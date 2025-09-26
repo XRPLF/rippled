@@ -45,14 +45,15 @@ class CheckMessageLogs : public Logs
         }
 
         void
-        write(beast::severities::Severity level, beast::Journal::StringBuffer text) override
+        write(beast::severities::Severity level, std::string const& text)
+            override
         {
-            if (text.str().find(owner_.msg_) != std::string::npos)
+            if (text.find(owner_.msg_) != std::string::npos)
                 *owner_.pFound_ = true;
         }
 
         void
-        writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text)
+        writeAlways(beast::severities::Severity level, std::string const& text)
             override
         {
             write(level, text);

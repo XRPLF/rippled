@@ -822,14 +822,6 @@ PeerImp::cancelTimer() noexcept
     }
 }
 
-std::string
-PeerImp::makePrefix(id_t id)
-{
-    std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << id << "] ";
-    return ss.str();
-}
-
 //------------------------------------------------------------------------------
 void
 PeerImp::doAccept()

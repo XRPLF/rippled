@@ -1644,7 +1644,6 @@ ApplicationImp::run()
     perfLog_->stop();
 
     JLOG(m_journal.info()) << "Done.";
-    logs_->flushBatch();
 }
 
 void

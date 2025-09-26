@@ -38,12 +38,6 @@
 
 namespace ripple {
 
-namespace {
-constexpr auto FLUSH_INTERVAL =
-    std::chrono::milliseconds(10);  // Max delay before flush
-}
-
-
 Logs::Sink::Sink(
     std::string const& partition,
     beast::severities::Severity thresh,
@@ -53,7 +47,7 @@ Logs::Sink::Sink(
 }
 
 void
-Logs::Sink::write(beast::severities::Severity level, beast::Journal::StringBuffer text)
+Logs::Sink::write(beast::severities::Severity level, std::string const& text)
 {
     if (level < threshold())
         return;
@@ -62,7 +56,9 @@ Logs::Sink::write(beast::severities::Severity level, beast::Journal::StringBuffe
 }
 
 void
-Logs::Sink::writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text)
+Logs::Sink::writeAlways(
+    beast::severities::Severity level,
+    std::string const& text)
 {
     logs_.write(level, partition_, text, console());
 }
@@ -76,7 +72,7 @@ Logs::File::File() : m_stream(nullptr)
 bool
 Logs::File::isOpen() const noexcept
 {
-    return m_stream.has_value();
+    return m_stream != nullptr;
 }
 
 bool
@@ -87,16 +83,14 @@ Logs::File::open(boost::filesystem::path const& path)
     bool wasOpened = false;
 
     // VFALCO TODO Make this work with Unicode file paths
-    std::ofstream stream(path.c_str(), std::fstream::app);
+    std::unique_ptr<std::ofstream> stream(
+        new std::ofstream(path.c_str(), std::fstream::app));
 
-    if (stream.good())
+    if (stream->good())
     {
         m_path = path;
 
         m_stream = std::move(stream);
-        size_t const bufsize = 256 * 1024;
-        static char buf[bufsize];
-        m_stream->rdbuf()->pubsetbuf(buf, bufsize);
 
         wasOpened = true;
     }
@@ -115,39 +109,31 @@ Logs::File::closeAndReopen()
 void
 Logs::File::close()
 {
-    m_stream.reset();
+    m_stream = nullptr;
 }
 
 void
-Logs::File::write(std::string const& text)
+Logs::File::write(std::string_view text)
 {
-    if (m_stream.has_value())
-        m_stream->write(text.data(), text.size());
+    if (m_stream != nullptr)
+        (*m_stream) << text;
+}
+
+void
+Logs::File::writeln(std::string_view text)
+{
+    if (m_stream != nullptr)
+    {
+        (*m_stream) << text;
+        (*m_stream) << std::endl;
+    }
 }
 
 //------------------------------------------------------------------------------
 
 Logs::Logs(beast::severities::Severity thresh)
     : thresh_(thresh)  // default severity
-    , writeBuffer_(
-          batchBuffer_)  // Initially, entire buffer is available for writing
-    , readBuffer_(batchBuffer_.data(), 0)  // No data ready to flush initially
-    , stopLogThread_(false)
 {
-    logThread_ = std::thread(&Logs::logThreadWorker, this);
-}
-
-Logs::~Logs()
-{
-    // Signal log thread to stop and wait for it to finish
-    {
-        stopLogThread_ = true;
-    }
-    
-    if (logThread_.joinable())
-        logThread_.join();
-    
-    flushBatch();  // Ensure all logs are written on shutdown
 }
 
 bool
@@ -159,7 +145,7 @@ Logs::open(boost::filesystem::path const& pathToLogFile)
 beast::Journal::Sink&
 Logs::get(std::string const& name)
 {
-    std::lock_guard lock(sinkSetMutex_);
+    std::lock_guard lock(mutex_);
     auto const result = sinks_.emplace(name, makeSink(name, thresh_));
     return *result.first->second;
 }
@@ -168,6 +154,12 @@ beast::Journal::Sink&
 Logs::operator[](std::string const& name)
 {
     return get(name);
+}
+
+beast::Journal
+Logs::journal(std::string const& name)
+{
+    return beast::Journal(get(name));
 }
 
 beast::severities::Severity
@@ -179,7 +171,7 @@ Logs::threshold() const
 void
 Logs::threshold(beast::severities::Severity thresh)
 {
-    std::lock_guard lock(sinkSetMutex_);
+    std::lock_guard lock(mutex_);
     thresh_ = thresh;
     for (auto& sink : sinks_)
         sink.second->threshold(thresh);
@@ -189,7 +181,7 @@ std::vector<std::pair<std::string, std::string>>
 Logs::partition_severities() const
 {
     std::vector<std::pair<std::string, std::string>> list;
-    std::lock_guard lock(sinkSetMutex_);
+    std::lock_guard lock(mutex_);
     list.reserve(sinks_.size());
     for (auto const& [name, sink] : sinks_)
         list.emplace_back(name, toString(fromSeverity(sink->threshold())));
@@ -200,118 +192,28 @@ void
 Logs::write(
     beast::severities::Severity level,
     std::string const& partition,
-    beast::Journal::StringBuffer text,
+    std::string const& text,
     bool console)
 {
     std::string s;
-    std::string_view result = text.str();
+    std::string_view result = text;
     if (!beast::Journal::isStructuredJournalEnabled())
     {
-        format(s, text.str(), level, partition);
-        text.str() = s;
-        result = text.str();
+        format(s, text, level, partition);
+        result = text;
     }
 
-    // if (!silent_)
-    //     std::cerr << result << '\n';
-
-    messages_.push(text);
-    
-    // Signal log thread that new messages are available
-    // logCondition_.notify_one();
-
-    // Add to batch buffer for file output
-    if (0) {
-        // std::lock_guard lock(batchMutex_);
-
-        // Console output still immediate for responsiveness
-        // if (!silent_)
-        //     std::cerr << result << '\n';
-
-        size_t logSize = result.size() + 1;  // +1 for newline
-
-        // If log won't fit in current write buffer, flush first
-        if (logSize > writeBuffer_.size())
-        {
-            flushBatchUnsafe();
-        }
-
-        // Copy log into write buffer
-        std::copy(result.begin(), result.end(), writeBuffer_.begin());
-        writeBuffer_[result.size()] = '\n';
-
-        return;
-
-        // Update spans: expand read buffer, shrink write buffer
-        size_t totalUsed = readBuffer_.size() + logSize;
-        readBuffer_ = std::span<char>(batchBuffer_.data(), totalUsed);
-        writeBuffer_ = std::span<char>(
-            batchBuffer_.data() + totalUsed, batchBuffer_.size() - totalUsed);
-
-        auto now = std::chrono::steady_clock::now();
-        bool shouldFlush = (now - lastFlush_) >= FLUSH_INTERVAL;
-
-        if (shouldFlush)
-        {
-            flushBatchUnsafe();
-            lastFlush_ = now;
-        }
-    }
-
+    std::lock_guard lock(mutex_);
+    file_.writeln(result);
     // VFALCO TODO Fix console output
     // if (console)
     //    out_.write_console(s);
 }
 
-void
-Logs::flushBatch()
-{
-    std::lock_guard lock(batchMutex_);
-    flushBatchUnsafe();
-}
-
-void
-Logs::flushBatchUnsafe()
-{
-    if (readBuffer_.empty())
-        return;
-
-    // Write the read buffer contents to file in one system call
-    // file_.write(std::string_view{readBuffer_.data(), readBuffer_.size()});
-
-    // Reset spans: entire buffer available for writing, nothing to read
-    writeBuffer_ = std::span<char>(batchBuffer_);
-    readBuffer_ = std::span<char>(batchBuffer_.data(), 0);
-}
-
-void
-Logs::logThreadWorker()
-{
-    while (!stopLogThread_)
-    {
-        std::this_thread::sleep_for(FLUSH_INTERVAL);
-
-        beast::Journal::StringBuffer buffer;
-        // Process all available messages
-        while (messages_.pop(buffer))
-        {
-            // Also write to console if not silent
-            if (!silent_)
-                std::cerr << buffer.str() << '\n';
-
-            // Write to file
-            file_.write(buffer.str());
-
-            // Return node to pool for reuse
-            beast::Journal::returnStringBuffer(std::move(buffer));
-        }
-    }
-}
-
 std::string
 Logs::rotate()
 {
-    flushBatch();  // Flush pending logs before rotating
+    std::lock_guard lock(mutex_);
     bool const wasOpened = file_.closeAndReopen();
     if (wasOpened)
         return "The log file was closed and reopened.";
@@ -428,7 +330,7 @@ Logs::fromString(std::string const& s)
 void
 Logs::format(
     std::string& output,
-    std::string_view message,
+    std::string const& message,
     beast::severities::Severity severity,
     std::string const& partition)
 {

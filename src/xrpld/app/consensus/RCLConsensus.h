@@ -553,14 +553,12 @@ class RclConsensusLogger
     beast::Journal j_;
     std::unique_ptr<std::stringstream> ss_;
     std::chrono::steady_clock::time_point start_;
-    std::source_location location_;
 
 public:
     explicit RclConsensusLogger(
         char const* label,
         bool validating,
-        beast::Journal j,
-        std::source_location location = std::source_location::current());
+        beast::Journal j);
     ~RclConsensusLogger();
 
     std::unique_ptr<std::stringstream> const&

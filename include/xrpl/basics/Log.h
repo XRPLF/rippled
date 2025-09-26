@@ -26,19 +26,12 @@
 #include <boost/beast/core/string.hpp>
 #include <boost/filesystem.hpp>
 
-#include <boost/lockfree/queue.hpp>
-
-#include <array>
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
 #include <fstream>
 #include <map>
 #include <memory>
 #include <mutex>
-#include <span>
-#include <thread>
 #include <utility>
+#include <string_view>
 
 namespace ripple {
 
@@ -76,10 +69,11 @@ private:
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, beast::Journal::StringBuffer text) override;
+        write(beast::severities::Severity level, std::string const& text)
+            override;
 
         void
-        writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text)
+        writeAlways(beast::severities::Severity level, std::string const& text)
             override;
     };
 
@@ -137,16 +131,22 @@ private:
             Does nothing if there is no associated system file.
         */
         void
-        write(std::string const& str);
+        write(std::string_view text);
+
+        /** write to the log file and append an end of line marker.
+            Does nothing if there is no associated system file.
+        */
+        void
+        writeln(std::string_view text);
 
         /** @} */
 
     private:
-        std::optional<std::ofstream> m_stream;
+        std::unique_ptr<std::ofstream> m_stream;
         boost::filesystem::path m_path;
     };
 
-    std::mutex mutable sinkSetMutex_;
+    std::mutex mutable mutex_;
     std::map<
         std::string,
         std::unique_ptr<beast::Journal::Sink>,
@@ -156,24 +156,6 @@ private:
     File file_;
     bool silent_ = false;
 
-    // Batching members
-    mutable std::mutex batchMutex_;
-    boost::lockfree::queue<beast::Journal::StringBuffer, boost::lockfree::capacity<100>> messages_;
-    static constexpr size_t BATCH_BUFFER_SIZE = 64 * 1024;  // 64KB buffer
-    std::array<char, BATCH_BUFFER_SIZE> batchBuffer_{};
-    std::span<char> writeBuffer_;  // Points to available write space
-    std::span<char> readBuffer_;   // Points to data ready to flush
-
-    // Log thread members
-    std::thread logThread_;
-    std::atomic<bool> stopLogThread_;
-    std::mutex logMutex_;
-    std::condition_variable logCondition_;
-    
-private:
-    std::chrono::steady_clock::time_point lastFlush_ =
-        std::chrono::steady_clock::now();
-
 public:
     Logs(beast::severities::Severity level);
 
@@ -181,7 +163,7 @@ public:
     Logs&
     operator=(Logs const&) = delete;
 
-    virtual ~Logs();  // Need to flush on destruction
+    virtual ~Logs() = default;
 
     bool
     open(boost::filesystem::path const& pathToLogFile);
@@ -201,10 +183,7 @@ public:
     }
 
     beast::Journal
-    journal(std::string const& name)
-    {
-        return beast::Journal{get(name), name};
-    }
+    journal(std::string const& name);
 
     beast::severities::Severity
     threshold() const;
@@ -219,14 +198,11 @@ public:
     write(
         beast::severities::Severity level,
         std::string const& partition,
-        beast::Journal::StringBuffer text,
+        std::string const& text,
         bool console);
 
     std::string
     rotate();
-
-    void
-    flushBatch();
 
     /**
      * Set flag to write logs to stderr (false) or not (true).
@@ -260,7 +236,7 @@ public:
     static void
     format(
         std::string& output,
-        std::string_view message,
+        std::string const& message,
         beast::severities::Severity severity,
         std::string const& partition);
 
@@ -270,12 +246,6 @@ private:
         // If the message exceeds this length it will be truncated with elipses.
         maximumMessageCharacters = 12 * 1024
     };
-
-    void
-    flushBatchUnsafe();
-    
-    void
-    logThreadWorker();
 };
 
 // Wraps a Journal::Stream to skip evaluation of

@@ -49,19 +49,20 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, beast::Journal::StringBuffer text) override
+    write(beast::severities::Severity level, std::string const& text) override
     {
         if (level < threshold())
             return;
 
-        std::cout << clock_.now().time_since_epoch().count() << " " << text.str()
+        std::cout << clock_.now().time_since_epoch().count() << " " << text
                   << std::endl;
     }
 
     void
-    writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text) override
+    writeAlways(beast::severities::Severity level, std::string const& text)
+        override
     {
-        std::cout << clock_.now().time_since_epoch().count() << " " << text.str()
+        std::cout << clock_.now().time_since_epoch().count() << " " << text
                   << std::endl;
     }
 };

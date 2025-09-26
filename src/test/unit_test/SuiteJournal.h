@@ -49,14 +49,17 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, beast::Journal::StringBuffer text) override;
+    write(beast::severities::Severity level, std::string const& text) override;
 
     void
-    writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text) override;
+    writeAlways(beast::severities::Severity level, std::string const& text)
+        override;
 };
 
 inline void
-SuiteJournalSink::write(beast::severities::Severity level, beast::Journal::StringBuffer text)
+SuiteJournalSink::write(
+    beast::severities::Severity level,
+    std::string const& text)
 {
     // Only write the string if the level at least equals the threshold.
     if (level >= threshold())
@@ -66,7 +69,7 @@ SuiteJournalSink::write(beast::severities::Severity level, beast::Journal::Strin
 inline void
 SuiteJournalSink::writeAlways(
     beast::severities::Severity level,
-    beast::Journal::StringBuffer text)
+    std::string const& text)
 {
     using namespace beast::severities;
 
@@ -93,7 +96,7 @@ SuiteJournalSink::writeAlways(
 
     static std::mutex log_mutex;
     std::lock_guard lock(log_mutex);
-    suite_.log << s << partition_ << text.str() << std::endl;
+    suite_.log << s << partition_ << text << std::endl;
 }
 
 class SuiteJournal
@@ -134,7 +137,7 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, beast::Journal::StringBuffer text) override
+    write(beast::severities::Severity level, std::string const& text) override
     {
         if (level < threshold())
             return;
@@ -142,9 +145,10 @@ public:
     }
 
     inline void
-    writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text) override
+    writeAlways(beast::severities::Severity level, std::string const& text)
+        override
     {
-        strm_ << text.str() << std::endl;
+        strm_ << text << std::endl;
     }
 
     std::stringstream const&

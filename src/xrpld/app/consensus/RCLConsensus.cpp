@@ -1107,8 +1107,7 @@ RCLConsensus::startRound(
 RclConsensusLogger::RclConsensusLogger(
     char const* label,
     bool const validating,
-    beast::Journal j,
-    std::source_location location)
+    beast::Journal j)
     : j_(j)
 {
     if (!validating && !j.info())
@@ -1126,16 +1125,16 @@ RclConsensusLogger::~RclConsensusLogger()
         return;
     auto const duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - start_);
-
     std::stringstream outSs;
     outSs << header_ << "duration " << (duration.count() / 1000) << '.'
           << std::setw(3) << std::setfill('0') << (duration.count() % 1000)
           << "s. " << ss_->str();
 
-    auto node = beast::Journal::rentFromPool();
+    thread_local std::string buffer;
     if (beast::Journal::isStructuredJournalEnabled())
     {
-        beast::detail::SimpleJsonWriter writer{&node.str()};
+        buffer.resize(5 * 1024);
+        beast::detail::SimpleJsonWriter writer{&buffer};
         writer.startObject();
         writer.writeKey("Msg");
         writer.writeString(outSs.str());
@@ -1146,9 +1145,9 @@ RclConsensusLogger::~RclConsensusLogger()
     }
     else
     {
-        node.str() = outSs.str();
+        buffer = outSs.str();
     }
-    j_.sink().writeAlways(beast::severities::kInfo, node);
+    j_.sink().writeAlways(beast::severities::kInfo, buffer);
 }
 
 }  // namespace ripple

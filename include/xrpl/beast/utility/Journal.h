@@ -22,12 +22,10 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
-#include <thread>
 #include <deque>
 #include <atomic>
 #include <charconv>
 #include <cstring>
-#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <source_location>
@@ -330,146 +328,21 @@ public:
 
     class Sink;
 
-    class StringBufferPool {
-    public:
-        static constexpr std::uint32_t kEmptyIdx = std::numeric_limits<std::uint32_t>::max();
-
-        struct Head {
-            std::uint32_t tag;
-            std::uint32_t idx; // kEmptyIdx means empty
-        };
-
-        struct Node {
-            std::uint32_t next_idx{kEmptyIdx};
-            std::uint32_t self_idx{kEmptyIdx};
-            std::string   buf{};
-        };
-
-        class StringBuffer
-        {
-        public:
-            StringBuffer() = default;
-
-            std::string&
-            str() { return node_->buf; }
-
-        private:
-            StringBuffer(StringBufferPool* owner, Node* node)
-                : owner_(owner), node_(node) {}
-
-            StringBufferPool* owner_ = nullptr;
-            Node* node_ = nullptr;
-
-            friend class StringBufferPool;
-        };
-
-        explicit StringBufferPool(std::uint32_t grow_by = 20)
-            : growBy_(grow_by), head_({0, kEmptyIdx}) {}
-
-        // Rent a buffer; grows on demand. Returns move-only RAII handle.
-        StringBuffer rent() {
-            for (;;) {
-                auto old = head_.load(std::memory_order_acquire);
-                if (old.idx == kEmptyIdx) { grow(); continue; }      // rare slow path
-
-                Node& n = nodes_[old.idx];
-                std::uint32_t next = n.next_idx;
-
-                Head neu{ old.tag + 1, next };
-                if (head_.compare_exchange_weak(old, neu,
-                                                std::memory_order_acq_rel,
-                                                std::memory_order_acquire)) {
-                    return {this, &n};
-                }
-            }
-        }
-
-        // Only the pool/handle can call this
-        void giveBack(StringBuffer&& h) noexcept {
-            Node* node = h.node_;
-            if (!node) return; // already invalid
-            const std::uint32_t idx = node->self_idx;
-
-            for (;;) {
-                auto old = head_.load(std::memory_order_acquire);
-
-                node->next_idx = old.idx;
-
-                Head neu{ std::uint32_t(old.tag + 1), idx };
-                if (head_.compare_exchange_weak(old, neu,
-                                                std::memory_order_acq_rel,
-                                                std::memory_order_acquire)) {
-                    // Invalidate handle (prevents double return)
-                    h.owner_ = nullptr;
-                    h.node_  = nullptr;
-                    return;
-                }
-            }
-        }
-
-    private:
-
-        void grow() {
-            if (head_.load(std::memory_order_acquire).idx != kEmptyIdx) return;
-            std::scoped_lock lk(growMutex_);
-            if (head_.load(std::memory_order_acquire).idx != kEmptyIdx) return;
-
-            auto base = static_cast<std::uint32_t>(nodes_.size());
-            nodes_.resize(base + growBy_);
-
-            // Init nodes and local chain
-            for (std::uint32_t i = 0; i < growBy_; ++i) {
-                std::uint32_t idx = base + i;
-                Node& n = nodes_[idx];
-                n.self_idx = idx;
-                n.next_idx = (i + 1 < growBy_) ? (idx + 1) : kEmptyIdx;
-            }
-
-            // Splice chain onto global head: [base .. base+grow_by_-1]
-            const std::uint32_t chain_head = base;
-            const std::uint32_t chain_tail = base + growBy_ - 1;
-
-            for (;;) {
-                auto old = head_.load(std::memory_order_acquire);
-
-                nodes_[chain_tail].next_idx = old.idx; // tail -> old head
-                Head neu{ std::uint32_t(old.tag + 1), chain_head };
-
-                if (head_.compare_exchange_weak(old, neu,
-                                                std::memory_order_acq_rel,
-                                                std::memory_order_acquire)) {
-                    break;
-                }
-            }
-        }
-
-        const std::uint32_t growBy_;
-
-        // single 64-bit CAS
-        std::atomic<Head> head_;
-
-        // only during growth
-        std::mutex growMutex_;
-
-        // stable storage for nodes/strings
-        std::deque<Node> nodes_;
-    };
-    using StringBuffer = StringBufferPool::StringBuffer;
-
     class JsonLogContext
     {
-        StringBuffer messageBuffer_;
+        std::string messageBuffer_;
         detail::SimpleJsonWriter jsonWriter_;
         bool hasMessageParams_ = false;
         std::size_t messageOffset_ = 0;
     public:
 
         JsonLogContext()
-            : messageBuffer_(rentFromPool())
-            , jsonWriter_(&messageBuffer_.str())
-        {}
+            : jsonWriter_(&messageBuffer_)
+        {
+            messageBuffer_.reserve(4 * 1024);
+        }
 
-        StringBuffer
+        std::string&
         messageBuffer() { return messageBuffer_; }
 
         void
@@ -522,7 +395,6 @@ private:
     static std::shared_mutex globalLogAttributesMutex_;
     static bool jsonLogsEnabled_;
 
-    static StringBufferPool messagePool_;
     static thread_local JsonLogContext currentJsonLogContext_;
 
     // Invariant: m_sink always points to a valid Sink
@@ -533,20 +405,11 @@ private:
         std::source_location location,
         severities::Severity severity) const;
 
-    static StringBuffer
+    static std::string&
     formatLog(std::string const& message);
 
 public:
     //--------------------------------------------------------------------------
-
-    static StringBuffer
-    rentFromPool()
-    {
-        return messagePool_.rent();
-    }
-
-    static void
-    returnStringBuffer(StringBuffer&& node) { messagePool_.giveBack(std::move(node)); }
 
     static void
     enableStructuredJournal();
@@ -597,7 +460,7 @@ public:
             level is below the current threshold().
         */
         virtual void
-        write(Severity level, StringBuffer text) = 0;
+        write(Severity level, std::string const& text) = 0;
 
         /** Bypass filter and write text to the sink at the specified severity.
          * Always write the message, but maintain the same formatting as if
@@ -607,7 +470,7 @@ public:
          * @param text Text to write to sink.
          */
         virtual void
-        writeAlways(Severity level, StringBuffer text) = 0;
+        writeAlways(Severity level, std::string const& text) = 0;
 
     private:
         Severity thresh_;

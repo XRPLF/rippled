@@ -48,14 +48,14 @@ public:
         }
 
         void
-        write(severities::Severity level, Journal::StringBuffer) override
+        write(severities::Severity level, std::string const&) override
         {
             if (level >= threshold())
                 ++m_count;
         }
 
         void
-        writeAlways(severities::Severity level, Journal::StringBuffer) override
+        writeAlways(severities::Severity level, std::string const&) override
         {
             ++m_count;
         }

@@ -113,17 +113,20 @@ flow(
 
     if (auto stream = j.trace())
     {
-        stream << "\nsrc: " << src << "\ndst: " << dst
+        std::stringstream ss;
+        ss << "\nsrc: " << src << "\ndst: " << dst
                   << "\nsrcIssue: " << srcIssue << "\ndstIssue: " << dstIssue;
-        stream << "\nNumStrands: " << strands.size();
+        ss << "\nNumStrands: " << strands.size();
         for (auto const& curStrand : strands)
         {
-            stream << "NumSteps: " << curStrand.size();
+            ss << "NumSteps: " << curStrand.size();
             for (auto const& step : curStrand)
             {
-                stream << '\n' << *step << '\n';
+                ss << '\n' << *step << '\n';
             }
         }
+
+        std::move(stream) << ss.str();
     }
 
     bool const srcIsXRP = isXRP(srcIssue.currency);

@@ -92,19 +92,20 @@ public:
         }
 
         void
-        write(beast::severities::Severity level, beast::Journal::StringBuffer text) override
+        write(beast::severities::Severity level, std::string const& text)
+            override
         {
             if (level < threshold())
                 return;
 
-            suite_.log << text.str() << std::endl;
+            suite_.log << text << std::endl;
         }
 
         void
-        writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text)
+        writeAlways(beast::severities::Severity level, std::string const& text)
             override
         {
-            suite_.log << text.str() << std::endl;
+            suite_.log << text << std::endl;
         }
     };
 
