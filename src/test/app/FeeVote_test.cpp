@@ -335,7 +335,10 @@ class FeeVote_test : public beast::unit_test::suite
 
         // Test with XRPFees disabled (legacy format)
         {
-            jtx::Env env(*this, jtx::testable_amendments() - featureXRPFees);
+            jtx::Env env(
+                *this,
+                jtx::testable_amendments() - featureXRPFees -
+                    featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
                 create_genesis,
                 env.app().config(),
@@ -365,7 +368,8 @@ class FeeVote_test : public beast::unit_test::suite
 
         // Test with XRPFees enabled (new format)
         {
-            jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
+            jtx::Env env(
+                *this, jtx::testable_amendments() - featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
                 create_genesis,
                 env.app().config(),
@@ -398,7 +402,10 @@ class FeeVote_test : public beast::unit_test::suite
         testcase("Fee Transaction Validation");
 
         {
-            jtx::Env env(*this, jtx::testable_amendments() - featureXRPFees);
+            jtx::Env env(
+                *this,
+                jtx::testable_amendments() - featureXRPFees -
+                    featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
                 create_genesis,
                 env.app().config(),
@@ -422,7 +429,8 @@ class FeeVote_test : public beast::unit_test::suite
         }
 
         {
-            jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
+            jtx::Env env(
+                *this, jtx::testable_amendments() - featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
                 create_genesis,
                 env.app().config(),
@@ -451,7 +459,7 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Pseudo Transaction Properties");
 
-        jtx::Env env(*this, jtx::testable_amendments());
+        jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
         auto ledger = std::make_shared<Ledger>(
             create_genesis,
             env.app().config(),
@@ -490,7 +498,7 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Multiple Fee Updates");
 
-        jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
+        jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
         auto ledger = std::make_shared<Ledger>(
             create_genesis,
             env.app().config(),
@@ -539,7 +547,7 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Wrong Ledger Sequence");
 
-        jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
+        jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
         auto ledger = std::make_shared<Ledger>(
             create_genesis,
             env.app().config(),
@@ -570,7 +578,7 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Partial Field Updates");
 
-        jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
+        jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
         auto ledger = std::make_shared<Ledger>(
             create_genesis,
             env.app().config(),
@@ -618,7 +626,7 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Single Invalid Transaction");
 
-        jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
+        jtx::Env env(*this, jtx::testable_amendments() - featureSmartEscrow);
         auto ledger = std::make_shared<Ledger>(
             create_genesis,
             env.app().config(),
@@ -658,7 +666,7 @@ class FeeVote_test : public beast::unit_test::suite
 
         // Test with XRPFees enabled
         {
-            Env env(*this, testable_amendments() | featureXRPFees);
+            Env env(*this, testable_amendments() - featureSmartEscrow);
             auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
 
             auto ledger = std::make_shared<Ledger>(
@@ -693,7 +701,9 @@ class FeeVote_test : public beast::unit_test::suite
 
         // Test with XRPFees disabled (legacy format)
         {
-            Env env(*this, testable_amendments() - featureXRPFees);
+            Env env(
+                *this,
+                testable_amendments() - featureXRPFees - featureSmartEscrow);
             auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
 
             auto ledger = std::make_shared<Ledger>(
@@ -736,7 +746,7 @@ class FeeVote_test : public beast::unit_test::suite
         setup.account_reserve = 1234567;
         setup.owner_reserve = 7654321;
 
-        Env env(*this, testable_amendments() | featureXRPFees);
+        Env env(*this, testable_amendments() - featureSmartEscrow);
 
         // establish what the current fees are
         BEAST_EXPECT(
