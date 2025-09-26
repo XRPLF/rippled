@@ -240,6 +240,12 @@ TYPED_SFIELD(sfClosePaymentFee,          NUMBER,     12)
 TYPED_SFIELD(sfPrincipalOutstanding,     NUMBER,     13)
 TYPED_SFIELD(sfPrincipalRequested,       NUMBER,     14)
 
+// int32
+// NOTE: Do not use `sfDummyInt32`. It's so far the only use of INT32
+// in this file and has been defined here for test only.
+// TODO: Replace `sfDummyInt32` with actually useful field.
+TYPED_SFIELD(sfDummyInt32,               INT32,      1) // for tests only
+
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)
 TYPED_SFIELD(sfBalance,                  AMOUNT,     2)

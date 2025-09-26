@@ -316,11 +316,20 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 XRPAmount
 Transactor::calculateOwnerReserveFee(ReadView const& view, STTx const& tx)
 {
-    // One reserve increment is typically much greater than one base fee.
+    // Assumption: One reserve increment is typically much greater than one base
+    // fee.
+    // This check is in an assert so that it will come to the attention of
+    // developers if that assumption is not correct. If the owner reserve is not
+    // significantly larger than the base fee (or even worse, smaller), we will
+    // need to rethink charging an owner reserve as a transaction fee.
+    // TODO: This function is static, and I don't want to add more parameters.
+    // When it is finally refactored to be in a context that has access to the
+    // Application, include "app().overlay().networkID() > 2 ||" in the
+    // condition.
     XRPL_ASSERT(
         view.fees().increment > view.fees().base * 100,
-        "ripple::Transactor::calculateOwnerReserveFee : Owner reserve is much "
-        "greater than base fee");
+        "ripple::Transactor::calculateOwnerReserveFee : Owner reserve is "
+        "reasonable");
     return view.fees().increment;
 }
 
