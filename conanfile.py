@@ -31,7 +31,8 @@ class Xrpl(ConanFile):
         'openssl/1.1.1w',
         'soci/4.0.3',
         'zlib/1.3.1',
-        'wamr/2.4.1',
+        #'wamr/2.4.1',
+        'wasmtime/37.0.0',
     ]
 
     test_requires = [
@@ -193,7 +194,8 @@ class Xrpl(ConanFile):
             'protobuf::libprotobuf',
             'soci::soci',
             'sqlite3::sqlite',
-            'wamr::wamr',
+            #'wamr::wamr',
+            'wasmtime::wasmtime',
             'xxhash::xxhash',
             'zlib::zlib',
         ]

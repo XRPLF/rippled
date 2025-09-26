@@ -23,7 +23,8 @@
 
 #include <xrpld/app/wasm/HostFunc.h>
 #include <xrpld/app/wasm/HostFuncWrapper.h>
-#include <xrpld/app/wasm/WamrVM.h>
+// #include <xrpld/app/wasm/WamrVM.h>
+#include <xrpld/app/wasm/WasmtimeVM.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AccountID.h>
@@ -188,7 +189,7 @@ preflightEscrowWasm(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WasmEngine::WasmEngine() : impl(std::make_unique<WamrEngine>())
+WasmEngine::WasmEngine() : impl(std::make_unique<WasmtimeEngine>())
 {
 }
 

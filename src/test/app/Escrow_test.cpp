@@ -1986,12 +1986,12 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // not enough gas
-            // This function takes 4 gas
+            // This function takes 2 gas
             // In testing, 1 gas costs 1 drop
             auto const finishFee = env.current()->fees().base + 4;
             env(escrow::finish(carol, alice, seq),
                 fee(finishFee),
-                escrow::comp_allowance(2),
+                escrow::comp_allowance(1),
                 ter(tecFAILED_PROCESSING));
         }
 
@@ -2029,7 +2029,7 @@ struct Escrow_test : public beast::unit_test::suite
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
         auto const& wasmHex = ledgerSqnWasmHex;
-        std::uint32_t const allowance = 66;
+        std::uint32_t const allowance = 8;
         auto escrowCreate = escrow::create(alice, carol, XRP(1000));
         auto [createFee, finishFee] = [&]() {
             Env env(*this, features);
@@ -2169,7 +2169,9 @@ struct Escrow_test : public beast::unit_test::suite
 
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
+                    BEAST_EXPECTS(
+                        txMeta->getFieldU32(sfGasUsed) == allowance,
+                        std::to_string(txMeta->getFieldU32(sfGasUsed)));
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
                     BEAST_EXPECTS(
                         txMeta->getFieldI32(sfWasmReturnCode) == 6,
@@ -2220,7 +2222,9 @@ struct Escrow_test : public beast::unit_test::suite
 
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
+                    BEAST_EXPECTS(
+                        txMeta->getFieldU32(sfGasUsed) == allowance,
+                        std::to_string(txMeta->getFieldU32(sfGasUsed)));
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
                     BEAST_EXPECTS(
                         txMeta->getFieldI32(sfWasmReturnCode) == 13,
@@ -2351,7 +2355,7 @@ struct Escrow_test : public beast::unit_test::suite
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECTS(
-                        txMeta->getFieldU32(sfGasUsed) == 38'571,
+                        txMeta->getFieldU32(sfGasUsed) == 1'772,
                         std::to_string(txMeta->getFieldU32(sfGasUsed)));
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
                     BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
@@ -2436,7 +2440,7 @@ struct Escrow_test : public beast::unit_test::suite
                 env.close();
                 env.close();
 
-                auto const allowance = 137'896;
+                auto const allowance = 5'070;
                 auto const finishFee = env.current()->fees().base +
                     (allowance * env.current()->fees().gasPrice) /
                         MICRO_DROPS_PER_DROP +

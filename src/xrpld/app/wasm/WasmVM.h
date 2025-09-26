@@ -38,10 +38,10 @@ static std::string_view const ESCROW_FUNCTION_NAME = "finish";
 
 uint32_t const MAX_PAGES = 128;  // 8MB = 64KB*128
 
-class WamrEngine;
+class WasmtimeEngine;
 class WasmEngine
 {
-    std::unique_ptr<WamrEngine> const impl;
+    std::unique_ptr<WasmtimeEngine> const impl;
 
     WasmEngine();
 

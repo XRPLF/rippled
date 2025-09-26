@@ -33,6 +33,11 @@ runs:
         echo 'Conan profile:'
         conan profile show
 
+    - name: Export wasmtime
+      shell: bash
+      run: |
+        conan export --version 37.0.0 external/wasmtime
+
     - name: Set up Conan remote
       shell: bash
       run: |

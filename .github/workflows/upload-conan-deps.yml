@@ -32,7 +32,6 @@ on:
       - ".github/scripts/strategy-matrix/**"
 
       - conanfile.py
-      - conan.lock
 
 env:
   CONAN_REMOTE_NAME: xrplf

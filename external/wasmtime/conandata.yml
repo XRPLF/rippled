@@ -1,0 +1,6 @@
+patches:
+  37.0.0:
+  - patch_description: install only static lib (to prevent conflict with shared)
+    patch_file: patches/static_only.patch
+    patch_type: conan
+
