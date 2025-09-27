@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package org.xrpl.rpc.v1;
+option go_package = "xrpl.org/rpc/v1";
 option java_package = "org.xrpl.rpc.v1";
 option java_multiple_files = true;
 
