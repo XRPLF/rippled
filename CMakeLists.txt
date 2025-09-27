@@ -49,7 +49,7 @@ if(Git_FOUND)
 endif() #git
 
 if(thread_safety_analysis)
-  add_compile_options(-Wthread-safety -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -DRIPPLE_ENABLE_THREAD_SAFETY_ANNOTATIONS)
+  add_compile_options(-Wthread-safety -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -DXRPL_ENABLE_THREAD_SAFETY_ANNOTATIONS)
   add_compile_options("-stdlib=libc++")
   add_link_options("-stdlib=libc++")
 endif()
@@ -112,7 +112,7 @@ option(rocksdb "Enable RocksDB" ON)
 if(rocksdb)
   find_package(RocksDB REQUIRED)
   set_target_properties(RocksDB::rocksdb PROPERTIES
-    INTERFACE_COMPILE_DEFINITIONS RIPPLE_ROCKSDB_AVAILABLE=1
+    INTERFACE_COMPILE_DEFINITIONS XRPL_ROCKSDB_AVAILABLE=1
   )
   target_link_libraries(ripple_libs INTERFACE RocksDB::rocksdb)
 endif()
