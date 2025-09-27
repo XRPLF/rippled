@@ -1961,7 +1961,8 @@ class MPToken_test : public beast::unit_test::suite
                 // Exclude pseudo-transaction SetFee. Don't consider
                 // the Fee field since it's included in every transaction.
                 if (e.supportMPT() == soeMPTNotSupported &&
-                    e.sField().getName() != jss::Fee &&
+                    (e.sField().getName() != jss::Fee &&
+                     e.sField().getName() != jss::MaxFee) &&
                     format.getName() != jss::SetFee)
                 {
                     txWithAmounts.insert(

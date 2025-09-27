@@ -185,6 +185,7 @@ enum TEFcodes : TERUnderlyingType {
     tefNO_TICKET,
     tefNFTOKEN_IS_NOT_TRANSFERABLE,
     tefINVALID_LEDGER_FIX_TYPE,
+    tefFIREWALL_BLOCK,
 };
 
 //------------------------------------------------------------------------------

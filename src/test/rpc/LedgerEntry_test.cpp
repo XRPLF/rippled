@@ -2028,6 +2028,149 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
+    testLedgerEntryFirewall()
+    {
+        testcase("Firewall");
+        using namespace test::jtx;
+
+        auto cfg = envconfig();
+        cfg->FEES.reference_fee = 10;
+        Env env{*this, std::move(cfg)};
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        // Create firewall
+        env(firewall::set(alice),
+            firewall::backup(bob),
+            firewall::counter_party(carol),
+            ter(tesSUCCESS));
+        env.close();
+
+        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        {
+            // Exercise ledger_closed along the way.
+            Json::Value const jrr = env.rpc("ledger_closed")[jss::result];
+            BEAST_EXPECT(jrr[jss::ledger_hash] == ledgerHash);
+            BEAST_EXPECT(jrr[jss::ledger_index] == 4);
+        }
+
+        std::string firewallIndex;
+        {
+            // Request alice's firewall.
+            Json::Value jvParams;
+            jvParams[jss::firewall] = alice.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::node));
+            BEAST_EXPECT(jrr[jss::node][jss::Owner] == alice.human());
+            BEAST_EXPECT(
+                jrr[jss::node][sfCounterParty.jsonName] == carol.human());
+            firewallIndex = jrr[jss::index].asString();
+        }
+        {
+            // Request alice's firewall using the index.
+            Json::Value jvParams;
+            jvParams[jss::index] = firewallIndex;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::node));
+            BEAST_EXPECT(jrr[jss::node][jss::Owner] == alice.human());
+            BEAST_EXPECT(
+                jrr[jss::node][sfCounterParty.jsonName] == carol.human());
+        }
+        {
+            // Check malformed cases
+            Json::Value jvParams;
+            testMalformedField(
+                env,
+                jvParams,
+                jss::firewall,
+                FieldType::AccountField,
+                "malformedAddress");
+        }
+        {
+            // Request a firewall that is not in the ledger.
+            Json::Value jvParams;
+            jvParams[jss::firewall] = Account("bob").human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+        }
+    }
+
+    void
+    testLedgerEntryWithdrawPreauth()
+    {
+        testcase("Withdraw Preauth");
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        // Create firewall
+        env(firewall::set(alice),
+            firewall::backup(bob),
+            firewall::counter_party(carol),
+            ter(tesSUCCESS));
+        env.close();
+
+        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string withdrawPreauthIndex;
+        {
+            // Request a withdrawPreauth by owner and authorized.
+            Json::Value jvParams;
+            jvParams[jss::withdraw_preauth][jss::owner] = alice.human();
+            jvParams[jss::withdraw_preauth][jss::authorized] = bob.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] ==
+                jss::WithdrawPreauth);
+            BEAST_EXPECT(jrr[jss::node][sfAccount.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfAuthorize.jsonName] == bob.human());
+            withdrawPreauthIndex = jrr[jss::node][jss::index].asString();
+        }
+        {
+            // Request a withdrawPreauth by index.
+            Json::Value jvParams;
+            jvParams[jss::withdraw_preauth] = withdrawPreauthIndex;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] ==
+                jss::WithdrawPreauth);
+            BEAST_EXPECT(jrr[jss::node][sfAccount.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfAuthorize.jsonName] == bob.human());
+        }
+        {
+            // test all missing/malformed field cases
+            runLedgerEntryTest(
+                env,
+                jss::withdraw_preauth,
+                {
+                    {jss::owner, "malformedOwner"},
+                    {jss::authorized, "malformedAuthorized", false},
+                });
+        }
+    }
+
+    void
     testLedgerEntryCLI()
     {
         testcase("command-line");
@@ -2076,6 +2219,8 @@ public:
         testOracleLedgerEntry();
         testLedgerEntryMPT();
         testLedgerEntryPermissionedDomain();
+        testLedgerEntryFirewall();
+        testLedgerEntryWithdrawPreauth();
         testLedgerEntryCLI();
     }
 };

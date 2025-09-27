@@ -301,6 +301,41 @@ STTx::checkBatchSign(
     return Unexpected("Internal batch signature check failure.");
 }
 
+Expected<void, std::string>
+STTx::checkFirewallSign(
+    RequireFullyCanonicalSig requireCanonicalSig,
+    Rules const& rules) const
+{
+    try
+    {
+        STArray const& signers{getFieldArray(sfFirewallSigners)};
+        if (signers.size() == 1)
+        {
+            auto const result =
+                checkFirewallSingleSign(signers[0], requireCanonicalSig);
+            if (!result)
+                return result;
+        }
+        // for (auto const& signer : signers)
+        // {
+        //     Blob const& signingPubKey = signer.getFieldVL(sfSigningPubKey);
+        //     auto const result = signingPubKey.empty()
+        //         ? checkFirewallMultiSign(signer, requireCanonicalSig, rules)
+        //         : checkFirewallSingleSign(signer, requireCanonicalSig);
+
+        //     if (!result)
+        //         return result;
+        // }
+        return {};
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(debugLog().error())
+            << "Batch signature check failed: " << e.what();
+    }
+    return Unexpected("Internal batch signature check failure.");
+}
+
 Json::Value
 STTx::getJson(JsonOptions options) const
 {
@@ -439,6 +474,17 @@ STTx::checkBatchSingleSign(
 }
 
 Expected<void, std::string>
+STTx::checkFirewallSingleSign(
+    STObject const& firewallSigner,
+    RequireFullyCanonicalSig requireCanonicalSig) const
+{
+    auto const data = getSigningData(*this);
+    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
+        (requireCanonicalSig == STTx::RequireFullyCanonicalSig::yes);
+    return singleSignHelper(firewallSigner, makeSlice(data), fullyCanonical);
+}
+
+Expected<void, std::string>
 multiSignHelper(
     STObject const& signerObj,
     bool const fullyCanonical,
@@ -517,6 +563,29 @@ multiSignHelper(
 }
 
 Expected<void, std::string>
+STTx::checkMultiSign(
+    RequireFullyCanonicalSig requireCanonicalSig,
+    Rules const& rules) const
+{
+    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
+        (requireCanonicalSig == RequireFullyCanonicalSig::yes);
+
+    // We can ease the computational load inside the loop a bit by
+    // pre-constructing part of the data that we hash.  Fill a Serializer
+    // with the stuff that stays constant from signature to signature.
+    Serializer dataStart = startMultiSigningData(*this);
+    return multiSignHelper(
+        *this,
+        fullyCanonical,
+        [&dataStart](AccountID const& accountID) mutable -> Serializer {
+            Serializer s = dataStart;
+            finishMultiSigningData(accountID, s);
+            return s;
+        },
+        rules);
+}
+
+Expected<void, std::string>
 STTx::checkBatchMultiSign(
     STObject const& batchSigner,
     RequireFullyCanonicalSig requireCanonicalSig,
@@ -542,7 +611,8 @@ STTx::checkBatchMultiSign(
 }
 
 Expected<void, std::string>
-STTx::checkMultiSign(
+STTx::checkFirewallMultiSign(
+    STObject const& firewallSigner,
     RequireFullyCanonicalSig requireCanonicalSig,
     Rules const& rules) const
 {
@@ -554,7 +624,7 @@ STTx::checkMultiSign(
     // with the stuff that stays constant from signature to signature.
     Serializer dataStart = startMultiSigningData(*this);
     return multiSignHelper(
-        *this,
+        firewallSigner,
         fullyCanonical,
         [&dataStart](AccountID const& accountID) mutable -> Serializer {
             Serializer s = dataStart;

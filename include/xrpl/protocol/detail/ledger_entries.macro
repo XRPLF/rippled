@@ -509,5 +509,29 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))
 
+/** A ledger object which tracks the firewall rules for an account.
+    \sa keylet::firewall
+ */
+LEDGER_ENTRY(ltFIREWALL, 0x0085, Firewall, firewall, ({
+    {sfOwner,               soeREQUIRED},
+    {sfCounterParty,        soeREQUIRED},
+    {sfMaxFee,              soeOPTIONAL},
+    {sfOwnerNode,           soeREQUIRED},
+    {sfPreviousTxnID,       soeREQUIRED},
+    {sfPreviousTxnLgrSeq,   soeREQUIRED}
+}))
+
+/** A ledger object which tracks WithdrawPreauth
+    \sa keylet::WithdrawPreauth
+ */
+LEDGER_ENTRY_DUPLICATE(ltWITHDRAW_PREAUTH, 0x0086, WithdrawPreauth, withdraw_preauth, ({
+    {sfAccount,              soeREQUIRED},
+    {sfAuthorize,            soeREQUIRED},
+    {sfDestinationTag,       soeOPTIONAL},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE

@@ -681,6 +681,48 @@ parseXChainOwnedCreateAccountClaimID(
     return keylet.key;
 }
 
+static Expected<uint256, Json::Value>
+parseFirewall(Json::Value const& params, Json::StaticString const fieldName)
+{
+    if (auto const account = LedgerEntryHelpers::parse<AccountID>(params))
+    {
+        return keylet::firewall(*account).key;
+    }
+
+    return LedgerEntryHelpers::invalidFieldError(
+        "malformedAddress", fieldName, "AccountID");
+}
+
+static Expected<uint256, Json::Value>
+parseWithdrawPreauth(Json::Value const& wp, Json::StaticString const fieldName)
+{
+    if (!wp.isObject())
+    {
+        return parseObjectID(wp, fieldName);
+    }
+
+    auto const owner =
+        LedgerEntryHelpers::requiredAccountID(wp, jss::owner, "malformedOwner");
+    if (!owner)
+    {
+        return Unexpected(owner.error());
+    }
+
+    if (!wp.isMember(jss::authorized))
+    {
+        return LedgerEntryHelpers::malformedError("malformedRequest", "");
+    }
+
+    auto const authorized =
+        LedgerEntryHelpers::parse<AccountID>(wp[jss::authorized]);
+    if (!authorized)
+    {
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedAuthorized", jss::authorized, "AccountID");
+    }
+    return keylet::withdrawPreauth(*owner, *authorized, 0).key;
+}
+
 using FunctionType = Expected<uint256, Json::Value> (*)(
     Json::Value const&,
     Json::StaticString const);

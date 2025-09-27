@@ -135,6 +135,11 @@ public:
         RequireFullyCanonicalSig requireCanonicalSig,
         Rules const& rules) const;
 
+    Expected<void, std::string>
+    checkFirewallSign(
+        RequireFullyCanonicalSig requireCanonicalSig,
+        Rules const& rules) const;
+
     // SQL Functions with metadata.
     static std::string const&
     getMetaSQLInsertReplaceHeader();
@@ -170,6 +175,17 @@ private:
     Expected<void, std::string>
     checkBatchMultiSign(
         STObject const& batchSigner,
+        RequireFullyCanonicalSig requireCanonicalSig,
+        Rules const& rules) const;
+
+    Expected<void, std::string>
+    checkFirewallSingleSign(
+        STObject const& firewallSigner,
+        RequireFullyCanonicalSig requireCanonicalSig) const;
+
+    Expected<void, std::string>
+    checkFirewallMultiSign(
+        STObject const& firewallSigner,
         RequireFullyCanonicalSig requireCanonicalSig,
         Rules const& rules) const;
 

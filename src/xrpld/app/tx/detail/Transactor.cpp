@@ -19,6 +19,7 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DelegateUtils.h>
+#include <xrpld/app/misc/FirewallHelpers.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
@@ -910,6 +911,114 @@ Transactor::checkMultiSign(
     }
 
     // Met the quorum.  Continue.
+    return tesSUCCESS;
+}
+
+NotTEC
+Transactor::checkFirewallSign(PreclaimContext const& ctx)
+{
+    auto const account = ctx.tx.getAccountID(sfAccount);
+
+    // Check if the firewall is enabled.
+    auto const sleFirewall = ctx.view.read(keylet::firewall(account));
+    if (!sleFirewall)
+        return tesSUCCESS;
+
+    // Check if the firewall has signers.
+    auto const counterParty = sleFirewall->getAccountID(sfCounterParty);
+    STArray const& signers(ctx.tx.getFieldArray(sfFirewallSigners));
+    auto const sleAccountSigners = ctx.view.read(keylet::signers(counterParty));
+    // if (sleAccountSigners)
+    //     return checkMultiSign(ctx, account, signers);
+
+    // Check if the firewall has a single signer.
+    Blob const pkSigner = signers[0].getFieldVL(sfSigningPubKey);
+    AccountID const idAccount = signers[0].getAccountID(sfAccount);
+    if (idAccount != counterParty)
+        return tefBAD_AUTH;
+    auto const sleAccount = ctx.view.read(keylet::account(idAccount));
+    if (!sleAccount)
+        return terNO_ACCOUNT;
+    auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
+    return checkSingleSign(
+        idSigner, idAccount, sleAccount, ctx.view.rules(), ctx.j);
+}
+
+NotTEC
+Transactor::checkFirewall(PreclaimContext const& ctx)
+{
+    auto const account = ctx.tx.getAccountID(sfAccount);
+    auto const sleFirewall = ctx.view.read(keylet::firewall(account));
+    if (!sleFirewall)
+        return tesSUCCESS;
+
+    if (sleFirewall->isFieldPresent(sfMaxFee) &&
+        ctx.tx.getFieldAmount(sfFee) > sleFirewall->getFieldAmount(sfMaxFee))
+    {
+        JLOG(ctx.j.trace()) << "Transaction fee exceeds firewall limit.";
+        return tefFIREWALL_BLOCK;
+    }
+
+    // Allow: Firewall is disabled
+    if (Firewall::getInstance().isAllowed(
+            ctx.tx.getFieldU16(sfTransactionType)))
+    {
+        JLOG(ctx.j.trace()) << "Transaction type: " << ctx.tx.getTxnType()
+                            << " is allowed by firewall.";
+        return tesSUCCESS;
+    }
+
+    // Block: Firewall is enabled
+    if (Firewall::getInstance().isBlocked(
+            ctx.tx.getFieldU16(sfTransactionType)))
+    {
+        JLOG(ctx.j.trace()) << "Transaction type: " << ctx.tx.getTxnType()
+                            << " is blocked by firewall.";
+        return tefFIREWALL_BLOCK;
+    }
+
+    // Defensive: Transaction type is neither allowed nor blocked
+    if (!Firewall::getInstance().isCheck(ctx.tx.getFieldU16(sfTransactionType)))
+    {  // LCOV_EXCL_START
+        JLOG(ctx.j.trace())
+            << "Transaction type: " << ctx.tx.getTxnType()
+            << " is neither allowed, blocked nor checked by firewall.";
+        return tefINTERNAL;
+    }  // LCOV_EXCL_STOP
+
+    // Block: ttPAYMENT
+    if (ctx.tx.getTxnType() == ttPAYMENT)
+    {
+        // Block: SelfPayments && Paths
+        if (ctx.tx.getAccountID(sfDestination) == account ||
+            ctx.tx.isFieldPresent(sfPaths))
+        {
+            JLOG(ctx.j.trace())
+                << "Self payment or payment with paths is blocked by firewall.";
+            return tefFIREWALL_BLOCK;
+        }
+    }
+
+    if (!ctx.tx.isFieldPresent(sfDestination))
+    {
+        JLOG(ctx.j.trace()) << "Not Allowed Transaction without destination is "
+                               "blocked by firewall.";
+        return tefFIREWALL_BLOCK;
+    }
+
+    if (ctx.tx.isFieldPresent(sfDestination) &&
+        !ctx.view.exists(keylet::withdrawPreauth(
+            account,
+            ctx.tx.getAccountID(sfDestination),
+            ctx.tx.isFieldPresent(sfDestinationTag)
+                ? ctx.tx.getFieldU32(sfDestinationTag)
+                : 0)))
+    {
+        JLOG(ctx.j.trace())
+            << "Not Authorized Destination is blocked by firewall.";
+        return tefFIREWALL_BLOCK;
+    }
+
     return tesSUCCESS;
 }
 
