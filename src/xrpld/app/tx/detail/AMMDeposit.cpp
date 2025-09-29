@@ -29,21 +29,23 @@
 
 namespace ripple {
 
+bool
+AMMDeposit::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return ammEnabled(ctx.rules);
+}
+
+std::uint32_t
+AMMDeposit::getFlagsMask(PreflightContext const& ctx)
+
+{
+    return tfDepositMask;
+}
+
 NotTEC
 AMMDeposit::preflight(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const flags = ctx.tx.getFlags();
-    if (flags & tfDepositMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
@@ -159,7 +161,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
