@@ -133,6 +133,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a25fad9630eb43db555a045666be0eef0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c1d0485bec0731d1546e0ea5c9d92f6" id="r_a6c1d0485bec0731d1546e0ea5c9d92f6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a2ce3074a39ea65126b82fc59baf43126">TxType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Permission.html#a6c1d0485bec0731d1546e0ea5c9d92f6">getGranularTxType</a> (<a class="el" href="namespaceripple.html#ade5563f86b59d07ba4cd6ec03ba1af38">GranularPermissionType</a> const &amp;gpType) const</td></tr>
 <tr class="separator:a6c1d0485bec0731d1546e0ea5c9d92f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a63e94488c31190b444956cf6097f70" id="r_a1a63e94488c31190b444956cf6097f70"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/reference_wrapper.html">std::reference_wrapper</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &gt; &gt; const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Permission.html#a1a63e94488c31190b444956cf6097f70">getTxFeature</a> (<a class="el" href="namespaceripple.html#a2ce3074a39ea65126b82fc59baf43126">TxType</a> txType) const</td></tr>
+<tr class="separator:a1a63e94488c31190b444956cf6097f70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb87b1616359be82e52b8d7d6886c265" id="r_afb87b1616359be82e52b8d7d6886c265"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Permission.html#afb87b1616359be82e52b8d7d6886c265">isDelegatable</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const &amp;permissionValue, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules) const</td></tr>
 <tr class="separator:afb87b1616359be82e52b8d7d6886c265"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a877345798f472bcfd372e7b66de536b6" id="r_a877345798f472bcfd372e7b66de536b6"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Permission.html#a877345798f472bcfd372e7b66de536b6">txToPermissionType</a> (<a class="el" href="namespaceripple.html#a2ce3074a39ea65126b82fc59baf43126">TxType</a> const &amp;type) const</td></tr>
@@ -354,6 +356,26 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a1a63e94488c31190b444956cf6097f70" name="a1a63e94488c31190b444956cf6097f70"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a63e94488c31190b444956cf6097f70">&#9670;&#160;</a></span>getTxFeature()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/reference_wrapper.html">std::reference_wrapper</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &gt; &gt; const ripple::Permission::getTxFeature </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a2ce3074a39ea65126b82fc59baf43126">TxType</a>&#160;</td>
+          <td class="paramname"><em>txType</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Permissions_8cpp_source.html#l00151">151</a> of file <a class="el" href="Permissions_8cpp_source.html">Permissions.cpp</a>.</p>
+
+</div>
+</div>
 <a id="afb87b1616359be82e52b8d7d6886c265" name="afb87b1616359be82e52b8d7d6886c265"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afb87b1616359be82e52b8d7d6886c265">&#9670;&#160;</a></span>isDelegatable()</h2>
 
@@ -380,7 +402,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Permissions_8cpp_source.html#l00151">151</a> of file <a class="el" href="Permissions_8cpp_source.html">Permissions.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Permissions_8cpp_source.html#l00164">164</a> of file <a class="el" href="Permissions_8cpp_source.html">Permissions.cpp</a>.</p>
 
 </div>
 </div>
@@ -400,7 +422,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Permissions_8cpp_source.html#l00189">189</a> of file <a class="el" href="Permissions_8cpp_source.html">Permissions.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Permissions_8cpp_source.html#l00198">198</a> of file <a class="el" href="Permissions_8cpp_source.html">Permissions.cpp</a>.</p>
 
 </div>
 </div>
@@ -420,7 +442,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Permissions_8cpp_source.html#l00195">195</a> of file <a class="el" href="Permissions_8cpp_source.html">Permissions.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Permissions_8cpp_source.html#l00204">204</a> of file <a class="el" href="Permissions_8cpp_source.html">Permissions.cpp</a>.</p>
 
 </div>
 </div>

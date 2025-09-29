@@ -3671,7 +3671,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l03572" name="l03572"></a><span class="lineno"> 3572</span>                    env.current()-&gt;rules(),</div>
 <div class="line"><a id="l03573" name="l03573"></a><span class="lineno"> 3573</span>                    tapNONE,</div>
 <div class="line"><a id="l03574" name="l03574"></a><span class="lineno"> 3574</span>                    env.journal);</div>
-<div class="line"><a id="l03575" name="l03575"></a><span class="lineno"> 3575</span>                <span class="keyword">auto</span> pf = AMMBid::preflight(pfctx);</div>
+<div class="line"><a id="l03575" name="l03575"></a><span class="lineno"> 3575</span>                <span class="keyword">auto</span> pf = Transactor::invokePreflight&lt;AMMBid&gt;(pfctx);</div>
 <div class="line"><a id="l03576" name="l03576"></a><span class="lineno"> 3576</span>                BEAST_EXPECT(pf == temDISABLED);</div>
 <div class="line"><a id="l03577" name="l03577"></a><span class="lineno"> 3577</span>                env.app().config().features.insert(featureAMM);</div>
 <div class="line"><a id="l03578" name="l03578"></a><span class="lineno"> 3578</span>            }</div>
@@ -3686,7 +3686,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l03587" name="l03587"></a><span class="lineno"> 3587</span>                    env.current()-&gt;rules(),</div>
 <div class="line"><a id="l03588" name="l03588"></a><span class="lineno"> 3588</span>                    tapNONE,</div>
 <div class="line"><a id="l03589" name="l03589"></a><span class="lineno"> 3589</span>                    env.journal);</div>
-<div class="line"><a id="l03590" name="l03590"></a><span class="lineno"> 3590</span>                <span class="keyword">auto</span> pf = AMMBid::preflight(pfctx);</div>
+<div class="line"><a id="l03590" name="l03590"></a><span class="lineno"> 3590</span>                <span class="keyword">auto</span> pf = Transactor::invokePreflight&lt;AMMBid&gt;(pfctx);</div>
 <div class="line"><a id="l03591" name="l03591"></a><span class="lineno"> 3591</span>                BEAST_EXPECT(pf != tesSUCCESS);</div>
 <div class="line"><a id="l03592" name="l03592"></a><span class="lineno"> 3592</span>            }</div>
 <div class="line"><a id="l03593" name="l03593"></a><span class="lineno"> 3593</span> </div>
@@ -3701,7 +3701,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l03602" name="l03602"></a><span class="lineno"> 3602</span>                    env.current()-&gt;rules(),</div>
 <div class="line"><a id="l03603" name="l03603"></a><span class="lineno"> 3603</span>                    tapNONE,</div>
 <div class="line"><a id="l03604" name="l03604"></a><span class="lineno"> 3604</span>                    env.journal);</div>
-<div class="line"><a id="l03605" name="l03605"></a><span class="lineno"> 3605</span>                <span class="keyword">auto</span> pf = AMMBid::preflight(pfctx);</div>
+<div class="line"><a id="l03605" name="l03605"></a><span class="lineno"> 3605</span>                <span class="keyword">auto</span> pf = Transactor::invokePreflight&lt;AMMBid&gt;(pfctx);</div>
 <div class="line"><a id="l03606" name="l03606"></a><span class="lineno"> 3606</span>                BEAST_EXPECT(pf == temBAD_AMM_TOKENS);</div>
 <div class="line"><a id="l03607" name="l03607"></a><span class="lineno"> 3607</span>            }</div>
 <div class="line"><a id="l03608" name="l03608"></a><span class="lineno"> 3608</span>        }</div>

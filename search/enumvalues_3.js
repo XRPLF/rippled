@@ -25,10 +25,10 @@ var searchData=
   ['createacct_22',['createAcct',['../namespaceripple.html#a56626079606ddd359a5c40cbe9e9761ba9214da622e1379d8f3496c5b26fc593a',1,'ripple']]],
   ['createmptissuance_23',['createMPTIssuance',['../namespaceripple.html#a56626079606ddd359a5c40cbe9e9761baf242e7992dad392bca536d08afcca28e',1,'ripple']]],
   ['createpseudoacct_24',['createPseudoAcct',['../namespaceripple.html#a56626079606ddd359a5c40cbe9e9761bacaf3253c5fd3baf7731b039a7c410153',1,'ripple']]],
-  ['credential_25',['credential',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307ba9bdc8b294d9eb8696390079578c659db',1,'ripple::CREDENTIAL'],['../namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7c7c74ef60d5950b8abb1ba20e964cdf',1,'ripple::credential']]],
+  ['credential_25',['credential',['../namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7c7c74ef60d5950b8abb1ba20e964cdf',1,'ripple::credential'],['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307ba9bdc8b294d9eb8696390079578c659db',1,'ripple::CREDENTIAL']]],
   ['cur_26',['cur',['../classripple_1_1test_1_1ElementComboIter.html#a4a14ce172d72da140cb8ae49a8f132dcab5fddf1ef601e74db01c1425561a38cb',1,'ripple::test::ElementComboIter']]],
   ['currencyfield_27',['CurrencyField',['../namespaceripple_1_1test.html#a33d206712667192f356d3283738a0411ad0da868d50d0bc8c56d861a6b90c51f0',1,'ripple::test']]],
-  ['current_28',['current',['../namespaceripple_1_1RPC.html#a4c04e509451d50d9449cff3d477ff4f2a1ccbdd5cbc00ad939048ccd47f9c6d8a',1,'ripple::RPC::CURRENT'],['../namespaceripple.html#a6434c1a0fd22b77e2e4a228c0eca79eba43b5c9175984c071f30b873fdce0a000',1,'ripple::current']]],
+  ['current_28',['current',['../namespaceripple.html#a6434c1a0fd22b77e2e4a228c0eca79eba43b5c9175984c071f30b873fdce0a000',1,'ripple::current'],['../namespaceripple_1_1RPC.html#a4c04e509451d50d9449cff3d477ff4f2a1ccbdd5cbc00ad939048ccd47f9c6d8a',1,'ripple::RPC::CURRENT']]],
   ['currentschemaversion_29',['currentSchemaVersion',['../classripple_1_1PeerFinder_1_1StoreSqdb.html#aa74f6ddc62bfb70042d339e51fd02cb9a9b7291675bb8c7cc7cca41dcc2c05ab5',1,'ripple::PeerFinder::StoreSqdb']]],
   ['custom_30',['Custom',['../classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938a429832eac6b9ee7b50a1265131cd2845',1,'ripple::Transactor']]],
   ['customcode_31',['customCode',['../namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350ca735314ed73dbc8306ffc16151f7a0484',1,'ripple::NodeStore']]]

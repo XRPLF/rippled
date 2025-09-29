@@ -4929,6 +4929,8 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="separator:aceaff96130b8a2fec303ae3a730d26c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb405992f4c9811987a0fae104d7355b" id="r_aeb405992f4c9811987a0fae104d7355b"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aeb405992f4c9811987a0fae104d7355b">extractNFTokenFlagsFromTxFlags</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> txFlags)</td></tr>
 <tr class="separator:aeb405992f4c9811987a0fae104d7355b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c4f7b3f58a8d623f50e81f5b9c743d2" id="r_a0c4f7b3f58a8d623f50e81f5b9c743d2"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a0c4f7b3f58a8d623f50e81f5b9c743d2">hasOfferFields</a> (<a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;ctx)</td></tr>
+<tr class="separator:a0c4f7b3f58a8d623f50e81f5b9c743d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a057808985eb1cda645ec3b17a027113e" id="r_a057808985eb1cda645ec3b17a027113e"><td class="memTemplParams" colspan="2">template&lt;class TIn , class TOut &gt; </td></tr>
 <tr class="memitem:a057808985eb1cda645ec3b17a027113e"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a057808985eb1cda645ec3b17a027113e">operator&lt;&lt;</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;os, <a class="el" href="classripple_1_1TOffer.html">TOffer</a>&lt; TIn, TOut &gt; const &amp;offer)</td></tr>
 <tr class="separator:a057808985eb1cda645ec3b17a027113e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4952,15 +4954,9 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="separator:a224f97e143a942bf29a6308854d7d89c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a474b3ad651022903a32bfb1161a481cf" id="r_a474b3ad651022903a32bfb1161a481cf"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a474b3ad651022903a32bfb1161a481cf">removeSignersFromLedger</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;accountKeylet, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;ownerDirKeylet, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;signerListKeylet, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="separator:a474b3ad651022903a32bfb1161a481cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a362865ef53c336f61de3da6dfc05664a" id="r_a362865ef53c336f61de3da6dfc05664a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a362865ef53c336f61de3da6dfc05664a">preflight0</a> (<a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;ctx)</td></tr>
-<tr class="memdesc:a362865ef53c336f61de3da6dfc05664a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs early sanity checks on the txid.  <br /></td></tr>
-<tr class="separator:a362865ef53c336f61de3da6dfc05664a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5dfb437ade69624474bbe4125ceb791a" id="r_a5dfb437ade69624474bbe4125ceb791a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5dfb437ade69624474bbe4125ceb791a">preflight1</a> (<a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;ctx)</td></tr>
-<tr class="memdesc:a5dfb437ade69624474bbe4125ceb791a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs early sanity checks on the account and fee fields.  <br /></td></tr>
-<tr class="separator:a5dfb437ade69624474bbe4125ceb791a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8b257ff89d14ac75ce240946f32d3773" id="r_a8b257ff89d14ac75ce240946f32d3773"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8b257ff89d14ac75ce240946f32d3773">preflight2</a> (<a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;ctx)</td></tr>
-<tr class="memdesc:a8b257ff89d14ac75ce240946f32d3773"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks whether the signature appears valid.  <br /></td></tr>
-<tr class="separator:a8b257ff89d14ac75ce240946f32d3773"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3d0707c1a91a7c56842e505972bcbb0" id="r_ae3d0707c1a91a7c56842e505972bcbb0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae3d0707c1a91a7c56842e505972bcbb0">preflight0</a> (<a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;ctx, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> flagMask)</td></tr>
+<tr class="memdesc:ae3d0707c1a91a7c56842e505972bcbb0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs early sanity checks on the txid.  <br /></td></tr>
+<tr class="separator:ae3d0707c1a91a7c56842e505972bcbb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6aab406eb9522bb36ba7247335e303ec" id="r_a6aab406eb9522bb36ba7247335e303ec"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6aab406eb9522bb36ba7247335e303ec">removeUnfundedOffers</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;offers, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> viewJ)</td></tr>
 <tr class="separator:a6aab406eb9522bb36ba7247335e303ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ba581584f364d79f3b5020b6a2c66da" id="r_a8ba581584f364d79f3b5020b6a2c66da"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8ba581584f364d79f3b5020b6a2c66da">removeExpiredNFTokenOffers</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;offers, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> viewJ)</td></tr>
@@ -7937,7 +7933,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Change_8h_source.html#l00067">67</a> of file <a class="el" href="Change_8h_source.html">Change.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Change_8h_source.html#l00064">64</a> of file <a class="el" href="Change_8h_source.html">Change.h</a>.</p>
 
 </div>
 </div>
@@ -7953,7 +7949,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Change_8h_source.html#l00068">68</a> of file <a class="el" href="Change_8h_source.html">Change.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Change_8h_source.html#l00065">65</a> of file <a class="el" href="Change_8h_source.html">Change.h</a>.</p>
 
 </div>
 </div>
@@ -7969,7 +7965,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Change_8h_source.html#l00069">69</a> of file <a class="el" href="Change_8h_source.html">Change.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Change_8h_source.html#l00066">66</a> of file <a class="el" href="Change_8h_source.html">Change.h</a>.</p>
 
 </div>
 </div>
@@ -8001,7 +7997,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CreateOffer_8h_source.html#l00092">92</a> of file <a class="el" href="CreateOffer_8h_source.html">CreateOffer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CreateOffer_8h_source.html#l00098">98</a> of file <a class="el" href="CreateOffer_8h_source.html">CreateOffer.h</a>.</p>
 
 </div>
 </div>
@@ -8033,7 +8029,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DeleteAccount_8h_source.html#l00049">49</a> of file <a class="el" href="DeleteAccount_8h_source.html">DeleteAccount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DeleteAccount_8h_source.html#l00052">52</a> of file <a class="el" href="DeleteAccount_8h_source.html">DeleteAccount.h</a>.</p>
 
 </div>
 </div>
@@ -8097,7 +8093,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="src_2xrpld_2app_2tx_2detail_2PayChan_8h_source.html#l00049">49</a> of file <a class="el" href="src_2xrpld_2app_2tx_2detail_2PayChan_8h_source.html">src/xrpld/app/tx/detail/PayChan.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="src_2xrpld_2app_2tx_2detail_2PayChan_8h_source.html#l00052">52</a> of file <a class="el" href="src_2xrpld_2app_2tx_2detail_2PayChan_8h_source.html">src/xrpld/app/tx/detail/PayChan.h</a>.</p>
 
 </div>
 </div>
@@ -8113,7 +8109,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="src_2xrpld_2app_2tx_2detail_2PayChan_8h_source.html#l00072">72</a> of file <a class="el" href="src_2xrpld_2app_2tx_2detail_2PayChan_8h_source.html">src/xrpld/app/tx/detail/PayChan.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="src_2xrpld_2app_2tx_2detail_2PayChan_8h_source.html#l00078">78</a> of file <a class="el" href="src_2xrpld_2app_2tx_2detail_2PayChan_8h_source.html">src/xrpld/app/tx/detail/PayChan.h</a>.</p>
 
 </div>
 </div>
@@ -8129,7 +8125,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="src_2xrpld_2app_2tx_2detail_2PayChan_8h_source.html#l00095">95</a> of file <a class="el" href="src_2xrpld_2app_2tx_2detail_2PayChan_8h_source.html">src/xrpld/app/tx/detail/PayChan.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="src_2xrpld_2app_2tx_2detail_2PayChan_8h_source.html#l00107">107</a> of file <a class="el" href="src_2xrpld_2app_2tx_2detail_2PayChan_8h_source.html">src/xrpld/app/tx/detail/PayChan.h</a>.</p>
 
 </div>
 </div>
@@ -8145,7 +8141,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SetAccount_8h_source.html#l00054">54</a> of file <a class="el" href="SetAccount_8h_source.html">SetAccount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SetAccount_8h_source.html#l00057">57</a> of file <a class="el" href="SetAccount_8h_source.html">SetAccount.h</a>.</p>
 
 </div>
 </div>
@@ -8177,7 +8173,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SetSignerList_8h_source.html#l00096">96</a> of file <a class="el" href="SetSignerList_8h_source.html">SetSignerList.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SetSignerList_8h_source.html#l00099">99</a> of file <a class="el" href="SetSignerList_8h_source.html">SetSignerList.h</a>.</p>
 
 </div>
 </div>
@@ -8193,7 +8189,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SetTrust_8h_source.html#l00051">51</a> of file <a class="el" href="SetTrust_8h_source.html">SetTrust.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SetTrust_8h_source.html#l00054">54</a> of file <a class="el" href="SetTrust_8h_source.html">SetTrust.h</a>.</p>
 
 </div>
 </div>
@@ -8209,7 +8205,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="XChainBridge_8h_source.html#l00071">71</a> of file <a class="el" href="XChainBridge_8h_source.html">XChainBridge.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="XChainBridge_8h_source.html#l00074">74</a> of file <a class="el" href="XChainBridge_8h_source.html">XChainBridge.h</a>.</p>
 
 </div>
 </div>
@@ -8225,7 +8221,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="XChainBridge_8h_source.html#l00254">254</a> of file <a class="el" href="XChainBridge_8h_source.html">XChainBridge.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="XChainBridge_8h_source.html#l00257">257</a> of file <a class="el" href="XChainBridge_8h_source.html">XChainBridge.h</a>.</p>
 
 </div>
 </div>
@@ -25573,7 +25569,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00680">680</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00681">681</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -40340,7 +40336,7 @@ template&lt;class T , class C &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMBid_8cpp_source.html#l00178">178</a> of file <a class="el" href="AMMBid_8cpp_source.html">AMMBid.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMBid_8cpp_source.html#l00172">172</a> of file <a class="el" href="AMMBid_8cpp_source.html">AMMBid.cpp</a>.</p>
 
 </div>
 </div>
@@ -40390,7 +40386,7 @@ template&lt;class T , class C &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMCreate_8cpp_source.html#l00218">218</a> of file <a class="el" href="AMMCreate_8cpp_source.html">AMMCreate.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMCreate_8cpp_source.html#l00212">212</a> of file <a class="el" href="AMMCreate_8cpp_source.html">AMMCreate.cpp</a>.</p>
 
 </div>
 </div>
@@ -40434,7 +40430,7 @@ template&lt;class T , class C &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00629">629</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMDeposit_8cpp_source.html#l00631">631</a> of file <a class="el" href="AMMDeposit_8cpp_source.html">AMMDeposit.cpp</a>.</p>
 
 </div>
 </div>
@@ -40484,7 +40480,7 @@ template&lt;class T , class C &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMVote_8cpp_source.html#l00085">85</a> of file <a class="el" href="AMMVote_8cpp_source.html">AMMVote.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMVote_8cpp_source.html#l00079">79</a> of file <a class="el" href="AMMVote_8cpp_source.html">AMMVote.cpp</a>.</p>
 
 </div>
 </div>
@@ -40528,7 +40524,7 @@ template&lt;class T , class C &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00157">157</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00158">158</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
@@ -40578,7 +40574,7 @@ template&lt;class T , class C &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00672">672</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00673">673</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
@@ -41106,7 +41102,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Clawback_8cpp_source.html#l00109">109</a> of file <a class="el" href="Clawback_8cpp_source.html">Clawback.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Clawback_8cpp_source.html#l00106">106</a> of file <a class="el" href="Clawback_8cpp_source.html">Clawback.cpp</a>.</p>
 
 </div>
 </div>
@@ -41156,7 +41152,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Clawback_8cpp_source.html#l00162">162</a> of file <a class="el" href="Clawback_8cpp_source.html">Clawback.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Clawback_8cpp_source.html#l00159">159</a> of file <a class="el" href="Clawback_8cpp_source.html">Clawback.cpp</a>.</p>
 
 </div>
 </div>
@@ -41206,7 +41202,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Clawback_8cpp_source.html#l00231">231</a> of file <a class="el" href="Clawback_8cpp_source.html">Clawback.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Clawback_8cpp_source.html#l00228">228</a> of file <a class="el" href="Clawback_8cpp_source.html">Clawback.cpp</a>.</p>
 
 </div>
 </div>
@@ -41228,7 +41224,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Clawback_8cpp_source.html#l00262">262</a> of file <a class="el" href="Clawback_8cpp_source.html">Clawback.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Clawback_8cpp_source.html#l00259">259</a> of file <a class="el" href="Clawback_8cpp_source.html">Clawback.cpp</a>.</p>
 
 </div>
 </div>
@@ -41264,7 +41260,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DID_8cpp_source.html#l00081">81</a> of file <a class="el" href="DID_8cpp_source.html">DID.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DID_8cpp_source.html#l00072">72</a> of file <a class="el" href="DID_8cpp_source.html">DID.cpp</a>.</p>
 
 </div>
 </div>
@@ -41430,7 +41426,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00204">204</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00205">205</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
 
 </div>
 </div>
@@ -41474,7 +41470,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00282">282</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00283">283</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
 
 </div>
 </div>
@@ -41580,7 +41576,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00407">407</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00408">408</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
 
 </div>
 </div>
@@ -41630,7 +41626,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00434">434</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00435">435</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
 
 </div>
 </div>
@@ -41668,7 +41664,7 @@ template&lt;&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00615">615</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00616">616</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
 
 </div>
 </div>
@@ -41750,7 +41746,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00708">708</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00714">714</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
 
 </div>
 </div>
@@ -41788,7 +41784,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00732">732</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00738">738</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
 
 </div>
 </div>
@@ -41954,7 +41950,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00815">815</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00821">821</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
 
 </div>
 </div>
@@ -42034,7 +42030,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00950">950</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00956">956</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
 
 </div>
 </div>
@@ -42116,7 +42112,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l01230">1230</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l01237">1237</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
 
 </div>
 </div>
@@ -42154,7 +42150,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l01250">1250</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l01257">1257</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
 
 </div>
 </div>
@@ -42324,6 +42320,34 @@ template&lt;&gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="NFTokenMint_8cpp_source.html#l00036">36</a> of file <a class="el" href="NFTokenMint_8cpp_source.html">NFTokenMint.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a0c4f7b3f58a8d623f50e81f5b9c743d2" name="a0c4f7b3f58a8d623f50e81f5b9c743d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c4f7b3f58a8d623f50e81f5b9c743d2">&#9670;&#160;</a></span>hasOfferFields()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static bool ripple::hasOfferFields </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ctx</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="NFTokenMint_8cpp_source.html#l00042">42</a> of file <a class="el" href="NFTokenMint_8cpp_source.html">NFTokenMint.cpp</a>.</p>
 
 </div>
 </div>
@@ -42693,7 +42717,7 @@ template&lt;class TIn , class TOut &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SetOracle_8cpp_source.html#l00186">186</a> of file <a class="el" href="SetOracle_8cpp_source.html">SetOracle.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SetOracle_8cpp_source.html#l00177">177</a> of file <a class="el" href="SetOracle_8cpp_source.html">SetOracle.cpp</a>.</p>
 
 </div>
 </div>
@@ -42721,7 +42745,7 @@ template&lt;class TIn , class TOut &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SetOracle_8cpp_source.html#l00199">199</a> of file <a class="el" href="SetOracle_8cpp_source.html">SetOracle.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SetOracle_8cpp_source.html#l00190">190</a> of file <a class="el" href="SetOracle_8cpp_source.html">SetOracle.cpp</a>.</p>
 
 </div>
 </div>
@@ -42759,7 +42783,7 @@ template&lt;class TIn , class TOut &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SetSignerList_8cpp_source.html#l00170">170</a> of file <a class="el" href="SetSignerList_8cpp_source.html">SetSignerList.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SetSignerList_8cpp_source.html#l00167">167</a> of file <a class="el" href="SetSignerList_8cpp_source.html">SetSignerList.cpp</a>.</p>
 
 </div>
 </div>
@@ -42821,12 +42845,12 @@ template&lt;class TIn , class TOut &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SetSignerList_8cpp_source.html#l00197">197</a> of file <a class="el" href="SetSignerList_8cpp_source.html">SetSignerList.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SetSignerList_8cpp_source.html#l00194">194</a> of file <a class="el" href="SetSignerList_8cpp_source.html">SetSignerList.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a362865ef53c336f61de3da6dfc05664a" name="a362865ef53c336f61de3da6dfc05664a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a362865ef53c336f61de3da6dfc05664a">&#9670;&#160;</a></span>preflight0()</h2>
+<a id="ae3d0707c1a91a7c56842e505972bcbb0" name="ae3d0707c1a91a7c56842e505972bcbb0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3d0707c1a91a7c56842e505972bcbb0">&#9670;&#160;</a></span>preflight0()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -42835,59 +42859,26 @@ template&lt;class TIn , class TOut &gt; </div>
           <td class="memname"><a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a> ripple::preflight0 </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ctx</em></td><td>)</td>
+          <td class="paramname"><em>ctx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>flagMask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Performs early sanity checks on the txid. </p>
+<p>Performs early sanity checks on the txid and flags. </p>
 
 <p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00044">44</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a5dfb437ade69624474bbe4125ceb791a" name="a5dfb437ade69624474bbe4125ceb791a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5dfb437ade69624474bbe4125ceb791a">&#9670;&#160;</a></span>preflight1()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a> ripple::preflight1 </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ctx</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Performs early sanity checks on the account and fee fields. </p>
-
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00091">91</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a8b257ff89d14ac75ce240946f32d3773" name="a8b257ff89d14ac75ce240946f32d3773"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8b257ff89d14ac75ce240946f32d3773">&#9670;&#160;</a></span>preflight2()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a> ripple::preflight2 </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ctx</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Checks whether the signature appears valid. </p>
-
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00160">160</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -42931,7 +42922,7 @@ template&lt;class TIn , class TOut &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00919">919</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l01000">1000</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -42975,7 +42966,7 @@ template&lt;class TIn , class TOut &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00939">939</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l01020">1020</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -43019,7 +43010,7 @@ template&lt;class TIn , class TOut &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00958">958</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l01039">1039</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -43063,7 +43054,7 @@ template&lt;class TIn , class TOut &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00971">971</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l01052">1052</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -56926,7 +56917,7 @@ template&lt;class T &gt; </div>
 <div class="ttc" id="anamespaceripple_html_a4a9c7b33fef9015d6406302ef80b63c5aae5e56594b6603a1f590717fb345f295"><div class="ttname"><a href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5aae5e56594b6603a1f590717fb345f295">ripple::lmfMPTCanMutateCanLock</a></div><div class="ttdeci">@ lmfMPTCanMutateCanLock</div><div class="ttdef"><b>Definition</b> <a href="LedgerFormats_8h_source.html#l00191">LedgerFormats.h:191</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a4a9c7b33fef9015d6406302ef80b63c5aefa6ebbecfc084d1fcd13f5fa933076e"><div class="ttname"><a href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5aefa6ebbecfc084d1fcd13f5fa933076e">ripple::lmfMPTCanMutateCanTrade</a></div><div class="ttdeci">@ lmfMPTCanMutateCanTrade</div><div class="ttdef"><b>Definition</b> <a href="LedgerFormats_8h_source.html#l00194">LedgerFormats.h:194</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="MPTokenIssuanceSet_8cpp_source.html#l00039">39</a> of file <a class="el" href="MPTokenIssuanceSet_8cpp_source.html">MPTokenIssuanceSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPTokenIssuanceSet_8cpp_source.html#l00053">53</a> of file <a class="el" href="MPTokenIssuanceSet_8cpp_source.html">MPTokenIssuanceSet.cpp</a>.</p>
 
 </div>
 </div>

@@ -398,6 +398,12 @@ Functions</h2></td></tr>
 <tr class="memitem:acb3e941928e4b3997a5f46821622f625" id="r_acb3e941928e4b3997a5f46821622f625"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#acb3e941928e4b3997a5f46821622f625">dbHasSpace</a> (soci::session &amp;session, <a class="el" href="classripple_1_1Config.html">Config</a> const  &amp;config, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="memdesc:acb3e941928e4b3997a5f46821622f625"><td class="mdescLeft">&#160;</td><td class="mdescRight">dbHasSpace Checks if given database has available space.  <br /></td></tr>
 <tr class="separator:acb3e941928e4b3997a5f46821622f625"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad804fd336366e602b9e5645ac43eab99" id="r_ad804fd336366e602b9e5645ac43eab99"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#ad804fd336366e602b9e5645ac43eab99">preflightCheckSigningKey</a> (<a class="el" href="classripple_1_1STObject.html">STObject</a> const &amp;sigObject, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:ad804fd336366e602b9e5645ac43eab99"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks the validity of the transactor signing key.  <br /></td></tr>
+<tr class="separator:ad804fd336366e602b9e5645ac43eab99"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87b10e0d53e2abd4e55291e50fc9c989" id="r_a87b10e0d53e2abd4e55291e50fc9c989"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a87b10e0d53e2abd4e55291e50fc9c989">preflightCheckSimulateKeys</a> (<a class="el" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> flags, <a class="el" href="classripple_1_1STObject.html">STObject</a> const  &amp;sigObject, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:a87b10e0d53e2abd4e55291e50fc9c989"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks the special signing key state needed for simulation.  <br /></td></tr>
+<tr class="separator:a87b10e0d53e2abd4e55291e50fc9c989"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af55810910292bce584eb1aa14e55fae1" id="r_af55810910292bce584eb1aa14e55fae1"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#af55810910292bce584eb1aa14e55fae1">getSociSqliteInit</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;dir, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;ext)</td></tr>
 <tr class="separator:af55810910292bce584eb1aa14e55fae1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2fc6c0177558ca5d07f884e0efcb1c3d" id="r_a2fc6c0177558ca5d07f884e0efcb1c3d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a2fc6c0177558ca5d07f884e0efcb1c3d">getSociInit</a> (<a class="el" href="classripple_1_1BasicConfig.html">BasicConfig</a> const &amp;config, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;dbName)</td></tr>
@@ -3094,6 +3100,79 @@ template&lt;class T &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>True if space is available. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="Node_8cpp_source.html#l01270">1270</a> of file <a class="el" href="Node_8cpp_source.html">Node.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ad804fd336366e602b9e5645ac43eab99" name="ad804fd336366e602b9e5645ac43eab99"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad804fd336366e602b9e5645ac43eab99">&#9670;&#160;</a></span>preflightCheckSigningKey()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a> ripple::detail::preflightCheckSigningKey </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STObject.html">STObject</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sigObject</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Checks the validity of the transactor signing key. </p>
+<p>Normally called from preflight1.</p>
+<p>Normally called from preflight1 with ctx.tx. </p>
+
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00104">104</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a87b10e0d53e2abd4e55291e50fc9c989" name="a87b10e0d53e2abd4e55291e50fc9c989"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87b10e0d53e2abd4e55291e50fc9c989">&#9670;&#160;</a></span>preflightCheckSimulateKeys()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a> &gt; ripple::detail::preflightCheckSimulateKeys </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a>&#160;</td>
+          <td class="paramname"><em>flags</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STObject.html">STObject</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sigObject</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Checks the special signing key state needed for simulation. </p>
+<p>Normally called from preflight2 with ctx.tx. </p>
+
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00116">116</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
