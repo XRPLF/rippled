@@ -281,6 +281,12 @@ protected:
     static XRPAmount
     calculateOwnerReserveFee(ReadView const& view, STTx const& tx);
 
+    static NotTEC
+    checkSign(
+        PreclaimContext const& ctx,
+        AccountID const& id,
+        STObject const& sigObject);
+
     // Base class always returns true
     static bool
     checkExtraFeatures(PreflightContext const& ctx);
@@ -317,18 +323,15 @@ private:
     payFee();
     static NotTEC
     checkSingleSign(
+        PreclaimContext const& ctx,
         AccountID const& idSigner,
         AccountID const& idAccount,
-        std::shared_ptr<SLE const> sleAccount,
-        Rules const& rules,
-        beast::Journal j);
+        std::shared_ptr<SLE const> sleAccount);
     static NotTEC
     checkMultiSign(
-        ReadView const& view,
-        AccountID const& idAccount,
-        STArray const& txSigners,
-        ApplyFlags const& flags,
-        beast::Journal j);
+        PreclaimContext const& ctx,
+        AccountID const& id,
+        STObject const& sigObject);
 
     void trapTransaction(uint256) const;
 

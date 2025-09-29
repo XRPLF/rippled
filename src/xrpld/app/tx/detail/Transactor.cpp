@@ -659,16 +659,19 @@ Transactor::apply()
 }
 
 NotTEC
-Transactor::checkSign(PreclaimContext const& ctx)
+Transactor::checkSign(
+    PreclaimContext const& ctx,
+    AccountID const& idAccount,
+    STObject const& sigObject)
 {
-    auto const pkSigner = ctx.tx.getSigningPubKey();
+    auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     // Ignore signature check on batch inner transactions
-    if (ctx.tx.isFlag(tfInnerBatchTxn) &&
+    if (sigObject.isFlag(tfInnerBatchTxn) &&
         ctx.view.rules().enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
-        if (ctx.tx.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
-            ctx.tx.isFieldPresent(sfSigners))
+        if (sigObject.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
+            sigObject.isFieldPresent(sfSigners))
         {
             return temINVALID_FLAG;  // LCOV_EXCL_LINE
         }
@@ -676,34 +679,31 @@ Transactor::checkSign(PreclaimContext const& ctx)
     }
 
     if ((ctx.flags & tapDRY_RUN) && pkSigner.empty() &&
-        !ctx.tx.isFieldPresent(sfSigners))
+        !sigObject.isFieldPresent(sfSigners))
     {
         // simulate: skip signature validation when neither SigningPubKey nor
         // Signers are provided
         return tesSUCCESS;
     }
 
-    auto const idAccount = ctx.tx[~sfDelegate].value_or(ctx.tx[sfAccount]);
-
     // If the pk is empty and not simulate or simulate and signers,
     // then we must be multi-signing.
     if (ctx.tx.isFieldPresent(sfSigners))
     {
-        STArray const& txSigners(ctx.tx.getFieldArray(sfSigners));
-        return checkMultiSign(ctx.view, idAccount, txSigners, ctx.flags, ctx.j);
+        return checkMultiSign(ctx, idAccount, sigObject);
     }
 
     // Check Single Sign
     XRPL_ASSERT(
-        !pkSigner.empty(),
-        "ripple::Transactor::checkSingleSign : non-empty signer or simulation");
+        !pkSigner.empty(), "ripple::Transactor::checkSign : non-empty signer");
 
     if (!publicKeyType(makeSlice(pkSigner)))
     {
-        JLOG(ctx.j.trace())
-            << "checkSingleSign: signing public key type is unknown";
+        JLOG(ctx.j.trace()) << "checkSign: signing public key type is unknown";
         return tefBAD_AUTH;  // FIXME: should be better error!
     }
+
+    // Look up the account.
     auto const idSigner = pkSigner.empty()
         ? idAccount
         : calcAccountID(PublicKey(makeSlice(pkSigner)));
@@ -711,8 +711,16 @@ Transactor::checkSign(PreclaimContext const& ctx)
     if (!sleAccount)
         return terNO_ACCOUNT;
 
-    return checkSingleSign(
-        idSigner, idAccount, sleAccount, ctx.view.rules(), ctx.j);
+    return checkSingleSign(ctx, idSigner, idAccount, sleAccount);
+}
+
+NotTEC
+Transactor::checkSign(PreclaimContext const& ctx)
+{
+    auto const idAccount = ctx.tx.isFieldPresent(sfDelegate)
+        ? ctx.tx.getAccountID(sfDelegate)
+        : ctx.tx.getAccountID(sfAccount);
+    return checkSign(ctx, idAccount, ctx.tx);
 }
 
 NotTEC
@@ -727,9 +735,7 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
         Blob const& pkSigner = signer.getFieldVL(sfSigningPubKey);
         if (pkSigner.empty())
         {
-            STArray const& txSigners(signer.getFieldArray(sfSigners));
-            if (ret = checkMultiSign(
-                    ctx.view, idAccount, txSigners, ctx.flags, ctx.j);
+            if (ret = checkMultiSign(ctx, idAccount, signer);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -753,8 +759,7 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
                 return tesSUCCESS;
             }
 
-            if (ret = checkSingleSign(
-                    idSigner, idAccount, sleAccount, ctx.view.rules(), ctx.j);
+            if (ret = checkSingleSign(ctx, idSigner, idAccount, sleAccount);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -764,15 +769,14 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
 
 NotTEC
 Transactor::checkSingleSign(
+    PreclaimContext const& ctx,
     AccountID const& idSigner,
     AccountID const& idAccount,
-    std::shared_ptr<SLE const> sleAccount,
-    Rules const& rules,
-    beast::Journal j)
+    std::shared_ptr<SLE const> sleAccount)
 {
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
-    if (rules.enabled(fixMasterKeyAsRegularKey))
+    if (ctx.view.rules().enabled(fixMasterKeyAsRegularKey))
     {
         // Signed with regular key.
         if ((*sleAccount)[~sfRegularKey] == idSigner)
@@ -809,14 +813,16 @@ Transactor::checkSingleSign(
     else if (sleAccount->isFieldPresent(sfRegularKey))
     {
         // Signing key does not match master or regular key.
-        JLOG(j.trace()) << "checkSingleSign: Not authorized to use account.";
+        JLOG(ctx.j.trace())
+            << "checkSingleSign: Not authorized to use account.";
         return tefBAD_AUTH;
     }
     else
     {
         // No regular key on account and signing key does not match master key.
         // FIXME: Why differentiate this case from tefBAD_AUTH?
-        JLOG(j.trace()) << "checkSingleSign: Not authorized to use account.";
+        JLOG(ctx.j.trace())
+            << "checkSingleSign: Not authorized to use account.";
         return tefBAD_AUTH_MASTER;
     }
 
@@ -825,19 +831,17 @@ Transactor::checkSingleSign(
 
 NotTEC
 Transactor::checkMultiSign(
-    ReadView const& view,
+    PreclaimContext const& ctx,
     AccountID const& id,
-    STArray const& txSigners,
-    ApplyFlags const& flags,
-    beast::Journal j)
+    STObject const& sigObject)
 {
-    // Get mTxnAccountID's SignerList and Quorum.
+    // Get id's SignerList and Quorum.
     std::shared_ptr<STLedgerEntry const> sleAccountSigners =
-        view.read(keylet::signers(id));
+        ctx.view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
-        JLOG(j.trace())
+        JLOG(ctx.j.trace())
             << "applyTransaction: Invalid: Not a multi-signing account.";
         return tefNOT_MULTI_SIGNING;
     }
@@ -852,11 +856,12 @@ Transactor::checkMultiSign(
         "ripple::Transactor::checkMultiSign : signer list ID is 0");
 
     auto accountSigners =
-        SignerEntries::deserialize(*sleAccountSigners, j, "ledger");
+        SignerEntries::deserialize(*sleAccountSigners, ctx.j, "ledger");
     if (!accountSigners)
         return accountSigners.error();
 
     // Get the array of transaction signers.
+    STArray const& txSigners(sigObject.getFieldArray(sfSigners));
 
     // Walk the accountSigners performing a variety of checks and see if
     // the quorum is met.
@@ -875,7 +880,7 @@ Transactor::checkMultiSign(
         {
             if (++iter == accountSigners->end())
             {
-                JLOG(j.trace())
+                JLOG(ctx.j.trace())
                     << "applyTransaction: Invalid SigningAccount.Account.";
                 return tefBAD_SIGNATURE;
             }
@@ -883,7 +888,7 @@ Transactor::checkMultiSign(
         if (iter->account != txSignerAcctID)
         {
             // The SigningAccount is not in the SignerEntries.
-            JLOG(j.trace())
+            JLOG(ctx.j.trace())
                 << "applyTransaction: Invalid SigningAccount.Account.";
             return tefBAD_SIGNATURE;
         }
@@ -897,13 +902,13 @@ Transactor::checkMultiSign(
         // STTx::checkMultiSign
         if (!spk.empty() && !publicKeyType(makeSlice(spk)))
         {
-            JLOG(j.trace())
+            JLOG(ctx.j.trace())
                 << "checkMultiSign: signing public key type is unknown";
             return tefBAD_SIGNATURE;
         }
 
         XRPL_ASSERT(
-            (flags & tapDRY_RUN) || !spk.empty(),
+            (ctx.flags & tapDRY_RUN) || !spk.empty(),
             "ripple::Transactor::checkMultiSign : non-empty signer or "
             "simulation");
         AccountID const signingAcctIDFromPubKey = spk.empty()
@@ -935,7 +940,8 @@ Transactor::checkMultiSign(
 
         // In any of these cases we need to know whether the account is in
         // the ledger.  Determine that now.
-        auto const sleTxSignerRoot = view.read(keylet::account(txSignerAcctID));
+        auto const sleTxSignerRoot =
+            ctx.view.read(keylet::account(txSignerAcctID));
 
         if (signingAcctIDFromPubKey == txSignerAcctID)
         {
@@ -948,7 +954,7 @@ Transactor::checkMultiSign(
 
                 if (signerAccountFlags & lsfDisableMaster)
                 {
-                    JLOG(j.trace())
+                    JLOG(ctx.j.trace())
                         << "applyTransaction: Signer:Account lsfDisableMaster.";
                     return tefMASTER_DISABLED;
                 }
@@ -960,21 +966,21 @@ Transactor::checkMultiSign(
             // Public key must hash to the account's regular key.
             if (!sleTxSignerRoot)
             {
-                JLOG(j.trace()) << "applyTransaction: Non-phantom signer "
-                                   "lacks account root.";
+                JLOG(ctx.j.trace()) << "applyTransaction: Non-phantom signer "
+                                       "lacks account root.";
                 return tefBAD_SIGNATURE;
             }
 
             if (!sleTxSignerRoot->isFieldPresent(sfRegularKey))
             {
-                JLOG(j.trace())
+                JLOG(ctx.j.trace())
                     << "applyTransaction: Account lacks RegularKey.";
                 return tefBAD_SIGNATURE;
             }
             if (signingAcctIDFromPubKey !=
                 sleTxSignerRoot->getAccountID(sfRegularKey))
             {
-                JLOG(j.trace())
+                JLOG(ctx.j.trace())
                     << "applyTransaction: Account doesn't match RegularKey.";
                 return tefBAD_SIGNATURE;
             }
@@ -986,7 +992,8 @@ Transactor::checkMultiSign(
     // Cannot perform transaction if quorum is not met.
     if (weightSum < sleAccountSigners->getFieldU32(sfSignerQuorum))
     {
-        JLOG(j.trace()) << "applyTransaction: Signers failed to meet quorum.";
+        JLOG(ctx.j.trace())
+            << "applyTransaction: Signers failed to meet quorum.";
         return tefBAD_QUORUM;
     }
 
