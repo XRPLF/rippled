@@ -1363,6 +1363,26 @@ class Vault_test : public beast::unit_test::suite
         using namespace test::jtx;
         {
             {
+                testcase("IOU fail because MPT is disabled");
+                Env env{
+                    *this,
+                    (testable_amendments() - featureMPTokensV1) |
+                        featureSingleAssetVault};
+                Account issuer{"issuer"};
+                Account owner{"owner"};
+                env.fund(XRP(1000), issuer, owner);
+                env.close();
+
+                Vault vault{env};
+                Asset asset = issuer["IOU"].asset();
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+
+                env(tx, ter(temDISABLED));
+                env.close();
+            }
+
+            {
                 testcase("IOU fail create frozen");
                 Env env{*this, testable_amendments() | featureSingleAssetVault};
                 Account issuer{"issuer"};
