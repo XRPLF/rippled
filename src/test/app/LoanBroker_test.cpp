@@ -29,8 +29,9 @@ class LoanBroker_test : public beast::unit_test::suite
     // Ensure that all the features needed for Lending Protocol are included,
     // even if they are set to unsupported.
     FeatureBitset const all{
-        jtx::testable_amendments() | featureMPTokensV1 |
-        featureSingleAssetVault | featureLendingProtocol};
+        (jtx::testable_amendments() | featureMPTokensV1 |
+         featureLendingProtocol) -
+        featureSingleAssetVault};
 
     void
     testDisabled()
@@ -83,8 +84,10 @@ class LoanBroker_test : public beast::unit_test::suite
         };
         failAll(all - featureMPTokensV1);
         failAll(all - featureSingleAssetVault - featureLendingProtocol);
-        failAll(all - featureSingleAssetVault);
-        failAll(all - featureLendingProtocol, true);
+        failAll((all | featureSingleAssetVault) - featureLendingProtocol, true);
+        // Don't test SAV disabled by itself, because it is transitively enabled
+        // by lending protocol. It is explicitly disabled by `all` above, which
+        // is used for the remaining tests.
     }
 
     struct VaultInfo
