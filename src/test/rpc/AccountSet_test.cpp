@@ -584,7 +584,7 @@ public:
     testBadSigningKey()
     {
         using namespace test::jtx;
-        testcase("Bad singing key");
+        testcase("Bad signing key");
         Env env(*this);
         Account const alice("alice");
 
