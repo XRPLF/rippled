@@ -100,7 +100,7 @@ preflight1(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfDelegate))
     {
-        if (!ctx.rules.enabled(featurePermissionDelegation))
+        if (!ctx.rules.enabled(featurePermissionDelegationV1_1))
             return temDISABLED;
 
         if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
@@ -213,7 +213,7 @@ Transactor::Transactor(ApplyContext& ctx)
 {
 }
 
-TER
+NotTEC
 Transactor::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -224,7 +224,7 @@ Transactor::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     return checkTxPermission(sle, tx);
 }
