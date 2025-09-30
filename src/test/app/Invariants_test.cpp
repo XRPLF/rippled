@@ -1913,6 +1913,102 @@ class Invariants_test : public beast::unit_test::suite
             });
 
         doInvariantCheck(
+            {"vault updated by a wrong transaction type"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                ac.view().erase(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"vault updated by a wrong transaction type"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"vault updated by a wrong transaction type"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sequence = ac.view().seq();
+                auto const vaultKeylet = keylet::vault(A1.id(), sequence);
+                auto sleVault = std::make_shared<SLE>(vaultKeylet);
+                auto const vaultPage = ac.view().dirInsert(
+                    keylet::ownerDir(A1.id()),
+                    sleVault->key(),
+                    describeOwnerDir(A1.id()));
+                sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+
+                ac.view().insert(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        doInvariantCheck(
+            {"vault operation updated more than single vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                {
+                    auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                    auto sleVault = ac.view().peek(keylet);
+                    if (!sleVault)
+                        return false;
+                    ac.view().erase(sleVault);
+                }
+                {
+                    auto const keylet = keylet::vault(A2.id(), ac.view().seq());
+                    auto sleVault = ac.view().peek(keylet);
+                    if (!sleVault)
+                        return false;
+                    ac.view().erase(sleVault);
+                }
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                {
+                    auto [tx, _] =
+                        vault.create({.owner = A1, .asset = xrpIssue()});
+                    env(tx);
+                }
+                {
+                    auto [tx, _] =
+                        vault.create({.owner = A2, .asset = xrpIssue()});
+                    env(tx);
+                }
+                return true;
+            });
+
+        doInvariantCheck(
             {"deleted vault must also delete shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
@@ -2504,7 +2600,7 @@ class Invariants_test : public beast::unit_test::suite
             });
 
         doInvariantCheck(
-            {"wrong transaction type created a vault",
+            {"vault created by a wrong transaction type",
              "account root created illegally"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // The code below will create a valid vault with (almost) all
