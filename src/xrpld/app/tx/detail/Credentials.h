@@ -33,6 +33,9 @@ public:
     {
     }
 
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
     static NotTEC
     preflight(PreflightContext const& ctx);
 
@@ -54,6 +57,9 @@ public:
     {
     }
 
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
     static NotTEC
     preflight(PreflightContext const& ctx);
 
@@ -74,6 +80,9 @@ public:
     explicit CredentialAccept(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);
