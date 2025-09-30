@@ -137,6 +137,17 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
     auto inNode = root_;
     SHAMapNodeID nodeID;
 
+    // The item should definitely be there if it's not backed and
+    // inner->isEmptyBranch(branch) returns true, otherwise, the node may not be
+    // fully ready, and we should not throw an exception.
+    bool const shouldThrow = !backed_;
+
+    auto getDescend = [this, shouldThrow](SHAMapInnerNode& parent, int branch) {
+        if (shouldThrow)
+            return descendThrow(parent, branch);
+        return descend(parent, branch);
+    };
+
     while (inNode->isInner())
     {
         if (stack != nullptr)
@@ -148,7 +159,9 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
         if (inner->isEmptyBranch(branch))
             return nullptr;
 
-        inNode = descendThrow(*inner, branch);
+        inNode = getDescend(*inner, branch);
+        if (inNode == nullptr)
+            return nullptr;
         nodeID = nodeID.getChildNodeID(branch);
     }
 
@@ -337,9 +350,14 @@ SHAMap::descend(SHAMapInnerNode& parent, int branch) const
     if (node || !backed_)
         return node;
 
-    node = fetchNode(parent.getChildHash(branch));
-    if (!node)
+    try
+    {
+        node = fetchNode(parent.getChildHash(branch));
+    }
+    catch (SHAMapMissingNode)
+    {
         return {};
+    }
 
     node = parent.canonicalizeChild(branch, std::move(node));
     return node;

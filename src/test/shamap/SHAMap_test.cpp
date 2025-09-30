@@ -327,6 +327,77 @@ public:
                 --h;
             }
         }
+
+        {
+            testcase("peek a not locally available item");
+
+            tests::TestNodeFamily tf{journal};
+
+            // Create a map with tree structure.
+            SHAMap fullHistoryNode{SHAMapType::FREE, tf};
+            fullHistoryNode.addItem(
+                SHAMapNodeType::tnTRANSACTION_NM,
+                make_shamapitem(
+                    uint256("00000000000000000000000000000000000000000000000000"
+                            "00000000000000"),
+                    IntToVUC(0)));
+            fullHistoryNode.addItem(
+                SHAMapNodeType::tnTRANSACTION_NM,
+                make_shamapitem(
+                    uint256("00000000000000000000000000000000000000000000000000"
+                            "00000000000001"),
+                    IntToVUC(0)));
+            fullHistoryNode.addItem(
+                SHAMapNodeType::tnTRANSACTION_NM,
+                make_shamapitem(
+                    uint256("00000000000000000000000000000000000000000000000000"
+                            "00000000000002"),
+                    IntToVUC(0)));
+            fullHistoryNode.invariants();
+
+            // Serialise the root node
+            Serializer root{768};
+            fullHistoryNode.serializeRoot(root);
+
+            // Create another shamap with only the root node so that the items
+            // we added before are not locally available and need to be fetched.
+            SHAMap currentNode(SHAMapType::FREE, tf);
+            currentNode.addRootNode(
+                fullHistoryNode.getHash(),
+                Slice{root.getDataPtr(), static_cast<size_t>(root.getLength())},
+                nullptr);
+            if (!backed)
+                currentNode.setUnbacked();
+
+            boost::intrusive_ptr<SHAMapItem const> node;
+            bool hasThrown = false;
+            try
+            {
+                // As the item is not locally available, we will try to fetch it
+                // from the database, and it will not succeed because nothing is
+                // in the db. This reproduces the scenario where the item is
+                // available on the ledger (we know it exists in full history
+                // nodes, and maybe other nodes) but not locally, and we'll
+                // fetch it later.
+                node = currentNode.peekItem(
+                    uint256("00000000000000000000000000000000000000000000000000"
+                            "00000000000002"));
+            }
+            catch (SHAMapMissingNode)
+            {
+                hasThrown = true;
+            }
+
+            if (backed)
+            {
+                BEAST_EXPECT(!hasThrown);
+            }
+            else
+            {
+                BEAST_EXPECT(hasThrown);
+            }
+            BEAST_EXPECT(node == nullptr);
+        }
     }
 };
 
