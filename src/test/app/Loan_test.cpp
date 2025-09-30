@@ -1721,9 +1721,6 @@ class Loan_test : public beast::unit_test::suite
 
                 while (state.paymentRemaining > 0)
                 {
-                    testcase << "Payments remaining: "
-                             << state.paymentRemaining;
-
                     STAmount const principalRequestedAmount{
                         broker.asset, state.principalRequested};
                     // Compute the payment based on the number of
@@ -1740,6 +1737,11 @@ class Loan_test : public beast::unit_test::suite
                             rawPeriodicPayment,
                             principalRequestedAmount,
                             Number::upward)};
+
+                    testcase
+                        << "Payments remaining: " << state.paymentRemaining
+                        << ", computed payment amount: " << periodicPayment;
+
                     // Only check the first payment since the rounding
                     // may drift as payments are made
                     BEAST_EXPECT(

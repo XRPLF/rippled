@@ -148,13 +148,15 @@ LoanPay::doApply()
     // Loan object state changes
     Number const originalPrincipalRequested = loanSle->at(sfPrincipalRequested);
 
-    view.update(loanSle);
-
     Expected<LoanPaymentParts, TER> paymentParts =
-        loanComputePaymentParts(asset, view, loanSle, amount, j_);
+        loanMakePayment(asset, view, loanSle, amount, j_);
 
     if (!paymentParts)
         return paymentParts.error();
+
+    // If the payment computation completed without error, the loanSle object
+    // has been modified.
+    view.update(loanSle);
 
     // If the loan was impaired, it isn't anymore.
     loanSle->clearFlag(lsfLoanImpaired);
@@ -171,6 +173,14 @@ LoanPay::doApply()
         paymentParts->feePaid >= 0,
         "ripple::LoanPay::doApply",
         "valid fee paid");
+    if (paymentParts->principalPaid <= 0 || paymentParts->interestPaid < 0 ||
+        paymentParts->feePaid < 0)
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.fatal()) << "Loan payment computation returned invalid values.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     //------------------------------------------------------
     // LoanBroker object state changes
@@ -205,7 +215,7 @@ LoanPay::doApply()
                      originalPrincipalRequested);
     if (!sufficientCover)
     {
-        // Add the fee to to First Loss Cover Pool
+        // Add the fee to First Loss Cover Pool
         coverAvailableField += totalPaidToBroker;
     }
     auto const brokerPayee =
