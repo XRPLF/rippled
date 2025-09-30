@@ -356,16 +356,33 @@ public:
             fullHistoryNode.invariants();
 
             // Serialise the root node
-            Serializer root{768};
-            fullHistoryNode.serializeRoot(root);
+            Serializer root;
+            bool finished = false;
+            SHAMapHash rootHash;
+
+            // Grab the root node and serialize it.
+            fullHistoryNode.visitNodes([&](SHAMapTreeNode& node) {
+                if (finished)
+                {
+                    return false;
+                }
+                node.serializeWithPrefix(root);
+                rootHash = node.getHash();
+                finished = true;
+                return false;
+            });
+
+            // Put the root node into the database.
+            tf.db().store(hotTRANSACTION_NODE, std::move(root.modData()), rootHash.as_uint256(), 0);
 
             // Create another shamap with only the root node so that the items
             // we added before are not locally available and need to be fetched.
             SHAMap currentNode(SHAMapType::FREE, tf);
-            currentNode.addRootNode(
-                fullHistoryNode.getHash(),
-                Slice{root.getDataPtr(), static_cast<size_t>(root.getLength())},
-                nullptr);
+            // Fetch the root node, this is closer to what happens in real life
+            // in Ledger::Ledger(LedgerInfo const& info, bool& loaded,
+            // bool acquire, Config const& config, Family& family,
+            // beast::Journal j) in loadByHash in Ledger.cpp
+            currentNode.fetchRoot(rootHash, nullptr);
             if (!backed)
                 currentNode.setUnbacked();
 
