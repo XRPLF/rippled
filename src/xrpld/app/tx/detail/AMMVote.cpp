@@ -30,7 +30,7 @@ namespace ripple {
 bool
 AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (ammEnabled(ctx.rules))
+    if (!ammEnabled(ctx.rules))
         return false;
 
     if (!ctx.rules.enabled(featureMPTokensV2) &&

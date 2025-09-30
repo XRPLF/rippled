@@ -40,7 +40,7 @@ AMMClawback::getFlagsMask(PreflightContext const& ctx)
 }
 
 bool
-AMMClawback::checkExtraFeatures(const ripple::PreflightContext& ctx)
+AMMClawback::checkExtraFeatures(ripple::PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureAMMClawback))
         return false;
@@ -49,7 +49,8 @@ AMMClawback::checkExtraFeatures(const ripple::PreflightContext& ctx)
 
     if (!ctx.rules.enabled(featureMPTokensV2) &&
         ((clawAmount && clawAmount->holds<MPTIssue>()) ||
-         ctx.tx[sfAsset].holds<MPTIssue>() || ctx.tx[sfAsset2].holds<MPTIssue>()))
+         ctx.tx[sfAsset].holds<MPTIssue>() ||
+         ctx.tx[sfAsset2].holds<MPTIssue>()))
         return false;
 
     return true;

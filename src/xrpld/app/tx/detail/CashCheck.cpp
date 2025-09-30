@@ -35,7 +35,7 @@
 namespace ripple {
 
 bool
-CashCheck::checkExtraFeatures(const ripple::PreflightContext& ctx)
+CashCheck::checkExtraFeatures(ripple::PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureChecks))
         return false;

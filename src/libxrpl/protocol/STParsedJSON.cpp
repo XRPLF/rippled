@@ -823,7 +823,7 @@ parseLeaf(
                         AccountID uAccount, uIssuer;
                         PathAsset uAsset;
 
-                        if (!account && !currency && !issuer)
+                        if (!account && !asset && !issuer)
                         {
                             error = invalid_data(element_name);
                             return ret;

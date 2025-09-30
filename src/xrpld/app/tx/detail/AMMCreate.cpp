@@ -40,7 +40,8 @@ AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
         return false;
 
     if (!ctx.rules.enabled(featureMPTokensV2) &&
-        (ctx.tx[sfAmount].holds<MPTIssue>() || ctx.tx[sfAmount2].holds<MPTIssue>()))
+        (ctx.tx[sfAmount].holds<MPTIssue>() ||
+         ctx.tx[sfAmount2].holds<MPTIssue>()))
         return false;
 
     return true;

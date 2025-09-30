@@ -4459,8 +4459,8 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = AMMBid::preflight(pfctx);
-                BEAST_EXPECT(pf == temDISABLED);
+                auto pf = AMMBid::checkExtraFeatures(pfctx);
+                BEAST_EXPECT(pf == false);
                 env.app().config().features.insert(featureMPTokensV2);
             }
 
