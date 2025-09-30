@@ -138,9 +138,10 @@ class Simulate_test : public beast::unit_test::suite
         std::function<void(
             Json::Value const&,
             Json::Value const&,
+            Json::Value const&,
             Json::Value const&)> const& validate,
         Json::Value const& expectedMetadataKey,
-        bool testSerialized = true)
+        Json::Value const& expectedMetadataValue)
     {
         env.close();
 
@@ -149,8 +150,13 @@ class Simulate_test : public beast::unit_test::suite
         validate(
             env.rpc("json", "simulate", to_string(params)),
             tx,
-            expectedMetadataKey);
-        validate(env.rpc("simulate", to_string(tx)), tx, expectedMetadataKey);
+            expectedMetadataKey,
+            expectedMetadataValue);
+        validate(
+            env.rpc("simulate", to_string(tx)),
+            tx,
+            expectedMetadataKey,
+            expectedMetadataValue);
 
         BEAST_EXPECTS(
             env.current()->txCount() == 0,
@@ -1218,73 +1224,93 @@ class Simulate_test : public beast::unit_test::suite
         testcase("Successful transaction with additional metadata");
 
         using namespace jtx;
+        using namespace std::chrono_literals;
         Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
                     cfg->NETWORK_ID = 1025;
                     return cfg;
                 })};
 
         Account const alice("alice");
+        Account const bob("bob");
 
-        env.fund(XRP(10000), alice);
+        env.fund(XRP(10000), alice, bob);
         env.close();
+        // deliver_amount is unavailable in the metadata before 2014-02-01
+        // so proceed to 2014-02-01
+        env.close(NetClock::time_point{446000000s});
 
         {
-            auto validateOutput = [&](Json::Value const& resp,
-                                      Json::Value const& tx,
-                                      Json::Value const& expectedMetadataKey) {
-                auto result = resp[jss::result];
+            auto validateOutput =
+                [&](Json::Value const& resp,
+                    Json::Value const& tx,
+                    Json::Value const& expectedMetadataKey,
+                    Json::Value const& expectedMetadataValue) {
+                    auto result = resp[jss::result];
 
-                BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
-                BEAST_EXPECT(result[jss::engine_result_code] == 0);
-                BEAST_EXPECT(
-                    result[jss::engine_result_message] ==
-                    "The simulated transaction would have been applied.");
-
-                if (BEAST_EXPECT(
-                        result.isMember(jss::meta) ||
-                        result.isMember(jss::meta_blob)))
-                {
-                    Json::Value const metadata = getJsonMetadata(result);
-
-                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
+                    BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+                    BEAST_EXPECT(result[jss::engine_result_code] == 0);
                     BEAST_EXPECT(
-                        metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
-                    BEAST_EXPECT(
-                        metadata.isMember(expectedMetadataKey.asString()));
-                }
-            };
+                        result[jss::engine_result_message] ==
+                        "The simulated transaction would have been applied.");
+
+                    if (BEAST_EXPECT(
+                            result.isMember(jss::meta) ||
+                            result.isMember(jss::meta_blob)))
+                    {
+                        Json::Value const metadata = getJsonMetadata(result);
+
+                        BEAST_EXPECT(
+                            metadata[sfTransactionIndex.jsonName] == 0);
+                        BEAST_EXPECT(
+                            metadata[sfTransactionResult.jsonName] ==
+                            "tesSUCCESS");
+                        BEAST_EXPECT(
+                            metadata.isMember(expectedMetadataKey.asString()));
+                        BEAST_EXPECT(
+                            metadata[expectedMetadataKey.asString()] ==
+                            expectedMetadataValue);
+                    }
+                };
 
             {
                 Json::Value tx;
-                tx[jss::Account] = env.master.human();
+                tx[jss::Account] = alice.human();
                 tx[jss::TransactionType] = jss::Payment;
-                tx[sfDestination] = alice.human();
+                tx[sfDestination] = bob.human();
                 tx[sfAmount] = "100";
 
                 // test delivered amount
                 testTxJsonMetadataField(
-                    env, tx, validateOutput, jss::delivered_amount);
+                    env, tx, validateOutput, jss::delivered_amount, "100");
             }
 
             {
                 Json::Value tx;
-                tx[jss::Account] = env.master.human();
+                tx[jss::Account] = alice.human();
                 tx[jss::TransactionType] = jss::NFTokenMint;
                 tx[sfNFTokenTaxon] = 1;
 
+                Json::Value nftokenId =
+                    to_string(token::getNextID(env, alice, 1));
                 // test nft synthetic
                 testTxJsonMetadataField(
-                    env, tx, validateOutput, jss::nftoken_id);
+                    env, tx, validateOutput, jss::nftoken_id, nftokenId);
             }
 
             {
                 Json::Value tx;
-                tx[jss::Account] = env.master.human();
+                tx[jss::Account] = alice.human();
                 tx[jss::TransactionType] = jss::MPTokenIssuanceCreate;
 
+                Json::Value mptIssuanceId =
+                    to_string(makeMptID(env.seq(alice), alice));
                 // test mpt issuance id
                 testTxJsonMetadataField(
-                    env, tx, validateOutput, jss::mpt_issuance_id);
+                    env,
+                    tx,
+                    validateOutput,
+                    jss::mpt_issuance_id,
+                    mptIssuanceId);
             }
         }
     }
