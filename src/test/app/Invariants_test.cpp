@@ -1963,7 +1963,6 @@ class Invariants_test : public beast::unit_test::suite
                     sleVault->key(),
                     describeOwnerDir(A1.id()));
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
-
                 ac.view().insert(sleVault);
                 return true;
             },
@@ -2007,6 +2006,28 @@ class Invariants_test : public beast::unit_test::suite
                 }
                 return true;
             });
+
+        doInvariantCheck(
+            {"vault operation updated more than single vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sequence = ac.view().seq();
+                auto const insertVault = [&](Account const A) {
+                    auto const vaultKeylet = keylet::vault(A.id(), sequence);
+                    auto sleVault = std::make_shared<SLE>(vaultKeylet);
+                    auto const vaultPage = ac.view().dirInsert(
+                        keylet::ownerDir(A.id()),
+                        sleVault->key(),
+                        describeOwnerDir(A.id()));
+                    sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+                    ac.view().insert(sleVault);
+                };
+                insertVault(A1);
+                insertVault(A2);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         doInvariantCheck(
             {"deleted vault must also delete shares"},
