@@ -2504,6 +2504,73 @@ class Invariants_test : public beast::unit_test::suite
             });
 
         doInvariantCheck(
+            {"wrong transaction type created a vault",
+             "account root created illegally"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                // The code below will create a valid vault with (almost) all
+                // the invariants holding. Except one: it is created by the
+                // wrong transaction type.
+                auto const sequence = ac.view().seq();
+                auto const vaultKeylet = keylet::vault(A1.id(), sequence);
+                auto sleVault = std::make_shared<SLE>(vaultKeylet);
+                auto const vaultPage = ac.view().dirInsert(
+                    keylet::ownerDir(A1.id()),
+                    sleVault->key(),
+                    describeOwnerDir(A1.id()));
+                sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+
+                auto pseudoId =
+                    pseudoAccountAddress(ac.view(), vaultKeylet.key);
+                // Create pseudo-account.
+                auto sleAccount =
+                    std::make_shared<SLE>(keylet::account(pseudoId));
+                sleAccount->setAccountID(sfAccount, pseudoId);
+                sleAccount->setFieldAmount(sfBalance, STAmount{});
+                std::uint32_t const seqno =                             //
+                    ac.view().rules().enabled(featureSingleAssetVault)  //
+                    ? 0                                                 //
+                    : sequence;
+                sleAccount->setFieldU32(sfSequence, seqno);
+                sleAccount->setFieldU32(
+                    sfFlags,
+                    lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+                sleAccount->setFieldH256(sfVaultID, vaultKeylet.key);
+                ac.view().insert(sleAccount);
+
+                auto const sharesMptId = makeMptID(sequence, pseudoId);
+                auto const sharesKeylet = keylet::mptIssuance(sharesMptId);
+                auto sleShares = std::make_shared<SLE>(sharesKeylet);
+                auto const sharesPage = ac.view().dirInsert(
+                    keylet::ownerDir(pseudoId),
+                    sharesKeylet,
+                    describeOwnerDir(pseudoId));
+                sleShares->setFieldU64(sfOwnerNode, *sharesPage);
+
+                sleShares->at(sfFlags) = 0;
+                sleShares->at(sfIssuer) = pseudoId;
+                sleShares->at(sfOutstandingAmount) = 0;
+                sleShares->at(sfSequence) = sequence;
+
+                sleVault->at(sfAccount) = pseudoId;
+                sleVault->at(sfFlags) = 0;
+                sleVault->at(sfSequence) = sequence;
+                sleVault->at(sfOwner) = A1.id();
+                sleVault->at(sfAssetsTotal) = Number(0);
+                sleVault->at(sfAssetsAvailable) = Number(0);
+                sleVault->at(sfLossUnrealized) = Number(0);
+                sleVault->at(sfShareMPTID) = sharesMptId;
+                sleVault->at(sfWithdrawalPolicy) =
+                    vaultStrategyFirstComeFirstServe;
+
+                ac.view().insert(sleVault);
+                ac.view().insert(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        doInvariantCheck(
             {"shares issuer and vault pseudo-account must be the same",
              "shares issuer pseudo-account must point back to the vault"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {

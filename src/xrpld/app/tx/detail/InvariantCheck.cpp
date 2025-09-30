@@ -2221,11 +2221,11 @@ ValidVault::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    // If `before` is empty, this means an object is being created
-    // If `after` is empty, this means an object is being deleted
-    // Otherwise it's a modification of an object.
+    // If `before` is empty, this means an object is being created, in which
+    // case `isDelete` must be false. Otherwise `before` and `after` are set and
+    // `isDelete` indicates whether an object is being deleted or modified.
     XRPL_ASSERT(
-        before != nullptr || after != nullptr,
+        after != nullptr && (before != nullptr || !isDelete),
         "ripple::ValidVault::visitEntry : some object is available");
 
     // `Number balance` will capture the difference (delta) between "before"
@@ -2241,7 +2241,7 @@ ValidVault::visitEntry(
         switch (before->getType())
         {
             case ltVAULT:
-                beforeVault_ = Vault::make(*before);
+                beforeVault_.push_back(Vault::make(*before));
                 break;
             case ltMPTOKEN_ISSUANCE:
                 // At this moment we have no way of telling if this object holds
@@ -2270,7 +2270,7 @@ ValidVault::visitEntry(
         switch (after->getType())
         {
             case ltVAULT:
-                afterVault_ = Vault::make(*after);
+                afterVault_.push_back(Vault::make(*after));
                 break;
             case ltMPTOKEN_ISSUANCE:
                 // At this moment we have no way of telling if this object holds
@@ -2312,12 +2312,21 @@ ValidVault::finalize(
     if (!isTesSuccess(ret))
         return true;  // Do not perform checks
 
+    if (beforeVault_.size() > 1 || afterVault_.size() > 1)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: vault operation modified more than single vault";
+        XRPL_ASSERT(
+            enforce, "ripple::ValidVault::finalize : single vault invariant");
+        return !enforce;  // That's all we can do here
+    }
+
     auto const txnType = tx.getTxnType();
     // First special handling for ttVAULT_DELETE, which is the only
     // vault-modifying transaction without an "after" state of the vault
     if (txnType == ttVAULT_DELETE)
     {
-        if (!beforeVault_)
+        if (beforeVault_.empty())
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: vault deletion succeeded without deleting a "
@@ -2327,6 +2336,7 @@ ValidVault::finalize(
                 "ripple::ValidVault::finalize : vault deletion invariant");
             return !enforce;  // That's all we can do here
         }
+        auto const& beforeVault = beforeVault_[0];
 
         // At this moment we only know a vault is being deleted and there
         // might be some MPTokenIssuance objects which are deleted in the
@@ -2334,7 +2344,7 @@ ValidVault::finalize(
         auto const deletedShares = [&]() -> std::optional<Shares> {
             for (auto const& e : beforeMPTs_)
             {
-                if (e.share.getMptID() == beforeVault_->shareMPTID)
+                if (e.share.getMptID() == beforeVault.shareMPTID)
                     return std::move(e);
             }
             return std::nullopt;
@@ -2357,13 +2367,13 @@ ValidVault::finalize(
                                "shares outstanding";
             result = false;
         }
-        if (beforeVault_->assetsTotal != zero)
+        if (beforeVault.assetsTotal != zero)
         {
             JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
                                "assets outstanding";
             result = false;
         }
-        if (beforeVault_->assetsAvailable != zero)
+        if (beforeVault.assetsAvailable != zero)
         {
             JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
                                "assets available";
@@ -2374,8 +2384,9 @@ ValidVault::finalize(
     }
 
     auto const updatedShares = [&]() -> std::optional<Shares> {
-        if (!afterVault_)
+        if (afterVault_.empty())
             return std::nullopt;
+        auto const& afterVault = afterVault_[0];
 
         // At this moment we only know that a vault is being updated and there
         // might be some MPTokenIssuance objects which are also updated in the
@@ -2384,12 +2395,12 @@ ValidVault::finalize(
         // such collections linear search is faster than lookup.
         for (auto const& e : afterMPTs_)
         {
-            if (e.share.getMptID() == afterVault_->shareMPTID)
+            if (e.share.getMptID() == afterVault.shareMPTID)
                 return e;
         }
 
         auto const sleShares =
-            view.read(keylet::mptIssuance(afterVault_->shareMPTID));
+            view.read(keylet::mptIssuance(afterVault.shareMPTID));
 
         return sleShares ? std::optional<Shares>(Shares::make(*sleShares))
                          : std::nullopt;
@@ -2398,13 +2409,15 @@ ValidVault::finalize(
     bool result = true;
 
     // Universal transaction checks
-    if (afterVault_)
+    if (!afterVault_.empty())
     {
-        if (beforeVault_)
+        auto const& afterVault = afterVault_[0];
+        if (!beforeVault_.empty())
         {
-            if (afterVault_->asset != beforeVault_->asset ||
-                afterVault_->pseudoId != beforeVault_->pseudoId ||
-                afterVault_->shareMPTID != beforeVault_->shareMPTID)
+            auto const& beforeVault = beforeVault_[0];
+            if (afterVault.asset != beforeVault.asset ||
+                afterVault.pseudoId != beforeVault.pseudoId ||
+                afterVault.shareMPTID != beforeVault.shareMPTID)
             {
                 JLOG(j.fatal())
                     << "Invariant failed: violation of vault immutable data";
@@ -2424,13 +2437,13 @@ ValidVault::finalize(
 
         if (updatedShares->sharesTotal == 0)
         {
-            if (afterVault_->assetsTotal != zero)
+            if (afterVault.assetsTotal != zero)
             {
                 JLOG(j.fatal()) << "Invariant failed: updated zero sized "
                                    "vault must have no assets outstanding";
                 result = false;
             }
-            if (afterVault_->assetsAvailable != zero)
+            if (afterVault.assetsAvailable != zero)
             {
                 JLOG(j.fatal()) << "Invariant failed: updated zero sized "
                                    "vault must have no assets available";
@@ -2445,22 +2458,22 @@ ValidVault::finalize(
             result = false;
         }
 
-        if (afterVault_->assetsAvailable < zero)
+        if (afterVault.assetsAvailable < zero)
         {
             JLOG(j.fatal())
                 << "Invariant failed: assets available must be positive";
             result = false;
         }
 
-        if (afterVault_->assetsAvailable > afterVault_->assetsTotal)
+        if (afterVault.assetsAvailable > afterVault.assetsTotal)
         {
             JLOG(j.fatal()) << "Invariant failed: assets available must "
                                "not be greater than assets outstanding";
             result = false;
         }
         else if (
-            afterVault_->lossUnrealized >
-            afterVault_->assetsTotal - afterVault_->assetsAvailable)
+            afterVault.lossUnrealized >
+            afterVault.assetsTotal - afterVault.assetsAvailable)
         {
             JLOG(j.fatal())  //
                 << "Invariant failed: loss unrealized must not exceed "
@@ -2468,14 +2481,14 @@ ValidVault::finalize(
             result = false;
         }
 
-        if (afterVault_->assetsTotal < zero)
+        if (afterVault.assetsTotal < zero)
         {
             JLOG(j.fatal())
                 << "Invariant failed: assets outstanding must be positive";
             result = false;
         }
 
-        if (afterVault_->assetsMaximum < zero)
+        if (afterVault.assetsMaximum < zero)
         {
             JLOG(j.fatal())
                 << "Invariant failed: assets maximum must be positive";
@@ -2489,7 +2502,7 @@ ValidVault::finalize(
         txnType == ttVAULT_WITHDRAW ||  //
         txnType == ttVAULT_CLAWBACK)
     {
-        if (!afterVault_)
+        if (afterVault_.empty())
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: vault operation succeeded without updating "
@@ -2498,21 +2511,23 @@ ValidVault::finalize(
                 enforce, "ripple::ValidVault::finalize : vault noop invariant");
             return !enforce;  // That's all we can do here
         }
+        auto const& afterVault = afterVault_[0];
 
         // Transactor makes this condition impossible, but since we need to
         // access beforeVault_ then we also need a defensive check.
-        if (!beforeVault_ && txnType != ttVAULT_CREATE)
+        if (beforeVault_.empty() && txnType != ttVAULT_CREATE)
         {
-            // LCOV_EXCL_START
-            UNREACHABLE(
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: wrong transaction type created a vault";
+            XRPL_ASSERT(
+                enforce,
                 "ripple::ValidVault::finalize : missing old vault state");
-            return false;
-            // LCOV_EXCL_STOP
+            return !enforce;  // That's all we can do here
         }
 
         // One universal check for all vault transaction types
-        if (beforeVault_ &&
-            afterVault_->lossUnrealized != beforeVault_->lossUnrealized)
+        if (!beforeVault_.empty() &&
+            afterVault.lossUnrealized != beforeVault_[0].lossUnrealized)
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: vault transaction must not change loss "
@@ -2521,9 +2536,13 @@ ValidVault::finalize(
         }
 
         auto const beforeShares = [&]() -> std::optional<Shares> {
+            if (beforeVault_.empty())
+                return std::nullopt;
+            auto const& beforeVault = beforeVault_[0];
+
             for (auto const& e : beforeMPTs_)
             {
-                if (e.share.getMptID() == beforeVault_->shareMPTID)
+                if (e.share.getMptID() == beforeVault.shareMPTID)
                     return std::move(e);
             }
             return std::nullopt;
@@ -2542,7 +2561,7 @@ ValidVault::finalize(
             return !enforce;  // That's all we can do here
         }
 
-        auto const& vaultAsset = afterVault_->asset;
+        auto const& vaultAsset = afterVault.asset;
         auto const deltaAssets =
             [&](AccountID const& id) -> std::optional<Number> {
             auto const get =  //
@@ -2575,11 +2594,11 @@ ValidVault::finalize(
         auto const deltaShares =
             [&](AccountID const& id) -> std::optional<Number> {
             auto const it = [&]() {
-                if (id == afterVault_->pseudoId)
+                if (id == afterVault.pseudoId)
                     return deltas_.find(
-                        keylet::mptIssuance(afterVault_->shareMPTID).key);
+                        keylet::mptIssuance(afterVault.shareMPTID).key);
                 return deltas_.find(
-                    keylet::mptoken(afterVault_->shareMPTID, id).key);
+                    keylet::mptoken(afterVault.shareMPTID, id).key);
             }();
 
             return it != deltas_.end() ? std::optional<Number>(it->second)
@@ -2596,7 +2615,7 @@ ValidVault::finalize(
                 case ttVAULT_CREATE: {
                     bool result = true;
 
-                    if (beforeVault_)
+                    if (!beforeVault_.empty())
                     {
                         JLOG(j.fatal())  //
                             << "Invariant failed: create operation must not "
@@ -2604,9 +2623,9 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (afterVault_->assetsAvailable != zero ||
-                        afterVault_->assetsTotal != zero ||
-                        afterVault_->lossUnrealized != zero ||
+                    if (afterVault.assetsAvailable != zero ||
+                        afterVault.assetsTotal != zero ||
+                        afterVault.lossUnrealized != zero ||
                         updatedShares->sharesTotal != 0)
                     {
                         JLOG(j.fatal())  //
@@ -2614,8 +2633,7 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (afterVault_->pseudoId !=
-                        updatedShares->share.getIssuer())
+                    if (afterVault.pseudoId != updatedShares->share.getIssuer())
                     {
                         JLOG(j.fatal())  //
                             << "Invariant failed: shares issuer and vault "
@@ -2641,7 +2659,7 @@ ValidVault::finalize(
                     }
 
                     if (auto const vaultId = (*sleSharesIssuer)[~sfVaultID];
-                        !vaultId || *vaultId != afterVault_->key)
+                        !vaultId || *vaultId != afterVault.key)
                     {
                         JLOG(j.fatal())  //
                             << "Invariant failed: shares issuer pseudo-account "
@@ -2655,7 +2673,7 @@ ValidVault::finalize(
                     bool result = true;
 
                     auto const vaultDeltaAssets =
-                        deltaAssets(afterVault_->pseudoId);
+                        deltaAssets(afterVault.pseudoId);
                     if (vaultDeltaAssets)
                     {
                         JLOG(j.fatal()) <<  //
@@ -2664,8 +2682,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (beforeVault_ && afterVault_ &&
-                        beforeVault_->assetsTotal != afterVault_->assetsTotal)
+                    if (!beforeVault_.empty() &&
+                        beforeVault_[0].assetsTotal != afterVault.assetsTotal)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: set must not change assets "
@@ -2673,8 +2691,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (afterVault_->assetsMaximum > zero &&
-                        afterVault_->assetsTotal > afterVault_->assetsMaximum)
+                    if (afterVault.assetsMaximum > zero &&
+                        afterVault.assetsTotal > afterVault.assetsMaximum)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: set assets outstanding must not "
@@ -2682,9 +2700,9 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (beforeVault_ && afterVault_ &&
-                        beforeVault_->assetsAvailable !=
-                            afterVault_->assetsAvailable)
+                    if (!beforeVault_.empty() &&
+                        beforeVault_[0].assetsAvailable !=
+                            afterVault.assetsAvailable)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: set must not change assets "
@@ -2706,8 +2724,16 @@ ValidVault::finalize(
                 case ttVAULT_DEPOSIT: {
                     bool result = true;
 
+                    if (beforeVault_.empty())
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: deposit must update vault state";
+                        return false;  // That's all we can do
+                    }
+                    auto const& beforeVault = beforeVault_[0];
+
                     auto const vaultDeltaAssets =
-                        deltaAssets(afterVault_->pseudoId);
+                        deltaAssets(afterVault.pseudoId);
 
                     if (!vaultDeltaAssets)
                     {
@@ -2782,8 +2808,8 @@ ValidVault::finalize(
                         }
                     }
 
-                    if (afterVault_->assetsMaximum > zero &&
-                        afterVault_->assetsTotal > afterVault_->assetsMaximum)
+                    if (afterVault.assetsMaximum > zero &&
+                        afterVault.assetsTotal > afterVault.assetsMaximum)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: deposit assets outstanding must "
@@ -2809,7 +2835,7 @@ ValidVault::finalize(
                     }
 
                     auto const vaultDeltaShares =
-                        deltaShares(afterVault_->pseudoId);
+                        deltaShares(afterVault.pseudoId);
                     if (!vaultDeltaShares)
                     {
                         JLOG(j.fatal()) <<  //
@@ -2826,15 +2852,15 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (beforeVault_->assetsTotal + *vaultDeltaAssets !=
-                        afterVault_->assetsTotal)
+                    if (beforeVault.assetsTotal + *vaultDeltaAssets !=
+                        afterVault.assetsTotal)
                     {
                         JLOG(j.fatal()) << "Invariant failed: deposit and "
                                            "assets outstanding must add up";
                         result = false;
                     }
-                    if (beforeVault_->assetsAvailable + *vaultDeltaAssets !=
-                        afterVault_->assetsAvailable)
+                    if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
+                        afterVault.assetsAvailable)
                     {
                         JLOG(j.fatal()) << "Invariant failed: deposit and "
                                            "assets available must add up";
@@ -2846,8 +2872,17 @@ ValidVault::finalize(
                 case ttVAULT_WITHDRAW: {
                     bool result = true;
 
+                    if (beforeVault_.empty())
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: withdrawal must update vault "
+                            "state";
+                        return false;  // That's all we can do
+                    }
+                    auto const& beforeVault = beforeVault_[0];
+
                     auto const vaultDeltaAssets =
-                        deltaAssets(afterVault_->pseudoId);
+                        deltaAssets(afterVault.pseudoId);
 
                     if (!vaultDeltaAssets)
                     {
@@ -2945,7 +2980,7 @@ ValidVault::finalize(
                     }
 
                     auto const vaultDeltaShares =
-                        deltaShares(afterVault_->pseudoId);
+                        deltaShares(afterVault.pseudoId);
                     if (!vaultDeltaShares)
                     {
                         JLOG(j.fatal()) <<  //
@@ -2963,8 +2998,8 @@ ValidVault::finalize(
                     }
 
                     // Note, vaultBalance is negative (see check above)
-                    if (beforeVault_->assetsTotal + *vaultDeltaAssets !=
-                        afterVault_->assetsTotal)
+                    if (beforeVault.assetsTotal + *vaultDeltaAssets !=
+                        afterVault.assetsTotal)
                     {
                         JLOG(j.fatal())
                             << "Invariant failed: withdrawal and assets "
@@ -2972,8 +3007,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (beforeVault_->assetsAvailable + *vaultDeltaAssets !=
-                        afterVault_->assetsAvailable)
+                    if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
+                        afterVault.assetsAvailable)
                     {
                         JLOG(j.fatal())
                             << "Invariant failed: withdrawal and assets "
@@ -2986,6 +3021,15 @@ ValidVault::finalize(
                 case ttVAULT_CLAWBACK: {
                     bool result = true;
 
+                    if (beforeVault_.empty())
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must update vault "
+                            "state";
+                        return false;  // That's all we can do
+                    }
+                    auto const& beforeVault = beforeVault_[0];
+
                     if (vaultAsset.native() ||
                         vaultAsset.getIssuer() != tx[sfAccount])
                     {
@@ -2996,7 +3040,7 @@ ValidVault::finalize(
                     }
 
                     auto const vaultDeltaAssets =
-                        deltaAssets(afterVault_->pseudoId);
+                        deltaAssets(afterVault.pseudoId);
 
                     if (!vaultDeltaAssets)
                     {
@@ -3032,7 +3076,7 @@ ValidVault::finalize(
                     }
 
                     auto const vaultDeltaShares =
-                        deltaShares(afterVault_->pseudoId);
+                        deltaShares(afterVault.pseudoId);
                     if (!vaultDeltaShares)
                     {
                         JLOG(j.fatal()) <<  //
@@ -3049,8 +3093,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (beforeVault_->assetsTotal + *vaultDeltaAssets !=
-                        afterVault_->assetsTotal)
+                    if (beforeVault.assetsTotal + *vaultDeltaAssets !=
+                        afterVault.assetsTotal)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback and assets outstanding "
@@ -3058,8 +3102,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (beforeVault_->assetsAvailable + *vaultDeltaAssets !=
-                        afterVault_->assetsAvailable)
+                    if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
+                        afterVault.assetsAvailable)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback and assets "
