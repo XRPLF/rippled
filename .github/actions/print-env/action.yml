@@ -1,0 +1,43 @@
+name: Print build environment
+description: "Print environment and some tooling versions"
+
+runs:
+  using: composite
+  steps:
+    - name: Check configuration (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      shell: bash
+      run: |
+        echo 'Checking environment variables.'
+        set
+
+        echo 'Checking CMake version.'
+        cmake --version
+
+        echo 'Checking Conan version.'
+        conan --version
+
+    - name: Check configuration (Linux and macOS)
+      if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        echo 'Checking path.'
+        echo ${PATH} | tr ':' '\n'
+
+        echo 'Checking environment variables.'
+        env | sort
+
+        echo 'Checking CMake version.'
+        cmake --version
+
+        echo 'Checking compiler version.'
+        ${{ runner.os == 'Linux' && '${CC}' || 'clang' }} --version
+
+        echo 'Checking Conan version.'
+        conan --version
+
+        echo 'Checking Ninja version.'
+        ninja --version
+
+        echo 'Checking nproc version.'
+        nproc --version
