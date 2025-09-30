@@ -373,7 +373,11 @@ public:
             });
 
             // Put the root node into the database.
-            tf.db().store(hotTRANSACTION_NODE, std::move(root.modData()), rootHash.as_uint256(), 0);
+            tf.db().store(
+                hotTRANSACTION_NODE,
+                std::move(root.modData()),
+                rootHash.as_uint256(),
+                0);
 
             // Create another shamap with only the root node so that the items
             // we added before are not locally available and need to be fetched.
