@@ -1363,7 +1363,7 @@ struct FlowMPT_test : public beast::unit_test::suite
 
             env(pay(alice, carol, USD(100)));
 
-            BEAST_EXPECT(env.balance(gw, USD) == USD(100));
+            BEAST_EXPECT(env.balance(gw, USD) == USD(-100));
             BEAST_EXPECT(env.balance(carol, USD) == USD(100));
             BEAST_EXPECT(env.balance(alice, USD) == USD(0));
         }
@@ -1385,7 +1385,7 @@ struct FlowMPT_test : public beast::unit_test::suite
 
             env(pay(alice, carol, USD(100)), txflags(tfPartialPayment));
 
-            BEAST_EXPECT(env.balance(gw, USD) == USD(80));
+            BEAST_EXPECT(env.balance(gw, USD) == USD(-80));
             BEAST_EXPECT(env.balance(alice, USD) == USD(0));
             BEAST_EXPECT(env.balance(carol, USD) == USD(80));
         }
@@ -1409,7 +1409,7 @@ struct FlowMPT_test : public beast::unit_test::suite
 
             env(pay(alice, carol, USD(100)), txflags(tfPartialPayment));
 
-            BEAST_EXPECT(env.balance(gw, USD) == USD(100));
+            BEAST_EXPECT(env.balance(gw, USD) == USD(-100));
             BEAST_EXPECT(env.balance(alice, USD) == USD(0));
             BEAST_EXPECT(env.balance(carol, USD) == USD(80));
         }
@@ -1434,7 +1434,7 @@ struct FlowMPT_test : public beast::unit_test::suite
 
             env(pay(bob, carol, USD(100)), sendmax(XRP(100)), path(~USD));
 
-            BEAST_EXPECT(env.balance(gw, USD) == USD(100));
+            BEAST_EXPECT(env.balance(gw, USD) == USD(-100));
             BEAST_EXPECT(env.balance(alice, USD) == USD(0));
             BEAST_EXPECT(env.balance(carol, USD) == USD(100));
         }
@@ -1461,7 +1461,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 txflags(tfPartialPayment),
                 ter(tecPATH_DRY));
 
-            BEAST_EXPECT(env.balance(gw, USD) == USD(100));
+            BEAST_EXPECT(env.balance(gw, USD) == USD(-100));
             BEAST_EXPECT(env.balance(carol, USD) == USD(100));
         }
 
@@ -1485,7 +1485,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 path(~USD),
                 txflags(tfPartialPayment));
 
-            BEAST_EXPECT(env.balance(gw, USD) == USD(100));
+            BEAST_EXPECT(env.balance(gw, USD) == USD(-100));
             BEAST_EXPECT(env.balance(carol, USD) == USD(100));
         }
 
@@ -1509,7 +1509,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 path(~XRP),
                 ter(tecPATH_PARTIAL));
 
-            BEAST_EXPECT(env.balance(gw, USD) == USD(100));
+            BEAST_EXPECT(env.balance(gw, USD) == USD(-100));
             BEAST_EXPECT(env.balance(alice, USD) == USD(100));
         }
 
@@ -1546,7 +1546,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 env(pay(gw, carol, USD(100)), sendmax(EUR(100)), path(~USD));
 
                 if constexpr (std::is_same_v<tUSD, MPT>)
-                    BEAST_EXPECT(env.balance(gw, USD) == USD(100));
+                    BEAST_EXPECT(env.balance(gw, USD) == USD(-100));
                 BEAST_EXPECT(env.balance(alice, USD) == USD(0));
                 BEAST_EXPECT(env.balance(alice, EUR) == EUR(100));
                 BEAST_EXPECT(env.balance(carol, USD) == USD(100));
@@ -1640,7 +1640,7 @@ struct FlowMPT_test : public beast::unit_test::suite
 
                 if constexpr (std::is_same_v<tUSD, MPT>)
                 {
-                    BEAST_EXPECT(env.balance(gw, USD) == USD(1'000));
+                    BEAST_EXPECT(env.balance(gw, USD) == USD(-1'000));
                     BEAST_EXPECT(env.balance(alice, USD) == USD(495));
                     BEAST_EXPECT(env.balance(bob, USD) == USD(505));
                 }
@@ -1705,7 +1705,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 sendmax(XRP(100)),
                 txflags(tfPartialPayment));
 
-            BEAST_EXPECT(env.balance(gw, USD) == USD(1'624));
+            BEAST_EXPECT(env.balance(gw, USD) == USD(-1'624));
             BEAST_EXPECT(env.balance(carol, USD) == USD(1'102));
             env.require(offers(carol, 0));
             env.require(offers(gw, 0));
@@ -1736,7 +1736,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 sendmax(XRP(30)),
                 txflags(tfPartialPayment),
                 path(~USD));
-            BEAST_EXPECT(env.balance(gw, USD) == USD(28));
+            BEAST_EXPECT(env.balance(gw, USD) == USD(-28));
             BEAST_EXPECT(env.balance(alice, USD) == USD(0));
             // 12+11+5
             BEAST_EXPECT(env.balance(bob, USD) == USD(28));
@@ -1808,7 +1808,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 env(pay(gw, carol, USD(100)));
                 env(pay(gw, bob, USD(100)));
 
-                BEAST_EXPECT(env.balance(gw, USD) == USD(300));
+                BEAST_EXPECT(env.balance(gw, USD) == USD(-300));
 
                 env(trust(john, EUR(100)));
                 env(trust(dan, EUR(100)));
@@ -1868,7 +1868,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 BEAST_EXPECT(env.balance(john, USD) == USD(100));
                 BEAST_EXPECT(env.balance(dan, USD) == USD(d.expDanBuyUSD));
                 BEAST_EXPECT(env.balance(ed, USD) == USD(d.expEdBuyUSD));
-                BEAST_EXPECT(env.balance(gw, USD) == USD(d.outstUSD));
+                BEAST_EXPECT(env.balance(gw, USD) == USD(-d.outstUSD));
                 BEAST_EXPECT(env.balance(alice, USD) == USD(0));
                 BEAST_EXPECT(env.balance(carol, USD) == USD(0));
                 BEAST_EXPECT(
@@ -1990,7 +1990,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 BEAST_EXPECT(expectOffers(env, carol, 1));
                 BEAST_EXPECT(expectOffers(env, bob, 1));
                 BEAST_EXPECT(expectOffers(env, gw, 1));
-                BEAST_EXPECT(env.balance(gw, USD) == USD(300));
+                BEAST_EXPECT(env.balance(gw, USD) == USD(-300));
 
                 env(pay(alice, ed, XRP(300)),
                     sendmax(USD(d.sendMax)),
@@ -2003,7 +2003,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 BEAST_EXPECT(env.balance(carol, USD) == USD(100));
                 BEAST_EXPECT(env.balance(bob, USD) == USD(d.expBobBuyUSD));
                 BEAST_EXPECT(env.balance(ed) == XRP(d.dstExpectXRP));
-                BEAST_EXPECT(env.balance(gw, USD) == USD(d.outstUSD));
+                BEAST_EXPECT(env.balance(gw, USD) == USD(-d.outstUSD));
                 BEAST_EXPECT(
                     env.balance(gw) ==
                     XRPAmount{d.expGwXRP * DROPS_PER_XRP - baseFee * 3});
@@ -2104,7 +2104,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 BEAST_EXPECT(expectOffers(env, carol, 1));
                 BEAST_EXPECT(expectOffers(env, bob, 1));
                 BEAST_EXPECT(expectOffers(env, gw, 1));
-                BEAST_EXPECT(env.balance(gw, USD) == USD(200 + d.initDst));
+                BEAST_EXPECT(env.balance(gw, USD) == USD(-200 - d.initDst));
 
                 env(pay(alice, ed, USD(300)),
                     sendmax(XRP(d.sendMax)),
@@ -2120,7 +2120,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     env.balance(bob, USD) == USD(100 - d.expBobSellUSD));
                 BEAST_EXPECT(env.balance(ed, USD) == USD(d.dstExpectUSD));
-                BEAST_EXPECT(env.balance(gw, USD) == USD(d.outstUSD));
+                BEAST_EXPECT(env.balance(gw, USD) == USD(-d.outstUSD));
                 BEAST_EXPECT(
                     env.balance(gw) ==
                     XRPAmount{
@@ -2203,7 +2203,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                     txflags(tfPartialPayment | tfNoRippleDirect));
 
                 BEAST_EXPECT(env.balance(alice) == XRP(dstXRP));
-                BEAST_EXPECT(env.balance(gw, USD) == USD(300));
+                BEAST_EXPECT(env.balance(gw, USD) == USD(-300));
                 BEAST_EXPECT(env.balance(carol, USD) == USD(300));
                 BEAST_EXPECT(expectOffers(env, carol, 0));
                 BEAST_EXPECT(expectOffers(env, gw, expGwOffers));
