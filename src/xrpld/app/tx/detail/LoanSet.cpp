@@ -146,7 +146,13 @@ LoanSet::checkSign(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfCounterpartySignature))
         return tesSUCCESS;
     auto const counterSig = ctx.tx.getFieldObject(sfCounterpartySignature);
-    return Transactor::checkSign(ctx, *counterSigner, counterSig);
+    return Transactor::checkSign(
+        ctx.view,
+        ctx.flags,
+        ctx.parentBatchId,
+        *counterSigner,
+        counterSig,
+        ctx.j);
 }
 
 XRPAmount

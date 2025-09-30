@@ -1,0 +1,115 @@
+name: Build rippled
+
+on:
+  workflow_call:
+    inputs:
+      build_dir:
+        description: "The directory where to build."
+        required: true
+        type: string
+      build_type:
+        description: 'The build type to use ("Debug", "Release").'
+        required: true
+        type: string
+      cmake_args:
+        description: "Additional arguments to pass to CMake."
+        required: true
+        type: string
+      cmake_target:
+        description: "The CMake target to build."
+        required: true
+        type: string
+
+      runs_on:
+        description: Runner to run the job on as a JSON string
+        required: true
+        type: string
+      image:
+        description: "The image to run in (leave empty to run natively)"
+        required: true
+        type: string
+
+      config_name:
+        description: "The name of the configuration."
+        required: true
+        type: string
+
+    secrets:
+      CODECOV_TOKEN:
+        description: "The Codecov token to use for uploading coverage reports."
+        required: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build ${{ inputs.config_name }}
+    runs-on: ${{ fromJSON(inputs.runs_on) }}
+    container: ${{ inputs.image != '' && inputs.image || null }}
+    steps:
+      - name: Cleanup workspace
+        if: ${{ runner.os == 'macOS' }}
+        uses: XRPLF/actions/.github/actions/cleanup-workspace@3f044c7478548e3c32ff68980eeb36ece02b364e
+
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Prepare runner
+        uses: XRPLF/actions/.github/actions/prepare-runner@638e0dc11ea230f91bd26622fb542116bb5254d5
+        with:
+          disable_ccache: false
+
+      - name: Print build environment
+        uses: ./.github/actions/print-env
+
+      - name: Setup Conan
+        uses: ./.github/actions/setup-conan
+
+      - name: Build dependencies
+        uses: ./.github/actions/build-deps
+        with:
+          build_dir: ${{ inputs.build_dir }}
+          build_type: ${{ inputs.build_type }}
+
+      - name: Configure CMake
+        shell: bash
+        working-directory: ${{ inputs.build_dir }}
+        run: |
+          cmake \
+            -G '${{ runner.os == 'Windows' && 'Visual Studio 17 2022' || 'Ninja' }}' \
+            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+            -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
+            ${{ inputs.cmake_args }} \
+            ..
+
+      - name: Build the binary
+        shell: bash
+        working-directory: ${{ inputs.build_dir }}
+        run: |
+          cmake \
+            --build . \
+            --config ${{ inputs.build_type }} \
+            --parallel $(nproc) \
+            --target ${{ inputs.cmake_target }}
+
+      - name: Upload rippled artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rippled-${{ inputs.config_name }}
+          path: ${{ inputs.build_dir }}/${{ runner.os == 'Windows' && inputs.build_type || '' }}/rippled${{ runner.os == 'Windows' && '.exe' || '' }}
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Upload coverage report
+        if: ${{ inputs.cmake_target == 'coverage' }}
+        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
+        with:
+          disable_search: true
+          disable_telem: true
+          fail_ci_if_error: true
+          files: ${{ inputs.build_dir }}/coverage.xml
+          plugins: noop
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
