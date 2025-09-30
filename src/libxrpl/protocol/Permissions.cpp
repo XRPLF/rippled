@@ -147,6 +147,19 @@ Permission::getGranularTxType(GranularPermissionType const& gpType) const
     return std::nullopt;
 }
 
+std::optional<std::reference_wrapper<uint256 const>> const
+Permission::getTxFeature(TxType txType) const
+{
+    auto const txFeaturesIt = txFeatureMap_.find(txType);
+    XRPL_ASSERT(
+        txFeaturesIt != txFeatureMap_.end(),
+        "ripple::Permissions::getTxFeature : tx exists in txFeatureMap_");
+
+    if (txFeaturesIt->second == uint256{})
+        return std::nullopt;
+    return txFeaturesIt->second;
+}
+
 bool
 Permission::isDelegatable(
     std::uint32_t const& permissionValue,

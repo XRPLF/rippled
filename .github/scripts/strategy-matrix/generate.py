@@ -162,7 +162,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
             'config_name': config_name,
             'cmake_args': cmake_args,
             'cmake_target': cmake_target,
-            'build_only': 'true' if build_only else 'false',
+            'build_only': build_only,
             'build_type': build_type,
             'os': os,
             'architecture': architecture,
