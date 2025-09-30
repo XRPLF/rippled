@@ -1730,6 +1730,14 @@ struct Escrow_test : public beast::unit_test::suite
                 fee(txnFees),
                 ter(temDISABLED));
             env.close();
+
+            env(escrowCreate,
+                escrow::finish_function(wasmHex),
+                escrow::cancel_time(env.now() + 100s),
+                escrow::data("00112233"),
+                fee(txnFees),
+                ter(temDISABLED));
+            env.close();
         }
 
         {
@@ -1751,6 +1759,45 @@ struct Escrow_test : public beast::unit_test::suite
             std::string longWasmHex = "00112233445566778899AA";
             env(escrowCreate,
                 escrow::finish_function(longWasmHex),
+                escrow::cancel_time(env.now() + 100s),
+                fee(txnFees),
+                ter(temMALFORMED));
+            env.close();
+        }
+
+        {
+            // Data without FinishFunction
+            Env env(*this, features);
+            XRPAmount const txnFees = env.current()->fees().base + 100000;
+            // create escrow
+            env.fund(XRP(5000), alice, carol);
+
+            auto escrowCreate = escrow::create(alice, carol, XRP(500));
+
+            // 11-byte string
+            std::string longData(4, 'A');
+            env(escrowCreate,
+                escrow::data(longData),
+                escrow::finish_time(env.now() + 100s),
+                fee(txnFees),
+                ter(temMALFORMED));
+            env.close();
+        }
+
+        {
+            // Data > max length
+            Env env(*this, features);
+            XRPAmount const txnFees = env.current()->fees().base + 100000;
+            // create escrow
+            env.fund(XRP(5000), alice, carol);
+
+            auto escrowCreate = escrow::create(alice, carol, XRP(500));
+
+            // 11-byte string
+            std::string longData(maxWasmDataLength * 2 + 2, 'B');
+            env(escrowCreate,
+                escrow::data(longData),
+                escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
                 fee(txnFees),
                 ter(temMALFORMED));

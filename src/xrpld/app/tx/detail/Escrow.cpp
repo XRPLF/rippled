@@ -137,7 +137,8 @@ EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfFinishFunction) &&
+    if ((ctx.tx.isFieldPresent(sfFinishFunction) ||
+         ctx.tx.isFieldPresent(sfData)) &&
         !ctx.rules.enabled(featureSmartEscrow))
     {
         JLOG(ctx.j.debug()) << "SmartEscrow not enabled";
@@ -219,6 +220,22 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         if (condition->type != Type::preimageSha256 &&
             !ctx.rules.enabled(featureCryptoConditionsSuite))
             return temDISABLED;
+    }
+
+    if (ctx.tx.isFieldPresent(sfData))
+    {
+        if (!ctx.tx.isFieldPresent(sfFinishFunction))
+        {
+            JLOG(ctx.j.debug())
+                << "EscrowCreate with Data requires FinishFunction";
+            return temMALFORMED;
+        }
+        auto const data = ctx.tx.getFieldVL(sfData);
+        if (data.size() > maxWasmDataLength)
+        {
+            JLOG(ctx.j.debug()) << "EscrowCreate.Data bad size " << data.size();
+            return temMALFORMED;
+        }
     }
 
     if (ctx.tx.isFieldPresent(sfFinishFunction))
