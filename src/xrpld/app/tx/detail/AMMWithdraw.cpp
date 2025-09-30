@@ -30,11 +30,11 @@
 
 namespace ripple {
 
-NotTEC
-AMMWithdraw::preflight(PreflightContext const& ctx)
+bool
+AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (!ammEnabled(ctx.rules))
-        return temDISABLED;
+        return false;
 
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
@@ -44,18 +44,24 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
          ctx.tx[sfAsset2].holds<MPTIssue>() ||
          (amount && amount->holds<MPTIssue>()) ||
          (amount2 && amount2->holds<MPTIssue>())))
-        return temDISABLED;
+        return false;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+    return true;
+}
 
+std::uint32_t
+AMMWithdraw::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfWithdrawMask;
+}
+
+NotTEC
+AMMWithdraw::preflight(PreflightContext const& ctx)
+{
     auto const flags = ctx.tx.getFlags();
-    if (flags & tfWithdrawMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
-        return temINVALID_FLAG;
-    }
 
+    auto const amount = ctx.tx[~sfAmount];
+    auto const amount2 = ctx.tx[~sfAmount2];
     auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokenIn];
     // Valid combinations are:
@@ -160,7 +166,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 static std::optional<STAmount>

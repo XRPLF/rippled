@@ -30,26 +30,22 @@
 
 namespace ripple {
 
-NotTEC
-CreateCheck::preflight(PreflightContext const& ctx)
+bool
+CreateCheck::checkExtraFeatures(const ripple::PreflightContext& ctx)
 {
     if (!ctx.rules.enabled(featureChecks))
-        return temDISABLED;
+        return false;
 
     if (!ctx.rules.enabled(featureMPTokensV2) &&
         ctx.tx[sfSendMax].holds<MPTIssue>())
-        return temDISABLED;
+        return false;
 
-    NotTEC const ret{preflight1(ctx)};
-    if (!isTesSuccess(ret))
-        return ret;
+    return true;
+}
 
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        // There are no flags (other than universal) for CreateCheck yet.
-        JLOG(ctx.j.warn()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
+NotTEC
+CreateCheck::preflight(PreflightContext const& ctx)
+{
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
     {
         // They wrote a check to themselves.
@@ -82,7 +78,7 @@ CreateCheck::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

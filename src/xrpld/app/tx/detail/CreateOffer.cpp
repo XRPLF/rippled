@@ -44,34 +44,40 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
 }
 
-NotTEC
-CreateOffer::preflight(PreflightContext const& ctx)
+bool
+CreateOffer::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfDomainID) &&
         !ctx.rules.enabled(featurePermissionedDEX))
-        return temDISABLED;
+        return false;
 
     if (!ctx.rules.enabled(featureMPTokensV2) &&
         (ctx.tx[sfTakerPays].holds<MPTIssue>() ||
          ctx.tx[sfTakerGets].holds<MPTIssue>()))
-        return temDISABLED;
+        return false;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+    return true;
+}
 
+std::uint32_t
+CreateOffer::getFlagsMask(PreflightContext const& ctx)
+{
+    // The tfOfferCreateMask is built assuming that PermissionedDEX is
+    // enabled
+    if (ctx.rules.enabled(featurePermissionedDEX))
+        return tfOfferCreateMask;
+    // If PermissionedDEX is not enabled, add tfHybrid to the mask,
+    // indicating it is not allowed.
+    return tfOfferCreateMask | tfHybrid;
+}
+
+NotTEC
+CreateOffer::preflight(PreflightContext const& ctx)
+{
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
     std::uint32_t const uTxFlags = tx.getFlags();
-
-    if (uTxFlags & tfOfferCreateMask)
-    {
-        JLOG(j.debug()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
-
-    if (!ctx.rules.enabled(featurePermissionedDEX) && tx.isFlag(tfHybrid))
-        return temINVALID_FLAG;
 
     if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
         return temINVALID_FLAG;
@@ -142,7 +148,7 @@ CreateOffer::preflight(PreflightContext const& ctx)
         return temBAD_ISSUER;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

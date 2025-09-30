@@ -101,6 +101,22 @@ Permission::getInstance()
     return instance;
 }
 
+std::optional<std::string>
+Permission::getPermissionName(std::uint32_t const value) const
+{
+    auto const permissionValue = static_cast<GranularPermissionType>(value);
+    if (auto const granular = getGranularName(permissionValue))
+        return *granular;
+
+    // not a granular permission, check if it maps to a transaction type
+    auto const txType = permissionToTxType(value);
+    if (auto const* item = TxFormats::getInstance().findByType(txType);
+        item != nullptr)
+        return item->getName();
+
+    return std::nullopt;
+}
+
 std::optional<std::uint32_t>
 Permission::getGranularValue(std::string const& name) const
 {
@@ -131,6 +147,19 @@ Permission::getGranularTxType(GranularPermissionType const& gpType) const
     return std::nullopt;
 }
 
+std::optional<std::reference_wrapper<uint256 const>> const
+Permission::getTxFeature(TxType txType) const
+{
+    auto const txFeaturesIt = txFeatureMap_.find(txType);
+    XRPL_ASSERT(
+        txFeaturesIt != txFeatureMap_.end(),
+        "ripple::Permissions::getTxFeature : tx exists in txFeatureMap_");
+
+    if (txFeaturesIt->second == uint256{})
+        return std::nullopt;
+    return txFeaturesIt->second;
+}
+
 bool
 Permission::isDelegatable(
     std::uint32_t const& permissionValue,
@@ -150,16 +179,12 @@ Permission::isDelegatable(
         if (it == delegatableTx_.end())
             return false;
 
-        auto const txFeaturesIt = txFeatureMap_.find(txType);
-        XRPL_ASSERT(
-            txFeaturesIt != txFeatureMap_.end(),
-            "ripple::Permissions::isDelegatable : tx exists in txFeatureMap_");
+        auto const feature = getTxFeature(txType);
 
         // fixDelegateV1_1: Delegation is only allowed if the required amendment
         // for the transaction is enabled. For transactions that do not require
         // an amendment, delegation is always allowed.
-        if (txFeaturesIt->second != uint256{} &&
-            !rules.enabled(txFeaturesIt->second))
+        if (feature && !rules.enabled(*feature))
             return false;
     }
 

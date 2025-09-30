@@ -65,20 +65,37 @@ getMaxSourceAmount(
             dstAmount < beast::zero);
 }
 
-NotTEC
-Payment::preflight(PreflightContext const& ctx)
+bool
+Payment::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
         !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
-
+        return false;
     if (ctx.tx.isFieldPresent(sfDomainID) &&
         !ctx.rules.enabled(featurePermissionedDEX))
-        return temDISABLED;
+        return false;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+    return true;
+}
 
+std::uint32_t
+Payment::getFlagsMask(PreflightContext const& ctx)
+{
+    auto& tx = ctx.tx;
+
+    STAmount const dstAmount(tx.getFieldAmount(sfAmount));
+    bool const isDstMPT = dstAmount.holds<MPTIssue>();
+    bool const MPTokensV2 = ctx.rules.enabled(featureMPTokensV2);
+
+    std::uint32_t paymentMask =
+        (isDstMPT && !MPTokensV2) ? tfMPTPaymentMaskV1 : tfPaymentMask;
+
+    return paymentMask;
+}
+
+NotTEC
+Payment::preflight(PreflightContext const& ctx)
+{
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -90,15 +107,6 @@ Payment::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     std::uint32_t const txFlags = tx.getFlags();
-
-    std::uint32_t paymentMask =
-        (isDstMPT && !MPTokensV2) ? tfMPTPaymentMaskV1 : tfPaymentMask;
-
-    if (txFlags & paymentMask)
-    {
-        JLOG(j.trace()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
 
     if (!MPTokensV2 && isDstMPT && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
@@ -250,7 +258,7 @@ Payment::preflight(PreflightContext const& ctx)
         !isTesSuccess(err))
         return err;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

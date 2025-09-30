@@ -27,30 +27,27 @@
 
 namespace ripple {
 
-NotTEC
-AMMVote::preflight(PreflightContext const& ctx)
+bool
+AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
+    if (ammEnabled(ctx.rules))
+        return false;
 
     if (!ctx.rules.enabled(featureMPTokensV2) &&
         (ctx.tx[sfAsset].holds<MPTIssue>() ||
          ctx.tx[sfAsset2].holds<MPTIssue>()))
-        return temDISABLED;
+        return false;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+    return true;
+}
 
+NotTEC
+AMMVote::preflight(PreflightContext const& ctx)
+{
     if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid asset pair.";
         return res;
-    }
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Vote: invalid flags.";
-        return temINVALID_FLAG;
     }
 
     if (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD)
@@ -59,7 +56,7 @@ AMMVote::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

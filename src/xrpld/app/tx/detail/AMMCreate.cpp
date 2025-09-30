@@ -33,27 +33,24 @@
 
 namespace ripple {
 
+bool
+AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
+{
+    if (!ammEnabled(ctx.rules))
+        return false;
+
+    if (!ctx.rules.enabled(featureMPTokensV2) &&
+        (ctx.tx[sfAmount].holds<MPTIssue>() || ctx.tx[sfAmount2].holds<MPTIssue>()))
+        return false;
+
+    return true;
+}
+
 NotTEC
 AMMCreate::preflight(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
-
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
-
-    if (!ctx.rules.enabled(featureMPTokensV2) &&
-        (amount.holds<MPTIssue>() || amount2.holds<MPTIssue>()))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Instance: invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     if (amount.asset() == amount2.asset())
     {
@@ -80,14 +77,14 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 XRPAmount
 AMMCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // The fee required for AMMCreate is one owner reserve.
-    return view.fees().increment;
+    return calculateOwnerReserveFee(view, tx);
 }
 
 TER

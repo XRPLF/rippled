@@ -33,28 +33,31 @@
 
 namespace ripple {
 
-NotTEC
-AMMClawback::preflight(PreflightContext const& ctx)
+std::uint32_t
+AMMClawback::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfAMMClawbackMask;
+}
+
+bool
+AMMClawback::checkExtraFeatures(const ripple::PreflightContext& ctx)
 {
     if (!ctx.rules.enabled(featureAMMClawback))
-        return temDISABLED;
+        return false;
 
     std::optional<STAmount> const clawAmount = ctx.tx[~sfAmount];
-    auto const asset = ctx.tx[sfAsset];
-    auto const asset2 = ctx.tx[sfAsset2];
 
     if (!ctx.rules.enabled(featureMPTokensV2) &&
         ((clawAmount && clawAmount->holds<MPTIssue>()) ||
-         asset.holds<MPTIssue>() || asset2.holds<MPTIssue>()))
-        return temDISABLED;
+         ctx.tx[sfAsset].holds<MPTIssue>() || ctx.tx[sfAsset2].holds<MPTIssue>()))
+        return false;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;  // LCOV_EXCL_LINE
+    return true;
+}
 
-    auto const flags = ctx.tx.getFlags();
-    if (flags & tfAMMClawbackMask)
-        return temINVALID_FLAG;
-
+NotTEC
+AMMClawback::preflight(PreflightContext const& ctx)
+{
     AccountID const issuer = ctx.tx[sfAccount];
     AccountID const holder = ctx.tx[sfHolder];
 
@@ -65,8 +68,14 @@ AMMClawback::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
+    std::optional<STAmount> const clawAmount = ctx.tx[~sfAmount];
+    auto const asset = ctx.tx[sfAsset];
+    auto const asset2 = ctx.tx[sfAsset2];
+
     if (isXRP(asset))
         return temMALFORMED;
+
+    auto const flags = ctx.tx.getFlags();
 
     if (flags & tfClawTwoAssets && asset.getIssuer() != asset2.getIssuer())
     {
@@ -93,7 +102,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
     if (clawAmount && *clawAmount <= beast::zero)
         return temBAD_AMOUNT;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
