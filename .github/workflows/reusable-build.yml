@@ -76,23 +76,29 @@ jobs:
       - name: Configure CMake
         shell: bash
         working-directory: ${{ inputs.build_dir }}
+        env:
+          BUILD_TYPE: ${{ inputs.build_type }}
+          CMAKE_ARGS: ${{ inputs.cmake_args }}
         run: |
           cmake \
             -G '${{ runner.os == 'Windows' && 'Visual Studio 17 2022' || 'Ninja' }}' \
             -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
-            -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
-            ${{ inputs.cmake_args }} \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+            ${{ env.CMAKE_ARGS }} \
             ..
 
       - name: Build the binary
         shell: bash
         working-directory: ${{ inputs.build_dir }}
+        env:
+          BUILD_TYPE: ${{ inputs.build_type }}
+          CMAKE_TARGET: ${{ inputs.cmake_target }}
         run: |
           cmake \
             --build . \
-            --config ${{ inputs.build_type }} \
+            --config ${{ env.BUILD_TYPE }} \
             --parallel $(nproc) \
-            --target ${{ inputs.cmake_target }}
+            --target ${{ env.CMAKE_TARGET }}
 
       - name: Upload rippled artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
