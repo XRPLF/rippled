@@ -46,8 +46,11 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 bool
 CreateOffer::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return (!ctx.tx.isFieldPresent(sfDomainID)) ||
-        ctx.rules.enabled(featurePermissionedDEX);
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDEX))
+        return false;
+
+    return true;
 }
 
 std::uint32_t
