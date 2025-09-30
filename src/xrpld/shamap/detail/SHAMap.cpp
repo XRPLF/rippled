@@ -354,7 +354,7 @@ SHAMap::descend(SHAMapInnerNode& parent, int branch) const
     {
         node = fetchNode(parent.getChildHash(branch));
     }
-    catch (SHAMapMissingNode)
+    catch (SHAMapMissingNode const&)
     {
         return {};
     }

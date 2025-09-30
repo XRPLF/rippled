@@ -383,7 +383,7 @@ public:
                     uint256("00000000000000000000000000000000000000000000000000"
                             "00000000000002"));
             }
-            catch (SHAMapMissingNode)
+            catch (SHAMapMissingNode const&)
             {
                 hasThrown = true;
             }
