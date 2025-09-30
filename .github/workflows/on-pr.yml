@@ -50,8 +50,8 @@ jobs:
           files: |
             # These paths are unique to `on-pr.yml`.
             .github/scripts/levelization/**
-            .github/workflows/check-levelization.yml
-            .github/workflows/notify-clio.yml
+            .github/workflows/reusable-check-levelization.yml
+            .github/workflows/reusable-notify-clio.yml
             .github/workflows/on-pr.yml
 
             # Keep the paths below in sync with those in `on-trigger.yml`.
@@ -59,7 +59,7 @@ jobs:
             .github/actions/build-test/**
             .github/actions/setup-conan/**
             .github/scripts/strategy-matrix/**
-            .github/workflows/build-test.yml
+            .github/workflows/reusable-build-test.yml
             .github/workflows/reusable-strategy-matrix.yml
             .codecov.yml
             cmake/**
@@ -93,12 +93,12 @@ jobs:
   check-levelization:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
-    uses: ./.github/workflows/check-levelization.yml
+    uses: ./.github/workflows/reusable-check-levelization.yml
 
   build-test:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
-    uses: ./.github/workflows/build-test.yml
+    uses: ./.github/workflows/reusable-build-test.yml
     strategy:
       matrix:
         os: [linux, macos, windows]
@@ -112,7 +112,7 @@ jobs:
       - should-run
       - build-test
     if: ${{ needs.should-run.outputs.go == 'true' && contains(fromJSON('["release", "master"]'), github.ref_name) }}
-    uses: ./.github/workflows/notify-clio.yml
+    uses: ./.github/workflows/reusable-notify-clio.yml
     secrets:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}

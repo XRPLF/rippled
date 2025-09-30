@@ -39,22 +39,22 @@
 
 namespace ripple {
 
-NotTEC
-DeleteAccount::preflight(PreflightContext const& ctx)
+bool
+DeleteAccount::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureDeletableAccounts))
-        return temDISABLED;
+        return false;
 
     if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
         !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
+        return false;
 
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
+    return true;
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
+NotTEC
+DeleteAccount::preflight(PreflightContext const& ctx)
+{
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         // An account cannot be deleted and give itself the resulting XRP.
         return temDST_IS_SRC;
@@ -63,14 +63,14 @@ DeleteAccount::preflight(PreflightContext const& ctx)
         !isTesSuccess(err))
         return err;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 XRPAmount
 DeleteAccount::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // The fee required for AccountDelete is one owner reserve.
-    return view.fees().increment;
+    return calculateOwnerReserveFee(view, tx);
 }
 
 namespace {

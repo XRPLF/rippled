@@ -36,6 +36,9 @@ public:
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
     static NotTEC
     preflight(PreflightContext const& ctx);
 
@@ -62,6 +65,9 @@ public:
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
     static NotTEC
     preflight(PreflightContext const& ctx);
 
@@ -81,6 +87,12 @@ public:
     explicit PayChanClaim(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
+
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);

@@ -83,6 +83,12 @@ Serializer::addInteger(std::uint64_t i)
 {
     return add64(i);
 }
+template <>
+int
+Serializer::addInteger(std::int32_t i)
+{
+    return add32(i);
+}
 
 int
 Serializer::addRaw(Blob const& vector)
