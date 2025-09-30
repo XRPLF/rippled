@@ -786,24 +786,26 @@ Transactor::checkSign(
         return tesSUCCESS;
     }
 
-    // If the pk is empty and not simulate or simulate and signers,
-    // then we must be multi-signing.
-    if (ctx.tx.isFieldPresent(sfSigners))
+    if (sigObject.isFieldPresent(sfSponsor))
     {
-        return checkMultiSign(ctx, idAccount, sigObject);
-    }
-
-    if (ctx.tx.isFieldPresent(sfSponsor))
-    {
-        auto const sponsorObj = ctx.tx.getFieldObject(sfSponsor);
+        auto const sponsorObj = sigObject.getFieldObject(sfSponsor);
         auto const isCoSigned = sponsorObj.isFieldPresent(sfTxnSignature) ||
             !sponsorObj.getFieldVL(sfSigningPubKey).empty() ||
             sponsorObj.isFieldPresent(sfSigners);
         if (isCoSigned)
         {
-            if (auto const ret = checkSponsorSign(ctx); !isTesSuccess(ret))
+            auto const sponsorAcc = sponsorObj.getAccountID(sfAccount);
+            if (auto const ret = checkSign(ctx, sponsorAcc, sponsorObj);
+                !isTesSuccess(ret))
                 return ret;
         }
+    }
+
+    // If the pk is empty and not simulate or simulate and signers,
+    // then we must be multi-signing.
+    if (sigObject.isFieldPresent(sfSigners))
+    {
+        return checkMultiSign(ctx, idAccount, sigObject);
     }
 
     // Check Single Sign
@@ -877,52 +879,6 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
                 return ret;
         }
     }
-    return ret;
-}
-
-NotTEC
-Transactor::checkSponsorSign(PreclaimContext const& ctx)
-{
-    NotTEC ret = tesSUCCESS;
-
-    if (!ctx.tx.isFieldPresent(sfSponsor))
-        return tesSUCCESS;
-
-    auto const sponsorObj = ctx.tx.getFieldObject(sfSponsor);
-
-    auto const sponsorAcc = sponsorObj.getAccountID(sfAccount);
-    Blob const& pkSigner = sponsorObj.getFieldVL(sfSigningPubKey);
-
-    auto const sleAccount = ctx.view.read(keylet::account(sponsorAcc));
-    if (!sleAccount)
-        return tefBAD_AUTH;
-
-    if (pkSigner.empty())
-    {
-        STArray const& txSigners(sponsorObj.getFieldArray(sfSigners));
-        for (auto const& txSigner : txSigners)
-        {
-            if (ret = checkMultiSign(ctx, sponsorAcc, txSigner);
-                !isTesSuccess(ret))
-                return ret;
-        }
-    }
-    else
-    {
-        // LCOV_EXCL_START
-        if (!publicKeyType(makeSlice(pkSigner)))
-            return tefBAD_AUTH;
-        // LCOV_EXCL_STOP
-
-        auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
-
-        if (ret = checkSingleSign(ctx, idSigner, sponsorAcc, sleAccount);
-            !isTesSuccess(ret))
-        {
-            return ret;
-        }
-    }
-
     return ret;
 }
 

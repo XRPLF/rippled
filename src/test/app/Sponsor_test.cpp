@@ -227,7 +227,7 @@ public:
             fee(XRP(1)),
             sponsor::as(invalid, tfSponsorReserve),
             sponsor::sig(invalid),
-            ter(tefBAD_AUTH));
+            ter(terNO_ACCOUNT));
 
         // Success
         env(noop(alice),
@@ -273,7 +273,7 @@ public:
             fee(XRP(1)),
             sponsor::as(invalid, tfSponsorReserve),
             sponsor::msig({signer1}),
-            ter(tefBAD_AUTH));
+            ter(tefNOT_MULTI_SIGNING));
 
         env(noop(alice),
             fee(XRP(1)),

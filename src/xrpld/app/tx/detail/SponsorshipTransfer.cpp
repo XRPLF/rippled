@@ -34,16 +34,7 @@ namespace ripple {
 NotTEC
 SponsorshipTransfer::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSponsor))
-        return temDISABLED;
-
-    if (auto const ter = preflight1(ctx))
-        return ter;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 template <typename T>

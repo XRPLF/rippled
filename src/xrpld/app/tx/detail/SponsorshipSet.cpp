@@ -25,20 +25,17 @@
 
 namespace ripple {
 
+std::uint32_t
+SponsorshipSet::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfSponsorshipSetMask;
+}
+
 NotTEC
 SponsorshipSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSponsor))
-        return temDISABLED;
-
-    if (auto const ter = preflight1(ctx))
-        return ter;
-
     // check Flags
     {
-        if (ctx.tx.isFlag(tfSponsorshipSetMask))
-            return temINVALID_FLAG;
-
         if (ctx.tx.isFlag(tfSponsorshipSetRequireSignForFee) &&
             ctx.tx.isFlag(tfSponsorshipClearRequireSignForFee))
             return temINVALID_FLAG;
@@ -123,7 +120,7 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
