@@ -19,9 +19,9 @@
 
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -67,22 +67,19 @@ computeFreezeFlags(
 
 namespace ripple {
 
+std::uint32_t
+SetTrust::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfTrustSetMask;
+}
+
 NotTEC
 SetTrust::preflight(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
     std::uint32_t const uTxFlags = tx.getFlags();
-
-    if (uTxFlags & tfTrustSetMask)
-    {
-        JLOG(j.trace()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
 
     if (!ctx.rules.enabled(featureDeepFreeze))
     {
@@ -127,7 +124,7 @@ SetTrust::preflight(PreflightContext const& ctx)
         return temDST_NEEDED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

@@ -24,13 +24,10 @@ on:
     branches: [develop]
     paths:
       - .github/workflows/upload-conan-deps.yml
-
       - .github/workflows/reusable-strategy-matrix.yml
-
       - .github/actions/build-deps/action.yml
       - .github/actions/setup-conan/action.yml
       - ".github/scripts/strategy-matrix/**"
-
       - conanfile.py
       - conan.lock
 
@@ -56,7 +53,7 @@ jobs:
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
       max-parallel: 10
     runs-on: ${{ matrix.architecture.runner }}
-    container: ${{ contains(matrix.architecture.platform, 'linux') && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version) || null }}
+    container: ${{ contains(matrix.architecture.platform, 'linux') && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}-sha-5dd7158', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version) || null }}
 
     steps:
       - name: Cleanup workspace
@@ -83,9 +80,11 @@ jobs:
           force_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
 
       - name: Log into Conan remote
-        if: github.repository_owner == 'XRPLF' && github.event_name != 'pull_request'
+        if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' }}
         run: conan remote login ${{ env.CONAN_REMOTE_NAME }} "${{ secrets.CONAN_REMOTE_USERNAME }}" --password "${{ secrets.CONAN_REMOTE_PASSWORD }}"
 
       - name: Upload Conan packages
-        if: github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' && github.event_name != 'schedule'
-        run: conan upload "*" -r=${{ env.CONAN_REMOTE_NAME }} --confirm ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
+        if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' && github.event_name != 'schedule' }}
+        env:
+          FORCE_OPTION: ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
+        run: conan upload "*" --remote='${{ env.CONAN_REMOTE_NAME }}' --confirm ${{ env.FORCE_OPTION }}
