@@ -1507,8 +1507,10 @@ trustCreate(
         bSetHigh ? sfHighLimit : sfLowLimit, saLimit);
     sleRippleState->setFieldAmount(
         bSetHigh ? sfLowLimit : sfHighLimit,
-        STAmount(Issue{
-            saBalance.getCurrency(), bSetDst ? uSrcAccountID : uDstAccountID}));
+        STAmount(
+            Issue{
+                saBalance.getCurrency(),
+                bSetDst ? uSrcAccountID : uDstAccountID}));
 
     if (uQualityIn)
         sleRippleState->setFieldU32(
@@ -3299,10 +3301,6 @@ checkLPTokenAuthorization(
     AccountID const& acct,
     uint256 const& ammID)
 {
-    auto const sleAcct = view.read(keylet::account(acct));
-    if (!sleAcct || sleAcct->isFieldPresent(sfAMMID))
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
     auto const sleAmm = view.read(keylet::amm(ammID));
     if (!sleAmm)
         return tecINTERNAL;  // LCOV_EXCL_LINE
