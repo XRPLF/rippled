@@ -19,6 +19,8 @@
 
 #include <test/jtx.h>
 
+#include <xrpld/app/tx/apply.h>
+
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
@@ -579,6 +581,32 @@ public:
     }
 
     void
+    testBadSigningKey()
+    {
+        using namespace test::jtx;
+        testcase("Bad signing key");
+        Env env(*this);
+        Account const alice("alice");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto jtx = env.jt(noop("alice"), ter(temBAD_SIGNATURE));
+        if (!BEAST_EXPECT(jtx.stx))
+            return;
+        auto stx = std::make_shared<STTx>(*jtx.stx);
+        stx->at(sfSigningPubKey) = makeSlice(std::string("badkey"));
+
+        env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            auto const result =
+                ripple::apply(env.app(), view, *stx, tapNONE, j);
+            BEAST_EXPECT(result.ter == temBAD_SIGNATURE);
+            BEAST_EXPECT(!result.applied);
+            return result.applied;
+        });
+    }
+
+    void
     run() override
     {
         testNullAccountSet();
@@ -594,6 +622,7 @@ public:
         testRequireAuthWithDir();
         testTransferRate();
         testTicket();
+        testBadSigningKey();
     }
 };
 
