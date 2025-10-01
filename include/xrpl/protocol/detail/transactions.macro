@@ -717,7 +717,7 @@ TRANSACTION(ttBATCH, 71, Batch,
 
 // /** This transaction type converts into confidential MPT balance. */
 // TRANSACTION(ttCONFIDENTIAL_CONVERT, 72, ConfidentialConvert,
-//     Delegation::delegatable, 
+//     Delegation::delegatable,
 //     featureConfidentialTransfer,
 //     ({
 //     {sfMPTokenIssuanceID, soeREQUIRED},
