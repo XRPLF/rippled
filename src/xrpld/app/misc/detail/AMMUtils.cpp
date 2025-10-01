@@ -249,7 +249,7 @@ ammAccountHolds(
 }
 
 static TER
-deleteAMMObjects(
+deleteAMMTrustLines(
     Sandbox& sb,
     AccountID const& ammAccountID,
     std::uint16_t maxTrustlinesToDelete,
@@ -261,27 +261,11 @@ deleteAMMObjects(
         [&](LedgerEntryType nodeType,
             uint256 const&,
             std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
-            // Skip AMM
-            if (nodeType == LedgerEntryType::ltAMM)
+            // Skip AMM and MPToken
+            if (nodeType == ltAMM || nodeType == ltMPTOKEN)
                 return {tesSUCCESS, SkipEntry::Yes};
 
-            if (nodeType == ltMPTOKEN)
-            {
-                // MPT must have zero balance
-                if (sleItem->getFieldU64(sfMPTAmount) != 0)
-                {
-                    // LCOV_EXCL_START
-                    JLOG(j.error()) << "deleteAMMObjects: deleting MPT with "
-                                       "non-zero balance.";
-                    return {tecINTERNAL, SkipEntry::No};
-                    // LCOV_EXCL_STOP
-                }
-
-                return {
-                    deleteAMMMPToken(sb, sleItem, ammAccountID, j),
-                    SkipEntry::No};
-            }
-            else if (nodeType == LedgerEntryType::ltRIPPLE_STATE)
+            if (nodeType == ltRIPPLE_STATE)
             {
                 // Trustlines must have zero balance
                 if (sleItem->getFieldAmount(sfBalance) != beast::zero)
@@ -307,6 +291,55 @@ deleteAMMObjects(
         },
         j,
         maxTrustlinesToDelete);
+}
+
+static TER
+deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
+{
+    return cleanupOnAccountDelete(
+        sb,
+        keylet::ownerDir(ammAccountID),
+        [&](LedgerEntryType nodeType,
+            uint256 const&,
+            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            // Skip AMM
+            if (nodeType == ltAMM)
+                return {tesSUCCESS, SkipEntry::Yes};
+
+            if (nodeType == ltMPTOKEN)
+            {
+                // MPT must have zero balance
+                if (sleItem->getFieldU64(sfMPTAmount) != 0)
+                {
+                    // LCOV_EXCL_START
+                    JLOG(j.error()) << "deleteAMMObjects: deleting MPT with "
+                                       "non-zero balance.";
+                    return {tecINTERNAL, SkipEntry::No};
+                    // LCOV_EXCL_STOP
+                }
+
+                return {
+                    deleteAMMMPToken(sb, sleItem, ammAccountID, j),
+                    SkipEntry::No};
+            }
+            else if (nodeType == ltRIPPLE_STATE)
+            {
+                // Trustlines should have been deleted
+                // LCOV_EXCL_START
+                JLOG(j.error())
+                    << "deleteAMMObjects: trustlines should have been deleted";
+                return {tecINTERNAL, SkipEntry::No};
+                // LCOV_EXCL_STOP
+            }
+            // LCOV_EXCL_START
+            JLOG(j.error())
+                << "deleteAMMObjects: deleting non-trustline or non-MPT "
+                << nodeType;
+            return {tecINTERNAL, SkipEntry::No};
+            // LCOV_EXCL_STOP
+        },
+        j,
+        3);  // At most two MPToken plus AMM object
 }
 
 TER
@@ -338,7 +371,14 @@ deleteAMMAccount(
     }
 
     if (auto const ter =
-            deleteAMMObjects(sb, ammAccountID, maxDeletableAMMTrustLines, j);
+            deleteAMMTrustLines(sb, ammAccountID, maxDeletableAMMTrustLines, j);
+        ter != tesSUCCESS)
+        return ter;
+
+    // Delete AMM's MPTokens only if all trustlines are deleted. If trustlines
+    // are not deleted then AMM can be re-created with Deposit and
+    // AMM's MPToken(s) must exist.
+    if (auto const ter = deleteAMMMPTokens(sb, ammAccountID, j);
         ter != tesSUCCESS)
         return ter;
 

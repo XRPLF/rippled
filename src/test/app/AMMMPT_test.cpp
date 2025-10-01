@@ -3665,6 +3665,17 @@ private:
                     ter(terNO_AMM));
             },
             {{XRP(10'000), AMMMPT(10'000)}});
+
+        // MPTokenInstance object doesn't exist
+        {
+            Env env(*this);
+            env.fund(XRP(1'000), alice);
+            env(AMM::votejv(
+                    {.account = alice,
+                     .tfee = 1'000,
+                     .assets = {{XRP, MPT(alice, 0)}}}),
+                ter(terNO_AMM));
+        }
     }
 
     void
@@ -7648,6 +7659,143 @@ private:
     }
 
     void
+    testAutoDelete()
+    {
+        testcase("Auto Delete");
+
+        using namespace jtx;
+        FeatureBitset const all{testable_amendments()};
+
+        {
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = XRPAmount(1);
+                    return cfg;
+                }),
+                all);
+            env.fund(XRP(1'000), gw, alice);
+            MPTTester USD(
+                {.env = env, .issuer = gw, .holders = {alice}, .pay = 20'000});
+            MPTTester BTC(
+                {.env = env, .issuer = gw, .holders = {alice}, .pay = 20'000});
+            AMM amm(env, gw, USD(10'000), BTC(10'000));
+            for (auto i = 0; i < maxDeletableAMMTrustLines + 10; ++i)
+            {
+                Account const a{std::to_string(i)};
+                env.fund(XRP(1'000), a);
+                env(trust(a, STAmount{amm.lptIssue(), 10'000}));
+                env.close();
+            }
+            // The trustlines are partially deleted,
+            // AMM is set to an empty state.
+            amm.withdrawAll(gw);
+            BEAST_EXPECT(amm.ammExists());
+
+            // Bid,Vote,Deposit,Withdraw,SetTrust failing with
+            // tecAMM_EMPTY. Deposit succeeds with tfTwoAssetIfEmpty option.
+            env(amm.bid({
+                    .account = alice,
+                    .bidMin = 1000,
+                }),
+                ter(tecAMM_EMPTY));
+            amm.vote({.account = alice, .tfee = 100, .err = ter(tecAMM_EMPTY)});
+            amm.withdraw(
+                {.account = alice, .tokens = 100, .err = ter(tecAMM_EMPTY)});
+            amm.deposit(
+                {.account = alice,
+                 .asset1In = USD(100),
+                 .err = ter(tecAMM_EMPTY)});
+            env(trust(alice, STAmount{amm.lptIssue(), 10'000}),
+                ter(tecAMM_EMPTY));
+
+            // Can deposit with tfTwoAssetIfEmpty option
+            amm.deposit(
+                {.account = alice,
+                 .asset1In = USD(1'000),
+                 .asset2In = BTC(1'000),
+                 .flags = tfTwoAssetIfEmpty,
+                 .tfee = 1'000});
+            return;
+            BEAST_EXPECT(
+                amm.expectBalances(USD(11'000), BTC(11'000), amm.tokens()));
+            BEAST_EXPECT(amm.expectTradingFee(1'000));
+            BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
+
+            // Withdrawing all tokens deletes AMM since the number
+            // of remaining trustlines is less than max
+            amm.withdrawAll(alice);
+            BEAST_EXPECT(!amm.ammExists());
+            BEAST_EXPECT(!env.le(keylet::ownerDir(amm.ammAccount())));
+        }
+
+        {
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = XRPAmount(1);
+                    return cfg;
+                }),
+                all);
+            env.fund(XRP(1'000), gw, alice);
+            MPTTester USD(
+                {.env = env, .issuer = gw, .holders = {alice}, .pay = 20'000});
+            MPTTester BTC(
+                {.env = env, .issuer = gw, .holders = {alice}, .pay = 20'000});
+            AMM amm(env, gw, USD(10'000), BTC(10'000));
+            for (auto i = 0; i < maxDeletableAMMTrustLines * 2 + 10; ++i)
+            {
+                Account const a{std::to_string(i)};
+                env.fund(XRP(1'000), a);
+                env(trust(a, STAmount{amm.lptIssue(), 10'000}));
+                env.close();
+            }
+            // The trustlines are partially deleted.
+            amm.withdrawAll(gw);
+            BEAST_EXPECT(amm.ammExists());
+
+            // AMMDelete has to be called twice to delete AMM.
+            amm.ammDelete(alice, ter(tecINCOMPLETE));
+            BEAST_EXPECT(amm.ammExists());
+            // Deletes remaining trustlines and deletes AMM.
+            amm.ammDelete(alice);
+            BEAST_EXPECT(!amm.ammExists());
+            BEAST_EXPECT(!env.le(keylet::ownerDir(amm.ammAccount())));
+
+            // Try redundant delete
+            amm.ammDelete(alice, ter(terNO_AMM));
+        }
+
+        {
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = XRPAmount(1);
+                    return cfg;
+                }),
+                all);
+            env.fund(XRP(1'000), gw, alice, carol);
+            MPTTester USD(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol},
+                 .pay = 20'000});
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol},
+                 .pay = 20'000});
+            AMM amm(env, gw, USD(10'000), BTC(10'000));
+            amm.deposit({.account = alice, .tokens = 1'000});
+            amm.deposit({.account = carol, .tokens = 1'000});
+            amm.withdrawAll(alice);
+            amm.withdrawAll(carol);
+            amm.withdrawAll(gw);
+            BEAST_EXPECT(!amm.ammExists());
+        }
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::testable_amendments()};
@@ -7681,6 +7829,7 @@ private:
         testLPTokenBalance(all);
         testLPTokenBalance(all - fixAMMv1_3);
         testAMMDepositWithFrozenAssets();
+        testAutoDelete();
     }
 };
 
