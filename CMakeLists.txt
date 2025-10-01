@@ -85,7 +85,7 @@ endif()
 ###
 
 include(deps/Boost)
-find_package(OpenSSL 1.1.1 REQUIRED)
+find_package(OpenSSL 3.6.0 REQUIRED)
 set_target_properties(OpenSSL::SSL PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS OPENSSL_NO_SSL2
 )

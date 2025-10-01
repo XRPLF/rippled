@@ -1,6 +1,7 @@
 from conan import ConanFile, __version__ as conan_version
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 import re
+import subprocess
 
 class Xrpl(ConanFile):
     name = 'xrpl'
@@ -27,7 +28,7 @@ class Xrpl(ConanFile):
         'grpc/1.50.1',
         'libarchive/3.8.1',
         'nudb/2.0.9',
-        'openssl/1.1.1w',
+        'openssl/3.6.0',
         'soci/4.0.3',
         'zlib/1.3.1',
     ]
@@ -89,6 +90,7 @@ class Xrpl(ConanFile):
     }
 
     def set_version(self):
+        subprocess.run(["conan", "export", f'{self.recipe_folder}/external/openssl-3.6.0/'])
         if self.version is None:
             path = f'{self.recipe_folder}/src/libxrpl/protocol/BuildInfo.cpp'
             regex = r'versionString\s?=\s?\"(.*)\"'
