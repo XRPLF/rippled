@@ -13,13 +13,14 @@ var searchData=
   ['qualityoutpercent_10',['qualityOutPercent',['../classripple_1_1test_1_1jtx_1_1qualityOutPercent.html#aac9ab079677202a19e6c0c6e61eeecde',1,'ripple::test::jtx::qualityOutPercent']]],
   ['qualitythreshold_11',['qualitythreshold',['../classripple_1_1BookOfferCrossingStep.html#af9386ed665aa6773818fa61026f889f3',1,'ripple::BookOfferCrossingStep::qualityThreshold()'],['../classripple_1_1BookPaymentStep.html#acbb2a0f185de4c5fc0258c7f37dc6c9f',1,'ripple::BookPaymentStep::qualityThreshold()']]],
   ['qualityupperbound_12',['qualityupperbound',['../classripple_1_1DirectStepI.html#afc3a13db6014986481c457965d545353',1,'ripple::DirectStepI::qualityUpperBound()'],['../classripple_1_1Step.html#a702aa10aab4edda95b7ec219eeb58754',1,'ripple::Step::qualityUpperBound()'],['../classripple_1_1XRPEndpointStep.html#aee550b5061967ba687b80dd6e8901297',1,'ripple::XRPEndpointStep::qualityUpperBound()'],['../classripple_1_1BookStep.html#ae34588a45abed1c1eeb250976ad360c5',1,'ripple::BookStep::qualityUpperBound()']]],
-  ['queue_13',['queue',['http://en.cppreference.com/w/cpp/container/queue/queue.html',1,'std::queue']]],
-  ['queue_5ftime_14',['queue_time',['../classripple_1_1Job.html#a789f77c51f558ff1373dbef8d206dfa6',1,'ripple::Job']]],
-  ['queue_5ftype_15',['queue_type',['../classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html#a3a52d0e8b9f031946c5295a710a46952',1,'ripple::test::csf::Scheduler::queue_type::queue_type(queue_type const &amp;)=delete'],['../classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html#aeaf2f4315d10d2c2b1ea1552e062ceb9',1,'ripple::test::csf::Scheduler::queue_type::queue_type(boost::container::pmr::monotonic_buffer_resource *alloc)']]],
-  ['queuejob_16',['queueJob',['../classripple_1_1TimeoutCounter.html#a0679c129f5ffcdcf46b6b2ce6f31a553',1,'ripple::TimeoutCounter']]],
-  ['quick_5fexit_17',['quick_exit',['http://en.cppreference.com/w/cpp/utility/program/quick_exit.html',1,'std']]],
-  ['quiet_18',['quiet',['../classripple_1_1Config.html#a9162d3ba9894fc8eb804f573cc631dad',1,'ripple::Config']]],
-  ['quiet_5fnan_19',['quiet_NaN',['http://en.cppreference.com/w/cpp/types/numeric_limits/quiet_NaN.html',1,'std::numeric_limits']]],
-  ['quorum_20',['quorum',['../classripple_1_1ValidatorList.html#ad28f57783826e0b090713c89265c81e4',1,'ripple::ValidatorList']]],
-  ['quoted_21',['quoted',['http://en.cppreference.com/w/cpp/io/manip/quoted.html',1,'std']]]
+  ['query_5ffd_5fstats_13',['query_fd_stats',['../classripple_1_1Door.html#a7bfd4bfa55c4fa62a5362bba63f1281d',1,'ripple::Door']]],
+  ['queue_14',['queue',['http://en.cppreference.com/w/cpp/container/queue/queue.html',1,'std::queue']]],
+  ['queue_5ftime_15',['queue_time',['../classripple_1_1Job.html#a789f77c51f558ff1373dbef8d206dfa6',1,'ripple::Job']]],
+  ['queue_5ftype_16',['queue_type',['../classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html#a3a52d0e8b9f031946c5295a710a46952',1,'ripple::test::csf::Scheduler::queue_type::queue_type(queue_type const &amp;)=delete'],['../classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html#aeaf2f4315d10d2c2b1ea1552e062ceb9',1,'ripple::test::csf::Scheduler::queue_type::queue_type(boost::container::pmr::monotonic_buffer_resource *alloc)']]],
+  ['queuejob_17',['queueJob',['../classripple_1_1TimeoutCounter.html#a0679c129f5ffcdcf46b6b2ce6f31a553',1,'ripple::TimeoutCounter']]],
+  ['quick_5fexit_18',['quick_exit',['http://en.cppreference.com/w/cpp/utility/program/quick_exit.html',1,'std']]],
+  ['quiet_19',['quiet',['../classripple_1_1Config.html#a9162d3ba9894fc8eb804f573cc631dad',1,'ripple::Config']]],
+  ['quiet_5fnan_20',['quiet_NaN',['http://en.cppreference.com/w/cpp/types/numeric_limits/quiet_NaN.html',1,'std::numeric_limits']]],
+  ['quorum_21',['quorum',['../classripple_1_1ValidatorList.html#ad28f57783826e0b090713c89265c81e4',1,'ripple::ValidatorList']]],
+  ['quoted_22',['quoted',['http://en.cppreference.com/w/cpp/io/manip/quoted.html',1,'std']]]
 ];
