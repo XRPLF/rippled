@@ -360,7 +360,7 @@ public:
         beast::IP::Endpoint const& local_endpoint)
     {
         JLOG(m_journal.trace())
-            << beast::leftw(18) << "Logic connected" << slot->fingerprint()
+            << beast::leftw(18) << "Logic connected " << slot->fingerprint()
             << " on local " << local_endpoint;
 
         std::lock_guard _(lock_);
