@@ -160,6 +160,10 @@ doAccountInfo(RPC::JsonContext& context)
                 {
                     // Remove the ID suffix from the field name.
                     name = name.substr(0, name.size() - 2);
+                    XRPL_ASSERT_PARTS(
+                        !name.empty(),
+                        "ripple::doAccountInfo",
+                        "name is not empty")
                 }
                 // ValidPseudoAccounts invariant guarantees that only one field
                 // can be set
