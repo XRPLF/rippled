@@ -150,15 +150,6 @@ LoanManage::defaultLoan(
     auto brokerDebtTotalProxy = brokerSle->at(sfDebtTotal);
     auto const totalDefaultAmount = principalOutstanding + interestOutstanding;
 
-#if LOANDRAW
-    // The default Amount equals the outstanding principal and interest,
-    // excluding any funds unclaimed by the Borrower.
-    auto loanAssetsAvailableProxy = loanSle->at(sfAssetsAvailable);
-    auto const defaultAmount = totalDefaultAmount - loanAssetsAvailableProxy;
-#else
-    // TODO: get rid of this and just use totalDefaultAmount
-    auto const defaultAmount = totalDefaultAmount;
-#endif
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     TenthBips32 const coverRateLiquidation{
@@ -170,14 +161,10 @@ LoanManage::defaultLoan(
                 tenthBipsOfValue(
                     brokerDebtTotalProxy.value(), coverRateMinimum),
                 coverRateLiquidation),
-            defaultAmount),
+            totalDefaultAmount),
         originalPrincipalRequested);
-#if LOANDRAW
-    auto const returnToVault = defaultCovered + loanAssetsAvailableProxy;
-#else
-    auto const returnToVault = defaultCovered;
-#endif
-    auto const vaultDefaultAmount = defaultAmount - defaultCovered;
+
+    auto const vaultDefaultAmount = totalDefaultAmount - defaultCovered;
 
     // Update the Vault object:
 
@@ -195,7 +182,7 @@ LoanManage::defaultLoan(
         vaultAssetsTotalProxy -= vaultDefaultAmount;
         // Increase the Asset Available of the Vault by liquidated First-Loss
         // Capital and any unclaimed funds amount:
-        vaultSle->at(sfAssetsAvailable) += returnToVault;
+        vaultSle->at(sfAssetsAvailable) += defaultCovered;
         // The loss has been realized
         if (loanSle->isFlag(lsfLoanImpaired))
         {
@@ -241,9 +228,6 @@ LoanManage::defaultLoan(
     // Update the Loan object:
     loanSle->setFlag(lsfLoanDefault);
     loanSle->at(sfPaymentRemaining) = 0;
-#if LOANDRAW
-    loanAssetsAvailableProxy = 0;
-#endif
     loanSle->at(sfPrincipalOutstanding) = 0;
     view.update(loanSle);
 
@@ -253,7 +237,7 @@ LoanManage::defaultLoan(
         view,
         brokerSle->at(sfAccount),
         vaultSle->at(sfAccount),
-        STAmount{vaultAsset, returnToVault},
+        STAmount{vaultAsset, defaultCovered},
         j,
         WaiveTransferFee::Yes);
 }

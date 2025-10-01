@@ -563,11 +563,6 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfPreviousPaymentDate,  soeREQUIRED},
     {sfNextPaymentDueDate,   soeREQUIRED},
     {sfPaymentRemaining,     soeREQUIRED},
-//#if LOANDRAW
-// TODO: Remove this when you remove the rest of the LOANDRAW blocks.
-// Directives don't work with macro expansion.
-    {sfAssetsAvailable,      soeDEFAULT},
-//#endif
     {sfPrincipalOutstanding, soeREQUIRED},
     // Save the original request amount for rounding / scaling of
     // other computations, particularly for IOUs

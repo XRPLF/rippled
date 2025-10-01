@@ -101,23 +101,6 @@ LoanDelete::doApply()
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-#if LOANDRAW
-    // transfer any remaining funds to the borrower
-    auto const vaultAsset = vaultSle->at(sfAsset);
-    auto assetsAvailableProxy = loanSle->at(sfAssetsAvailable);
-    if (assetsAvailableProxy != 0)
-    {
-        if (auto const ter = accountSend(
-                view,
-                brokerPseudoAccount,
-                borrower,
-                STAmount{vaultAsset, assetsAvailableProxy},
-                j_,
-                WaiveTransferFee::Yes))
-            return ter;
-    }
-#endif
-
     // Remove LoanID from Directory of the LoanBroker pseudo-account.
     if (!view.dirRemove(
             keylet::ownerDir(brokerPseudoAccount),
