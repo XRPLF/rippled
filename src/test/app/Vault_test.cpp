@@ -21,14 +21,13 @@
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/amount.h>
 
-#include <xrpld/ledger/Sandbox.h>
-#include <xrpld/ledger/View.h>
-
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -1340,7 +1339,7 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
 
                 Vault vault{env};
-                Asset asset = issuer["IOU"];
+                Asset asset = issuer["IOU"].asset();
                 auto [tx, keylet] =
                     vault.create({.owner = owner, .asset = asset});
 
@@ -1359,7 +1358,7 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
 
                 Vault vault{env};
-                Asset asset = issuer["IOU"];
+                Asset asset = issuer["IOU"].asset();
                 auto [tx, keylet] =
                     vault.create({.owner = owner, .asset = asset});
                 env(tx, ter(terNO_RIPPLE));
@@ -1375,7 +1374,7 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
 
                 Vault vault{env};
-                Asset asset = issuer["IOU"];
+                Asset asset = issuer["IOU"].asset();
                 {
                     auto [tx, keylet] =
                         vault.create({.owner = owner, .asset = asset});
@@ -3166,7 +3165,7 @@ class Vault_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        testcase("failed pseudo-account allocation");
+        testcase("fail pseudo-account allocation");
         Env env{*this, testable_amendments() | featureSingleAssetVault};
         Account const owner{"owner"};
         Vault vault{env};
@@ -3503,7 +3502,7 @@ class Vault_test : public beast::unit_test::suite
                 STAmount(d.asset, Number(100, 0)));
             BEAST_EXPECT(
                 env.balance(d.vaultAccount, d.shares) ==
-                STAmount(d.share, Number(1000, 0)));
+                STAmount(d.share, Number(-1000, 0)));
 
             {
                 testcase("Scale redeem exact");
@@ -3528,7 +3527,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(90, 0)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(900, 0)));
+                    STAmount(d.share, Number(-900, 0)));
             }
 
             {
@@ -3563,7 +3562,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(900 - 25, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(900 - 25, 0)));
+                    STAmount(d.share, -Number(900 - 25, 0)));
             }
 
             {
@@ -3590,7 +3589,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(875 - 21, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(875 - 21, 0)));
+                    STAmount(d.share, -Number(875 - 21, 0)));
             }
 
             {
@@ -3651,7 +3650,7 @@ class Vault_test : public beast::unit_test::suite
                 STAmount(d.asset, Number(100, 0)));
             BEAST_EXPECT(
                 env.balance(d.vaultAccount, d.shares) ==
-                STAmount(d.share, Number(1000, 0)));
+                STAmount(d.share, Number(-1000, 0)));
 
             {
                 testcase("Scale withdraw exact");
@@ -3679,7 +3678,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(90, 0)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(900, 0)));
+                    STAmount(d.share, Number(-900, 0)));
             }
 
             {
@@ -3726,7 +3725,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(900 - 25, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(900 - 25, 0)));
+                    STAmount(d.share, -Number(900 - 25, 0)));
             }
 
             {
@@ -3755,7 +3754,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(875 - 38, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(875 - 38, 0)));
+                    STAmount(d.share, -Number(875 - 38, 0)));
             }
 
             {
@@ -3784,7 +3783,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(837 - 37, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(837 - 37, 0)));
+                    STAmount(d.share, -Number(837 - 37, 0)));
             }
 
             {
@@ -3807,7 +3806,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(800 - 1, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(800 - 1, 0)));
+                    STAmount(d.share, -Number(800 - 1, 0)));
             }
 
             {
@@ -3870,7 +3869,7 @@ class Vault_test : public beast::unit_test::suite
                 STAmount(d.asset, Number(100, 0)));
             BEAST_EXPECT(
                 env.balance(d.vaultAccount, d.shares) ==
-                STAmount(d.share, Number(1000, 0)));
+                STAmount(d.share, -Number(1000, 0)));
             {
                 testcase("Scale clawback exact");
                 // assetsToSharesWithdraw:
@@ -3898,7 +3897,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(90, 0)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(900, 0)));
+                    STAmount(d.share, -Number(900, 0)));
             }
 
             {
@@ -3938,7 +3937,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(900 - 25, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(900 - 25, 0)));
+                    STAmount(d.share, -Number(900 - 25, 0)));
             }
 
             {
@@ -3968,7 +3967,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(875 - 38, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(875 - 38, 0)));
+                    STAmount(d.share, -Number(875 - 38, 0)));
             }
 
             {
@@ -3998,7 +3997,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(837 - 37, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(837 - 37, 0)));
+                    STAmount(d.share, -Number(837 - 37, 0)));
             }
 
             {
@@ -4022,7 +4021,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(800 - 1, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(800 - 1, 0)));
+                    STAmount(d.share, -Number(800 - 1, 0)));
             }
 
             {

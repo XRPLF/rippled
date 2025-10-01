@@ -1,0 +1,69 @@
+name: Build and test configuration
+
+on:
+  workflow_call:
+    inputs:
+      build_dir:
+        description: "The directory where to build."
+        required: true
+        type: string
+      build_only:
+        description: 'Whether to only build or to build and test the code ("true", "false").'
+        required: true
+        type: boolean
+      build_type:
+        description: 'The build type to use ("Debug", "Release").'
+        type: string
+        required: true
+      cmake_args:
+        description: "Additional arguments to pass to CMake."
+        required: false
+        type: string
+        default: ""
+      cmake_target:
+        description: "The CMake target to build."
+        type: string
+        required: true
+
+      runs_on:
+        description: Runner to run the job on as a JSON string
+        required: true
+        type: string
+      image:
+        description: "The image to run in (leave empty to run natively)"
+        required: true
+        type: string
+
+      config_name:
+        description: "The configuration string (used for naming artifacts and such)."
+        required: true
+        type: string
+
+    secrets:
+      CODECOV_TOKEN:
+        description: "The Codecov token to use for uploading coverage reports."
+        required: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      build_dir: ${{ inputs.build_dir }}
+      build_type: ${{ inputs.build_type }}
+      cmake_args: ${{ inputs.cmake_args }}
+      cmake_target: ${{ inputs.cmake_target }}
+      runs_on: ${{ inputs.runs_on }}
+      image: ${{ inputs.image }}
+      config_name: ${{ inputs.config_name }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  test:
+    needs: build
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+      run_tests: ${{ !inputs.build_only }}
+      verify_voidstar: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
+      runs_on: ${{ inputs.runs_on }}
+      image: ${{ inputs.image }}
+      config_name: ${{ inputs.config_name }}

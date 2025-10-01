@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
-#include <xrpld/ledger/ApplyView.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
@@ -81,8 +81,8 @@ constexpr HashRouterFlags SF_CF_VALID = HashRouterFlags::PRIVATE6;
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{
-        ctx.tx, isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
+    auto const amount = ctx.tx[sfAmount];
+    return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::zero};
 }
 
 template <ValidIssueType T>
@@ -118,15 +118,16 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+std::uint32_t
+EscrowCreate::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+}
+
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     STAmount const amount{ctx.tx[sfAmount]};
     if (!isXRP(amount))
     {
@@ -189,7 +190,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
             return temDISABLED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 template <ValidIssueType T>
@@ -538,6 +539,11 @@ EscrowCreate::doApply()
     (*slep)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
 
+    if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+    {
+        (*slep)[sfSequence] = ctx_.tx.getSeqValue();
+    }
+
     if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))
     {
         auto const xferRate = transferRate(ctx_.view(), amount);
@@ -624,19 +630,23 @@ checkCondition(Slice f, Slice c)
     return validate(*fulfillment, *condition);
 }
 
+bool
+EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
+        ctx.rules.enabled(featureCredentials);
+}
+
+std::uint32_t
+EscrowFinish::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+}
+
 NotTEC
 EscrowFinish::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const cb = ctx.tx[~sfCondition];
     auto const fb = ctx.tx[~sfFulfillment];
 
@@ -645,13 +655,14 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     if (static_cast<bool>(cb) != static_cast<bool>(fb))
         return temMALFORMED;
 
-    // Verify the transaction signature. If it doesn't work
-    // then don't do any more work.
-    {
-        auto const ret = preflight2(ctx);
-        if (!isTesSuccess(ret))
-            return ret;
-    }
+    return tesSUCCESS;
+}
+
+NotTEC
+EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
+{
+    auto const cb = ctx.tx[~sfCondition];
+    auto const fb = ctx.tx[~sfFulfillment];
 
     if (cb && fb)
     {
@@ -1007,8 +1018,13 @@ escrowUnlockApplyHelper<MPTIssue>(
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }
-
-    return rippleUnlockEscrowMPT(view, sender, receiver, finalAmt, journal);
+    return rippleUnlockEscrowMPT(
+        view,
+        sender,
+        receiver,
+        finalAmt,
+        view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
+        journal);
 }
 
 TER
@@ -1197,16 +1213,17 @@ EscrowFinish::doApply()
 
 //------------------------------------------------------------------------------
 
+std::uint32_t
+EscrowCancel::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+}
+
 NotTEC
 EscrowCancel::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 template <ValidIssueType T>

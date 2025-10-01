@@ -19,34 +19,28 @@
 
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/tx/detail/AMMVote.h>
-#include <xrpld/ledger/Sandbox.h>
 
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 
+bool
+AMMVote::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return ammEnabled(ctx.rules);
+}
+
 NotTEC
 AMMVote::preflight(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     if (auto const res = invalidAMMAssetPair(
             ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid asset pair.";
         return res;
-    }
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Vote: invalid flags.";
-        return temINVALID_FLAG;
     }
 
     if (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD)
@@ -55,7 +49,7 @@ AMMVote::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/PermissionedDomainSet.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -28,22 +28,15 @@
 
 namespace ripple {
 
+bool
+PermissionedDomainSet::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return ctx.rules.enabled(featureCredentials);
+}
+
 NotTEC
 PermissionedDomainSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePermissionedDomains) ||
-        !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "PermissionedDomainSet: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
     if (auto err = credentials::checkArray(
             ctx.tx.getFieldArray(sfAcceptedCredentials),
             maxPermissionedDomainCredentialsArraySize,
@@ -55,7 +48,7 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
     if (domain && *domain == beast::zero)
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
