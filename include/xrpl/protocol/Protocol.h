@@ -179,6 +179,11 @@ std::size_t constexpr permissionMaxSize = 10;
 /** The maximum number of transactions that can be in a batch. */
 std::size_t constexpr maxBatchTxCount = 8;
 
+/** EC ElGamal ciphertext length 33-byte */
+std::size_t constexpr ecGamalEncryptedLength = 33;
+
+/** EC ElGamal ciphertext length: two 33-byte components concatenated */
+std::size_t constexpr ecGamalEncryptedTotalLength = 66;
 }  // namespace ripple
 
 #endif

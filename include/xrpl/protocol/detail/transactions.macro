@@ -715,6 +715,19 @@ TRANSACTION(ttBATCH, 71, Batch,
     {sfBatchSigners, soeOPTIONAL},
 }))
 
+// /** This transaction type converts into confidential MPT balance. */
+// TRANSACTION(ttCONFIDENTIAL_CONVERT, 72, ConfidentialConvert,
+//     Delegation::delegatable,
+//     featureConfidentialTransfer,
+//     ({
+//     {sfMPTokenIssuanceID, soeREQUIRED},
+//     {sfMPTAmount, soeREQUIRED},
+//     {sfHolderElGamalPublicKey, soeOPTIONAL},
+//     {sfHolderEncryptedAmount, soeREQUIRED},
+//     {sfIssuerEncryptedAmount, soeREQUIRED},
+//     {sfZKProof, soeREQUIRED},
+// }))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
