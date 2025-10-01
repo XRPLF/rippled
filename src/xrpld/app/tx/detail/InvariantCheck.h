@@ -176,7 +176,7 @@ public:
 class AccountRootsDeletedClean
 {
     // Pair is <before, after>. Before is used for most of the checks, so that
-    // if, for example, and object ID field is cleared, but the object is not
+    // if, for example, an object ID field is cleared, but the object is not
     // deleted, it can still be found. After is used specifically for any checks
     // that are expected as part of the deletion, such as zeroing out the
     // balance.

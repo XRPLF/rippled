@@ -67,7 +67,13 @@ class msig
 {
 public:
     std::vector<Reg> signers;
+    /** Alternative transaction object field in which to place the signer list.
+     *
+     * subField is only supported if an account_ is provided as well.
+     */
     SField const* const subField = nullptr;
+    /// Used solely as a convenience placeholder for ctors that do _not_ specify
+    /// a subfield.
     static constexpr SField* const topLevel = nullptr;
 
     msig(SField const* subField_, std::vector<Reg> signers_)

@@ -133,14 +133,13 @@ LoanManage::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-defaultLoan(
+LoanManage::defaultLoan(
     ApplyView& view,
     SLE::ref loanSle,
     SLE::ref brokerSle,
     SLE::ref vaultSle,
     Number const& principalOutstanding,
     Number const& interestOutstanding,
-    std::uint32_t paymentInterval,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -260,15 +259,12 @@ defaultLoan(
 }
 
 TER
-impairLoan(
+LoanManage::impairLoan(
     ApplyView& view,
     SLE::ref loanSle,
-    SLE::ref brokerSle,
     SLE::ref vaultSle,
     Number const& principalOutstanding,
     Number const& interestOutstanding,
-    std::uint32_t paymentInterval,
-    Asset const& vaultAsset,
     beast::Journal j)
 {
     // Update the Vault object(set "paper loss")
@@ -300,15 +296,13 @@ impairLoan(
 }
 
 TER
-unimpairLoan(
+LoanManage::unimpairLoan(
     ApplyView& view,
     SLE::ref loanSle,
-    SLE::ref brokerSle,
     SLE::ref vaultSle,
     Number const& principalOutstanding,
     Number const& interestOutstanding,
     std::uint32_t paymentInterval,
-    Asset const& vaultAsset,
     beast::Journal j)
 {
     // Update the Vault object(clear "paper loss")
@@ -394,7 +388,6 @@ LoanManage::doApply()
                 vaultSle,
                 principalOutstanding,
                 interestOutstanding,
-                paymentInterval,
                 vaultAsset,
                 j_))
             return ter;
@@ -404,12 +397,9 @@ LoanManage::doApply()
         if (auto const ter = impairLoan(
                 view,
                 loanSle,
-                brokerSle,
                 vaultSle,
                 principalOutstanding,
                 interestOutstanding,
-                paymentInterval,
-                vaultAsset,
                 j_))
             return ter;
     }
@@ -418,12 +408,10 @@ LoanManage::doApply()
         if (auto const ter = unimpairLoan(
                 view,
                 loanSle,
-                brokerSle,
                 vaultSle,
                 principalOutstanding,
                 interestOutstanding,
                 paymentInterval,
-                vaultAsset,
                 j_))
             return ter;
     }

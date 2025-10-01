@@ -55,7 +55,7 @@ class Loan_test : public beast::unit_test::suite
         // Single Asset Vault depends on MPTokensV1, but don't test every combo
         // of that.
         using namespace jtx;
-        auto failAll = [this](FeatureBitset features, bool goodVault = false) {
+        auto failAll = [this](FeatureBitset features) {
             Env env(*this, features);
 
             Account const alice{"alice"};
@@ -96,7 +96,7 @@ class Loan_test : public beast::unit_test::suite
         failAll(all - featureMPTokensV1);
         failAll(all - featureSingleAssetVault - featureLendingProtocol);
         failAll(all - featureSingleAssetVault);
-        failAll(all - featureLendingProtocol, true);
+        failAll(all - featureLendingProtocol);
     }
 
     struct BrokerInfo
@@ -122,6 +122,9 @@ class Loan_test : public beast::unit_test::suite
         TenthBips32 const interestRate{};
     };
 
+    /** Helper class to compare the expected state of a loan and loan broker
+     * against the data in the ledger.
+     */
     struct VerifyLoanStatus
     {
     public:
@@ -145,6 +148,8 @@ class Loan_test : public beast::unit_test::suite
         {
         }
 
+        /** Checks the expected broker state against the ledger
+         */
         void
         checkBroker(
             Number const& principalRequested,
@@ -194,6 +199,9 @@ class Loan_test : public beast::unit_test::suite
                     if (ownerCount == 0)
                     {
                         // Allow some slop for rounding IOUs
+
+                        // TODO: This needs to be an exact match once all the
+                        // other rounding issues are worked out.
                         auto const total = vaultSle->at(sfAssetsTotal);
                         auto const available = vaultSle->at(sfAssetsAvailable);
                         env.test.BEAST_EXPECT(
@@ -210,21 +218,7 @@ class Loan_test : public beast::unit_test::suite
             }
         }
 
-        void
-        checkBroker(
-            LoanState const& state,
-            TenthBips32 interestRate,
-            std::uint32_t ownerCount) const
-        {
-            checkBroker(
-                state.principalRequested,
-                state.principalOutstanding,
-                interestRate,
-                state.paymentInterval,
-                state.paymentRemaining,
-                ownerCount);
-        }
-
+        /** Checks both the loan and broker expect states against the ledger */
         void
         operator()(
             std::uint32_t previousPaymentDate,
@@ -300,6 +294,7 @@ class Loan_test : public beast::unit_test::suite
             }
         }
 
+        /** Checks both the loan and broker expect states against the ledger */
         void
         operator()(LoanState const& state) const
         {
@@ -442,6 +437,16 @@ class Loan_test : public beast::unit_test::suite
         return true;
     }
 
+    /** Runs through the complete lifecycle of a loan
+     *
+     * 1. Create a loan.
+     * 2. Test a bunch of transaction failure conditions.
+     * 3. Use the `toEndOfLife` callback to take the loan to 0. How that is done
+     *    depends on the callback. e.g. Default, Early payoff, make all the
+     * normal payments, etc.
+     * 4. Delete the loan. The loan will alternate between being deleted by the
+     *    lender and the borrower.
+     */
     void
     lifecycle(
         std::string const& caseLabel,
@@ -745,6 +750,14 @@ class Loan_test : public beast::unit_test::suite
         }
     }
 
+    /** Wrapper to run a series of lifecycle tests for a given asset and loan
+     * amount
+     *
+     * Will be used in the future to vary the loan parameters. For now, it is
+     * only called once.
+     *
+     * Tests a bunch of LoanSet failure conditions before lifecycle.
+     */
     template <class TAsset, std::size_t NAsset>
     void
     testCaseWrapper(

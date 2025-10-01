@@ -29,19 +29,19 @@ sig::operator()(Env&, JTx& jt) const
 {
     if (!manual_)
         return;
-    if (!subField)
+    if (!subField_)
         jt.fill_sig = false;
     if (account_)
     {
         // VFALCO Inefficient pre-C++14
         auto const account = *account_;
-        auto callback = [subField = subField, account](Env&, JTx& jtx) {
+        auto callback = [subField = subField_, account](Env&, JTx& jtx) {
             // Where to put the signature. Supports sfCounterPartySignature.
             auto& sigObject = subField ? jtx[*subField] : jtx.jv;
 
             jtx::sign(jtx.jv, account, sigObject);
         };
-        if (!subField)
+        if (!subField_)
             jt.mainSigners.emplace_back(callback);
         else
             jt.postSigners.emplace_back(callback);

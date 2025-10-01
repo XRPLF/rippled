@@ -20,6 +20,7 @@
 #include <xrpld/app/tx/detail/LoanPay.h>
 //
 #include <xrpld/app/misc/LendingHelpers.h>
+#include <xrpld/app/tx/detail/LoanManage.h>
 
 namespace ripple {
 
@@ -148,6 +149,37 @@ LoanPay::doApply()
     // Loan object state changes
     Number const originalPrincipalRequested = loanSle->at(sfPrincipalRequested);
 
+    // Unimpair the loan if it was impaired. Do this before the payment is
+    // attempted, so the original values can be used. If the payment fails, this
+    // change will be discarded.
+    if (loanSle->isFlag(lsfLoanImpaired))
+    {
+        TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
+        auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
+
+        TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
+        auto const paymentInterval = loanSle->at(sfPaymentInterval);
+        auto const paymentsRemaining = loanSle->at(sfPaymentRemaining);
+
+        auto const interestOutstanding = loanInterestOutstandingMinusFee(
+            asset,
+            originalPrincipalRequested,
+            principalOutstanding.value(),
+            interestRate,
+            paymentInterval,
+            paymentsRemaining,
+            managementFeeRate);
+
+        LoanManage::unimpairLoan(
+            view,
+            loanSle,
+            vaultSle,
+            principalOutstanding,
+            interestOutstanding,
+            paymentInterval,
+            j_);
+    }
+
     Expected<LoanPaymentParts, TER> paymentParts =
         loanMakePayment(asset, view, loanSle, amount, j_);
 
@@ -157,9 +189,6 @@ LoanPay::doApply()
     // If the payment computation completed without error, the loanSle object
     // has been modified.
     view.update(loanSle);
-
-    // If the loan was impaired, it isn't anymore.
-    loanSle->clearFlag(lsfLoanImpaired);
 
     XRPL_ASSERT_PARTS(
         paymentParts->principalPaid > 0,

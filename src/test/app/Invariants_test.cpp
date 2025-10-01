@@ -162,6 +162,9 @@ class Invariants_test : public beast::unit_test::suite
                 auto sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
+                // Clear the balance so the "account deletion left behind a
+                // non-zero balance" check doesn't trip earlier than the desired
+                // check.
                 sle->at(sfBalance) = beast::zero;
                 ac.view().erase(sle);
                 return true;
@@ -190,6 +193,9 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleA2 = ac.view().peek(keylet::account(A2.id()));
                 if (!sleA1 || !sleA2)
                     return false;
+                // Clear the balance so the "account deletion left behind a
+                // non-zero balance" check doesn't trip earlier than the desired
+                // check.
                 sleA1->at(sfBalance) = beast::zero;
                 sleA2->at(sfBalance) = beast::zero;
                 ac.view().erase(sleA1);
@@ -232,6 +238,9 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sleA1 = ac.view().peek(keylet::account(a1));
                 if (!sleA1)
                     return false;
+                // Clear the balance so the "account deletion left behind a
+                // non-zero balance" check doesn't trip earlier than the desired
+                // check.
                 sleA1->at(sfBalance) = beast::zero;
                 BEAST_EXPECT(sleA1->at(sfOwnerCount) == 0);
                 adjustOwnerCount(ac.view(), sleA1, 1, ac.journal);
@@ -270,6 +279,9 @@ class Invariants_test : public beast::unit_test::suite
                     auto const key = std::invoke(keyletfunc, a1);
                     auto const newSLE = std::make_shared<SLE>(key);
                     ac.view().insert(newSLE);
+                    // Clear the balance so the "account deletion left behind a
+                    // non-zero balance" check doesn't trip earlier than the
+                    // desired check.
                     sleA1->at(sfBalance) = beast::zero;
                     ac.view().erase(sleA1);
 
@@ -287,6 +299,9 @@ class Invariants_test : public beast::unit_test::suite
                 auto sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
+                // Clear the balance so the "account deletion left behind a
+                // non-zero balance" check doesn't trip earlier than the desired
+                // check.
                 sle->at(sfBalance) = beast::zero;
                 sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
@@ -319,6 +334,9 @@ class Invariants_test : public beast::unit_test::suite
                 BEAST_EXPECT(sle->at(~sfAMMID));
                 BEAST_EXPECT(sle->at(~sfAMMID) == ammKey);
 
+                // Clear the balance so the "account deletion left behind a
+                // non-zero balance" check doesn't trip earlier than the desired
+                // check.
                 sle->at(sfBalance) = beast::zero;
                 sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
@@ -383,6 +401,9 @@ class Invariants_test : public beast::unit_test::suite
                     !ac.view().exists(ownerDirKeylet) ||
                     ac.view().emptyDirDelete(ownerDirKeylet));
 
+                // Clear the balance so the "account deletion left behind a
+                // non-zero balance" check doesn't trip earlier than the desired
+                // check.
                 sle->at(sfBalance) = beast::zero;
                 sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);

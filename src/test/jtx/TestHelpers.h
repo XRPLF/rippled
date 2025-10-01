@@ -746,21 +746,19 @@ set(AccountID const& account, uint256 const& vaultId, std::uint32_t flags = 0);
 
 // Use "del" because "delete" is a reserved word in C++.
 Json::Value
-del(AccountID const& account,
-    uint256 const& loanBrokerID,
-    std::uint32_t flags = 0);
+del(AccountID const& account, uint256 const& brokerID, std::uint32_t flags = 0);
 
 Json::Value
 coverDeposit(
     AccountID const& account,
-    uint256 const& loanBrokerID,
+    uint256 const& brokerID,
     STAmount const& amount,
     std::uint32_t flags = 0);
 
 Json::Value
 coverWithdraw(
     AccountID const& account,
-    uint256 const& loanBrokerID,
+    uint256 const& brokerID,
     STAmount const& amount,
     std::uint32_t flags = 0);
 
