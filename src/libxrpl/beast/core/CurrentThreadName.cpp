@@ -96,12 +96,39 @@ setCurrentThreadNameImpl(std::string_view name)
 #if BOOST_OS_LINUX
 #include <pthread.h>
 
+#include <iostream>
+#include <unordered_set>
+
 namespace beast::detail {
+
+// On Linux, thread names are limited to 16 bytes including the null terminator.
+// Maximum number of characters is therefore 15.
+constexpr std::size_t linuxThreadNameMaxLen = 15;
+
+#ifdef TRUNCATED_THREAD_NAME_LOGS
+thread_local std::unordered_set<std::string> loggedLongThreadNames_;
+#endif
 
 inline void
 setCurrentThreadNameImpl(std::string_view name)
 {
-    pthread_setname_np(pthread_self(), name.data());
+    // truncate and set the thread name.
+    std::string const boundedName{name.substr(0, linuxThreadNameMaxLen)};
+    pthread_setname_np(pthread_self(), boundedName.c_str());
+
+#ifdef TRUNCATED_THREAD_NAME_LOGS
+    if (name.size() > linuxThreadNameMaxLen)
+    {
+        auto const [it, inserted] =
+            loggedLongThreadNames_.insert(std::string(name));
+        if (inserted)
+        {
+            std::cerr << "WARNING: Thread name \"" << name << "\" (length "
+                      << name.size() << ") truncated to \"" << boundedName
+                      << "\" (length 15) on Linux.\n";
+        }
+    }
+#endif
 }
 
 }  // namespace beast::detail

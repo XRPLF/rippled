@@ -54,6 +54,21 @@ if(is_linux)
   option(perf "Enables flags that assist with perf recording" OFF)
   option(use_gold "enables detection of gold (binutils) linker" ON)
   option(use_mold "enables detection of mold (binutils) linker" ON)
+  # Set a default value for the log flag based on the build type.
+  # This provides a sensible default (on for debug, off for release)
+  # while still allowing the user to override it for any build.
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(TRUNCATED_LOGS_DEFAULT ON)
+  else()
+    set(TRUNCATED_LOGS_DEFAULT OFF)
+  endif()
+  option(TRUNCATED_THREAD_NAME_LOGS
+    "Show warnings about truncated thread names on Linux."
+    ${TRUNCATED_LOGS_DEFAULT}
+  )
+  if(TRUNCATED_THREAD_NAME_LOGS)
+    add_compile_definitions(TRUNCATED_THREAD_NAME_LOGS)
+  endif()
 else()
   # we are not ready to allow shared-libs on windows because it would require
   # export declarations. On macos it's more feasible, but static openssl
