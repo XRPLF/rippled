@@ -57,12 +57,7 @@ struct Coro_create_t
 class JobQueue : private Workers::Callback
 {
 public:
-    enum class QueueState
-    {
-        Accepting,
-        Stopping,
-        Stopped
-    };
+    enum class QueueState { Accepting, Stopping, Stopped };
 
     /** Coroutines must run to completion. */
     class Coro : public std::enable_shared_from_this<Coro>
@@ -178,13 +173,14 @@ public:
     template <typename JobHandler>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
-    requires std::is_void_v<std::invoke_result_t<JobHandler>>
+        requires std::is_void_v<std::invoke_result_t<JobHandler>>
     {
         if (queueState_ != QueueState::Accepting)
         {
             return false;
         }
-        return addJobNoStatusCheck(type, name, std::forward<JobHandler>(jobHandler));
+        return addJobNoStatusCheck(
+            type, name, std::forward<JobHandler>(jobHandler));
     }
 
     /** Creates a coroutine and adds a job to the queue which will run it.
@@ -293,8 +289,11 @@ private:
 
     template <typename JobHandler>
     bool
-    addJobNoStatusCheck(JobType type, std::string const& name, JobHandler&& jobHandler)
-    requires std::is_void_v<std::invoke_result_t<JobHandler>>
+    addJobNoStatusCheck(
+        JobType type,
+        std::string const& name,
+        JobHandler&& jobHandler)
+        requires std::is_void_v<std::invoke_result_t<JobHandler>>
     {
         if (auto optionalCountedJob =
                 jobCounter_.wrap(std::forward<JobHandler>(jobHandler)))

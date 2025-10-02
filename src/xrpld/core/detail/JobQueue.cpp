@@ -310,7 +310,8 @@ JobQueue::stop()
 
     if (!queueState_.compare_exchange_strong(accepting, QueueState::Stopping))
     {
-        XRPL_ASSERT(false, "Incorrect queueState, should be accepting but not!");
+        XRPL_ASSERT(
+            false, "Incorrect queueState, should be accepting but not!");
     }
     std::map<void*, std::weak_ptr<Coro>> suspendedCoros;
     {
@@ -327,7 +328,10 @@ JobQueue::stop()
             {
                 // We don't allow any new jobs from outside when we are
                 // stopping, but we should allow new jobs from inside the class.
-                addJobNoStatusCheck(coroPtr->type_, coroPtr->name_, [coroPtr]() { coroPtr->resume(); });
+                addJobNoStatusCheck(
+                    coroPtr->type_, coroPtr->name_, [coroPtr]() {
+                        coroPtr->resume();
+                    });
             }
         }
     }
