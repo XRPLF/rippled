@@ -27,8 +27,6 @@
 
 namespace ripple {
 
-// FIXME: Need to clean up ledgers by index at some point
-
 LedgerHistory::LedgerHistory(
     beast::insight::Collector::ptr const& collector,
     Application& app)
@@ -47,6 +45,7 @@ LedgerHistory::LedgerHistory(
           std::chrono::minutes{5},
           stopwatch(),
           app_.journal("TaggedCache"))
+    , mLedgersByIndex(256)
     , j_(app.journal("LedgerHistory"))
 {
 }
@@ -68,7 +67,13 @@ LedgerHistory::insert(
     bool const alreadyHad = m_ledgers_by_hash.canonicalize_replace_cache(
         ledger->info().hash, ledger);
     if (validated)
+    {
         mLedgersByIndex[ledger->info().seq] = ledger->info().hash;
+        JLOG(j_.info()) << "LedgerHistory::insert: mLedgersByIndex size: "
+                        << mLedgersByIndex.size() << " , total size: "
+                        << mLedgersByIndex.size() *
+                (sizeof(LedgerIndex) + sizeof(LedgerHash));
+    }
 
     return alreadyHad;
 }
@@ -115,6 +120,11 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
             "ripple::LedgerHistory::getLedgerBySeq : immutable result ledger");
         m_ledgers_by_hash.canonicalize_replace_client(ret->info().hash, ret);
         mLedgersByIndex[ret->info().seq] = ret->info().hash;
+        JLOG(j_.info())
+            << "LedgerHistory::getLedgerBySeq: mLedgersByIndex size: "
+            << mLedgersByIndex.size() << " , total size: "
+            << mLedgersByIndex.size() *
+                (sizeof(LedgerIndex) + sizeof(LedgerHash));
         return (ret->info().seq == index) ? ret : nullptr;
     }
 }
