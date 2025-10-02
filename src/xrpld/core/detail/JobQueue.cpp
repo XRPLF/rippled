@@ -357,7 +357,7 @@ JobQueue::stop()
             nSuspend_ == 0, "ripple::JobQueue::stop : no coros suspended");
     }
     auto stopping = QueueState::Stopping;
-    if (queueState_.compare_exchange_strong(stopping, QueueState::Stopped))
+    if (!queueState_.compare_exchange_strong(stopping, QueueState::Stopped))
     {
         XRPL_ASSERT(false, "Incorrect queueState, should be stopping but not!");
     }
