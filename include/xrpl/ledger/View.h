@@ -589,6 +589,7 @@ addEmptyHolding(
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,
+    STAmount const& limit,
     beast::Journal journal);
 
 [[nodiscard]] TER
@@ -597,6 +598,7 @@ addEmptyHolding(
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
+    STAmount const& limit,
     beast::Journal journal);
 
 [[nodiscard]] inline TER
@@ -605,12 +607,13 @@ addEmptyHolding(
     AccountID const& accountID,
     XRPAmount priorBalance,
     Asset const& asset,
+    STAmount const& limit,
     beast::Journal journal)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
             return addEmptyHolding(
-                view, accountID, priorBalance, issue, journal);
+                view, accountID, priorBalance, issue, limit, journal);
         },
         asset.value());
 }
@@ -882,6 +885,40 @@ enforceMPTokenAuthorization(
     AccountID const& account,
     XRPAmount const& priorBalance,
     beast::Journal j);
+
+enum class SendIssuerHandling {
+    ihSENDER_NOT_ALLOWED,
+    ihRECEIVER_NOT_ALLOWED,
+    ihIGNORE
+};
+enum class SendEscrowHandling { ehIGNORE, ehCHECK };
+enum class SendAuthHandling {
+    ahCHECK_SENDER,
+    ahCHECK_RECEIVER,
+    ahBOTH,
+    ahNEITHER
+};
+enum class SendFreezeHandling {
+    fhCHECK_SENDER,
+    fhCHECK_RECEIVER,
+    fhBOTH,
+    fhNEITHER
+};
+enum class SendTransferHandling { thIGNORE, thCHECK };
+enum class SendBalanceHandling { bhIGNORE, bhCHECK };
+
+TER
+canSendFT(
+    ReadView const& view,
+    AccountID const& sender,
+    AccountID const& receiver,
+    STAmount const& amount,
+    SendIssuerHandling issuerHandling,
+    SendEscrowHandling escrowHandling,
+    SendAuthHandling authHandling,
+    SendFreezeHandling freezeHandling,
+    SendTransferHandling transferHandling,
+    SendBalanceHandling balanceHandling);
 
 /** Check if the destination account is allowed
  *  to receive MPT. Return tecNO_AUTH if it doesn't

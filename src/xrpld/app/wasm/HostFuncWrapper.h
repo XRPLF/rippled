@@ -564,4 +564,94 @@ using floatLog_proto =
 wasm_trap_t*
 floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
+using instanceParam_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+instanceParam_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using functionParam_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+functionParam_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getContractDataFromKey_proto =
+    int32_t(uint8_t*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+getContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getNestedContractDataFromKey_proto = int32_t(
+    uint8_t*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+getNestedContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using setContractDataFromKey_proto =
+    int32_t(uint8_t*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+setContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using setNestedContractDataFromKey_proto = int32_t(
+    uint8_t*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+setNestedContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using buildTxn_proto = int32_t(int32_t);
+wasm_trap_t*
+buildTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using addTxnField_proto = int32_t(int32_t, int32_t, uint8_t const*, int32_t);
+wasm_trap_t*
+addTxnField_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using emitBuiltTxn_proto = int32_t(int32_t);
+wasm_trap_t*
+emitBuiltTxn_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using emitTxn_proto = int32_t(uint8_t const*, int32_t);
+wasm_trap_t*
+emitTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using emitEvent_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
+wasm_trap_t*
+emitEvent_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 }  // namespace ripple

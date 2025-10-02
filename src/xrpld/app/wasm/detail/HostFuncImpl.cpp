@@ -25,8 +25,8 @@
 #include <xrpl/protocol/digest.h>
 
 #ifdef _DEBUG
-// #define DEBUG_OUTPUT 1
-// #define DEBUG_OUTPUT_WAMR 1
+#define DEBUG_OUTPUT 1
+#define DEBUG_OUTPUT_WAMR 1
 #endif
 
 namespace ripple {

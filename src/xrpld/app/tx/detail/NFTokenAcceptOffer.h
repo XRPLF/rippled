@@ -38,12 +38,6 @@ private:
         std::shared_ptr<SLE> const& buy,
         std::shared_ptr<SLE> const& sell);
 
-    TER
-    transferNFToken(
-        AccountID const& buyer,
-        AccountID const& seller,
-        uint256 const& nfTokenID);
-
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 

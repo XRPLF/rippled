@@ -35,6 +35,8 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STDataType.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STNumber.h>
@@ -970,6 +972,53 @@ parseLeaf(
                 error = invalid_data(json_name, fieldName);
                 return ret;
             }
+            break;
+
+        case STI_DATA: {
+            try
+            {
+                ret = detail::make_stvar<STData>(dataFromJson(field, value));
+            }
+            catch (std::exception const&)
+            {
+                std::cout << "STI_DATA failed for field: " << fieldName
+                          << " in object: " << json_name << "\n";
+                error = invalid_data(json_name, fieldName);
+                return ret;
+            }
+
+            break;
+        }
+        case STI_DATATYPE: {
+            try
+            {
+                ret = detail::make_stvar<STDataType>(
+                    dataTypeFromJson(field, value));
+            }
+            catch (std::exception const&)
+            {
+                std::cout << "STI_DATATYPE failed for field: " << fieldName
+                          << " in object: " << json_name << "\n";
+                error = invalid_data(json_name, fieldName);
+                return ret;
+            }
+            break;
+        }
+
+        case STI_JSON:
+            Throw<std::runtime_error>("STI_JSON is not supported");
+            // try
+            // {
+            //     ret = detail::make_stvar<STDataType>(
+            //         dataTypeFromJson(field, value));
+            // }
+            // catch (std::exception const&)
+            // {
+            //     std::cout << "STI_DATATYPE failed for field: " << fieldName
+            //               << " in object: " << json_name << "\n";
+            //     error = invalid_data(json_name, fieldName);
+            //     return ret;
+            // }
             break;
 
         default:

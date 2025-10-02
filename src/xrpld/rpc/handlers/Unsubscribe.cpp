@@ -103,6 +103,10 @@ doUnsubscribe(RPC::JsonContext& context)
             {
                 context.netOps.unsubConsensus(ispSub->getSeq());
             }
+            else if (streamName == "contract_events")
+            {
+                context.netOps.unsubContractEvent(ispSub->getSeq());
+            }
             else
             {
                 return rpcError(rpcSTREAM_MALFORMED);

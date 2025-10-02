@@ -947,6 +947,95 @@ TRANSACTION(ttBATCH, 71, Batch,
     {sfBatchSigners, soeOPTIONAL},
 }))
 
+/** This transaction type creates the smart contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/ContractCreate.h>
+#endif
+TRANSACTION(ttCONTRACT_CREATE, 72, ContractCreate,
+    Delegation::delegatable,
+    featureSmartContract,
+    createPseudoAcct,
+    ({
+    {sfContractCode, soeOPTIONAL},
+    {sfContractHash, soeOPTIONAL},
+    {sfFunctions, soeOPTIONAL},
+    {sfInstanceParameters, soeOPTIONAL},
+    {sfInstanceParameterValues, soeOPTIONAL},
+    {sfURI, soeOPTIONAL},
+}))
+
+/** This transaction type modifies the smart contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/ContractModify.h>
+#endif
+TRANSACTION(ttCONTRACT_MODIFY, 73, ContractModify,
+    Delegation::delegatable,
+    featureSmartContract,
+    noPriv,
+    ({
+    {sfContractAccount, soeOPTIONAL},
+    {sfContractCode, soeOPTIONAL},
+    {sfContractHash, soeOPTIONAL},
+    {sfFunctions, soeOPTIONAL},
+    {sfInstanceParameters, soeOPTIONAL},
+    {sfInstanceParameterValues, soeOPTIONAL},
+    {sfURI, soeOPTIONAL},
+}))
+
+/** This transaction type deletes the smart contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/ContractDelete.h>
+#endif
+TRANSACTION(ttCONTRACT_DELETE, 74, ContractDelete,
+    Delegation::delegatable,
+    featureSmartContract,
+    mustDeleteAcct,
+    ({
+    {sfContractAccount, soeREQUIRED},
+}))
+
+/** This transaction type claws back funds from the contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/ContractClawback.h>
+#endif
+TRANSACTION(ttCONTRACT_CLAWBACK, 75, ContractClawback,
+    Delegation::delegatable,
+    featureSmartContract,
+    noPriv,
+    ({
+    {sfContractAccount, soeOPTIONAL},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
+}))
+
+/** This transaction type deletes user data. */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/ContractUserDelete.h>
+#endif
+TRANSACTION(ttCONTRACT_USER_DELETE, 76, ContractUserDelete,
+    Delegation::delegatable,
+    featureSmartContract,
+    noPriv,
+    ({
+    {sfContractAccount, soeREQUIRED},
+    {sfFunctionName, soeREQUIRED},
+    {sfParameters, soeOPTIONAL},
+    {sfComputationAllowance, soeREQUIRED},
+}))
+
+/** This transaction type calls the smart contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/ContractCall.h>
+#endif
+TRANSACTION(ttCONTRACT_CALL, 77, ContractCall,
+    Delegation::delegatable,
+    featureSmartContract,
+    noPriv,
+    ({
+    {sfContractAccount, soeREQUIRED},
+    {sfFunctionName, soeREQUIRED},
+    {sfParameters, soeOPTIONAL},
+    {sfComputationAllowance, soeREQUIRED},
+}))
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html

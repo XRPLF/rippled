@@ -23,6 +23,7 @@
 #include <xrpld/app/wasm/WamrVM.h>
 
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/digest.h>
 
@@ -1914,6 +1915,416 @@ floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     i = 2;
     return returnResult(
         runtime, params, results, hf->floatLog(*x, *rounding), i);
+}
+
+wasm_trap_t*
+instanceParam_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[3].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const iindex = getDataInt32(rt, params, index);
+    if (!iindex)
+    {
+        return hfResult(results, iindex.error());
+    }
+
+    auto const stTypeId = getDataInt32(rt, params, index);
+    if (!stTypeId)
+    {
+        return hfResult(results, stTypeId.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->instanceParam(*iindex, *stTypeId), index);
+}
+
+wasm_trap_t*
+functionParam_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[3].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const iindex = getDataInt32(rt, params, index);
+    if (!iindex)
+    {
+        return hfResult(results, iindex.error());
+    }
+
+    auto const stTypeId = getDataInt32(rt, params, index);
+    if (!stTypeId)
+    {
+        return hfResult(results, stTypeId.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->functionParam(*iindex, *stTypeId), index);
+}
+
+wasm_trap_t*
+getContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    if (params->data[3].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const key = getDataString(rt, params, index);
+    if (!key)
+    {
+        return hfResult(results, key.error());
+    }
+
+    if (params->data[5].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    return returnResult(
+        rt, params, results, hf->getContractDataFromKey(*acc, *key), index);
+}
+
+wasm_trap_t*
+getNestedContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    if (params->data[3].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const nested = getDataString(rt, params, index);
+    if (!nested)
+    {
+        return hfResult(results, nested.error());
+    }
+
+    if (params->data[5].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const key = getDataString(rt, params, index);
+    if (!key)
+    {
+        return hfResult(results, key.error());
+    }
+
+    if (params->data[7].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    return returnResult(
+        rt,
+        params,
+        results,
+        hf->getNestedContractDataFromKey(*acc, *nested, *key),
+        index);
+}
+
+wasm_trap_t*
+setContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    if (params->data[3].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const key = getDataString(rt, params, index);
+    if (!key)
+    {
+        return hfResult(results, key.error());
+    }
+
+    if (params->data[5].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const data = getDataSlice(rt, params, index);
+    if (!data)
+    {
+        return hfResult(results, data.error());
+    }
+
+    SerialIter valueSit(data->data(), data->size());
+    STJson::Value const value = STJson::makeValueFromVLWithType(valueSit);
+    return returnResult(
+        rt,
+        params,
+        results,
+        hf->setContractDataFromKey(*acc, *key, value),
+        index);
+}
+
+wasm_trap_t*
+setNestedContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    if (params->data[3].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const nested = getDataString(rt, params, index);
+    if (!nested)
+    {
+        return hfResult(results, nested.error());
+    }
+
+    if (params->data[5].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const key = getDataString(rt, params, index);
+    if (!key)
+    {
+        return hfResult(results, key.error());
+    }
+
+    if (params->data[7].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const data = getDataSlice(rt, params, index);
+    if (!data)
+    {
+        return hfResult(results, data.error());
+    }
+
+    SerialIter valueSit(data->data(), data->size());
+    STJson::Value const value = STJson::makeValueFromVLWithType(valueSit);
+    return returnResult(
+        rt,
+        params,
+        results,
+        hf->setNestedContractDataFromKey(*acc, *nested, *key, value),
+        index);
+}
+
+wasm_trap_t*
+buildTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const txnType = getDataInt32(rt, params, index);
+    if (!txnType)
+    {
+        return hfResult(results, txnType.error());
+    }
+
+    return returnResult(rt, params, results, hf->buildTxn(*txnType), index);
+}
+
+wasm_trap_t*
+addTxnField_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[3].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const txnIndex = getDataInt32(rt, params, index);
+    if (!txnIndex)
+    {
+        return hfResult(results, txnIndex.error());
+    }
+
+    auto const fname = getDataSField(rt, params, index);
+    if (!fname)
+    {
+        return hfResult(results, fname.error());
+    }
+
+    auto const data = getDataSlice(rt, params, index);
+    if (!data)
+    {
+        return hfResult(results, data.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->addTxnField(*txnIndex, *fname, *data), index);
+}
+
+wasm_trap_t*
+emitBuiltTxn_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const txnIndex = getDataInt32(rt, params, index);
+    if (!txnIndex)
+    {
+        return hfResult(results, txnIndex.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->emitBuiltTxn(*txnIndex), index);
+}
+
+wasm_trap_t*
+emitTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const slice = getDataSlice(rt, params, index);
+    if (!slice)
+    {
+        return hfResult(results, slice.error());
+    }
+
+    std::shared_ptr<STTx const> stpTrans;
+    try
+    {
+        stpTrans = std::make_shared<STTx const>(SerialIter{*slice});
+    }
+    catch (std::exception& e)
+    {
+        std::cout << "Error creating STTx: " << e.what() << std::endl;
+        return hfResult(results, HostFunctionError::INTERNAL);
+    }
+
+    return returnResult(rt, params, results, hf->emitTxn(stpTrans), index);
+}
+
+wasm_trap_t*
+emitEvent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const name = getDataString(rt, params, index);
+    if (!name)
+    {
+        return hfResult(results, name.error());
+    }
+
+    auto const data = getDataSlice(rt, params, index);
+    if (!data)
+    {
+        return hfResult(results, data.error());
+    }
+
+    auto parsed = STJson::fromBlob(data->data(), data->size());
+
+    return returnResult(
+        rt, params, results, hf->emitEvent(*name, *parsed), index);
 }
 
 // LCOV_EXCL_START
