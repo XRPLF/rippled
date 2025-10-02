@@ -30,7 +30,9 @@
 #include <boost/operators.hpp>
 
 #include <cstdint>
+#include <limits>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 
@@ -47,6 +49,51 @@ public:
 
 private:
     value_type drops_;
+
+    static constexpr value_type
+    safeAdd(value_type a, value_type b)
+    {
+        if ((b > 0 && a > std::numeric_limits<value_type>::max() - b) ||
+            (b < 0 && a < std::numeric_limits<value_type>::min() - b))
+            throw std::overflow_error("XRPAmount overflow");
+        return a + b;
+    }
+
+    static constexpr value_type
+    safeSub(value_type a, value_type b)
+    {
+        if (b == std::numeric_limits<value_type>::min())
+            throw std::underflow_error("XRPAmount underflow");
+        return safeAdd(a, -b);
+    }
+
+    static constexpr value_type
+    safeMul(value_type a, value_type b)
+    {
+        if (a == 0 || b == 0)
+            return 0;
+
+        if ((a > 0 && b > 0 &&
+             a > std::numeric_limits<value_type>::max() / b) ||
+            (a > 0 && b < 0 &&
+             b < std::numeric_limits<value_type>::min() / a) ||
+            (a < 0 && b > 0 &&
+             a < std::numeric_limits<value_type>::min() / b) ||
+            (a < 0 && b < 0 && a < std::numeric_limits<value_type>::max() / b))
+        {
+            throw std::overflow_error("XRPAmount overflow");
+        }
+
+        return a * b;
+    }
+
+    static constexpr value_type
+    safeNeg(value_type a)
+    {
+        if (a == std::numeric_limits<value_type>::min())
+            throw std::overflow_error("XRPAmount overflow");
+        return -a;
+    }
 
 public:
     XRPAmount() = default;
@@ -81,10 +128,11 @@ public:
         return *this;
     }
 
+    // Use safe multiplication
     constexpr XRPAmount
     operator*(value_type const& rhs) const
     {
-        return XRPAmount{drops_ * rhs};
+        return XRPAmount{safeMul(drops_, rhs)};
     }
 
     friend constexpr XRPAmount
@@ -97,42 +145,42 @@ public:
     XRPAmount&
     operator+=(XRPAmount const& other)
     {
-        drops_ += other.drops();
+        drops_ = safeAdd(drops_, other.drops());
         return *this;
     }
 
     XRPAmount&
     operator-=(XRPAmount const& other)
     {
-        drops_ -= other.drops();
+        drops_ = safeSub(drops_, other.drops());
         return *this;
     }
 
     XRPAmount&
     operator+=(value_type const& rhs)
     {
-        drops_ += rhs;
+        drops_ = safeAdd(drops_, rhs);
         return *this;
     }
 
     XRPAmount&
     operator-=(value_type const& rhs)
     {
-        drops_ -= rhs;
+        drops_ = safeSub(drops_, rhs);
         return *this;
     }
 
     XRPAmount&
     operator*=(value_type const& rhs)
     {
-        drops_ *= rhs;
+        drops_ = safeMul(drops_, rhs);
         return *this;
     }
 
     XRPAmount
     operator-() const
     {
-        return XRPAmount{-drops_};
+        return XRPAmount{safeNeg(drops_)};
     }
 
     bool
@@ -308,4 +356,4 @@ mulRatio(
 
 }  // namespace ripple
 
-#endif  // RIPPLE_BASICS_XRPAMOUNT_H_INCLUDED
+#endif  // RIPPLE_PROTOCOL_XRPAMOUNT_H_INCLUDED
