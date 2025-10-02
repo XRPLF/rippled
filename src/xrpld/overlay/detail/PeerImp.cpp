@@ -3963,6 +3963,19 @@ PeerImp::releaseRequestCookies(uint256 const& requestHash)
     return result;
 };
 
+std::set<std::optional<uint64_t>>
+PeerImp::releaseRequestCookies(uint256 const& requestHash)
+{
+    std::set<std::optional<uint64_t>> result;
+    std::lock_guard lock(cookieLock_);
+    if (messageRequestCookies_.contains(requestHash))
+    {
+        std::swap(result, messageRequestCookies_[requestHash]);
+        messageRequestCookies_.erase(requestHash);
+    }
+    return result;
+};
+
 void
 PeerImp::Metrics::add_message(std::uint64_t bytes)
 {

@@ -103,7 +103,7 @@ NodeFamily::acquire(uint256 const& hash, std::uint32_t seq)
         JLOG(j_.error()) << "Missing node in " << to_string(hash);
 
         app_.getInboundLedgers().acquire(
-            hash, seq, InboundLedger::Reason::GENERIC);
+            hash, seq, InboundLedger::Reason::GENERIC, "NodeFamily::acquire");
     }
 }
 

@@ -43,9 +43,10 @@ public:
 
     // These are the reasons we might acquire a ledger
     enum class Reason {
-        HISTORY,   // Acquiring past ledger
-        GENERIC,   // Generic other reasons
-        CONSENSUS  // We believe the consensus round requires this ledger
+        HISTORY,    // Acquiring past ledger
+        GENERIC,    // Generic other reasons
+        CONSENSUS,  // We believe the consensus round requires this ledger
+        PREFERRED   // We need this ledger for preferred ledger analysis
     };
 
     InboundLedger(
@@ -59,8 +60,10 @@ public:
     ~InboundLedger();
 
     // Called when another attempt is made to fetch this same ledger
-    void
-    update(std::uint32_t seq);
+    //
+    // Returns true if this triggers requests to be sent
+    bool
+    update(std::uint32_t seq, bool broadcast);
 
     /** Returns true if we got all the data. */
     bool
@@ -91,7 +94,7 @@ public:
     bool
     checkLocal();
     void
-    init(ScopedLockType& collectionLock);
+    init(ScopedLockType& collectionLock, bool broadcast);
 
     bool
     gotData(
@@ -198,24 +201,8 @@ private:
     std::unique_ptr<PeerSet> mPeerSet;
 };
 
-inline std::string
-to_string(InboundLedger::Reason reason)
-{
-    using enum InboundLedger::Reason;
-    switch (reason)
-    {
-        case HISTORY:
-            return "HISTORY";
-        case GENERIC:
-            return "GENERIC";
-        case CONSENSUS:
-            return "CONSENSUS";
-        default:
-            UNREACHABLE(
-                "ripple::to_string(InboundLedger::Reason) : unknown value");
-            return "unknown";
-    }
-}
+std::string
+to_string(InboundLedger::Reason reason);
 
 }  // namespace ripple
 

@@ -70,7 +70,8 @@ public:
     acquire(
         uint256 const& hash,
         std::uint32_t seq,
-        InboundLedger::Reason reason) override
+        InboundLedger::Reason reason,
+        char const* context) override
     {
         auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
             XRPL_ASSERT(
@@ -83,7 +84,7 @@ public:
                     return true;
                 if (reason == InboundLedger::Reason::GENERIC)
                     return true;
-                if (reason == InboundLedger::Reason::CONSENSUS)
+                if (reason >= InboundLedger::Reason::CONSENSUS)
                     return true;
                 return false;
             }();
@@ -92,7 +93,7 @@ public:
             ss << "InboundLedger::acquire: "
                << "Request: " << to_string(hash) << ", " << seq
                << " NeedNetworkLedger: " << (needNetworkLedger ? "yes" : "no")
-               << " Reason: " << to_string(reason)
+               << " Reason: " << to_string(reason) << " Context: " << context
                << " Should acquire: " << (shouldAcquire ? "true." : "false.");
 
             /*  Acquiring ledgers is somewhat expensive. It requires lots of
@@ -106,20 +107,34 @@ public:
                 // the network, and doesn't have the necessary tx's and
                 // ledger entries to build the ledger.
                 bool const isFull = app_.getOPs().isFull();
+                // fallingBehind means the last closed ledger is at least 2
+                // behind the validated ledger. If the node is falling
+                // behind the network, it probably needs information from
+                // the network to catch up.
+                //
+                // The reason this should not simply be only at least 1
+                // behind the validated ledger is that a slight lag is
+                // normal case because some nodes get there slightly later
+                // than others. A difference of 2 means that at least a full
+                // ledger interval has passed, so the node is beginning to
+                // fall behind.
+                bool const fallingBehind = app_.getOPs().isFallingBehind();
+                // If the ledger is needed for preferred ledger analysis and we
+                // don't have it, chances are we're not going to build it,
+                // because someone else has built it, so download it.
+                bool const preferred =
+                    reason == InboundLedger::Reason::PREFERRED;
                 // If everything else is ok, don't try to acquire the ledger
                 // if the requested seq is in the near future relative to
-                // the validated ledger. If the requested ledger is between
-                // 1 and 19 inclusive ledgers ahead of the valid ledger this
-                // node has not built it yet, but it's possible/likely it
-                // has the tx's necessary to build it and get caught up.
-                // Plus it might not become validated. On the other hand, if
-                // it's more than 20 in the future, this node should request
-                // it so that it can jump ahead and get caught up.
+                // the validated ledger. Because validations lag behind
+                // consensus, if we get any further behind than this, we
+                // risk losing sync, because we don't have the preferred
+                // ledger available.
                 LedgerIndex const validSeq =
                     app_.getLedgerMaster().getValidLedgerIndex();
-                constexpr std::size_t lagLeeway = 20;
-                bool const nearFuture =
-                    (seq > validSeq) && (seq < validSeq + lagLeeway);
+                constexpr std::size_t lagLeeway = 2;
+                bool const nearFuture = (validSeq > 0) && (seq > validSeq) &&
+                    (seq < validSeq + lagLeeway);
                 // If everything else is ok, don't try to acquire the ledger
                 // if the request is related to consensus. (Note that
                 // consensus calls usually pass a seq of 0, so nearFuture
@@ -128,8 +143,10 @@ public:
                     reason == InboundLedger::Reason::CONSENSUS;
                 ss << " Evaluating whether to broadcast requests to peers"
                    << ". full: " << (isFull ? "true" : "false")
-                   << ". ledger sequence " << seq
-                   << ". Valid sequence: " << validSeq
+                   << ". falling behind: " << (fallingBehind ? "true" : "false")
+                   << ". needed for preferred ledger analysis: "
+                   << (preferred ? "true" : "false") << ". ledger sequence "
+                   << seq << ". Valid sequence: " << validSeq
                    << ". Lag leeway: " << lagLeeway
                    << ". request for near future ledger: "
                    << (nearFuture ? "true" : "false")
@@ -137,6 +154,12 @@ public:
 
                 // If the node is not synced, send requests.
                 if (!isFull)
+                    return true;
+                // If the node is falling behind, send requests.
+                if (fallingBehind)
+                    return true;
+                // If needed for preferred analysis, send requests.
+                if (preferred)
                     return true;
                 // If the ledger is in the near future, do NOT send requests.
                 // This node is probably about to build it.
@@ -148,7 +171,7 @@ public:
                     return false;
                 return true;
             }();
-            ss << ". Would broadcast to peers? "
+            ss << ". Broadcast to peers? "
                << (shouldBroadcast ? "true." : "false.");
 
             if (!shouldAcquire)
@@ -183,7 +206,7 @@ public:
                         std::ref(m_clock),
                         mPeerSetBuilder->build());
                     mLedgers.emplace(hash, inbound);
-                    inbound->init(sl);
+                    inbound->init(sl, shouldBroadcast);
                     ++mCounter;
                 }
             }
@@ -195,8 +218,12 @@ public:
                 return {};
             }
 
-            if (!isNew)
-                inbound->update(seq);
+            bool const didBroadcast = [&]() {
+                if (!isNew)
+                    return inbound->update(seq, shouldBroadcast);
+                return shouldBroadcast;
+            }();
+            ss << " First broadcast: " << (didBroadcast ? "true" : "false");
 
             if (!inbound->isComplete())
             {
@@ -222,7 +249,7 @@ public:
         {
             try
             {
-                acquire(hash, seq, reason);
+                acquire(hash, seq, reason, "acquireAsync");
             }
             catch (std::exception const& e)
             {

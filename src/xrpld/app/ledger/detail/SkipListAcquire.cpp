@@ -108,7 +108,11 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
     }
 
     if (fallBack_)
-        inboundLedgers_.acquire(hash_, 0, InboundLedger::Reason::GENERIC);
+        inboundLedgers_.acquire(
+            hash_,
+            0,
+            InboundLedger::Reason::GENERIC,
+            "SkipListAcquire::trigger");
 }
 
 void
