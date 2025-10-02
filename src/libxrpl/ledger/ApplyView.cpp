@@ -24,87 +24,116 @@
 
 namespace ripple {
 
-std::optional<std::uint64_t>
-ApplyView::dirAdd(
-    bool preserveOrder,
+namespace directory {
+
+struct Gap
+{
+    uint64_t const page;
+    SLE::pointer node;
+    uint64_t const nextPage;
+    SLE::pointer next;
+};
+
+std::uint64_t
+createRoot(
+    ApplyView& view,
     Keylet const& directory,
     uint256 const& key,
     std::function<void(std::shared_ptr<SLE> const&)> const& describe)
 {
-    auto root = peek(directory);
+    auto newRoot = std::make_shared<SLE>(directory);
+    newRoot->setFieldH256(sfRootIndex, directory.key);
+    describe(newRoot);
 
-    if (!root)
-    {
-        // No root, make it.
-        root = std::make_shared<SLE>(directory);
-        root->setFieldH256(sfRootIndex, directory.key);
-        describe(root);
+    STVector256 v;
+    v.push_back(key);
+    newRoot->setFieldV256(sfIndexes, v);
 
-        STVector256 v;
-        v.push_back(key);
-        root->setFieldV256(sfIndexes, v);
+    view.insert(newRoot);
+    return std::uint64_t{0};
+}
 
-        insert(root);
-        return std::uint64_t{0};
-    }
+auto
+findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
+{
+    std::uint64_t page = start->getFieldU64(sfIndexPrevious);
 
-    std::uint64_t page = root->getFieldU64(sfIndexPrevious);
-
-    auto node = root;
+    auto node = start;
 
     if (page)
     {
-        node = peek(keylet::page(directory, page));
+        node = view.peek(keylet::page(directory, page));
         if (!node)
             LogicError("Directory chain: root back-pointer broken.");
     }
 
     auto indexes = node->getFieldV256(sfIndexes);
+    return std::make_tuple(page, node, indexes);
+}
 
-    // If there's space, we use it:
-    if (indexes.size() < dirNodeMaxEntries)
+std::uint64_t
+insertKey(
+    ApplyView& view,
+    SLE::ref node,
+    std::uint64_t page,
+    bool preserveOrder,
+    STVector256& indexes,
+    uint256 const& key)
+{
+    if (preserveOrder)
     {
-        if (preserveOrder)
-        {
-            if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
-                LogicError("dirInsert: double insertion");
+        if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
+            LogicError("dirInsert: double insertion");
 
-            indexes.push_back(key);
-        }
-        else
-        {
-            // We can't be sure if this page is already sorted because
-            // it may be a legacy page we haven't yet touched. Take
-            // the time to sort it.
-            std::sort(indexes.begin(), indexes.end());
+        indexes.push_back(key);
+    }
+    else
+    {
+        // We can't be sure if this page is already sorted because
+        // it may be a legacy page we haven't yet touched. Take
+        // the time to sort it.
+        std::sort(indexes.begin(), indexes.end());
 
-            auto pos = std::lower_bound(indexes.begin(), indexes.end(), key);
+        auto pos = std::lower_bound(indexes.begin(), indexes.end(), key);
 
-            if (pos != indexes.end() && key == *pos)
-                LogicError("dirInsert: double insertion");
+        if (pos != indexes.end() && key == *pos)
+            LogicError("dirInsert: double insertion");
 
-            indexes.insert(pos, key);
-        }
-
-        node->setFieldV256(sfIndexes, indexes);
-        update(node);
-        return page;
+        indexes.insert(pos, key);
     }
 
+    node->setFieldV256(sfIndexes, indexes);
+    view.update(node);
+    return page;
+}
+
+std::optional<std::uint64_t>
+insertPage(
+    ApplyView& view,
+    std::uint64_t page,
+    SLE::pointer node,
+    std::uint64_t nextPage,
+    SLE::ref next,
+    uint256 const& key,
+    Keylet const& directory,
+    std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+{
     // Check whether we're out of pages.
     if (++page >= dirNodeMaxPages)
+    {
         return std::nullopt;
+    }
 
     // We are about to create a new node; we'll link it to
     // the chain first:
     node->setFieldU64(sfIndexNext, page);
-    update(node);
+    view.update(node);
 
-    root->setFieldU64(sfIndexPrevious, page);
-    update(root);
+    next->setFieldU64(sfIndexPrevious, page);
+    view.update(next);
 
     // Insert the new key:
-    indexes.clear();
+    STVector256 indexes;
     indexes.push_back(key);
 
     node = std::make_shared<SLE>(keylet::page(directory, page));
@@ -115,10 +144,81 @@ ApplyView::dirAdd(
     // it's the default.
     if (page != 1)
         node->setFieldU64(sfIndexPrevious, page - 1);
+    if (nextPage)
+        node->setFieldU64(sfIndexNext, nextPage);
     describe(node);
-    insert(node);
+    view.insert(node);
 
     return page;
+}
+
+}  // namespace directory
+
+std::optional<std::uint64_t>
+ApplyView::dirAdd(
+    bool preserveOrder,
+    Keylet const& directory,
+    uint256 const& key,
+    std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+{
+    auto const root = peek(directory);
+
+    if (!root)
+    {
+        // No root, make it.
+        return directory::createRoot(*this, directory, key, describe);
+    }
+
+    auto [page, node, indexes] =
+        directory::findPreviousPage(*this, directory, root);
+
+    if (rules().enabled(featureDefragDirectories))
+    {
+        // If there are more nodes than just the root, and there's no space in
+        // the last one, walk backwards to find one with space, or to find one
+        // missing.
+        std::optional<directory::Gap> gapPages;
+        while (page && indexes.size() >= dirNodeMaxEntries)
+        {
+            // Find a page with space, or a gap in pages.
+            auto [prevPage, prevNode, prevIndexes] =
+                directory::findPreviousPage(*this, directory, node);
+            if (!gapPages && prevPage != page - 1)
+                gapPages.emplace(prevPage, prevNode, page, node);
+            page = prevPage;
+            node = prevNode;
+            indexes = prevIndexes;
+        }
+        // We looped through all the pages back to the root.
+        if (!page)
+        {
+            // If we found a gap, use it.
+            if (gapPages)
+            {
+                return directory::insertPage(
+                    *this,
+                    gapPages->page,
+                    gapPages->node,
+                    gapPages->nextPage,
+                    gapPages->next,
+                    key,
+                    directory,
+                    describe);
+            }
+            std::tie(page, node, indexes) =
+                directory::findPreviousPage(*this, directory, root);
+        }
+    }
+
+    // If there's space, we use it:
+    if (indexes.size() < dirNodeMaxEntries)
+    {
+        return directory::insertKey(
+            *this, node, page, preserveOrder, indexes, key);
+    }
+
+    return directory::insertPage(
+        *this, page, node, 0, root, key, directory, describe);
 }
 
 bool
