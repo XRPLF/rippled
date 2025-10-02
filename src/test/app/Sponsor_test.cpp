@@ -18,12 +18,13 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/xchain_bridge.h>
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
-
-#include "test/jtx/Env.h"
-#include "test/jtx/ticket.h"
 
 namespace ripple {
 namespace test {
@@ -3483,6 +3484,121 @@ public:
     void
     testXChain()
     {
+        testcase("XChain");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const doorA("doorA");
+        Account const signer("signer");
+        Account const sponsor("sponsor");
+
+        Env env{*this, testable_amendments()};
+        env.fund(XRP(1000000), alice, bob, sponsor, doorA);
+        env.close();
+
+        auto jvb = bridge(doorA, XRP, env.master, XRP);
+
+        env(signers(doorA, 1, {signer}));
+        env.close();
+
+        // XChainCreateBridge
+        {
+            BEAST_EXPECT(ownerCount(env, doorA) == 1);  // SignerList
+            BEAST_EXPECT(sponsoredOwnerCount(env, doorA) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+
+            env(bridge_create(doorA, jvb, XRP(1), XRP(1)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, doorA) == 2);  // Bridge, SignerList
+            BEAST_EXPECT(sponsoredOwnerCount(env, doorA) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        }
+        // XChainCreateClaimID
+        {
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            env(xchain_create_claim_id(alice, jvb, XRP(1), bob),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            // XChainOwnedClaimID created
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+        }
+        // XChainCommit
+        {
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // XChainOwnedClaimID
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+
+            env(xchain_commit(alice, jvb, 1, XRP(100), bob),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            // doesn't sponsor anything
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+        }
+        // XChainAddClaimAttestation
+        {
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+
+            env(claim_attestation(
+                    alice, jvb, bob, XRP(1), bob, false, 1, bob, signer),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            // XChainOwnedClaimID deleted
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        }
+        // XChainClaim
+        {
+            // prepare for claim
+            {
+                env(xchain_create_claim_id(alice, jvb, XRP(1), bob),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env(xchain_commit(
+                    alice, jvb, 2, XRP(100)));  // omit destination
+                env(claim_attestation(
+                    alice,
+                    jvb,
+                    bob,
+                    XRP(100),
+                    bob,
+                    false,
+                    2,
+                    std::nullopt,
+                    signer));
+                env.close();
+            }
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+
+            env(xchain_claim(alice, jvb, 2, XRP(100), bob));
+            env.close();
+
+            // XChainOwnedClaimID deleted
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        }
     }
 
     void
@@ -3722,7 +3838,7 @@ public:
         testSignerList();
         testTrustSet();
         testVault();
-        // testXChain();
+        testXChain();
     }
 
     void
