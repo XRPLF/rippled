@@ -589,6 +589,8 @@ ConnectAttempt::processResponse()
             remote_endpoint_.address(),
             app_);
 
+        usage_.setPublicKey(publicKey);
+
         JLOG(journal_.debug())
             << "Protocol: " << to_string(*negotiatedProtocol);
         JLOG(journal_.info())
