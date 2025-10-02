@@ -59,8 +59,11 @@ jobs:
             .github/actions/build-test/**
             .github/actions/setup-conan/**
             .github/scripts/strategy-matrix/**
+            .github/workflows/reusable-build.yml
+            .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
             .github/workflows/reusable-strategy-matrix.yml
+            .github/workflows/reusable-test.yml
             .codecov.yml
             cmake/**
             conan/**
@@ -105,7 +108,7 @@ jobs:
     with:
       os: ${{ matrix.os }}
     secrets:
-      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   notify-clio:
     needs:
