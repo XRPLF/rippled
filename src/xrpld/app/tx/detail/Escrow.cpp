@@ -1324,6 +1324,7 @@ EscrowFinish::doApply()
         if (auto const& data = ledgerDataProvider.getData(); data.has_value())
         {
             slep->setFieldVL(sfData, makeSlice(*data));
+            ctx_.view().update(slep);
         }
 
         if (re.has_value())
