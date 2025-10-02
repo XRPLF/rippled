@@ -2190,7 +2190,7 @@ NoModifiedUnmodifiableFields::finalize(
                     fieldChanged(before, after, sfStartDate) ||
                     fieldChanged(before, after, sfPaymentInterval) ||
                     fieldChanged(before, after, sfGracePeriod) ||
-                    fieldChanged(before, after, sfPrincipalRequested);
+                    fieldChanged(before, after, sfLoanScale);
                 break;
             default:
                 /*

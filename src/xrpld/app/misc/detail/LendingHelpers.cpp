@@ -48,8 +48,8 @@ loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 
 Number
 loanPeriodicPayment(
-    Number principalOutstanding,
-    Number periodicRate,
+    Number const& principalOutstanding,
+    Number const& periodicRate,
     std::uint32_t paymentsRemaining)
 {
     if (principalOutstanding == 0 || paymentsRemaining == 0)
@@ -72,7 +72,7 @@ loanPeriodicPayment(
 
 Number
 loanPeriodicPayment(
-    Number principalOutstanding,
+    Number const& principalOutstanding,
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining)
@@ -91,7 +91,7 @@ loanPeriodicPayment(
 
 Number
 loanLatePaymentInterest(
-    Number principalOutstanding,
+    Number const& principalOutstanding,
     TenthBips32 lateInterestRate,
     NetClock::time_point parentCloseTime,
     std::uint32_t startDate,
@@ -114,8 +114,8 @@ loanLatePaymentInterest(
 
 Number
 loanAccruedInterest(
-    Number principalOutstanding,
-    Number periodicRate,
+    Number const& principalOutstanding,
+    Number const& periodicRate,
     NetClock::time_point parentCloseTime,
     std::uint32_t startDate,
     std::uint32_t prevPaymentDate,

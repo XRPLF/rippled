@@ -147,7 +147,7 @@ LoanPay::doApply()
 
     //------------------------------------------------------
     // Loan object state changes
-    Number const originalPrincipalRequested = loanSle->at(sfPrincipalRequested);
+    std::int32_t const loanScale = loanSle->at(sfLoanScale);
 
     // Unimpair the loan if it was impaired. Do this before the payment is
     // attempted, so the original values can be used. If the payment fails, this
@@ -163,7 +163,7 @@ LoanPay::doApply()
 
         auto const interestOutstanding = loanInterestOutstandingMinusFee(
             asset,
-            originalPrincipalRequested,
+            loanScale,
             principalOutstanding.value(),
             interestRate,
             paymentInterval,
@@ -219,7 +219,7 @@ LoanPay::doApply()
     auto const managementFee = roundToAsset(
         asset,
         tenthBipsOfValue(paymentParts->interestPaid, managementFeeRate),
-        originalPrincipalRequested);
+        loanScale);
 
     auto const totalPaidToVault = paymentParts->principalPaid +
         paymentParts->interestPaid - managementFee;
@@ -241,7 +241,7 @@ LoanPay::doApply()
     bool const sufficientCover = coverAvailableField >=
         roundToAsset(asset,
                      tenthBipsOfValue(debtTotalField.value(), coverRateMinimum),
-                     originalPrincipalRequested);
+                     loanScale);
     if (!sufficientCover)
     {
         // Add the fee to First Loss Cover Pool
@@ -253,15 +253,11 @@ LoanPay::doApply()
     // Decrease LoanBroker Debt by the amount paid, add the Loan value change,
     // and subtract the change in the management fee
     auto const vaultValueChange = valueMinusManagementFee(
-        asset,
-        paymentParts->valueChange,
-        managementFeeRate,
-        originalPrincipalRequested);
+        asset, paymentParts->valueChange, managementFeeRate, loanScale);
     // debtDecrease may be negative, increasing the debt
     auto const debtDecrease = totalPaidToVault - vaultValueChange;
     XRPL_ASSERT_PARTS(
-        roundToAsset(asset, debtDecrease, originalPrincipalRequested) ==
-            debtDecrease,
+        roundToAsset(asset, debtDecrease, loanScale) == debtDecrease,
         "ripple::LoanPay::doApply",
         "debtDecrease rounding good");
     if (debtDecrease >= debtTotalField)

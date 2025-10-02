@@ -111,7 +111,7 @@ class Loan_test : public beast::unit_test::suite
         NetClock::time_point startDate = {};
         std::uint32_t nextPaymentDate = 0;
         std::uint32_t paymentRemaining = 0;
-        Number const principalRequested = 0;
+        std::int32_t const loanScale = 0;
         Number principalOutstanding = 0;
         std::uint32_t flags = 0;
         std::uint32_t paymentInterval = 0;
@@ -221,7 +221,7 @@ class Loan_test : public beast::unit_test::suite
             std::uint32_t nextPaymentDate,
             std::uint32_t paymentRemaining,
             Number const& principalRequested,
-            Number const& principalOutstanding,
+            Number const& loanScale,
             std::uint32_t flags) const
         {
             using namespace jtx;
@@ -233,13 +233,12 @@ class Loan_test : public beast::unit_test::suite
                     loan->at(sfNextPaymentDueDate) == nextPaymentDate);
                 env.test.BEAST_EXPECT(
                     loan->at(sfPaymentRemaining) == paymentRemaining);
-                env.test.BEAST_EXPECT(
-                    loan->at(sfPrincipalRequested) == principalRequested);
+                env.test.BEAST_EXPECT(loan->at(sfLoanScale) == loanScale);
                 env.test.BEAST_EXPECT(
                     loan->at(sfPrincipalOutstanding) == principalOutstanding);
                 env.test.BEAST_EXPECT(
-                    loan->at(sfPrincipalRequested) ==
-                    broker.asset(loanAmount).value());
+                    loan->at(sfLoanScale) ==
+                    broker.asset(loanAmount).value().exponent());
                 env.test.BEAST_EXPECT(loan->at(sfFlags) == flags);
 
                 auto const interestRate = TenthBips32{loan->at(sfInterestRate)};
@@ -369,7 +368,7 @@ class Loan_test : public beast::unit_test::suite
                 .startDate = tp{d{loan->at(sfStartDate)}},
                 .nextPaymentDate = loan->at(sfNextPaymentDueDate),
                 .paymentRemaining = loan->at(sfPaymentRemaining),
-                .principalRequested = loan->at(sfPrincipalRequested),
+                .loanScale = loan->at(sfLoanScale),
                 .principalOutstanding = loan->at(sfPrincipalOutstanding),
                 .flags = loan->at(sfFlags),
                 .paymentInterval = loan->at(sfPaymentInterval),
@@ -611,7 +610,7 @@ class Loan_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 loan->at(sfNextPaymentDueDate) == startDate + interval);
             BEAST_EXPECT(loan->at(sfPaymentRemaining) == total);
-            BEAST_EXPECT(loan->at(sfPrincipalRequested) == principalRequest);
+            BEAST_EXPECT(loan->at(sfLoanScale) == principalRequest.exponent());
             BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == principalRequest);
         }
 
@@ -1985,7 +1984,7 @@ class Loan_test : public beast::unit_test::suite
             BEAST_EXPECT(loan[sfPaymentRemaining] == 1);
             BEAST_EXPECT(loan[sfPreviousPaymentDate] == 0);
             BEAST_EXPECT(loan[sfPrincipalOutstanding] == "1000000000");
-            BEAST_EXPECT(loan[sfPrincipalRequested] == "1000000000");
+            BEAST_EXPECT(loan[sfLoanScale] == 0);
             BEAST_EXPECT(
                 loan[sfStartDate].asUInt() ==
                 startDate.time_since_epoch().count());
@@ -2177,7 +2176,7 @@ class Loan_test : public beast::unit_test::suite
         {
             // Verify the payment decreased the principal
             BEAST_EXPECT(loan->at(sfPaymentRemaining) == numPayments);
-            BEAST_EXPECT(loan->at(sfPrincipalRequested) == actualPrincipal);
+            BEAST_EXPECT(loan->at(sfLoanScale) == actualPrincipal.exponent());
             BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == actualPrincipal);
         }
 
@@ -2190,7 +2189,7 @@ class Loan_test : public beast::unit_test::suite
         {
             // Verify the payment decreased the principal
             BEAST_EXPECT(loan->at(sfPaymentRemaining) == numPayments - 1);
-            BEAST_EXPECT(loan->at(sfPrincipalRequested) == actualPrincipal);
+            BEAST_EXPECT(loan->at(sfLoanScale) == actualPrincipal.exponent());
             BEAST_EXPECT(
                 loan->at(sfPrincipalOutstanding) == actualPrincipal - 1);
         }
