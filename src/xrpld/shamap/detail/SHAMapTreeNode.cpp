@@ -42,8 +42,7 @@ SHAMapTreeNode::makeTransaction(
         make_shamapitem(sha512Half(HashPrefix::transactionID, data), data);
 
     if (hashValid)
-        return intr_ptr::make_shared<SHAMapTxLeafNode>(
-            std::move(item), 0, hash);
+        return intr_ptr::make_shared<SHAMapTxLeafNode>(std::move(item), 0);
 
     return intr_ptr::make_shared<SHAMapTxLeafNode>(std::move(item), 0);
 }
@@ -72,7 +71,7 @@ SHAMapTreeNode::makeTransactionWithMeta(
 
     if (hashValid)
         return intr_ptr::make_shared<SHAMapTxPlusMetaLeafNode>(
-            std::move(item), 0, hash);
+            std::move(item), 0);
 
     return intr_ptr::make_shared<SHAMapTxPlusMetaLeafNode>(std::move(item), 0);
 }
@@ -104,7 +103,7 @@ SHAMapTreeNode::makeAccountState(
 
     if (hashValid)
         return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(
-            std::move(item), 0, hash);
+            std::move(item), 0);
 
     return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(
         std::move(item), 0);
