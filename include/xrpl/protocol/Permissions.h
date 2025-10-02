@@ -74,6 +74,9 @@ public:
     Permission&
     operator=(Permission const&) = delete;
 
+    std::optional<std::string>
+    getPermissionName(std::uint32_t const value) const;
+
     std::optional<std::uint32_t>
     getGranularValue(std::string const& name) const;
 
@@ -82,6 +85,9 @@ public:
 
     std::optional<TxType>
     getGranularTxType(GranularPermissionType const& gpType) const;
+
+    std::optional<std::reference_wrapper<uint256 const>> const
+    getTxFeature(TxType txType) const;
 
     bool
     isDelegatable(std::uint32_t const& permissionValue, Rules const& rules)

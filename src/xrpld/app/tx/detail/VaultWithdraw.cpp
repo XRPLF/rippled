@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/VaultWithdraw.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
@@ -33,15 +33,6 @@ namespace ripple {
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
-
-    if (auto const ter = preflight1(ctx))
-        return ter;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
     if (ctx.tx[sfVaultID] == beast::zero)
     {
         JLOG(ctx.j.debug()) << "VaultWithdraw: zero/empty vault ID.";
@@ -68,7 +59,7 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

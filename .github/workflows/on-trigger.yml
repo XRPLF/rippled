@@ -14,7 +14,7 @@ on:
       - master
     paths:
       # These paths are unique to `on-trigger.yml`.
-      - ".github/workflows/check-missing-commits.yml"
+      - ".github/workflows/reusable-check-missing-commits.yml"
       - ".github/workflows/on-trigger.yml"
       - ".github/workflows/publish-docs.yml"
 
@@ -23,8 +23,11 @@ on:
       - ".github/actions/build-test/**"
       - ".github/actions/setup-conan/**"
       - ".github/scripts/strategy-matrix/**"
-      - ".github/workflows/build-test.yml"
+      - ".github/workflows/reusable-build.yml"
+      - ".github/workflows/reusable-build-test-config.yml"
+      - ".github/workflows/reusable-build-test.yml"
       - ".github/workflows/reusable-strategy-matrix.yml"
+      - ".github/workflows/reusable-test.yml"
       - ".codecov.yml"
       - "cmake/**"
       - "conan/**"
@@ -43,22 +46,8 @@ on:
   schedule:
     - cron: "32 6 * * 1-5"
 
-  # Run when manually triggered via the GitHub UI or API. If `force_upload` is
-  # true, then the dependencies that were missing (`force_rebuild` is false) or
-  # rebuilt (`force_rebuild` is true) will be uploaded, overwriting existing
-  # dependencies if needed.
+  # Run when manually triggered via the GitHub UI or API.
   workflow_dispatch:
-    inputs:
-      dependencies_force_build:
-        description: "Force building of all dependencies."
-        required: false
-        type: boolean
-        default: false
-      dependencies_force_upload:
-        description: "Force uploading of all dependencies."
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -71,15 +60,15 @@ defaults:
 jobs:
   check-missing-commits:
     if: ${{ github.event_name == 'push' && github.ref_type == 'branch' && contains(fromJSON('["develop", "release"]'), github.ref_name) }}
-    uses: ./.github/workflows/check-missing-commits.yml
+    uses: ./.github/workflows/reusable-check-missing-commits.yml
 
   build-test:
-    uses: ./.github/workflows/build-test.yml
+    uses: ./.github/workflows/reusable-build-test.yml
     strategy:
       matrix:
         os: [linux, macos, windows]
     with:
       os: ${{ matrix.os }}
-      strategy_matrix: "minimal"
+      strategy_matrix: ${{ github.event_name == 'schedule' && 'all' || 'minimal' }}
     secrets:
-      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

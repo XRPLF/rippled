@@ -33,8 +33,11 @@
 // in include/xrpl/protocol/Feature.h.
 
 XRPL_FIX    (ExpiredNFTokenOfferRemoval, Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (IncludeKeyletFields,        Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(DynamicMPT,                 Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FIX    (TokenEscrowV1,              Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (DelegateV1_1,               Supported::no,  VoteBehavior::DefaultNo)
-XRPL_FIX    (PriceOracleOrder,           Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FIX    (PriceOracleOrder,           Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (MPTDeliveredAmount,         Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMClawbackRounding,        Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(TokenEscrow,                Supported::yes, VoteBehavior::DefaultNo)
@@ -43,7 +46,7 @@ XRPL_FIX    (AMMv1_3,                    Supported::yes, VoteBehavior::DefaultNo
 XRPL_FEATURE(PermissionedDEX,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Batch,                      Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(SingleAssetVault,           Supported::no,  VoteBehavior::DefaultNo)
-XRPL_FEATURE(PermissionDelegation,       Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(PermissionDelegation,       Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (PayChanCancelAfter,         Supported::yes, VoteBehavior::DefaultNo)
 // Check flags in Credential transactions
 XRPL_FIX    (InvalidTxFlags,             Supported::yes, VoteBehavior::DefaultNo)

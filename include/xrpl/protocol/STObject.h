@@ -25,7 +25,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
@@ -34,6 +33,7 @@
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/detail/STVar.h>
 
 #include <boost/iterator/transform_iterator.hpp>
@@ -231,6 +231,8 @@ public:
     getFieldH192(SField const& field) const;
     uint256
     getFieldH256(SField const& field) const;
+    std::int32_t
+    getFieldI32(SField const& field) const;
     AccountID
     getAccountID(SField const& field) const;
 
@@ -364,6 +366,8 @@ public:
     setFieldH128(SField const& field, uint128 const&);
     void
     setFieldH256(SField const& field, uint256 const&);
+    void
+    setFieldI32(SField const& field, std::int32_t);
     void
     setFieldVL(SField const& field, Blob const&);
     void
