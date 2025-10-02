@@ -233,8 +233,6 @@ public:
     getFieldH256(SField const& field) const;
     std::int32_t
     getFieldI32(SField const& field) const;
-    std::int64_t
-    getFieldI64(SField const& field) const;
     AccountID
     getAccountID(SField const& field) const;
 
@@ -370,8 +368,6 @@ public:
     setFieldH256(SField const& field, uint256 const&);
     void
     setFieldI32(SField const& field, std::int32_t);
-    void
-    setFieldI64(SField const& field, std::int64_t);
     void
     setFieldVL(SField const& field, Blob const&);
     void

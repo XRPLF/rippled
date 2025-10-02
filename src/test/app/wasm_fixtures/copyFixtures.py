@@ -46,10 +46,10 @@ def process_rust(project_name):
     project_path = os.path.abspath(
         os.path.join(os.path.dirname(__file__), project_name)
     )
-    wasm_location = f"target/wasm32-unknown-unknown/release/{project_name}.wasm"
+    wasm_location = f"target/wasm32v1-none/release/{project_name}.wasm"
     build_cmd = (
         f"(cd {project_path} "
-        f"&& cargo build --target wasm32-unknown-unknown --release "
+        f"&& cargo build --target wasm32v1-none --release "
         f"&& wasm-opt {wasm_location} {OPT} -o {wasm_location}"
         ")"
     )
@@ -68,7 +68,7 @@ def process_rust(project_name):
     src_path = os.path.abspath(
         os.path.join(
             os.path.dirname(__file__),
-            f"{project_name}/target/wasm32-unknown-unknown/release/{project_name}.wasm",
+            f"{project_name}/target/wasm32v1-none/release/{project_name}.wasm",
         )
     )
     with open(src_path, "rb") as f:
