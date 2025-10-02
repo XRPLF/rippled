@@ -134,22 +134,26 @@ EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
     return txnFees;
 }
 
-NotTEC
-EscrowCreate::preflight(PreflightContext const& ctx)
+bool
+EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfFinishFunction) &&
         !ctx.rules.enabled(featureSmartEscrow))
-    {
-        JLOG(ctx.j.debug()) << "SmartEscrow not enabled";
-        return temDISABLED;
-    }
+        return false;
 
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
+    return true;
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+std::uint32_t
+EscrowCreate::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+}
 
+NotTEC
+EscrowCreate::preflight(PreflightContext const& ctx)
+{
     STAmount const amount{ctx.tx[sfAmount]};
     if (!isXRP(amount))
     {
@@ -242,7 +246,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 template <ValidIssueType T>
@@ -698,26 +702,31 @@ checkCondition(Slice f, Slice c)
     return validate(*fulfillment, *condition);
 }
 
-NotTEC
-EscrowFinish::preflight(PreflightContext const& ctx)
+bool
+EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
     if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
         !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
+        return false;
 
     if (ctx.tx.isFieldPresent(sfComputationAllowance) &&
         !ctx.rules.enabled(featureSmartEscrow))
     {
-        JLOG(ctx.j.debug()) << "SmartEscrow not enabled";
-        return temDISABLED;
+        return false;
     }
+    return true;
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+std::uint32_t
+EscrowFinish::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+}
 
+NotTEC
+EscrowFinish::preflight(PreflightContext const& ctx)
+{
     auto const cb = ctx.tx[~sfCondition];
     auto const fb = ctx.tx[~sfFulfillment];
 
@@ -729,13 +738,14 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    // Verify the transaction signature. If it doesn't work
-    // then don't do any more work.
-    {
-        auto const ret = preflight2(ctx);
-        if (!isTesSuccess(ret))
-            return ret;
-    }
+    return tesSUCCESS;
+}
+
+NotTEC
+EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
+{
+    auto const cb = ctx.tx[~sfCondition];
+    auto const fb = ctx.tx[~sfFulfillment];
 
     if (cb && fb)
     {
@@ -1414,16 +1424,17 @@ EscrowFinish::doApply()
 
 //------------------------------------------------------------------------------
 
+std::uint32_t
+EscrowCancel::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+}
+
 NotTEC
 EscrowCancel::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 template <ValidIssueType T>
