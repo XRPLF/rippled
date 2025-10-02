@@ -1900,6 +1900,11 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {"vault deletion succeeded without deleting a vault"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                ac.view().update(sleVault);
                 return true;
             },
             XRPAmount{},
@@ -1969,6 +1974,26 @@ class Invariants_test : public beast::unit_test::suite
             XRPAmount{},
             STTx{ttPAYMENT, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        doInvariantCheck(
+            {"vault deleted by a wrong transaction type"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                ac.view().erase(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
 
         doInvariantCheck(
             {"vault operation updated more than single vault"},
@@ -2080,7 +2105,7 @@ class Invariants_test : public beast::unit_test::suite
             });
 
         doInvariantCheck(
-            {"vault operation succeeded without updating or creating a vault"},
+            {"vault operation succeeded without modifying a vault"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -2103,7 +2128,7 @@ class Invariants_test : public beast::unit_test::suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"vault operation succeeded without updating or creating a vault"},
+            {"vault operation succeeded without modifying a vault"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 return true;
             },
@@ -2118,7 +2143,7 @@ class Invariants_test : public beast::unit_test::suite
             });
 
         doInvariantCheck(
-            {"vault operation succeeded without updating or creating a vault"},
+            {"vault operation succeeded without modifying a vault"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 return true;
             },
@@ -2133,7 +2158,7 @@ class Invariants_test : public beast::unit_test::suite
             });
 
         doInvariantCheck(
-            {"vault operation succeeded without updating or creating a vault"},
+            {"vault operation succeeded without modifying a vault"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 return true;
             },
@@ -2148,12 +2173,27 @@ class Invariants_test : public beast::unit_test::suite
             });
 
         doInvariantCheck(
-            {"vault operation succeeded without updating or creating a vault"},
+            {"vault operation succeeded without modifying a vault"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 return true;
             },
             XRPAmount{},
             STTx{ttVAULT_CLAWBACK, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"vault operation succeeded without modifying a vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
                 Vault vault{env};

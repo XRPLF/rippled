@@ -2314,9 +2314,21 @@ ValidVault::finalize(
     if (!isTesSuccess(ret))
         return true;  // Do not perform checks
 
-    // TODO: add mayModifyVault
-    if ((!afterVault_.empty() || !beforeVault_.empty()) &&
-        !hasPrivilege(tx, mustModifyVault))
+    if (afterVault_.empty() && beforeVault_.empty())
+    {
+        if (hasPrivilege(tx, mustModifyVault))
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: vault operation succeeded without modifying "
+                "a vault";
+            XRPL_ASSERT(
+                enforce, "ripple::ValidVault::finalize : vault noop invariant");
+            return !enforce;
+        }
+
+        return true;  // Not a vault operation
+    }
+    else if (!hasPrivilege(tx, mustModifyVault))  // TODO: mayModifyVault
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault updated by a wrong transaction type";
@@ -2337,20 +2349,24 @@ ValidVault::finalize(
     }
 
     auto const txnType = tx.getTxnType();
-    // First special handling for ttVAULT_DELETE, which is the only
+
+    // We do special handling for ttVAULT_DELETE first, because it's the only
     // vault-modifying transaction without an "after" state of the vault
-    if (txnType == ttVAULT_DELETE)
+    if (afterVault_.empty())
     {
-        if (beforeVault_.empty())
+        if (txnType != ttVAULT_DELETE)
         {
             JLOG(j.fatal()) <<  //
-                "Invariant failed: vault deletion succeeded without deleting a "
-                "vault";
+                "Invariant failed: vault deleted by a wrong transaction type";
             XRPL_ASSERT(
                 enforce,
-                "ripple::ValidVault::finalize : vault deletion invariant");
+                "ripple::ValidVault::finalize : illegal vault deletion "
+                "invariant");
             return !enforce;  // That's all we can do here
         }
+
+        // Note, if afterVault_ is empty then we know that beforeVault_ is not
+        // empty, as enforced at the top of this function
         auto const& beforeVault = beforeVault_[0];
 
         // At this moment we only know a vault is being deleted and there
@@ -2397,22 +2413,16 @@ ValidVault::finalize(
 
         return result;
     }
-
-    // Note, only valid case when `afterVault_` can be empty is handled above
-    if (afterVault_.empty())
+    else if (txnType == ttVAULT_DELETE)
     {
-        if (hasPrivilege(tx, mustModifyVault))
-        {
-            JLOG(j.fatal()) <<  //
-                "Invariant failed: vault operation succeeded without updating "
-                "or creating a vault";
-            XRPL_ASSERT(
-                enforce, "ripple::ValidVault::finalize : vault noop invariant");
-            return !enforce;
-        }
-
-        return true;  // Not a vault operation
+        JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without "
+                           "deleting a vault";
+        XRPL_ASSERT(
+            enforce, "ripple::ValidVault::finalize : vault deletion invariant");
+        return !enforce;  // That's all we can do here
     }
+
+    // Note, `afterVault_.empty()` is handled above
     auto const& afterVault = afterVault_[0];
     XRPL_ASSERT(
         beforeVault_.empty() || beforeVault_[0].key == afterVault.key,
