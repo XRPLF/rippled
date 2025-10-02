@@ -433,10 +433,22 @@ featureToName(uint256 const& f)
 #pragma push_macro("XRPL_RETIRE")
 #undef XRPL_RETIRE
 
+template <std::size_t N>
+constexpr auto
+enforceMaxFeatureNameSize(char const (&n)[N]) -> char const*
+{
+    static_assert(N != reservedFeatureNameSize);
+    static_assert(N != reservedFeatureNameSize + 1);
+    static_assert(N <= maxFeatureNameSize);
+    return n;
+}
+
 #define XRPL_FEATURE(name, supported, vote) \
-    uint256 const feature##name = registerFeature(#name, supported, vote);
-#define XRPL_FIX(name, supported, vote) \
-    uint256 const fix##name = registerFeature("fix" #name, supported, vote);
+    uint256 const feature##name =           \
+        registerFeature(enforceMaxFeatureNameSize(#name), supported, vote);
+#define XRPL_FIX(name, supported, vote)        \
+    uint256 const fix##name = registerFeature( \
+        enforceMaxFeatureNameSize("fix" #name), supported, vote);
 
 // clang-format off
 #define XRPL_RETIRE(name)                                       \
