@@ -320,6 +320,11 @@ LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, ({
     {sfBaseFeeDrops,           soeOPTIONAL},
     {sfReserveBaseDrops,       soeOPTIONAL},
     {sfReserveIncrementDrops,  soeOPTIONAL},
+    // Smart Escrow fields
+    {sfExtensionComputeLimit,  soeOPTIONAL},
+    {sfExtensionSizeLimit,     soeOPTIONAL},
+    {sfGasPrice,               soeOPTIONAL},
+
     {sfPreviousTxnID,          soeOPTIONAL},
     {sfPreviousTxnLgrSeq,      soeOPTIONAL},
 }))

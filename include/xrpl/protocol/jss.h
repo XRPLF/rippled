@@ -272,6 +272,9 @@ JSS(expected_date_UTC);       // out: any (warnings)
 JSS(expected_ledger_size);    // out: TxQ
 JSS(expiration);              // out: AccountOffers, AccountChannels,
                               //      ValidatorList, amm_info
+JSS(extension_compute);       // out: NetworkOps
+JSS(extension_size);          // out: NetworkOps
+JSS(gas_price);               // out: NetworkOps
 JSS(fail_hard);               // in: Sign, Submit
 JSS(failed);                  // out: InboundLedger
 JSS(feature);                 // in: Feature
@@ -722,11 +725,11 @@ JSS(write_load);              // out: GetCounts
 #pragma push_macro("LEDGER_ENTRY_DUPLICATE")
 #undef LEDGER_ENTRY_DUPLICATE
 
-#define LEDGER_ENTRY(tag, value, name, rpcName, ...) \
-    JSS(name);                                       \
+#define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
+    JSS(name);                                          \
     JSS(rpcName);
 
-#define LEDGER_ENTRY_DUPLICATE(tag, value, name, rpcName, ...) JSS(rpcName);
+#define LEDGER_ENTRY_DUPLICATE(tag, value, name, rpcName, fields) JSS(rpcName);
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
