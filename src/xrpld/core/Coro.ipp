@@ -104,7 +104,7 @@ JobQueue::Coro::post()
 
     XRPL_ASSERT(
         state_ == CoroState::Suspended,
-        "JobQueue::Coro::post: coroutine should be suspended!");
+        "ripple::JobQueue::Coro::post : should be suspended");
 
     // sp keeps 'this' alive
     if (jq_.addJob(
