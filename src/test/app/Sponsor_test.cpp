@@ -3292,6 +3292,28 @@ public:
 
             Vault vault{env};
             auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+
+            {
+                auto const ticketSeq = env.seq(sponsor) + 1;
+                env(ticket::create(sponsor, 1));
+                env.close();
+                adjustAccountXRPBalance(
+                    env, sponsor, reserve(env, 3) - drops(1));
+                // check with OwnerCount=3 because free MPToken condition exists
+                env(tx,
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+                adjustAccountXRPBalance(env, sponsor, reserve(env, 3));
+                env(noop(sponsor), ticket::use(ticketSeq));
+                env.close();
+            }
+
+            // get keylet using latest sequence
+            keylet =
+                std::get<1>(vault.create({.owner = alice, .asset = asset}));
+
             env(tx,
                 sponsor::as(sponsor, tfSponsorReserve),
                 sponsor::sig(sponsor));
@@ -3321,8 +3343,27 @@ public:
 
             BEAST_EXPECT(ownerCount(env, bob) == 1);  // RippleState
 
-            env(vault.deposit(
-                    {.depositor = bob, .id = keylet.key, .amount = asset(100)}),
+            auto const depositTx = vault.deposit(
+                {.depositor = bob, .id = keylet.key, .amount = asset(100)});
+            {
+                // TODO: https://github.com/XRPLF/rippled/issues/5837
+                // auto const ticketSeq = env.seq(sponsor) + 1;
+                // env(ticket::create(sponsor, 1));
+                // env.close();
+                // adjustAccountXRPBalance(
+                //     env, sponsor, reserve(env, 3) - drops(1));
+                // // check with OwnerCount=3 because free MPToken condition
+                // exists env(depositTx,
+                //     sponsor::as(sponsor, tfSponsorReserve),
+                //     sponsor::sig(sponsor),
+                //     ter(tecINSUFFICIENT_RESERVE));
+                // env.close();
+                // adjustAccountXRPBalance(env, sponsor, reserve(env, 3));
+                // env(noop(sponsor), ticket::use(ticketSeq));
+                // env.close();
+            }
+
+            env(depositTx,
                 sponsor::as(sponsor, tfSponsorReserve),
                 sponsor::sig(sponsor));
             env.close();
@@ -3352,10 +3393,29 @@ public:
                 env(pay(gw, bob, asset(100)));
                 env.close();
 
-                env(vault.deposit(
-                        {.depositor = bob,
-                         .id = keylet.key,
-                         .amount = asset(100)}),
+                auto const depositTx = vault.deposit(
+                    {.depositor = bob, .id = keylet.key, .amount = asset(100)});
+
+                {
+                    // https://github.com/XRPLF/rippled/issues/5837
+                    // auto const ticketSeq = env.seq(sponsor) + 1;
+                    // env(ticket::create(sponsor, 1));
+                    // env.close();
+                    // adjustAccountXRPBalance(
+                    //     env, sponsor, reserve(env, 3) - drops(1));
+                    // // check with OwnerCount=3 because free MPToken condition
+                    // // exists
+                    // env(depositTx,
+                    //     sponsor::as(sponsor, tfSponsorReserve),
+                    //     sponsor::sig(sponsor),
+                    //     ter(tecINSUFFICIENT_RESERVE));
+                    // env.close();
+                    // adjustAccountXRPBalance(env, sponsor, reserve(env, 3));
+                    // env(noop(sponsor), ticket::use(ticketSeq));
+                    // env.close();
+                }
+
+                env(depositTx,
                     sponsor::as(sponsor, tfSponsorReserve),
                     sponsor::sig(sponsor));
                 env.close();
@@ -3427,8 +3487,29 @@ public:
             env(pay(gw, bob, asset(100)));
             env.close();
 
-            env(vault.deposit(
-                    {.depositor = bob, .id = keylet.key, .amount = asset(100)}),
+            auto const depositTx = vault.deposit(
+                {.depositor = bob, .id = keylet.key, .amount = asset(100)});
+
+            {
+                // https://github.com/XRPLF/rippled/issues/5837
+                // auto const ticketSeq = env.seq(sponsor) + 1;
+                // env(ticket::create(sponsor, 1));
+                // env.close();
+                // adjustAccountXRPBalance(
+                //     env, sponsor, reserve(env, 3) - drops(1));
+                // // check with OwnerCount=3 because free MPToken condition
+                // // exists
+                // env(depositTx,
+                //     sponsor::as(sponsor, tfSponsorReserve),
+                //     sponsor::sig(sponsor),
+                //     ter(tecINSUFFICIENT_RESERVE));
+                // env.close();
+                // adjustAccountXRPBalance(env, sponsor, reserve(env, 3));
+                // env(noop(sponsor), ticket::use(ticketSeq));
+                // env.close();
+            }
+
+            env(depositTx,
                 sponsor::as(sponsor, tfSponsorReserve),
                 sponsor::sig(sponsor));
             env.close();
@@ -3507,6 +3588,14 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, doorA) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
+            env(bridge_create(doorA, jvb, XRP(1), XRP(1)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
+
             env(bridge_create(doorA, jvb, XRP(1), XRP(1)),
                 sponsor::as(sponsor, tfSponsorReserve),
                 sponsor::sig(sponsor));
@@ -3521,6 +3610,14 @@ public:
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 2) - drops(1));
+            env(xchain_create_claim_id(alice, jvb, XRP(1), bob),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
 
             env(xchain_create_claim_id(alice, jvb, XRP(1), bob),
                 sponsor::as(sponsor, tfSponsorReserve),
@@ -3818,7 +3915,6 @@ public:
     void
     testSponsorReserve()
     {
-        // TODO: add checks fo InsufficientReserve for Sponsoring ledger entry
         testRequireFlag();
         testAMM();
         testCheck();
