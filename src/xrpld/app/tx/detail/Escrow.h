@@ -33,8 +33,14 @@ public:
     {
     }
 
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
+
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
+
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);

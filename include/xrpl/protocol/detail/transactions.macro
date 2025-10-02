@@ -69,11 +69,13 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
     noPriv,
     ({
     {sfDestination, soeREQUIRED},
+    {sfDestinationTag, soeOPTIONAL},
     {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfCondition, soeOPTIONAL},
     {sfCancelAfter, soeOPTIONAL},
     {sfFinishAfter, soeOPTIONAL},
-    {sfDestinationTag, soeOPTIONAL},
+    {sfFinishFunction, soeOPTIONAL},
+    {sfData,           soeOPTIONAL},
 }))
 
 /** This transaction type completes an existing escrow. */
@@ -87,6 +89,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish,
     {sfFulfillment, soeOPTIONAL},
     {sfCondition, soeOPTIONAL},
     {sfCredentialIDs, soeOPTIONAL},
+    {sfComputationAllowance, soeOPTIONAL},
 }))
 
 
