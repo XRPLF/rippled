@@ -178,6 +178,14 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
+                testcase(prefix + " set maximum is idempotent, set it again");
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfAssetsMaximum] = asset(150).number();
+                env(tx);
+                env.close();
+            }
+
+            {
                 testcase(prefix + " set data");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfData] = "0";
@@ -218,6 +226,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .amount = asset(1000)});
                 env(tx, ter(tecINSUFFICIENT_FUNDS));
+                env.close();
             }
 
             {
@@ -385,6 +394,27 @@ class Vault_test : public beast::unit_test::suite
                     env.balance(depositor, shares) == share(50 * scale));
             }
 
+            if (!asset.raw().native())
+            {
+                testcase(prefix + " issuer deposits");
+                auto tx = vault.deposit(
+                    {.depositor = issuer,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                env(tx);
+                env.close();
+                BEAST_EXPECT(env.balance(issuer, shares) == share(10 * scale));
+
+                testcase(prefix + " issuer withdraws");
+                tx = vault.withdraw(
+                    {.depositor = issuer,
+                     .id = keylet.key,
+                     .amount = share(10 * scale)});
+                env(tx);
+                env.close();
+                BEAST_EXPECT(env.balance(issuer, shares) == share(0 * scale));
+            }
+
             {
                 testcase(prefix + " withdraw remaining assets");
                 auto tx = vault.withdraw(
@@ -454,6 +484,8 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(10)});
                 tx[sfDestination] = erin.human();
                 env(tx);
+                env.close();
+
                 // Erin returns assets to issuer
                 env(pay(erin, issuer, asset(10)));
                 env.close();
@@ -479,12 +511,14 @@ class Vault_test : public beast::unit_test::suite
                 testcase(prefix + " fail to delete because wrong owner");
                 auto tx = vault.del({.owner = issuer, .id = keylet.key});
                 env(tx, ter(tecNO_PERMISSION));
+                env.close();
             }
 
             {
                 testcase(prefix + " delete empty vault");
                 auto tx = vault.del({.owner = owner, .id = keylet.key});
                 env(tx);
+                env.close();
                 BEAST_EXPECT(!env.le(keylet));
             }
         };
@@ -1328,6 +1362,26 @@ class Vault_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
         {
+            {
+                testcase("IOU fail because MPT is disabled");
+                Env env{
+                    *this,
+                    (testable_amendments() - featureMPTokensV1) |
+                        featureSingleAssetVault};
+                Account issuer{"issuer"};
+                Account owner{"owner"};
+                env.fund(XRP(1000), issuer, owner);
+                env.close();
+
+                Vault vault{env};
+                Asset asset = issuer["IOU"].asset();
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+
+                env(tx, ter(temDISABLED));
+                env.close();
+            }
+
             {
                 testcase("IOU fail create frozen");
                 Env env{*this, testable_amendments() | featureSingleAssetVault};
@@ -2878,6 +2932,12 @@ class Vault_test : public beast::unit_test::suite
                 tx[sfDomainID] = to_string(domainId);
                 env(tx);
                 env.close();
+
+                // Should be idempotent
+                tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfDomainID] = to_string(domainId);
+                env(tx);
+                env.close();
             }
         }
 
@@ -3033,6 +3093,7 @@ class Vault_test : public beast::unit_test::suite
                  .id = keylet.key,
                  .amount = asset(50)});
             env(tx);
+            env.close();
 
             tx = vault.clawback(
                 {.issuer = issuer,
@@ -3047,6 +3108,7 @@ class Vault_test : public beast::unit_test::suite
                  .holder = owner,
                  .amount = asset(0)});
             env(tx);
+            env.close();
 
             tx = vault.del({
                 .owner = owner,
@@ -3093,6 +3155,7 @@ class Vault_test : public beast::unit_test::suite
             auto tx = vault.deposit(
                 {.depositor = owner, .id = keylet.key, .amount = asset(50)});
             env(tx);
+            env.close();
         }
 
         {
