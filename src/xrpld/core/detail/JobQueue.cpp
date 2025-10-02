@@ -305,6 +305,10 @@ JobQueue::stop()
     // get suspended and yield() will return immediately, so we can safely
     // move m_suspendedCoros, and we can assume that no coroutine will be
     // suspended in the future.
+    if (queueState_ == QueueState::Stopped)
+    {
+        return;
+    }
 
     auto accepting = QueueState::Accepting;
 
