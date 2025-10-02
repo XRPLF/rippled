@@ -277,6 +277,12 @@ public:
         return map_;
     }
 
+    partition_map_type const&
+    map() const
+    {
+        return map_;
+    }
+
     iterator
     begin()
     {
@@ -319,6 +325,12 @@ public:
     end() const
     {
         return cend();
+    }
+
+    std::size_t
+    partition_index(key_type const& key) const
+    {
+        return partitioner(key);
     }
 
 private:
@@ -380,7 +392,7 @@ public:
     clear()
     {
         for (auto& p : map_)
-            p.clear();
+            p.clear();  // TODO make sure that it is locked inside
     }
 
     iterator
@@ -406,7 +418,7 @@ public:
     {
         std::size_t ret = 0;
         for (auto& p : map_)
-            ret += p.size();
+            ret += p.size();  // TODO make sure that it is locked inside
         return ret;
     }
 

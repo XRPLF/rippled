@@ -27,8 +27,6 @@
 
 namespace ripple {
 
-// FIXME: Need to clean up ledgers by index at some point
-
 LedgerHistory::LedgerHistory(
     beast::insight::Collector::ptr const& collector,
     Application& app)
@@ -47,6 +45,7 @@ LedgerHistory::LedgerHistory(
           std::chrono::minutes{5},
           stopwatch(),
           app_.journal("TaggedCache"))
+    , mLedgersByIndex(256)
     , j_(app.journal("LedgerHistory"))
 {
 }
@@ -63,12 +62,18 @@ LedgerHistory::insert(
         ledger->stateMap().getHash().isNonZero(),
         "ripple::LedgerHistory::insert : nonzero hash");
 
-    std::unique_lock sl(m_ledgers_by_hash.peekMutex());
-
+    // TODOL merge the below into a single call to avoid lock and race
+    // conditions, i.e. - return alreadyHad on assignment somehow.
     bool const alreadyHad = m_ledgers_by_hash.canonicalize_replace_cache(
         ledger->info().hash, ledger);
     if (validated)
+    {
         mLedgersByIndex[ledger->info().seq] = ledger->info().hash;
+        JLOG(j_.info()) << "LedgerHistory::insert: mLedgersByIndex size: "
+                        << mLedgersByIndex.size() << " , total size: "
+                        << mLedgersByIndex.size() *
+                (sizeof(LedgerIndex) + sizeof(LedgerHash));
+    }
 
     return alreadyHad;
 }
@@ -76,7 +81,7 @@ LedgerHistory::insert(
 LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
-    std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+    // TODO: is it safe to get iterator without lock here?
     if (auto it = mLedgersByIndex.find(index); it != mLedgersByIndex.end())
         return it->second;
     return {};
@@ -86,13 +91,12 @@ std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerBySeq(LedgerIndex index)
 {
     {
-        std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+        // TODO: this lock is not needed
         auto it = mLedgersByIndex.find(index);
 
         if (it != mLedgersByIndex.end())
         {
             uint256 hash = it->second;
-            sl.unlock();
             return getLedgerByHash(hash);
         }
     }
@@ -108,13 +112,19 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 
     {
         // Add this ledger to the local tracking by index
-        std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+        // std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+        // TODO: make sure that canonicalize_replace_client lock the partition
 
         XRPL_ASSERT(
             ret->isImmutable(),
             "ripple::LedgerHistory::getLedgerBySeq : immutable result ledger");
         m_ledgers_by_hash.canonicalize_replace_client(ret->info().hash, ret);
         mLedgersByIndex[ret->info().seq] = ret->info().hash;
+        JLOG(j_.info())
+            << "LedgerHistory::getLedgerBySeq: mLedgersByIndex size: "
+            << mLedgersByIndex.size() << " , total size: "
+            << mLedgersByIndex.size() *
+                (sizeof(LedgerIndex) + sizeof(LedgerHash));
         return (ret->info().seq == index) ? ret : nullptr;
     }
 }
@@ -458,7 +468,8 @@ LedgerHistory::builtLedger(
     XRPL_ASSERT(
         !hash.isZero(), "ripple::LedgerHistory::builtLedger : nonzero hash");
 
-    std::unique_lock sl(m_consensus_validated.peekMutex());
+    // std::unique_lock sl(m_consensus_validated.peekMutex());
+    // TODO: make sure that canonicalize_replace_client lock the partition
 
     auto entry = std::make_shared<cv_entry>();
     m_consensus_validated.canonicalize_replace_client(index, entry);
@@ -500,7 +511,8 @@ LedgerHistory::validatedLedger(
         !hash.isZero(),
         "ripple::LedgerHistory::validatedLedger : nonzero hash");
 
-    std::unique_lock sl(m_consensus_validated.peekMutex());
+    // std::unique_lock sl(m_consensus_validated.peekMutex());
+    // TODO: make sure that canonicalize_replace_client lock the partition
 
     auto entry = std::make_shared<cv_entry>();
     m_consensus_validated.canonicalize_replace_client(index, entry);
@@ -535,7 +547,9 @@ LedgerHistory::validatedLedger(
 bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
-    std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+    // std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+    // TODO: how to ensure that? "Ensure m_ledgers_by_hash doesn't have the
+    // wrong hash for a particular index"
     auto it = mLedgersByIndex.find(ledgerIndex);
 
     if ((it != mLedgersByIndex.end()) && (it->second != ledgerHash))
