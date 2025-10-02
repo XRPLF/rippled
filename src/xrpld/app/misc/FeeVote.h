@@ -20,10 +20,9 @@
 #ifndef RIPPLE_APP_MISC_FEEVOTE_H_INCLUDED
 #define RIPPLE_APP_MISC_FEEVOTE_H_INCLUDED
 
-#include <xrpld/shamap/SHAMap.h>
-
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/shamap/SHAMap.h>
 
 namespace ripple {
 

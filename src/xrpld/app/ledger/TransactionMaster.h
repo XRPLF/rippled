@@ -21,12 +21,12 @@
 #define RIPPLE_APP_LEDGER_TRANSACTIONMASTER_H_INCLUDED
 
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/shamap/SHAMapItem.h>
-#include <xrpld/shamap/SHAMapTreeNode.h>
 
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 namespace ripple {
 
