@@ -36,12 +36,8 @@ class ClosureCounter_test : public beast::unit_test::suite
 {
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
-    test::jtx::Env env_{
-        *this,
-        jtx::envconfig(),
-        nullptr,
-        beast::severities::kDisabled};
-    beast::Journal j{env_.app().journal("ClosureCounter_test")};
+    std::optional<test::jtx::Env> env_;
+    std::optional<beast::Journal> j;
 
     void
     testConstruction()
@@ -280,7 +276,7 @@ class ClosureCounter_test : public beast::unit_test::suite
 
         // Join with 0 count should not stall.
         using namespace std::chrono_literals;
-        voidCounter.join("testWrap", 1ms, j);
+        voidCounter.join("testWrap", 1ms, *j);
 
         // Wrapping a closure after join() should return std::nullopt.
         BEAST_EXPECT(voidCounter.wrap([]() {}) == std::nullopt);
@@ -301,7 +297,7 @@ class ClosureCounter_test : public beast::unit_test::suite
         std::thread localThread([&voidCounter, &threadExited, this]() {
             // Should stall after calling join.
             using namespace std::chrono_literals;
-            voidCounter.join("testWaitOnJoin", 1ms, j);
+            voidCounter.join("testWaitOnJoin", 1ms, *j);
             threadExited.store(true);
         });
 
@@ -331,6 +327,10 @@ public:
     void
     run() override
     {
+        env_.emplace(
+            *this, jtx::envconfig(), nullptr, beast::severities::kDisabled);
+        j.emplace(env_->app().journal("ClosureCounter_test"));
+
         testConstruction();
         testArgs();
         testWrap();

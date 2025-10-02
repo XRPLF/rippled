@@ -194,9 +194,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
 
         for (bool const afterSwitchTime : {true, false})
         {
-            auto cfg = envconfig();
-            cfg->FEES.reference_fee = 10;
-            Env env(*this, std::move(cfg));
+            Env env(*this, XRPAmount(10));
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(1000), alice, bob, carol);
             if (afterSwitchTime)
@@ -285,9 +283,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
 
         for (bool const afterSwitchTime : {true, false})
         {
-            auto cfg = envconfig();
-            cfg->FEES.reference_fee = 10;
-            Env env(*this, std::move(cfg));
+            Env env(*this, XRPAmount(10));
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(1000), alice, bob, carol);
             if (afterSwitchTime)

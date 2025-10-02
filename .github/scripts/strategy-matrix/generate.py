@@ -34,6 +34,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # The default CMake target is 'all' for Linux and MacOS and 'install'
         # for Windows, but it can get overridden for certain configurations.
         cmake_target = 'install' if os["distro_name"] == 'windows' else 'all'
+        unittest_args = ''
 
         # We build and test all configurations by default, except for Windows in
         # Debug, because it is too slow, as well as when code coverage is
@@ -58,7 +59,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                 skip = True
                 if os['distro_version'] == 'bookworm':
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-13' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        cmake_args = f'-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}'
+                        unittest_args = f'{unittest_args} --unittest-fee=500'
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-15' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
                         skip = False
@@ -66,7 +67,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                         cmake_args = f'-Dvoidstar=ON {cmake_args}'
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-17' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        cmake_args = f'-DUNIT_TEST_REFERENCE_FEE=1000 {cmake_args}'
+                        unittest_args = f'{unittest_args} --unittest-fee=1000'
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-20' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
                         skip = False
@@ -161,6 +162,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         configurations.append({
             'config_name': config_name,
             'cmake_args': cmake_args,
+            'unittest_args' : unittest_args,
             'cmake_target': cmake_target,
             'build_only': build_only,
             'build_type': build_type,
