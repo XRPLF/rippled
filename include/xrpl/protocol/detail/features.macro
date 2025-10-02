@@ -37,7 +37,7 @@ XRPL_FEATURE(DynamicMPT,                 Supported::no,  VoteBehavior::DefaultNo
 XRPL_FIX    (TokenEscrowV1,              Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (DelegateV1_1,               Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (PriceOracleOrder,           Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (MPTDeliveredAmount,         Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FIX    (MPTDeliveredAmount,         Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMClawbackRounding,        Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(TokenEscrow,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (EnforceNFTokenTrustlineV2,  Supported::yes, VoteBehavior::DefaultNo)
