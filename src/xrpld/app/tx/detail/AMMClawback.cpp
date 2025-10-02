@@ -169,6 +169,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         asset,
         asset2,
         FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         ctx_.journal);
 
     if (!expected)
@@ -200,6 +201,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 holdLPtokens,
                 0,
                 FreezeHandling::fhIGNORE_FREEZE,
+                AuthHandling::ahIGNORE_AUTH,
                 WithdrawAll::Yes,
                 mPriorBalance,
                 ctx_.journal);
@@ -281,6 +283,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             holdLPtokens,
             0,
             FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
             WithdrawAll::Yes,
             mPriorBalance,
             ctx_.journal);
@@ -316,6 +319,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             tokensAdj,
             0,
             FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
             WithdrawAll::No,
             mPriorBalance,
             ctx_.journal);
@@ -335,6 +339,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac),
         0,
         FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         WithdrawAll::No,
         mPriorBalance,
         ctx_.journal);

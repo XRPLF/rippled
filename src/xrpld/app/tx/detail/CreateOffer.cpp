@@ -175,8 +175,13 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
         return tecFROZEN;
     }
 
-    if (accountFunds(ctx.view, id, saTakerGets, fhZERO_IF_FROZEN, viewJ) <=
-        beast::zero)
+    if (accountFunds(
+            ctx.view,
+            id,
+            saTakerGets,
+            fhZERO_IF_FROZEN,
+            ahZERO_IF_UNAUTHORIZED,
+            viewJ) <= beast::zero)
     {
         JLOG(ctx.j.debug())
             << "delay: Offers must be at least partially funded.";
@@ -332,8 +337,13 @@ CreateOffer::flowCross(
         // We check this in preclaim, but when selling XRP charged fees can
         // cause a user's available balance to go to 0 (by causing it to dip
         // below the reserve) so we check this case again.
-        STAmount const inStartBalance =
-            accountFunds(psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+        STAmount const inStartBalance = accountFunds(
+            psb,
+            account_,
+            takerAmount.in,
+            fhZERO_IF_FROZEN,
+            ahZERO_IF_UNAUTHORIZED,
+            j_);
         if (inStartBalance <= beast::zero)
         {
             // The account balance can't cover even part of the offer.
@@ -436,7 +446,12 @@ CreateOffer::flowCross(
         if (isTesSuccess(result.result()))
         {
             STAmount const takerInBalance = accountFunds(
-                psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+                psb,
+                account_,
+                takerAmount.in,
+                fhZERO_IF_FROZEN,
+                ahZERO_IF_UNAUTHORIZED,
+                j_);
 
             if (takerInBalance <= beast::zero)
             {

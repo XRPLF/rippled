@@ -191,6 +191,7 @@ doAMMInfo(RPC::JsonContext& context)
         issue1,
         issue2,
         FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         context.j);
     auto const lptAMMBalance = accountID
         ? ammLPHolds(*ledger, *amm, *accountID, context.j)
