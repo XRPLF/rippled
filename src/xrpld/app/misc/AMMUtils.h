@@ -40,9 +40,10 @@ std::pair<STAmount, STAmount>
 ammPoolHolds(
     ReadView const& view,
     AccountID const& ammAccountID,
-    Issue const& issue1,
-    Issue const& issue2,
+    Asset const& asset1,
+    Asset const& asset2,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal const j);
 
 /** Get AMM pool and LP token balances. If both optIssue are
@@ -53,9 +54,10 @@ Expected<std::tuple<STAmount, STAmount, STAmount>, TER>
 ammHolds(
     ReadView const& view,
     SLE const& ammSle,
-    std::optional<Issue> const& optIssue1,
-    std::optional<Issue> const& optIssue2,
+    std::optional<Asset> const& optAsset1,
+    std::optional<Asset> const& optAsset2,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal const j);
 
 /** Get the balance of LP tokens.
@@ -63,8 +65,8 @@ ammHolds(
 STAmount
 ammLPHolds(
     ReadView const& view,
-    Currency const& cur1,
-    Currency const& cur2,
+    Asset const& asset1,
+    Asset const& asset2,
     AccountID const& ammAccount,
     AccountID const& lpAccount,
     beast::Journal const j);
@@ -92,7 +94,7 @@ STAmount
 ammAccountHolds(
     ReadView const& view,
     AccountID const& ammAccountID,
-    Issue const& issue);
+    Asset const& asset);
 
 /** Delete trustlines to AMM. If all trustlines are deleted then
  * AMM object and account are deleted. Otherwise tecIMPCOMPLETE is returned.
@@ -100,8 +102,8 @@ ammAccountHolds(
 TER
 deleteAMMAccount(
     Sandbox& view,
-    Issue const& asset,
-    Issue const& asset2,
+    Asset const& asset,
+    Asset const& asset2,
     beast::Journal j);
 
 /** Initialize Auction and Voting slots and set the trading/discounted fee.
@@ -111,7 +113,7 @@ initializeFeeAuctionVote(
     ApplyView& view,
     std::shared_ptr<SLE>& ammSle,
     AccountID const& account,
-    Issue const& lptIssue,
+    Asset const& lptAsset,
     std::uint16_t tfee);
 
 /** Return true if the Liquidity Provider is the only AMM provider, false

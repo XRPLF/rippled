@@ -1402,10 +1402,10 @@ class Vault_test : public beast::unit_test::suite
                         return defXRP;
                     return a + XRP(1000);
                 }
-                auto const defIOU = STAmount{a.issue(), 30000};
+                auto const defIOU = STAmount{a.asset(), 30000};
                 if (a <= defIOU)
                     return defIOU;
-                return a + STAmount{a.issue(), 1000};
+                return a + STAmount{a.asset(), 1000};
             };
             auto const toFund1 = tofund(asset1);
             auto const toFund2 = tofund(asset2);
@@ -2257,6 +2257,50 @@ class Vault_test : public beast::unit_test::suite
 
             auto [tx2, k2] = vault.create({.owner = owner, .asset = shares});
             env(tx2, ter{tecWRONG_ASSET});
+            env.close();
+        }
+
+        {
+            testcase("MPT OutstandingAmount > MaximumAmount");
+
+            Env env{*this, testable_amendments() | featureSingleAssetVault};
+            Account alice{"alice"};
+            Account issuer{"issuer"};
+            env.fund(XRP(1'000), alice, issuer);
+            env.close();
+            Vault vault{env};
+
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {alice},
+                 .maxAmt = 100});
+
+            auto [tx, k] = vault.create({.owner = issuer, .asset = BTC});
+            env(tx);
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = issuer, .id = k.key, .amount = BTC(110)});
+            // accountHolds is the first check and the issuer has only BTC(100)
+            // available
+            env(tx, ter{tecINSUFFICIENT_FUNDS});
+            env.close();
+
+            // OutstandingAmount == MaximumAmount
+            env(pay(issuer, alice, BTC(100)));
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = issuer, .id = k.key, .amount = BTC(100)});
+            // the issuer has BTC(0) available
+            env(tx, ter{tecINSUFFICIENT_FUNDS});
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = alice, .id = k.key, .amount = BTC(100)});
+            // alice transfers BTC(100), OutstandingAmount is 100
+            env(tx);
             env.close();
         }
     }

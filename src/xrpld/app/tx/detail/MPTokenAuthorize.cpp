@@ -173,6 +173,32 @@ MPTokenAuthorize::createMPToken(
 }
 
 TER
+MPTokenAuthorize::checkCreateMPT(
+    ripple::ApplyView& view,
+    ripple::MPTIssue const& mptIssue,
+    ripple::AccountID const& holder,
+    beast::Journal j)
+{
+    if (mptIssue.getIssuer() == holder)
+        return tesSUCCESS;
+
+    auto const mptIssuanceID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const mptokenID = keylet::mptoken(mptIssuanceID.key, holder);
+    if (!view.exists(mptokenID))
+    {
+        if (auto const err =
+                createMPToken(view, mptIssue.getMptID(), holder, 0);
+            err != tesSUCCESS)
+            return err;
+        auto const sleAcct = view.peek(keylet::account(holder));
+        if (!sleAcct)
+            return tecINTERNAL;
+        adjustOwnerCount(view, sleAcct, 1, j);
+    }
+    return tesSUCCESS;
+}
+
+TER
 MPTokenAuthorize::doApply()
 {
     auto const& tx = ctx_.tx;

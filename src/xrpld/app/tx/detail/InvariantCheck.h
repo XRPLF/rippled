@@ -732,6 +732,42 @@ private:
         beast::Journal const&) const;
 };
 
+/** Verify:
+ *    - OutstandingAmount <= MaximumAmount for any MPT
+ *    - OutstandingAmount after = OutstandingAmount before +
+ *         sum (MPT after - MPT before) - this is total MPT credit/debit
+ */
+class ValidPayment
+{
+    enum Order { Before = 0, After = 1 };
+    struct MPTData
+    {
+        std::array<std::int64_t, After + 1> outstanding;
+        // sum (MPT after - MPT before)
+        std::int64_t mptAmount{0};
+    };
+
+    // true if OutstandingAmount > MaximumAmount in after for any MPT
+    bool overflow_{false};
+    // mptid:MPTData
+    hash_map<uint192, MPTData> data_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -754,7 +790,8 @@ using InvariantChecks = std::tuple<
     ValidPermissionedDomain,
     ValidPermissionedDEX,
     ValidAMM,
-    ValidPseudoAccounts>;
+    ValidPseudoAccounts,
+    ValidPayment>;
 
 /**
  * @brief get a tuple of all invariant checks

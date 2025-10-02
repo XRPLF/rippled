@@ -30,7 +30,15 @@ namespace ripple {
 bool
 AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return ammEnabled(ctx.rules);
+    if (!ammEnabled(ctx.rules))
+        return false;
+
+    if (!ctx.rules.enabled(featureMPTokensV2) &&
+        (ctx.tx[sfAsset].holds<MPTIssue>() ||
+         ctx.tx[sfAsset2].holds<MPTIssue>()))
+        return false;
+
+    return true;
 }
 
 NotTEC
@@ -64,8 +72,8 @@ AMMDelete::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    auto const ter = deleteAMMAccount(
-        sb, ctx_.tx[sfAsset].get<Issue>(), ctx_.tx[sfAsset2].get<Issue>(), j_);
+    auto const ter =
+        deleteAMMAccount(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
     if (ter == tesSUCCESS || ter == tecINCOMPLETE)
         sb.apply(ctx_.rawView());
 

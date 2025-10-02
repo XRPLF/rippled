@@ -260,7 +260,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         AMM ammAlice1(env, alice, XRP(10'000), USD(10'000));
         ammAlice1.deposit(carol, 10'000'000);
 
-        fund(env, gw, {alice, carol}, {EUR(10'000)}, Fund::IOUOnly);
+        fund(env, gw, {alice, carol}, {EUR(10'000)}, Fund::TokenOnly);
         AMM ammAlice2(env, alice, XRP(10'000), EUR(10'000));
         ammAlice2.deposit(carol, 10'000'000);
         auto const token1 = ammAlice1.lptIssue();

@@ -20,7 +20,9 @@
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/app/misc/MPTUtils.h>
 #include <xrpld/app/tx/detail/AMMCreate.h>
+#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
@@ -34,7 +36,15 @@ namespace ripple {
 bool
 AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return ammEnabled(ctx.rules);
+    if (!ammEnabled(ctx.rules))
+        return false;
+
+    if (!ctx.rules.enabled(featureMPTokensV2) &&
+        (ctx.tx[sfAmount].holds<MPTIssue>() ||
+         ctx.tx[sfAmount2].holds<MPTIssue>()))
+        return false;
+
+    return true;
 }
 
 NotTEC
@@ -43,10 +53,10 @@ AMMCreate::preflight(PreflightContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
 
-    if (amount.issue() == amount2.issue())
+    if (amount.asset() == amount2.asset())
     {
         JLOG(ctx.j.debug())
-            << "AMM Instance: tokens can not have the same currency/issuer.";
+            << "AMM Instance: tokens can not have the same asset.";
         return temBAD_AMM_TOKENS;
     }
 
@@ -86,50 +96,50 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto const amount2 = ctx.tx[sfAmount2];
 
     // Check if AMM already exists for the token pair
-    if (auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
+    if (auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset());
         ctx.view.read(ammKeylet))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: ltAMM already exists.";
         return tecDUPLICATE;
     }
 
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), accountID);
+    if (auto const ter = requireAuth(ctx.view, amount.asset(), accountID);
         ter != tesSUCCESS)
     {
         JLOG(ctx.j.debug())
-            << "AMM Instance: account is not authorized, " << amount.issue();
+            << "AMM Instance: account is not authorized, " << amount.asset();
         return ter;
     }
 
-    if (auto const ter = requireAuth(ctx.view, amount2.issue(), accountID);
+    if (auto const ter = requireAuth(ctx.view, amount2.asset(), accountID);
         ter != tesSUCCESS)
     {
         JLOG(ctx.j.debug())
-            << "AMM Instance: account is not authorized, " << amount2.issue();
+            << "AMM Instance: account is not authorized, " << amount2.asset();
         return ter;
     }
 
     // Globally or individually frozen
-    if (isFrozen(ctx.view, accountID, amount.issue()) ||
-        isFrozen(ctx.view, accountID, amount2.issue()))
+    if (isFrozen(ctx.view, accountID, amount.asset()) ||
+        isFrozen(ctx.view, accountID, amount2.asset()))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: involves frozen asset.";
         return tecFROZEN;
     }
 
-    auto noDefaultRipple = [](ReadView const& view, Issue const& issue) {
-        if (isXRP(issue))
+    auto noDefaultRipple = [](ReadView const& view, Asset const& asset) {
+        if (asset.holds<MPTIssue>() || isXRP(asset))
             return false;
 
         if (auto const issuerAccount =
-                view.read(keylet::account(issue.account)))
+                view.read(keylet::account(asset.getIssuer())))
             return (issuerAccount->getFlags() & lsfDefaultRipple) == 0;
 
         return false;
     };
 
-    if (noDefaultRipple(ctx.view, amount.issue()) ||
-        noDefaultRipple(ctx.view, amount2.issue()))
+    if (noDefaultRipple(ctx.view, amount.asset()) ||
+        noDefaultRipple(ctx.view, amount2.asset()))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: DefaultRipple not set";
         return terNO_RIPPLE;
@@ -144,16 +154,17 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecINSUF_RESERVE_LINE;
     }
 
-    auto insufficientBalance = [&](STAmount const& asset) {
-        if (isXRP(asset))
-            return xrpBalance < asset;
-        return accountID != asset.issue().account &&
+    auto insufficientBalance = [&](STAmount const& amount) {
+        if (isXRP(amount))
+            return xrpBalance < amount;
+        return accountID != amount.asset().getIssuer() &&
             accountHolds(
                 ctx.view,
                 accountID,
-                asset.issue(),
+                amount.asset(),
                 FreezeHandling::fhZERO_IF_FROZEN,
-                ctx.j) < asset;
+                AuthHandling::ahZERO_IF_UNAUTHORIZED,
+                ctx.j) < amount;
     };
 
     if (insufficientBalance(amount) || insufficientBalance(amount2))
@@ -165,7 +176,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 
     auto isLPToken = [&](STAmount const& amount) -> bool {
         if (auto const sle =
-                ctx.view.read(keylet::account(amount.issue().account)))
+                ctx.view.read(keylet::account(amount.asset().getIssuer())))
             return sle->isFieldPresent(sfAMMID);
         return false;
     };
@@ -180,10 +191,19 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureSingleAssetVault))
     {
         if (auto const accountId = pseudoAccountAddress(
-                ctx.view, keylet::amm(amount.issue(), amount2.issue()).key);
+                ctx.view, keylet::amm(amount.asset(), amount2.asset()).key);
             accountId == beast::zero)
             return terADDRESS_COLLISION;
     }
+
+    if (auto const ter = checkMPTTxAllowed(
+            ctx.view, ttAMM_CREATE, amount.asset(), accountID);
+        ter != tesSUCCESS)
+        return ter;
+    if (auto const ter = checkMPTTxAllowed(
+            ctx.view, ttAMM_CREATE, amount2.asset(), accountID);
+        ter != tesSUCCESS)
+        return ter;
 
     // If featureAMMClawback is enabled, allow AMMCreate without checking
     // if the issuer has clawback enabled
@@ -192,20 +212,36 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 
     // Disallow AMM if the issuer has clawback enabled when featureAMMClawback
     // is not enabled
-    auto clawbackDisabled = [&](Issue const& issue) -> TER {
-        if (isXRP(issue))
+    auto clawbackDisabled = [&](Asset const& asset) -> TER {
+        if (isXRP(asset))
             return tesSUCCESS;
-        if (auto const sle = ctx.view.read(keylet::account(issue.account));
-            !sle)
-            return tecINTERNAL;
-        else if (sle->getFlags() & lsfAllowTrustLineClawback)
-            return tecNO_PERMISSION;
+        if (asset.holds<MPTIssue>())
+        {
+            if (auto const sle = ctx.view.read(
+                    keylet::mptIssuance(asset.get<MPTIssue>().getMptID()));
+                !sle)
+                return tecINTERNAL;
+            else if (sle->getFlags() & lsfMPTCanClawback)
+                return tecNO_PERMISSION;
+        }
+        else
+        {
+            if (auto const sle =
+                    ctx.view.read(keylet::account(asset.getIssuer()));
+                !sle)
+                return tecINTERNAL;
+            else if (sle->getFlags() & lsfAllowTrustLineClawback)
+                return tecNO_PERMISSION;
+        }
         return tesSUCCESS;
     };
 
-    if (auto const ter = clawbackDisabled(amount.issue()); ter != tesSUCCESS)
+    if (auto const ter = clawbackDisabled(amount.asset()); ter != tesSUCCESS)
         return ter;
-    return clawbackDisabled(amount2.issue());
+    if (auto const ter = clawbackDisabled(amount2.asset()); ter != tesSUCCESS)
+        return ter;
+
+    return tesSUCCESS;
 }
 
 static std::pair<TER, bool>
@@ -218,7 +254,7 @@ applyCreate(
     auto const amount = ctx_.tx[sfAmount];
     auto const amount2 = ctx_.tx[sfAmount2];
 
-    auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
+    auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset());
 
     // Mitigate same account exists possibility
     auto const maybeAccount = createPseudoAccount(sb, ammKeylet.key, sfAMMID);
@@ -232,8 +268,7 @@ applyCreate(
     auto const accountId = (*account)[sfAccount];
 
     // LP Token already exists. (should not happen)
-    auto const lptIss = ammLPTIssue(
-        amount.issue().currency, amount2.issue().currency, accountId);
+    auto const lptIss = ammLPTIssue(amount.asset(), amount2.asset(), accountId);
     if (sb.read(keylet::line(accountId, lptIss)))
     {
         JLOG(j_.error()) << "AMM Instance: LP Token already exists.";
@@ -253,9 +288,9 @@ applyCreate(
     auto ammSle = std::make_shared<SLE>(ammKeylet);
     ammSle->setAccountID(sfAccount, accountId);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
-    auto const& [issue1, issue2] = std::minmax(amount.issue(), amount2.issue());
-    ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, issue1});
-    ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, issue2});
+    auto const& [asset1, asset2] = std::minmax(amount.asset(), amount2.asset());
+    ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, asset1});
+    ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, asset2});
     // AMM creator gets the auction slot and the voting slot.
     initializeFeeAuctionVote(
         ctx_.view(), ammSle, account_, lptIss, ctx_.tx[sfTradingFee]);
@@ -276,20 +311,46 @@ applyCreate(
         return {res, false};
     }
 
-    auto sendAndTrustSet = [&](STAmount const& amount) -> TER {
+    auto sendAndInitTrustOrMPT = [&](STAmount const& amount) -> TER {
+        // Authorize MPT
+        if (amount.holds<MPTIssue>())
+        {
+            auto const& mptIssue = amount.get<MPTIssue>();
+            auto const& mptID = mptIssue.getMptID();
+            std::uint32_t flags = lsfMPTAMM;
+            if (auto const err = requireAuth(
+                    ctx_.view(), mptIssue, accountId, AuthType::WeakAuth);
+                err != tesSUCCESS)
+            {
+                if (err == tecNO_AUTH)
+                    flags |= lsfMPTAuthorized;
+                else
+                    return err;
+            }
+
+            if (auto const err = MPTokenAuthorize::createMPToken(
+                    sb, mptID, accountId, flags);
+                err != tesSUCCESS)
+                return err;
+            // Don't adjust AMM owner count.
+            // It's irrelevant for pseudo-account like AMM.
+        }
+
         if (auto const res = accountSend(
                 sb,
                 account_,
                 accountId,
                 amount,
                 ctx_.journal,
-                WaiveTransferFee::Yes))
+                WaiveTransferFee::Yes,
+                AllowMPTOverflow::No))
             return res;
+
         // Set AMM flag on AMM trustline
-        if (!isXRP(amount))
+        if (amount.holds<Issue>() && !isXRP(amount))
         {
             if (SLE::pointer sleRippleState =
-                    sb.peek(keylet::line(accountId, amount.issue()));
+                    sb.peek(keylet::line(accountId, amount.get<Issue>()));
                 !sleRippleState)
                 return tecINTERNAL;
             else
@@ -299,11 +360,12 @@ applyCreate(
                 sb.update(sleRippleState);
             }
         }
+
         return tesSUCCESS;
     };
 
     // Send asset1.
-    res = sendAndTrustSet(amount);
+    res = sendAndInitTrustOrMPT(amount);
     if (res != tesSUCCESS)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send " << amount;
@@ -311,7 +373,7 @@ applyCreate(
     }
 
     // Send asset2.
-    res = sendAndTrustSet(amount2);
+    res = sendAndInitTrustOrMPT(amount2);
     if (res != tesSUCCESS)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send " << amount2;
@@ -322,15 +384,15 @@ applyCreate(
                      << ammKeylet.key << " " << lpTokens << " " << amount << " "
                      << amount2;
     auto addOrderBook =
-        [&](Issue const& issueIn, Issue const& issueOut, std::uint64_t uRate) {
-            Book const book{issueIn, issueOut, std::nullopt};
+        [&](Asset const& assetIn, Asset const& assetOut, std::uint64_t uRate) {
+            Book const book{assetIn, assetOut, std::nullopt};
             auto const dir = keylet::quality(keylet::book(book), uRate);
             if (auto const bookExisted = static_cast<bool>(sb.read(dir));
                 !bookExisted)
                 ctx_.app.getOrderBookDB().addOrderBook(book);
         };
-    addOrderBook(amount.issue(), amount2.issue(), getRate(amount2, amount));
-    addOrderBook(amount2.issue(), amount.issue(), getRate(amount, amount2));
+    addOrderBook(amount.asset(), amount2.asset(), getRate(amount2, amount));
+    addOrderBook(amount2.asset(), amount.asset(), getRate(amount, amount2));
 
     return {res, res == tesSUCCESS};
 }

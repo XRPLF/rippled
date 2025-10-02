@@ -20,7 +20,7 @@
 #include <xrpld/app/paths/AMMContext.h>
 #include <xrpld/app/paths/Credit.h>
 #include <xrpld/app/paths/Flow.h>
-#include <xrpld/app/paths/detail/AmountSpec.h>
+#include <xrpld/app/paths/detail/EitherAmount.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/app/paths/detail/StrandFlow.h>
 
@@ -34,8 +34,8 @@ template <class FlowResult>
 static auto
 finishFlow(
     PaymentSandbox& sb,
-    Issue const& srcIssue,
-    Issue const& dstIssue,
+    Asset const& srcAsset,
+    Asset const& dstAsset,
     FlowResult&& f)
 {
     path::RippleCalc::Output result;
@@ -45,8 +45,8 @@ finishFlow(
         result.removableOffers = std::move(f.removableOffers);
 
     result.setResult(f.ter);
-    result.actualAmountIn = toSTAmount(f.in, srcIssue);
-    result.actualAmountOut = toSTAmount(f.out, dstIssue);
+    result.actualAmountIn = toSTAmount(f.in, srcAsset);
+    result.actualAmountOut = toSTAmount(f.out, dstAsset);
 
     return result;
 };
@@ -68,19 +68,21 @@ flow(
     beast::Journal j,
     path::detail::FlowDebugInfo* flowDebugInfo)
 {
-    Issue const srcIssue = [&] {
+    Asset const srcAsset = [&]() -> Asset {
         if (sendMax)
-            return sendMax->issue();
-        if (!isXRP(deliver.issue().currency))
-            return Issue(deliver.issue().currency, src);
-        return xrpIssue();
+            return sendMax->asset();
+        if (isXRP(deliver))
+            return xrpIssue();
+        if (deliver.holds<Issue>())
+            return Issue(deliver.get<Issue>().currency, src);
+        return deliver.asset();
     }();
 
-    Issue const dstIssue = deliver.issue();
+    Asset const dstAsset = deliver.asset();
 
-    std::optional<Issue> sendMaxIssue;
+    std::optional<Asset> sendMaxAsset;
     if (sendMax)
-        sendMaxIssue = sendMax->issue();
+        sendMaxAsset = sendMax->asset();
 
     AMMContext ammContext(src, false);
 
@@ -91,9 +93,9 @@ flow(
         sb,
         src,
         dst,
-        dstIssue,
+        dstAsset,
         limitQuality,
-        sendMaxIssue,
+        sendMaxAsset,
         paths,
         defaultPaths,
         ownerPaysTransferFee,
@@ -114,7 +116,7 @@ flow(
     if (j.trace())
     {
         j.trace() << "\nsrc: " << src << "\ndst: " << dst
-                  << "\nsrcIssue: " << srcIssue << "\ndstIssue: " << dstIssue;
+                  << "\nsrcAsset: " << srcAsset << "\ndstAsset: " << dstAsset;
         j.trace() << "\nNumStrands: " << strands.size();
         for (auto const& curStrand : strands)
         {
@@ -126,87 +128,33 @@ flow(
         }
     }
 
-    bool const srcIsXRP = isXRP(srcIssue.currency);
-    bool const dstIsXRP = isXRP(dstIssue.currency);
-
-    auto const asDeliver = toAmountSpec(deliver);
-
-    // The src account may send either xrp or iou. The dst account may receive
-    // either xrp or iou. Since XRP and IOU amounts are represented by different
-    // types, use templates to tell `flow` about the amount types.
-    if (srcIsXRP && dstIsXRP)
-    {
-        return finishFlow(
-            sb,
-            srcIssue,
-            dstIssue,
-            flow<XRPAmount, XRPAmount>(
+    // The src account may send either xrp,iou,or mpt. The dst account may
+    // receive either xrp,iou, or mpt. Since XRP, IOU, and MPT amounts are
+    // represented by different types, use templates to tell `flow` about the
+    // amount types.
+    return std::visit(
+        [&, &strands_ = strands]<typename TIn, typename TOut>(
+            TIn const&, TOut const&) {
+            using TIn_ = typename TIn::amount_type;
+            using TOut_ = typename TOut::amount_type;
+            return finishFlow(
                 sb,
-                strands,
-                asDeliver.xrp,
-                partialPayment,
-                offerCrossing,
-                limitQuality,
-                sendMax,
-                j,
-                ammContext,
-                flowDebugInfo));
-    }
-
-    if (srcIsXRP && !dstIsXRP)
-    {
-        return finishFlow(
-            sb,
-            srcIssue,
-            dstIssue,
-            flow<XRPAmount, IOUAmount>(
-                sb,
-                strands,
-                asDeliver.iou,
-                partialPayment,
-                offerCrossing,
-                limitQuality,
-                sendMax,
-                j,
-                ammContext,
-                flowDebugInfo));
-    }
-
-    if (!srcIsXRP && dstIsXRP)
-    {
-        return finishFlow(
-            sb,
-            srcIssue,
-            dstIssue,
-            flow<IOUAmount, XRPAmount>(
-                sb,
-                strands,
-                asDeliver.xrp,
-                partialPayment,
-                offerCrossing,
-                limitQuality,
-                sendMax,
-                j,
-                ammContext,
-                flowDebugInfo));
-    }
-
-    XRPL_ASSERT(!srcIsXRP && !dstIsXRP, "ripple::flow : neither is XRP");
-    return finishFlow(
-        sb,
-        srcIssue,
-        dstIssue,
-        flow<IOUAmount, IOUAmount>(
-            sb,
-            strands,
-            asDeliver.iou,
-            partialPayment,
-            offerCrossing,
-            limitQuality,
-            sendMax,
-            j,
-            ammContext,
-            flowDebugInfo));
+                srcAsset,
+                dstAsset,
+                flow<TIn_, TOut_>(
+                    sb,
+                    strands_,
+                    get<TOut_>(deliver),
+                    partialPayment,
+                    offerCrossing,
+                    limitQuality,
+                    sendMax,
+                    j,
+                    ammContext,
+                    flowDebugInfo));
+        },
+        srcAsset.getAmountType(),
+        dstAsset.getAmountType());
 }
 
 }  // namespace ripple

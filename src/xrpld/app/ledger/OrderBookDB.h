@@ -49,18 +49,18 @@ public:
      */
     std::vector<Book>
     getBooksByTakerPays(
-        Issue const&,
+        Asset const&,
         std::optional<Domain> const& domain = std::nullopt);
 
     /** @return a count of all orderbooks that want this issuerID and
         currencyID. */
     int
     getBookSize(
-        Issue const&,
+        Asset const&,
         std::optional<Domain> const& domain = std::nullopt);
 
     bool
-    isBookToXRP(Issue const&, std::optional<Domain> domain = std::nullopt);
+    isBookToXRP(Asset const&, std::optional<Domain> domain = std::nullopt);
 
     BookListeners::pointer
     getBookListeners(Book const&);
@@ -78,16 +78,16 @@ private:
     Application& app_;
 
     // Maps order books by "issue in" to "issue out":
-    hardened_hash_map<Issue, hardened_hash_set<Issue>> allBooks_;
+    hardened_hash_map<Asset, hardened_hash_set<Asset>> allBooks_;
 
-    hardened_hash_map<std::pair<Issue, Domain>, hardened_hash_set<Issue>>
+    hardened_hash_map<std::pair<Asset, Domain>, hardened_hash_set<Asset>>
         domainBooks_;
 
     // does an order book to XRP exist
-    hash_set<Issue> xrpBooks_;
+    hash_set<Asset> xrpBooks_;
 
     // does an order book to XRP exist
-    hash_set<std::pair<Issue, Domain>> xrpDomainBooks_;
+    hash_set<std::pair<Asset, Domain>> xrpDomainBooks_;
 
     std::recursive_mutex mLock;
 

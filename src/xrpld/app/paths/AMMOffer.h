@@ -21,7 +21,7 @@
 #define RIPPLE_APP_AMMOFFER_H_INCLUDED
 
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TER.h>
 
@@ -35,7 +35,7 @@ class QualityFunction;
  * methods for use in generic BookStep methods. AMMOffer amounts
  * are changed indirectly in BookStep limiting steps.
  */
-template <typename TIn, typename TOut>
+template <StepAmount TIn, StepAmount TOut>
 class AMMOffer
 {
 private:
@@ -71,8 +71,11 @@ public:
         return quality_;
     }
 
-    Issue const&
-    issueIn() const;
+    Asset const&
+    assetIn() const;
+
+    Asset const&
+    assetOut() const;
 
     AccountID const&
     owner() const;

@@ -119,6 +119,7 @@ public:
         STAmount const& lpTokensWithdraw,
         std::uint16_t tfee,
         FreezeHandling freezeHanding,
+        AuthHandling authHandling,
         WithdrawAll withdrawAll,
         XRPAmount const& priorBalance,
         beast::Journal const& journal);
@@ -152,6 +153,7 @@ public:
         STAmount const& lpTokensWithdraw,
         std::uint16_t tfee,
         FreezeHandling freezeHandling,
+        AuthHandling authHandling,
         WithdrawAll withdrawAll,
         XRPAmount const& priorBalance,
         beast::Journal const& journal);
@@ -161,8 +163,8 @@ public:
         Sandbox& sb,
         std::shared_ptr<SLE> const ammSle,
         STAmount const& lpTokenBalance,
-        Issue const& issue1,
-        Issue const& issue2,
+        Asset const& asset1,
+        Asset const& asset2,
         beast::Journal const& journal);
 
 private:

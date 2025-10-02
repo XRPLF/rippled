@@ -24,7 +24,7 @@
 #include <xrpld/app/paths/AMMContext.h>
 #include <xrpld/app/paths/Credit.h>
 #include <xrpld/app/paths/Flow.h>
-#include <xrpld/app/paths/detail/AmountSpec.h>
+#include <xrpld/app/paths/detail/EitherAmount.h>
 #include <xrpld/app/paths/detail/FlatSets.h>
 #include <xrpld/app/paths/detail/FlowDebugInfo.h>
 #include <xrpld/app/paths/detail/Steps.h>
@@ -402,9 +402,11 @@ limitOut(
             return XRPAmount{*out};
         else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
             return IOUAmount{*out};
+        else if constexpr (std::is_same_v<TOutAmt, MPTAmount>)
+            return MPTAmount{*out};
         else
             return STAmount{
-                remainingOut.issue(), out->mantissa(), out->exponent()};
+                remainingOut.asset(), out->mantissa(), out->exponent()};
     }();
     // A tiny difference could be due to the round off
     if (withinRelativeDistance(out, remainingOut, Number(1, -9)))
@@ -446,7 +448,7 @@ public:
         // add the strands in `next_` to `cur_`, sorted by theoretical quality.
         // Best quality first.
         cur_.clear();
-        if (v.rules().enabled(featureFlowSortStrands) && !next_.empty())
+        if (!next_.empty())
         {
             std::vector<std::pair<Quality, Strand const*>> strandQuals;
             strandQuals.reserve(next_.size());
@@ -556,7 +558,7 @@ public:
    @return Actual amount in and out from the strands, errors, and payment
    sandbox
 */
-template <class TInAmt, class TOutAmt>
+template <StepAmount TInAmt, StepAmount TOutAmt>
 FlowResult<TInAmt, TOutAmt>
 flow(
     PaymentSandbox const& baseView,
@@ -730,46 +732,16 @@ flow(
                 continue;
             }
 
-            if (baseView.rules().enabled(featureFlowSortStrands))
-            {
-                XRPL_ASSERT(!best, "ripple::flow : best is unset");
-                if (!f.inactive)
-                    activeStrands.push(strand);
-                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
-                activeStrands.pushRemainingCurToNext(strandIndex + 1);
-                break;
-            }
-
-            activeStrands.push(strand);
-
-            if (!best || best->quality < q ||
-                (best->quality == q && best->out < f.out))
-            {
-                // If this strand is inactive (because it consumed too many
-                // offers) and ends up having the best quality, remove it
-                // from the activeStrands. If it doesn't end up having the
-                // best quality, keep it active.
-
-                if (f.inactive)
-                {
-                    // This should be `nextSize`, not `size`. This issue is
-                    // fixed in featureFlowSortStrands.
-                    markInactiveOnUse = activeStrands.size() - 1;
-                }
-                else
-                {
-                    markInactiveOnUse.reset();
-                }
-
-                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
-            }
+            XRPL_ASSERT(!best, "ripple::flow : best is unset");
+            if (!f.inactive)
+                activeStrands.push(strand);
+            best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
+            activeStrands.pushRemainingCurToNext(strandIndex + 1);
+            break;
         }
 
-        bool const shouldBreak = [&] {
-            if (baseView.rules().enabled(featureFlowSortStrands))
-                return !best || offersConsidered >= maxOffersToConsider;
-            return !best;
-        }();
+        bool const shouldBreak =
+            !best || offersConsidered >= maxOffersToConsider;
 
         if (best)
         {

@@ -30,14 +30,21 @@ namespace ripple {
 bool
 AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return ammEnabled(ctx.rules);
+    if (!ammEnabled(ctx.rules))
+        return false;
+
+    if (!ctx.rules.enabled(featureMPTokensV2) &&
+        (ctx.tx[sfAsset].holds<MPTIssue>() ||
+         ctx.tx[sfAsset2].holds<MPTIssue>()))
+        return false;
+
+    return true;
 }
 
 NotTEC
 AMMVote::preflight(PreflightContext const& ctx)
 {
-    if (auto const res = invalidAMMAssetPair(
-            ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
+    if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid asset pair.";
         return res;

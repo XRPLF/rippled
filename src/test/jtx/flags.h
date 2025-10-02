@@ -124,7 +124,7 @@ fclear(Account const& account, std::uint32_t off)
 }
 
 /** Match set account flags */
-class flags : private detail::flags_helper
+class flags : private ripple::detail::flags_helper
 {
 private:
     Account account_;
@@ -141,7 +141,7 @@ public:
 };
 
 /** Match clear account flags */
-class nflags : private detail::flags_helper
+class nflags : private ripple::detail::flags_helper
 {
 private:
     Account account_;

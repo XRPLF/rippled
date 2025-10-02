@@ -1083,6 +1083,32 @@ removeDeletedTrustLines(
     }
 }
 
+static void
+removeDeletedMPTs(
+    ApplyView& view,
+    std::vector<uint256> const& mpts,
+    beast::Journal viewJ)
+{
+    // There could be at most two MPTs - one for each side of AMM pool
+    if (mpts.size() > 2)
+    {
+        JLOG(viewJ.error())
+            << "removeDeletedTrustLines: deleted mpts exceed 2 " << mpts.size();
+        return;
+    }
+
+    for (auto const& index : mpts)
+    {
+        if (auto const sleState = view.peek({ltMPTOKEN, index});
+            deleteAMMMPToken(view, sleState, (*sleState)[sfIssuer], viewJ) !=
+            tesSUCCESS)
+        {
+            JLOG(viewJ.error())
+                << "removeDeletedMPTs: failed to delete AMM MPT";
+        }
+    }
+}
+
 /** Reset the context, discarding any changes made and adjust the fee.
 
     @param fee The transaction fee to be charged.
@@ -1224,20 +1250,22 @@ Transactor::operator()()
         //        when transactions fail with a `tec` code.
         std::vector<uint256> removedOffers;
         std::vector<uint256> removedTrustLines;
+        std::vector<uint256> removedMPTs;
         std::vector<uint256> expiredNFTokenOffers;
         std::vector<uint256> expiredCredentials;
 
         bool const doOffers =
             ((result == tecOVERSIZE) || (result == tecKILLED));
-        bool const doLines = (result == tecINCOMPLETE);
+        bool const doLinesOrMPTs = (result == tecINCOMPLETE);
         bool const doNFTokenOffers = (result == tecEXPIRED);
         bool const doCredentials = (result == tecEXPIRED);
-        if (doOffers || doLines || doNFTokenOffers || doCredentials)
+        if (doOffers || doLinesOrMPTs || doNFTokenOffers || doCredentials)
         {
             ctx_.visit([doOffers,
                         &removedOffers,
-                        doLines,
+                        doLinesOrMPTs,
                         &removedTrustLines,
+                        &removedMPTs,
                         doNFTokenOffers,
                         &expiredNFTokenOffers,
                         doCredentials,
@@ -1261,11 +1289,13 @@ Transactor::operator()()
                         removedOffers.push_back(index);
                     }
 
-                    if (doLines && before && after &&
-                        (before->getType() == ltRIPPLE_STATE))
+                    if (doLinesOrMPTs && before && after)
                     {
                         // Removal of obsolete AMM trust line
-                        removedTrustLines.push_back(index);
+                        if (before->getType() == ltRIPPLE_STATE)
+                            removedTrustLines.push_back(index);
+                        else if (before->getType() == ltMPTOKEN)
+                            removedMPTs.push_back(index);
                     }
 
                     if (doNFTokenOffers && before && after &&
@@ -1298,8 +1328,11 @@ Transactor::operator()()
                 view(), expiredNFTokenOffers, ctx_.app.journal("View"));
 
         if (result == tecINCOMPLETE)
+        {
             removeDeletedTrustLines(
                 view(), removedTrustLines, ctx_.app.journal("View"));
+            removeDeletedMPTs(view(), removedMPTs, ctx_.app.journal("View"));
+        }
 
         if (result == tecEXPIRED)
             removeExpiredCredentials(

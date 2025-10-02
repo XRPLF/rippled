@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/ledger/OrderBookDB.h>
+#include <xrpld/app/misc/MPTUtils.h>
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
@@ -48,6 +49,11 @@ CreateOffer::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfDomainID) &&
         !ctx.rules.enabled(featurePermissionedDEX))
+        return false;
+
+    if (!ctx.rules.enabled(featureMPTokensV2) &&
+        (ctx.tx[sfTakerPays].holds<MPTIssue>() ||
+         ctx.tx[sfTakerGets].holds<MPTIssue>()))
         return false;
 
     return true;
@@ -118,18 +124,18 @@ CreateOffer::preflight(PreflightContext const& ctx)
     }
 
     auto const& uPaysIssuerID = saTakerPays.getIssuer();
-    auto const& uPaysCurrency = saTakerPays.getCurrency();
+    auto const& uPaysAsset = saTakerPays.asset();
 
     auto const& uGetsIssuerID = saTakerGets.getIssuer();
-    auto const& uGetsCurrency = saTakerGets.getCurrency();
+    auto const& uGetsAsset = saTakerGets.asset();
 
-    if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
+    if (uPaysAsset == uGetsAsset)
     {
         JLOG(j.debug()) << "Malformed offer: redundant (IOU for IOU)";
         return temREDUNDANT;
     }
     // We don't allow a non-native currency to use the currency code XRP.
-    if (badCurrency() == uPaysCurrency || badCurrency() == uGetsCurrency)
+    if (badAsset() == uPaysAsset || badAsset() == uGetsAsset)
     {
         JLOG(j.debug()) << "Malformed offer: bad currency";
         return temBAD_CURRENCY;
@@ -153,10 +159,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     auto saTakerPays = ctx.tx[sfTakerPays];
     auto saTakerGets = ctx.tx[sfTakerGets];
 
-    auto const& uPaysIssuerID = saTakerPays.getIssuer();
-    auto const& uPaysCurrency = saTakerPays.getCurrency();
-
-    auto const& uGetsIssuerID = saTakerGets.getIssuer();
+    auto const& uPaysAsset = saTakerPays.asset();
 
     auto const cancelSequence = ctx.tx[~sfOfferSequence];
 
@@ -168,15 +171,29 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
 
     auto viewJ = ctx.app.journal("View");
 
-    if (isGlobalFrozen(ctx.view, uPaysIssuerID) ||
-        isGlobalFrozen(ctx.view, uGetsIssuerID))
+    if (isGlobalFrozen(ctx.view, saTakerPays.asset()) ||
+        isGlobalFrozen(ctx.view, saTakerGets.asset()))
     {
         JLOG(ctx.j.debug()) << "Offer involves frozen asset";
         return tecFROZEN;
     }
 
-    if (accountFunds(ctx.view, id, saTakerGets, fhZERO_IF_FROZEN, viewJ) <=
-        beast::zero)
+    if (auto const ter =
+            checkMPTDEXAllowed(ctx.view, saTakerPays.asset(), id, std::nullopt);
+        ter != tesSUCCESS)
+        return ter;
+    if (auto const ter =
+            checkMPTDEXAllowed(ctx.view, saTakerGets.asset(), id, std::nullopt);
+        ter != tesSUCCESS)
+        return ter;
+
+    if (accountFunds(
+            ctx.view,
+            id,
+            saTakerGets,
+            fhZERO_IF_FROZEN,
+            ahZERO_IF_UNAUTHORIZED,
+            viewJ) <= beast::zero)
     {
         JLOG(ctx.j.debug())
             << "delay: Offers must be at least partially funded.";
@@ -208,12 +225,8 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     // Make sure that we are authorized to hold what the taker will pay us.
     if (!saTakerPays.native())
     {
-        auto result = checkAcceptAsset(
-            ctx.view,
-            ctx.flags,
-            id,
-            ctx.j,
-            Issue(uPaysCurrency, uPaysIssuerID));
+        auto result =
+            checkAcceptAsset(ctx.view, ctx.flags, id, ctx.j, uPaysAsset);
         if (result != tesSUCCESS)
             return result;
     }
@@ -236,20 +249,20 @@ CreateOffer::checkAcceptAsset(
     ApplyFlags const flags,
     AccountID const id,
     beast::Journal const j,
-    Issue const& issue)
+    Asset const& asset)
 {
     // Only valid for custom currencies
     XRPL_ASSERT(
-        !isXRP(issue.currency),
+        !isXRP(asset),
         "ripple::CreateOffer::checkAcceptAsset : input is not XRP");
 
-    auto const issuerAccount = view.read(keylet::account(issue.account));
+    auto const issuerAccount = view.read(keylet::account(asset.getIssuer()));
 
     if (!issuerAccount)
     {
         JLOG(j.debug())
             << "delay: can't receive IOUs from non-existent issuer: "
-            << to_string(issue.account);
+            << to_string(asset.getIssuer());
 
         return (flags & tapRETRY) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
@@ -257,64 +270,74 @@ CreateOffer::checkAcceptAsset(
     // This code is attached to the DepositPreauth amendment as a matter of
     // convenience.  The change is not significant enough to deserve its
     // own amendment.
-    if (view.rules().enabled(featureDepositPreauth) && (issue.account == id))
+    if (view.rules().enabled(featureDepositPreauth) &&
+        (asset.getIssuer() == id))
         // An account can always accept its own issuance.
         return tesSUCCESS;
 
-    if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
+    if (asset.holds<Issue>())
     {
+        auto const& issue = asset.get<Issue>();
+        if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
+        {
+            auto const trustLine =
+                view.read(keylet::line(id, asset.getIssuer(), issue.currency));
+
+            if (!trustLine)
+            {
+                return (flags & tapRETRY) ? TER{terNO_LINE} : TER{tecNO_LINE};
+            }
+
+            // Entries have a canonical representation, determined by a
+            // lexicographical "greater than" comparison employing strict weak
+            // ordering. Determine which entry we need to access.
+            bool const canonical_gt(id > asset.getIssuer());
+
+            bool const is_authorized(
+                (*trustLine)[sfFlags] &
+                (canonical_gt ? lsfLowAuth : lsfHighAuth));
+
+            if (!is_authorized)
+            {
+                JLOG(j.debug())
+                    << "delay: can't receive IOUs from issuer without auth.";
+
+                return (flags & tapRETRY) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
+            }
+        }
+
+        // An account can not create a trustline to itself, so no line can exist
+        // to be frozen. Additionally, an issuer can always accept its own
+        // issuance.
+        if (issue.account == id)
+        {
+            return tesSUCCESS;
+        }
+
         auto const trustLine =
             view.read(keylet::line(id, issue.account, issue.currency));
 
         if (!trustLine)
         {
-            return (flags & tapRETRY) ? TER{terNO_LINE} : TER{tecNO_LINE};
+            return tesSUCCESS;
         }
 
-        // Entries have a canonical representation, determined by a
-        // lexicographical "greater than" comparison employing strict weak
-        // ordering. Determine which entry we need to access.
-        bool const canonical_gt(id > issue.account);
+        // There's no difference which side enacted deep freeze, accepting
+        // tokens shouldn't be possible.
+        bool const deepFrozen =
+            (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
 
-        bool const is_authorized(
-            (*trustLine)[sfFlags] & (canonical_gt ? lsfLowAuth : lsfHighAuth));
-
-        if (!is_authorized)
+        if (deepFrozen)
         {
-            JLOG(j.debug())
-                << "delay: can't receive IOUs from issuer without auth.";
-
-            return (flags & tapRETRY) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
+            return tecFROZEN;
         }
-    }
 
-    // An account can not create a trustline to itself, so no line can exist
-    // to be frozen. Additionally, an issuer can always accept its own
-    // issuance.
-    if (issue.account == id)
-    {
         return tesSUCCESS;
     }
-
-    auto const trustLine =
-        view.read(keylet::line(id, issue.account, issue.currency));
-
-    if (!trustLine)
-    {
-        return tesSUCCESS;
-    }
-
-    // There's no difference which side enacted deep freeze, accepting
-    // tokens shouldn't be possible.
-    bool const deepFrozen =
-        (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
-
-    if (deepFrozen)
-    {
-        return tecFROZEN;
-    }
-
-    return tesSUCCESS;
+    else
+        // WeakAuth - don't check if MPToken exists since it's created if
+        // needed.
+        return requireAuth(view, asset.get<MPTIssue>(), id, AuthType::WeakAuth);
 }
 
 std::pair<TER, Amounts>
@@ -332,8 +355,13 @@ CreateOffer::flowCross(
         // We check this in preclaim, but when selling XRP charged fees can
         // cause a user's available balance to go to 0 (by causing it to dip
         // below the reserve) so we check this case again.
-        STAmount const inStartBalance =
-            accountFunds(psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+        STAmount const inStartBalance = accountFunds(
+            psb,
+            account_,
+            takerAmount.in,
+            fhZERO_IF_FROZEN,
+            ahZERO_IF_UNAUTHORIZED,
+            j_);
         if (inStartBalance <= beast::zero)
         {
             // The account balance can't cover even part of the offer.
@@ -348,13 +376,13 @@ CreateOffer::flowCross(
         STAmount sendMax = takerAmount.in;
         if (!sendMax.native() && (account_ != sendMax.getIssuer()))
         {
-            gatewayXferRate = transferRate(psb, sendMax.getIssuer());
+            gatewayXferRate = transferRate(psb, sendMax);
             if (gatewayXferRate.value != QUALITY_ONE)
             {
                 sendMax = multiplyRound(
                     takerAmount.in,
                     gatewayXferRate,
-                    takerAmount.in.issue(),
+                    takerAmount.in.asset(),
                     true);
             }
         }
@@ -386,6 +414,7 @@ CreateOffer::flowCross(
         }
         // Special handling for the tfSell flag.
         STAmount deliver = takerAmount.out;
+        auto const& deliverAsset = deliver.asset();
         OfferCrossing offerCrossing = OfferCrossing::yes;
         if (txFlags & tfSell)
         {
@@ -395,15 +424,17 @@ CreateOffer::flowCross(
             // we allow delivery of the largest possible amount.
             if (deliver.native())
                 deliver = STAmount{STAmount::cMaxNative};
-            else
-                // We can't use the maximum possible currency here because
-                // there might be a gateway transfer rate to account for.
-                // Since the transfer rate cannot exceed 200%, we use 1/2
-                // maxValue for our limit.
+            // We can't use the maximum possible currency here because
+            // there might be a gateway transfer rate to account for.
+            // Since the transfer rate cannot exceed 200%, we use 1/2
+            // maxValue for our limit.
+            else if (deliver.holds<Issue>())
                 deliver = STAmount{
-                    takerAmount.out.issue(),
+                    deliverAsset,
                     STAmount::cMaxValue / 2,
                     STAmount::cMaxOffset};
+            else
+                deliver = STAmount{deliverAsset, maxMPTokenAmount / 2};
         }
 
         // Call the payment engine's flow() to do the actual work.
@@ -436,7 +467,12 @@ CreateOffer::flowCross(
         if (isTesSuccess(result.result()))
         {
             STAmount const takerInBalance = accountFunds(
-                psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+                psb,
+                account_,
+                takerAmount.in,
+                fhZERO_IF_FROZEN,
+                ahZERO_IF_UNAUTHORIZED,
+                j_);
 
             if (takerInBalance <= beast::zero)
             {
@@ -465,7 +501,7 @@ CreateOffer::flowCross(
                         nonGatewayAmountIn = divideRound(
                             result.actualAmountIn,
                             gatewayXferRate,
-                            takerAmount.in.issue(),
+                            takerAmount.in.asset(),
                             true);
 
                     afterCross.in -= nonGatewayAmountIn;
@@ -487,11 +523,11 @@ CreateOffer::flowCross(
                             return divRoundStrict(
                                 afterCross.in,
                                 rate,
-                                takerAmount.out.issue(),
+                                takerAmount.out.asset(),
                                 false);
 
                         return divRound(
-                            afterCross.in, rate, takerAmount.out.issue(), true);
+                            afterCross.in, rate, takerAmount.out.asset(), true);
                     }();
                 }
                 else
@@ -506,7 +542,7 @@ CreateOffer::flowCross(
                     if (afterCross.out < beast::zero)
                         afterCross.out.clear();
                     afterCross.in = mulRound(
-                        afterCross.out, rate, takerAmount.in.issue(), true);
+                        afterCross.out, rate, takerAmount.in.asset(), true);
                 }
             }
         }
@@ -526,7 +562,10 @@ CreateOffer::format_amount(STAmount const& amount)
 {
     std::string txt = amount.getText();
     txt += "/";
-    txt += to_string(amount.issue().currency);
+    if (amount.holds<Issue>())
+        txt += to_string(amount.get<Issue>().currency);
+    else
+        txt += to_string(amount.get<MPTIssue>());
     return txt;
 }
 
@@ -546,7 +585,7 @@ CreateOffer::applyHybrid(
     sleOffer->setFlag(lsfHybrid);
 
     // if offer is hybrid, need to also place into open offer dir
-    Book const book{saTakerPays.issue(), saTakerGets.issue(), std::nullopt};
+    Book const book{saTakerPays.asset(), saTakerGets.asset(), std::nullopt};
 
     auto dir =
         keylet::quality(keylet::book(book), getRate(saTakerGets, saTakerPays));
@@ -674,12 +713,12 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             if (bSell)
             {
                 // this is a sell, round taker pays
-                saTakerPays = multiply(saTakerGets, rate, saTakerPays.issue());
+                saTakerPays = multiply(saTakerGets, rate, saTakerPays.asset());
             }
             else
             {
                 // this is a buy, round taker gets
-                saTakerGets = divide(saTakerPays, rate, saTakerGets.issue());
+                saTakerGets = divide(saTakerPays, rate, saTakerGets.asset());
             }
             if (!saTakerGets || !saTakerPays)
             {
@@ -694,8 +733,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         Amounts const takerAmount(saTakerGets, saTakerPays);
 
         JLOG(j_.debug()) << "Attempting cross: "
-                         << to_string(takerAmount.in.issue()) << " -> "
-                         << to_string(takerAmount.out.issue());
+                         << to_string(takerAmount.in.asset()) << " -> "
+                         << to_string(takerAmount.out.asset());
 
         if (auto stream = j_.trace())
         {
@@ -741,10 +780,10 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         }
 
         XRPL_ASSERT(
-            saTakerGets.issue() == place_offer.in.issue(),
+            saTakerGets.asset() == place_offer.in.asset(),
             "ripple::CreateOffer::applyGuts : taker gets issue match");
         XRPL_ASSERT(
-            saTakerPays.issue() == place_offer.out.issue(),
+            saTakerPays.asset() == place_offer.out.asset(),
             "ripple::CreateOffer::applyGuts : taker pays issue match");
 
         if (takerAmount != place_offer)
@@ -856,11 +895,11 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Update owner count.
     adjustOwnerCount(sb, sleCreator, 1, viewJ);
 
-    JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.issue())
-                     << " : " << to_string(saTakerGets.issue())
+    JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset())
+                     << " : " << to_string(saTakerGets.asset())
                      << (domainID ? (" : " + to_string(*domainID)) : "");
 
-    Book const book{saTakerPays.issue(), saTakerGets.issue(), domainID};
+    Book const book{saTakerPays.asset(), saTakerGets.asset(), domainID};
 
     // Add offer to order book, using the original rate
     // before any crossing occured.
@@ -878,10 +917,30 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     auto setBookDir = [&](SLE::ref sle,
                           std::optional<uint256> const& maybeDomain) {
-        sle->setFieldH160(sfTakerPaysCurrency, saTakerPays.issue().currency);
-        sle->setFieldH160(sfTakerPaysIssuer, saTakerPays.issue().account);
-        sle->setFieldH160(sfTakerGetsCurrency, saTakerGets.issue().currency);
-        sle->setFieldH160(sfTakerGetsIssuer, saTakerGets.issue().account);
+        if (saTakerPays.holds<Issue>())
+        {
+            sle->setFieldH160(
+                sfTakerPaysCurrency, saTakerPays.get<Issue>().currency);
+            sle->setFieldH160(
+                sfTakerPaysIssuer, saTakerPays.get<Issue>().account);
+        }
+        else
+        {
+            sle->setFieldH192(
+                sfTakerPaysMPT, saTakerPays.get<MPTIssue>().getMptID());
+        }
+        if (saTakerGets.holds<Issue>())
+        {
+            sle->setFieldH160(
+                sfTakerGetsCurrency, saTakerGets.get<Issue>().currency);
+            sle->setFieldH160(
+                sfTakerGetsIssuer, saTakerGets.get<Issue>().account);
+        }
+        else
+        {
+            sle->setFieldH192(
+                sfTakerGetsMPT, saTakerGets.get<MPTIssue>().getMptID());
+        }
         sle->setFieldU64(sfExchangeRate, uRate);
         if (maybeDomain)
             sle->setFieldH256(sfDomainID, *maybeDomain);

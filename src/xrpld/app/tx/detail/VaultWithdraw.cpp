@@ -155,7 +155,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
         return ret;
 
-    if (auto const ret = checkFrozen(ctx.view, account, vaultShare))
+    if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
         return ret;
 
     return tesSUCCESS;

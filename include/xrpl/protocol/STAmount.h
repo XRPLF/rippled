@@ -194,12 +194,9 @@ public:
     constexpr TIss const&
     get() const;
 
-    Issue const&
-    issue() const;
-
-    // These three are deprecated
-    Currency const&
-    getCurrency() const;
+    template <ValidIssueType TIss>
+    TIss&
+    get();
 
     AccountID const&
     getIssuer() const;
@@ -254,9 +251,6 @@ public:
     // Zero while copying currency and issuer.
     void
     clear(Asset const& asset);
-
-    void
-    setIssuer(AccountID const& uIssuer);
 
     /** Set the Issue for this amount. */
     void
@@ -492,16 +486,11 @@ STAmount::get() const
     return mAsset.get<TIss>();
 }
 
-inline Issue const&
-STAmount::issue() const
+template <ValidIssueType TIss>
+TIss&
+STAmount::get()
 {
-    return get<Issue>();
-}
-
-inline Currency const&
-STAmount::getCurrency() const
-{
-    return mAsset.get<Issue>().currency;
+    return mAsset.get<TIss>();
 }
 
 inline AccountID const&
@@ -572,7 +561,7 @@ STAmount::clear()
 {
     // The -100 is used to allow 0 to sort less than a small positive values
     // which have a negative exponent.
-    mOffset = native() ? 0 : -100;
+    mOffset = native() || holds<MPTIssue>() ? 0 : -100;
     mValue = 0;
     mIsNegative = false;
 }
@@ -582,12 +571,6 @@ STAmount::clear(Asset const& asset)
 {
     setIssue(asset);
     clear();
-}
-
-inline void
-STAmount::setIssuer(AccountID const& uIssuer)
-{
-    mAsset.get<Issue>().account = uIssuer;
 }
 
 inline STAmount const&

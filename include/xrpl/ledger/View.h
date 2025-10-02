@@ -41,6 +41,7 @@
 namespace ripple {
 
 enum class WaiveTransferFee : bool { No = false, Yes };
+enum class AllowMPTOverflow : bool { No = false, Yes };
 enum class SkipEntry : bool { No = false, Yes };
 
 //------------------------------------------------------------------------------
@@ -246,8 +247,8 @@ isDeepFrozen(
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
-    Issue const& asset,
-    Issue const& asset2);
+    Asset const& asset,
+    Asset const& asset2);
 
 // Returns the amount an account can spend without going into debt.
 //
@@ -261,13 +262,17 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     beast::Journal j);
 
-[[nodiscard]] STAmount
+[[nodiscard]] inline STAmount
 accountHolds(
     ReadView const& view,
     AccountID const& account,
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
-    beast::Journal j);
+    beast::Journal j)
+{
+    return accountHolds(
+        view, account, issue.currency, issue.account, zeroIfFrozen, j);
+}
 
 [[nodiscard]] STAmount
 accountHolds(
@@ -287,6 +292,26 @@ accountHolds(
     AuthHandling zeroIfUnauthorized,
     beast::Journal j);
 
+[[nodiscard]] inline STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j)
+{
+    return std::visit(
+        [&]<typename TIss>(TIss const& issue) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return accountHolds(view, account, issue, zeroIfFrozen, j);
+            else
+                return accountHolds(
+                    view, account, issue, zeroIfFrozen, zeroIfUnauthorized, j);
+        },
+        asset.value());
+}
+
 // Returns the amount an account can spend of the currency type saDefault, or
 // returns saDefault if this account is the issuer of the currency in
 // question. Should be used in favor of accountHolds when questioning how much
@@ -299,6 +324,34 @@ accountFunds(
     STAmount const& saDefault,
     FreezeHandling freezeHandling,
     beast::Journal j);
+
+[[nodiscard]] STAmount
+accountFunds(
+    ReadView const& view,
+    AccountID const& id,
+    STAmount const& saDefault,
+    FreezeHandling freezeHandling,
+    AuthHandling authHandling,
+    beast::Journal j);
+
+/**
+ * Determine funds available for an issuer to sell in an issuer owned offer.
+ * Issuing step, which could be either MPTEndPointStep last step or BookStep's
+ * TakerPays may overflow OutstandingAmount. Redeeming step, in BookStep's
+ * TakerGets redeems the offer's owner funds, essentially balancing out
+ * the overflow, unless the offer's owner is the issuer.
+ */
+[[nodiscard]] STAmount
+issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue);
+
+/** Facilitate tracking of MPT sold by an issuer owning MPT sell offer.
+ * See ApplyView::issuerSelfDebitHookMPT().
+ */
+void
+issuerSelfDebitHookMPT(
+    ApplyView& view,
+    MPTIssue const& issue,
+    std::uint64_t amount);
 
 // Return the account's liquid (not reserved) XRP.  Generally prefer
 // calling accountHolds() over this interface.  However, this interface
@@ -383,8 +436,18 @@ transferRate(ReadView const& view, MPTID const& issuanceID);
  * @param view The ledger view
  * @param amount The amount to transfer
  */
-[[nodiscard]] Rate
-transferRate(ReadView const& view, STAmount const& amount);
+[[nodiscard]] inline Rate
+transferRate(ReadView const& view, STAmount const& amount)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return transferRate(view, issue.getIssuer());
+            else
+                return transferRate(view, issue.getMptID());
+        },
+        amount.asset().value());
+}
 
 /** Returns `true` if the directory is empty
     @param key The key of the directory
@@ -748,7 +811,8 @@ accountSend(
     AccountID const& to,
     STAmount const& saAmount,
     beast::Journal j,
-    WaiveTransferFee waiveFee = WaiveTransferFee::No);
+    WaiveTransferFee waiveFee = WaiveTransferFee::No,
+    AllowMPTOverflow allowOverflow = AllowMPTOverflow::Yes);
 
 [[nodiscard]] TER
 issueIOU(
@@ -926,6 +990,16 @@ deleteAMMTrustLine(
     ApplyView& view,
     std::shared_ptr<SLE> sleState,
     std::optional<AccountID> const& ammAccountID,
+    beast::Journal j);
+
+/** Delete AMMs MPToken. The passed `sle` must be obtained from a prior
+ * call to view.peek().
+ */
+[[nodiscard]] TER
+deleteAMMMPToken(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleMPT,
+    AccountID const& ammAccountID,
     beast::Journal j);
 
 // From the perspective of a vault, return the number of shares to give the

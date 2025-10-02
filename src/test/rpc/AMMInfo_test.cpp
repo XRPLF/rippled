@@ -54,8 +54,7 @@ public:
         testAMM([&](AMM& ammAlice, Env&) {
             Account const gw("gw");
             auto const USD = gw["USD"];
-            auto const jv =
-                ammAlice.ammRpcInfo({}, {}, USD.issue(), USD.issue());
+            auto const jv = ammAlice.ammRpcInfo({}, {}, USD, USD);
             BEAST_EXPECT(jv[jss::error_message] == "Account not found.");
         });
 
@@ -71,10 +70,10 @@ public:
             TestAccount,
             bool>> const invalidParams = {
             {xrpIssue(), std::nullopt, None, false},
-            {std::nullopt, USD.issue(), None, false},
+            {std::nullopt, USD, None, false},
             {xrpIssue(), std::nullopt, Alice, false},
-            {std::nullopt, USD.issue(), Alice, false},
-            {xrpIssue(), USD.issue(), Alice, false},
+            {std::nullopt, USD, Alice, false},
+            {xrpIssue(), USD, Alice, false},
             {std::nullopt, std::nullopt, None, true}};
 
         // Invalid parameters
@@ -140,10 +139,10 @@ public:
             TestAccount,
             bool>> const invalidParamsBadAccount = {
             {xrpIssue(), std::nullopt, None, false},
-            {std::nullopt, USD.issue(), None, false},
+            {std::nullopt, USD, None, false},
             {xrpIssue(), std::nullopt, Bogie, false},
-            {std::nullopt, USD.issue(), Bogie, false},
-            {xrpIssue(), USD.issue(), Bogie, false},
+            {std::nullopt, USD, Bogie, false},
+            {xrpIssue(), USD, Bogie, false},
             {std::nullopt, std::nullopt, None, true}};
 
         // Invalid parameters *and* invalid AMM account, default API version
@@ -191,8 +190,6 @@ public:
         using namespace jtx;
         testAMM([&](AMM& ammAlice, Env&) {
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
-                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
-            BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                 XRP(10000),
                 USD(10000),
                 IOUAmount{10000000, 0},
@@ -200,6 +197,33 @@ public:
                 std::nullopt,
                 ammAlice.ammAccount()));
         });
+
+        {
+            Env env{*this};
+            env.fund(XRP(1'000), gw);
+            MPTTester mpt(env, gw, {.fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
+            MPTTester mpt1(env, gw, {.fund = false});
+            mpt1.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
+            auto const MPT = mpt["MPT"];
+            auto const MPT1 = mpt1["MPT"];
+            std::vector<std::tuple<PrettyAmount, PrettyAmount, IOUAmount>>
+                pools = {
+                    {XRP(100), MPT(100), IOUAmount{100'000}},
+                    {USD(100), MPT(100), IOUAmount{100}},
+                    {MPT(100), MPT1(100), IOUAmount{100}}};
+            for (auto& pool : pools)
+            {
+                AMM amm(env, gw, std::get<0>(pool), std::get<1>(pool));
+                BEAST_EXPECT(amm.expectAmmRpcInfo(
+                    std::get<0>(pool),
+                    std::get<1>(pool),
+                    std::get<2>(pool),
+                    std::nullopt,
+                    std::nullopt,
+                    amm.ammAccount()));
+            }
+        }
     }
 
     void

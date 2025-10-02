@@ -23,6 +23,7 @@
 
 #include <xrpl/protocol/Quality.h>
 
+#include <boost/format.hpp>
 #include <boost/regex.hpp>
 
 namespace ripple {
@@ -178,9 +179,9 @@ class AMMCalc_test : public beast::unit_test::suite
     std::string
     toString(STAmount const& a)
     {
-        std::stringstream str;
-        str << a.getText() << "/" << to_string(a.issue().currency);
-        return str.str();
+        return (boost::format("%s/%s") % a.getText() %
+                to_string(a.get<Issue>().currency))
+            .str();
     }
 
     STAmount
@@ -189,8 +190,8 @@ class AMMCalc_test : public beast::unit_test::suite
         if (a == b)
             return amt;
         if (amt.native())
-            return toSTAmount(mulRatio(amt.xrp(), a, b, round), amt.issue());
-        return toSTAmount(mulRatio(amt.iou(), a, b, round), amt.issue());
+            return toSTAmount(mulRatio(amt.xrp(), a, b, round), amt.asset());
+        return toSTAmount(mulRatio(amt.iou(), a, b, round), amt.asset());
     }
 
     void
@@ -205,8 +206,8 @@ class AMMCalc_test : public beast::unit_test::suite
         STAmount sin{};
         int limitingStep = vp.size();
         STAmount limitStepOut{};
-        auto trate = [&](auto const& amt) {
-            auto const currency = to_string(amt.issue().currency);
+        auto trate = [&](STAmount const& amt) {
+            auto const currency = to_string(amt.get<Issue>().currency);
             return rates.find(currency) != rates.end() ? rates.at(currency)
                                                        : QUALITY_ONE;
         };
@@ -270,8 +271,8 @@ class AMMCalc_test : public beast::unit_test::suite
         STAmount sout{};
         int limitingStep = 0;
         STAmount limitStepIn{};
-        auto trate = [&](auto const& amt) {
-            auto const currency = to_string(amt.issue().currency);
+        auto trate = [&](STAmount const& amt) {
+            auto const currency = to_string(amt.get<Issue>().currency);
             return rates.find(currency) != rates.end() ? rates.at(currency)
                                                        : QUALITY_ONE;
         };

@@ -27,12 +27,13 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Concepts.h>
 
 #include <boost/container/flat_set.hpp>
 
 namespace ripple {
 
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 class TOfferStreamBase
 {
 public:
@@ -86,6 +87,7 @@ protected:
     permRmOffer(uint256 const& offerIndex) = 0;
 
     template <class TTakerPays, class TTakerGets>
+        requires ValidTaker<TTakerPays, TTakerGets>
     bool
     shouldRmSmallIncreasedQOffer() const;
 
@@ -129,33 +131,6 @@ public:
 
 /** Presents and consumes the offers in an order book.
 
-    Two `ApplyView` objects accumulate changes to the ledger. `view`
-    is applied when the calling transaction succeeds. If the calling
-    transaction fails, then `view_cancel` is applied.
-
-    Certain invalid offers are automatically removed:
-    - Offers with missing ledger entries
-    - Offers that expired
-    - Offers found unfunded:
-    An offer is found unfunded when the corresponding balance is zero
-    and the caller has not modified the balance. This is accomplished
-    by also looking up the balance in the cancel view.
-
-    When an offer is removed, it is removed from both views. This grooms the
-    order book regardless of whether or not the transaction is successful.
-*/
-class OfferStream : public TOfferStreamBase<STAmount, STAmount>
-{
-protected:
-    void
-    permRmOffer(uint256 const& offerIndex) override;
-
-public:
-    using TOfferStreamBase<STAmount, STAmount>::TOfferStreamBase;
-};
-
-/** Presents and consumes the offers in an order book.
-
     The `view_' ` `ApplyView` accumulates changes to the ledger.
     The `cancelView_` is used to determine if an offer is found
     unfunded or became unfunded.
@@ -171,7 +146,7 @@ public:
     and the caller has not modified the balance. This is accomplished
     by also looking up the balance in the cancel view.
 */
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
 {
 private:
