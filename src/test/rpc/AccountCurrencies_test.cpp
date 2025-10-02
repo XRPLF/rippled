@@ -43,11 +43,10 @@ class AccountCurrencies_test : public beast::unit_test::suite
             params[jss::account] = Account{"bob"}.human();
             params[jss::ledger_hash] = 1;
             auto const result = env.rpc(
-                "json",
-                "account_currencies",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(result[jss::error_message] == "ledgerHashNotString");
+            BEAST_EXPECT(
+                result[jss::error_message] == "Invalid field 'ledger_hash'.");
         }
 
         {  // missing account field

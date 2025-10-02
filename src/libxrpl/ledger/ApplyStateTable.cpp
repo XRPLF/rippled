@@ -282,11 +282,8 @@ ApplyStateTable::apply(
         metadata = meta;
     }
 
-    if (!isDryRun)
-    {
-        to.rawTxInsert(tx.getTransactionID(), sTx, sMeta);
-        apply(to);
-    }
+    to.rawTxInsert(tx.getTransactionID(), sTx, sMeta);
+    apply(to);
     return metadata;
 }
 

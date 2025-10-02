@@ -171,11 +171,12 @@ apply(
     });
 }
 
-static bool
+std::optional<std::vector<ApplyResult>>
 applyBatchTransactions(
     Application& app,
     OpenView& batchView,
     STTx const& batchTxn,
+    ApplyFlags flags,
     beast::Journal j)
 {
     XRPL_ASSERT(
@@ -186,46 +187,70 @@ applyBatchTransactions(
     auto const parentBatchId = batchTxn.getTransactionID();
     auto const mode = batchTxn.getFlags();
 
-    auto applyOneTransaction =
-        [&app, &j, &parentBatchId, &batchView](STTx&& tx) {
-            OpenView perTxBatchView(batch_view, batchView);
+    auto applyOneTransaction = [&app, &j, &parentBatchId, &batchView, &flags](
+                                   STTx&& tx) {
+        OpenView perTxBatchView(batch_view, batchView);
 
-            auto const ret =
-                apply(app, perTxBatchView, parentBatchId, tx, tapBATCH, j);
+        auto const ret = apply(
+            app,
+            perTxBatchView,
+            parentBatchId,
+            tx,
+            (flags & tapDRY_RUN) | tapBATCH,
+            j);
+        if (flags & tapDRY_RUN)
+        {
+            XRPL_ASSERT(
+                ret.applied == false,
+                "Inner transaction should not be applied in dry run");
+        }
+        else
+        {
             XRPL_ASSERT(
                 ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
                 "Inner transaction should not be applied");
+        }
 
-            JLOG(j.debug()) << "BatchTrace[" << parentBatchId
-                            << "]: " << tx.getTransactionID() << " "
-                            << (ret.applied ? "applied" : "failure") << ": "
-                            << transToken(ret.ter);
+        JLOG(j.debug()) << "BatchTrace[" << parentBatchId
+                        << "]: " << tx.getTransactionID() << " "
+                        << (ret.applied ? "applied" : "failure") << ": "
+                        << transToken(ret.ter);
 
-            // If the transaction should be applied push its changes to the
-            // whole-batch view.
-            if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
-                perTxBatchView.apply(batchView);
+        // If the transaction should be applied push its changes to the
+        // whole-batch view.
+        if ((ret.applied || flags & tapDRY_RUN) &&
+            (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+            perTxBatchView.apply(batchView);
 
-            return ret;
-        };
+        return ret;
+    };
 
-    int applied = 0;
+    std::vector<ApplyResult> results;
 
     for (STObject rb : batchTxn.getFieldArray(sfRawTransactions))
     {
         auto const result = applyOneTransaction(STTx{std::move(rb)});
-        XRPL_ASSERT(
-            result.applied ==
-                (isTesSuccess(result.ter) || isTecClaim(result.ter)),
-            "Outer Batch failure, inner transaction should not be applied");
+        if (flags & tapDRY_RUN)
+        {
+            XRPL_ASSERT(
+                result.applied == false,
+                "Inner transaction should not be applied in dry run");
+        }
+        else
+        {
+            XRPL_ASSERT(
+                result.applied ==
+                    (isTesSuccess(result.ter) || isTecClaim(result.ter)),
+                "Outer Batch failure, inner transaction should not be applied");
+        }
 
-        if (result.applied)
-            ++applied;
+        if (result.applied || flags & tapDRY_RUN)
+            results.push_back(result);
 
         if (!isTesSuccess(result.ter))
         {
             if (mode & tfAllOrNothing)
-                return false;
+                return std::nullopt;
 
             if (mode & tfUntilFailure)
                 break;
@@ -234,7 +259,12 @@ applyBatchTransactions(
             break;
     }
 
-    return applied != 0;
+    if (results.empty())
+    {
+        return std::nullopt;
+    }
+
+    return results;
 }
 
 ApplyTransactionResult
@@ -268,7 +298,7 @@ applyTransaction(
             {
                 OpenView wholeBatchView(batch_view, view);
 
-                if (applyBatchTransactions(app, wholeBatchView, txn, j))
+                if (applyBatchTransactions(app, wholeBatchView, txn, flags, j))
                     wholeBatchView.apply(view);
             }
 
