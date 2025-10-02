@@ -324,8 +324,7 @@ PaymentSandbox::balanceHookIOU(
     // to compute usable balance just slightly above what the ledger
     // calculates (but always less than the actual balance).
     auto adjustedAmt = std::min({amount, lastBal - delta, minBal});
-    if (amount.holds<Issue>())
-        adjustedAmt.get<Issue>().account = amount.getIssuer();
+    adjustedAmt.get<Issue>().account = amount.getIssuer();
 
     if (isXRP(issuer) && adjustedAmt < beast::zero)
         // A calculated negative XRP balance is not an error case. Consider a
@@ -447,6 +446,10 @@ PaymentSandbox::issuerSelfDebitHookMPT(
     std::uint64_t amount,
     std::int64_t origBalance)
 {
+    XRPL_ASSERT(
+        amount > 0,
+        "PaymentSandbox::issuerSelfDebitHookMPT: amount must be > 0");
+
     tab_.issuerSelfDebitMPT(issue, amount, origBalance);
 }
 
