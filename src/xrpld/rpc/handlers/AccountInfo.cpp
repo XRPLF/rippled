@@ -21,7 +21,7 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
@@ -30,7 +30,46 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <boost/algorithm/string/case_conv.hpp>
+
 namespace ripple {
+
+/**
+ * @brief Injects JSON describing a ledger entry.
+ *
+ * @param jv The JSON value to populate.
+ * @param sle The ledger entry to describe.
+ *
+ * @details
+ * Populates the provided JSON value with the description of the specified
+ * ledger entry. If the entry is an account root and contains an email hash,
+ * adds a 'urlgravatar' field with the corresponding Gravatar URL.
+ * If the entry is not an account root, sets the 'Invalid' field to true.
+ */
+void
+injectSLE(Json::Value& jv, SLE const& sle)
+{
+    jv = sle.getJson(JsonOptions::none);
+    if (sle.getType() == ltACCOUNT_ROOT)
+    {
+        if (sle.isFieldPresent(sfEmailHash))
+        {
+            auto const& hash = sle.getFieldH128(sfEmailHash);
+            Blob const b(hash.begin(), hash.end());
+            std::string md5 = strHex(makeSlice(b));
+            boost::to_lower(md5);
+            // VFALCO TODO Give a name and move this constant
+            //             to a more visible location. Also
+            //             shouldn't this be https?
+            jv[jss::urlgravatar] =
+                str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
+        }
+    }
+    else
+    {
+        jv[jss::Invalid] = true;
+    }
+}
 
 // {
 //   account: <ident>,
@@ -127,7 +166,7 @@ doAccountInfo(RPC::JsonContext& context)
         }
 
         Json::Value jvAccepted(Json::objectValue);
-        RPC::injectSLE(jvAccepted, *sleAccepted);
+        injectSLE(jvAccepted, *sleAccepted);
         result[jss::account_data] = jvAccepted;
 
         Json::Value acctFlags{Json::objectValue};

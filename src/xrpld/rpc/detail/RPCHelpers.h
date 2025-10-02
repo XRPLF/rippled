@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012=2014 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -26,65 +26,45 @@
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/SecretKey.h>
 
 #include <optional>
-#include <variant>
-
-namespace Json {
-class Value;
-}
 
 namespace ripple {
 
 class ReadView;
-class Transaction;
 
 namespace RPC {
 
 struct JsonContext;
 
-/** Get an AccountID from an account ID or public key. */
-std::optional<AccountID>
-accountFromStringStrict(std::string const&);
-
-// --> strIdent: public key, account ID, or regular seed.
-// --> bStrict: Only allow account id or public key.
-//
-// Returns a Json::objectValue, containing error information if there was one.
-Json::Value
-accountFromString(
-    AccountID& result,
-    std::string const& strIdent,
-    bool bStrict = false);
-
-/** Decode account ID from string
-    @param[out] result account ID decoded from string
-    @param strIdent public key, account ID, or regular seed.
-    @param bStrict Only allow account id or public key.
-    @return code representing error, or rpcSUCCES on success
-*/
-error_code_i
-accountFromStringWithCode(
-    AccountID& result,
-    std::string const& strIdent,
-    bool bStrict = false);
-
-/** Gets the start hint for traversing account objects
- * @param sle - Ledger entry defined by the marker passed into the RPC.
- * @param accountID - The ID of the account whose objects you are traversing.
+/**
+ * @brief Gets the start hint for traversing account objects.
+ *
+ * This function retrieves a hint value from the specified ledger entry (SLE)
+ * that can be used to optimize traversal of account objects for the given
+ * account ID.
+ *
+ * @param sle Shared pointer to the ledger entry (SLE) defined by the marker
+ * passed into the RPC.
+ * @param accountID The ID of the account whose objects are being traversed.
+ * @return A 64-bit unsigned integer representing the start hint for traversal.
  */
 std::uint64_t
 getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
 
 /**
- * Tests if a SLE is owned by accountID.
- * @param ledger - The ledger used to search for the sle.
- * @param sle - The SLE to test for ownership.
- * @param account - The account being tested for SLE ownership.
+ * @brief Tests if a ledger entry (SLE) is owned by the specified account.
+ *
+ * Determines whether the given SLE is related to or owned by the provided
+ * account ID within the context of the specified ledger.
+ *
+ * @param ledger The ledger view used to search for the SLE.
+ * @param sle Shared pointer to the SLE to test for ownership.
+ * @param accountID The account being tested for SLE ownership.
+ * @return true if the SLE is owned by the account, false otherwise.
  */
 bool
 isRelatedToAccount(
@@ -92,178 +72,105 @@ isRelatedToAccount(
     std::shared_ptr<SLE const> const& sle,
     AccountID const& accountID);
 
-/** Gathers all objects for an account in a ledger.
-    @param ledger Ledger to search account objects.
-    @param account AccountID to find objects for.
-    @param typeFilter Gathers objects of these types. empty gathers all types.
-    @param dirIndex Begin gathering account objects from this directory.
-    @param entryIndex Begin gathering objects from this directory node.
-    @param limit Maximum number of objects to find.
-    @param jvResult A JSON result that holds the request objects.
-*/
-bool
-getAccountObjects(
-    ReadView const& ledger,
-    AccountID const& account,
-    std::optional<std::vector<LedgerEntryType>> const& typeFilter,
-    uint256 dirIndex,
-    uint256 entryIndex,
-    std::uint32_t const limit,
-    Json::Value& jvResult);
-
-/** Get ledger by hash
-    If there is no error in the return value, the ledger pointer will have
-    been filled
-*/
-template <class T>
-Status
-getLedger(T& ledger, uint256 const& ledgerHash, Context& context);
-
-/** Get ledger by sequence
-    If there is no error in the return value, the ledger pointer will have
-    been filled
-*/
-template <class T>
-Status
-getLedger(T& ledger, uint32_t ledgerIndex, Context& context);
-
-enum LedgerShortcut { CURRENT, CLOSED, VALIDATED };
-/** Get ledger specified in shortcut.
-    If there is no error in the return value, the ledger pointer will have
-    been filled
-*/
-template <class T>
-Status
-getLedger(T& ledger, LedgerShortcut shortcut, Context& context);
-
-/** Look up a ledger from a request and fill a Json::Result with either
-    an error, or data representing a ledger.
-
-    If there is no error in the return value, then the ledger pointer will have
-    been filled.
-*/
-Json::Value
-lookupLedger(std::shared_ptr<ReadView const>&, JsonContext&);
-
-/** Look up a ledger from a request and fill a Json::Result with the data
-    representing a ledger.
-
-    If the returned Status is OK, the ledger pointer will have been filled.
-*/
-Status
-lookupLedger(
-    std::shared_ptr<ReadView const>&,
-    JsonContext&,
-    Json::Value& result);
-
-template <class T, class R>
-Status
-ledgerFromRequest(T& ledger, GRPCContext<R>& context);
-
-template <class T>
-Status
-ledgerFromSpecifier(
-    T& ledger,
-    org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
-    Context& context);
-
+/**
+ * @brief Parses an array of account IDs from a JSON value.
+ *
+ * Extracts and returns a set of AccountID objects from the provided JSON array.
+ *
+ * @param jvArray The JSON value containing an array of account IDs.
+ * @return A hash_set containing the parsed AccountID objects.
+ */
 hash_set<AccountID>
 parseAccountIds(Json::Value const& jvArray);
 
-bool
-isHexTxID(std::string const& txid);
-
-/** Inject JSON describing ledger entry
-
-    Effects:
-        Adds the JSON description of `sle` to `jv`.
-
-        If `sle` holds an account root, also adds the
-        urlgravatar field JSON if sfEmailHash is present.
-*/
-void
-injectSLE(Json::Value& jv, SLE const& sle);
-
-/** Retrieve the limit value from a JsonContext, or set a default -
-    then restrict the limit by max and min if not an ADMIN request.
-
-    If there is an error, return it as JSON.
-*/
+/**
+ * @brief Retrieves the limit value from a JsonContext or sets a default.
+ *
+ * Reads the "limit" field from the given JsonContext, applies default, minimum,
+ * and maximum constraints as appropriate, and returns an error as JSON if
+ * validation fails.
+ *
+ * @param limit Reference to the variable where the limit value will be stored.
+ * @param range The allowed range for the limit value.
+ * @param context The JSON context from which to read the limit.
+ * @return An optional JSON value containing an error if one occurred, or
+ * std::nullopt on success.
+ */
 std::optional<Json::Value>
 readLimitField(
     unsigned int& limit,
-    Tuning::LimitRange const&,
-    JsonContext const&);
+    Tuning::LimitRange const& range,
+    JsonContext const& context);
 
+/**
+ * @brief Extracts a Seed from RPC parameters.
+ *
+ * Attempts to parse and return a Seed from the provided JSON RPC parameters.
+ * If parsing fails, an error is set in the provided error JSON value.
+ *
+ * @param params The JSON value containing RPC parameters.
+ * @param error Reference to a JSON value to be set with error information if
+ * parsing fails.
+ * @return An optional Seed if parsing is successful, or std::nullopt otherwise.
+ */
 std::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error);
 
+/**
+ * @brief Parses a RippleLib seed from RPC parameters.
+ *
+ * Attempts to extract and return a Seed from the provided JSON parameters using
+ * RippleLib conventions.
+ *
+ * @param params The JSON value containing RPC parameters.
+ * @return An optional Seed if parsing is successful, or std::nullopt otherwise.
+ */
 std::optional<Seed>
 parseRippleLibSeed(Json::Value const& params);
 
 /**
- * API version numbers used in API version 1
+ * @brief Chooses the ledger entry type based on RPC parameters.
+ *
+ * Determines the appropriate LedgerEntryType to use based on the provided JSON
+ * parameters, and returns a pair containing the RPC status and the selected
+ * type.
+ *
+ * @param params The JSON value containing RPC parameters.
+ * @return A pair consisting of the RPC status and the chosen LedgerEntryType.
  */
-extern beast::SemanticVersion const firstVersion;
-extern beast::SemanticVersion const goodVersion;
-extern beast::SemanticVersion const lastVersion;
-
-template <class Object>
-void
-setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
-{
-    XRPL_ASSERT(
-        apiVersion != apiInvalidVersion,
-        "ripple::RPC::setVersion : input is valid");
-    auto&& object = addObject(parent, jss::version);
-    if (apiVersion == apiVersionIfUnspecified)
-    {
-        object[jss::first] = firstVersion.print();
-        object[jss::good] = goodVersion.print();
-        object[jss::last] = lastVersion.print();
-    }
-    else
-    {
-        object[jss::first] = apiMinimumSupportedVersion.value;
-        object[jss::last] =
-            betaEnabled ? apiBetaVersion : apiMaximumSupportedVersion;
-    }
-}
-
 std::pair<RPC::Status, LedgerEntryType>
 chooseLedgerEntryType(Json::Value const& params);
 
 /**
- * Check if the type is a valid filtering type for account_objects method
+ * @brief Checks if the type is a valid filtering type for the account_objects
+ * method.
  *
- * Since Amendments, DirectoryNode, FeeSettings, LedgerHashes can not be
- * owned by an account, this function will return false in these situations.
+ * Determines whether the specified LedgerEntryType is valid for filtering in
+ * the account_objects RPC method. Types such as Amendments, DirectoryNode,
+ * FeeSettings, and LedgerHashes are not considered valid as they cannot be
+ * owned by an account.
+ *
+ * @param type The ledger entry type to check.
+ * @return true if the type is valid for account_objects filtering, false
+ * otherwise.
  */
 bool
 isAccountObjectsValidType(LedgerEntryType const& type);
 
 /**
- * Retrieve the api version number from the json value
+ * @brief Generates a keypair for signature from RPC parameters.
  *
- * Note that APIInvalidVersion will be returned if
- * 1) the version number field has a wrong format
- * 2) the version number retrieved is out of the supported range
- * 3) the version number is unspecified and
- *    APIVersionIfUnspecified is out of the supported range
+ * Attempts to derive a public and secret key pair from the provided JSON RPC
+ * parameters. If an error occurs, it is set in the provided error JSON value.
  *
- * @param value a Json value that may or may not specifies
- *        the api version number
- * @param betaEnabled if the beta API version is enabled
- * @return the api version number
+ * @param params The JSON value containing RPC parameters.
+ * @param error Reference to a JSON value to be set with error information if
+ * keypair generation fails.
+ * @param apiVersion The API version to use for keypair derivation (defaults to
+ * apiVersionIfUnspecified).
+ * @return An optional pair containing the public and secret keys if successful,
+ * or std::nullopt otherwise.
  */
-unsigned int
-getAPIVersionNumber(Json::Value const& value, bool betaEnabled);
-
-/** Return a ledger based on ledger_hash or ledger_index,
-    or an RPC error */
-std::variant<std::shared_ptr<Ledger const>, Json::Value>
-getLedgerByContext(RPC::JsonContext& context);
-
 std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(
     Json::Value const& params,

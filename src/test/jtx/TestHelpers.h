@@ -22,6 +22,8 @@
 
 #include <test/jtx/Env.h>
 
+#include <xrpld/app/misc/TxQ.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>

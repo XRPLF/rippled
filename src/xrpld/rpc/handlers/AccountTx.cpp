@@ -109,11 +109,11 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
             std::string ledgerStr = params[jss::ledger_index].asString();
 
             if (ledgerStr == "current" || ledgerStr.empty())
-                ledger = LedgerShortcut::CURRENT;
+                ledger = LedgerShortcut::Current;
             else if (ledgerStr == "closed")
-                ledger = LedgerShortcut::CLOSED;
+                ledger = LedgerShortcut::Closed;
             else if (ledgerStr == "validated")
-                ledger = LedgerShortcut::VALIDATED;
+                ledger = LedgerShortcut::Validated;
             else
             {
                 RPC::Status status{

@@ -20,7 +20,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
@@ -35,16 +35,12 @@ std::optional<AccountID>
 getAccount(Json::Value const& v, Json::Value& result)
 {
     std::string strIdent(v.asString());
-    AccountID accountID;
 
-    if (auto jv = RPC::accountFromString(accountID, strIdent))
+    if (auto opt = parseBase58<AccountID>(strIdent); opt.has_value())
     {
-        for (auto it = jv.begin(); it != jv.end(); ++it)
-            result[it.memberName()] = (*it);
-
-        return std::nullopt;
+        return *opt;
     }
-    return std::optional<AccountID>(accountID);
+    return std::nullopt;
 }
 
 Expected<Issue, error_code_i>

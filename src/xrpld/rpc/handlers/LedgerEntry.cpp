@@ -19,7 +19,7 @@
 
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/handlers/LedgerEntryHelpers.h>
 
 #include <xrpl/basics/StringUtilities.h>

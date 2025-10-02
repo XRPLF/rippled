@@ -498,7 +498,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                         to_string(jvParams))[jss::result];
                     auto const expectedErrMsg = fieldValue.isString()
                         ? "ledgerHashMalformed"
-                        : "ledgerHashNotString";
+                        : "Invalid field 'ledger_hash', not string.";
                     checkErrorValue(jrr, "invalidParams", expectedErrMsg);
                 };
 
