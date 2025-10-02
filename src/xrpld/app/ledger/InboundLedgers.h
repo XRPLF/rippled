@@ -47,6 +47,8 @@ public:
     // instead. Inbound ledger acquisition is asynchronous anyway.
     virtual void
     acquireAsync(
+        JobType type,
+        std::string const& name,
         uint256 const& hash,
         std::uint32_t seq,
         InboundLedger::Reason reason) = 0;
