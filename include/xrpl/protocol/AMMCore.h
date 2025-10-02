@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED
-#define RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED
+#ifndef XRPL_PROTOCOL_AMMCORE_H_INCLUDED
+#define XRPL_PROTOCOL_AMMCORE_H_INCLUDED
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AccountID.h>
@@ -123,4 +123,4 @@ feeMultHalf(std::uint16_t tfee)
 
 }  // namespace ripple
 
-#endif  // RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED
+#endif  // XRPL_PROTOCOL_AMMCORE_H_INCLUDED

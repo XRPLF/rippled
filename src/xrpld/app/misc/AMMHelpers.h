@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_AMMHELPERS_H_INCLUDED
-#define RIPPLE_APP_MISC_AMMHELPERS_H_INCLUDED
+#ifndef XRPL_APP_MISC_AMMHELPERS_H_INCLUDED
+#define XRPL_APP_MISC_AMMHELPERS_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -782,4 +782,4 @@ adjustFracByTokens(
 
 }  // namespace ripple
 
-#endif  // RIPPLE_APP_MISC_AMMHELPERS_H_INCLUDED
+#endif  // XRPL_APP_MISC_AMMHELPERS_H_INCLUDED

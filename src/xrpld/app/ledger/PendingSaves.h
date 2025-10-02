@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_PENDINGSAVES_H_INCLUDED
-#define RIPPLE_APP_PENDINGSAVES_H_INCLUDED
+#ifndef XRPL_APP_PENDINGSAVES_H_INCLUDED
+#define XRPL_APP_PENDINGSAVES_H_INCLUDED
 
 #include <xrpl/protocol/Protocol.h>
 

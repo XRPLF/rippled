@@ -241,7 +241,7 @@ public:
     static std::size_t
     numberOfThreads(Config const& config)
     {
-#if RIPPLE_SINGLE_IO_SERVICE_THREAD
+#if XRPL_SINGLE_IO_SERVICE_THREAD
         return 1;
 #else
 

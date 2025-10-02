@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAP_SHAMAPITEM_H_INCLUDED
-#define RIPPLE_SHAMAP_SHAMAPITEM_H_INCLUDED
+#ifndef XRPL_SHAMAP_SHAMAPITEM_H_INCLUDED
+#define XRPL_SHAMAP_SHAMAPITEM_H_INCLUDED
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/CountedObject.h>

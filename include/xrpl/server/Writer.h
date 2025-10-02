@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_WRITER_H_INCLUDED
-#define RIPPLE_SERVER_WRITER_H_INCLUDED
+#ifndef XRPL_SERVER_WRITER_H_INCLUDED
+#define XRPL_SERVER_WRITER_H_INCLUDED
 
 #include <boost/asio/buffer.hpp>
 

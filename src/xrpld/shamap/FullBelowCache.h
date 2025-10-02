@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAP_FULLBELOWCACHE_H_INCLUDED
-#define RIPPLE_SHAMAP_FULLBELOWCACHE_H_INCLUDED
+#ifndef XRPL_SHAMAP_FULLBELOWCACHE_H_INCLUDED
+#define XRPL_SHAMAP_FULLBELOWCACHE_H_INCLUDED
 
 #include <xrpl/basics/KeyCache.h>
 #include <xrpl/basics/TaggedCache.h>

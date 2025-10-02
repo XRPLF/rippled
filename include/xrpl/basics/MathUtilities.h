@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_MATHUTILITIES_H_INCLUDED
-#define RIPPLE_BASICS_MATHUTILITIES_H_INCLUDED
+#ifndef XRPL_BASICS_MATHUTILITIES_H_INCLUDED
+#define XRPL_BASICS_MATHUTILITIES_H_INCLUDED
 
 #include <algorithm>
 #include <cassert>

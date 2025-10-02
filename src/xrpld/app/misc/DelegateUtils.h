@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_DELEGATEUTILS_H_INCLUDED
-#define RIPPLE_APP_MISC_DELEGATEUTILS_H_INCLUDED
+#ifndef XRPL_APP_MISC_DELEGATEUTILS_H_INCLUDED
+#define XRPL_APP_MISC_DELEGATEUTILS_H_INCLUDED
 
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -54,4 +54,4 @@ loadGranularPermission(
 
 }  // namespace ripple
 
-#endif  // RIPPLE_APP_MISC_DELEGATEUTILS_H_INCLUDED
+#endif  // XRPL_APP_MISC_DELEGATEUTILS_H_INCLUDED

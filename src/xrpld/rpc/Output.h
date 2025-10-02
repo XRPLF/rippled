@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_OUTPUT_H_INCLUDED
-#define RIPPLE_RPC_OUTPUT_H_INCLUDED
+#ifndef XRPL_RPC_OUTPUT_H_INCLUDED
+#define XRPL_RPC_OUTPUT_H_INCLUDED
 
 #include <boost/utility/string_ref.hpp>
 

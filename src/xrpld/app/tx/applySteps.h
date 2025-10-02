@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_APPLYSTEPS_H_INCLUDED
-#define RIPPLE_TX_APPLYSTEPS_H_INCLUDED
+#ifndef XRPL_TX_APPLYSTEPS_H_INCLUDED
+#define XRPL_TX_APPLYSTEPS_H_INCLUDED
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyViewImpl.h>

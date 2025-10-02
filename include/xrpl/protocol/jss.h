@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_JSONFIELDS_H_INCLUDED
-#define RIPPLE_PROTOCOL_JSONFIELDS_H_INCLUDED
+#ifndef XRPL_PROTOCOL_JSONFIELDS_H_INCLUDED
+#define XRPL_PROTOCOL_JSONFIELDS_H_INCLUDED
 
 #include <xrpl/json/json_value.h>
 

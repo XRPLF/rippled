@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
-#define RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
+#ifndef XRPL_OVERLAY_CONNECTATTEMPT_H_INCLUDED
+#define XRPL_OVERLAY_CONNECTATTEMPT_H_INCLUDED
 
 #include <xrpld/overlay/detail/OverlayImpl.h>
 

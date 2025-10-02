@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_CSF_TX_H_INCLUDED
-#define RIPPLE_TEST_CSF_TX_H_INCLUDED
+#ifndef XRPL_TEST_CSF_TX_H_INCLUDED
+#define XRPL_TEST_CSF_TX_H_INCLUDED
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>

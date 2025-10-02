@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_FACTORY_H_INCLUDED
-#define RIPPLE_NODESTORE_FACTORY_H_INCLUDED
+#ifndef XRPL_NODESTORE_FACTORY_H_INCLUDED
+#define XRPL_NODESTORE_FACTORY_H_INCLUDED
 
 #include <xrpld/nodestore/Backend.h>
 #include <xrpld/nodestore/Scheduler.h>

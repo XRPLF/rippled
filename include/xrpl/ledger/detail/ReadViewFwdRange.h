@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_READVIEWFWDRANGE_H_INCLUDED
-#define RIPPLE_LEDGER_READVIEWFWDRANGE_H_INCLUDED
+#ifndef XRPL_LEDGER_READVIEWFWDRANGE_H_INCLUDED
+#define XRPL_LEDGER_READVIEWFWDRANGE_H_INCLUDED
 
 #include <cstddef>
 #include <memory>

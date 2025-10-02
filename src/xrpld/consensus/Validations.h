@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CONSENSUS_VALIDATIONS_H_INCLUDED
-#define RIPPLE_CONSENSUS_VALIDATIONS_H_INCLUDED
+#ifndef XRPL_CONSENSUS_VALIDATIONS_H_INCLUDED
+#define XRPL_CONSENSUS_VALIDATIONS_H_INCLUDED
 
 #include <xrpld/consensus/LedgerTrie.h>
 

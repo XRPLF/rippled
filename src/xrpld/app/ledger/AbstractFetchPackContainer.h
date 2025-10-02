@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
-#define RIPPLE_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
+#ifndef XRPL_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
+#define XRPL_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>

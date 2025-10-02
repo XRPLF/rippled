@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
-#define RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
+#ifndef XRPL_COMPRESSIONALGORITHMS_H_INCLUDED
+#define XRPL_COMPRESSIONALGORITHMS_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
 
@@ -165,4 +165,4 @@ lz4Decompress(
 
 }  // namespace ripple
 
-#endif  // RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
+#endif  // XRPL_COMPRESSIONALGORITHMS_H_INCLUDED

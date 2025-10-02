@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_SLOT_H_INCLUDED
-#define RIPPLE_OVERLAY_SLOT_H_INCLUDED
+#ifndef XRPL_OVERLAY_SLOT_H_INCLUDED
+#define XRPL_OVERLAY_SLOT_H_INCLUDED
 
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/Peer.h>
@@ -842,4 +842,4 @@ Slots<clock_type>::deleteIdlePeers()
 
 }  // namespace ripple
 
-#endif  // RIPPLE_OVERLAY_SLOT_H_INCLUDED
+#endif  // XRPL_OVERLAY_SLOT_H_INCLUDED

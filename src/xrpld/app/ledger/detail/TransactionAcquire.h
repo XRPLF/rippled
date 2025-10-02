@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
-#define RIPPLE_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
+#ifndef XRPL_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
+#define XRPL_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
 
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/shamap/SHAMap.h>

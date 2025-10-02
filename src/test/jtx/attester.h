@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_ATTESTER_H_INCLUDED
-#define RIPPLE_TEST_JTX_ATTESTER_H_INCLUDED
+#ifndef XRPL_TEST_JTX_ATTESTER_H_INCLUDED
+#define XRPL_TEST_JTX_ATTESTER_H_INCLUDED
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/protocol/AccountID.h>

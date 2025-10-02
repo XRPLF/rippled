@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_SAFE_CAST_H_INCLUDED
-#define RIPPLE_BASICS_SAFE_CAST_H_INCLUDED
+#ifndef XRPL_BASICS_SAFE_CAST_H_INCLUDED
+#define XRPL_BASICS_SAFE_CAST_H_INCLUDED
 
 #include <type_traits>
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_SQUELCH_H_INCLUDED
-#define RIPPLE_OVERLAY_SQUELCH_H_INCLUDED
+#ifndef XRPL_OVERLAY_SQUELCH_H_INCLUDED
+#define XRPL_OVERLAY_SQUELCH_H_INCLUDED
 
 #include <xrpld/overlay/ReduceRelayCommon.h>
 
@@ -126,4 +126,4 @@ Squelch<clock_type>::expireSquelch(PublicKey const& validator)
 
 }  // namespace ripple
 
-#endif  // RIPPLED_SQUELCH_H
+#endif  // XRPL_SQUELCH_H

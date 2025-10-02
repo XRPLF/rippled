@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_RPCCALL_H_INCLUDED
-#define RIPPLE_NET_RPCCALL_H_INCLUDED
+#ifndef XRPL_NET_RPCCALL_H_INCLUDED
+#define XRPL_NET_RPCCALL_H_INCLUDED
 
 #include <xrpld/core/Config.h>
 

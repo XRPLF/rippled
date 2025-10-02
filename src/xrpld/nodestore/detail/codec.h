@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_CODEC_H_INCLUDED
-#define RIPPLE_NODESTORE_CODEC_H_INCLUDED
+#ifndef XRPL_NODESTORE_CODEC_H_INCLUDED
+#define XRPL_NODESTORE_CODEC_H_INCLUDED
 
 // Disable lz4 deprecation warning due to incompatibility with clang attributes
 #define LZ4_DISABLE_DEPRECATE_WARNINGS

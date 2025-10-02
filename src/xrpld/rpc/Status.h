@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_STATUS_H_INCLUDED
-#define RIPPLE_RPC_STATUS_H_INCLUDED
+#ifndef XRPL_RPC_STATUS_H_INCLUDED
+#define XRPL_RPC_STATUS_H_INCLUDED
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/ErrorCodes.h>

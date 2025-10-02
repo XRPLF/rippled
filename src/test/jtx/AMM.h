@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_AMM_H_INCLUDED
-#define RIPPLE_TEST_JTX_AMM_H_INCLUDED
+#ifndef XRPL_TEST_JTX_AMM_H_INCLUDED
+#define XRPL_TEST_JTX_AMM_H_INCLUDED
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -463,4 +463,4 @@ ammClawback(
 }  // namespace test
 }  // namespace ripple
 
-#endif  // RIPPLE_TEST_JTX_AMM_H_INCLUDED
+#endif  // XRPL_TEST_JTX_AMM_H_INCLUDED

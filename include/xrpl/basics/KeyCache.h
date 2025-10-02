@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_KEYCACHE_H
-#define RIPPLE_BASICS_KEYCACHE_H
+#ifndef XRPL_BASICS_KEYCACHE_H
+#define XRPL_BASICS_KEYCACHE_H
 
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
@@ -29,4 +29,4 @@ using KeyCache = TaggedCache<uint256, int, true>;
 
 }  // namespace ripple
 
-#endif  // RIPPLE_BASICS_KEYCACHE_H
+#endif  // XRPL_BASICS_KEYCACHE_H

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TX_INVARIANTCHECK_H_INCLUDED
-#define RIPPLE_APP_TX_INVARIANTCHECK_H_INCLUDED
+#ifndef XRPL_APP_TX_INVARIANTCHECK_H_INCLUDED
+#define XRPL_APP_TX_INVARIANTCHECK_H_INCLUDED
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>

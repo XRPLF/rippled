@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_PORT_H_INCLUDED
-#define RIPPLE_SERVER_PORT_H_INCLUDED
+#ifndef XRPL_SERVER_PORT_H_INCLUDED
+#define XRPL_SERVER_PORT_H_INCLUDED
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/net/IPEndpoint.h>

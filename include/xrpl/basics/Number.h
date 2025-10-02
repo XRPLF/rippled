@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_NUMBER_H_INCLUDED
-#define RIPPLE_BASICS_NUMBER_H_INCLUDED
+#ifndef XRPL_BASICS_NUMBER_H_INCLUDED
+#define XRPL_BASICS_NUMBER_H_INCLUDED
 
 #include <cstdint>
 #include <limits>
@@ -425,4 +425,4 @@ public:
 
 }  // namespace ripple
 
-#endif  // RIPPLE_BASICS_NUMBER_H_INCLUDED
+#endif  // XRPL_BASICS_NUMBER_H_INCLUDED

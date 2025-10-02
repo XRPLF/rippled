@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_APPLYVIEWBASE_H_INCLUDED
-#define RIPPLE_LEDGER_APPLYVIEWBASE_H_INCLUDED
+#ifndef XRPL_LEDGER_APPLYVIEWBASE_H_INCLUDED
+#define XRPL_LEDGER_APPLYVIEWBASE_H_INCLUDED
 
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>

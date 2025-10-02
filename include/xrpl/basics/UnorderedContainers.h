@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
-#define RIPPLE_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
+#ifndef XRPL_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
+#define XRPL_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
 
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/basics/partitioned_unordered_map.h>

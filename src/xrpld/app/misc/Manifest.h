@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_MANIFEST_H_INCLUDED
-#define RIPPLE_APP_MISC_MANIFEST_H_INCLUDED
+#ifndef XRPL_APP_MISC_MANIFEST_H_INCLUDED
+#define XRPL_APP_MISC_MANIFEST_H_INCLUDED
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>

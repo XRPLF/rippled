@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_HANDSHAKE_H_INCLUDED
-#define RIPPLE_OVERLAY_HANDSHAKE_H_INCLUDED
+#ifndef XRPL_OVERLAY_HANDSHAKE_H_INCLUDED
+#define XRPL_OVERLAY_HANDSHAKE_H_INCLUDED
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>

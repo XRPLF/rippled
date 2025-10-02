@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_TRUSTED_PUBLISHER_SERVER_H_INCLUDED
-#define RIPPLE_TEST_TRUSTED_PUBLISHER_SERVER_H_INCLUDED
+#ifndef XRPL_TEST_TRUSTED_PUBLISHER_SERVER_H_INCLUDED
+#define XRPL_TEST_TRUSTED_PUBLISHER_SERVER_H_INCLUDED
 
 #include <test/jtx/envconfig.h>
 

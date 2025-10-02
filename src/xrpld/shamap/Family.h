@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAP_FAMILY_H_INCLUDED
-#define RIPPLE_SHAMAP_FAMILY_H_INCLUDED
+#ifndef XRPL_SHAMAP_FAMILY_H_INCLUDED
+#define XRPL_SHAMAP_FAMILY_H_INCLUDED
 
 #include <xrpld/nodestore/Database.h>
 #include <xrpld/shamap/FullBelowCache.h>

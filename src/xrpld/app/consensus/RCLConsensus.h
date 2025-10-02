@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
-#define RIPPLE_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
+#ifndef XRPL_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
+#define XRPL_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
 
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
 #include <xrpld/app/consensus/RCLCxLedger.h>

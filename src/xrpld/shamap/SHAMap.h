@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAP_SHAMAP_H_INCLUDED
-#define RIPPLE_SHAMAP_SHAMAP_H_INCLUDED
+#ifndef XRPL_SHAMAP_SHAMAP_H_INCLUDED
+#define XRPL_SHAMAP_SHAMAP_H_INCLUDED
 
 #include <xrpld/nodestore/Database.h>
 #include <xrpld/nodestore/NodeObject.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_INTRUSIVEPOINTER_H_INCLUDED
-#define RIPPLE_BASICS_INTRUSIVEPOINTER_H_INCLUDED
+#ifndef XRPL_BASICS_INTRUSIVEPOINTER_H_INCLUDED
+#define XRPL_BASICS_INTRUSIVEPOINTER_H_INCLUDED
 
 #include <concepts>
 #include <cstdint>

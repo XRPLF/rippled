@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_SERIALIZE_H_INCLUDED
-#define RIPPLE_PROTOCOL_SERIALIZE_H_INCLUDED
+#ifndef XRPL_PROTOCOL_SERIALIZE_H_INCLUDED
+#define XRPL_PROTOCOL_SERIALIZE_H_INCLUDED
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/STObject.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_LOADMONITOR_H_INCLUDED
-#define RIPPLE_CORE_LOADMONITOR_H_INCLUDED
+#ifndef XRPL_CORE_LOADMONITOR_H_INCLUDED
+#define XRPL_CORE_LOADMONITOR_H_INCLUDED
 
 #include <xrpld/core/LoadEvent.h>
 

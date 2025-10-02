@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
-#define RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
+#ifndef XRPL_PROTOCOL_B58_UTILS_H_INCLUDED
+#define XRPL_PROTOCOL_B58_UTILS_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -199,4 +199,4 @@ b58_10_to_b58_be(std::uint64_t input)
 #endif
 
 }  // namespace ripple
-#endif  // RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
+#endif  // XRPL_PROTOCOL_B58_UTILS_H_INCLUDED

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_TESTS_PATHSET_H_INCLUDED
-#define RIPPLE_LEDGER_TESTS_PATHSET_H_INCLUDED
+#ifndef XRPL_LEDGER_TESTS_PATHSET_H_INCLUDED
+#define XRPL_LEDGER_TESTS_PATHSET_H_INCLUDED
 
 #include <test/jtx.h>
 

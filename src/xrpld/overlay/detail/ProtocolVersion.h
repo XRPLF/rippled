@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_PROTOCOLVERSION_H_INCLUDED
-#define RIPPLE_OVERLAY_PROTOCOLVERSION_H_INCLUDED
+#ifndef XRPL_OVERLAY_PROTOCOLVERSION_H_INCLUDED
+#define XRPL_OVERLAY_PROTOCOLVERSION_H_INCLUDED
 
 #include <boost/beast/core/string.hpp>
 

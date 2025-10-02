@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CRYPTO_SECURE_ERASE_H_INCLUDED
-#define RIPPLE_CRYPTO_SECURE_ERASE_H_INCLUDED
+#ifndef XRPL_CRYPTO_SECURE_ERASE_H_INCLUDED
+#define XRPL_CRYPTO_SECURE_ERASE_H_INCLUDED
 
 #include <cstddef>
 

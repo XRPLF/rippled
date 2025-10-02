@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_ASSET_H_INCLUDED
-#define RIPPLE_PROTOCOL_ASSET_H_INCLUDED
+#ifndef XRPL_PROTOCOL_ASSET_H_INCLUDED
+#define XRPL_PROTOCOL_ASSET_H_INCLUDED
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -234,4 +234,4 @@ assetFromJson(Json::Value const& jv);
 
 }  // namespace ripple
 
-#endif  // RIPPLE_PROTOCOL_ASSET_H_INCLUDED
+#endif  // XRPL_PROTOCOL_ASSET_H_INCLUDED

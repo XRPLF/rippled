@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_CACHEDVIEW_H_INCLUDED
-#define RIPPLE_LEDGER_CACHEDVIEW_H_INCLUDED
+#ifndef XRPL_LEDGER_CACHEDVIEW_H_INCLUDED
+#define XRPL_LEDGER_CACHEDVIEW_H_INCLUDED
 
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/ledger/CachedSLEs.h>

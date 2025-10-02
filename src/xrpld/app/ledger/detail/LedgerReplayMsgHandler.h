@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_LEDGER_LEDGERREPLAYMSGHANDLER_H_INCLUDED
-#define RIPPLE_APP_LEDGER_LEDGERREPLAYMSGHANDLER_H_INCLUDED
+#ifndef XRPL_APP_LEDGER_LEDGERREPLAYMSGHANDLER_H_INCLUDED
+#define XRPL_APP_LEDGER_LEDGERREPLAYMSGHANDLER_H_INCLUDED
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/messages.h>

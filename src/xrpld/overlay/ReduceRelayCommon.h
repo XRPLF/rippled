@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_REDUCERELAYCOMMON_H_INCLUDED
-#define RIPPLE_OVERLAY_REDUCERELAYCOMMON_H_INCLUDED
+#ifndef XRPL_OVERLAY_REDUCERELAYCOMMON_H_INCLUDED
+#define XRPL_OVERLAY_REDUCERELAYCOMMON_H_INCLUDED
 
 #include <chrono>
 
@@ -62,4 +62,4 @@ static constexpr std::size_t MAX_TX_QUEUE_SIZE = 10000;
 
 }  // namespace ripple
 
-#endif  // RIPPLED_REDUCERELAYCOMMON_H_INCLUDED
+#endif  // XRPL_REDUCERELAYCOMMON_H_INCLUDED

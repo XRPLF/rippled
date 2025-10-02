@@ -184,7 +184,7 @@ if(xrpld)
   # define a macro for tests that might need to
   # be exluded or run differently in CI environment
   if(is_ci)
-    target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
+    target_compile_definitions(rippled PRIVATE XRPL_RUNNING_IN_CI)
   endif ()
 
   if(voidstar)

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MAIN_APPLICATION_H_INCLUDED
-#define RIPPLE_APP_MAIN_APPLICATION_H_INCLUDED
+#ifndef XRPL_APP_MAIN_APPLICATION_H_INCLUDED
+#define XRPL_APP_MAIN_APPLICATION_H_INCLUDED
 
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/PeerReservationTable.h>

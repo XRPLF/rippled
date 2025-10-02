@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SOCIDB_H_INCLUDED
-#define RIPPLE_SOCIDB_H_INCLUDED
+#ifndef XRPL_SOCIDB_H_INCLUDED
+#define XRPL_SOCIDB_H_INCLUDED
 
 /** An embedded database wrapper with an intuitive, type-safe interface.
 

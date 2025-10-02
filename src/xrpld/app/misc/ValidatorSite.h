@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_VALIDATORSITE_H_INCLUDED
-#define RIPPLE_APP_MISC_VALIDATORSITE_H_INCLUDED
+#ifndef XRPL_APP_MISC_VALIDATORSITE_H_INCLUDED
+#define XRPL_APP_MISC_VALIDATORSITE_H_INCLUDED
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>

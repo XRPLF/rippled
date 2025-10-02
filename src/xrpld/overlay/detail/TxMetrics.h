@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_TXMETRICS_H_INCLUDED
-#define RIPPLE_OVERLAY_TXMETRICS_H_INCLUDED
+#ifndef XRPL_OVERLAY_TXMETRICS_H_INCLUDED
+#define XRPL_OVERLAY_TXMETRICS_H_INCLUDED
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/messages.h>

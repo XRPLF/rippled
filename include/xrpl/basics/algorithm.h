@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ALGORITHM_H_INCLUDED
-#define RIPPLE_ALGORITHM_H_INCLUDED
+#ifndef XRPL_ALGORITHM_H_INCLUDED
+#define XRPL_ALGORITHM_H_INCLUDED
 
 #include <utility>
 

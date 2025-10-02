@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_HTTPCLIENT_H_INCLUDED
-#define RIPPLE_NET_HTTPCLIENT_H_INCLUDED
+#ifndef XRPL_NET_HTTPCLIENT_H_INCLUDED
+#define XRPL_NET_HTTPCLIENT_H_INCLUDED
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/utility/Journal.h>

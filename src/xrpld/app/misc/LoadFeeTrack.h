@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_LOADFEETRACK_H_INCLUDED
-#define RIPPLE_CORE_LOADFEETRACK_H_INCLUDED
+#ifndef XRPL_CORE_LOADFEETRACK_H_INCLUDED
+#define XRPL_CORE_LOADFEETRACK_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_SETSIGNERLIST_H_INCLUDED
-#define RIPPLE_TX_SETSIGNERLIST_H_INCLUDED
+#ifndef XRPL_TX_SETSIGNERLIST_H_INCLUDED
+#define XRPL_TX_SETSIGNERLIST_H_INCLUDED
 
 #include <xrpld/app/tx/detail/SignerEntries.h>
 #include <xrpld/app/tx/detail/Transactor.h>

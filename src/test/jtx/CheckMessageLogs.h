@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_CHECKMESSAGELOGS_H_INCLUDED
-#define RIPPLE_TEST_JTX_CHECKMESSAGELOGS_H_INCLUDED
+#ifndef XRPL_TEST_JTX_CHECKMESSAGELOGS_H_INCLUDED
+#define XRPL_TEST_JTX_CHECKMESSAGELOGS_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_SHAMAP_HASH_H_INCLUDED
-#define RIPPLE_BASICS_SHAMAP_HASH_H_INCLUDED
+#ifndef XRPL_BASICS_SHAMAP_HASH_H_INCLUDED
+#define XRPL_BASICS_SHAMAP_HASH_H_INCLUDED
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
@@ -118,4 +118,4 @@ extract(SHAMapHash const& key)
 
 }  // namespace ripple
 
-#endif  // RIPPLE_BASICS_SHAMAP_HASH_H_INCLUDED
+#endif  // XRPL_BASICS_SHAMAP_HASH_H_INCLUDED

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_NFTOKENOFFERCREATE_H_INCLUDED
-#define RIPPLE_TX_NFTOKENOFFERCREATE_H_INCLUDED
+#ifndef XRPL_TX_NFTOKENOFFERCREATE_H_INCLUDED
+#define XRPL_TX_NFTOKENOFFERCREATE_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 

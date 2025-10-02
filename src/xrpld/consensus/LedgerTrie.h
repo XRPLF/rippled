@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
-#define RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
+#ifndef XRPL_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
+#define XRPL_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/beast/utility/instrumentation.h>

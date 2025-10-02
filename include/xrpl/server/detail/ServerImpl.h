@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_SERVERIMPL_H_INCLUDED
-#define RIPPLE_SERVER_SERVERIMPL_H_INCLUDED
+#ifndef XRPL_SERVER_SERVERIMPL_H_INCLUDED
+#define XRPL_SERVER_SERVERIMPL_H_INCLUDED
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/List.h>
