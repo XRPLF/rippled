@@ -4,8 +4,8 @@
 extern crate std;
 
 use crate::host::{Error, Result, Result::Err, Result::Ok};
-use xrpl_std::core::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_std::core::ledger_objects::current_escrow::get_current_escrow;
+use xrpl_std::core::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_std::core::ledger_objects::ledger_object;
 use xrpl_std::core::ledger_objects::traits::CurrentEscrowFields;
 use xrpl_std::core::types::amount::asset::{Asset, IouAsset, XrpAsset};
@@ -13,7 +13,7 @@ use xrpl_std::core::types::amount::currency_code::CurrencyCode;
 use xrpl_std::core::types::amount::mpt_id::MptId;
 use xrpl_std::core::types::keylets;
 use xrpl_std::host;
-use xrpl_std::host::trace::{DataRepr, trace, trace_account, trace_data, trace_num};
+use xrpl_std::host::trace::{trace, trace_account, trace_data, trace_num, DataRepr};
 use xrpl_std::sfield;
 
 #[unsafe(no_mangle)]

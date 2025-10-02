@@ -50,3 +50,5 @@ extern std::string const floatTestsWasmHex;
 extern std::string const float0Hex;
 
 extern std::string const disabledFloatHex;
+
+extern std::string const updateDataWasmHex;

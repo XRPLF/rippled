@@ -137,7 +137,8 @@ EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 bool
 EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfFinishFunction) &&
+    if ((ctx.tx.isFieldPresent(sfFinishFunction) ||
+         ctx.tx.isFieldPresent(sfData)) &&
         !ctx.rules.enabled(featureSmartEscrow))
         return false;
 
@@ -223,6 +224,22 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         if (condition->type != Type::preimageSha256 &&
             !ctx.rules.enabled(featureCryptoConditionsSuite))
             return temDISABLED;
+    }
+
+    if (ctx.tx.isFieldPresent(sfData))
+    {
+        if (!ctx.tx.isFieldPresent(sfFinishFunction))
+        {
+            JLOG(ctx.j.debug())
+                << "EscrowCreate with Data requires FinishFunction";
+            return temMALFORMED;
+        }
+        auto const data = ctx.tx.getFieldVL(sfData);
+        if (data.size() > maxWasmDataLength)
+        {
+            JLOG(ctx.j.debug()) << "EscrowCreate.Data bad size " << data.size();
+            return temMALFORMED;
+        }
     }
 
     if (ctx.tx.isFieldPresent(sfFinishFunction))
@@ -1317,6 +1334,7 @@ EscrowFinish::doApply()
         if (auto const& data = ledgerDataProvider.getData(); data.has_value())
         {
             slep->setFieldVL(sfData, makeSlice(*data));
+            ctx_.view().update(slep);
         }
 
         if (re.has_value())
