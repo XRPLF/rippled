@@ -344,9 +344,6 @@ public:
         return true;
     }
 
-    static std::string
-    makePrefix(std::uint32_t id);
-
     void
     reportInboundTraffic(TrafficCount::category cat, int bytes);
 

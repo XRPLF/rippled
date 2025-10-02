@@ -82,10 +82,22 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , sink_(app_.journal("Peer"), makePrefix(id))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id))
-    , journal_(sink_)
-    , p_journal_(p_sink_)
+    , journal_(
+          app_.journal("Peer"),
+          log::attributes(
+              log::attr("NodeID", id),
+              log::attr("RemoteAddress", to_string(slot->remote_endpoint())),
+              log::attr(
+                  "PublicKey",
+                  toBase58(TokenType::NodePublic, publicKey))))
+    , p_journal_(
+          app_.journal("Protocol"),
+          log::attributes(
+              log::attr("NodeID", id),
+              log::attr("RemoteAddress", to_string(slot->remote_endpoint())),
+              log::attr(
+                  "PublicKey",
+                  toBase58(TokenType::NodePublic, publicKey))))
     , stream_ptr_(std::move(stream_ptr))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)
@@ -810,14 +822,6 @@ PeerImp::cancelTimer() noexcept
     }
 }
 
-std::string
-PeerImp::makePrefix(id_t id)
-{
-    std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << id << "] ";
-    return ss.str();
-}
-
 //------------------------------------------------------------------------------
 void
 PeerImp::doAccept()
@@ -981,10 +985,10 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 
     if (auto stream = journal_.trace())
     {
-        stream << "onReadMessage: "
-               << (bytes_transferred > 0
-                       ? to_string(bytes_transferred) + " bytes"
-                       : "");
+        std::move(stream) << "onReadMessage: "
+                          << (bytes_transferred > 0
+                                  ? to_string(bytes_transferred) + " bytes"
+                                  : "");
     }
 
     metrics_.recv.add_message(bytes_transferred);
@@ -1063,10 +1067,10 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 
     if (auto stream = journal_.trace())
     {
-        stream << "onWriteMessage: "
-               << (bytes_transferred > 0
-                       ? to_string(bytes_transferred) + " bytes"
-                       : "");
+        std::move(stream) << "onWriteMessage: "
+                          << (bytes_transferred > 0
+                                  ? to_string(bytes_transferred) + " bytes"
+                                  : "");
     }
 
     metrics_.sent.add_message(bytes_transferred);

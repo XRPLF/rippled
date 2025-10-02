@@ -794,6 +794,11 @@ run(int argc, char** argv)
     else if (vm.count("verbose"))
         thresh = kTrace;
 
+    if (config->LOG_STYLE == LogStyle::Json)
+    {
+        beast::Journal::enableStructuredJournal();
+    }
+
     auto logs = std::make_unique<Logs>(thresh);
 
     // No arguments. Run server.

@@ -141,7 +141,6 @@ class Transactor
 {
 protected:
     ApplyContext& ctx_;
-    beast::WrappedSink sink_;
     beast::Journal const j_;
 
     AccountID const account_;

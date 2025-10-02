@@ -30,6 +30,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <string_view>
 #include <utility>
 
 namespace ripple {
@@ -130,27 +131,14 @@ private:
             Does nothing if there is no associated system file.
         */
         void
-        write(char const* text);
+        write(std::string_view text);
 
         /** write to the log file and append an end of line marker.
             Does nothing if there is no associated system file.
         */
         void
-        writeln(char const* text);
+        writeln(std::string_view text);
 
-        /** Write to the log file using std::string. */
-        /** @{ */
-        void
-        write(std::string const& str)
-        {
-            write(str.c_str());
-        }
-
-        void
-        writeln(std::string const& str)
-        {
-            writeln(str.c_str());
-        }
         /** @} */
 
     private:
@@ -185,6 +173,14 @@ public:
 
     beast::Journal::Sink&
     operator[](std::string const& name);
+
+    template <typename AttributesFactory>
+    beast::Journal
+    journal(std::string const& name, AttributesFactory&& factory)
+    {
+        return beast::Journal{
+            get(name), name, std::forward<AttributesFactory>(factory)};
+    }
 
     beast::Journal
     journal(std::string const& name);
@@ -237,30 +233,34 @@ public:
     static LogSeverity
     fromString(std::string const& s);
 
-private:
-    enum {
-        // Maximum line length for log messages.
-        // If the message exceeds this length it will be truncated with elipses.
-        maximumMessageCharacters = 12 * 1024
-    };
-
     static void
     format(
         std::string& output,
         std::string const& message,
         beast::severities::Severity severity,
         std::string const& partition);
+
+private:
+    enum {
+        // Maximum line length for log messages.
+        // If the message exceeds this length it will be truncated with elipses.
+        maximumMessageCharacters = 12 * 1024
+    };
 };
 
 // Wraps a Journal::Stream to skip evaluation of
 // expensive argument lists if the stream is not active.
 #ifndef JLOG
-#define JLOG(x) \
-    if (!x)     \
-    {           \
-    }           \
-    else        \
-        x
+#define JLOG_JOIN_(a, b) a##b
+#define JLOG_JOIN(a, b) JLOG_JOIN_(a, b)
+#define JLOG_UNIQUE(base) JLOG_JOIN(base, __LINE__)  // line-based unique name
+
+#define JLOG(x)                                               \
+    if (auto JLOG_UNIQUE(stream) = (x); !JLOG_UNIQUE(stream)) \
+    {                                                         \
+    }                                                         \
+    else                                                      \
+        std::move(JLOG_UNIQUE(stream))
 #endif
 
 #ifndef CLOG

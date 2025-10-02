@@ -77,6 +77,16 @@ struct FeeSetup
      * values.) */
 };
 
+/**
+ * We support producing plain text logs and structured json logs.
+ */
+namespace LogStyle {
+enum LogStyle { LogFmt, Json };
+
+LogStyle
+fromString(std::string const&);
+};  // namespace LogStyle
+
 //  This entire derived class is deprecated.
 //  For new config information use the style implied
 //  in the base class. For existing config information
@@ -298,6 +308,9 @@ public:
         FORCED_LEDGER_RANGE_PRESENT;
 
     std::optional<std::size_t> VALIDATOR_LIST_THRESHOLD;
+
+    // Set it to LogStyle::Json to get structured json logs.
+    LogStyle::LogStyle LOG_STYLE = LogStyle::LogFmt;
 
 public:
     Config();

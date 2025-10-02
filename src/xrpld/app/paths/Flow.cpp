@@ -111,19 +111,22 @@ flow(
 
     ammContext.setMultiPath(strands.size() > 1);
 
-    if (j.trace())
+    if (auto stream = j.trace())
     {
-        j.trace() << "\nsrc: " << src << "\ndst: " << dst
-                  << "\nsrcIssue: " << srcIssue << "\ndstIssue: " << dstIssue;
-        j.trace() << "\nNumStrands: " << strands.size();
+        std::stringstream ss;
+        ss << "\nsrc: " << src << "\ndst: " << dst << "\nsrcIssue: " << srcIssue
+           << "\ndstIssue: " << dstIssue;
+        ss << "\nNumStrands: " << strands.size();
         for (auto const& curStrand : strands)
         {
-            j.trace() << "NumSteps: " << curStrand.size();
+            ss << "NumSteps: " << curStrand.size();
             for (auto const& step : curStrand)
             {
-                j.trace() << '\n' << *step << '\n';
+                ss << '\n' << *step << '\n';
             }
         }
+
+        std::move(stream) << ss.str();
     }
 
     bool const srcIsXRP = isXRP(srcIssue.currency);
