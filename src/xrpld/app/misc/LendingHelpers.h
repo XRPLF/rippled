@@ -88,7 +88,7 @@ valueMinusManagementFee(
         asset, detail::minusManagementFee(value, managementFeeRate), scale);
 }
 
-Number
+inline Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 {
     return detail::loanPeriodicRate(interestRate, paymentInterval);
@@ -121,7 +121,7 @@ loanPeriodicPayment(
     std::uint32_t paymentsRemaining,
     std::int32_t scale)
 {
-    loanPeriodicPayment(
+    return loanPeriodicPayment(
         asset,
         principalOutstanding,
         loanPeriodicRate(interestRate, paymentInterval),
@@ -272,7 +272,7 @@ loanLatePaymentInterest(
 
 template <AssetType A>
 bool
-rounded(A const& asset, Number const& value, std::int32_t scale)
+isRounded(A const& asset, Number const& value, std::int32_t scale)
 {
     return roundToAsset(asset, value, scale, Number::downward) == value &&
         roundToAsset(asset, value, scale, Number::upward) == value;
@@ -302,9 +302,9 @@ computePaymentParts(
      * Payment)
      */
     XRPL_ASSERT_PARTS(
-        rounded(asset, totalValueOutstanding, scale) &&
-            rounded(asset, principalOutstanding, scale) &&
-            rounded(asset, periodicPaymentAmount, scale),
+        isRounded(asset, totalValueOutstanding, scale) &&
+            isRounded(asset, principalOutstanding, scale) &&
+            isRounded(asset, periodicPaymentAmount, scale),
         "ripple::computePaymentParts",
         "Asset values are rounded");
     Number const roundedFee = roundToAsset(asset, serviceFee, scale);

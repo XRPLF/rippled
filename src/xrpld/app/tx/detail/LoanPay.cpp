@@ -45,6 +45,8 @@ LoanPay::preflight(PreflightContext const& ctx)
 TER
 LoanPay::preclaim(PreclaimContext const& ctx)
 {
+    return temDISABLED;
+#if LOANCOMPLETE
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
@@ -117,11 +119,14 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     }
 
     return tesSUCCESS;
+#endif
 }
 
 TER
 LoanPay::doApply()
 {
+    return temDISABLED;
+#if LOANCOMPLETE
     auto const& tx = ctx_.tx;
     auto& view = ctx_.view();
 
@@ -310,6 +315,7 @@ LoanPay::doApply()
         return ter;
 
     return tesSUCCESS;
+#endif
 }
 
 //------------------------------------------------------------------------------
