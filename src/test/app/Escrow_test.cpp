@@ -1774,7 +1774,6 @@ struct Escrow_test : public beast::unit_test::suite
 
             auto escrowCreate = escrow::create(alice, carol, XRP(500));
 
-            // 11-byte string
             std::string longData(4, 'A');
             env(escrowCreate,
                 escrow::data(longData),
@@ -1793,7 +1792,7 @@ struct Escrow_test : public beast::unit_test::suite
 
             auto escrowCreate = escrow::create(alice, carol, XRP(500));
 
-            // 11-byte string
+            // string of length maxWasmDataLength * 2 + 2
             std::string longData(maxWasmDataLength * 2 + 2, 'B');
             env(escrowCreate,
                 escrow::data(longData),
