@@ -33,7 +33,7 @@
 // in include/xrpl/protocol/Feature.h.
 
 XRPL_FIX    (IncludeKeyletFields,        Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(DynamicMPT,                 Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(DynamicMPT,                 Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (TokenEscrowV1,              Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (DelegateV1_1,               Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (PriceOracleOrder,           Supported::yes, VoteBehavior::DefaultNo)
