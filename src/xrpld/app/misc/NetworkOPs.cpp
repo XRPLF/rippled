@@ -49,9 +49,8 @@
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/CTID.h>
-#include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/mulDiv.h>
@@ -3274,11 +3273,8 @@ NetworkOPsImp::transJson(
     if (meta)
     {
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::none);
-        RPC::insertDeliveredAmount(
+        RPC::insertAllSyntheticInJson(
             jvObj[jss::meta], *ledger, transaction, meta->get());
-        RPC::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
-        RPC::insertMPTokenIssuanceID(
-            jvObj[jss::meta], transaction, meta->get());
     }
 
     // add CTID where the needed data for it exists

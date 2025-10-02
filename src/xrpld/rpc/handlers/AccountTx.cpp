@@ -23,9 +23,8 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
@@ -346,11 +345,8 @@ populateJsonResponse(
                     {
                         jvObj[jss::meta] =
                             txnMeta->getJson(JsonOptions::include_date);
-                        insertDeliveredAmount(
-                            jvObj[jss::meta], context, txn, *txnMeta);
-                        RPC::insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
-                        RPC::insertMPTokenIssuanceID(
-                            jvObj[jss::meta], sttx, *txnMeta);
+                        RPC::insertAllSyntheticInJson(
+                            jvObj[jss::meta], context, sttx, *txnMeta);
                     }
                     else
                         UNREACHABLE(
