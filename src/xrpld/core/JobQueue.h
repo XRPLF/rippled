@@ -57,6 +57,13 @@ struct Coro_create_t
 class JobQueue : private Workers::Callback
 {
 public:
+    enum class QueueState
+    {
+        Accepting,
+        Stopping,
+        Stopped
+    };
+
     /** Coroutines must run to completion. */
     class Coro : public std::enable_shared_from_this<Coro>
     {
@@ -168,24 +175,16 @@ public:
 
         @return true if jobHandler added to queue.
     */
-    template <
-        typename JobHandler,
-        typename = std::enable_if_t<std::is_same<
-            decltype(std::declval<JobHandler&&>()()),
-            void>::value>>
+    template <typename JobHandler>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
+    requires std::is_void_v<std::invoke_result_t<JobHandler>>
     {
-        if (!accepting_)
+        if (queueState_ != QueueState::Accepting)
         {
             return false;
         }
-        if (auto optionalCountedJob =
-                jobCounter_.wrap(std::forward<JobHandler>(jobHandler)))
-        {
-            return addRefCountedJob(type, name, std::move(*optionalCountedJob));
-        }
-        return false;
+        return addJobNoStatusCheck(type, name, std::forward<JobHandler>(jobHandler));
     }
 
     /** Creates a coroutine and adds a job to the queue which will run it.
@@ -244,13 +243,16 @@ public:
     bool
     isStopping() const
     {
-        return stopping_;
+        return queueState_ == QueueState::Stopping;
     }
 
     // We may be able to move away from this, but we can keep it during the
     // transition.
     bool
-    isStopped() const;
+    isStopped() const
+    {
+        return queueState_ == QueueState::Stopped;
+    }
 
 private:
     friend class Coro;
@@ -262,9 +264,7 @@ private:
     std::uint64_t m_lastJob;
     std::set<Job> m_jobSet;
     JobCounter jobCounter_;
-    std::atomic_bool accepting_ = true;
-    std::atomic_bool stopping_{false};
-    std::atomic_bool stopped_{false};
+    std::atomic<QueueState> queueState_{QueueState::Accepting};
     JobDataMap m_jobData;
     JobTypeData m_invalidJobData;
 
@@ -287,28 +287,22 @@ private:
     std::condition_variable cv_;
 
     void
-    onStopResumeCoros(std::map<void*, std::weak_ptr<Coro>>& coros)
-    {
-        for (auto& [_, coro] : coros)
-        {
-            if (auto coroPtr = coro.lock())
-            {
-                if (auto optionalCountedJob =
-                        jobCounter_.wrap([=]() { coroPtr->resume(); }))
-                {
-                    addRefCountedJob(
-                        coroPtr->type_,
-                        coroPtr->name_,
-                        std::move(*optionalCountedJob));
-                }
-            }
-        }
-    }
-
-    void
     collect();
     JobTypeData&
     getJobTypeData(JobType type);
+
+    template <typename JobHandler>
+    bool
+    addJobNoStatusCheck(JobType type, std::string const& name, JobHandler&& jobHandler)
+    requires std::is_void_v<std::invoke_result_t<JobHandler>>
+    {
+        if (auto optionalCountedJob =
+                jobCounter_.wrap(std::forward<JobHandler>(jobHandler)))
+        {
+            return addRefCountedJob(type, name, std::move(*optionalCountedJob));
+        }
+        return false;
+    }
 
     // Adds a reference counted job to the JobQueue.
     //
@@ -447,7 +441,7 @@ template <class F>
 std::shared_ptr<JobQueue::Coro>
 JobQueue::postCoro(JobType t, std::string const& name, F&& f)
 {
-    if (!accepting_)
+    if (queueState_ != QueueState::Accepting)
     {
         return nullptr;
     }

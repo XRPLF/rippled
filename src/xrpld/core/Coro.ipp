@@ -120,14 +120,13 @@ JobQueue::Coro::post()
 inline void
 JobQueue::Coro::resume()
 {
+    auto suspended = CoroState::Suspended;
+    if (!state_.compare_exchange_strong(suspended, CoroState::Running))
     {
-        auto suspended = CoroState::Suspended;
-        if (!state_.compare_exchange_strong(suspended, CoroState::Running))
-        {
-            return;
-        }
-        cv_.notify_all();
+        return;
     }
+    cv_.notify_all();
+
     {
         std::lock_guard lock(jq_.m_mutex);
         jq_.m_suspendedCoros.erase(this);
