@@ -101,12 +101,21 @@ public:
         }));
 
         gate g;
-        env.app().getJobQueue().postCoro(
+        gate gStart;
+        auto coro = env.app().getJobQueue().postCoro(
             jtCLIENT, "Coroutine-Test", [&](auto const& c) {
-                c->post();
+                gStart.signal();
                 c->yield();
                 g.signal();
             });
+
+        // Wait for the coroutine to start.
+        BEAST_EXPECT(gStart.wait_for(5s));
+
+        BEAST_EXPECT(coro->state() == JobQueue::Coro::CoroState::Suspended);
+        // Post the coroutine.
+        coro->post();
+
         BEAST_EXPECT(g.wait_for(5s));
     }
 
@@ -176,11 +185,77 @@ public:
     }
 
     void
+    stopJobQueueWhenCoroutineSuspended()
+    {
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        testcase("Stop JobQueue when a coroutine is suspended");
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->FORCE_MULTI_THREAD = true;
+            return cfg;
+        }));
+
+        bool started = false;
+        bool finished = false;
+        std::optional<bool> shouldStop;
+        std::condition_variable cv;
+        std::mutex m;
+        std::unique_lock<std::mutex> lk(m);
+        auto coro = env.app().getJobQueue().postCoro(
+            jtCLIENT, "Coroutine-Test", [&](auto const& c) {
+                started = true;
+                cv.notify_all();
+                c->yield();
+                finished = true;
+                shouldStop = c->shouldStop();
+                cv.notify_all();
+            });
+
+        cv.wait_for(lk, 5s, [&]() { return started; });
+        env.app().getJobQueue().stop();
+
+        cv.wait_for(lk, 5s, [&]() { return finished; });
+        BEAST_EXPECT(finished);
+        BEAST_EXPECT(shouldStop.has_value() && *shouldStop == true);
+    }
+
+    void
+    coroutineGetsDestroyedBeforeExecuting()
+    {
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        testcase("Coroutine gets destroyed before executing");
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->FORCE_MULTI_THREAD = true;
+            return cfg;
+        }));
+
+        {
+            auto coro = std::make_shared<JobQueue::Coro>(
+                Coro_create_t{},
+                env.app().getJobQueue(),
+                JobType::jtCLIENT,
+                "test",
+                [](auto coro) {
+
+                });
+        }
+
+        pass();
+    }
+
+    void
     run() override
     {
         correct_order();
         incorrect_order();
         thread_specific_storage();
+        stopJobQueueWhenCoroutineSuspended();
+        coroutineGetsDestroyedBeforeExecuting();
     }
 };
 

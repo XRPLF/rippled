@@ -26,6 +26,12 @@
 
 namespace ripple {
 
+bool
+JobQueue::Coro::shouldStop() const
+{
+    return jq_.queueState_ != QueueState::Accepting || exiting_;
+}
+
 JobQueue::JobQueue(
     int threadCount,
     beast::insight::Collector::ptr const& collector,
@@ -295,7 +301,45 @@ JobQueue::getJobTypeData(JobType type)
 void
 JobQueue::stop()
 {
-    stopping_ = true;
+    // Once we stop accepting new jobs, all running coroutines won't be able to
+    // get suspended and yield() will return immediately, so we can safely
+    // move m_suspendedCoros, and we can assume that no coroutine will be
+    // suspended in the future.
+    if (queueState_ == QueueState::Stopped)
+    {
+        return;
+    }
+
+    auto accepting = QueueState::Accepting;
+
+    if (!queueState_.compare_exchange_strong(accepting, QueueState::Stopping))
+    {
+        XRPL_ASSERT(
+            false, "Incorrect queueState, should be accepting but not!");
+    }
+    std::map<void*, std::weak_ptr<Coro>> suspendedCoros;
+    {
+        std::unique_lock lock(m_mutex);
+        suspendedCoros = std::move(m_suspendedCoros);
+    }
+    if (!suspendedCoros.empty())
+    {
+        // We should resume the suspended coroutines so that the coroutines
+        // get a chance to exit cleanly.
+        for (auto& [_, coro] : suspendedCoros)
+        {
+            if (auto coroPtr = coro.lock())
+            {
+                // We don't allow any new jobs from outside when we are
+                // stopping, but we should allow new jobs from inside the class.
+                addJobNoStatusCheck(
+                    coroPtr->type_, coroPtr->name_, [coroPtr]() {
+                        coroPtr->resume();
+                    });
+            }
+        }
+    }
+
     using namespace std::chrono_literals;
     jobCounter_.join("JobQueue", 1s, m_journal);
     {
@@ -305,8 +349,9 @@ JobQueue::stop()
         // `Job::doJob` and the return of `JobQueue::processTask`. That is why
         // we must wait on the condition variable to make these assertions.
         std::unique_lock<std::mutex> lock(m_mutex);
-        cv_.wait(
-            lock, [this] { return m_processCount == 0 && m_jobSet.empty(); });
+        cv_.wait(lock, [this] {
+            return m_processCount == 0 && nSuspend_ == 0 && m_jobSet.empty();
+        });
         XRPL_ASSERT(
             m_processCount == 0,
             "ripple::JobQueue::stop : all processes completed");
@@ -314,14 +359,12 @@ JobQueue::stop()
             m_jobSet.empty(), "ripple::JobQueue::stop : all jobs completed");
         XRPL_ASSERT(
             nSuspend_ == 0, "ripple::JobQueue::stop : no coros suspended");
-        stopped_ = true;
     }
-}
-
-bool
-JobQueue::isStopped() const
-{
-    return stopped_;
+    auto stopping = QueueState::Stopping;
+    if (!queueState_.compare_exchange_strong(stopping, QueueState::Stopped))
+    {
+        XRPL_ASSERT(false, "Incorrect queueState, should be stopping but not!");
+    }
 }
 
 void

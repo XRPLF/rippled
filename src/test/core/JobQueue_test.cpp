@@ -87,6 +87,8 @@ class JobQueue_test : public beast::unit_test::suite
             while (yieldCount == 0)
                 ;
 
+            coro->join();
+
             // Now re-post until the Coro says it is done.
             int old = yieldCount;
             while (coro->runnable())
@@ -117,6 +119,9 @@ class JobQueue_test : public beast::unit_test::suite
                 BEAST_EXPECT(false);
                 return;
             }
+
+            while (yieldCount == 0)
+                ;  // We should wait for the job to start and yield
 
             // Wait for the Job to run and yield.
             coro->join();
