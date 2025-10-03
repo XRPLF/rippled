@@ -125,7 +125,8 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     if (loanBrokerSle->at(sfOwner) != account)
     {
         JLOG(ctx.j.warn())
-            << "LoanBroker for Loan does not belong to the account.";
+            << "LoanBroker for Loan does not belong to the account. LoanModify "
+               "can only be submitted by the Loan Broker.";
         return tecNO_PERMISSION;
     }
 
@@ -138,8 +139,6 @@ LoanManage::defaultLoan(
     SLE::ref loanSle,
     SLE::ref brokerSle,
     SLE::ref vaultSle,
-    Number const& principalOutstanding,
-    Number const& interestOutstanding,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -148,7 +147,8 @@ LoanManage::defaultLoan(
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
     TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
     auto brokerDebtTotalProxy = brokerSle->at(sfDebtTotal);
-    auto const totalDefaultAmount = principalOutstanding + interestOutstanding;
+
+    Number const totalDefaultAmount = loanSle->at(sfTotalValueOutstanding);
 
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
@@ -156,6 +156,11 @@ LoanManage::defaultLoan(
         brokerSle->at(sfCoverRateLiquidation)};
     auto const defaultCovered = roundToAsset(
         vaultAsset,
+        /*
+         * This formula is from the XLS-66 spec, section 3.2.3.2 (State
+         * Changes), specifically "if the `tfLoanDefault` flag is set" / "Apply
+         * the First-Loss Capital to the Default Amount"
+         */
         std::min(
             tenthBipsOfValue(
                 tenthBipsOfValue(
@@ -186,14 +191,16 @@ LoanManage::defaultLoan(
         // The loss has been realized
         if (loanSle->isFlag(lsfLoanImpaired))
         {
+            Number const lossRealized = loanSle->at(sfPrincipalOutstanding) +
+                loanSle->at(sfInterestOwed);
             auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-            if (vaultLossUnrealizedProxy < totalDefaultAmount)
+            if (vaultLossUnrealizedProxy < lossRealized)
             {
                 JLOG(j.warn())
                     << "Vault unrealized loss is less than the default amount";
                 return tefBAD_LEDGER;
             }
-            vaultLossUnrealizedProxy -= totalDefaultAmount;
+            vaultLossUnrealizedProxy -= lossRealized;
         }
         view.update(vaultSle);
     }
@@ -247,13 +254,13 @@ LoanManage::impairLoan(
     ApplyView& view,
     SLE::ref loanSle,
     SLE::ref vaultSle,
-    Number const& principalOutstanding,
-    Number const& interestOutstanding,
     beast::Journal j)
 {
+    Number const lossUnrealized =
+        loanSle->at(sfPrincipalOutstanding) + loanSle->at(sfInterestOwed);
     // Update the Vault object(set "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-    vaultLossUnrealizedProxy += principalOutstanding + interestOutstanding;
+    vaultLossUnrealizedProxy += lossUnrealized;
     if (vaultLossUnrealizedProxy >
         vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
     {
@@ -284,14 +291,12 @@ LoanManage::unimpairLoan(
     ApplyView& view,
     SLE::ref loanSle,
     SLE::ref vaultSle,
-    Number const& principalOutstanding,
-    Number const& interestOutstanding,
-    std::uint32_t paymentInterval,
     beast::Journal j)
 {
     // Update the Vault object(clear "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-    auto const lossReversed = principalOutstanding + interestOutstanding;
+    Number const lossReversed =
+        loanSle->at(sfPrincipalOutstanding) + loanSle->at(sfInterestOwed);
     if (vaultLossUnrealizedProxy < lossReversed)
     {
         // LCOV_EXCL_START
@@ -305,6 +310,7 @@ LoanManage::unimpairLoan(
 
     // Update the Loan object
     loanSle->clearFlag(lsfLoanImpaired);
+    auto const paymentInterval = loanSle->at(sfPaymentInterval);
     auto const normalPaymentDueDate =
         std::max(loanSle->at(sfPreviousPaymentDate), loanSle->at(sfStartDate)) +
         paymentInterval;
@@ -347,58 +353,22 @@ LoanManage::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
 
-    TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
-    std::int32_t const loanScale = loanSle->at(sfLoanScale);
-    auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
-
-    TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
-    auto const paymentInterval = loanSle->at(sfPaymentInterval);
-    auto const paymentsRemaining = loanSle->at(sfPaymentRemaining);
-    auto const interestOutstanding = loanInterestOutstandingMinusFee(
-        vaultAsset,
-        loanScale,
-        principalOutstanding.value(),
-        interestRate,
-        paymentInterval,
-        paymentsRemaining,
-        managementFeeRate);
-
     // Valid flag combinations are checked in preflight. No flags is valid -
     // just a noop.
     if (tx.isFlag(tfLoanDefault))
     {
-        if (auto const ter = defaultLoan(
-                view,
-                loanSle,
-                brokerSle,
-                vaultSle,
-                principalOutstanding,
-                interestOutstanding,
-                vaultAsset,
-                j_))
+        if (auto const ter =
+                defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_))
             return ter;
     }
     else if (tx.isFlag(tfLoanImpair))
     {
-        if (auto const ter = impairLoan(
-                view,
-                loanSle,
-                vaultSle,
-                principalOutstanding,
-                interestOutstanding,
-                j_))
+        if (auto const ter = impairLoan(view, loanSle, vaultSle, j_))
             return ter;
     }
     else if (tx.isFlag(tfLoanUnimpair))
     {
-        if (auto const ter = unimpairLoan(
-                view,
-                loanSle,
-                vaultSle,
-                principalOutstanding,
-                interestOutstanding,
-                paymentInterval,
-                j_))
+        if (auto const ter = unimpairLoan(view, loanSle, vaultSle, j_))
             return ter;
     }
 

@@ -347,7 +347,10 @@ LoanSet::doApply()
             if (auto const value = tx[field];
                 value && !isRounded(vaultAsset, *value, properties.loanScale))
             {
-                JLOG(j_.warn()) << name << " has too much precision.";
+                JLOG(j_.warn())
+                    << name << " has too much precision. Total loan value is "
+                    << properties.totalValueOutstanding << " with a scale of "
+                    << properties.loanScale;
                 return tecPRECISION_LOSS;
             }
         }

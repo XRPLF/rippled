@@ -53,8 +53,6 @@ public:
         SLE::ref loanSle,
         SLE::ref brokerSle,
         SLE::ref vaultSle,
-        Number const& principalOutstanding,
-        Number const& interestOutstanding,
         Asset const& vaultAsset,
         beast::Journal j);
 
@@ -65,8 +63,6 @@ public:
         ApplyView& view,
         SLE::ref loanSle,
         SLE::ref vaultSle,
-        Number const& principalOutstanding,
-        Number const& interestOutstanding,
         beast::Journal j);
 
     /** Helper function that might be needed by other transactors
@@ -76,9 +72,6 @@ public:
         ApplyView& view,
         SLE::ref loanSle,
         SLE::ref vaultSle,
-        Number const& principalOutstanding,
-        Number const& interestOutstanding,
-        std::uint32_t paymentInterval,
         beast::Journal j);
 
     TER
