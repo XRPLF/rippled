@@ -442,7 +442,7 @@ transferHelper(
         auto const sleSrc = psb.peek(keylet::account(src));
         XRPL_ASSERT(sleSrc, "ripple::transferHelper : non-null source account");
         if (!sleSrc)
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         {
             auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
@@ -712,7 +712,7 @@ finalizeClaimHelper(
             }
 
             if (distributed > rewardPool)
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
 
             return tesSUCCESS;
         }();
@@ -1150,7 +1150,7 @@ applyCreateAccountAttestations(
         // subsequent claim ids
         auto const sleBridge = psb.peek(bridgeK);
         if (!sleBridge)
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
         (*sleBridge)[sfXChainAccountClaimCount] = attBegin->createCount;
         psb.update(sleBridge);
     }
@@ -1170,12 +1170,12 @@ applyCreateAccountAttestations(
             claimIDKeylet,
             describeOwnerDir(doorAccount));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*createdSleClaimID)[sfOwnerNode] = *page;
 
         auto const sleDoor = psb.peek(doorK);
         if (!sleDoor)
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // Reserve was already checked
         adjustOwnerCount(psb, sleDoor, 1, j);
@@ -1240,8 +1240,9 @@ TER
 attestationPreclaim(PreclaimContext const& ctx)
 {
     auto const att = toClaim<TAttestation>(ctx.tx);
+    // checked in preflight
     if (!att)
-        return tecINTERNAL;  // checked in preflight
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
     auto const sleBridge = readBridge(ctx.view, bridgeSpec);
@@ -1272,7 +1273,7 @@ attestationDoApply(ApplyContext& ctx)
     auto const att = toClaim<TAttestation>(ctx.tx);
     if (!att)
         // Should already be checked in preflight
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
 
@@ -1503,7 +1504,7 @@ XChainCreateBridge::doApply()
 
     auto const sleAcct = ctx_.view().peek(keylet::account(account));
     if (!sleAcct)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     STXChainBridge::ChainType const chainType =
         STXChainBridge::srcChain(account == bridgeSpec.lockingChainDoor());
@@ -1525,7 +1526,7 @@ XChainCreateBridge::doApply()
         auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(account), bridgeKeylet, describeOwnerDir(account));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
@@ -1618,7 +1619,7 @@ BridgeModify::doApply()
 
     auto const sleAcct = ctx_.view().peek(keylet::account(account));
     if (!sleAcct)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     STXChainBridge::ChainType const chainType =
         STXChainBridge::srcChain(account == bridgeSpec.lockingChainDoor());
@@ -1626,7 +1627,7 @@ BridgeModify::doApply()
     auto const sleBridge =
         ctx_.view().peek(keylet::bridge(bridgeSpec, chainType));
     if (!sleBridge)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (reward)
         (*sleBridge)[sfSignatureReward] = *reward;
@@ -1689,7 +1690,7 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
         else if (thisDoor == bridgeSpec.issuingChainDoor())
             isLockingChain = false;
         else
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     {
@@ -1713,7 +1714,7 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
         // Should have been caught when creating the bridge
         // Detect here so `otherChainAmount` doesn't switch from IOU -> XRP
         // and the numeric issues that need to be addressed with that.
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     auto const otherChainAmount = [&]() -> STAmount {
@@ -1919,7 +1920,7 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
         else if (thisDoor == bridgeSpec.issuingChainDoor())
             isLockingChain = false;
         else
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     if (isLockingChain)
@@ -1946,11 +1947,11 @@ XChainCommit::doApply()
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
 
     if (!psb.read(keylet::account(account)))
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = readBridge(psb, bridgeSpec);
     if (!sleBridge)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const dst = (*sleBridge)[sfAccount];
 
@@ -2038,21 +2039,27 @@ XChainCreateClaimID::doApply()
 
     auto const sleAcct = ctx_.view().peek(keylet::account(account));
     if (!sleAcct)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = peekBridge(ctx_.view(), bridgeSpec);
     if (!sleBridge)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     std::uint32_t const claimID = (*sleBridge)[sfXChainClaimID] + 1;
     if (claimID == 0)
-        return tecINTERNAL;  // overflow
+    {
+        // overflow
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     (*sleBridge)[sfXChainClaimID] = claimID;
 
     Keylet const claimIDKeylet = keylet::xChainClaimID(bridgeSpec, claimID);
     if (ctx_.view().exists(claimIDKeylet))
-        return tecINTERNAL;  // already checked out!?!
+    {
+        // already checked out!?!
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     auto const sleClaimID = std::make_shared<SLE>(claimIDKeylet);
 
@@ -2071,7 +2078,7 @@ XChainCreateClaimID::doApply()
             claimIDKeylet,
             describeOwnerDir(account));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 
@@ -2189,7 +2196,7 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
         else if (thisDoor == bridgeSpec.issuingChainDoor())
             srcChain = STXChainBridge::ChainType::issuing;
         else
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
     }
     STXChainBridge::ChainType const dstChain =
         STXChainBridge::otherChain(srcChain);
@@ -2215,11 +2222,11 @@ XChainCreateAccountCommit::doApply()
 
     auto const sle = psb.peek(keylet::account(account));
     if (!sle)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = peekBridge(psb, bridge);
     if (!sleBridge)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const dst = (*sleBridge)[sfAccount];
 

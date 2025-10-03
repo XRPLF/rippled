@@ -377,7 +377,7 @@ SetTrust::doApply()
 
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     std::uint32_t const uOwnerCount = sle->getFieldU32(sfOwnerCount);
 

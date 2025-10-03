@@ -282,7 +282,7 @@ MPTokenIssuanceSet::doApply()
         sle = view().peek(keylet::mptIssuance(mptIssuanceID));
 
     if (!sle)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t flagsOut = flagsIn;

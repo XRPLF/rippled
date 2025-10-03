@@ -87,8 +87,10 @@ CashCheck::preclaim(PreclaimContext const& ctx)
     {
         // They wrote a check to themselves.  This should be caught when
         // the check is created, but better late than never.
+        // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "Malformed transaction: Cashing check to self.";
         return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
     {
         auto const sleSrc = ctx.view.read(keylet::account(srcId));
@@ -245,17 +247,21 @@ CashCheck::doApply()
     auto sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
     if (!sleCheck)
     {
+        // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Precheck did not verify check's existence.";
         return tecFAILED_PROCESSING;
+        // LCOV_EXCL_STOP
     }
 
     AccountID const srcId{sleCheck->getAccountID(sfAccount)};
     if (!psb.exists(keylet::account(srcId)) ||
         !psb.exists(keylet::account(account_)))
     {
+        // LCOV_EXCL_START
         JLOG(ctx_.journal.fatal())
             << "Precheck did not verify source or destination's existence.";
         return tecFAILED_PROCESSING;
+        // LCOV_EXCL_STOP
     }
 
     // Preclaim already checked that source has at least the requested
@@ -478,8 +484,10 @@ CashCheck::doApply()
             sleCheck->key(),
             true))
     {
+        // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from destination.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     // Remove check from check owner's directory.
@@ -489,8 +497,10 @@ CashCheck::doApply()
             sleCheck->key(),
             true))
     {
+        // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     // If we succeeded, update the check owner's reserve.

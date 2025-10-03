@@ -159,7 +159,7 @@ CreateCheck::doApply()
 {
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // A check counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
@@ -209,7 +209,7 @@ CreateCheck::doApply()
                          << (page ? "success" : "failure");
 
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         sleCheck->setFieldU64(sfDestinationNode, *page);
     }
@@ -225,7 +225,7 @@ CreateCheck::doApply()
                          << (page ? "success" : "failure");
 
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }

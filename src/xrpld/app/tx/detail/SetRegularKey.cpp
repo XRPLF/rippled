@@ -66,7 +66,7 @@ SetRegularKey::doApply()
 {
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (!minimumFee(ctx_.app, ctx_.baseFee, view().fees(), view().flags()))
         sle->setFlag(lsfPasswordSpent);

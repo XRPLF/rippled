@@ -77,19 +77,23 @@ deleteSLE(
             AccountID const& account, SField const& node, bool isOwner) -> TER {
         auto const sleAccount = view.peek(keylet::account(account));
         if (!sleAccount)
-        {  // LCOV_EXCL_START
+        {
+            // LCOV_EXCL_START
             JLOG(j.fatal()) << "Internal error: can't retrieve Owner account.";
             return tecINTERNAL;
-        }  // LCOV_EXCL_STOP
+            // LCOV_EXCL_STOP
+        }
 
         // Remove object from owner directory
         std::uint64_t const page = sleCredential->getFieldU64(node);
         if (!view.dirRemove(
                 keylet::ownerDir(account), page, sleCredential->key(), false))
-        {  // LCOV_EXCL_START
+        {
+            // LCOV_EXCL_START
             JLOG(j.fatal()) << "Unable to delete Credential from owner.";
             return tefBAD_LEDGER;
-        }  // LCOV_EXCL_STOP
+            // LCOV_EXCL_STOP
+        }
 
         if (isOwner)
             adjustOwnerCount(view, sleAccount, -1, j);

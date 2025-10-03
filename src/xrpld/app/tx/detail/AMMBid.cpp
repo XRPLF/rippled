@@ -247,10 +247,12 @@ applyBid(
         if (saBurn >= lptAMMBalance)
         {
             // This error case should never occur.
+            // LCOV_EXCL_START
             JLOG(ctx_.journal.fatal())
                 << "AMM Bid: LP Token burn exceeds AMM balance " << burn << " "
                 << lptAMMBalance;
             return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
         auto res =
             redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
