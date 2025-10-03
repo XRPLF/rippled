@@ -64,7 +64,7 @@ struct DID_test : public beast::unit_test::suite
 
         // Fund alice enough to exist, but not enough to meet
         // the reserve for creating a DID.
-        auto const acctReserve = env.current()->fees().accountReserve(0);
+        auto const acctReserve = env.current()->fees().reserve;
         auto const incReserve = env.current()->fees().increment;
         auto const baseFee = env.current()->fees().base;
         env.fund(acctReserve, alice);
