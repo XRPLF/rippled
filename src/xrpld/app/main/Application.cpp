@@ -2045,79 +2045,81 @@ ApplicationImp::loadOldLedger(
             return false;
             // LCOV_EXCL_STOP
         }
-    }
 
-    if (!loadLedger->assertSensible(journal("Ledger")))
-    {
-        // LCOV_EXCL_START
-        JLOG(m_journal.fatal()) << "Ledger is not sensible.";
-        UNREACHABLE(
-            "ripple::ApplicationImp::loadOldLedger : ledger is not "
-            "sensible");
-        return false;
-        // LCOV_EXCL_STOP
-    }
-
-    m_ledgerMaster->setLedgerRangePresent(
-        loadLedger->info().seq, loadLedger->info().seq);
-
-    m_ledgerMaster->switchLCL(loadLedger);
-    loadLedger->setValidated();
-    m_ledgerMaster->setFullLedger(loadLedger, true, false);
-    openLedger_.emplace(loadLedger, cachedSLEs_, logs_->journal("OpenLedger"));
-
-    if (replay)
-    {
-        // inject transaction(s) from the replayLedger into our open ledger
-        // and build replay structure
-        auto replayData =
-            std::make_unique<LedgerReplay>(loadLedger, replayLedger);
-
-        for (auto const& [_, tx] : replayData->orderedTxns())
+        if (!loadLedger->assertSensible(journal("Ledger")))
         {
-            (void)_;
-            auto txID = tx->getTransactionID();
-            if (trapTxID == txID)
+            // LCOV_EXCL_START
+            JLOG(m_journal.fatal()) << "Ledger is not sensible.";
+            UNREACHABLE(
+                "ripple::ApplicationImp::loadOldLedger : ledger is not "
+                "sensible");
+            return false;
+            // LCOV_EXCL_STOP
+        }
+
+        m_ledgerMaster->setLedgerRangePresent(
+            loadLedger->info().seq, loadLedger->info().seq);
+
+        m_ledgerMaster->switchLCL(loadLedger);
+        loadLedger->setValidated();
+        m_ledgerMaster->setFullLedger(loadLedger, true, false);
+        openLedger_.emplace(
+            loadLedger, cachedSLEs_, logs_->journal("OpenLedger"));
+
+        if (replay)
+        {
+            // inject transaction(s) from the replayLedger into our open ledger
+            // and build replay structure
+            auto replayData =
+                std::make_unique<LedgerReplay>(loadLedger, replayLedger);
+
+            for (auto const& [_, tx] : replayData->orderedTxns())
             {
-                trapTxID_ = txID;
-                JLOG(m_journal.debug()) << "Trap transaction set: " << txID;
+                (void)_;
+                auto txID = tx->getTransactionID();
+                if (trapTxID == txID)
+                {
+                    trapTxID_ = txID;
+                    JLOG(m_journal.debug()) << "Trap transaction set: " << txID;
+                }
+
+                auto s = std::make_shared<Serializer>();
+                tx->add(*s);
+
+                forceValidity(getHashRouter(), txID, Validity::SigGoodOnly);
+
+                openLedger_->modify(
+                    [&txID, &s](OpenView& view, beast::Journal j) {
+                        view.rawTxInsert(txID, std::move(s), nullptr);
+                        return true;
+                    });
             }
 
-            auto s = std::make_shared<Serializer>();
-            tx->add(*s);
+            m_ledgerMaster->takeReplay(std::move(replayData));
 
-            forceValidity(getHashRouter(), txID, Validity::SigGoodOnly);
-
-            openLedger_->modify([&txID, &s](OpenView& view, beast::Journal j) {
-                view.rawTxInsert(txID, std::move(s), nullptr);
-                return true;
-            });
-        }
-
-        m_ledgerMaster->takeReplay(std::move(replayData));
-
-        if (trapTxID && !trapTxID_)
-        {
-            JLOG(m_journal.fatal())
-                << "Ledger " << replayLedger->info().seq
-                << " does not contain the transaction hash " << *trapTxID;
-            return false;
+            if (trapTxID && !trapTxID_)
+            {
+                JLOG(m_journal.fatal())
+                    << "Ledger " << replayLedger->info().seq
+                    << " does not contain the transaction hash " << *trapTxID;
+                return false;
+            }
         }
     }
-}
-catch (SHAMapMissingNode const& mn)
-{
-    JLOG(m_journal.fatal()) << "While loading specified ledger: " << mn.what();
-    return false;
-}
-catch (boost::bad_lexical_cast&)
-{
-    JLOG(m_journal.fatal())
-        << "Ledger specified '" << ledgerID << "' is not valid";
-    return false;
-}
+    catch (SHAMapMissingNode const& mn)
+    {
+        JLOG(m_journal.fatal())
+            << "While loading specified ledger: " << mn.what();
+        return false;
+    }
+    catch (boost::bad_lexical_cast&)
+    {
+        JLOG(m_journal.fatal())
+            << "Ledger specified '" << ledgerID << "' is not valid";
+        return false;
+    }
 
-return true;
+    return true;
 }
 
 bool
