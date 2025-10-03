@@ -224,8 +224,10 @@ removeSignersFromLedger(
 
     if (!view.dirRemove(ownerDirKeylet, hint, signerListKeylet.key, false))
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete SignerList from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     adjustOwnerCount(

@@ -93,8 +93,10 @@ CancelCheck::doApply()
         if (!view().dirRemove(
                 keylet::ownerDir(dstId), page, sleCheck->key(), true))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete check from destination.";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
     {
@@ -102,8 +104,10 @@ CancelCheck::doApply()
         if (!view().dirRemove(
                 keylet::ownerDir(srcId), page, sleCheck->key(), true))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete check from owner.";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 

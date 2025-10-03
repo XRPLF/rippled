@@ -70,7 +70,7 @@ MPTokenIssuanceDestroy::doApply()
 
     if (!view().dirRemove(
             keylet::ownerDir(account_), (*mpt)[sfOwnerNode], mpt->key(), false))
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     view().erase(mpt);
 

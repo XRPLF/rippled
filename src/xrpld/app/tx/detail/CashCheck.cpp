@@ -478,8 +478,10 @@ CashCheck::doApply()
             sleCheck->key(),
             true))
     {
+        // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from destination.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     // Remove check from check owner's directory.
@@ -489,8 +491,10 @@ CashCheck::doApply()
             sleCheck->key(),
             true))
     {
+        // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     // If we succeeded, update the check owner's reserve.

@@ -299,8 +299,10 @@ DepositPreauth::removeFromLedger(
     std::uint64_t const page{(*slePreauth)[sfOwnerNode]};
     if (!view.dirRemove(keylet::ownerDir(account), page, preauthIndex, false))
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete DepositPreauth from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     // If we succeeded, update the DepositPreauth owner's reserve.

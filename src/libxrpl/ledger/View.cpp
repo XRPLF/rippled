@@ -1436,7 +1436,7 @@ trustCreate(
 
     XRPL_ASSERT(sleAccount, "ripple::trustCreate : non-null SLE");
     if (!sleAccount)
-        return tefINTERNAL;
+        return tefINTERNAL;  //
 
     XRPL_ASSERT(
         sleAccount->getAccountID(sfAccount) ==
@@ -1610,7 +1610,7 @@ trustDelete(
             sleRippleState->key(),
             false))
     {
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: high";
@@ -1621,7 +1621,7 @@ trustDelete(
             sleRippleState->key(),
             false))
     {
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: state";
@@ -1647,7 +1647,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
             offerIndex,
             false))
     {
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     if (!view.dirRemove(
@@ -1656,7 +1656,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
             offerIndex,
             false))
     {
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     if (sle->isFieldPresent(sfAdditionalBooks))
@@ -2725,11 +2725,13 @@ cleanupOnAccountDelete(
             if (!sleItem)
             {
                 // Directory node has an invalid index.  Bail out.
+                // LCOV_EXCL_START
                 JLOG(j.fatal())
                     << "DeleteAccount: Directory node in ledger " << view.seq()
                     << " has index to object that is missing: "
                     << to_string(dirEntry);
                 return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
             }
 
             LedgerEntryType const nodeType{safe_cast<LedgerEntryType>(
@@ -2762,9 +2764,11 @@ cleanupOnAccountDelete(
                 "ripple::cleanupOnAccountDelete : minimum dir entries");
             if (uDirEntry == 0)
             {
+                // LCOV_EXCL_START
                 JLOG(j.error())
                     << "DeleteAccount iterator re-validation failed.";
                 return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
             }
             if (skipEntry == SkipEntry::No)
                 uDirEntry--;
