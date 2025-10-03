@@ -1666,17 +1666,33 @@ class Delegate_test : public beast::unit_test::suite
         }
     }
 
+    /// This class only adds a non-explicit ctor for uint256's to FeatureBitset
+    class BitsetWrapper : public FeatureBitset
+    {
+    public:
+        BitsetWrapper() = default;
+
+        template <class... Fs>
+        BitsetWrapper(uint256 const& f, Fs&&... fs)
+            : FeatureBitset(f, std::forward<Fs>(fs)...)
+        {
+        }
+    };
+
     void
     testTxReqireFeatures(FeatureBitset features)
     {
         testcase("test delegate disabled tx");
         using namespace jtx;
 
+        BitsetWrapper const featuresSAV{
+            featureSingleAssetVault, featureLendingProtocol};
+
         // map of tx and required feature.
         // non-delegatable tx are not included.
         // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer,
         // NFTokenAcceptOffer are not included, they are tested separately.
-        std::unordered_map<std::string, uint256> txRequiredFeatures{
+        std::unordered_map<std::string, BitsetWrapper> txRequiredFeatures{
             {"TicketCreate", featureTicketBatch},
             {"CheckCreate", featureChecks},
             {"CheckCash", featureChecks},
@@ -1713,12 +1729,12 @@ class Delegate_test : public beast::unit_test::suite
             {"NFTokenModify", featureDynamicNFT},
             {"PermissionedDomainSet", featurePermissionedDomains},
             {"PermissionedDomainDelete", featurePermissionedDomains},
-            {"VaultCreate", featureSingleAssetVault},
-            {"VaultSet", featureSingleAssetVault},
-            {"VaultDelete", featureSingleAssetVault},
-            {"VaultDeposit", featureSingleAssetVault},
-            {"VaultWithdraw", featureSingleAssetVault},
-            {"VaultClawback", featureSingleAssetVault}};
+            {"VaultCreate", featuresSAV},
+            {"VaultSet", featuresSAV},
+            {"VaultDelete", featuresSAV},
+            {"VaultDeposit", featuresSAV},
+            {"VaultWithdraw", featuresSAV},
+            {"VaultClawback", featuresSAV}};
 
         // fixDelegateV1_1 post-amendment: can not delegate tx if any
         // required feature disabled.
@@ -1740,8 +1756,8 @@ class Delegate_test : public beast::unit_test::suite
                     env(delegate::set(alice, bob, {tx}), ter(temMALFORMED));
             };
 
-            for (auto const& tx : txRequiredFeatures)
-                txAmendmentDisabled(features, tx.first);
+            for (auto const& required : txRequiredFeatures)
+                txAmendmentDisabled(features, required.first);
         }
 
         // if all the required features in txRequiredFeatures are enabled, will
@@ -1758,8 +1774,8 @@ class Delegate_test : public beast::unit_test::suite
                 env(delegate::set(alice, bob, {tx}));
             };
 
-            for (auto const& tx : txRequiredFeatures)
-                txAmendmentEnabled(tx.first);
+            for (auto const& required : txRequiredFeatures)
+                txAmendmentEnabled(required.first);
         }
 
         // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer, and

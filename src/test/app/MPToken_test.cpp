@@ -3632,33 +3632,36 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{testable_amendments()};
 
+        auto const featuresNoSAV =
+            all - featureSingleAssetVault - featureLendingProtocol;
+        auto const featuresNoDomains = all - featurePermissionedDomains;
         // MPTokenIssuanceCreate
-        testCreateValidation(all - featureSingleAssetVault);
-        testCreateValidation(all - featurePermissionedDomains);
+        testCreateValidation(featuresNoSAV);
+        testCreateValidation(featuresNoDomains);
         testCreateValidation(all);
-        testCreateEnabled(all - featureSingleAssetVault);
+        testCreateEnabled(featuresNoSAV);
         testCreateEnabled(all);
 
         // MPTokenIssuanceDestroy
-        testDestroyValidation(all - featureSingleAssetVault);
+        testDestroyValidation(featuresNoSAV);
         testDestroyValidation(all);
-        testDestroyEnabled(all - featureSingleAssetVault);
+        testDestroyEnabled(featuresNoSAV);
         testDestroyEnabled(all);
 
         // MPTokenAuthorize
-        testAuthorizeValidation(all - featureSingleAssetVault);
+        testAuthorizeValidation(featuresNoSAV);
         testAuthorizeValidation(all);
-        testAuthorizeEnabled(all - featureSingleAssetVault);
+        testAuthorizeEnabled(featuresNoSAV);
         testAuthorizeEnabled(all);
 
         // MPTokenIssuanceSet
-        testSetValidation(all - featureSingleAssetVault - featureDynamicMPT);
-        testSetValidation(all - featureSingleAssetVault);
+        testSetValidation(featuresNoSAV - featureDynamicMPT);
+        testSetValidation(featuresNoSAV);
         testSetValidation(all - featureDynamicMPT);
-        testSetValidation(all - featurePermissionedDomains);
+        testSetValidation(featuresNoDomains);
         testSetValidation(all);
 
-        testSetEnabled(all - featureSingleAssetVault);
+        testSetEnabled(featuresNoSAV);
         testSetEnabled(all);
 
         // MPT clawback

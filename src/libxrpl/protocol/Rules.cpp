@@ -126,19 +126,45 @@ Rules::presets() const
     return impl_->presets();
 }
 
+/** Define features that can be considered enabled based on other features.
+ *
+ * This is a simple key-value map where
+ *   - the key is the feature being checked
+ *   - the value is a set of other features, which, in any of them are enabled,
+ *     will cause the key feature to be considered enabled.
+ *
+ */
+std::map<uint256, std::vector<uint256>> const&
+getTransitiveFeatureMap()
+{
+    static std::map<uint256, std::vector<uint256>> const featureToOverride{
+        // The functionality of the "NonFungibleTokensV1_1" amendment is
+        // precisely the functionality of the following three amendments
+        // so if their status is ever queried individually, we inject an
+        // extra check here to simplify the checking elsewhere.
+        {featureNonFungibleTokensV1, {featureNonFungibleTokensV1_1}},
+        {fixNFTokenNegOffer, {featureNonFungibleTokensV1_1}},
+        {fixNFTokenDirV1, {featureNonFungibleTokensV1_1}},
+        // If LendingProtocol is enabled, then SingleAssetVault can also be
+        // considered enabled
+        {featureSingleAssetVault, {featureLendingProtocol}}};
+    return featureToOverride;
+}
+
 bool
 Rules::enabled(uint256 const& feature) const
 {
     XRPL_ASSERT(impl_, "ripple::Rules::enabled : initialized");
 
-    // The functionality of the "NonFungibleTokensV1_1" amendment is
-    // precisely the functionality of the following three amendments
-    // so if their status is ever queried individually, we inject an
-    // extra check here to simplify the checking elsewhere.
-    if (feature == featureNonFungibleTokensV1 ||
-        feature == fixNFTokenNegOffer || feature == fixNFTokenDirV1)
+    // Some features can be considered enabled based on other enabled features.
+    static auto const& transitiveFeatureMap = getTransitiveFeatureMap();
+    if (transitiveFeatureMap.contains(feature))
     {
-        if (impl_->enabled(featureNonFungibleTokensV1_1))
+        auto const& transitiveFeatures = transitiveFeatureMap.at(feature);
+        if (std::any_of(
+                transitiveFeatures.begin(),
+                transitiveFeatures.end(),
+                [this](auto const& f) { return impl_->enabled(f); }))
             return true;
     }
 
