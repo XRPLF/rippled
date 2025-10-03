@@ -1421,7 +1421,7 @@ trustCreate(
         describeOwnerDir(uLowAccountID));
 
     if (!lowNode)
-        return tecDIR_FULL;
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     auto highNode = view.dirInsert(
         keylet::ownerDir(uHighAccountID),
@@ -1429,7 +1429,7 @@ trustCreate(
         describeOwnerDir(uHighAccountID));
 
     if (!highNode)
-        return tecDIR_FULL;
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     bool const bSetDst = saLimit.getIssuer() == uDstAccountID;
     bool const bSetHigh = bSrcHigh ^ bSetDst;

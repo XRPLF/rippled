@@ -387,7 +387,7 @@ SetSignerList::replaceSignerList()
                      << ": " << (page ? "success" : "failure");
 
     if (!page)
-        return tecDIR_FULL;
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     signerList->setFieldU64(sfOwnerNode, *page);
 

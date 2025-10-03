@@ -96,7 +96,7 @@ addSLE(
         auto page = ctx.view().dirInsert(
             keylet::ownerDir(owner), sle->key(), describeOwnerDir(owner));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
     adjustOwnerCount(ctx.view(), sleAccount, 1, ctx.journal);

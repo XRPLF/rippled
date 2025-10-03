@@ -198,7 +198,7 @@ DepositPreauth::doApply()
                          << (page ? "success" : "failure");
 
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
@@ -262,7 +262,7 @@ DepositPreauth::doApply()
                          << (page ? "success" : "failure");
 
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         slePreauth->setFieldU64(sfOwnerNode, *page);
 

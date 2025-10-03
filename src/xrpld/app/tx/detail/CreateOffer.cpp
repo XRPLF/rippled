@@ -848,9 +848,11 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     if (!ownerNode)
     {
+        // LCOV_EXCL_START
         JLOG(j_.debug())
             << "final result: failed to add offer to owner's directory";
         return {tecDIR_FULL, true};
+        // LCOV_EXCL_STOP
     }
 
     // Update owner count.
@@ -894,8 +896,10 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     if (!bookNode)
     {
+        // LCOV_EXCL_START
         JLOG(j_.debug()) << "final result: failed to add offer to book";
         return {tecDIR_FULL, true};
+        // LCOV_EXCL_STOP
     }
 
     auto sleOffer = std::make_shared<SLE>(offer_index);

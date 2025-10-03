@@ -1170,7 +1170,7 @@ applyCreateAccountAttestations(
             claimIDKeylet,
             describeOwnerDir(doorAccount));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*createdSleClaimID)[sfOwnerNode] = *page;
 
         auto const sleDoor = psb.peek(doorK);
@@ -1526,7 +1526,7 @@ XChainCreateBridge::doApply()
         auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(account), bridgeKeylet, describeOwnerDir(account));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
@@ -2078,7 +2078,7 @@ XChainCreateClaimID::doApply()
             claimIDKeylet,
             describeOwnerDir(account));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 

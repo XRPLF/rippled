@@ -123,7 +123,7 @@ CreateTicket::doApply()
                          << ": " << (page ? "success" : "failure");
 
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         sleTicket->setFieldU64(sfOwnerNode, *page);
     }

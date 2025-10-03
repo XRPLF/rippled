@@ -305,7 +305,7 @@ PayChanCreate::doApply()
             payChanKeylet,
             describeOwnerDir(account));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfOwnerNode] = *page;
     }
 
@@ -315,7 +315,7 @@ PayChanCreate::doApply()
         auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfDestinationNode] = *page;
     }
 
