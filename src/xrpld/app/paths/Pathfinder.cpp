@@ -648,8 +648,10 @@ Pathfinder::getBestPaths(
 
         if (path.empty())
         {
+            // LCOV_EXCL_START
             UNREACHABLE("ripple::Pathfinder::getBestPaths : path not found");
             continue;
+            // LCOV_EXCL_STOP
         }
 
         bool startsWithIssuer = false;

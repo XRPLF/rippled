@@ -353,9 +353,13 @@ populateJsonResponse(
                             jvObj[jss::meta], sttx, *txnMeta);
                     }
                     else
+                    {
+                        // LCOV_EXCL_START
                         UNREACHABLE(
                             "ripple::populateJsonResponse : missing "
                             "transaction medatata");
+                        // LCOV_EXCL_STOP
+                    }
                 }
             }
         }

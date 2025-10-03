@@ -133,8 +133,10 @@ ApplyView::emptyDirDelete(Keylet const& directory)
     if (directory.type != ltDIR_NODE ||
         node->getFieldH256(sfRootIndex) != directory.key)
     {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::ApplyView::emptyDirDelete : invalid node type");
         return false;
+        // LCOV_EXCL_STOP
     }
 
     // The directory still contains entries and so it cannot be removed

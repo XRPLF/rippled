@@ -121,11 +121,13 @@ public:
         using namespace boost::filesystem;
         if (db_.is_open())
         {
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::NodeStore::NuDBBackend::open : database is already "
                 "open");
             JLOG(j_.error()) << "database is already open";
             return;
+            // LCOV_EXCL_STOP
         }
         auto const folder = path(name_);
         auto const dp = (folder / "nudb.dat").string();

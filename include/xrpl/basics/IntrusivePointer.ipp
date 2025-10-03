@@ -654,12 +654,14 @@ SharedWeakUnion<T>::convertToWeak()
             break;
         case destroy:
             // We just added a weak ref. How could we destroy?
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::SharedWeakUnion::convertToWeak : destroying freshly "
                 "added ref");
             delete p;
             unsafeSetRawPtr(nullptr);
             return true;  // Should never happen
+            // LCOV_EXCL_STOP
         case partialDestroy:
             // This is a weird case. We just converted the last strong
             // pointer to a weak pointer.

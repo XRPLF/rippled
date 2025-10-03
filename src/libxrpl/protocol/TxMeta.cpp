@@ -238,9 +238,11 @@ TxMeta::getAffectedNode(uint256 const& node)
         if (n.getFieldH256(sfLedgerIndex) == node)
             return n;
     }
+    // LCOV_EXCL_START
     UNREACHABLE("ripple::TxMeta::getAffectedNode(uint256) : node not found");
     Throw<std::runtime_error>("Affected node not found");
     return *(mNodes.begin());  // Silence compiler warning.
+    // LCOV_EXCL_STOP
 }
 
 STObject

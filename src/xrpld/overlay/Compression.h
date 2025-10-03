@@ -60,12 +60,14 @@ decompress(
                 in, inSize, decompressed, decompressedSize);
         else
         {
+            // LCOV_EXCL_START
             JLOG(debugLog().warn())
                 << "decompress: invalid compression algorithm "
                 << static_cast<int>(algorithm);
             UNREACHABLE(
                 "ripple::compression::decompress : invalid compression "
                 "algorithm");
+            // LCOV_EXCL_STOP
         }
     }
     catch (...)
@@ -98,11 +100,13 @@ compress(
                 in, inSize, std::forward<BufferFactory>(bf));
         else
         {
+            // LCOV_EXCL_START
             JLOG(debugLog().warn()) << "compress: invalid compression algorithm"
                                     << static_cast<int>(algorithm);
             UNREACHABLE(
                 "ripple::compression::compress : invalid compression "
                 "algorithm");
+            // LCOV_EXCL_STOP
         }
     }
     catch (...)
