@@ -1127,6 +1127,11 @@ addSponsorToLedgerEntry(
     std::optional<std::shared_ptr<SLE>> const& sponsorSle,
     SF_ACCOUNT const& field)
 {
+    XRPL_ASSERT(
+        (sle->getType() == ltRIPPLE_STATE &&
+         (field == sfHighSponsorAccount || field == sfLowSponsorAccount)) ||
+            (sle->getType() != ltRIPPLE_STATE && field == sfSponsorAccount),
+        "addSponsorToLedgerEntry : Invalid field to the LedgerEntry");
     if (sponsorSle)
         sle->setAccountID(field, (*sponsorSle)->getAccountID(sfAccount));
 }
@@ -1136,6 +1141,11 @@ removeSponsorFromLedgerEntry(
     std::shared_ptr<SLE> const& sle,
     SF_ACCOUNT const& field)
 {
+    XRPL_ASSERT(
+        (sle->getType() == ltRIPPLE_STATE &&
+         (field == sfHighSponsorAccount || field == sfLowSponsorAccount)) ||
+            (sle->getType() != ltRIPPLE_STATE && field == sfSponsorAccount),
+        "removeSponsorFromLedgerEntry : Invalid field to the LedgerEntry");
     if (sle->isFieldPresent(field))
         sle->makeFieldAbsent(field);
 }
@@ -2455,7 +2465,7 @@ updateTrustLine(
             sfFlags, flags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
 
         removeSponsorFromLedgerEntry(
-            sle, !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
+            state, !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
 
         // Balance is zero, receiver reserve is clear.
         if (!after  // Balance is zero.
