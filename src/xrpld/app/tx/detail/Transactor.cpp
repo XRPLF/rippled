@@ -796,7 +796,8 @@ Transactor::checkSign(
         if (isCoSigned)
         {
             auto const sponsorAcc = sponsorObj.getAccountID(sfAccount);
-            if (auto const ret = checkSign(ctx, sponsorAcc, sponsorObj);
+            if (auto const ret =
+                    checkSign(view, flags, sponsorAcc, sponsorObj, j);
                 !isTesSuccess(ret))
                 return ret;
         }
