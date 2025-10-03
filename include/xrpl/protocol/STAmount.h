@@ -695,6 +695,53 @@ divRoundStrict(
 std::uint64_t
 getRate(STAmount const& offerOut, STAmount const& offerIn);
 
+/** Round an arbitrary precision Amount to the precision of a reference Amount.
+ *
+ * This is used to ensure that calculations involving IOU amounts do not collect
+ * dust beyond the precision of the reference value.
+ *
+ * @param value The value to be rounded
+ * @param referenceValue A reference value to establish the precision limit of
+ *     `value`. Should be larger than `value`.
+ * @param rounding Optional Number rounding mode
+ *
+ */
+STAmount
+roundToReference(
+    STAmount const value,
+    STAmount referenceValue,
+    Number::rounding_mode rounding = Number::getround());
+
+/** Round an arbitrary precision Number to the precision of a given Asset.
+ *
+ * This is used to ensure that calculations do not collect dust beyond the
+ * precision of the reference value for IOUs, or fractional amounts for the
+ * integral types XRP and MPT.
+ *
+ * @param asset The relevant asset
+ * @param value The value to be rounded
+ * @param referenceValue Only relevant to IOU assets. A reference value to
+ *     establish the precision limit of `value`. Should be larger than
+ *     `value`.
+ * @param rounding Optional Number rounding mode
+ */
+template <AssetType A>
+Number
+roundToAsset(
+    A const& asset,
+    Number const& value,
+    Number const& referenceValue,
+    Number::rounding_mode rounding = Number::getround())
+{
+    NumberRoundModeGuard mg(rounding);
+    STAmount const ret{asset, value};
+    if (ret.asset().native() || !ret.asset().holds<Issue>())
+        return ret;
+    // Not that the ctor will round integral types (XRP, MPT) via canonicalize,
+    // so no extra work is needed for those.
+    return roundToReference(ret, STAmount{asset, referenceValue});
+}
+
 //------------------------------------------------------------------------------
 
 inline bool
@@ -709,10 +756,10 @@ canAdd(STAmount const& amt1, STAmount const& amt2);
 bool
 canSubtract(STAmount const& amt1, STAmount const& amt2);
 
-// Since `canonicalize` does not have access to a ledger, this is needed to put
-// the low-level routine stAmountCanonicalize on an amendment switch. Only
-// transactions need to use this switchover. Outside of a transaction it's safe
-// to unconditionally use the new behavior.
+// Since `canonicalize` does not have access to a ledger, this is needed to
+// put the low-level routine stAmountCanonicalize on an amendment switch.
+// Only transactions need to use this switchover. Outside of a transaction
+// it's safe to unconditionally use the new behavior.
 
 bool
 getSTAmountCanonicalizeSwitchover();

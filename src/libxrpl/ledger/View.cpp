@@ -1052,13 +1052,17 @@ describeOwnerDir(AccountID const& account)
 }
 
 TER
-dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
+dirLink(
+    ApplyView& view,
+    AccountID const& owner,
+    std::shared_ptr<SLE>& object,
+    SF_UINT64 const& node)
 {
     auto const page = view.dirInsert(
         keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
     if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
-    object->setFieldU64(sfOwnerNode, *page);
+    object->setFieldU64(node, *page);
     return tesSUCCESS;
 }
 
@@ -1131,6 +1135,7 @@ createPseudoAccount(
     uint256 const& pseudoOwnerKey,
     SField const& ownerField)
 {
+    [[maybe_unused]]
     auto const& fields = getPseudoAccountFields();
     XRPL_ASSERT(
         std::count_if(
@@ -1153,9 +1158,10 @@ createPseudoAccount(
     // Pseudo-accounts can't submit transactions, so set the sequence number
     // to 0 to make them easier to spot and verify, and add an extra level
     // of protection.
-    std::uint32_t const seqno =                        //
-        view.rules().enabled(featureSingleAssetVault)  //
-        ? 0                                            //
+    std::uint32_t const seqno =                           //
+        view.rules().enabled(featureSingleAssetVault) ||  //
+            view.rules().enabled(featureLendingProtocol)  //
+        ? 0                                               //
         : view.seq();
     account->setFieldU32(sfSequence, seqno);
     // Ignore reserves requirement, disable the master key, allow default

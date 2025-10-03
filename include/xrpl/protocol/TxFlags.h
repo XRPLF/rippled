@@ -285,6 +285,17 @@ constexpr std::uint32_t tfIndependent                  = 0x00080000;
 constexpr std::uint32_t const tfBatchMask =
     ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent) | tfInnerBatchTxn;
 
+// LoanSet flags:
+// True, indicates the loan supports overpayments
+constexpr std::uint32_t const tfLoanOverpayment = 0x00010000;
+constexpr std::uint32_t const tfLoanSetMask = ~(tfUniversal | tfLoanOverpayment);
+
+// LoanManage flags:
+constexpr std::uint32_t const tfLoanDefault = 0x00010000;
+constexpr std::uint32_t const tfLoanImpair = 0x00020000;
+constexpr std::uint32_t const tfLoanUnimpair = 0x00040000;
+constexpr std::uint32_t const tfLoanManageMask = ~(tfUniversal | tfLoanDefault | tfLoanImpair | tfLoanUnimpair);
+
 // clang-format on
 
 }  // namespace ripple

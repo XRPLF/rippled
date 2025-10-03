@@ -235,7 +235,7 @@ public:
     getBalance(Account const& account) const;
 
     MPT
-    operator[](std::string const& name);
+    operator[](std::string const& name) const;
 
 private:
     using SLEP = std::shared_ptr<SLE const>;

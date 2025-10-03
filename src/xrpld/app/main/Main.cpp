@@ -173,7 +173,7 @@ printHelp(po::options_description const& desc)
            "     server_state [counters]\n"
            "     sign <private_key> <tx_json> [offline]\n"
            "     sign_for <signer_address> <signer_private_key> <tx_json> "
-           "[offline]\n"
+           "[offline] [<signature_field>]\n"
            "     stop\n"
            "     simulate [<tx_blob>|<tx_json>] [<binary>]\n"
            "     submit <tx_blob>|[<private_key> <tx_json>]\n"
