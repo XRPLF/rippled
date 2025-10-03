@@ -524,6 +524,7 @@ multiSignHelper(
 
         // Verify the signature.
         bool validSig = false;
+        std::optional<std::string> errorWhat;
         try
         {
             auto spk = signer.getFieldVL(sfSigningPubKey);
@@ -537,15 +538,16 @@ multiSignHelper(
                     fullyCanonical);
             }
         }
-        catch (std::exception const&)
+        catch (std::exception const& e)
         {
             // We assume any problem lies with the signature.
             validSig = false;
+            errorWhat = e.what();
         }
         if (!validSig)
             return Unexpected(
                 std::string("Invalid signature on account ") +
-                toBase58(accountID) + ".");
+                toBase58(accountID) + errorWhat.value_or("") + ".");
     }
     // All signatures verified.
     return {};
