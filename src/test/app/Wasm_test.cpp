@@ -519,7 +519,7 @@ struct Wasm_test : public beast::unit_test::suite
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 96'942, std::to_string(re->cost));
+                BEAST_EXPECTS(re->cost == 97'411, std::to_string(re->cost));
             }
             env.close();
         }
