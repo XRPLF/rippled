@@ -350,8 +350,6 @@ SetSignerList::replaceSignerList()
         return tefINTERNAL;
 
     // Compute new reserve.  Verify the account has funds to meet the reserve.
-    std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
-
     // The required reserve changes based on featureMultiSignReserve...
     int addedOwnerCount{1};
     std::uint32_t flags{lsfOneOwnerCount};
