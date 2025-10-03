@@ -21,7 +21,6 @@
 #include <test/jtx.h>
 
 #include <xrpld/app/tx/applySteps.h>
-#include <xrpld/app/wasm/WasmVM.h>
 
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>
