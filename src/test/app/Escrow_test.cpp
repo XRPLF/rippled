@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
 #include <xrpld/app/tx/applySteps.h>
