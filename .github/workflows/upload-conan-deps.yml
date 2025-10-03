@@ -24,13 +24,10 @@ on:
     branches: [develop]
     paths:
       - .github/workflows/upload-conan-deps.yml
-
       - .github/workflows/reusable-strategy-matrix.yml
-
       - .github/actions/build-deps/action.yml
       - .github/actions/setup-conan/action.yml
       - ".github/scripts/strategy-matrix/**"
-
       - conanfile.py
       - conan.lock
 
@@ -88,4 +85,6 @@ jobs:
 
       - name: Upload Conan packages
         if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' && github.event_name != 'schedule' }}
-        run: conan upload "*" -r=${{ env.CONAN_REMOTE_NAME }} --confirm ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
+        env:
+          FORCE_OPTION: ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
+        run: conan upload "*" --remote='${{ env.CONAN_REMOTE_NAME }}' --confirm ${{ env.FORCE_OPTION }}

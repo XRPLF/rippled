@@ -51,14 +51,18 @@ struct MPTMutabilityFlags
 };
 
 static constexpr std::array<MPTMutabilityFlags, 6> mptMutabilityFlags = {
-    {{tmfMPTSetCanLock, tmfMPTClearCanLock, lmfMPTCanMutateCanLock},
-     {tmfMPTSetRequireAuth, tmfMPTClearRequireAuth, lmfMPTCanMutateRequireAuth},
-     {tmfMPTSetCanEscrow, tmfMPTClearCanEscrow, lmfMPTCanMutateCanEscrow},
-     {tmfMPTSetCanTrade, tmfMPTClearCanTrade, lmfMPTCanMutateCanTrade},
-     {tmfMPTSetCanTransfer, tmfMPTClearCanTransfer, lmfMPTCanMutateCanTransfer},
+    {{tmfMPTSetCanLock, tmfMPTClearCanLock, lsmfMPTCanMutateCanLock},
+     {tmfMPTSetRequireAuth,
+      tmfMPTClearRequireAuth,
+      lsmfMPTCanMutateRequireAuth},
+     {tmfMPTSetCanEscrow, tmfMPTClearCanEscrow, lsmfMPTCanMutateCanEscrow},
+     {tmfMPTSetCanTrade, tmfMPTClearCanTrade, lsmfMPTCanMutateCanTrade},
+     {tmfMPTSetCanTransfer,
+      tmfMPTClearCanTransfer,
+      lsmfMPTCanMutateCanTransfer},
      {tmfMPTSetCanClawback,
       tmfMPTClearCanClawback,
-      lmfMPTCanMutateCanClawback}}};
+      lsmfMPTCanMutateCanClawback}}};
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
@@ -243,7 +247,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
-    if (!isMutableFlag(lmfMPTCanMutateMetadata) &&
+    if (!isMutableFlag(lsmfMPTCanMutateMetadata) &&
         ctx.tx.isFieldPresent(sfMPTokenMetadata))
         return tecNO_PERMISSION;
 
@@ -256,7 +260,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         if (fee > 0u && !sleMptIssuance->isFlag(lsfMPTCanTransfer))
             return tecNO_PERMISSION;
 
-        if (!isMutableFlag(lmfMPTCanMutateTransferFee))
+        if (!isMutableFlag(lsmfMPTCanMutateTransferFee))
             return tecNO_PERMISSION;
     }
 
