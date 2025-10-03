@@ -89,7 +89,7 @@ LoanBrokerDelete::doApply()
             broker->key(),
             false))
     {
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
     if (!view().dirRemove(
             keylet::ownerDir(vaultPseudoID),
@@ -97,7 +97,7 @@ LoanBrokerDelete::doApply()
             broker->key(),
             false))
     {
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     {
@@ -118,26 +118,26 @@ LoanBrokerDelete::doApply()
 
     auto brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
     if (!brokerPseudoSLE)
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     // Making the payment and removing the empty holding should have deleted any
     // obligations associated with the broker or broker pseudo-account.
     if (*brokerPseudoSLE->at(sfBalance))
     {
         JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account has a balance";
-        return tecHAS_OBLIGATIONS;
+        return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
     }
     if (brokerPseudoSLE->at(sfOwnerCount) != 0)
     {
         JLOG(j_.warn())
             << "LoanBrokerDelete: Pseudo-account still owns objects";
-        return tecHAS_OBLIGATIONS;
+        return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
     }
     if (auto const directory = keylet::ownerDir(brokerPseudoID);
         view().read(directory))
     {
         JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account has a directory";
-        return tecHAS_OBLIGATIONS;
+        return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
     }
 
     view().erase(brokerPseudoSLE);
