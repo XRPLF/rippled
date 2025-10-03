@@ -414,10 +414,8 @@ escrowLockApplyHelper<Issue>(
     beast::Journal journal)
 {
     // Defensive: Issuer cannot create an escrow
-    // LCOV_EXCL_START
     if (issuer == sender)
-        return tecINTERNAL;
-    // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const ter = rippleCredit(
         view,
@@ -441,10 +439,8 @@ escrowLockApplyHelper<MPTIssue>(
     beast::Journal journal)
 {
     // Defensive: Issuer cannot create an escrow
-    // LCOV_EXCL_START
     if (issuer == sender)
-        return tecINTERNAL;
-    // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const ter = rippleLockEscrowMPT(view, sender, amount, journal);
     if (ter != tesSUCCESS)
@@ -843,10 +839,8 @@ escrowUnlockApplyHelper<Issue>(
     bool const receiverIssuer = issuer == receiver;
     bool const issuerHigh = issuer > receiver;
 
-    // LCOV_EXCL_START
     if (senderIssuer)
-        return tecINTERNAL;
-    // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (receiverIssuer)
         return tesSUCCESS;

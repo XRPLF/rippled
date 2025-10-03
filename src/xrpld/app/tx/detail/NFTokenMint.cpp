@@ -306,7 +306,7 @@ NFTokenMint::doApply()
 
     if (nfTokenTemplate == nullptr)
         // Should never happen.
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const nftokenID = createNFTokenID(
         extractNFTokenFlagsFromTxFlags(ctx_.tx.getFlags()),

@@ -349,7 +349,7 @@ SetSignerList::replaceSignerList()
 
     auto const sle = view().peek(accountKeylet);
     if (!sle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Compute new reserve.  Verify the account has funds to meet the reserve.
     std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
@@ -405,7 +405,7 @@ SetSignerList::destroySignerList()
     // is enabled or there is a regular key.
     SLE::pointer ledgerEntry = view().peek(accountKeylet);
     if (!ledgerEntry)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if ((ledgerEntry->isFlag(lsfDisableMaster)) &&
         (!ledgerEntry->isFieldPresent(sfRegularKey)))

@@ -87,8 +87,10 @@ CashCheck::preclaim(PreclaimContext const& ctx)
     {
         // They wrote a check to themselves.  This should be caught when
         // the check is created, but better late than never.
+        // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "Malformed transaction: Cashing check to self.";
         return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
     {
         auto const sleSrc = ctx.view.read(keylet::account(srcId));

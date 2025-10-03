@@ -76,7 +76,7 @@ addSLE(
 {
     auto const sleAccount = ctx.view().peek(keylet::account(owner));
     if (!sleAccount)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check reserve availability for new object creation
     {
@@ -197,7 +197,7 @@ DIDDelete::deleteSLE(
 
     auto const sleOwner = view.peek(keylet::account(owner));
     if (!sleOwner)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     adjustOwnerCount(view, sleOwner, -1, j);
     view.update(sleOwner);

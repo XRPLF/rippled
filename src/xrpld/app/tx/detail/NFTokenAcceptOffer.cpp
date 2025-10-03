@@ -356,7 +356,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
     auto const& offer = bo ? bo : so;
     if (!offer)
         // Purely defensive, should be caught in preflight.
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& tokenID = offer->at(sfNFTokenID);
     auto const& amount = offer->at(sfAmount);
@@ -399,7 +399,7 @@ NFTokenAcceptOffer::pay(
 {
     // This should never happen, but it's easy and quick to check.
     if (amount < beast::zero)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const result = accountSend(view(), from, to, amount, j_);
 
@@ -428,7 +428,7 @@ NFTokenAcceptOffer::transferNFToken(
     auto tokenAndPage = nft::findTokenAndPage(view(), seller, nftokenID);
 
     if (!tokenAndPage)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (auto const ret = nft::removeToken(
             view(), seller, nftokenID, std::move(tokenAndPage->page));
@@ -437,7 +437,7 @@ NFTokenAcceptOffer::transferNFToken(
 
     auto const sleBuyer = view().read(keylet::account(buyer));
     if (!sleBuyer)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     std::uint32_t const buyerOwnerCountBefore =
         sleBuyer->getFieldU32(sfOwnerCount);
@@ -525,14 +525,14 @@ NFTokenAcceptOffer::doApply()
     {
         JLOG(j_.fatal()) << "Unable to delete buy offer '"
                          << to_string(bo->key()) << "': ignoring";
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     if (so && !nft::deleteTokenOffer(view(), so))
     {
         JLOG(j_.fatal()) << "Unable to delete sell offer '"
                          << to_string(so->key()) << "': ignoring";
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     // Bridging two different offers
@@ -603,7 +603,7 @@ NFTokenAcceptOffer::doApply()
     if (so)
         return acceptOffer(so);
 
-    return tecINTERNAL;
+    return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
 }  // namespace ripple
