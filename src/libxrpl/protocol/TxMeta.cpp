@@ -82,14 +82,6 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
 }
 
 TxMeta::TxMeta(
-    uint256 const& txid,
-    std::uint32_t ledger,
-    std::string const& data)
-    : TxMeta(txid, ledger, data, CtorHelper())
-{
-}
-
-TxMeta::TxMeta(
     uint256 const& transactionID,
     std::uint32_t ledger,
     std::optional<uint256> parentBatchId)

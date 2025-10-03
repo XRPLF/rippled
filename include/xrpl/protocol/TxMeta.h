@@ -51,7 +51,6 @@ public:
         std::uint32_t ledger,
         std::optional<uint256> parentBatchId = std::nullopt);
     TxMeta(uint256 const& txID, std::uint32_t ledger, Blob const&);
-    TxMeta(uint256 const& txID, std::uint32_t ledger, std::string const&);
     TxMeta(uint256 const& txID, std::uint32_t ledger, STObject const&);
 
     uint256 const&
