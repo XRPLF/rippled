@@ -436,10 +436,12 @@ public:
                     admin_.erase(admin_.iterator_to(entry));
                     break;
                 default:
+                    // LCOV_EXCL_START
                     UNREACHABLE(
                         "ripple::Resource::Logic::release : invalid entry "
                         "kind");
                     break;
+                    // LCOV_EXCL_STOP
             }
             inactive_.push_back(entry);
             entry.whenExpires = m_clock.now() + secondsUntilExpiration;

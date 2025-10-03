@@ -126,10 +126,12 @@ struct FlowDebugInfo
         auto i = timePoints.find(tag);
         if (i == timePoints.end())
         {
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::path::detail::FlowDebugInfo::duration : timepoint not "
                 "found");
             return std::chrono::duration<double>(0);
+            // LCOV_EXCL_STOP
         }
         auto const& t = i->second;
         return std::chrono::duration_cast<std::chrono::duration<double>>(

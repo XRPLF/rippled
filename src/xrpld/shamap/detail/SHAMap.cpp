@@ -545,8 +545,10 @@ SHAMap::onlyBelow(SHAMapTreeNode* node) const
 
         if (!nextNode)
         {
+            // LCOV_EXCL_START
             UNREACHABLE("ripple::SHAMap::onlyBelow : no next node");
             return no_item;
+            // LCOV_EXCL_STOP
         }
 
         node = nextNode;
@@ -922,8 +924,10 @@ SHAMap::updateGiveItem(
 
     if (!node || (node->peekItem()->key() != tag))
     {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::SHAMap::updateGiveItem : invalid node");
         return false;
+        // LCOV_EXCL_STOP
     }
 
     if (node->getType() != type)

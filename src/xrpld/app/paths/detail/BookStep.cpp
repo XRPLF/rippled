@@ -1113,11 +1113,13 @@ BookStep<TIn, TOut, TDerived>::revImp(
     {
         case -1: {
             // something went very wrong
+            // LCOV_EXCL_START
             JLOG(j_.error())
                 << "BookStep remainingOut < 0 " << to_string(remainingOut);
             UNREACHABLE("ripple::BookStep::revImp : remaining less than zero");
             cache_.emplace(beast::zero, beast::zero);
             return {beast::zero, beast::zero};
+            // LCOV_EXCL_STOP
         }
         case 0: {
             // due to normalization, remainingOut can be zero without
@@ -1283,12 +1285,14 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
     switch (remainingIn.signum())
     {
         case -1: {
+            // LCOV_EXCL_START
             // something went very wrong
             JLOG(j_.error())
                 << "BookStep remainingIn < 0 " << to_string(remainingIn);
             UNREACHABLE("ripple::BookStep::fwdImp : remaining less than zero");
             cache_.emplace(beast::zero, beast::zero);
             return {beast::zero, beast::zero};
+            // LCOV_EXCL_STOP
         }
         case 0: {
             // due to normalization, remainingIn can be zero without
@@ -1421,8 +1425,10 @@ bookStepEqual(Step const& step, ripple::Book const& book)
     bool const outXRP = isXRP(book.out.currency);
     if (inXRP && outXRP)
     {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::test::bookStepEqual : no XRP to XRP book step");
         return false;  // no such thing as xrp/xrp book step
+        // LCOV_EXCL_STOP
     }
     if (inXRP && !outXRP)
         return equalHelper<

@@ -223,10 +223,12 @@ claimHelper(
         auto i = signersList.find(a.keyAccount);
         if (i == signersList.end())
         {
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::claimHelper : invalid inputs");  // should have already
                                                           // been checked
             continue;
+            // LCOV_EXCL_STOP
         }
         weight += i->second;
         rewardAccounts.push_back(a.rewardAccount);

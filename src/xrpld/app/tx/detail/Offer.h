@@ -225,11 +225,13 @@ template <class TIn, class TOut>
 void
 TOffer<TIn, TOut>::setFieldAmounts()
 {
+    // LCOV_EXCL_START
 #ifdef _MSC_VER
     UNREACHABLE("ripple::TOffer::setFieldAmounts : must be specialized");
 #else
     static_assert(sizeof(TOut) == -1, "Must be specialized");
 #endif
+    // LCOV_EXCL_STOP
 }
 
 template <class TIn, class TOut>

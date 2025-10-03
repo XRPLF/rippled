@@ -235,12 +235,14 @@ rangeCheckedCast(C c)
          std::numeric_limits<C>::is_signed &&
          c < std::numeric_limits<T>::lowest()))
     {
-        /* This should never happen */
+        // This should never happen
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::rangeCheckedCast : domain error");
         JLOG(debugLog().error())
             << "rangeCheckedCast domain error:"
             << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
             << " max: " << std::numeric_limits<T>::max();
+        // LCOV_EXCL_STOP
     }
 
     return static_cast<T>(c);

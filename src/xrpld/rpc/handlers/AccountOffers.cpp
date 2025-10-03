@@ -145,8 +145,10 @@ doAccountOffers(RPC::JsonContext& context)
                 std::shared_ptr<SLE const> const& sle) {
                 if (!sle)
                 {
+                    // LCOV_EXCL_START
                     UNREACHABLE("ripple::doAccountOffers : null SLE");
                     return false;
+                    // LCOV_EXCL_STOP
                 }
 
                 if (++count == limit)

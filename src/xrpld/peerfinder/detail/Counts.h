@@ -295,10 +295,12 @@ private:
                 m_closingCount += n;
                 break;
 
+            // LCOV_EXCL_START
             default:
                 UNREACHABLE(
                     "ripple::PeerFinder::Counts::adjust : invalid input state");
                 break;
+                // LCOV_EXCL_STOP
         };
     }
 

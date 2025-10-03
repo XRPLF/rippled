@@ -36,7 +36,9 @@ BookDirs::BookDirs(ReadView const& view, Book const& book)
     {
         if (!cdirFirst(*view_, key_, sle_, entry_, index_))
         {
+            // LCOV_EXCL_START
             UNREACHABLE("ripple::BookDirs::BookDirs : directory is empty");
+            // LCOV_EXCL_STOP
         }
     }
 }
@@ -110,9 +112,11 @@ BookDirs::const_iterator::operator++()
         }
         else if (!cdirFirst(*view_, cur_key_, sle_, entry_, index_))
         {
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::BookDirs::const_iterator::operator++ : directory is "
                 "empty");
+            // LCOV_EXCL_STOP
         }
     }
 

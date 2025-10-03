@@ -51,8 +51,10 @@ Status::codeString() const
         return sStr.str();
     }
 
+    // LCOV_EXCL_START
     UNREACHABLE("ripple::RPC::codeString : invalid type");
     return "";
+    // LCOV_EXCL_STOP
 }
 
 void

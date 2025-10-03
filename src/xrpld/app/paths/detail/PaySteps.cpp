@@ -95,11 +95,13 @@ toStep(
 
     if (e1->isOffer() && e2->isAccount())
     {
+        // LCOV_EXCL_START
         // should already be taken care of
         JLOG(j.error())
             << "Found offer/account payment step. Aborting payment strand.";
         UNREACHABLE("ripple::toStep : offer/account payment payment strand");
         return {temBAD_PATH, std::unique_ptr<Step>{}};
+        // LCOV_EXCL_STOP
     }
 
     XRPL_ASSERT(
@@ -392,8 +394,10 @@ toStrand(
             next->getCurrency() != curIssue.currency)
         {
             // Should never happen
+            // LCOV_EXCL_START
             UNREACHABLE("ripple::toStrand : offer currency mismatch");
             return {temBAD_PATH, Strand{}};
+            // LCOV_EXCL_STOP
         }
 
         auto s = toStep(
@@ -457,9 +461,11 @@ toStrand(
 
     if (!checkStrand())
     {
+        // LCOV_EXCL_START
         JLOG(j.warn()) << "Flow check strand failed";
         UNREACHABLE("ripple::toStrand : invalid strand");
         return {temBAD_PATH, Strand{}};
+        // LCOV_EXCL_STOP
     }
 
     return {tesSUCCESS, std::move(result)};

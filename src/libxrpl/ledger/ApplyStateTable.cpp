@@ -261,7 +261,7 @@ ApplyStateTable::apply(
             {
                 UNREACHABLE(
                     "ripple::detail::ApplyStateTable::apply : unsupported "
-                    "operation type");
+                    "operation type");  // LCOV_EXCL_LINE
             }
         }
 

@@ -94,7 +94,8 @@ hash_append(Hasher& h, beast::IP::Address const& addr) noexcept
     else if (addr.is_v6())
         hash_append(h, addr.to_v6().to_bytes());
     else
-        UNREACHABLE("beast::hash_append : invalid address type");
+        UNREACHABLE(
+            "beast::hash_append : invalid address type");  // LCOV_EXCL_LINE
 }
 }  // namespace beast
 

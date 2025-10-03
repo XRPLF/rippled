@@ -193,8 +193,10 @@ doAccountLines(RPC::JsonContext& context)
                     std::shared_ptr<SLE const> const& sleCur) {
                     if (!sleCur)
                     {
+                        // LCOV_EXCL_START
                         UNREACHABLE("ripple::doAccountLines : null SLE");
                         return false;
+                        // LCOV_EXCL_STOP
                     }
 
                     if (++count == limit)
