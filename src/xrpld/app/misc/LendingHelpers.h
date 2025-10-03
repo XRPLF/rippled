@@ -31,6 +31,16 @@ struct PreflightContext;
 bool
 checkLendingProtocolDependencies(PreflightContext const& ctx);
 
+struct PaymentParts
+{
+    Number rawInterest;
+    Number rawPrincipal;
+    Number roundedInterest;
+    Number roundedPrincipal;
+    Number roundedPayment;
+    bool final = false;
+};
+
 namespace detail {
 // These functions should rarely be used directly. More often, the ultimate
 // result needs to be roundToAsset'd.
@@ -74,11 +84,104 @@ minusManagementFee(Number const& value, TenthBips32 managementFeeRate)
     return tenthBipsOfValue(value, tenthBipsPerUnity - managementFeeRate);
 }
 
+template <AssetType A>
+PaymentParts
+computePaymentParts(
+    A const& asset,
+    std::int32_t scale,
+    Number const& totalValueOutstanding,
+    Number const& principalOutstanding,
+    Number const& referencePrincipal,
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentRemaining)
+{
+    /*
+     * This function is derived from the XLS-66 spec, section 3.2.4.1.1 (Regular
+     * Payment)
+     */
+    XRPL_ASSERT_PARTS(
+        isRounded(asset, totalValueOutstanding, scale) &&
+            isRounded(asset, principalOutstanding, scale),
+        "ripple::detail::computePaymentParts",
+        "Outstanding values are rounded");
+    auto const roundedPeriodicPayment =
+        roundToAsset(asset, periodicPayment, scale, Number::upward);
+    if (paymentRemaining == 1 || totalValueOutstanding <= periodicPayment)
+    {
+        // If there's only one payment left, we need to pay off the principal.
+        //
+        // The totalValueOutstanding should never be less than the
+        // periodicPayment until the last scheduled payment, but if it ever is,
+        // make it the last payment.
+        Number rawInterest = totalValueOutstanding - referencePrincipal;
+        Number roundedInterest = totalValueOutstanding - principalOutstanding;
+
+        // This is only expected to be true on the last payment
+        XRPL_ASSERT_PARTS(
+            rawInterest + referencePrincipal ==
+                roundedInterest + principalOutstanding,
+            "ripple::detail::computePaymentParts",
+            "last payment is complete");
+
+        Number const interest = totalValueOutstanding - principalOutstanding;
+        return {
+            .rawInterest = rawInterest,
+            .rawPrincipal = referencePrincipal,
+            .roundedInterest = roundedInterest,
+            .roundedPrincipal = principalOutstanding,
+            .roundedPayment = roundedPeriodicPayment,
+            .final = true};
+    }
+    /*
+     * From the spec, once the periodicPayment is computed:
+     *
+     * The principal and interest portions can be derived as follows:
+     *  interest = principalOutstanding * periodicRate
+     *  principal = periodicPayment - interest
+     *
+     * Because those values deal with funds, they need to be rounded.
+     */
+    Number const rawInterest = referencePrincipal * periodicRate;
+    Number const rawPrincipal = periodicPayment - rawInterest;
+    XRPL_ASSERT_PARTS(
+        rawInterest >= 0,
+        "ripple::detail::computePaymentParts",
+        "valid raw interest");
+    XRPL_ASSERT_PARTS(
+        rawPrincipal > 0 && rawPrincipal <= referencePrincipal,
+        "ripple::detail::computePaymentParts",
+        "valid raw principal");
+
+    Number const roundedInterest =
+        roundToAsset(asset, rawInterest, scale, Number::upward);
+    Number const roundedPrincipal = roundedPeriodicPayment - roundedInterest;
+    XRPL_ASSERT_PARTS(
+        roundedInterest >= 0,
+        "ripple::detail::computePaymentParts",
+        "valid rounded interest");
+    XRPL_ASSERT_PARTS(
+        roundedPrincipal >= 0 && roundedPrincipal <= principalOutstanding,
+        "ripple::detail::computePaymentParts",
+        "valid rounded principal");
+    XRPL_ASSERT_PARTS(
+        isRounded(asset, roundedPrincipal, scale),
+        "ripple::detail::computePaymentParts",
+        "principal is rounded");
+
+    return {
+        .rawInterest = rawInterest,
+        .rawPrincipal = rawPrincipal,
+        .roundedInterest = roundedInterest,
+        .roundedPrincipal = roundedPrincipal,
+        .roundedPayment = roundedPeriodicPayment};
+}
+
 }  // namespace detail
 
 template <AssetType A>
 Number
-valueMinusManagementFee(
+valueMinusFee(
     A const& asset,
     Number const& value,
     TenthBips32 managementFeeRate,
@@ -88,6 +191,90 @@ valueMinusManagementFee(
         asset, detail::minusManagementFee(value, managementFeeRate), scale);
 }
 
+struct LoanProperties
+{
+    Number periodicPayment;
+    Number totalValueOutstanding;
+    Number interestOwedToVault;
+    std::int32_t loanScale;
+    Number firstPaymentPrincipal;
+};
+
+template <AssetType A>
+LoanProperties
+computeLoanProperties(
+    A const& asset,
+    Number const& principalOutstanding,
+    Number const& referencePrincipal,
+    TenthBips32 interestRate,
+    std::uint32_t paymentInterval,
+    std::uint32_t paymentsRemaining,
+    TenthBips32 managementFeeRate)
+{
+    auto const periodicRate =
+        detail::loanPeriodicRate(interestRate, paymentInterval);
+    auto const periodicPayment = detail::loanPeriodicPayment(
+        principalOutstanding, periodicRate, paymentsRemaining);
+    Number const totalValueOutstanding = [&]() {
+        NumberRoundModeGuard mg(Number::to_nearest);
+        // Use STAmount's internal rounding instead of roundToAsset, because
+        // we're going to use this result to determine the scale for all the
+        // other rounding.
+        return STAmount{
+            asset,
+            /*
+             * This formula is from the XLS-66 spec, section 3.2.4.2 (Total
+             * Loan Value Calculation), specifically "totalValueOutstanding
+             * = ..."
+             */
+            periodicPayment * paymentsRemaining};
+    }();
+    // Base the loan scale on the total value, since that's going to be the
+    // biggest number involved
+    auto const loanScale = totalValueOutstanding.exponent();
+
+    auto const firstPaymentPrincipal = [&]() {
+        // Compute the unrounded parts for the first payment. Ensure that the
+        // principal payment will actually change the principal.
+        auto const paymentParts = detail::computePaymentParts(
+            asset,
+            loanScale,
+            totalValueOutstanding,
+            principalOutstanding,
+            referencePrincipal,
+            periodicPayment,
+            periodicRate,
+            paymentsRemaining);
+
+        // We only care about the unrounded principal part. It needs to be large
+        // enough that it will affect the reference principal.
+        auto const remaining = referencePrincipal - paymentParts.rawPrincipal;
+        if (remaining == referencePrincipal)
+            // No change, so the first payment effectively pays no principal.
+            // Whether that's a problem is left to the caller.
+            return Number{0};
+        return paymentParts.rawPrincipal;
+    }();
+
+    auto const interestOwedToVault = valueMinusFee(
+        asset,
+        /*
+         * This formula is from the XLS-66 spec, section 3.2.4.2 (Total Loan
+         * Value Calculation), specifically "totalInterestOutstanding = ..."
+         */
+        totalValueOutstanding - principalOutstanding,
+        managementFeeRate,
+        loanScale);
+
+    return LoanProperties{
+        .periodicPayment = periodicPayment,
+        .totalValueOutstanding = totalValueOutstanding,
+        .interestOwedToVault = interestOwedToVault,
+        .loanScale = loanScale,
+        .firstPaymentPrincipal = firstPaymentPrincipal};
+}
+
+#if LOANCOMPLETE
 inline Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 {
@@ -211,6 +398,7 @@ loanTotalInterestOutstanding(
             paymentInterval,
             paymentsRemaining));
 }
+#endif
 
 template <AssetType A>
 Number
@@ -220,10 +408,11 @@ loanInterestOutstandingMinusFee(
     TenthBips32 managementFeeRate,
     std::int32_t scale)
 {
-    return valueMinusManagementFee(
+    return valueMinusFee(
         asset, totalInterestOutstanding, managementFeeRate, scale);
 }
 
+#if LOANCOMPLETE
 template <AssetType A>
 Number
 loanInterestOutstandingMinusFee(
@@ -247,6 +436,7 @@ loanInterestOutstandingMinusFee(
         managementFeeRate,
         scale);
 }
+#endif
 
 template <AssetType A>
 Number
@@ -276,98 +466,6 @@ isRounded(A const& asset, Number const& value, std::int32_t scale)
 {
     return roundToAsset(asset, value, scale, Number::downward) == value &&
         roundToAsset(asset, value, scale, Number::upward) == value;
-}
-
-struct PaymentParts
-{
-    Number interest;
-    Number principal;
-    Number fee;
-};
-
-template <AssetType A>
-PaymentParts
-computePaymentParts(
-    A const& asset,
-    std::int32_t scale,
-    Number const& totalValueOutstanding,
-    Number const& principalOutstanding,
-    Number const& periodicPaymentAmount,
-    Number const& serviceFee,
-    Number const& periodicRate,
-    std::uint32_t paymentRemaining)
-{
-    /*
-     * This function is derived from the XLS-66 spec, section 3.2.4.1.1 (Regular
-     * Payment)
-     */
-    XRPL_ASSERT_PARTS(
-        isRounded(asset, totalValueOutstanding, scale) &&
-            isRounded(asset, principalOutstanding, scale) &&
-            isRounded(asset, periodicPaymentAmount, scale),
-        "ripple::computePaymentParts",
-        "Asset values are rounded");
-    Number const roundedFee = roundToAsset(asset, serviceFee, scale);
-    if (paymentRemaining == 1 || periodicPaymentAmount > totalValueOutstanding)
-    {
-        // If there's only one payment left, we need to pay off the principal.
-        Number const interest = totalValueOutstanding - principalOutstanding;
-        return {
-            .interest = interest,
-            .principal = principalOutstanding,
-            .fee = roundedFee};
-    }
-    /*
-     * From the spec, once the periodicPayment is computed:
-     *
-     * The principal and interest portions can be derived as follows:
-     *  interest = principalOutstanding * periodicRate
-     *  principal = periodicPayment - interest
-     *
-     * Because those values deal with funds, they need to be rounded.
-     */
-    Number const interest = roundToAsset(
-        asset, principalOutstanding * periodicRate, scale, Number::upward);
-    XRPL_ASSERT(
-        interest >= 0,
-        "ripple::detail::computePeriodicPayment : valid interest");
-
-    // To compute the principal using the above formulas, use the rounded
-    // payment amount, ensuring that some principal is paid regardless of any
-    // other results.
-    auto const roundedPayment = [&]() {
-        auto roundedPayment =
-            roundToAsset(asset, periodicPaymentAmount, scale, Number::upward);
-        if (roundedPayment > interest)
-            return roundedPayment;
-        auto newPayment = roundedPayment;
-        if (asset.native() || !asset.template holds<Issue>())
-        {
-            // integral types, just add one
-            ++newPayment;
-        }
-        else
-        {
-            // Non-integral types: IOU. Add "dust" that will not be lost in
-            // rounding.
-            auto const epsilon = Number{1, scale - 14};
-            newPayment += epsilon;
-        }
-        roundedPayment = roundToAsset(asset, newPayment, scale);
-        XRPL_ASSERT_PARTS(
-            roundedPayment == newPayment,
-            "ripple::computePaymentParts",
-            "epsilon preserved in rounding");
-        return roundedPayment;
-    }();
-    Number const principal =
-        roundToAsset(asset, roundedPayment - interest, scale);
-    XRPL_ASSERT_PARTS(
-        principal > 0 && principal <= principalOutstanding,
-        "ripple::computePaymentParts",
-        "valid principal");
-
-    return {.interest = interest, .principal = principal, .fee = roundedFee};
 }
 
 // This structure is explained in the XLS-66 spec, section 3.2.4.4 (Failure
@@ -420,6 +518,8 @@ handleLatePayment(
     STAmount const& amount,
     beast::Journal j)
 {
+    return Unexpected(temDISABLED);
+#if LOANCOMPLETE
     if (!hasExpired(view, nextDueDateProxy))
         return Unexpected(tesSUCCESS);
 
@@ -466,6 +566,7 @@ handleLatePayment(
         .interestPaid = late.interest,
         .valueChange = latePaymentInterest,
         .feePaid = late.fee};
+#endif
 }
 
 /* Handle possible full payments.

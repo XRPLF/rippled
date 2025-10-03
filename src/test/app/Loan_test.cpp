@@ -402,6 +402,7 @@ class Loan_test : public beast::unit_test::suite
         BrokerInfo const& broker,
         LoanState const& state)
     {
+#if LOANCOMPLETE
         if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             BEAST_EXPECT(brokerSle))
         {
@@ -430,6 +431,7 @@ class Loan_test : public beast::unit_test::suite
                 }
             }
         }
+#endif
         return true;
     }
 

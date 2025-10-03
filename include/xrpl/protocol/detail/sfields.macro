@@ -241,6 +241,8 @@ TYPED_SFIELD(sfPrincipalOutstanding,     NUMBER,     13)
 TYPED_SFIELD(sfPrincipalRequested,       NUMBER,     14)
 TYPED_SFIELD(sfTotalValueOutstanding,    NUMBER,     15)
 TYPED_SFIELD(sfPeriodicPayment,          NUMBER,     16)
+TYPED_SFIELD(sfReferencePrincipal,       NUMBER,     17)
+TYPED_SFIELD(sfInterestOwed,             NUMBER,     18)
 
 // int32
 TYPED_SFIELD(sfLoanScale,                INT32,      1)

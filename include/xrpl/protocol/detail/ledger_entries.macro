@@ -561,11 +561,12 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfPaymentInterval,      soeREQUIRED},
     {sfGracePeriod,          soeREQUIRED},
     {sfPeriodicPayment,      soeREQUIRED},
-    {sfPreviousPaymentDate,  soeREQUIRED},
+    {sfPreviousPaymentDate,  soeDEFAULT},
     {sfNextPaymentDueDate,   soeREQUIRED},
-    {sfPaymentRemaining,     soeREQUIRED},
-    {sfPrincipalOutstanding, soeREQUIRED},
+    {sfPaymentRemaining,     soeDEFAULT},
+    {sfPrincipalOutstanding, soeDEFAULT},
     {sfTotalValueOutstanding, soeDEFAULT},
+    {sfInterestOwed,         soeDEFAULT},
     // Based on the original principal borrowed, used for
     // rounding calculated values so they are all on a
     // consistent scale - that is, they all have the same

@@ -285,10 +285,7 @@ LoanSet::doApply()
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
-    auto const principalRequested = [&](Number const& requested) {
-        return roundToAsset(vaultAsset, requested, requested.exponent());
-    }(tx[sfPrincipalRequested]);
-    auto const loanScale = principalRequested.exponent();
+    auto const principalRequested = tx[sfPrincipalRequested];
 
     if (auto const assetsAvailable = vaultSle->at(sfAssetsAvailable);
         assetsAvailable < principalRequested)
@@ -300,53 +297,68 @@ LoanSet::doApply()
 
     TenthBips32 const interestRate{tx[~sfInterestRate].value_or(0)};
 
-    auto const originationFee = roundToAsset(
-        vaultAsset, tx[~sfLoanOriginationFee].value_or(Number{}), loanScale);
-    auto const loanAssetsToBorrower = principalRequested - originationFee;
-
     auto const paymentInterval =
         tx[~sfPaymentInterval].value_or(defaultPaymentInterval);
     auto const paymentTotal = tx[~sfPaymentTotal].value_or(defaultPaymentTotal);
 
-    auto const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
-    auto const periodicPayment = loanPeriodicPayment(
-        vaultAsset, principalRequested, periodicRate, paymentTotal, loanScale);
+    auto const properties = computeLoanProperties(
+        vaultAsset,
+        principalRequested,
+        principalRequested,
+        interestRate,
+        paymentInterval,
+        paymentTotal,
+        TenthBips32{brokerSle->at(sfManagementFeeRate)});
 
-    auto const totalValueOutstanding = loanTotalValueOutstanding(
-        vaultAsset, loanScale, periodicPayment, paymentTotal);
-
+    if (properties.firstPaymentPrincipal <= 0)
     {
-        // Check that some principal is paid each period. Since the first
-        // payment pays the least principal, if it's good, they'll all be good.
-        auto const paymentParts = computePaymentParts(
-            vaultAsset,
-            loanScale,
-            totalValueOutstanding,
-            principalRequested,
-            periodicPayment,
-            tx[~sfLoanServiceFee].value_or(Number{}),
-            periodicRate,
-            paymentTotal);
-
-        if (paymentParts.principal <= 0)
-        {
-            JLOG(j_.warn()) << "Loan is unable to pay principal.";
-            return tecLIMIT_EXCEEDED;
-        }
+        // Check that some reference principal is paid each period. Since the
+        // first payment pays the least principal, if it's good, they'll all be
+        // good. Note that the outstanding principal is rounded, and may not
+        // change right away.
+        JLOG(j_.warn()) << "Loan is unable to pay principal.";
+        return tecLIMIT_EXCEEDED;
+    }
+    // Check that the other computed values are valid
+    if (properties.interestOwedToVault < 0 ||
+        properties.totalValueOutstanding <= 0 ||
+        properties.periodicPayment <= 0)
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.warn())
+            << "Computed loan properties are invalid. Does not compute.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
-    TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
+    // Check that relevant values won't lose precision
+    {
+        static std::map<std::string, OptionaledField<STNumber>> const
+            valueFields{
+                {"Principal Requested", ~sfPrincipalRequested},
+                {"Origination fee", ~sfLoanOriginationFee},
+                {"Service fee", ~sfLoanServiceFee},
+                {"Late Payment fee", ~sfLatePaymentFee},
+                {"Close Payment fee", ~sfClosePaymentFee}
+                // Overpayment fee is really a rate. Don't include it.
+            };
+        for (auto const& [name, field] : valueFields)
+        {
+            if (auto const value = tx[field];
+                value && !isRounded(vaultAsset, *value, properties.loanScale))
+            {
+                JLOG(j_.warn()) << name << " has too much precision.";
+                return tecPRECISION_LOSS;
+            }
+        }
+    }
+    auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
 
-    auto const totalInterestOwedToVault = [&]() {
-        auto const totalInterestOutstanding = loanTotalInterestOutstanding(
-            principalRequested, totalValueOutstanding);
+    auto const loanAssetsToBorrower = principalRequested - originationFee;
 
-        return loanInterestOutstandingMinusFee(
-            vaultAsset, totalInterestOutstanding, managementFeeRate, loanScale);
-    }();
-
-    auto const newDebtTotal = brokerSle->at(sfDebtTotal) + principalRequested +
-        totalInterestOwedToVault;
+    auto const newDebtDelta =
+        principalRequested + properties.interestOwedToVault;
+    auto const newDebtTotal = brokerSle->at(sfDebtTotal) + newDebtDelta;
     if (auto const debtMaximum = brokerSle->at(sfDebtMaximum);
         debtMaximum != 0 && debtMaximum < newDebtTotal)
     {
@@ -458,7 +470,10 @@ LoanSet::doApply()
     setLoanField(~sfGracePeriod, defaultGracePeriod);
     // Set dynamic / computed fields to their initial values
     loan->at(sfPrincipalOutstanding) = principalRequested;
-    loan->at(sfTotalValueOutstanding) = totalValueOutstanding;
+    loan->at(sfReferencePrincipal) = principalRequested;
+    loan->at(sfPeriodicPayment) = properties.periodicPayment;
+    loan->at(sfTotalValueOutstanding) = properties.totalValueOutstanding;
+    loan->at(sfInterestOwed) = properties.interestOwedToVault;
     loan->at(sfPreviousPaymentDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
@@ -466,11 +481,11 @@ LoanSet::doApply()
 
     // Update the balances in the vault
     vaultSle->at(sfAssetsAvailable) -= principalRequested;
-    vaultSle->at(sfAssetsTotal) += totalInterestOwedToVault;
+    vaultSle->at(sfAssetsTotal) += properties.interestOwedToVault;
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    brokerSle->at(sfDebtTotal) += principalRequested + totalInterestOwedToVault;
+    brokerSle->at(sfDebtTotal) += newDebtDelta;
     // The broker's owner count is solely for the number of outstanding loans,
     // and is distinct from the broker's pseudo-account's owner count
     adjustOwnerCount(view, brokerSle, 1, j_);
