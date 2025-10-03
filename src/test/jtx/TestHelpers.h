@@ -502,6 +502,7 @@ expectLedgerEntryRoot(
 
 /* Payment Channel */
 /******************************************************************************/
+namespace paychan {
 
 Json::Value
 create(
@@ -560,6 +561,8 @@ channelBalance(ReadView const& view, uint256 const& chan);
 
 bool
 channelExists(ReadView const& view, uint256 const& chan);
+
+}  // namespace paychan
 
 /* Crossing Limits */
 /******************************************************************************/

@@ -31,6 +31,8 @@
 
 namespace ripple {
 namespace test {
+using namespace jtx::paychan;
+
 struct PayChan_test : public beast::unit_test::suite
 {
     FeatureBitset const disallowIncoming{featureDisallowIncoming};
