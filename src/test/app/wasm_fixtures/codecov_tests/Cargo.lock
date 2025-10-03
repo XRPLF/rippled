@@ -6,10 +6,10 @@ version = 4
 name = "codecov_tests"
 version = "0.0.1"
 dependencies = [
- "xrpl-std",
+ "xrpl-wasm-std",
 ]
 
 [[package]]
-name = "xrpl-std"
+name = "xrpl-wasm-std"
 version = "0.5.1-devnet5"
-source = "git+https://github.com/ripple/craft.git?branch=lastdevnet#6b20669b20561b9d0f09678f44ccbddb84ef9f47"
+source = "git+https://github.com/ripple/craft.git?branch=main#638276c92d790f5b738faa9f42855f02a2c7c7dc"

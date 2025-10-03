@@ -99,12 +99,6 @@ public:
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() override;
 
-    Expected<Hash, HostFunctionError>
-    getLedgerAccountHash() override;
-
-    Expected<Hash, HostFunctionError>
-    getLedgerTransactionHash() override;
-
     Expected<int32_t, HostFunctionError>
     getBaseFee() override;
 

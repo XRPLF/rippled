@@ -68,20 +68,6 @@ pub extern "C" fn finish() -> i32 {
             "get_parent_ledger_hash",
         );
     });
-    with_buffer::<32, _, _>(|ptr, len| {
-        check_result(
-            unsafe { host::get_ledger_account_hash(ptr, len) },
-            32,
-            "get_ledger_account_hash",
-        );
-    });
-    with_buffer::<32, _, _>(|ptr, len| {
-        check_result(
-            unsafe { host::get_ledger_tx_hash(ptr, len) },
-            32,
-            "get_ledger_tx_hash",
-        );
-    });
     check_result(unsafe { host::get_base_fee() }, 10, "get_base_fee");
     let amendment_name: &[u8] = b"test_amendment";
     let amendment_id: [u8; 32] = [1; 32];

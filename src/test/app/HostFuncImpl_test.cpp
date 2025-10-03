@@ -170,44 +170,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
-    testGetLedgerAccountHash()
-    {
-        testcase("getLedgerAccountHash");
-        using namespace test::jtx;
-
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        auto const result = hfs.getLedgerAccountHash();
-        if (BEAST_EXPECT(result.has_value()))
-            BEAST_EXPECT(result.value() == env.current()->info().accountHash);
-    }
-
-    void
-    testGetLedgerTransactionHash()
-    {
-        testcase("getLedgerTransactionHash");
-        using namespace test::jtx;
-
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        auto const result = hfs.getLedgerTransactionHash();
-        if (BEAST_EXPECT(result.has_value()))
-            BEAST_EXPECT(result.value() == env.current()->info().txHash);
-    }
-
-    void
     testGetBaseFee()
     {
         testcase("getBaseFee");
@@ -2899,7 +2861,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     testFloatNonIOU()
     {
-        testcase("Float Xrp+Mpt");
+        testcase("float Xrp+Mpt");
         using namespace test::jtx;
 
         Env env{*this};
@@ -2961,6 +2923,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     testFloats()
     {
+        testFloatTrace();
         testFloatFromInt();
         testFloatFromUint();
         testFloatSet();
@@ -2973,7 +2936,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testFloatPower();
         testFloatLog();
         testFloatNonIOU();
-        testFloatTrace();
     }
 
     void
@@ -2982,8 +2944,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testGetLedgerSqn();
         testGetParentLedgerTime();
         testGetParentLedgerHash();
-        testGetLedgerAccountHash();
-        testGetLedgerTransactionHash();
         testGetBaseFee();
         testIsAmendmentEnabled();
         testCacheLedgerObj();
