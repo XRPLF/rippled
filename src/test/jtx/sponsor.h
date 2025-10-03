@@ -101,35 +101,6 @@ public:
     operator()(jtx::Env&, jtx::JTx& jtx) const;
 };
 
-struct sig
-{
-private:
-    Reg signer_;
-
-public:
-    sig(Reg signer) : signer_(std::move(signer))
-    {
-    }
-
-    void
-    operator()(jtx::Env&, jtx::JTx& jtx) const;
-};
-
-struct msig
-{
-private:
-    std::vector<Reg> signers;
-
-public:
-    msig(std::vector<Reg> signers_) : signers(std::move(signers_))
-    {
-        sortSigners(signers);
-    }
-
-    void
-    operator()(jtx::Env&, jtx::JTx& jtx) const;
-};
-
 Json::Value
 ledgerEntry(
     jtx::Env& env,

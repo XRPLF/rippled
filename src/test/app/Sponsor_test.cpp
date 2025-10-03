@@ -73,7 +73,7 @@ public:
         env(noop(alice),
             fee(XRP(1)),
             sponsor::as(sponsor),
-            sponsor::sig(sponsor),
+            sig(sfSponsorSignature, sponsor),
             ter(temDISABLED));
 
         env(sponsor::transfer(alice), ter(temDISABLED));
@@ -208,7 +208,7 @@ public:
         // Signature doesn't exist
         auto tx = noop(alice);
         tx[sfSponsor.jsonName][sfAccount.jsonName] = sponsor.human();
-        tx[sfSponsor.jsonName][sfSigningPubKey.jsonName] =
+        tx[sfSponsorSignature.jsonName][sfSigningPubKey.jsonName] =
             strHex(sponsor.pk().slice());
 
         env(tx,
@@ -217,7 +217,7 @@ public:
             ter(telENV_RPC_FAILED));
 
         // Invalid signature
-        tx[sfSponsor.jsonName][sfTxnSignature.jsonName] = "DEADBEEF";
+        tx[sfSponsorSignature.jsonName][sfTxnSignature.jsonName] = "DEADBEEF";
         env(tx,
             fee(XRP(1)),
             sponsor::as(sponsor, tfSponsorReserve),
@@ -227,14 +227,14 @@ public:
         env(noop(alice),
             fee(XRP(1)),
             sponsor::as(invalid, tfSponsorReserve),
-            sponsor::sig(invalid),
+            sig(sfSponsorSignature, invalid),
             ter(terNO_ACCOUNT));
 
         // Success
         env(noop(alice),
             fee(XRP(1)),
             sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor),
+            sig(sfSponsorSignature, sponsor),
             ter(tesSUCCESS));
     }
 
@@ -259,8 +259,8 @@ public:
 
         // Invalid signature
         auto tx = noop(alice);
-        auto& signers1 =
-            tx[sfSponsor.jsonName][sfSigners.jsonName][0U][sfSigner.jsonName];
+        auto& signers1 = tx[sfSponsorSignature.jsonName][sfSigners.jsonName][0U]
+                           [sfSigner.jsonName];
         signers1[sfAccount.jsonName] = signer1.human();
         signers1[sfSigningPubKey.jsonName] = strHex(signer1.pk().slice());
         signers1[sfTxnSignature.jsonName] = "DEADBEEF";
@@ -273,13 +273,13 @@ public:
         env(noop(alice),
             fee(XRP(1)),
             sponsor::as(invalid, tfSponsorReserve),
-            sponsor::msig({signer1}),
+            msig(sfSponsorSignature, {signer1}),
             ter(tefNOT_MULTI_SIGNING));
 
         env(noop(alice),
             fee(XRP(1)),
             sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::msig({signer1}),
+            msig(sfSponsorSignature, {signer1}),
             ter(tesSUCCESS));
 
         env(signers(sponsor, 2, {{signer1, 1}, {signer2, 1}}));
@@ -288,7 +288,7 @@ public:
         env(noop(alice),
             fee(XRP(1)),
             sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::msig({signer1, signer2}),
+            msig(sfSponsorSignature, {signer1, signer2}),
             ter(tesSUCCESS));
     }
 
@@ -353,7 +353,7 @@ public:
 
             env(sponsor::transfer(alice),
                 sponsor::as(sponsor1, tfSponsorReserve),
-                sponsor::sig(sponsor1),
+                sig(sfSponsorSignature, sponsor1),
                 ter(tecINSUFFICIENT_RESERVE));
 
             env(pay(alice, sponsor1, drops(1)));
@@ -361,7 +361,7 @@ public:
 
             env(sponsor::transfer(alice),
                 sponsor::as(sponsor1, tfSponsorReserve),
-                sponsor::sig(sponsor1));
+                sig(sfSponsorSignature, sponsor1));
             env.close();
 
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
@@ -377,7 +377,7 @@ public:
             // transfer sponsor
             env(sponsor::transfer(alice),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2),
+                sig(sfSponsorSignature, sponsor2),
                 ter(tecINSUFFICIENT_RESERVE));
 
             env(pay(alice, sponsor2, drops(1)));
@@ -385,7 +385,7 @@ public:
 
             env(sponsor::transfer(alice),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
@@ -456,7 +456,7 @@ public:
 
             env(sponsor::transfer(alice, checkId),
                 sponsor::as(sponsor1, tfSponsorReserve),
-                sponsor::sig(sponsor1),
+                sig(sfSponsorSignature, sponsor1),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
@@ -466,14 +466,14 @@ public:
             // Invalid Owner
             env(sponsor::transfer(bob, checkId),
                 sponsor::as(sponsor1, tfSponsorReserve),
-                sponsor::sig(sponsor1),
+                sig(sfSponsorSignature, sponsor1),
                 ter(tecNO_PERMISSION));
             env.close();
 
             // Valid Owner
             env(sponsor::transfer(alice, checkId),
                 sponsor::as(sponsor1, tfSponsorReserve),
-                sponsor::sig(sponsor1));
+                sig(sfSponsorSignature, sponsor1));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -490,7 +490,7 @@ public:
             // transfer sponsor
             env(sponsor::transfer(alice, checkId),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2),
+                sig(sfSponsorSignature, sponsor2),
                 ter(tecINSUFFICIENT_RESERVE));
 
             env(pay(alice, sponsor2, drops(1)));
@@ -498,7 +498,7 @@ public:
 
             env(sponsor::transfer(alice, checkId),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
@@ -575,7 +575,7 @@ public:
                 env(pay(alice, bob, XRP(100)),
                     fee(XRP(2000)),
                     sponsor::as(sponsor, tfSponsorFee),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(terNO_ACCOUNT));
                 env.close();
                 BEAST_EXPECT(env.balance(alice) == aliceBalance);
@@ -597,7 +597,7 @@ public:
                 env(pay(alice, bob, sendAmt),
                     fee(feeAmt),
                     sponsor::as(sponsor, tfSponsorFee),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
                 BEAST_EXPECT(env.balance(alice) == aliceBalance - sendAmt);
                 BEAST_EXPECT(env.balance(bob) == bobBalance + sendAmt);
@@ -613,7 +613,7 @@ public:
                 env(pay(alice, bob, XRP(100)),
                     fee(XRP(2000)),
                     sponsor::as(sponsor, tfSponsorFee),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(terINSUF_FEE_B));
                 env.close();
                 BEAST_EXPECT(env.balance(alice) == aliceBalance);
@@ -632,7 +632,7 @@ public:
                 env(pay(alice, bob, XRP(20000)),
                     fee(feeAmt),
                     sponsor::as(sponsor, tfSponsorFee),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tecUNFUNDED_PAYMENT));
                 env.close();
 
@@ -829,7 +829,7 @@ public:
                     bob,
                     STAmount(env.current()->fees().accountReserve(0))),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             auto const bobSle = env.le(keylet::account(bob));
@@ -971,7 +971,7 @@ public:
 
                 env(ammCreate(env, alice, USD(100), EUR(100)),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tecINSUF_RESERVE_LINE));
                 env.close();
                 adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
@@ -979,7 +979,7 @@ public:
 
             env(ammCreate(env, alice, USD(100), EUR(100)),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             auto const amm =
@@ -1027,7 +1027,7 @@ public:
 
                 env(ammDeposit(env, bob, USD(100), EUR(100)),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tecINSUF_RESERVE_LINE));
                 env.close();
                 adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
@@ -1035,7 +1035,7 @@ public:
 
             env(ammDeposit(env, bob, USD(100), EUR(100)),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(
@@ -1062,7 +1062,7 @@ public:
 
                 env(ammCreate(env, alice, USD(1000), EUR(1000)),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 env(trust(alice, USD(0)));
@@ -1095,7 +1095,7 @@ public:
                         env, sponsor, reserve(env, 2) - drops(1));
                     env(jv,
                         sponsor::as(sponsor, tfSponsorReserve),
-                        sponsor::sig(sponsor),
+                        sig(sfSponsorSignature, sponsor),
                         ter(tecINSUFFICIENT_RESERVE));
                     env.close();
                     adjustAccountXRPBalance(env, sponsor, reserve(env, 3));
@@ -1103,7 +1103,7 @@ public:
 
                 env(jv,
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == 2);  // USD, LPToken
@@ -1128,7 +1128,7 @@ public:
 
                 env(ammCreate(env, alice, USD(1000), EUR(1000)),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 env(trust(alice, USD(0)));
@@ -1159,7 +1159,7 @@ public:
                         env, sponsor, reserve(env, 3) - drops(1));
                     env(jv,
                         sponsor::as(sponsor, tfSponsorReserve),
-                        sponsor::sig(sponsor),
+                        sig(sfSponsorSignature, sponsor),
                         ter(tecINSUFFICIENT_RESERVE));
                     env.close();
                     adjustAccountXRPBalance(env, sponsor, reserve(env, 4));
@@ -1167,7 +1167,7 @@ public:
 
                 env(jv,
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == 2);  // USD, EUR
@@ -1199,7 +1199,7 @@ public:
 
             env(ammCreate(env, alice, USD(100), EUR2(100)),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             env(trust(alice, USD(0)));
@@ -1213,7 +1213,7 @@ public:
                 // doesn't sponsor holder's new RippleState
                 env(amm::ammClawback(gw, alice, USD, EUR2, USD(10)),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == 2);  // LPToken, EUR2
@@ -1223,7 +1223,7 @@ public:
             {
                 env(amm::ammClawback(gw, alice, USD, EUR2, std::nullopt),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == 1);  // EUR2
@@ -1255,7 +1255,7 @@ public:
             auto const seq = env.seq(alice);
             env(check::create(alice, bob, XRP(1)),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);  // Check
@@ -1270,7 +1270,7 @@ public:
             // transfer sponsor
             env(sponsor::transfer(alice, keylet.key),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);  // Check
@@ -1302,7 +1302,7 @@ public:
             auto const seq2 = env.seq(alice);
             env(check::create(alice, bob, XRP(1)),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);  // Check
@@ -1315,7 +1315,7 @@ public:
             auto const checkId2 = keylet::check(alice, seq2).key;
             env(check::cash(bob, checkId2, XRP(1)),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -1340,7 +1340,7 @@ public:
             auto const seq2 = env.seq(alice);
             env(check::create(alice, bob, USD(1)),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);  // RippleState + Check
@@ -1356,7 +1356,7 @@ public:
             // CheckCash
             env(check::cash(bob, keylet.key, USD(1)),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);  // RippleState
@@ -1380,7 +1380,7 @@ public:
 
                 env(check::create(alice, bob, XRP(1)),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tecINSUFFICIENT_RESERVE));
                 env.close();
 
@@ -1388,7 +1388,7 @@ public:
 
                 env(check::create(alice, bob, XRP(1)),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tesSUCCESS));
                 env.close();
             }
@@ -1414,7 +1414,7 @@ public:
                 auto const keylet = keylet::check(alice, seq);
                 env(check::cash(bob, keylet.key, USD(1)),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tecNO_LINE_INSUF_RESERVE));
                 env.close();
             }
@@ -1445,7 +1445,7 @@ public:
             auto const seq = env.seq(alice);
             env(offer(alice, USD(1), XRP(1)),
                 sponsor::as(sponsor1, tfSponsorReserve),
-                sponsor::sig(sponsor1));
+                sig(sfSponsorSignature, sponsor1));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -1457,7 +1457,7 @@ public:
             auto const keylet = keylet::offer(alice, seq);
             env(sponsor::transfer(alice, keylet.key),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -1490,7 +1490,7 @@ public:
             auto const seq = env.seq(alice);
             env(offer(alice, USD(1), XRP(1)),
                 sponsor::as(sponsor1, tfSponsorReserve),
-                sponsor::sig(sponsor1));
+                sig(sfSponsorSignature, sponsor1));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -1503,7 +1503,7 @@ public:
             env(offer(alice, USD(1), XRP(1)),
                 json(jss::OfferSequence, seq),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -1543,7 +1543,7 @@ public:
             // OfferCreate
             env(offer(alice, EUR(1), USD(1)),
                 sponsor::as(sponsor1, tfSponsorReserve),
-                sponsor::sig(sponsor1));
+                sig(sfSponsorSignature, sponsor1));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -1559,7 +1559,7 @@ public:
             // OfferCreate (cross offer)
             env(offer(bob, USD(1), EUR(1)),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -1590,7 +1590,7 @@ public:
             // fullly not crossed
             env(offer(alice, USD(1), XRP(1)),
                 sponsor::as(sponsor1, tfSponsorReserve),
-                sponsor::sig(sponsor1),
+                sig(sfSponsorSignature, sponsor1),
                 ter(tecINSUF_RESERVE_OFFER));
 
             // partially crossed
@@ -1599,7 +1599,7 @@ public:
 
             env(offer(alice, USD(5), XRP(5)),
                 sponsor::as(sponsor1, tfSponsorReserve),
-                sponsor::sig(sponsor1),
+                sig(sfSponsorSignature, sponsor1),
                 ter(tecINSUF_RESERVE_OFFER));
         }
     }
@@ -1622,7 +1622,7 @@ public:
             std::uint32_t const ticketSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 250),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 250);
@@ -1637,7 +1637,7 @@ public:
             // transfer sponsor
             env(sponsor::transfer(alice, keylet.key),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 250);
@@ -1668,14 +1668,14 @@ public:
             adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
             env(ticket::create(alice, 1),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
             adjustAccountXRPBalance(env, sponsor, reserve(env, 249));
             env(ticket::create(alice, 250),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
@@ -1703,7 +1703,7 @@ public:
             env(credentials::create(subject, issuer, credType),
                 credentials::uri("uri"),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, issuer) == 1);
@@ -1717,7 +1717,7 @@ public:
                 keylet::credential(subject, issuer, credTypeSlice);
             env(sponsor::transfer(issuer, keylet.key),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, issuer) == 1);
@@ -1730,7 +1730,7 @@ public:
             // CredentialsAccept
             env(credentials::accept(subject, issuer, credType),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
@@ -1760,7 +1760,7 @@ public:
             // Accept Sponsored Credentials without sponsoring
             env(credentials::create(subject, issuer, credType),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, issuer) == 1);
@@ -1796,7 +1796,7 @@ public:
                     env, sponsor, reserve(env, 1) - drops(1));
                 env(credentials::create(subject, issuer, credType),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tecINSUFFICIENT_RESERVE));
                 env.close();
             }
@@ -1809,7 +1809,7 @@ public:
                     env, sponsor, reserve(env, 1) - drops(1));
                 env(credentials::accept(subject, issuer, credType),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tecINSUFFICIENT_RESERVE));
                 env.close();
             }
@@ -1834,7 +1834,7 @@ public:
             // DelegateSet
             env(delegate::set(alice, bob, {"Payment"}),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -1845,7 +1845,7 @@ public:
             auto const keylet = keylet::delegate(alice, bob);
             env(sponsor::transfer(alice, keylet.key),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -1871,7 +1871,7 @@ public:
             adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
             env(delegate::set(alice, bob, {"Payment"}),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
@@ -1894,7 +1894,7 @@ public:
             // DepositPreauthSet
             env(deposit::auth(alice, sponsor),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -1905,7 +1905,7 @@ public:
             auto const keylet = keylet::depositPreauth(alice, sponsor);
             env(sponsor::transfer(alice, keylet.key),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -1932,7 +1932,7 @@ public:
             adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
             env(deposit::auth(alice, sponsor),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
@@ -1956,7 +1956,7 @@ public:
             env(did::set(alice),
                 did::uri("uri"),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -1967,7 +1967,7 @@ public:
             auto const keylet = keylet::did(alice);
             env(sponsor::transfer(alice, keylet.key),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -1995,7 +1995,7 @@ public:
             env(did::set(alice),
                 did::uri("uri"),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
@@ -2028,7 +2028,7 @@ public:
                 escrow::condition(escrow::cb1),
                 escrow::cancel_time(env.now() + 100s),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2042,7 +2042,7 @@ public:
             // transfer sponsor
             env(sponsor::transfer(alice, keylet::escrow(alice, seq).key),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2091,7 +2091,7 @@ public:
                 escrow::condition(escrow::cb1),
                 escrow::cancel_time(env.now() + 10s),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -2107,7 +2107,7 @@ public:
                 escrow::condition(escrow::cb1),
                 escrow::fulfillment(escrow::fb1),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2),
+                sig(sfSponsorSignature, sponsor2),
                 fee(baseFee * 150));
             env.close();
 
@@ -2136,7 +2136,7 @@ public:
                 escrow::condition(escrow::cb1),
                 escrow::cancel_time(env.now() + 10s),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
@@ -2152,7 +2152,7 @@ public:
                 escrow::condition(escrow::cb1),
                 escrow::cancel_time(env.now() + 10s),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
             auto const seq = env.seq(alice);
@@ -2165,7 +2165,7 @@ public:
                 escrow::condition(escrow::cb1),
                 escrow::fulfillment(escrow::fb1),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 fee(baseFee * 150),
                 ter(tecNO_LINE_INSUF_RESERVE));
             env.close();
@@ -2194,7 +2194,7 @@ public:
             auto const mptid = makeMptID(env.seq(alice), alice.id());
             env(jv,
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2205,7 +2205,7 @@ public:
             auto const mptIssuanceKeylet = keylet::mptIssuance(mptid);
             env(sponsor::transfer(alice, mptIssuanceKeylet.key),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2220,7 +2220,7 @@ public:
             jv[sfMPTokenIssuanceID] = to_string(mptid);
             env(jv,
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2234,7 +2234,7 @@ public:
             auto const mptTokenKeylet = keylet::mptoken(mptid, bob);
             env(sponsor::transfer(bob, mptTokenKeylet.key),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2287,7 +2287,7 @@ public:
                 // auto const mptid = makeMptID(env.seq(alice), alice.id());
                 env(jv,
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tecINSUFFICIENT_RESERVE));
                 env.close();
             }
@@ -2316,7 +2316,7 @@ public:
                 // error (non-free mptoken)
                 env(jv,
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tecINSUFFICIENT_RESERVE));
                 env.close();
 
@@ -2329,7 +2329,7 @@ public:
                 // pass (free mptoken)
                 env(jv,
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tesSUCCESS));
                 env.close();
             }
@@ -2356,7 +2356,7 @@ public:
             uint256 const nftId{token::getNextID(env, alice, 0)};
             env(token::mint(alice),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2375,7 +2375,7 @@ public:
             env(token::mint(alice),
                 token::amount(XRP(10000)),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -2397,7 +2397,7 @@ public:
             {
                 env(token::mint(alice),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
             }
             env.close();
 
@@ -2429,7 +2429,7 @@ public:
             adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
             env(token::mint(alice),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
@@ -2437,7 +2437,7 @@ public:
             env(token::mint(alice),
                 token::amount(XRP(10000)),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
@@ -2477,7 +2477,7 @@ public:
                 token::destination(bob),
                 txflags(tfSellNFToken),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -2490,7 +2490,7 @@ public:
                 token::destination(bob),
                 txflags(tfSellNFToken),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 3);
@@ -2500,7 +2500,7 @@ public:
             // transfer sponsor
             env(sponsor::transfer(alice, offerIndex1),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 3);
@@ -2539,7 +2539,7 @@ public:
                 token::destination(bob),
                 txflags(tfSellNFToken),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -2577,7 +2577,7 @@ public:
                 token::owner(alice),
                 token::destination(alice),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, bob) == 1);
@@ -2615,7 +2615,7 @@ public:
                 token::owner(alice),
                 token::destination(broker),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, bob) == 1);
@@ -2629,7 +2629,7 @@ public:
                 txflags(tfSellNFToken),
                 token::destination(broker),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -2665,7 +2665,7 @@ public:
             env(token::createOffer(alice, nextNftId, XRP(1)),
                 txflags(tfSellNFToken),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
@@ -2677,7 +2677,7 @@ public:
             // NFTokenOfferAccept (buyer)
             env(token::acceptSellOffer(bob, offerIndex),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
@@ -2705,7 +2705,7 @@ public:
             auto const chan = paychan::channel(alice, bob, env.seq(alice));
             env(paychan::create(alice, bob, XRP(100), settleDelay, pk),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2715,7 +2715,7 @@ public:
             // transfer sponsor
             env(sponsor::transfer(alice, chan),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2747,7 +2747,7 @@ public:
             auto const settleDelay = 10s;
             env(paychan::create(alice, bob, XRP(100), settleDelay, pk),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
@@ -2771,7 +2771,7 @@ public:
             pdomain::Credentials credentials{{alice, "first credential"}};
             env(pdomain::setTx(alice, credentials),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2782,7 +2782,7 @@ public:
             env(sponsor::transfer(
                     alice, keylet::permissionedDomain(alice, seq).key),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2813,7 +2813,7 @@ public:
             pdomain::Credentials credentials{{alice, "first credential"}};
             env(pdomain::setTx(alice, credentials),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
@@ -2898,7 +2898,7 @@ public:
                 // OracleSet (reserve 1)
                 env(oracleSet(env, alice, 5),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2908,7 +2908,7 @@ public:
                 // transfer sponsor
                 env(sponsor::transfer(alice, keylet::oracle(alice, 1).key),
                     sponsor::as(sponsor2, tfSponsorReserve),
-                    sponsor::sig(sponsor2));
+                    sig(sfSponsorSignature, sponsor2));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2929,7 +2929,7 @@ public:
                 // OracleSet (reserve 2)
                 env(oracleSet(env, alice, 6),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -2939,7 +2939,7 @@ public:
                 // transfer sponsor
                 env(sponsor::transfer(alice, keylet::oracle(alice, 1).key),
                     sponsor::as(sponsor2, tfSponsorReserve),
-                    sponsor::sig(sponsor2));
+                    sig(sfSponsorSignature, sponsor2));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -2960,7 +2960,7 @@ public:
                 // OracleSet (reserve 1->2, sponsor1 -> no-sponsor)
                 env(oracleSet(env, alice, 5),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2987,7 +2987,7 @@ public:
                 // OracleSet (reserve 1->2, sponsor1 -> sponsor2)
                 env(oracleSet(env, alice, 5),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2997,7 +2997,7 @@ public:
                 // reserve 1->2
                 env(oracleSet(env, alice, 6),
                     sponsor::as(sponsor2, tfSponsorReserve),
-                    sponsor::sig(sponsor2));
+                    sig(sfSponsorSignature, sponsor2));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -3024,7 +3024,7 @@ public:
                 // reserve 1->2
                 env(oracleSet(env, alice, 6),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -3046,7 +3046,7 @@ public:
                 auto const ocount = isTwoOwnerCount ? 2 : 1;
                 env(oracleSet(env, alice, dataSeriesSize),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == ocount);
@@ -3056,7 +3056,7 @@ public:
                 // transfer sponsor
                 env(sponsor::transfer(alice, keylet::oracle(alice, 1).key),
                     sponsor::as(sponsor2, tfSponsorReserve),
-                    sponsor::sig(sponsor2));
+                    sig(sfSponsorSignature, sponsor2));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, alice) == ocount);
@@ -3083,14 +3083,14 @@ public:
             adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
             env(oracleSet(env, alice, 5),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
             adjustAccountXRPBalance(env, sponsor, reserve(env, 2) - drops(1));
             env(oracleSet(env, alice, 6),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
@@ -3114,7 +3114,7 @@ public:
             // SignerListSet
             env(signers(alice, 1, {{bob, 1}}),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -3124,7 +3124,7 @@ public:
             // transfer sponsor
             env(sponsor::transfer(alice, keylet::signers(alice).key),
                 sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -3151,7 +3151,7 @@ public:
             adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
             env(signers(alice, 1, {{bob, 1}}),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
@@ -3201,7 +3201,7 @@ public:
                 // create TrustLine
                 env(trust(user, USD(100)),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, user) == 1);
@@ -3215,7 +3215,7 @@ public:
                 env(sponsor::transfer(
                         user, keylet::line(user, issuer, currency).key),
                     sponsor::as(sponsor2, tfSponsorReserve),
-                    sponsor::sig(sponsor2));
+                    sig(sfSponsorSignature, sponsor2));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, user) == 1);
@@ -3255,7 +3255,7 @@ public:
                 // update TrustLine from user to make reserve
                 env(trust(user, USD(100)),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, user) == 1);
@@ -3307,7 +3307,7 @@ public:
                 // create TrustLine
                 env(trust(user, USD(100)),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tecNO_LINE_INSUF_RESERVE));
                 env.close();
 
@@ -3349,7 +3349,7 @@ public:
                 // check with OwnerCount=3 because free MPToken condition exists
                 env(tx,
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor),
+                    sig(sfSponsorSignature, sponsor),
                     ter(tecINSUFFICIENT_RESERVE));
                 env.close();
                 adjustAccountXRPBalance(env, sponsor, reserve(env, 3));
@@ -3363,7 +3363,7 @@ public:
 
             env(tx,
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);  // Vault, MPToken(share)
@@ -3402,7 +3402,7 @@ public:
                 // // check with OwnerCount=3 because free MPToken condition
                 // exists env(depositTx,
                 //     sponsor::as(sponsor, tfSponsorReserve),
-                //     sponsor::sig(sponsor),
+                //     sig(sfSponsorSignature,sponsor),
                 //     ter(tecINSUFFICIENT_RESERVE));
                 // env.close();
                 // adjustAccountXRPBalance(env, sponsor, reserve(env, 3));
@@ -3412,7 +3412,7 @@ public:
 
             env(depositTx,
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(
@@ -3454,7 +3454,7 @@ public:
                     // // exists
                     // env(depositTx,
                     //     sponsor::as(sponsor, tfSponsorReserve),
-                    //     sponsor::sig(sponsor),
+                    //     sig(sfSponsorSignature,sponsor),
                     //     ter(tecINSUFFICIENT_RESERVE));
                     // env.close();
                     // adjustAccountXRPBalance(env, sponsor, reserve(env, 3));
@@ -3464,7 +3464,7 @@ public:
 
                 env(depositTx,
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 env(trust(bob, asset(0)));  // remove trustline
@@ -3482,7 +3482,7 @@ public:
                          .id = keylet.key,
                          .amount = asset(50)}),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(
@@ -3500,7 +3500,7 @@ public:
                          .id = keylet.key,
                          .amount = asset(50)}),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, bob) == 1);  // RippleState
@@ -3548,7 +3548,7 @@ public:
                 // // exists
                 // env(depositTx,
                 //     sponsor::as(sponsor, tfSponsorReserve),
-                //     sponsor::sig(sponsor),
+                //     sig(sfSponsorSignature,sponsor),
                 //     ter(tecINSUFFICIENT_RESERVE));
                 // env.close();
                 // adjustAccountXRPBalance(env, sponsor, reserve(env, 3));
@@ -3558,7 +3558,7 @@ public:
 
             env(depositTx,
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(
@@ -3573,7 +3573,7 @@ public:
                      .holder = bob,
                      .amount = asset(0)}),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, bob) == 1);  // RippleState
@@ -3593,7 +3593,7 @@ public:
             auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
             env(tx,
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);  // Vault, MPToken(share)
@@ -3638,14 +3638,14 @@ public:
             adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
             env(bridge_create(doorA, jvb, XRP(1), XRP(1)),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
             adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
 
             env(bridge_create(doorA, jvb, XRP(1), XRP(1)),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, doorA) == 2);  // Bridge, SignerList
@@ -3661,14 +3661,14 @@ public:
             adjustAccountXRPBalance(env, sponsor, reserve(env, 2) - drops(1));
             env(xchain_create_claim_id(alice, jvb, XRP(1), bob),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
+                sig(sfSponsorSignature, sponsor),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
             adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
 
             env(xchain_create_claim_id(alice, jvb, XRP(1), bob),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             // XChainOwnedClaimID created
@@ -3684,7 +3684,7 @@ public:
 
             env(xchain_commit(alice, jvb, 1, XRP(100), bob),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             // doesn't sponsor anything
@@ -3701,7 +3701,7 @@ public:
             env(claim_attestation(
                     alice, jvb, bob, XRP(1), bob, false, 1, bob, signer),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sig(sfSponsorSignature, sponsor));
             env.close();
 
             // XChainOwnedClaimID deleted
@@ -3715,7 +3715,7 @@ public:
             {
                 env(xchain_create_claim_id(alice, jvb, XRP(1), bob),
                     sponsor::as(sponsor, tfSponsorReserve),
-                    sponsor::sig(sponsor));
+                    sig(sfSponsorSignature, sponsor));
                 env(xchain_commit(
                     alice, jvb, 2, XRP(100)));  // omit destination
                 env(claim_attestation(

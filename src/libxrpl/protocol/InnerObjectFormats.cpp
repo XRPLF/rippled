@@ -178,6 +178,11 @@ InnerObjectFormats::InnerObjectFormats()
         {
             {sfAccount, soeREQUIRED},
             {sfFlags, soeREQUIRED},
+        });
+
+    add(sfSponsorSignature.jsonName.c_str(),
+        sfSponsorSignature.getCode(),
+        {
             {sfSigningPubKey, soeOPTIONAL},
             {sfTxnSignature, soeOPTIONAL},
             {sfSigners, soeOPTIONAL},

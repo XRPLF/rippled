@@ -592,9 +592,6 @@ Env::autofill_sig(JTx& jt)
         jtx::sign(jv, lookup(ar->getAccountID(sfRegularKey)));
     else
         jtx::sign(jv, account);
-
-    if (jt.sponsorSigner)
-        jt.sponsorSigner(*this, jt);
 }
 
 void

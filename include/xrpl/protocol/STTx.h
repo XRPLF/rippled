@@ -115,12 +115,6 @@ public:
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
-    static Blob
-    getSigningData(STObject const& that);
-
-    static Blob
-    getSponsorSigningData(STTx const& that);
-
     uint256
     getTransactionID() const;
 
@@ -168,11 +162,6 @@ public:
         RequireFullyCanonicalSig requireCanonicalSig,
         Rules const& rules) const;
 
-    Expected<void, std::string>
-    checkSponsorSign(
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules) const;
-
     // SQL Functions with metadata.
     static std::string const&
     getMetaSQLInsertReplaceHeader();
@@ -209,19 +198,8 @@ private:
         RequireFullyCanonicalSig requireCanonicalSig) const;
 
     Expected<void, std::string>
-    checkSponsorSingleSign(
-        STObject const& signer,
-        RequireFullyCanonicalSig requireCanonicalSig) const;
-
-    Expected<void, std::string>
     checkBatchMultiSign(
         STObject const& batchSigner,
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules) const;
-
-    Expected<void, std::string>
-    checkSponsorMultiSign(
-        STObject const& signer,
         RequireFullyCanonicalSig requireCanonicalSig,
         Rules const& rules) const;
 
@@ -271,46 +249,6 @@ inline uint256
 STTx::getTransactionID() const
 {
     return tid_;
-}
-
-/** Return a Serializer suitable for computing a multisigning TxnSignature. */
-Serializer
-buildMultiSigningData(STObject const& obj, AccountID const& signingID);
-
-/** Break the multi-signing hash computation into 2 parts for optimization.
-
-    We can optimize verifying multiple multisignatures by splitting the
-    data building into two parts;
-     o A large part that is shared by all of the computations.
-     o A small part that is unique to each signer in the multisignature.
-
-    The following methods support that optimization:
-     1. startMultiSigningData provides the large part which can be shared.
-     2. finishMultiSigningData caps the passed in serializer with each
-        signer's unique data.
-*/
-Serializer
-startMultiSigningData(STObject const& obj);
-
-inline void
-finishMultiSigningData(AccountID const& signingID, Serializer& s)
-{
-    s.addBitString(signingID);
-}
-
-Serializer
-buildSponsorMultiSigningData(
-    STObject const& obj,
-    AccountID const& signingID,
-    uint32_t flags);
-
-Serializer
-startSponsorSigningData(STObject const& obj);
-
-inline void
-finishSponsorSigningData(AccountID const& signerID, Serializer& s)
-{
-    s.addBitString(signerID);
 }
 
 }  // namespace ripple

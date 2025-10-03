@@ -20,7 +20,6 @@
 #ifndef RIPPLE_TEST_JTX_JTX_H_INCLUDED
 #define RIPPLE_TEST_JTX_JTX_H_INCLUDED
 
-#include <test/jtx/Account.h>
 #include <test/jtx/basic_prop.h>
 #include <test/jtx/requires.h>
 
@@ -58,7 +57,7 @@ struct JTx
     // Functions that sign the transaction from the Account
     std::vector<std::function<void(Env&, JTx&)>> mainSigners;
     // Functions that sign something else after the mainSigners, such as
-    // sfCounterpartySignature
+    // sfCounterpartySignature and sfSponsorSignature
     std::vector<std::function<void(Env&, JTx&)>> postSigners;
 
     JTx() = default;
