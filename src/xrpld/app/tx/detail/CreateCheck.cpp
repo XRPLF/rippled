@@ -209,7 +209,7 @@ CreateCheck::doApply()
                          << (page ? "success" : "failure");
 
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         sleCheck->setFieldU64(sfDestinationNode, *page);
     }
@@ -225,7 +225,7 @@ CreateCheck::doApply()
                          << (page ? "success" : "failure");
 
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }
