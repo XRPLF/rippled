@@ -447,7 +447,7 @@ class MPToken_test : public beast::unit_test::suite
         // Test mptoken reserve requirement - first two mpts free (doApply)
         {
             Env env{*this, features};
-            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const acctReserve = env.current()->fees().reserve;
             auto const incReserve = env.current()->fees().increment;
 
             // 1 drop

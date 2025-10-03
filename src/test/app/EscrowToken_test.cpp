@@ -691,7 +691,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
-            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const acctReserve = env.current()->fees().reserve;
             auto const incReserve = env.current()->fees().increment;
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -2691,7 +2691,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
-            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const acctReserve = env.current()->fees().reserve;
             auto const incReserve = env.current()->fees().increment;
 
             auto const alice = Account("alice");
