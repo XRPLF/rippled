@@ -4146,8 +4146,11 @@ NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
     if (auto listeners = app_.getOrderBookDB().makeBookListeners(book))
         listeners->addSubscriber(isrListener);
     else
-        UNREACHABLE(
-            "ripple::NetworkOPsImp::subBook : null book listeners");  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("ripple::NetworkOPsImp::subBook : null book listeners");
+        // LCOV_EXCL_STOP
+    }
     return true;
 }
 

@@ -232,8 +232,11 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
                 }
         }
         else
-            UNREACHABLE(
-                "ripple::SHAMap::compare : invalid node");  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("ripple::SHAMap::compare : invalid node");
+            // LCOV_EXCL_STOP
+        }
     }
 
     return true;
