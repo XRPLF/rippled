@@ -247,17 +247,21 @@ CashCheck::doApply()
     auto sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
     if (!sleCheck)
     {
+        // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Precheck did not verify check's existence.";
         return tecFAILED_PROCESSING;
+        // LCOV_EXCL_STOP
     }
 
     AccountID const srcId{sleCheck->getAccountID(sfAccount)};
     if (!psb.exists(keylet::account(srcId)) ||
         !psb.exists(keylet::account(account_)))
     {
+        // LCOV_EXCL_START
         JLOG(ctx_.journal.fatal())
             << "Precheck did not verify source or destination's existence.";
         return tecFAILED_PROCESSING;
+        // LCOV_EXCL_STOP
     }
 
     // Preclaim already checked that source has at least the requested

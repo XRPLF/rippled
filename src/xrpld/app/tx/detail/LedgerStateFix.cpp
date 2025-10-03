@@ -77,7 +77,7 @@ LedgerStateFix::doApply()
     {
         case FixType::nfTokenPageLink:
             if (!nft::repairNFTokenDirectoryLinks(view(), ctx_.tx[sfOwner]))
-                return tecFAILED_PROCESSING;
+                return tecFAILED_PROCESSING;  // LCOV_EXCL_LINE
 
             return tesSUCCESS;
     }

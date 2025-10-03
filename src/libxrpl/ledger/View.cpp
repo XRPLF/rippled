@@ -1980,8 +1980,10 @@ accountSendIOU(
         {
             // VFALCO Its laborious to have to mutate the
             //        TER based on params everywhere
+            // LCOV_EXCL_START
             terResult = view.open() ? TER{telFAILED_PROCESSING}
                                     : TER{tecFAILED_PROCESSING};
+            // LCOV_EXCL_STOP
         }
         else
         {
@@ -2452,8 +2454,10 @@ transferXRP(
         // VFALCO Its unfortunate we have to keep
         //        mutating these TER everywhere
         // FIXME: this logic should be moved to callers maybe?
+        // LCOV_EXCL_START
         return view.open() ? TER{telFAILED_PROCESSING}
                            : TER{tecFAILED_PROCESSING};
+        // LCOV_EXCL_STOP
     }
 
     // Decrement XRP balance.
