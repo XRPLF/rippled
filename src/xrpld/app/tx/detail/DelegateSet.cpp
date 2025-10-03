@@ -109,11 +109,10 @@ DelegateSet::doApply()
         return tesSUCCESS;
     }
 
-    STAmount const reserve{ctx_.view().fees().accountReserve(
-        sleOwner->getFieldU32(sfOwnerCount) + 1)};
-
-    if (mPriorBalance < reserve)
-        return tecINSUFFICIENT_RESERVE;
+    if (auto const ret =
+            checkInsufficientReserve(view(), sleOwner, mPriorBalance, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
     if (!permissions.empty())

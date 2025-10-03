@@ -161,10 +161,13 @@ VaultCreate::doApply()
 
     if (auto ter = dirLink(view(), account_, vault))
         return ter;
+
+    if (auto const ret =
+            checkInsufficientReserve(view(), owner, mPriorBalance, 1);
+        !isTesSuccess(ret))
+        return ret;
+
     adjustOwnerCount(view(), owner, 1, j_);
-    auto ownerCount = owner->at(sfOwnerCount);
-    if (mPriorBalance < view().fees().accountReserve(ownerCount))
-        return tecINSUFFICIENT_RESERVE;
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)

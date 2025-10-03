@@ -351,13 +351,19 @@ NFTokenMint::doApply()
     // allows NFTs to be added to the page (and burn fees) without
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page or sell offer is added.
-    if (auto const ownerCountAfter =
-            view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
+    auto const sle = view().read(keylet::account(account_));
+    if (auto const ownerCountAfter = sle->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
-        if (auto const reserve = view().fees().accountReserve(ownerCountAfter);
-            mPriorBalance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(),
+                sle,
+                mPriorBalance,
+                // Specify 0 here since ownerCount has already been
+                // incremented
+                0);
+            !isTesSuccess(ret))
+            return ret;
     }
     return tesSUCCESS;
 }

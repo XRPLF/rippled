@@ -170,13 +170,10 @@ DepositPreauth::doApply()
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        {
-            STAmount const reserve{view().fees().accountReserve(
-                sleOwner->getFieldU32(sfOwnerCount) + 1)};
-
-            if (mPriorBalance < reserve)
-                return tecINSUFFICIENT_RESERVE;
-        }
+        if (auto const ret =
+                checkInsufficientReserve(view(), sleOwner, mPriorBalance, 1);
+            !isTesSuccess(ret))
+            return ret;
 
         // Preclaim already verified that the Preauth entry does not yet exist.
         // Create and populate the Preauth entry.
@@ -221,13 +218,10 @@ DepositPreauth::doApply()
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        {
-            STAmount const reserve{view().fees().accountReserve(
-                sleOwner->getFieldU32(sfOwnerCount) + 1)};
-
-            if (mPriorBalance < reserve)
-                return tecINSUFFICIENT_RESERVE;
-        }
+        if (auto const ret =
+                checkInsufficientReserve(view(), sleOwner, mPriorBalance, 1);
+            !isTesSuccess(ret))
+            return ret;
 
         // Preclaim already verified that the Preauth entry does not yet exist.
         // Create and populate the Preauth entry.

@@ -1019,6 +1019,30 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     return std::nullopt;
 }
 
+uint32_t
+ownerCount(std::shared_ptr<SLE const> const& accountSle)
+{
+    auto const ownerCount = accountSle->getFieldU32(sfOwnerCount);
+    return ownerCount;
+}
+
+TER
+checkInsufficientReserve(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& accSle,
+    STAmount const& accBalance,
+    std::int32_t ownerCountDelta,
+    std::int32_t accountCountDelta)
+{
+    STAmount const reserve{view.fees().accountReserve(
+        accSle->getFieldU32(sfOwnerCount) + ownerCountDelta)};
+
+    if (accBalance < reserve)
+        return tecINSUFFICIENT_RESERVE;
+
+    return tesSUCCESS;
+}
+
 //------------------------------------------------------------------------------
 //
 // Modifiers
@@ -1328,13 +1352,13 @@ authorizeMPToken(
         // an account owns, in the case of MPTokens we only
         // *enforce* a reserve if the user owns more than two
         // items. This is similar to the reserve requirements of trust lines.
-        std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
-        XRPAmount const reserveCreate(
-            (uOwnerCount < 2) ? XRPAmount(beast::zero)
-                              : view.fees().accountReserve(uOwnerCount + 1));
-
-        if (priorBalance < reserveCreate)
-            return tecINSUFFICIENT_RESERVE;
+        if (ownerCount(sleAcct) >= 2)
+        {
+            if (auto const ret =
+                    checkInsufficientReserve(view, sleAcct, priorBalance, 1);
+                !isTesSuccess(ret))
+                return ret;
+        }
 
         auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
         auto mptoken = std::make_shared<SLE>(mptokenKey);
