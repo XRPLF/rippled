@@ -157,14 +157,14 @@ constexpr std::uint32_t const tfMPTokenIssuanceCreateMask  =
 
 // MPTokenIssuanceCreate MutableFlags:
 // Indicating specific fields or flags may be changed after issuance.
-constexpr std::uint32_t const tmfMPTCanMutateCanLock = lmfMPTCanMutateCanLock;
-constexpr std::uint32_t const tmfMPTCanMutateRequireAuth = lmfMPTCanMutateRequireAuth;
-constexpr std::uint32_t const tmfMPTCanMutateCanEscrow = lmfMPTCanMutateCanEscrow;
-constexpr std::uint32_t const tmfMPTCanMutateCanTrade = lmfMPTCanMutateCanTrade;
-constexpr std::uint32_t const tmfMPTCanMutateCanTransfer = lmfMPTCanMutateCanTransfer;
-constexpr std::uint32_t const tmfMPTCanMutateCanClawback = lmfMPTCanMutateCanClawback;
-constexpr std::uint32_t const tmfMPTCanMutateMetadata = lmfMPTCanMutateMetadata;
-constexpr std::uint32_t const tmfMPTCanMutateTransferFee = lmfMPTCanMutateTransferFee;
+constexpr std::uint32_t const tmfMPTCanMutateCanLock = lsmfMPTCanMutateCanLock;
+constexpr std::uint32_t const tmfMPTCanMutateRequireAuth = lsmfMPTCanMutateRequireAuth;
+constexpr std::uint32_t const tmfMPTCanMutateCanEscrow = lsmfMPTCanMutateCanEscrow;
+constexpr std::uint32_t const tmfMPTCanMutateCanTrade = lsmfMPTCanMutateCanTrade;
+constexpr std::uint32_t const tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTransfer;
+constexpr std::uint32_t const tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
+constexpr std::uint32_t const tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
+constexpr std::uint32_t const tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
 constexpr std::uint32_t const tmfMPTokenIssuanceCreateMutableMask =
   ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow | tmfMPTCanMutateCanTrade
     | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback | tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
