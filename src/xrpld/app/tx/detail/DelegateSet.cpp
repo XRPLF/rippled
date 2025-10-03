@@ -45,8 +45,7 @@ DelegateSet::preflight(PreflightContext const& ctx)
         if (!permissionSet.insert(permission[sfPermissionValue]).second)
             return temMALFORMED;
 
-        if (ctx.rules.enabled(fixDelegateV1_1) &&
-            !Permission::getInstance().isDelegatable(
+        if (!Permission::getInstance().isDelegatable(
                 permission[sfPermissionValue], ctx.rules))
             return temMALFORMED;
     }
@@ -62,26 +61,6 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize])))
         return tecNO_TARGET;
-
-    auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
-    for (auto const& permission : permissions)
-    {
-        if (!ctx.view.rules().enabled(fixDelegateV1_1) &&
-            !Permission::getInstance().isDelegatable(
-                permission[sfPermissionValue], ctx.view.rules()))
-        {
-            // Before fixDelegateV1_1:
-            //   - The check was performed during preclaim.
-            //   - Transactions from amendments not yet enabled could still be
-            //   delegated.
-            //
-            // After fixDelegateV1_1:
-            //   - The check is performed during preflight.
-            //   - Transactions from amendments not yet enabled can no longer be
-            //   delegated.
-            return tecNO_PERMISSION;
-        }
-    }
 
     return tesSUCCESS;
 }

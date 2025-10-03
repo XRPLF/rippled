@@ -316,7 +316,7 @@ TRANSACTION(ttTRUST_SET, 20, TrustSet,
 #endif
 TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
     Delegation::notDelegatable,
-    uint256{},
+    featureDeletableAccounts,
     mustDeleteAcct,
     ({
     {sfDestination, soeREQUIRED},
@@ -837,7 +837,7 @@ TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete,
 #endif
 TRANSACTION(ttDELEGATE_SET, 64, DelegateSet,
     Delegation::notDelegatable,
-    featurePermissionDelegation,
+    featurePermissionDelegationV1_1,
     noPriv,
     ({
     {sfAuthorize, soeREQUIRED},
