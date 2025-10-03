@@ -399,7 +399,7 @@ NFTokenAcceptOffer::pay(
 {
     // This should never happen, but it's easy and quick to check.
     if (amount < beast::zero)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return tecINTERNAL;
 
     auto const result = accountSend(view(), from, to, amount, j_);
 
@@ -523,16 +523,20 @@ NFTokenAcceptOffer::doApply()
 
     if (bo && !nft::deleteTokenOffer(view(), bo))
     {
+        // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete buy offer '"
                          << to_string(bo->key()) << "': ignoring";
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     if (so && !nft::deleteTokenOffer(view(), so))
     {
+        // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete sell offer '"
                          << to_string(so->key()) << "': ignoring";
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     // Bridging two different offers
