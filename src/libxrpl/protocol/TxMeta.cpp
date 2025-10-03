@@ -54,11 +54,7 @@ TxMeta::TxMeta(
     mIndex = obj.getFieldU32(sfTransactionIndex);
     mNodes = *dynamic_cast<STArray*>(&obj.getField(sfAffectedNodes));
 
-    if (obj.isFieldPresent(sfDeliveredAmount))
-        setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
-
-    if (obj.isFieldPresent(sfParentBatchID))
-        setParentBatchId(obj.getFieldH256(sfParentBatchID));
+    setAdditionalFields(obj);
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
@@ -77,11 +73,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
     if (affectedNodes)
         mNodes = *affectedNodes;
 
-    if (obj.isFieldPresent(sfDeliveredAmount))
-        setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
-
-    if (obj.isFieldPresent(sfParentBatchID))
-        setParentBatchId(obj.getFieldH256(sfParentBatchID));
+    setAdditionalFields(obj);
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)

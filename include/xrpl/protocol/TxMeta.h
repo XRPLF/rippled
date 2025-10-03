@@ -113,6 +113,16 @@ public:
     }
 
     void
+    setAdditionalFields(STObject const& obj)
+    {
+        if (obj.isFieldPresent(sfDeliveredAmount))
+            setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
+
+        if (obj.isFieldPresent(sfParentBatchID))
+            setParentBatchId(obj.getFieldH256(sfParentBatchID));
+    }
+
+    void
     setDeliveredAmount(STAmount const& delivered)
     {
         mDelivered = delivered;
