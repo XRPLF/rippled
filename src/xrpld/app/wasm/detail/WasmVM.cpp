@@ -41,8 +41,6 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     WASM_IMPORT_FUNC2(i, getLedgerSqn, "get_ledger_sqn", hfs,                                                   60);
     WASM_IMPORT_FUNC2(i, getParentLedgerTime, "get_parent_ledger_time", hfs,                                    60);
     WASM_IMPORT_FUNC2(i, getParentLedgerHash, "get_parent_ledger_hash", hfs,                                    60);
-    WASM_IMPORT_FUNC2(i, getLedgerAccountHash, "get_ledger_account_hash", hfs,                                  60);
-    WASM_IMPORT_FUNC2(i, getLedgerTransactionHash, "get_ledger_tx_hash", hfs,                                   60);
     WASM_IMPORT_FUNC2(i, getBaseFee, "get_base_fee", hfs,                                                       60);
     WASM_IMPORT_FUNC2(i, isAmendmentEnabled, "amendment_enabled", hfs,                                         100);
 

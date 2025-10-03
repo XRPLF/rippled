@@ -113,18 +113,6 @@ public:
         return env_.current()->info().parentHash;
     }
 
-    Expected<Hash, HostFunctionError>
-    getLedgerAccountHash() override
-    {
-        return env_.current()->info().accountHash;
-    }
-
-    Expected<Hash, HostFunctionError>
-    getLedgerTransactionHash() override
-    {
-        return env_.current()->info().txHash;
-    }
-
     Expected<int32_t, HostFunctionError>
     getBaseFee() override
     {
@@ -647,18 +635,6 @@ struct PerfHostFunctions : public TestHostFunctions
     getParentLedgerHash() override
     {
         return env_.current()->info().parentHash;
-    }
-
-    Expected<Hash, HostFunctionError>
-    getLedgerAccountHash() override
-    {
-        return env_.current()->info().accountHash;
-    }
-
-    Expected<Hash, HostFunctionError>
-    getLedgerTransactionHash() override
-    {
-        return env_.current()->info().txHash;
     }
 
     Expected<int32_t, HostFunctionError>

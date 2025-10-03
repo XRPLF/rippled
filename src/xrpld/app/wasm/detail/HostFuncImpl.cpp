@@ -55,18 +55,6 @@ WasmHostFunctionsImpl::getParentLedgerHash()
     return ctx.view().info().parentHash;
 }
 
-Expected<Hash, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerAccountHash()
-{
-    return ctx.view().info().accountHash;
-}
-
-Expected<Hash, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerTransactionHash()
-{
-    return ctx.view().info().txHash;
-}
-
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getBaseFee()
 {

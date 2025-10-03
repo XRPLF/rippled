@@ -135,18 +135,6 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<Hash, HostFunctionError>
-    getLedgerAccountHash()
-    {
-        return Unexpected(HostFunctionError::INTERNAL);
-    }
-
-    virtual Expected<Hash, HostFunctionError>
-    getLedgerTransactionHash()
-    {
-        return Unexpected(HostFunctionError::INTERNAL);
-    }
-
     virtual Expected<int32_t, HostFunctionError>
     getBaseFee()
     {

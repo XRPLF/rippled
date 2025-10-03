@@ -44,20 +44,6 @@ getParentLedgerHash_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using getLedgerAccountHash_proto = int32_t(uint8_t*, int32_t);
-wasm_trap_t*
-getLedgerAccountHash_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results);
-
-using getLedgerTransactionHash_proto = int32_t(uint8_t*, int32_t);
-wasm_trap_t*
-getLedgerTransactionHash_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results);
-
 using getBaseFee_proto = int32_t();
 wasm_trap_t*
 getBaseFee_wrap(
