@@ -589,6 +589,52 @@ struct Credentials_test : public beast::unit_test::suite
                 env.close();
             }
         }
+
+        {
+            using namespace jtx;
+            {
+                // test flag doesn't set unless amendment enabled
+                Env env{*this, features - featureDisallowIncomingCredential};
+                env.fund(XRP(5000), subject, issuer);
+                env.close();
+
+                env(fset(subject, asfDisallowIncomingCredential));
+                env.close();
+                auto const sle = env.le(subject);
+                uint32_t flags = sle->getFlags();
+                BEAST_EXPECT(!(flags & lsfDisallowIncomingCredential));
+            }
+
+            testcase("Credentials fail, disallow incoming credential.");
+            {
+                Env env{*this, features | featureDisallowIncomingCredential};
+                env.fund(XRP(5000), subject, issuer);
+                env.close();
+
+                env(fset(subject, asfDisallowIncomingCredential, 1));
+                env.close();
+                auto const sle = env.le(subject);
+                uint32_t flags = sle->getFlags();
+                BEAST_EXPECT((flags & lsfDisallowIncomingCredential));
+
+                auto const jv = credentials::create(subject, issuer, credType);
+                env(jv, ter(tecNO_PERMISSION));
+                env.close();
+
+                // allow self-issued credential
+                auto const jv2 =
+                    credentials::create(subject, subject, credType);
+                env(jv2, ter(tesSUCCESS));
+                env.close();
+
+                // clear flag
+                env(fset(subject, 0, asfDisallowIncomingCredential));
+                env.close();
+                auto const sle2 = env.le(subject);
+                uint32_t flags2 = sle2->getFlags();
+                BEAST_EXPECT(!(flags2 & lsfDisallowIncomingCredential));
+            }
+        }
     }
 
     void
