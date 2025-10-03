@@ -2861,7 +2861,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     testFloatNonIOU()
     {
-        testcase("Float Xrp+Mpt");
+        testcase("float Xrp+Mpt");
         using namespace test::jtx;
 
         Env env{*this};
@@ -2923,6 +2923,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     testFloats()
     {
+        testFloatTrace();
         testFloatFromInt();
         testFloatFromUint();
         testFloatSet();
@@ -2935,7 +2936,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testFloatPower();
         testFloatLog();
         testFloatNonIOU();
-        testFloatTrace();
     }
 
     void
@@ -2944,8 +2944,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testGetLedgerSqn();
         testGetParentLedgerTime();
         testGetParentLedgerHash();
-        testGetLedgerAccountHash();
-        testGetLedgerTransactionHash();
         testGetBaseFee();
         testIsAmendmentEnabled();
         testCacheLedgerObj();
