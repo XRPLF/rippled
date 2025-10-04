@@ -31,7 +31,9 @@ struct PreflightContext;
 bool
 checkLendingProtocolDependencies(PreflightContext const& ctx);
 
-struct PaymentParts
+// This structure is used internally to compute the breakdown of a
+// single loan payment
+struct PaymentComponents
 {
     Number rawInterest;
     Number rawPrincipal;
@@ -40,6 +42,25 @@ struct PaymentParts
     // We may not need roundedPayment
     Number roundedPayment;
     bool final = false;
+};
+
+// This structure is explained in the XLS-66 spec, section 3.2.4.4 (Failure
+// Conditions)
+struct LoanPaymentParts
+{
+    /// principal_paid is the amount of principal that the payment covered.
+    Number principalPaid;
+    /// interest_paid is the amount of interest that the payment covered.
+    Number interestPaid;
+    /**
+     * value_change is the amount by which the total value of the Loan changed.
+     *  If value_change < 0, Loan value decreased.
+     *  If value_change > 0, Loan value increased.
+     * This is 0 for regular payments.
+     */
+    Number valueChange;
+    /// fee_paid is the amount of fee that the payment covered.
+    Number feeToPay;
 };
 
 namespace detail {
@@ -79,14 +100,14 @@ loanAccruedInterest(
     std::uint32_t paymentInterval);
 
 inline Number
-minusManagementFee(Number const& value, TenthBips32 managementFeeRate)
+minusFee(Number const& value, TenthBips32 managementFeeRate)
 {
     return tenthBipsOfValue(value, tenthBipsPerUnity - managementFeeRate);
 }
 
 template <AssetType A>
-PaymentParts
-computePaymentParts(
+PaymentComponents
+computePaymentComponents(
     A const& asset,
     std::int32_t scale,
     Number const& totalValueOutstanding,
@@ -103,7 +124,7 @@ computePaymentParts(
     XRPL_ASSERT_PARTS(
         isRounded(asset, totalValueOutstanding, scale) &&
             isRounded(asset, principalOutstanding, scale),
-        "ripple::detail::computePaymentParts",
+        "ripple::detail::computePaymentComponents",
         "Outstanding values are rounded");
     auto const roundedPeriodicPayment =
         roundToAsset(asset, periodicPayment, scale, Number::upward);
@@ -121,7 +142,7 @@ computePaymentParts(
         XRPL_ASSERT_PARTS(
             rawInterest + referencePrincipal ==
                 roundedInterest + principalOutstanding,
-            "ripple::detail::computePaymentParts",
+            "ripple::detail::computePaymentComponents",
             "last payment is complete");
 
         Number const interest = totalValueOutstanding - principalOutstanding;
@@ -130,7 +151,7 @@ computePaymentParts(
             .rawPrincipal = referencePrincipal,
             .roundedInterest = roundedInterest,
             .roundedPrincipal = principalOutstanding,
-            .roundedPayment = roundedPeriodicPayment,
+            .roundedPayment = roundedInterest + principalOutstanding,
             .final = true};
     }
     /*
@@ -144,11 +165,11 @@ computePaymentParts(
     Number const rawPrincipal = periodicPayment - rawInterest;
     XRPL_ASSERT_PARTS(
         rawInterest >= 0,
-        "ripple::detail::computePaymentParts",
+        "ripple::detail::computePaymentComponents",
         "valid raw interest");
     XRPL_ASSERT_PARTS(
         rawPrincipal > 0 && rawPrincipal <= referencePrincipal,
-        "ripple::detail::computePaymentParts",
+        "ripple::detail::computePaymentComponents",
         "valid raw principal");
 
     // if (count($A20), MIN(Z19, Z19 - FLOOR(AA19 - Y20, 1)), "")
@@ -190,15 +211,15 @@ computePaymentParts(
     Number const roundedInterest = roundedPeriodicPayment - roundedPrincipal;
     XRPL_ASSERT_PARTS(
         roundedInterest >= 0 && isRounded(asset, roundedInterest, scale),
-        "ripple::detail::computePaymentParts",
+        "ripple::detail::computePaymentComponents",
         "valid rounded interest");
     XRPL_ASSERT_PARTS(
         roundedPrincipal >= 0 && roundedPrincipal <= principalOutstanding,
-        "ripple::detail::computePaymentParts",
+        "ripple::detail::computePaymentComponents",
         "valid rounded principal");
     XRPL_ASSERT_PARTS(
         isRounded(asset, roundedPrincipal, scale),
-        "ripple::detail::computePaymentParts",
+        "ripple::detail::computePaymentComponents",
         "principal is rounded");
 
     return {
@@ -207,6 +228,229 @@ computePaymentParts(
         .roundedInterest = roundedInterest,
         .roundedPrincipal = roundedPrincipal,
         .roundedPayment = roundedPeriodicPayment};
+}
+
+struct PaymentComponentsPlus : public PaymentComponents
+{
+    Number fee{0};
+    Number valueChange{0};
+
+    PaymentComponentsPlus(
+        PaymentComponents const& p,
+        Number f,
+        Number v = Number{})
+        : PaymentComponents(p), fee(f), valueChange(v)
+    {
+    }
+};
+
+template <class NumberProxy, class Int32Proxy>
+LoanPaymentParts
+doPayment(
+    PaymentComponentsPlus const& payment,
+    NumberProxy& totalValueOutstandingProxy,
+    NumberProxy& principalOutstandingProxy,
+    NumberProxy& referencePrincipalProxy,
+    Int32Proxy& paymentRemainingProxy,
+    Int32Proxy& prevPaymentDateProxy,
+    Int32Proxy& nextDueDateProxy,
+    std::uint32_t paymentInterval)
+{
+    if (payment.final)
+    {
+        paymentRemainingProxy = 0;
+        XRPL_ASSERT_PARTS(
+            referencePrincipalProxy == payment.rawPrincipal,
+            "ripple::detail::doPayment",
+            "Full reference principal payment");
+        XRPL_ASSERT_PARTS(
+            principalOutstandingProxy == payment.roundedPrincipal,
+            "ripple::detail::doPayment",
+            "Full principal payment");
+        XRPL_ASSSERT_PARTS(
+            totalValueOutstandingProxy ==
+                payment.roundedPrincipal + payment.roundedInterest,
+            "ripple::detail::doPayment",
+            "Full value payment");
+
+        prevPaymentDateProxy = nextDueDateProxy;
+        // May as well...
+        nextDueDateProxy = 0;
+    }
+    else
+    {
+        paymentRemainingProxy -= 1;
+
+        prevPaymentDateProxy = nextDueDateProxy;
+        nextDueDateProxy += paymentInterval;
+    }
+    // A single payment always pays the same amount of principal. Only the
+    // interest and fees are extra for a late payment
+    referencePrincipalProxy -= payment.rawPrincipal;
+    principalOutstandingProxy -= payment.roundedPrincipal;
+    totalValueOutstandingProxy -=
+        payment.roundedPrincipal + payment.roundedInterest;
+
+    return LoanPaymentParts{
+        .principalPaid = payment.roundedPrincipal,
+        .interestPaid = payment.roundedInterest,
+        .valueChange = payment.valueChange,
+        .feeToPay = payment.fee};
+}
+
+/* Handle possible late payments.
+ *
+ * If this function processed a late payment, the return value will be
+ * a LoanPaymentParts object. If the loan is not late, the return will be an
+ * Unexpected(tesSUCCESS). Otherwise, it'll be an Unexpected with the error code
+ * the caller is expected to return.
+ *
+ *
+ * This function is an implementation of the XLS-66 spec, based on
+ * * section 3.2.4.3 (Transaction Pseudo-code), specifically the bit
+ *   labeled "the payment is late"
+ * * section 3.2.4.1.2 (Late Payment)
+ */
+template <AssetType A, class NumberProxy, class Int32Proxy>
+Expected<PaymentComponentsPlus, TER>
+handleLatePayment(
+    A const& asset,
+    ApplyView& view,
+    NumberProxy& principalOutstandingProxy,
+    Int32Proxy& nextDueDateProxy,
+    PaymentComponentsPlus const& periodic,
+    TenthBips32 const lateInterestRate,
+    std::int32_t loanScale,
+    Number const& latePaymentFee,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    if (!hasExpired(view, nextDueDateProxy))
+        return Unexpected(tesSUCCESS);
+
+    // the payment is late
+    // Late payment interest is only the part of the interest that comes from
+    // being late, as computed by 3.2.4.1.2.
+    auto const latePaymentInterest = loanLatePaymentInterest(
+        asset,
+        principalOutstandingProxy,
+        lateInterestRate,
+        view.parentCloseTime(),
+        nextDueDateProxy,
+        loanScale);
+    XRPL_ASSERT(
+        latePaymentInterest >= 0,
+        "ripple::detail::handleLatePayment : valid late interest");
+    PaymentComponentsPlus const late{
+        PaymentComponents{
+            .rawInterest = periodic.rawInterest + latePaymentInterest,
+            .rawPrincipal = periodic.rawPrincipal,
+            .roundedInterest = periodic.roundedInterest + latePaymentInterest,
+            .roundedPrincipal = periodic.roundedPrincipal,
+            .roundedPayment = periodic.roundedPayment},
+        // A late payment pays both the normal fee, and the extra fee
+        periodic.fee + latePaymentFee,
+        // A late payment increases the value of the loan by the difference
+        // between periodic and late payment interest
+        latePaymentInterest};
+    auto const totalDue =
+        late.roundedPrincipal + late.roundedInterest + late.fee;
+    XRPL_ASSERT_PARTS(
+        isRounded(asset, totalDue, loanScale),
+        "ripple::detail::handleLatePayment",
+        "total due is rounded");
+
+    if (amount < totalDue)
+    {
+        JLOG(j.warn()) << "Late loan payment amount is insufficient. Due: "
+                       << totalDue << ", paid: " << amount;
+        return Unexpected(tecINSUFFICIENT_PAYMENT);
+    }
+
+    return late;
+}
+
+/* Handle possible full payments.
+ *
+ * If this function processed a full payment, the return value will be
+ * a PaymentComponentsPlus object. If the payment should not be considered as a
+ * full payment, the return will be an Unexpected(tesSUCCESS). Otherwise, it'll
+ * be an Unexpected with the error code the caller is expected to return.
+ */
+template <AssetType A, class NumberProxy, class Int32Proxy>
+Expected<PaymentComponentsPlus, TER>
+handleFullPayment(
+    A const& asset,
+    ApplyView& view,
+    NumberProxy& principalOutstandingProxy,
+    NumberProxy& referencePrincipalProxy,
+    Int32Proxy& paymentRemainingProxy,
+    Int32Proxy& prevPaymentDateProxy,
+    std::uint32_t const startDate,
+    std::uint32_t const paymentInterval,
+    TenthBips32 const closeInterestRate,
+    std::int32_t loanScale,
+    Number const& totalInterestOutstanding,
+    Number const& periodicRate,
+    Number const& closePaymentFee,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    if (paymentRemainingProxy <= 1)
+        // If this is the last payment, it has to be a regular payment
+        return Unexpected(tesSUCCESS);
+
+    // If there is more than one payment remaining, see if enough was
+    // paid for a full payment
+    auto const accruedInterest = roundToAsset(
+        asset,
+        detail::loanAccruedInterest(
+            principalOutstandingProxy,
+            periodicRate,
+            view.parentCloseTime(),
+            startDate,
+            prevPaymentDateProxy,
+            paymentInterval),
+        loanScale);
+    XRPL_ASSERT(
+        accruedInterest >= 0,
+        "ripple::detail::handleFullPayment : valid accrued interest");
+    auto const prepaymentPenalty = roundToAsset(
+        asset,
+        tenthBipsOfValue(principalOutstandingProxy.value(), closeInterestRate),
+        loanScale);
+    XRPL_ASSERT(
+        prepaymentPenalty >= 0,
+        "ripple::detail::handleFullPayment : valid prepayment "
+        "interest");
+    auto const totalInterest = accruedInterest + prepaymentPenalty;
+    auto const closeFullPayment =
+        principalOutstandingProxy + totalInterest + closePaymentFee;
+
+    if (amount < closeFullPayment)
+        // If the payment is less than the full payment amount, it's not
+        // sufficient to be a full payment, but that's not an error.
+        return Unexpected(tesSUCCESS);
+
+    // Make a full payment
+
+    PaymentComponentsPlus const result{
+        PaymentComponents{
+            .rawInterest = principalOutstandingProxy + totalInterest -
+                referencePrincipalProxy,
+            .rawPrincipal = referencePrincipalProxy,
+            .roundedInterest = totalInterest,
+            .roundedPrincipal = principalOutstandingProxy,
+            .roundedPayment = closeFullPayment,
+            .final = true},
+        // A full payment only pays the single close payment fee
+        closePaymentFee,
+        // A full payment decreases the value of the loan by the
+        // difference between the interest paid and the expected
+        // outstanding interest return
+        totalInterest - totalInterestOutstanding};
+
+    return result;
 }
 
 }  // namespace detail
@@ -220,7 +464,7 @@ valueMinusFee(
     std::int32_t scale)
 {
     return roundToAsset(
-        asset, detail::minusManagementFee(value, managementFeeRate), scale);
+        asset, detail::minusFee(value, managementFeeRate), scale);
 }
 
 struct LoanProperties
@@ -272,7 +516,7 @@ computeLoanProperties(
     auto const firstPaymentPrincipal = [&]() {
         // Compute the unrounded parts for the first payment. Ensure that the
         // principal payment will actually change the principal.
-        auto const paymentParts = detail::computePaymentParts(
+        auto const paymentComponents = detail::computePaymentComponents(
             asset,
             loanScale,
             totalValueOutstanding,
@@ -284,12 +528,13 @@ computeLoanProperties(
 
         // We only care about the unrounded principal part. It needs to be large
         // enough that it will affect the reference principal.
-        auto const remaining = referencePrincipal - paymentParts.rawPrincipal;
+        auto const remaining =
+            referencePrincipal - paymentComponents.rawPrincipal;
         if (remaining == referencePrincipal)
             // No change, so the first payment effectively pays no principal.
             // Whether that's a problem is left to the caller.
             return Number{0};
-        return paymentParts.rawPrincipal;
+        return paymentComponents.rawPrincipal;
     }();
 
     auto const interestOwedToVault = valueMinusFee(
@@ -498,207 +743,8 @@ template <AssetType A>
 bool
 isRounded(A const& asset, Number const& value, std::int32_t scale)
 {
-    return roundToAsset(asset, value, scale, Number::downward) == value &&
-        roundToAsset(asset, value, scale, Number::upward) == value;
-}
-
-// This structure is explained in the XLS-66 spec, section 3.2.4.4 (Failure
-// Conditions)
-struct LoanPaymentParts
-{
-    /// principal_paid is the amount of principal that the payment covered.
-    Number principalPaid;
-    /// interest_paid is the amount of interest that the payment covered.
-    Number interestPaid;
-    /**
-     * value_change is the amount by which the total value of the Loan changed.
-     *  If value_change < 0, Loan value decreased.
-     *  If value_change > 0, Loan value increased.
-     * This is 0 for regular payments.
-     */
-    Number valueChange;
-    /// fee_paid is the amount of fee that the payment covered.
-    Number feeToPay;
-};
-
-template <class NumberProxy, class Int32Proxy>
-void
-doPayment(
-    PaymentParts const& payment,
-    NumberProxy& totalValueOutstandingProxy,
-    NumberProxy& principalOutstandingProxy,
-    NumberProxy& referencePrincipalProxy,
-    Int32Proxy& paymentRemainingProxy,
-    Int32Proxy& prevPaymentDateProxy,
-    Int32Proxy& nextDueDateProxy,
-    std::uint32_t paymentInterval)
-{
-    paymentRemainingProxy -= 1;
-    // A single payment always pays the same amount of principal. Only the
-    // interest and fees are extra for a late payment
-    referencePrincipalProxy -= payment.rawPrincipal;
-    principalOutstandingProxy -= payment.roundedPrincipal;
-    totalValueOutstandingProxy -=
-        payment.roundedPrincipal + payment.roundedInterest;
-
-    // Make sure this does an assignment
-    prevPaymentDateProxy = nextDueDateProxy;
-    nextDueDateProxy += paymentInterval;
-}
-
-/* Handle possible late payments.
- *
- * If this function processed a late payment, the return value will be
- * a LoanPaymentParts object. If the loan is not late, the return will be an
- * Unexpected(tesSUCCESS). Otherwise, it'll be an Unexpected with the error code
- * the caller is expected to return.
- *
- *
- * This function is an implementation of the XLS-66 spec, based on
- * * section 3.2.4.3 (Transaction Pseudo-code), specifically the bit
- *   labeled "the payment is late"
- * * section 3.2.4.1.2 (Late Payment)
- */
-template <AssetType A, class NumberProxy, class Int32Proxy>
-Expected<std::pair<PaymentParts, LoanPaymentParts>, TER>
-handleLatePayment(
-    A const& asset,
-    ApplyView& view,
-    NumberProxy& principalOutstandingProxy,
-    Int32Proxy& nextDueDateProxy,
-    PaymentParts const& periodic,
-    TenthBips32 const lateInterestRate,
-    std::int32_t loanScale,
-    Number const& paymentFee,
-    Number const& latePaymentFee,
-    STAmount const& amount,
-    beast::Journal j)
-{
-    if (!hasExpired(view, nextDueDateProxy))
-        return Unexpected(tesSUCCESS);
-
-    // the payment is late
-    // Late payment interest is only the part of the interest that comes from
-    // being late, as computed by 3.2.4.1.2.
-    auto const latePaymentInterest = loanLatePaymentInterest(
-        asset,
-        principalOutstandingProxy,
-        lateInterestRate,
-        view.parentCloseTime(),
-        nextDueDateProxy,
-        loanScale);
-    XRPL_ASSERT(
-        latePaymentInterest >= 0,
-        "ripple::handleLatePayment : valid late interest");
-    PaymentParts const late{
-        .rawInterest = periodic.rawInterest + latePaymentInterest,
-        .rawPrincipal = periodic.rawPrincipal,
-        .roundedInterest = periodic.roundedInterest + latePaymentInterest,
-        .roundedPrincipal = periodic.roundedPrincipal,
-        .roundedPayment = periodic.roundedPayment};
-    auto const fee = paymentFee + latePaymentFee;
-    auto const totalDue = late.roundedPrincipal + late.roundedInterest + fee;
-    XRPL_ASSERT_PARTS(
-        isRounded(asset, totalDue, loanScale),
-        "ripple::handleLatePayment",
-        "total due is rounded");
-
-    if (amount < totalDue)
-    {
-        JLOG(j.warn()) << "Late loan payment amount is insufficient. Due: "
-                       << totalDue << ", paid: " << amount;
-        return Unexpected(tecINSUFFICIENT_PAYMENT);
-    }
-
-    // A late payment increases the value of the loan by the difference
-    // between periodic and late payment interest
-    return std::make_pair(
-        late,
-        LoanPaymentParts{
-            .principalPaid = late.roundedPrincipal,
-            .interestPaid = late.roundedInterest,
-            .valueChange = latePaymentInterest,
-            .feeToPay = fee});
-}
-
-/* Handle possible full payments.
- *
- * If this function processed a full payment, the return value will be
- * a LoanPaymentParts object. If the payment should not be considered as a full
- * payment, the return will be an Unexpected(tesSUCCESS). Otherwise, it'll be an
- * Unexpected with the error code the caller is expected to return.
- */
-template <AssetType A, class NumberProxy, class Int32Proxy>
-Expected<LoanPaymentParts, TER>
-handleFullPayment(
-    A const& asset,
-    ApplyView& view,
-    NumberProxy& principalOutstandingProxy,
-    Int32Proxy& paymentRemainingProxy,
-    Int32Proxy& prevPaymentDateProxy,
-    std::uint32_t const startDate,
-    std::uint32_t const paymentInterval,
-    TenthBips32 const closeInterestRate,
-    std::int32_t loanScale,
-    Number const& totalInterestOutstanding,
-    Number const& periodicRate,
-    Number const& closePaymentFee,
-    STAmount const& amount,
-    beast::Journal j)
-{
-    if (paymentRemainingProxy <= 1)
-        // If this is the last payment, it has to be a regular payment
-        return Unexpected(tesSUCCESS);
-
-    // If there is more than one payment remaining, see if enough was
-    // paid for a full payment
-    auto const accruedInterest = roundToAsset(
-        asset,
-        detail::loanAccruedInterest(
-            principalOutstandingProxy,
-            periodicRate,
-            view.parentCloseTime(),
-            startDate,
-            prevPaymentDateProxy,
-            paymentInterval),
-        loanScale);
-    XRPL_ASSERT(
-        accruedInterest >= 0,
-        "ripple::handleFullPayment : valid accrued interest");
-    auto const prepaymentPenalty = roundToAsset(
-        asset,
-        tenthBipsOfValue(principalOutstandingProxy.value(), closeInterestRate),
-        loanScale);
-    XRPL_ASSERT(
-        prepaymentPenalty >= 0,
-        "ripple::handleFullPayment : valid prepayment "
-        "interest");
-    auto const totalInterest = accruedInterest + prepaymentPenalty;
-    auto const closeFullPayment =
-        principalOutstandingProxy + totalInterest + closePaymentFee;
-
-    if (amount < closeFullPayment)
-        // If the payment is less than the full payment amount, it's not
-        // sufficient to be a full payment, but that's not an error.
-        return Unexpected(tesSUCCESS);
-
-    // Make a full payment
-
-    // A full payment decreases the value of the loan by the
-    // difference between the interest paid and the expected
-    // outstanding interest return
-    auto const valueChange = totalInterest - totalInterestOutstanding;
-
-    LoanPaymentParts const result{
-        .principalPaid = principalOutstandingProxy,
-        .interestPaid = totalInterest,
-        .valueChange = valueChange,
-        .feeToPay = closePaymentFee};
-
-    paymentRemainingProxy = 0;
-    principalOutstandingProxy = 0;
-
-    return result;
+    return roundToAsset(asset, value, scale, Number::downward) ==
+        roundToAsset(asset, value, scale, Number::upward);
 }
 
 template <AssetType A>
@@ -766,19 +812,21 @@ loanMakePayment(
 
     view.update(loan);
 
-    auto const periodic = detail::computePaymentParts(
-        asset,
-        loanScale,
-        totalValueOutstandingProxy,
-        principalOutstandingProxy,
-        referencePrincipalProxy,
-        periodicPayment,
-        periodicRate,
-        paymentRemainingProxy);
+    detail::PaymentComponentsPlus const periodic{
+        detail::computePaymentComponents(
+            asset,
+            loanScale,
+            totalValueOutstandingProxy,
+            principalOutstandingProxy,
+            referencePrincipalProxy,
+            periodicPayment,
+            periodicRate,
+            paymentRemainingProxy),
+        serviceFee};
 
     // -------------------------------------------------------------
     // late payment handling
-    if (auto const latePaymentParts = handleLatePayment(
+    if (auto const latePaymentComponents = detail::handleLatePayment(
             asset,
             view,
             principalOutstandingProxy,
@@ -786,13 +834,12 @@ loanMakePayment(
             periodic,
             lateInterestRate,
             loanScale,
-            serviceFee,
             latePaymentFee,
             amount,
             j))
     {
-        doPayment(
-            latePaymentParts->first,
+        return doPayment(
+            *latePaymentComponents,
             totalValueOutstandingProxy,
             principalOutstandingProxy,
             referencePrincipalProxy,
@@ -800,21 +847,23 @@ loanMakePayment(
             prevPaymentDateProxy,
             nextDueDateProxy,
             paymentInterval);
-
-        return latePaymentParts->second;
     }
-    else if (latePaymentParts.error())
-        return Unexpected(latePaymentParts.error());
+    else if (latePaymentComponents.error())
+        // error() will be the TER returned if a payment is not made. It will
+        // only evaluate to true if it's an error. Otherwise, tesSUCCESS means
+        // nothing was done, so continue.
+        return Unexpected(latePaymentComponents.error());
 
     // -------------------------------------------------------------
     // full payment handling
     auto const totalInterestOutstanding =
         totalValueOutstandingProxy - principalOutstandingProxy;
 
-    if (auto const fullPaymentParts = handleFullPayment(
+    if (auto const fullPaymentComponents = detail::handleFullPayment(
             asset,
             view,
             principalOutstandingProxy,
+            referencePrincipalProxy,
             paymentRemainingProxy,
             prevPaymentDateProxy,
             startDate,
@@ -826,91 +875,92 @@ loanMakePayment(
             closePaymentFee,
             amount,
             j))
-        return *fullPaymentParts;
-    else if (fullPaymentParts.error())
-        return fullPaymentParts;
+        return doPayment(
+            *fullPaymentComponents,
+            totalValueOutstandingProxy,
+            principalOutstandingProxy,
+            referencePrincipalProxy,
+            paymentRemainingProxy,
+            prevPaymentDateProxy,
+            nextDueDateProxy,
+            paymentInterval);
+    else if (fullPaymentComponents.error())
+        // error() will be the TER returned if a payment is not made. It will
+        // only evaluate to true if it's an error. Otherwise, tesSUCCESS means
+        // nothing was done, so continue.
+        return Unexpected(fullPaymentComponents.error());
 
     // -------------------------------------------------------------
     // regular periodic payment handling
 
-    return Unexpected(temDISABLED);
-#if LOANCOMPLETE
     // if the payment is not late nor if it's a full payment, then it must
     // be a periodic one, with possible overpayments
 
-    auto const totalDue = periodic.interest + periodic.principal + periodic.fee;
+    // This will keep a running total of what is actually paid, if the payment
+    // is sufficient for a single payment
+    Number totalPaid =
+        periodic.roundedInterest + periodic.roundedPrincipal + periodic.fee;
 
-    // TODO: Don't attempt to figure out the number of payments beforehand. Just
-    // loop over making payments until the `amount` is used up or the loan is
-    // paid off.
-    std::optional<NumberRoundModeGuard> mg(Number::downward);
-    std::int64_t const fullPeriodicPayments = [&]() {
-        std::int64_t const full{amount / totalDue};
-        return full < paymentRemainingProxy ? full : paymentRemainingProxy;
-    }();
-    mg.reset();
-    // Temporary asserts
-    XRPL_ASSERT(
-        amount >= totalDue || fullPeriodicPayments == 0,
-        "temp full periodic rounding");
-    XRPL_ASSERT(
-        amount < totalDue || fullPeriodicPayments >= 1,
-        "temp full periodic rounding");
-
-    if (fullPeriodicPayments < 1)
+    if (amount < totalPaid)
     {
         JLOG(j.warn()) << "Periodic loan payment amount is insufficient. Due: "
-                       << totalDue << ", paid: " << amount;
+                       << totalPaid << ", paid: " << amount;
         return Unexpected(tecINSUFFICIENT_PAYMENT);
     }
 
-    nextDueDateProxy += paymentInterval * fullPeriodicPayments;
-    prevPaymentDateProxy = nextDueDateProxy - paymentInterval;
+    LoanPaymentParts totalParts = detail::doPayment(
+        periodic,
+        totalValueOutstandingProxy,
+        principalOutstandingProxy,
+        referencePrincipalProxy,
+        paymentRemainingProxy,
+        prevPaymentDateProxy,
+        nextDueDateProxy,
+        paymentInterval);
 
-    Number totalPrincipalPaid = 0;
-    Number totalInterestPaid = 0;
-    Number loanValueChange = 0;
-
-    std::optional<PaymentParts> future = periodic;
-    for (int i = 0; i < fullPeriodicPayments; ++i)
+    while (totalPaid < amount && paymentRemainingProxy > 0)
     {
-        // Only do the work if we need to
-        if (!future)
-            future = computePaymentParts(
+        // Try to make more payments
+        detail::PaymentComponentsPlus const nextPayment{
+            detail::computePaymentComponents(
                 asset,
                 loanScale,
                 totalValueOutstandingProxy,
                 principalOutstandingProxy,
+                referencePrincipalProxy,
                 periodicPayment,
-                serviceFee,
                 periodicRate,
-                paymentRemainingProxy);
+                paymentRemainingProxy),
+            periodic.fee};
         XRPL_ASSERT(
-            future->interest <= periodic.interest,
+            nextPayment.rawInterest <= periodic.rawInterest,
             "ripple::loanMakePayment : decreasing interest");
         XRPL_ASSERT(
-            future->principal >= periodic.principal,
+            nextPayment.rawPrincipal >= periodic.rawPrincipal,
             "ripple::loanMakePayment : increasing principal");
 
-        totalPrincipalPaid += future->principal;
-        totalInterestPaid += future->interest;
-        paymentRemainingProxy -= 1;
-        principalOutstandingProxy -= future->principal;
+        // the fee part doesn't change
+        auto const due = nextPayment.roundedInterest +
+            nextPayment.roundedPrincipal + periodic.fee;
 
-        future.reset();
+        if (amount < totalPaid + due)
+            // We're done making payments.
+            break;
+
+        totalPaid += due;
+        totalParts += detail::doPayment(
+            nextPayment,
+            totalValueOutstandingProxy,
+            principalOutstandingProxy,
+            referencePrincipalProxy,
+            paymentRemainingProxy,
+            prevPaymentDateProxy,
+            nextDueDateProxy,
+            paymentInterval);
     }
 
-    Number totalfeeToPay = serviceFee * fullPeriodicPayments;
-
-    Number const newInterest = loanTotalInterestOutstanding(
-                                   asset,
-                                   loanScale,
-                                   principalOutstandingProxy,
-                                   interestRate,
-                                   paymentInterval,
-                                   paymentRemainingProxy) +
-        totalInterestPaid;
-
+    return Unexpected(temDISABLED);
+#if LOANCOMPLETE
     // -------------------------------------------------------------
     // overpayment handling
     Number overpaymentInterestPortion = 0;
