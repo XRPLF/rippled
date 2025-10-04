@@ -350,8 +350,6 @@ SetSignerList::replaceSignerList()
         return tefINTERNAL;
 
     // Compute new reserve.  Verify the account has funds to meet the reserve.
-    std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
-
     // The required reserve changes based on featureMultiSignReserve...
     int addedOwnerCount{1};
     std::uint32_t flags{lsfOneOwnerCount};
@@ -362,14 +360,13 @@ SetSignerList::replaceSignerList()
         flags = 0;
     }
 
-    XRPAmount const newReserve{
-        view().fees().accountReserve(oldOwnerCount + addedOwnerCount)};
-
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
     // with CreateTicket.
-    if (mPriorBalance < newReserve)
-        return tecINSUFFICIENT_RESERVE;
+    if (auto const ret = checkInsufficientReserve(
+            ctx_.view(), sle, mPriorBalance, addedOwnerCount);
+        !isTesSuccess(ret))
+        return ret;
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
     auto signerList = std::make_shared<SLE>(signerListKeylet);

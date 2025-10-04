@@ -82,13 +82,10 @@ CreateTicket::doApply()
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
-    {
-        XRPAmount const reserve = view().fees().accountReserve(
-            sleAccountRoot->getFieldU32(sfOwnerCount) + ticketCount);
-
-        if (mPriorBalance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    if (auto const ret = checkInsufficientReserve(
+            view(), sleAccountRoot, mPriorBalance, ticketCount);
+        !isTesSuccess(ret))
+        return ret;
 
     beast::Journal viewJ{ctx_.app.journal("View")};
 

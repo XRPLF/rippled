@@ -114,10 +114,10 @@ PermissionedDomainSet::doApply()
         // Create new permissioned domain.
         // Check reserve availability for new object creation
         auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
-        auto const reserve =
-            ctx_.view().fees().accountReserve((*ownerSle)[sfOwnerCount] + 1);
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+        if (auto const ret =
+                checkInsufficientReserve(ctx_.view(), ownerSle, balance, 1);
+            !isTesSuccess(ret))
+            return ret;
 
         Keylet const pdKeylet = keylet::permissionedDomain(
             account_, ctx_.tx.getFieldU32(sfSequence));

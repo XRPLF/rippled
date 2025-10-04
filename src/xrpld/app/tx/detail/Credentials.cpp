@@ -139,12 +139,10 @@ CredentialCreate::doApply()
     if (!sleIssuer)
         return tefINTERNAL;
 
-    {
-        STAmount const reserve{view().fees().accountReserve(
-            sleIssuer->getFieldU32(sfOwnerCount) + 1)};
-        if (mPriorBalance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    if (auto const ret =
+            checkInsufficientReserve(view(), sleIssuer, mPriorBalance, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     sleCred->setAccountID(sfSubject, subject);
     sleCred->setAccountID(sfIssuer, account_);
@@ -344,12 +342,10 @@ CredentialAccept::doApply()
     if (!sleSubject || !sleIssuer)
         return tefINTERNAL;
 
-    {
-        STAmount const reserve{view().fees().accountReserve(
-            sleSubject->getFieldU32(sfOwnerCount) + 1)};
-        if (mPriorBalance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    if (auto const ret =
+            checkInsufficientReserve(view(), sleSubject, mPriorBalance, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(account_, issuer, credType);

@@ -204,13 +204,14 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
     // Check reserve and funds availability
     {
         auto const balance = (*sle)[sfBalance];
-        auto const reserve =
-            ctx.view.fees().accountReserve((*sle)[sfOwnerCount] + 1);
+        if (auto const ret =
+                checkInsufficientReserve(ctx.view, sle, balance, 1);
+            !isTesSuccess(ret))
+            return ret;
 
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-
-        if (balance < reserve + ctx.tx[sfAmount])
+        if (auto const ret = checkInsufficientReserve(
+                ctx.view, sle, balance - ctx.tx[sfAmount], 1);
+            !isTesSuccess(ret))
             return tecUNFUNDED;
     }
 
@@ -394,14 +395,15 @@ PayChanFund::doApply()
     {
         // Check reserve and funds availability
         auto const balance = (*sle)[sfBalance];
-        auto const reserve =
-            ctx_.view().fees().accountReserve((*sle)[sfOwnerCount]);
+        if (auto const ret =
+                checkInsufficientReserve(ctx_.view(), sle, balance, 0);
+            !isTesSuccess(ret))
+            return ret;  // LCOV_EXCL_LINE
 
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-
-        if (balance < reserve + ctx_.tx[sfAmount])
-            return tecUNFUNDED;
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(), sle, balance - ctx_.tx[sfAmount], 0);
+            !isTesSuccess(ret))
+            return tecUNFUNDED;  // LCOV_EXCL_LINE
     }
 
     // do not allow adding funds if dst does not exist

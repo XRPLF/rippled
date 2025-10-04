@@ -451,6 +451,17 @@ areCompatible(
     beast::Journal::Stream& s,
     char const* reason);
 
+uint32_t
+ownerCount(std::shared_ptr<SLE const> const& accountSle);
+
+TER
+checkInsufficientReserve(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& accSle,
+    STAmount const& accBalance,
+    std::int32_t ownerCountDelta,
+    std::int32_t accountCountDelta = 0);
+
 //------------------------------------------------------------------------------
 //
 // Modifiers

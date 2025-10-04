@@ -163,12 +163,12 @@ SetOracle::preclaim(PreclaimContext const& ctx)
     if (pairs.size() > maxOracleDataSeries)
         return tecARRAY_TOO_LARGE;
 
-    auto const reserve = ctx.view.fees().accountReserve(
-        sleSetter->getFieldU32(sfOwnerCount) + adjustReserve);
     auto const& balance = sleSetter->getFieldAmount(sfBalance);
 
-    if (balance < reserve)
-        return tecINSUFFICIENT_RESERVE;
+    if (auto const ret = checkInsufficientReserve(
+            ctx.view, sleSetter, balance, adjustReserve);
+        !isTesSuccess(ret))
+        return ret;
 
     return tesSUCCESS;
 }

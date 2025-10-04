@@ -1033,9 +1033,10 @@ tokenOfferCreateApply(
     std::uint32_t txFlags)
 {
     Keylet const acctKeylet = keylet::account(acctID);
-    if (auto const acct = view.read(acctKeylet);
-        priorBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
-        return tecINSUFFICIENT_RESERVE;
+    if (auto const ret = checkInsufficientReserve(
+            view, view.read(acctKeylet), priorBalance, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     auto const offerID = keylet::nftoffer(acctID, seqProxy.value());
 

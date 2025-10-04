@@ -79,14 +79,11 @@ addSLE(
         return tefINTERNAL;
 
     // Check reserve availability for new object creation
-    {
-        auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
-        auto const reserve =
-            ctx.view().fees().accountReserve((*sleAccount)[sfOwnerCount] + 1);
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
+    if (auto const ret =
+            checkInsufficientReserve(ctx.view(), sleAccount, balance, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     // Add ledger object to ledger
     ctx.view().insert(sle);
