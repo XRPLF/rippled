@@ -1022,8 +1022,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 uint32_t
 ownerCount(std::shared_ptr<SLE const> const& accountSle)
 {
-    auto const ownerCount = accountSle->getFieldU32(sfOwnerCount);
-    return ownerCount;
+    return accountSle->getFieldU32(sfOwnerCount);
 }
 
 TER
@@ -1034,8 +1033,8 @@ checkInsufficientReserve(
     std::int32_t ownerCountDelta,
     std::int32_t accountCountDelta)
 {
-    STAmount const reserve{view.fees().accountReserve(
-        accSle->getFieldU32(sfOwnerCount) + ownerCountDelta)};
+    STAmount const reserve{
+        view.fees().accountReserve(ownerCount(accSle) + ownerCountDelta)};
 
     if (accBalance < reserve)
         return tecINSUFFICIENT_RESERVE;
