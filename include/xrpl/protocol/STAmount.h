@@ -66,15 +66,15 @@ public:
     static int const cMaxOffset = 80;
 
     // Maximum native value supported by the code
-    static std::uint64_t const cMinValue = 1000000000000000ull;
-    static std::uint64_t const cMaxValue = 9999999999999999ull;
-    static std::uint64_t const cMaxNative = 9000000000000000000ull;
+    static std::uint64_t const cMinValue = 1'000'000'000'000'000ull;
+    static std::uint64_t const cMaxValue = 9'999'999'999'999'999ull;
+    static std::uint64_t const cMaxNative = 9'000'000'000'000'000'000ull;
 
     // Max native value on network.
-    static std::uint64_t const cMaxNativeN = 100000000000000000ull;
-    static std::uint64_t const cIssuedCurrency = 0x8000000000000000ull;
-    static std::uint64_t const cPositive = 0x4000000000000000ull;
-    static std::uint64_t const cMPToken = 0x2000000000000000ull;
+    static std::uint64_t const cMaxNativeN = 100'000'000'000'000'000ull;
+    static std::uint64_t const cIssuedCurrency = 0x8'000'000'000'000'000ull;
+    static std::uint64_t const cPositive = 0x4'000'000'000'000'000ull;
+    static std::uint64_t const cMPToken = 0x2'000'000'000'000'000ull;
     static std::uint64_t const cValueMask = ~(cPositive | cMPToken);
 
     static std::uint64_t const uRateOne;
@@ -695,21 +695,22 @@ divRoundStrict(
 std::uint64_t
 getRate(STAmount const& offerOut, STAmount const& offerIn);
 
-/** Round an arbitrary precision Amount to the precision of a reference Amount.
+/** Round an arbitrary precision Amount to the precision of an STAmount that has
+ * a given exponent.
  *
  * This is used to ensure that calculations involving IOU amounts do not collect
  * dust beyond the precision of the reference value.
  *
  * @param value The value to be rounded
- * @param referenceValue A reference value to establish the precision limit of
- *     `value`. Should be larger than `value`.
+ * @param scale An exponent value to establish the precision limit of
+ *     `value`. Should be larger than `value.exponent()`.
  * @param rounding Optional Number rounding mode
  *
  */
 STAmount
-roundToReference(
-    STAmount const value,
-    STAmount referenceValue,
+roundToScale(
+    STAmount value,
+    std::int32_t scale,
     Number::rounding_mode rounding = Number::getround());
 
 /** Round an arbitrary precision Number to the precision of a given Asset.
@@ -720,9 +721,8 @@ roundToReference(
  *
  * @param asset The relevant asset
  * @param value The value to be rounded
- * @param referenceValue Only relevant to IOU assets. A reference value to
- *     establish the precision limit of `value`. Should be larger than
- *     `value`.
+ * @param scale Only relevant to IOU assets. An exponent value to establish the
+ *      precision limit of `value`. Should be larger than `value.exponent()`.
  * @param rounding Optional Number rounding mode
  */
 template <AssetType A>
@@ -730,7 +730,7 @@ Number
 roundToAsset(
     A const& asset,
     Number const& value,
-    Number const& referenceValue,
+    std::int32_t scale,
     Number::rounding_mode rounding = Number::getround())
 {
     NumberRoundModeGuard mg(rounding);
@@ -739,7 +739,7 @@ roundToAsset(
         return ret;
     // Not that the ctor will round integral types (XRP, MPT) via canonicalize,
     // so no extra work is needed for those.
-    return roundToReference(ret, STAmount{asset, referenceValue});
+    return roundToScale(ret, scale);
 }
 
 //------------------------------------------------------------------------------

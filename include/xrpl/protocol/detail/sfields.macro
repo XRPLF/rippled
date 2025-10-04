@@ -239,12 +239,13 @@ TYPED_SFIELD(sfLatePaymentFee,           NUMBER,     11)
 TYPED_SFIELD(sfClosePaymentFee,          NUMBER,     12)
 TYPED_SFIELD(sfPrincipalOutstanding,     NUMBER,     13)
 TYPED_SFIELD(sfPrincipalRequested,       NUMBER,     14)
+TYPED_SFIELD(sfTotalValueOutstanding,    NUMBER,     15)
+TYPED_SFIELD(sfPeriodicPayment,          NUMBER,     16)
+TYPED_SFIELD(sfReferencePrincipal,       NUMBER,     17)
+TYPED_SFIELD(sfInterestOwed,             NUMBER,     18)
 
 // int32
-// NOTE: Do not use `sfDummyInt32`. It's so far the only use of INT32
-// in this file and has been defined here for test only.
-// TODO: Replace `sfDummyInt32` with actually useful field.
-TYPED_SFIELD(sfDummyInt32,               INT32,      1) // for tests only
+TYPED_SFIELD(sfLoanScale,                INT32,      1)
 
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)

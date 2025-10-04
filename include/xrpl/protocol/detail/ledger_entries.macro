@@ -548,30 +548,30 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfLoanBrokerID,         soeREQUIRED},
     {sfLoanSequence,         soeREQUIRED},
     {sfBorrower,             soeREQUIRED},
-    {sfLoanOriginationFee,   soeREQUIRED},
-    {sfLoanServiceFee,       soeREQUIRED},
-    {sfLatePaymentFee,       soeREQUIRED},
-    {sfClosePaymentFee,      soeREQUIRED},
-    {sfOverpaymentFee,       soeREQUIRED},
-    {sfInterestRate,         soeREQUIRED},
-    {sfLateInterestRate,     soeREQUIRED},
-    {sfCloseInterestRate,    soeREQUIRED},
-    {sfOverpaymentInterestRate, soeREQUIRED},
+    {sfLoanOriginationFee,   soeDEFAULT},
+    {sfLoanServiceFee,       soeDEFAULT},
+    {sfLatePaymentFee,       soeDEFAULT},
+    {sfClosePaymentFee,      soeDEFAULT},
+    {sfOverpaymentFee,       soeDEFAULT},
+    {sfInterestRate,         soeDEFAULT},
+    {sfLateInterestRate,     soeDEFAULT},
+    {sfCloseInterestRate,    soeDEFAULT},
+    {sfOverpaymentInterestRate, soeDEFAULT},
     {sfStartDate,            soeREQUIRED},
     {sfPaymentInterval,      soeREQUIRED},
     {sfGracePeriod,          soeREQUIRED},
-    {sfPreviousPaymentDate,  soeREQUIRED},
+    {sfPeriodicPayment,      soeREQUIRED},
+    {sfPreviousPaymentDate,  soeDEFAULT},
     {sfNextPaymentDueDate,   soeREQUIRED},
-    {sfPaymentRemaining,     soeREQUIRED},
-//#if LOANDRAW
-// TODO: Remove this when you remove the rest of the LOANDRAW blocks.
-// Directives don't work with macro expansion.
-    {sfAssetsAvailable,      soeDEFAULT},
-//#endif
-    {sfPrincipalOutstanding, soeREQUIRED},
-    // Save the original request amount for rounding / scaling of
-    // other computations, particularly for IOUs
-    {sfPrincipalRequested,   soeREQUIRED},
+    {sfPaymentRemaining,     soeDEFAULT},
+    {sfPrincipalOutstanding, soeDEFAULT},
+    {sfTotalValueOutstanding, soeDEFAULT},
+    {sfInterestOwed,         soeDEFAULT},
+    // Based on the original principal borrowed, used for
+    // rounding calculated values so they are all on a
+    // consistent scale - that is, they all have the same
+    // number of decimal places after the decimal point.
+    {sfLoanScale,            soeDEFAULT},
 }))
 
 #undef EXPAND
