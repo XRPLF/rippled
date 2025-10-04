@@ -1479,7 +1479,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
         // Check reserve
         auto const sleAcc = ctx.view.read(keylet::account(account));
         if (!sleAcc)
-            return terNO_ACCOUNT;
+            return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
         auto const balance = (*sleAcc)[sfBalance];
         if (auto const ret =
@@ -2013,7 +2013,7 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
         // Check reserve
         auto const sleAcc = ctx.view.read(keylet::account(account));
         if (!sleAcc)
-            return terNO_ACCOUNT;
+            return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
         auto const balance = (*sleAcc)[sfBalance];
         if (auto const ret =

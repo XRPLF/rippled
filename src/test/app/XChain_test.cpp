@@ -2614,17 +2614,8 @@ struct XChain_test : public beast::unit_test::suite,
 
         testcase("Add Non Batch Account Create Attestation");
 
-        XEnv mcEnv(*this);
-        XEnv scEnv(*this, true);
-
-        XRPAmount tx_fee = mcEnv.txFee();
-
         Account a{"a"};
         Account doorA{"doorA"};
-
-        STAmount funds{XRP(10000)};
-        mcEnv.fund(funds, a);
-        mcEnv.fund(funds, doorA);
 
         Account ua{"ua"};  // unfunded account we want to create
 
@@ -2639,47 +2630,88 @@ struct XChain_test : public beast::unit_test::suite,
             signers,
             Json::nullValue};
 
-        xrp_b.initBridge(mcEnv, scEnv);
-
-        auto const amt = XRP(777);
-        auto const amt_plus_reward = amt + xrp_b.reward;
         {
-            Balance bal_doorA(mcEnv, doorA);
-            Balance bal_a(mcEnv, a);
+            XEnv mcEnv(*this);
+            XEnv scEnv(*this, true);
 
-            mcEnv
-                .tx(sidechain_xchain_account_create(
-                    a, xrp_b.jvb, ua, amt, xrp_b.reward))
-                .close();
+            XRPAmount tx_fee = mcEnv.txFee();
 
-            BEAST_EXPECT(bal_doorA.diff() == amt_plus_reward);
-            BEAST_EXPECT(bal_a.diff() == -(amt_plus_reward + tx_fee));
+            STAmount funds{XRP(10000)};
+            mcEnv.fund(funds, a);
+            mcEnv.fund(funds, doorA);
+
+            xrp_b.initBridge(mcEnv, scEnv);
+
+            auto const amt = XRP(777);
+            auto const amt_plus_reward = amt + xrp_b.reward;
+            {
+                Balance bal_doorA(mcEnv, doorA);
+                Balance bal_a(mcEnv, a);
+
+                mcEnv
+                    .tx(sidechain_xchain_account_create(
+                        a, xrp_b.jvb, ua, amt, xrp_b.reward))
+                    .close();
+
+                BEAST_EXPECT(bal_doorA.diff() == amt_plus_reward);
+                BEAST_EXPECT(bal_a.diff() == -(amt_plus_reward + tx_fee));
+            }
+
+            for (int i = 0; i < signers.size(); ++i)
+            {
+                auto const att = create_account_attestation(
+                    signers[0].account,
+                    xrp_b.jvb,
+                    a,
+                    amt,
+                    xrp_b.reward,
+                    signers[i].account,
+                    true,
+                    1,
+                    ua,
+                    signers[i]);
+                TER const expectedTER = i < xrp_b.quorum
+                    ? tesSUCCESS
+                    : TER{tecXCHAIN_ACCOUNT_CREATE_PAST};
+
+                scEnv.tx(att, ter(expectedTER)).close();
+                if (i + 1 < xrp_b.quorum)
+                    BEAST_EXPECT(!scEnv.env_.le(ua));
+                else
+                    BEAST_EXPECT(scEnv.env_.le(ua));
+            }
+            BEAST_EXPECT(scEnv.env_.le(ua));
         }
-
-        for (int i = 0; i < signers.size(); ++i)
         {
+            XEnv mcEnv(*this);
+            XEnv scEnv(*this, true);
+
+            STAmount funds{XRP(10000)};
+            mcEnv.fund(funds, a);
+            auto const mcBaseFee = mcEnv.env_.current()->fees().base;
+            mcEnv.fund(
+                // for SignerList, Bridge: 2 increments
+                // for SetSignerList, BridgeCreate: 2 base fees
+                mcEnv.env_.current()->fees().accountReserve(3) + mcBaseFee * 2 -
+                    drops(1),
+                doorA);
+
+            xrp_b.initBridge(mcEnv, scEnv);
+
+            auto const amt = XRP(777);
             auto const att = create_account_attestation(
                 signers[0].account,
                 xrp_b.jvb,
                 a,
                 amt,
                 xrp_b.reward,
-                signers[i].account,
-                true,
+                signers[0].account,
+                false,
                 1,
                 ua,
-                signers[i]);
-            TER const expectedTER = i < xrp_b.quorum
-                ? tesSUCCESS
-                : TER{tecXCHAIN_ACCOUNT_CREATE_PAST};
-
-            scEnv.tx(att, ter(expectedTER)).close();
-            if (i + 1 < xrp_b.quorum)
-                BEAST_EXPECT(!scEnv.env_.le(ua));
-            else
-                BEAST_EXPECT(scEnv.env_.le(ua));
+                signers[0]);
+            mcEnv.tx(att, ter(tecINSUFFICIENT_RESERVE)).close();
         }
-        BEAST_EXPECT(scEnv.env_.le(ua));
     }
 
     void

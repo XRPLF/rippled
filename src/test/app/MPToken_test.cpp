@@ -156,6 +156,13 @@ class MPToken_test : public beast::unit_test::suite
                  .metadata = "test",
                  .err = temMALFORMED});
         }
+        // test reserve check of MPTokenIssuanceCreate
+        {
+            Env env{*this, features};
+            env.fund(env.current()->fees().accountReserve(1) - drops(1), alice);
+            MPTTester mptAlice(env, alice, {.fund = false});
+            mptAlice.create({.err = tecINSUFFICIENT_RESERVE});
+        }
     }
 
     void

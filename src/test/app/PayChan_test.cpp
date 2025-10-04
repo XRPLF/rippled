@@ -2322,6 +2322,38 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
+    testReserveCheck(FeatureBitset features)
+    {
+        testcase("Reserve check");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env(*this, features);
+
+        auto const acctReserveForOne = env.current()->fees().accountReserve(1);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), bob);
+        env.close();
+
+        env.fund(acctReserveForOne - drops(1), alice);
+        env.close();
+
+        BEAST_EXPECT(env.balance(alice) < acctReserveForOne);
+        env(create(alice, bob, XRP(1), 100s, alice.pk()),
+            ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+
+        env(pay(env.master, alice, XRP(1)));
+        env.close();
+
+        BEAST_EXPECT(env.balance(alice) > acctReserveForOne);
+        BEAST_EXPECT(env.balance(alice) < acctReserveForOne + XRP(1));
+        env(create(alice, bob, XRP(1), 100s, alice.pk()), ter(tecUNFUNDED));
+        env.close();
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testSimple(features);
@@ -2345,6 +2377,7 @@ struct PayChan_test : public beast::unit_test::suite
         testMetaAndOwnership(features);
         testAccountDelete(features);
         testUsingTickets(features);
+        testReserveCheck(features);
     }
 
 public:
