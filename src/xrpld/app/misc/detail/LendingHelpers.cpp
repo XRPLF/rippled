@@ -94,20 +94,18 @@ loanLatePaymentInterest(
     Number const& principalOutstanding,
     TenthBips32 lateInterestRate,
     NetClock::time_point parentCloseTime,
-    std::uint32_t startDate,
-    std::uint32_t prevPaymentDate)
+    std::uint32_t nextPaymentDueDate)
 {
     /*
      * This formula is from the XLS-66 spec, section 3.2.4.1.2 (Late payment),
      * specifically "latePaymentInterest = ..."
+     *
+     * The spec is to be updated to base the duration on the next due date
      */
-    auto const lastPaymentDate = std::max(prevPaymentDate, startDate);
+    auto const secondsOverdue =
+        parentCloseTime.time_since_epoch().count() - nextPaymentDueDate;
 
-    auto const secondsSinceLastPayment =
-        parentCloseTime.time_since_epoch().count() - lastPaymentDate;
-
-    auto const rate =
-        loanPeriodicRate(lateInterestRate, secondsSinceLastPayment);
+    auto const rate = loanPeriodicRate(lateInterestRate, secondsOverdue);
 
     return principalOutstanding * rate;
 }

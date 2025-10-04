@@ -122,8 +122,6 @@ LoanPay::preclaim(PreclaimContext const& ctx)
 TER
 LoanPay::doApply()
 {
-    return temDISABLED;
-#if LOANCOMPLETE
     auto const& tx = ctx_.tx;
     auto& view = ctx_.view();
 
@@ -149,37 +147,13 @@ LoanPay::doApply()
 
     //------------------------------------------------------
     // Loan object state changes
-    std::int32_t const loanScale = loanSle->at(sfLoanScale);
 
     // Unimpair the loan if it was impaired. Do this before the payment is
     // attempted, so the original values can be used. If the payment fails, this
     // change will be discarded.
     if (loanSle->isFlag(lsfLoanImpaired))
     {
-        TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
-        auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
-
-        TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
-        auto const paymentInterval = loanSle->at(sfPaymentInterval);
-        auto const paymentsRemaining = loanSle->at(sfPaymentRemaining);
-
-        auto const interestOutstanding = loanInterestOutstandingMinusFee(
-            asset,
-            loanScale,
-            principalOutstanding.value(),
-            interestRate,
-            paymentInterval,
-            paymentsRemaining,
-            managementFeeRate);
-
-        LoanManage::unimpairLoan(
-            view,
-            loanSle,
-            vaultSle,
-            principalOutstanding,
-            interestOutstanding,
-            paymentInterval,
-            j_);
+        LoanManage::unimpairLoan(view, loanSle, vaultSle, j_);
     }
 
     Expected<LoanPaymentParts, TER> paymentParts =
@@ -193,7 +167,8 @@ LoanPay::doApply()
     view.update(loanSle);
 
     XRPL_ASSERT_PARTS(
-        paymentParts->principalPaid > 0,
+        // It is possible to pay 0 interest
+        paymentParts->principalPaid >= 0,
         "ripple::LoanPay::doApply",
         "valid principal paid");
     XRPL_ASSERT_PARTS(
@@ -201,78 +176,83 @@ LoanPay::doApply()
         "ripple::LoanPay::doApply",
         "valid interest paid");
     XRPL_ASSERT_PARTS(
-        paymentParts->feePaid >= 0,
+        paymentParts->feeToPay >= 0,
         "ripple::LoanPay::doApply",
         "valid fee paid");
-    if (paymentParts->principalPaid <= 0 || paymentParts->interestPaid < 0 ||
-        paymentParts->feePaid < 0)
+    if (paymentParts->principalPaid < 0 || paymentParts->interestPaid < 0 ||
+        paymentParts->feeToPay < 0)
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Loan payment computation returned invalid values.";
-        return tecINTERNAL;
+        return tecLIMIT_EXCEEDED;
         // LCOV_EXCL_STOP
     }
+
+    std::int32_t const loanScale = loanSle->at(sfLoanScale);
 
     //------------------------------------------------------
     // LoanBroker object state changes
     view.update(brokerSle);
 
     TenthBips32 managementFeeRate{brokerSle->at(sfManagementFeeRate)};
-    auto const managementFee = roundToAsset(
-        asset,
-        tenthBipsOfValue(paymentParts->interestPaid, managementFeeRate),
-        loanScale);
+    auto interestOwedProxy = loanSle->at(sfInterestOwed);
 
-    auto const totalPaidToVault = paymentParts->principalPaid +
-        paymentParts->interestPaid - managementFee;
+    auto const [managementFee, interestPaidToVault] = [&]() {
+        auto const managementFee = roundToAsset(
+            asset,
+            tenthBipsOfValue(paymentParts->interestPaid, managementFeeRate),
+            loanScale);
+        auto const interest = paymentParts->interestPaid - managementFee;
+        auto const owed = *interestOwedProxy;
+        if (interest > owed)
+            return std::make_pair(interest - owed, owed);
+        return std::make_pair(managementFee, interest);
+    }();
+    XRPL_ASSERT_PARTS(
+        managementFee >= 0 && interestPaidToVault >= 0 &&
+            (managementFee + interestPaidToVault ==
+             paymentParts->interestPaid) &&
+            isRounded(asset, managementFee, loanScale) &&
+            isRounded(asset, interestPaidToVault, loanScale),
+        "ripple::LoanPay::doApply",
+        "management fee computation is valid");
+    auto const totalPaidToVault =
+        paymentParts->principalPaid + interestPaidToVault;
 
-    auto const totalPaidToBroker = paymentParts->feePaid + managementFee;
+    auto const totalPaidToBroker = paymentParts->feeToPay + managementFee;
 
     XRPL_ASSERT_PARTS(
         (totalPaidToVault + totalPaidToBroker) ==
             (paymentParts->principalPaid + paymentParts->interestPaid +
-             paymentParts->feePaid),
+             paymentParts->feeToPay),
         "ripple::LoanPay::doApply",
         "payments add up");
 
-    // If there is not enough first-loss capital
-    auto coverAvailableField = brokerSle->at(sfCoverAvailable);
-    auto debtTotalField = brokerSle->at(sfDebtTotal);
-    TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
+    auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
-    bool const sufficientCover = coverAvailableField >=
-        roundToAsset(asset,
-                     tenthBipsOfValue(debtTotalField.value(), coverRateMinimum),
-                     loanScale);
-    if (!sufficientCover)
-    {
-        // Add the fee to First Loss Cover Pool
-        coverAvailableField += totalPaidToBroker;
-    }
-    auto const brokerPayee =
-        sufficientCover ? brokerOwner : brokerPseudoAccount;
-
-    // Decrease LoanBroker Debt by the amount paid, add the Loan value change,
-    // and subtract the change in the management fee
-    auto const vaultValueChange = valueMinusManagementFee(
-        asset, paymentParts->valueChange, managementFeeRate, loanScale);
-    // debtDecrease may be negative, increasing the debt
-    auto const debtDecrease = totalPaidToVault - vaultValueChange;
+    // Decrease LoanBroker Debt by the amount paid, add the Loan value change
+    // (which might be negative). debtDecrease may be negative, increasing the
+    // debt
+    auto const debtDecrease = totalPaidToVault - paymentParts->valueChange;
     XRPL_ASSERT_PARTS(
-        roundToAsset(asset, debtDecrease, loanScale) == debtDecrease,
+        isRounded(asset, debtDecrease, loanScale),
         "ripple::LoanPay::doApply",
         "debtDecrease rounding good");
-    if (debtDecrease >= debtTotalField)
-        debtTotalField = 0;
+    // Despite our best efforts, it's possible for rounding errors to accumulate
+    // in the loan broker's debt total. This is because the broker may have more
+    // that one loan with significantly different scales.
+    if (debtDecrease >= debtTotalProxy)
+        debtTotalProxy = 0;
     else
-        debtTotalField -= debtDecrease;
+        debtTotalProxy -= debtDecrease;
 
     //------------------------------------------------------
     // Vault object state changes
     view.update(vaultSle);
 
     vaultSle->at(sfAssetsAvailable) += totalPaidToVault;
-    vaultSle->at(sfAssetsTotal) += vaultValueChange;
+    vaultSle->at(sfAssetsTotal) += paymentParts->valueChange;
+    interestOwedProxy -= interestPaidToVault;
 
     // Move funds
     STAmount const paidToVault(asset, totalPaidToVault);
@@ -283,16 +263,37 @@ LoanPay::doApply()
         "amount is sufficient");
     XRPL_ASSERT_PARTS(
         paidToVault + paidToBroker <= paymentParts->principalPaid +
-                paymentParts->interestPaid + paymentParts->feePaid,
+                paymentParts->interestPaid + paymentParts->feeToPay,
         "ripple::LoanPay::doApply",
         "payment agreement");
 
+    // Determine where to send the broker's fee
+    auto coverAvailableProxy = brokerSle->at(sfCoverAvailable);
+    TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
+
+    bool const sufficientCover = coverAvailableProxy >=
+        roundToAsset(asset,
+                     tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum),
+                     loanScale);
+    if (!sufficientCover)
+    {
+        // If there is not enough first-loss capital, add the fee to First Loss
+        // Cover Pool. Note that this moves the entire fee - it does not attempt
+        // to split it. The broker can Withdraw it later if they want, or leave
+        // it for future needs.
+        coverAvailableProxy += totalPaidToBroker;
+    }
+    auto const brokerPayee =
+        sufficientCover ? brokerOwner : brokerPseudoAccount;
+
+#if !NDEBUG
     auto const accountBalanceBefore =
         accountHolds(view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
     auto const vaultBalanceBefore = accountHolds(
         view, vaultPseudoAccount, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
     auto const brokerBalanceBefore = accountHolds(
         view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+#endif
 
     if (auto const ter = accountSend(
             view,
@@ -311,8 +312,35 @@ LoanPay::doApply()
             WaiveTransferFee::Yes))
         return ter;
 
-    return tesSUCCESS;
+#if !NDEBUG
+    auto const accountBalanceAfter =
+        accountHolds(view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+    auto const vaultBalanceAfter = accountHolds(
+        view, vaultPseudoAccount, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+    auto const brokerBalanceAfter = accountHolds(
+        view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+
+    auto const balanceScale = std::max(
+        {accountBalanceBefore.exponent(),
+         vaultBalanceBefore.exponent(),
+         brokerBalanceBefore.exponent(),
+         accountBalanceAfter.exponent(),
+         vaultBalanceAfter.exponent(),
+         brokerBalanceAfter.exponent()});
+    XRPL_ASSERT_PARTS(
+        roundToAsset(
+            asset,
+            accountBalanceBefore + vaultBalanceBefore + brokerBalanceBefore,
+            balanceScale) ==
+            roundToAsset(
+                asset,
+                accountBalanceAfter + vaultBalanceAfter + brokerBalanceAfter,
+                balanceScale),
+        "ripple::LoanPay::doApply",
+        "funds are conserved (with rounding)");
 #endif
+
+    return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------
