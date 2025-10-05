@@ -308,7 +308,7 @@ admin = 127.0.0.1
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ServerInfo, app, ripple);
+BEAST_DEFINE_TESTSUITE(ServerInfo, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

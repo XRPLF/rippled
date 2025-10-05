@@ -21,8 +21,8 @@
 #define RIPPLE_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
 
 #include <xrpld/app/paths/detail/AmountSpec.h>
-#include <xrpld/ledger/PaymentSandbox.h>
 
+#include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
 

@@ -22,9 +22,9 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/JobQueue.h>
-#include <xrpld/net/InfoSub.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>

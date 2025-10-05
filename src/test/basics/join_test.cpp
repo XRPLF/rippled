@@ -99,7 +99,7 @@ struct join_test : beast::unit_test::suite
     }
 };  // namespace test
 
-BEAST_DEFINE_TESTSUITE(join, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(join, basics, ripple);
 
 }  // namespace test
 }  // namespace ripple

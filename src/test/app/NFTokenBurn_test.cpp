@@ -1454,10 +1454,10 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnBaseUtil, tx, ripple, 3);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOfixFungTokens, tx, ripple, 3);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOFixTokenRemint, tx, ripple, 3);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOFixNFTPageLinks, tx, ripple, 3);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnAllFeatures, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnBaseUtil, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOfixFungTokens, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOFixTokenRemint, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOFixNFTPageLinks, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnAllFeatures, app, ripple, 3);
 
 }  // namespace ripple

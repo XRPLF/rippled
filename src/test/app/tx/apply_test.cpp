@@ -87,6 +87,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Apply, app, ripple);
+BEAST_DEFINE_TESTSUITE(Apply, tx, ripple);
 
 }  // namespace ripple

@@ -94,6 +94,7 @@ else ()
     INTERFACE
       -Wall
       -Wdeprecated
+      $<$<BOOL:${is_clang}>:-Wno-deprecated-declarations>
       $<$<BOOL:${wextra}>:-Wextra -Wno-unused-parameter>
       $<$<BOOL:${werr}>:-Werror>
       -fstack-protector

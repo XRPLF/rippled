@@ -18,12 +18,11 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/DelegateSet.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
 
 namespace ripple {
@@ -31,12 +30,6 @@ namespace ripple {
 NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePermissionDelegation))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
     if (permissions.size() > permissionMaxSize)
         return temARRAY_TOO_LARGE;
@@ -51,9 +44,14 @@ DelegateSet::preflight(PreflightContext const& ctx)
     {
         if (!permissionSet.insert(permission[sfPermissionValue]).second)
             return temMALFORMED;
+
+        if (ctx.rules.enabled(fixDelegateV1_1) &&
+            !Permission::getInstance().isDelegatable(
+                permission[sfPermissionValue], ctx.rules))
+            return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -68,9 +66,21 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
     for (auto const& permission : permissions)
     {
-        auto const permissionValue = permission[sfPermissionValue];
-        if (!Permission::getInstance().isDelegatable(permissionValue))
+        if (!ctx.view.rules().enabled(fixDelegateV1_1) &&
+            !Permission::getInstance().isDelegatable(
+                permission[sfPermissionValue], ctx.view.rules()))
+        {
+            // Before fixDelegateV1_1:
+            //   - The check was performed during preclaim.
+            //   - Transactions from amendments not yet enabled could still be
+            //   delegated.
+            //
+            // After fixDelegateV1_1:
+            //   - The check is performed during preflight.
+            //   - Transactions from amendments not yet enabled can no longer be
+            //   delegated.
             return tecNO_PERMISSION;
+        }
     }
 
     return tesSUCCESS;

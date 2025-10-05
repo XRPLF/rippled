@@ -18,27 +18,23 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 
+std::uint32_t
+MPTokenIssuanceDestroy::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfMPTokenIssuanceDestroyMask;
+}
+
 NotTEC
 MPTokenIssuanceDestroy::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureMPTokensV1))
-        return temDISABLED;
-
-    // check flags
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfMPTokenIssuanceDestroyMask)
-        return temINVALID_FLAG;
-
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

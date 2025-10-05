@@ -20,41 +20,42 @@
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
 #include <xrpld/app/tx/detail/VaultCreate.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 
+bool
+VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
+{
+    if (!ctx.rules.enabled(featureMPTokensV1))
+        return false;
+
+    return !ctx.tx.isFieldPresent(sfDomainID) ||
+        ctx.rules.enabled(featurePermissionedDomains);
+}
+
+std::uint32_t
+VaultCreate::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfVaultCreateMask;
+}
+
 NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault) ||
-        !ctx.rules.enabled(featureMPTokensV1))
-        return temDISABLED;
-
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDomains))
-        return temDISABLED;
-
-    if (auto const ter = preflight1(ctx))
-        return ter;
-
-    if (ctx.tx.getFlags() & tfVaultCreateMask)
-        return temINVALID_FLAG;
-
-    if (auto const data = ctx.tx[~sfData])
-    {
-        if (data->empty() || data->length() > maxDataPayloadLength)
-            return temMALFORMED;
-    }
+    if (!validDataLength(ctx.tx[~sfData], maxDataPayloadLength))
+        return temMALFORMED;
 
     if (auto const withdrawalPolicy = ctx.tx[~sfWithdrawalPolicy])
     {
@@ -84,48 +85,34 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    if (auto const scale = ctx.tx[~sfScale])
+    {
+        auto const vaultAsset = ctx.tx[sfAsset];
+        if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
+            return temMALFORMED;
+
+        if (scale > vaultMaximumIOUScale)
+            return temMALFORMED;
+    }
+
+    return tesSUCCESS;
 }
 
 XRPAmount
 VaultCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // One reserve increment is typically much greater than one base fee.
-    return view.fees().increment;
+    return calculateOwnerReserveFee(view, tx);
 }
 
 TER
 VaultCreate::preclaim(PreclaimContext const& ctx)
 {
-    auto vaultAsset = ctx.tx[sfAsset];
-    auto account = ctx.tx[sfAccount];
+    auto const vaultAsset = ctx.tx[sfAsset];
+    auto const account = ctx.tx[sfAccount];
 
-    if (vaultAsset.native())
-        ;  // No special checks for XRP
-    else if (vaultAsset.holds<MPTIssue>())
-    {
-        auto mptID = vaultAsset.get<MPTIssue>().getMptID();
-        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
-        if (!issuance)
-            return tecOBJECT_NOT_FOUND;
-        if (!issuance->isFlag(lsfMPTCanTransfer))
-        {
-            // NOTE: flag lsfMPTCanTransfer is immutable, so this is debug in
-            // VaultCreate only; in other vault function it's an error.
-            JLOG(ctx.j.debug())
-                << "VaultCreate: vault assets are non-transferable.";
-            return tecNO_AUTH;
-        }
-    }
-    else if (vaultAsset.holds<Issue>())
-    {
-        auto const issuer =
-            ctx.view.read(keylet::account(vaultAsset.getIssuer()));
-        if (!issuer)
-            return terNO_ACCOUNT;
-        else if (!issuer->isFlag(lsfDefaultRipple))
-            return terNO_RIPPLE;
-    }
+    if (auto const ter = canAddHolding(ctx.view, vaultAsset))
+        return ter;
 
     // Check for pseudo-account issuers - we do not want a vault to hold such
     // assets (e.g. MPT shares to other vaults or AMM LPTokens) as they would be
@@ -148,7 +135,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
             return tecOBJECT_NOT_FOUND;
     }
 
-    auto sequence = ctx.tx.getSeqValue();
+    auto const sequence = ctx.tx.getSeqValue();
     if (auto const accountId = pseudoAccountAddress(
             ctx.view, keylet::vault(account, sequence).key);
         accountId == beast::zero)
@@ -165,8 +152,8 @@ VaultCreate::doApply()
     // we can consider downgrading them to `tef` or `tem`.
 
     auto const& tx = ctx_.tx;
-    auto sequence = tx.getSeqValue();
-    auto owner = view().peek(keylet::account(account_));
+    auto const sequence = tx.getSeqValue();
+    auto const owner = view().peek(keylet::account(account_));
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -190,6 +177,10 @@ VaultCreate::doApply()
         !isTesSuccess(ter))
         return ter;
 
+    std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
+        ? 0
+        : ctx_.tx[~sfScale].value_or(vaultDefaultIOUScale);
+
     auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
     if ((txFlags & tfVaultShareNonTransferable) == 0)
@@ -209,12 +200,13 @@ VaultCreate::doApply()
             .account = pseudoId->value(),
             .sequence = 1,
             .flags = mptFlags,
+            .assetScale = scale,
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
         });
     if (!maybeShare)
         return maybeShare.error();  // LCOV_EXCL_LINE
-    auto& share = *maybeShare;
+    auto const& mptIssuanceID = *maybeShare;
 
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
     vault->at(sfFlags) = txFlags & tfVaultPrivate;
@@ -227,7 +219,7 @@ VaultCreate::doApply()
     // Leave default values for AssetTotal and AssetAvailable, both zero.
     if (auto value = tx[~sfAssetsMaximum])
         vault->at(sfAssetsMaximum) = *value;
-    vault->at(sfShareMPTID) = share;
+    vault->at(sfShareMPTID) = mptIssuanceID;
     if (auto value = tx[~sfData])
         vault->at(sfData) = *value;
     // Required field, default to vaultStrategyFirstComeFirstServe
@@ -235,8 +227,30 @@ VaultCreate::doApply()
         vault->at(sfWithdrawalPolicy) = *value;
     else
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
-    // No `LossUnrealized`.
+    if (scale)
+        vault->at(sfScale) = scale;
     view().insert(vault);
+
+    // Explicitly create MPToken for the vault owner
+    if (auto const err = authorizeMPToken(
+            view(), mPriorBalance, mptIssuanceID, account_, ctx_.journal);
+        !isTesSuccess(err))
+        return err;
+
+    // If the vault is private, set the authorized flag for the vault owner
+    if (txFlags & tfVaultPrivate)
+    {
+        if (auto const err = authorizeMPToken(
+                view(),
+                mPriorBalance,
+                mptIssuanceID,
+                pseudoId,
+                ctx_.journal,
+                {},
+                account_);
+            !isTesSuccess(err))
+            return err;
+    }
 
     return tesSUCCESS;
 }

@@ -1110,7 +1110,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDir, tx, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDir, app, ripple, 1);
 
 }  // namespace ripple
 

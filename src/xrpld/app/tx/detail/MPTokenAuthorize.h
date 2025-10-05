@@ -42,17 +42,14 @@ public:
     {
     }
 
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
     static NotTEC
     preflight(PreflightContext const& ctx);
 
     static TER
     preclaim(PreclaimContext const& ctx);
-
-    static TER
-    authorize(
-        ApplyView& view,
-        beast::Journal journal,
-        MPTAuthorizeArgs const& args);
 
     static TER
     createMPToken(
