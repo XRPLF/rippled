@@ -2339,7 +2339,7 @@ struct PayChan_test : public beast::unit_test::suite
         env.fund(acctReserveForOne - drops(1), alice);
         env.close();
 
-        BEAST_EXPECT(env.balance(alice) < acctReserveForOne);
+        BEAST_EXPECT(env.balance(alice) == acctReserveForOne - drops(1));
         env(create(alice, bob, XRP(1), 100s, alice.pk()),
             ter(tecINSUFFICIENT_RESERVE));
         env.close();

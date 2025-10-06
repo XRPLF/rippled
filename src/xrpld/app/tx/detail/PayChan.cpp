@@ -398,12 +398,12 @@ PayChanFund::doApply()
         if (auto const ret =
                 checkInsufficientReserve(ctx_.view(), sle, balance, 0);
             !isTesSuccess(ret))
-            return ret;  // LCOV_EXCL_LINE
+            return ret;
 
         if (auto const ret = checkInsufficientReserve(
                 ctx_.view(), sle, balance - ctx_.tx[sfAmount], 0);
             !isTesSuccess(ret))
-            return tecUNFUNDED;  // LCOV_EXCL_LINE
+            return tecUNFUNDED;
     }
 
     // do not allow adding funds if dst does not exist
