@@ -1529,6 +1529,36 @@ class LedgerEntry_test : public beast::unit_test::suite
         testcase("NFT Offer");
         using namespace test::jtx;
         Env env{*this};
+
+        // positive test
+        Account const issuer{"issuer"};
+        Account const buyer{"buyer"};
+        env.fund(XRP(1000), issuer, buyer);
+
+        uint256 const nftokenID0 =
+            token::getNextID(env, issuer, 0, tfTransferable);
+        env(token::mint(issuer, 0), txflags(tfTransferable));
+        env.close();
+        uint256 const offerID = keylet::nftoffer(issuer, env.seq(issuer)).key;
+        env(token::createOffer(issuer, nftokenID0, drops(1)),
+            token::destination(buyer),
+            txflags(tfSellNFToken));
+
+        {
+            Json::Value jvParams;
+            jvParams[jss::nft_offer] = to_string(offerID);
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] ==
+                jss::NFTokenOffer);
+            BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == issuer.human());
+            BEAST_EXPECT(
+                jrr[jss::node][sfNFTokenID.jsonName] == to_string(nftokenID0));
+            BEAST_EXPECT(jrr[jss::node][sfAmount.jsonName] == "1");
+        }
+
+        // negative tests
         runLedgerEntryTest(env, jss::nft_offer);
     }
 
@@ -1538,6 +1568,27 @@ class LedgerEntry_test : public beast::unit_test::suite
         testcase("NFT Page");
         using namespace test::jtx;
         Env env{*this};
+
+        // positive test
+        Account const issuer{"issuer"};
+        env.fund(XRP(1000), issuer);
+
+        env(token::mint(issuer, 0), txflags(tfTransferable));
+        env.close();
+
+        auto const nftpage = keylet::nftpage_min(issuer);
+        BEAST_EXPECT(env.le(nftpage) != nullptr);
+
+        {
+            Json::Value jvParams;
+            jvParams[jss::nft_page] = to_string(nftpage.key);
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::NFTokenPage);
+        }
+
+        // negative tests
         runLedgerEntryTest(env, jss::nft_page);
     }
 
