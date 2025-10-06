@@ -283,9 +283,11 @@ protected:
 
     static NotTEC
     checkSign(
-        PreclaimContext const& ctx,
-        AccountID const& id,
-        STObject const& sigObject);
+        ReadView const& view,
+        ApplyFlags flags,
+        AccountID const& idAccount,
+        STObject const& sigObject,
+        beast::Journal const j);
 
     // Base class always returns true
     static bool
@@ -323,15 +325,18 @@ private:
     payFee();
     static NotTEC
     checkSingleSign(
-        PreclaimContext const& ctx,
+        ReadView const& view,
         AccountID const& idSigner,
         AccountID const& idAccount,
-        std::shared_ptr<SLE const> sleAccount);
+        std::shared_ptr<SLE const> sleAccount,
+        beast::Journal const j);
     static NotTEC
     checkMultiSign(
-        PreclaimContext const& ctx,
+        ReadView const& view,
+        ApplyFlags flags,
         AccountID const& id,
-        STObject const& sigObject);
+        STObject const& sigObject,
+        beast::Journal const j);
 
     void trapTransaction(uint256) const;
 
