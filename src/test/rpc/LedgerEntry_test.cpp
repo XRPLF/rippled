@@ -685,6 +685,57 @@ class LedgerEntry_test : public beast::unit_test::suite
         testcase("AMM");
         using namespace test::jtx;
         Env env{*this};
+
+        // positive test
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+        AMM amm(env, alice, XRP(10), alice["USD"](1000));
+        env.close();
+
+        {
+            Json::Value jvParams;
+            jvParams[jss::amm] = to_string(amm.ammID());
+            auto const result =
+                env.rpc("json", "ledger_entry", to_string(jvParams));
+            BEAST_EXPECT(
+                result.isObject() && result.isMember(jss::result) &&
+                !result[jss::result].isMember(jss::error) &&
+                result[jss::result].isMember(jss::node) &&
+                result[jss::result][jss::node].isMember(
+                    sfLedgerEntryType.jsonName) &&
+                result[jss::result][jss::node][sfLedgerEntryType.jsonName] ==
+                    jss::AMM);
+        }
+
+        {
+            Json::Value jvParams;
+            Json::Value ammParams(Json::objectValue);
+            {
+                Json::Value obj(Json::objectValue);
+                obj[jss::currency] = "XRP";
+                ammParams[jss::asset] = obj;
+            }
+            {
+                Json::Value obj(Json::objectValue);
+                obj[jss::currency] = "USD";
+                obj[jss::issuer] = alice.human();
+                ammParams[jss::asset2] = obj;
+            }
+            jvParams[jss::amm] = ammParams;
+            auto const result =
+                env.rpc("json", "ledger_entry", to_string(jvParams));
+            BEAST_EXPECT(
+                result.isObject() && result.isMember(jss::result) &&
+                !result[jss::result].isMember(jss::error) &&
+                result[jss::result].isMember(jss::node) &&
+                result[jss::result][jss::node].isMember(
+                    sfLedgerEntryType.jsonName) &&
+                result[jss::result][jss::node][sfLedgerEntryType.jsonName] ==
+                    jss::AMM);
+        }
+
+        // negative tests
         runLedgerEntryTest(
             env,
             jss::amm,

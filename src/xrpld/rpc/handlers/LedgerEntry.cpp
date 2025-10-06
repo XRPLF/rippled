@@ -102,7 +102,7 @@ parseAMM(Json::Value const& params, Json::StaticString const fieldName)
     if (!asset2)
         return Unexpected(asset2.error());
 
-    return keylet::amm(issue, issue2).key;
+    return keylet::amm(*asset, *asset2).key;
 }
 
 static Expected<uint256, Json::Value>
