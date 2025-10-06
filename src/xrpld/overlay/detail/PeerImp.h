@@ -40,7 +40,6 @@
 #include <boost/endian/conversion.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
-#include <atomic>
 #include <cstdint>
 #include <optional>
 #include <queue>
@@ -50,68 +49,6 @@ namespace ripple {
 struct ValidatorBlobInfo;
 class SHAMap;
 
-/**
- * @class PeerImp
- * @brief This class manages established peer-to-peer connections, handles
- message exchange, monitors connection health, and graceful shutdown.
- *
-
- * The PeerImp shutdown mechanism is a multi-stage process
- * designed to ensure graceful connection termination while handling ongoing
- * I/O operations safely. The shutdown can be initiated from multiple points
- * and follows a deterministic state machine.
- *
- * The shutdown process can be triggered from several entry points:
- * - **External requests**: `stop()` method called by overlay management
- * - **Error conditions**: `fail(error_code)` or `fail(string)` on protocol
- * violations
- * - **Timer expiration**: Various timeout scenarios (ping timeout, large send
- * queue)
- * - **Connection health**: Peer tracking divergence or unknown state timeouts
- *
- * The shutdown follows this progression:
- *
- * Normal Operation → shutdown() → tryAsyncShutdown() → onShutdown() → close()
- *                      ↓              ↓                 ↓              ↓
- *                 Set shutdown_   SSL graceful      Timer cancel   Socket close
- *                 Cancel timer    shutdown start    & cleanup      & metrics
- *                 5s safety timer Set shutdownStarted_              update
- *
- * Two primary flags coordinate the shutdown process:
- * - `shutdown_`: Set when shutdown is requested
- * - `shutdownStarted_`: Set when SSL shutdown begins
- *
- * The shutdown mechanism carefully coordinates with ongoing read/write
- * operations:
- *
- * **Read Operations (`onReadMessage`)**:
- * - Checks `shutdown_` flag after processing each message batch
- * - If shutdown initiated during processing, calls `tryAsyncShutdown()`
- *
- * **Write Operations (`onWriteMessage`)**:
- * - Checks `shutdown_` flag before queuing new writes
- * - Calls `tryAsyncShutdown()` when shutdown flag detected
- *
- * Multiple timers require coordination during shutdown:
- * 1. **Peer Timer**: Regular ping/pong timer cancelled immediately in
- * `shutdown()`
- * 2. **Shutdown Timer**: 5-second safety timer ensures shutdown completion
- * 3. **Operation Cancellation**: All pending async operations are cancelled
- *
- * The shutdown implements fallback mechanisms:
- * - **Graceful Path**: SSL shutdown → Socket close → Cleanup
- * - **Forced Path**: If SSL shutdown fails or times out, proceeds to socket
- * close
- * - **Safety Timer**: 5-second timeout prevents hanging shutdowns
- *
- * All shutdown operations are serialized through the boost::asio::strand to
- * ensure thread safety. The strand guarantees that shutdown state changes
- * and I/O operation callbacks are executed sequentially.
- *
- * @note This class requires careful coordination between async operations,
- * timer management, and shutdown procedures to ensure no resource leaks
- * or hanging connections in high-throughput networking scenarios.
- */
 class PeerImp : public Peer,
                 public std::enable_shared_from_this<PeerImp>,
                 public OverlayImpl::Child
@@ -142,8 +79,6 @@ private:
     socket_type& socket_;
     stream_type& stream_;
     boost::asio::strand<boost::asio::executor> strand_;
-
-    // Multi-purpose timer for peer activity monitoring and shutdown safety
     waitable_timer timer_;
 
     // Updated at each stage of the connection process to reflect
@@ -160,6 +95,7 @@ private:
 
     std::atomic<Tracking> tracking_;
     clock_type::time_point trackingTime_;
+    bool detaching_ = false;
     // Node public key of peer.
     PublicKey const publicKey_;
     std::string name_;
@@ -239,19 +175,7 @@ private:
     http_response_type response_;
     boost::beast::http::fields const& headers_;
     std::queue<std::shared_ptr<Message>> send_queue_;
-
-    // Primary shutdown flag set when shutdown is requested
-    bool shutdown_ = false;
-
-    // SSL shutdown coordination flag
-    bool shutdownStarted_ = false;
-
-    // Indicates a read operation is currently pending
-    bool readPending_ = false;
-
-    // Indicates a write operation is currently pending
-    bool writePending_ = false;
-
+    bool gracefulClose_ = false;
     int large_sendq_ = 0;
     std::unique_ptr<LoadEvent> load_event_;
     // The highest sequence of each PublisherList that has
@@ -501,6 +425,9 @@ public:
     bool
     isHighLatency() const override;
 
+    void
+    fail(std::string const& reason);
+
     bool
     compressionEnabled() const override
     {
@@ -514,128 +441,31 @@ public:
     }
 
 private:
-    /**
-     * @brief Handles a failure associated with a specific error code.
-     *
-     * This function is called when an operation fails with an error code. It
-     * logs the warning message and gracefully shutdowns the connection.
-     *
-     * The function will do nothing if the connection is already closed or if a
-     * shutdown is already in progress.
-     *
-     * @param name The name of the operation that failed (e.g., "read",
-     * "write").
-     * @param ec The error code associated with the failure.
-     * @note This function must be called from within the object's strand.
-     */
-    void
-    fail(std::string const& name, error_code ec);
-
-    /**
-     * @brief Handles a failure described by a reason string.
-     *
-     * This overload is used for logical errors or protocol violations not
-     * associated with a specific error code. It logs a warning with the
-     * given reason, then initiates a graceful shutdown.
-     *
-     * The function will do nothing if the connection is already closed or if a
-     * shutdown is already in progress.
-     *
-     * @param reason A descriptive string explaining the reason for the failure.
-     * @note This function must be called from within the object's strand.
-     */
-    void
-    fail(std::string const& reason);
-
-    /** @brief Initiates the peer disconnection sequence.
-     *
-     * This is the primary entry point to start closing a peer connection. It
-     * marks the peer for shutdown and cancels any outstanding asynchronous
-     * operations. This cancellation allows the graceful shutdown to proceed
-     * once the handlers for the cancelled operations have completed.
-     *
-     * @note This method must be called on the peer's strand.
-     */
-    void
-    shutdown();
-
-    /** @brief Attempts to perform a graceful SSL shutdown if conditions are
-     * met.
-     *
-     * This helper function checks if the peer is in a state where a graceful
-     * SSL shutdown can be performed (i.e., shutdown has been requested and no
-     * I/O operations are currently in progress).
-     *
-     * @note This method must be called on the peer's strand.
-     */
-    void
-    tryAsyncShutdown();
-
-    /**
-     * @brief Handles the completion of the asynchronous SSL shutdown.
-     *
-     * This function is the callback for the `async_shutdown` operation started
-     * in `shutdown()`. Its first action is to cancel the timer. It
-     * then inspects the error code to determine the outcome.
-     *
-     * Regardless of the result, this function proceeds to call `close()` to
-     * ensure the underlying socket is fully closed.
-     *
-     * @param ec The error code resulting from the `async_shutdown` operation.
-     */
-    void
-    onShutdown(error_code ec);
-
-    /**
-     * @brief Forcibly closes the underlying socket connection.
-     *
-     * This function provides the final, non-graceful shutdown of the peer
-     * connection. It ensures any pending timers are cancelled and then
-     * immediately closes the TCP socket, bypassing the SSL shutdown handshake.
-     *
-     * After closing, it notifies the overlay manager of the disconnection.
-     *
-     * @note This function must be called from within the object's strand.
-     */
     void
     close();
 
-    /**
-     * @brief Sets and starts the peer timer.
-     *
-     * This function starts timer, which is used to detect inactivity
-     * and prevent stalled connections. It sets the timer to expire after the
-     * predefined `peerTimerInterval`.
-     *
-     * @note This function will terminate the connection in case of any errors.
-     */
     void
-    setTimer(std::chrono::seconds interval);
+    fail(std::string const& name, error_code ec);
 
-    /**
-     * @brief Handles the expiration of the peer activity timer.
-     *
-     * This callback is invoked when the timer set by `setTimer` expires. It
-     * watches the peer connection, checking for various timeout and health
-     * conditions.
-     *
-     * @param ec The error code associated with the timer's expiration.
-     * `operation_aborted` is expected if the timer was cancelled.
-     */
     void
-    onTimer(error_code const& ec);
+    gracefulClose();
 
-    /**
-     * @brief Cancels any pending wait on the peer activity timer.
-     *
-     * This function is called to stop the timer. It gracefully manages any
-     * errors that might occur during the cancellation process.
-     */
     void
-    cancelTimer() noexcept;
+    setTimer();
+
+    void
+    cancelTimer();
 
     static std::string
     makePrefix(id_t id);
+
+    // Called when the timer wait completes
+    void
+    onTimer(boost::system::error_code const& ec);
+
+    // Called when SSL shutdown completes
+    void
+    onShutdown(error_code ec);
 
     void
     doAccept();
