@@ -102,16 +102,7 @@ parseAMM(Json::Value const& params, Json::StaticString const fieldName)
     if (!asset2)
         return Unexpected(asset2.error());
 
-    try
-    {
-        auto const issue = issueFromJson(params[jss::asset]);
-        auto const issue2 = issueFromJson(params[jss::asset2]);
-        return keylet::amm(issue, issue2).key;
-    }
-    catch (std::runtime_error const&)
-    {
-        return LedgerEntryHelpers::malformedError("malformedRequest", "");
-    }
+    return keylet::amm(issue, issue2).key;
 }
 
 static Expected<uint256, Json::Value>
