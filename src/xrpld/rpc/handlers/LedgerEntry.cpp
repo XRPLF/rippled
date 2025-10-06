@@ -92,6 +92,16 @@ parseAMM(Json::Value const& params, Json::StaticString const fieldName)
         return Unexpected(value.error());
     }
 
+    auto const asset = LedgerEntryHelpers::requiredIssue(
+        params, jss::asset, "malformedRequest");
+    if (!asset)
+        return Unexpected(asset.error());
+
+    auto const asset2 = LedgerEntryHelpers::requiredIssue(
+        params, jss::asset2, "malformedRequest");
+    if (!asset2)
+        return Unexpected(asset2.error());
+
     try
     {
         auto const issue = issueFromJson(params[jss::asset]);

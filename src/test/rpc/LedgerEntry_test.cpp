@@ -49,6 +49,7 @@ enum class FieldType {
     CurrencyField,
     HashField,
     HashOrObjectField,
+    IssueField,
     ObjectField,
     StringField,
     TwoAccountArrayField,
@@ -59,6 +60,8 @@ enum class FieldType {
 std::vector<std::pair<Json::StaticString, FieldType>> mappings{
     {jss::account, FieldType::AccountField},
     {jss::accounts, FieldType::TwoAccountArrayField},
+    {jss::asset, FieldType::IssueField},
+    {jss::asset2, FieldType::IssueField},
     {jss::authorize, FieldType::AccountField},
     {jss::authorized, FieldType::AccountField},
     {jss::credential_type, FieldType::BlobField},
@@ -93,24 +96,26 @@ getTypeName(FieldType typeID)
 {
     switch (typeID)
     {
-        case FieldType::UInt32Field:
-            return "number";
-        case FieldType::UInt64Field:
-            return "number";
-        case FieldType::HashField:
-            return "hex string";
         case FieldType::AccountField:
             return "AccountID";
+        case FieldType::ArrayField:
+            return "array";
         case FieldType::BlobField:
             return "hex string";
         case FieldType::CurrencyField:
             return "Currency";
-        case FieldType::ArrayField:
-            return "array";
+        case FieldType::HashField:
+            return "hex string";
         case FieldType::HashOrObjectField:
             return "hex string or object";
+        case FieldType::IssueField:
+            return "Issue";
         case FieldType::TwoAccountArrayField:
             return "length-2 array of Accounts";
+        case FieldType::UInt32Field:
+            return "number";
+        case FieldType::UInt64Field:
+            return "number";
         default:
             Throw<std::runtime_error>(
                 "unknown type " + std::to_string(static_cast<uint8_t>(typeID)));
@@ -211,34 +216,37 @@ class LedgerEntry_test : public beast::unit_test::suite
             return values;
         };
 
-        static auto const& badUInt32Values = remove({2, 3});
-        static auto const& badUInt64Values = remove({2, 3});
-        static auto const& badHashValues = remove({2, 3, 7, 8, 16});
         static auto const& badAccountValues = remove({12});
+        static auto const& badArrayValues = remove({17, 20});
         static auto const& badBlobValues = remove({3, 7, 8, 16});
         static auto const& badCurrencyValues = remove({14});
-        static auto const& badArrayValues = remove({17, 20});
+        static auto const& badHashValues = remove({2, 3, 7, 8, 16});
         static auto const& badIndexValues = remove({12, 16, 18, 19});
+        static auto const& badUInt32Values = remove({2, 3});
+        static auto const& badUInt64Values = remove({2, 3});
+        static auto const& badIssueValues = remove({});
 
         switch (fieldType)
         {
-            case FieldType::UInt32Field:
-                return badUInt32Values;
-            case FieldType::UInt64Field:
-                return badUInt64Values;
-            case FieldType::HashField:
-                return badHashValues;
             case FieldType::AccountField:
                 return badAccountValues;
+            case FieldType::ArrayField:
+            case FieldType::TwoAccountArrayField:
+                return badArrayValues;
             case FieldType::BlobField:
                 return badBlobValues;
             case FieldType::CurrencyField:
                 return badCurrencyValues;
-            case FieldType::ArrayField:
-            case FieldType::TwoAccountArrayField:
-                return badArrayValues;
+            case FieldType::HashField:
+                return badHashValues;
             case FieldType::HashOrObjectField:
                 return badIndexValues;
+            case FieldType::IssueField:
+                return badIssueValues;
+            case FieldType::UInt32Field:
+                return badUInt32Values;
+            case FieldType::UInt64Field:
+                return badUInt64Values;
             default:
                 Throw<std::runtime_error>(
                     "unknown type " +
@@ -255,30 +263,37 @@ class LedgerEntry_test : public beast::unit_test::suite
             arr[1u] = "r4MrUGTdB57duTnRs6KbsRGQXgkseGb1b5";
             return arr;
         }();
+        static Json::Value const issueObject = []() {
+            Json::Value arr(Json::objectValue);
+            arr[jss::currency] = "XRP";
+            return arr;
+        }();
 
         auto const typeID = getFieldType(fieldName);
         switch (typeID)
         {
-            case FieldType::UInt32Field:
-                return 1;
-            case FieldType::UInt64Field:
-                return 1;
-            case FieldType::HashField:
-                return "5233D68B4D44388F98559DE42903767803EFA7C1F8D01413FC16EE6"
-                       "B01403D6D";
             case FieldType::AccountField:
                 return "r4MrUGTdB57duTnRs6KbsRGQXgkseGb1b5";
+            case FieldType::ArrayField:
+                return Json::arrayValue;
             case FieldType::BlobField:
                 return "ABCDEF";
             case FieldType::CurrencyField:
                 return "USD";
-            case FieldType::ArrayField:
-                return Json::arrayValue;
+            case FieldType::HashField:
+                return "5233D68B4D44388F98559DE42903767803EFA7C1F8D01413FC16EE6"
+                       "B01403D6D";
+            case FieldType::IssueField:
+                return issueObject;
             case FieldType::HashOrObjectField:
                 return "5233D68B4D44388F98559DE42903767803EFA7C1F8D01413FC16EE6"
                        "B01403D6D";
             case FieldType::TwoAccountArrayField:
                 return twoAccountArray;
+            case FieldType::UInt32Field:
+                return 1;
+            case FieldType::UInt64Field:
+                return 1;
             default:
                 Throw<std::runtime_error>(
                     "unknown type " +
@@ -463,7 +478,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryInvalid()
+    testInvalid()
     {
         testcase("Invalid requests");
         using namespace test::jtx;
@@ -545,7 +560,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryAccountRoot()
+    testAccountRoot()
     {
         testcase("AccountRoot");
         using namespace test::jtx;
@@ -651,7 +666,36 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryCheck()
+    testAmendments()
+    {
+        testcase("Amendments");
+        using namespace test::jtx;
+        Env env{*this};
+
+        // positive test is difficult since we need a validator to vote for an
+        // amendment in order for the object to exist
+
+        // negative tests
+        runLedgerEntryTest(env, jss::amendments);
+    }
+
+    void
+    testAMM()
+    {
+        testcase("AMM");
+        using namespace test::jtx;
+        Env env{*this};
+        runLedgerEntryTest(
+            env,
+            jss::amm,
+            {
+                {jss::asset, "malformedRequest"},
+                {jss::asset2, "malformedRequest"},
+            });
+    }
+
+    void
+    testCheck()
     {
         testcase("Check");
         using namespace test::jtx;
@@ -703,7 +747,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryCredentials()
+    testCredentials()
     {
         testcase("Credentials");
 
@@ -771,7 +815,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryDelegate()
+    testDelegate()
     {
         testcase("Delegate");
 
@@ -826,7 +870,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryDepositPreauth()
+    testDepositPreauth()
     {
         testcase("Deposit Preauth");
 
@@ -887,7 +931,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryDepositPreauthCred()
+    testDepositPreauthCred()
     {
         testcase("Deposit Preauth with credentials");
 
@@ -1168,7 +1212,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryDirectory()
+    testDirectory()
     {
         testcase("Directory");
         using namespace test::jtx;
@@ -1322,7 +1366,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryEscrow()
+    testEscrow()
     {
         testcase("Escrow");
         using namespace test::jtx;
@@ -1384,7 +1428,84 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryOffer()
+    testFeeSettings()
+    {
+        testcase("Fee Settings");
+        using namespace test::jtx;
+        Env env{*this};
+
+        // positive test
+        {
+            Keylet const keylet = keylet::fees();
+            Json::Value jvParams;
+            jvParams[jss::fee] = to_string(keylet.key);
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::FeeSettings);
+        }
+
+        // negative tests
+        runLedgerEntryTest(env, jss::fee);
+    }
+
+    void
+    testLedgerHashes()
+    {
+        testcase("Ledger Hashes");
+        using namespace test::jtx;
+        Env env{*this};
+
+        // positive test
+        {
+            Keylet const keylet = keylet::skip();
+            Json::Value jvParams;
+            jvParams[jss::hashes] = to_string(keylet.key);
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] ==
+                jss::LedgerHashes);
+        }
+
+        // negative tests
+        runLedgerEntryTest(env, jss::hashes);
+    }
+
+    void
+    testNFTokenOffer()
+    {
+        testcase("NFT Offer");
+        using namespace test::jtx;
+        Env env{*this};
+        runLedgerEntryTest(env, jss::nft_offer);
+    }
+
+    void
+    testNFTokenPage()
+    {
+        testcase("NFT Page");
+        using namespace test::jtx;
+        Env env{*this};
+        runLedgerEntryTest(env, jss::nft_page);
+    }
+
+    void
+    testNegativeUNL()
+    {
+        testcase("Negative UNL");
+        using namespace test::jtx;
+        Env env{*this};
+
+        // positive test is complicated since it requires a validator to be on
+        // the nUNL
+
+        // negative tests
+        runLedgerEntryTest(env, jss::nunl);
+    }
+
+    void
+    testOffer()
     {
         testcase("Offer");
         using namespace test::jtx;
@@ -1432,7 +1553,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryPayChan()
+    testPayChan()
     {
         testcase("Pay Chan");
         using namespace test::jtx;
@@ -1494,7 +1615,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryRippleState()
+    testRippleState()
     {
         testcase("RippleState");
         using namespace test::jtx;
@@ -1644,7 +1765,16 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryTicket()
+    testSignerList()
+    {
+        testcase("Signer List");
+        using namespace test::jtx;
+        Env env{*this};
+        runLedgerEntryTest(env, jss::signer_list);
+    }
+
+    void
+    testTicket()
     {
         testcase("Ticket");
         using namespace test::jtx;
@@ -1729,7 +1859,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryDID()
+    testDID()
     {
         testcase("DID");
         using namespace test::jtx;
@@ -1866,7 +1996,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryMPT()
+    testMPT()
     {
         testcase("MPT");
         using namespace test::jtx;
@@ -1949,7 +2079,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryPermissionedDomain()
+    testPermissionedDomain()
     {
         testcase("PermissionedDomain");
 
@@ -2028,7 +2158,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryCLI()
+    testCLI()
     {
         testcase("command-line");
         using namespace test::jtx;
@@ -2058,25 +2188,33 @@ public:
     void
     run() override
     {
-        testLedgerEntryInvalid();
-        testLedgerEntryAccountRoot();
-        testLedgerEntryCheck();
-        testLedgerEntryCredentials();
-        testLedgerEntryDelegate();
-        testLedgerEntryDepositPreauth();
-        testLedgerEntryDepositPreauthCred();
-        testLedgerEntryDirectory();
-        testLedgerEntryEscrow();
-        testLedgerEntryOffer();
-        testLedgerEntryPayChan();
-        testLedgerEntryRippleState();
-        testLedgerEntryTicket();
-        testLedgerEntryDID();
+        testInvalid();
+        testAccountRoot();
+        testAmendments();
+        testAMM();
+        testCheck();
+        testCredentials();
+        testDelegate();
+        testDepositPreauth();
+        testDepositPreauthCred();
+        testDirectory();
+        testEscrow();
+        testFeeSettings();
+        testLedgerHashes();
+        testNFTokenOffer();
+        testNFTokenPage();
+        testNegativeUNL();
+        testOffer();
+        testPayChan();
+        testRippleState();
+        testSignerList();
+        testTicket();
+        testDID();
         testInvalidOracleLedgerEntry();
         testOracleLedgerEntry();
-        testLedgerEntryMPT();
-        testLedgerEntryPermissionedDomain();
-        testLedgerEntryCLI();
+        testMPT();
+        testPermissionedDomain();
+        testCLI();
     }
 };
 
@@ -2104,7 +2242,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
     }
 
     void
-    testLedgerEntryBridge()
+    testBridge()
     {
         testcase("ledger_entry: bridge");
         using namespace test::jtx;
@@ -2195,7 +2333,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
     }
 
     void
-    testLedgerEntryClaimID()
+    testClaimID()
     {
         testcase("ledger_entry: xchain_claim_id");
         using namespace test::jtx;
@@ -2253,7 +2391,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
     }
 
     void
-    testLedgerEntryCreateAccountClaimID()
+    testCreateAccountClaimID()
     {
         testcase("ledger_entry: xchain_create_account_claim_id");
         using namespace test::jtx;
@@ -2380,9 +2518,9 @@ public:
     void
     run() override
     {
-        testLedgerEntryBridge();
-        testLedgerEntryClaimID();
-        testLedgerEntryCreateAccountClaimID();
+        testBridge();
+        testClaimID();
+        testCreateAccountClaimID();
     }
 };
 
