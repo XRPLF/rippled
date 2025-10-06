@@ -45,15 +45,6 @@ namespace ripple {
 NotTEC
 DIDSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureDID))
-        return temDISABLED;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     if (!ctx.tx.isFieldPresent(sfURI) &&
         !ctx.tx.isFieldPresent(sfDIDDocument) && !ctx.tx.isFieldPresent(sfData))
         return temEMPTY_DID;
@@ -74,7 +65,7 @@ DIDSet::preflight(PreflightContext const& ctx)
         isTooLong(sfData, maxDIDAttestationLength))
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -174,16 +165,7 @@ DIDSet::doApply()
 NotTEC
 DIDDelete::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureDID))
-        return temDISABLED;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

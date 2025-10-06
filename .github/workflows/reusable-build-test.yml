@@ -1,0 +1,58 @@
+# This workflow builds and tests the binary for various configurations.
+name: Build and test
+
+# This workflow can only be triggered by other workflows. Note that the
+# workflow_call event does not support the 'choice' input type, see
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onworkflow_callinputsinput_idtype,
+# so we use 'string' instead.
+on:
+  workflow_call:
+    inputs:
+      build_dir:
+        description: "The directory where to build."
+        required: false
+        type: string
+        default: ".build"
+      os:
+        description: 'The operating system to use for the build ("linux", "macos", "windows").'
+        required: true
+        type: string
+      strategy_matrix:
+        # TODO: Support additional strategies, e.g. "ubuntu" for generating all Ubuntu configurations.
+        description: 'The strategy matrix to use for generating the configurations ("minimal", "all").'
+        required: false
+        type: string
+        default: "minimal"
+    secrets:
+      CODECOV_TOKEN:
+        description: "The Codecov token to use for uploading coverage reports."
+        required: true
+
+jobs:
+  # Generate the strategy matrix to be used by the following job.
+  generate-matrix:
+    uses: ./.github/workflows/reusable-strategy-matrix.yml
+    with:
+      os: ${{ inputs.os }}
+      strategy_matrix: ${{ inputs.strategy_matrix }}
+
+  # Build and test the binary for each configuration.
+  build-test-config:
+    needs:
+      - generate-matrix
+    uses: ./.github/workflows/reusable-build-test-config.yml
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+      max-parallel: 10
+    with:
+      build_dir: ${{ inputs.build_dir }}
+      build_only: ${{ matrix.build_only }}
+      build_type: ${{ matrix.build_type }}
+      cmake_args: ${{ matrix.cmake_args }}
+      cmake_target: ${{ matrix.cmake_target }}
+      runs_on: ${{ toJSON(matrix.architecture.runner) }}
+      image: ${{ contains(matrix.architecture.platform, 'linux') && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}-sha-5dd7158', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version) || '' }}
+      config_name: ${{ matrix.config_name }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
