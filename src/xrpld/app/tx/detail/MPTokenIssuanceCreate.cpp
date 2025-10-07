@@ -39,7 +39,7 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
 
     if (ctx.tx.getFlags() & tfMPTNoConfidentialTransfer &&
         !ctx.rules.enabled(featureConfidentialTransfer))
-        return temDISABLED;
+        return false;
 
     return true;
 }
