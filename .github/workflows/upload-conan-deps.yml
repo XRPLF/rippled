@@ -40,11 +40,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Generate the strategy matrix to be used by the following job.
   generate-matrix:
     uses: ./.github/workflows/reusable-strategy-matrix.yml
     with:
       strategy_matrix: ${{ github.event_name == 'pull_request' && 'minimal' || 'all' }}
 
+  # Build and upload the dependencies for each configuration.
   run-upload-conan-deps:
     needs:
       - generate-matrix
@@ -53,8 +55,7 @@ jobs:
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
       max-parallel: 10
     runs-on: ${{ matrix.architecture.runner }}
-    container: ${{ contains(matrix.architecture.platform, 'linux') && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}-sha-5dd7158', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version) || null }}
-
+    container: ${{ contains(matrix.architecture.platform, 'linux') && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}-sha-{4}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version, matrix.os.image_sha) || null }}
     steps:
       - name: Cleanup workspace
         if: ${{ runner.os == 'macOS' }}
