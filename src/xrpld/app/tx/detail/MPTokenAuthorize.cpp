@@ -93,6 +93,26 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
                 sleMpt->isFlag(lsfMPTLocked))
                 return tecNO_PERMISSION;
 
+            if (ctx.view.rules().enabled(featureConfidentialTransfer))
+            {
+                auto const sleMptIssuance = ctx.view.read(
+                    keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+
+                // if there still existing encrypted balances of MPT in
+                // circulation
+                if (sleMptIssuance &&
+                    (*sleMptIssuance)[~sfConfidentialOutstandingAmount]
+                            .value_or(0) != 0)
+                {
+                    // this MPT still has encrypted balance, since we don't know
+                    // if it's non-zero or not, we won't allow deletion of
+                    // MPToken
+                    if (sleMpt->isFieldPresent(sfConfidentialBalanceInbox) ||
+                        sleMpt->isFieldPresent(sfConfidentialBalanceSpending))
+                        return tecHAS_OBLIGATIONS;
+                }
+            }
+
             return tesSUCCESS;
         }
 

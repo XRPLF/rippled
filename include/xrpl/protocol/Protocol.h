@@ -183,6 +183,15 @@ std::size_t constexpr ecGamalEncryptedLength = 33;
 
 /** EC ElGamal ciphertext length: two 33-byte components concatenated */
 std::size_t constexpr ecGamalEncryptedTotalLength = 66;
+
+/** Length of equality ZKProof */
+std::size_t constexpr ecEqualityProofLength = 98;
+
+/** Length of EC public key */
+std::size_t constexpr ecPubKeyLength = 64;
+
+/** Length of EC private key */
+std::size_t constexpr ecPrivKeyLength = 32;
 }  // namespace ripple
 
 #endif

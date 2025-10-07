@@ -19,8 +19,15 @@
 
 #include <test/jtx.h>
 
+#include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
+
+#include "test/jtx/mpt.h"
+#include <openssl/rand.h>
+
+#include <cstdint>
+#include <string>
 
 namespace ripple {
 namespace test {
@@ -248,6 +255,8 @@ MPTTester::set(MPTSet const& arg)
         jv[sfTransferFee] = *arg.transferFee;
     if (arg.metadata)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
+    if (arg.pubKey)
+        jv[sfIssuerElGamalPublicKey] = strHex(*arg.pubKey);
     if (submit(arg, jv) == tesSUCCESS && (arg.flags || arg.mutableFlags))
     {
         auto require = [&](std::optional<Account> const& holder,
@@ -330,6 +339,15 @@ MPTTester::checkDomainID(std::optional<uint256> expected) const
 }
 
 [[nodiscard]] bool
+MPTTester::printMPT(Account const& holder_) const
+{
+    return forObject(
+        [&](SLEP const& sle) -> bool { std::cout << "\n"
+                                                 << sle->getJson(); },
+        holder_);
+}
+
+[[nodiscard]] bool
 MPTTester::checkMPTokenAmount(
     Account const& holder_,
     std::int64_t expectedAmount) const
@@ -344,6 +362,15 @@ MPTTester::checkMPTokenOutstandingAmount(std::int64_t expectedAmount) const
 {
     return forObject([&](SLEP const& sle) {
         return expectedAmount == (*sle)[sfOutstandingAmount];
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::checkIssuanceConfidentialBalance(std::int64_t expectedAmount) const
+{
+    return forObject([&](SLEP const& sle) {
+        return expectedAmount ==
+            (*sle)[~sfConfidentialOutstandingAmount].value_or(0);
     });
 }
 
@@ -492,6 +519,50 @@ MPTTester::getBalance(Account const& account) const
     return 0;
 }
 
+std::int64_t
+MPTTester::getIssuanceConfidentialBalance() const
+{
+    if (!id_)
+        Throw<std::runtime_error>("MPT has not been created");
+
+    if (auto const sle = env_.le(keylet::mptIssuance(*id_)))
+        return (*sle)[~sfConfidentialOutstandingAmount].value_or(0);
+
+    return 0;
+}
+
+std::optional<Buffer>
+MPTTester::getEncryptedBalance(
+    Account const& account,
+    EncryptedBalanceType option) const
+{
+    if (!id_)
+        Throw<std::runtime_error>("MPT has not been created");
+
+    if (auto const sle = env_.le(keylet::mptoken(*id_, account.id())))
+    {
+        if (option == HOLDER_ENCRYPTED_INBOX &&
+            sle->isFieldPresent(sfConfidentialBalanceInbox))
+            return Buffer(
+                (*sle)[sfConfidentialBalanceInbox].data(),
+                (*sle)[sfConfidentialBalanceInbox].size());
+        if (option == HOLDER_ENCRYPTED_SPENDING &&
+            sle->isFieldPresent(sfConfidentialBalanceSpending))
+            return Buffer(
+                (*sle)[sfConfidentialBalanceSpending].data(),
+                (*sle)[sfConfidentialBalanceSpending].size());
+        if (option == ISSUER_ENCRYPTED_BALANCE &&
+            sle->isFieldPresent(sfIssuerEncryptedBalance))
+            return Buffer(
+                (*sle)[sfIssuerEncryptedBalance].data(),
+                (*sle)[sfIssuerEncryptedBalance].size());
+
+        return {};
+    }
+
+    return {};
+}
+
 std::uint32_t
 MPTTester::getFlags(std::optional<Account> const& holder) const
 {
@@ -510,6 +581,168 @@ MPT
 MPTTester::operator[](std::string const& name)
 {
     return MPT(name, issuanceID());
+}
+
+void
+MPTTester::convert(MPTConvert const& arg)
+{
+    Json::Value jv;
+    if (arg.account)
+        jv[sfAccount] = arg.account->human();
+    else
+        Throw<std::runtime_error>("Account not specified");
+
+    jv[jss::TransactionType] = jss::ConfidentialConvert;
+    if (arg.id)
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    if (arg.amt)
+        jv[sfMPTAmount.jsonName] = std::to_string(*arg.amt);
+    if (arg.holderPubKey)
+        jv[sfHolderElGamalPublicKey.jsonName] = strHex(*arg.holderPubKey);
+
+    if (arg.holderEncryptedAmt)
+        jv[sfHolderEncryptedAmount.jsonName] = strHex(*arg.holderEncryptedAmt);
+    else
+        jv[sfHolderEncryptedAmount.jsonName] =
+            strHex(encryptAmount(*arg.account, *arg.amt));
+
+    if (arg.issuerEncryptedAmt)
+        jv[sfIssuerEncryptedAmount.jsonName] = strHex(*arg.issuerEncryptedAmt);
+    else
+        jv[sfIssuerEncryptedAmount.jsonName] =
+            strHex(encryptAmount(issuer_, *arg.amt));
+
+    if (arg.proof)
+        jv[sfZKProof.jsonName] = *arg.proof;
+
+    auto const holderAmt = getBalance(*arg.account);
+    auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
+
+    auto maybeEncrypted =
+        getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+
+    uint64_t prevInboxBalance =
+        maybeEncrypted ? decryptAmount(*arg.account, *maybeEncrypted) : 0;
+
+    if (submit(arg, jv) == tesSUCCESS)
+    {
+        auto const curConfidentialOutstanding =
+            getIssuanceConfidentialBalance();
+        env_.require(mptbalance(*this, *arg.account, holderAmt - *arg.amt));
+        env_.require(requireAny([&]() -> bool {
+            return prevConfidentialOutstanding + *arg.amt ==
+                curConfidentialOutstanding;
+        }));
+        env_.require(requireAny([&]() -> bool {
+            auto maybeEncrypted =
+                getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+
+            uint64_t decryptedAmt = maybeEncrypted
+                ? decryptAmount(*arg.account, *maybeEncrypted)
+                : 0;
+            std::cout << "\n decrpypted amt is " << decryptedAmt << '\n';
+            return prevInboxBalance + *arg.amt == decryptedAmt;
+        }));
+    }
+}
+
+void
+MPTTester::generateKeyPair(Account const& account)
+{
+    unsigned char privKey[ecPrivKeyLength];
+    secp256k1_pubkey pubKey;
+    if (!secp256k1_elgamal_generate_keypair(
+            secp256k1Context(), privKey, &pubKey))
+        Throw<std::runtime_error>("failed to generate key pair");
+
+    pubKeys.insert({account.id(), Buffer{pubKey.data, ecPubKeyLength}});
+    privKeys.insert({account.id(), Buffer{privKey, ecPrivKeyLength}});
+}
+
+Buffer
+MPTTester::getPubKey(Account const& account) const
+{
+    auto it = pubKeys.find(account.id());
+    if (it != pubKeys.end())
+    {
+        return it->second;
+    }
+
+    Throw<std::runtime_error>("Account does not have public key");
+}
+
+Buffer
+MPTTester::getPrivKey(Account const& account) const
+{
+    auto it = privKeys.find(account.id());
+    if (it != privKeys.end())
+    {
+        return it->second;
+    }
+
+    Throw<std::runtime_error>("Account does not have private key");
+}
+
+Buffer
+MPTTester::encryptAmount(Account const& account, uint64_t amt) const
+{
+    Buffer buf(ecGamalEncryptedTotalLength);
+
+    // Allocate ciphertext placeholders
+    secp256k1_pubkey c1, c2;
+
+    // Prepare a random blinding factor
+    unsigned char blinding_factor[32];
+    if (RAND_bytes(blinding_factor, 32) != 1)
+        Throw<std::runtime_error>("Failed to generate random number");
+
+    secp256k1_pubkey pubKey;
+
+    auto keyData = getPubKey(account);
+
+    std::memcpy(pubKey.data, keyData.data(), ecPubKeyLength);
+
+    // Encrypt the amount
+    if (!secp256k1_elgamal_encrypt(
+            secp256k1Context(), &c1, &c2, &pubKey, amt, blinding_factor))
+        Throw<std::runtime_error>("Failed to encrypt amount");
+
+    // Serialize the ciphertext pair into the buffer
+    if (!serializeEcPair(c1, c2, buf))
+        Throw<std::runtime_error>(
+            "Failed to serialize into 66 byte compressed format");
+
+    return buf;
+}
+
+uint64_t
+MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
+{
+    secp256k1_pubkey c1;
+    secp256k1_pubkey c2;
+
+    uint64_t decryptedAmt;
+
+    if (!makeEcPair(amt, c1, c2))
+        Throw<std::runtime_error>(
+            "Failed to convert into individual EC components");
+
+    if (!secp256k1_elgamal_decrypt(
+            secp256k1Context(),
+            &decryptedAmt,
+            &c1,
+            &c2,
+            getPrivKey(account).data()))
+        Throw<std::runtime_error>("Failed to decrypt amount");
+
+    return decryptedAmt;
 }
 
 }  // namespace jtx

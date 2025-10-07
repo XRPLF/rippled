@@ -78,6 +78,15 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfDomainID) && ctx.tx.isFieldPresent(sfHolder))
         return temMALFORMED;
 
+    if (!ctx.rules.enabled(featureConfidentialTransfer) &&
+        ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey))
+        return temDISABLED;
+
+    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
+        ctx.tx.isFieldPresent(sfHolder))
+        return temMALFORMED;
+    // todo: check pubkey length
+
     auto const txFlags = ctx.tx.getFlags();
 
     // fails if both flags are set
@@ -90,10 +99,12 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     if (ctx.rules.enabled(featureSingleAssetVault) ||
-        ctx.rules.enabled(featureDynamicMPT))
+        ctx.rules.enabled(featureDynamicMPT) ||
+        ctx.rules.enabled(featureConfidentialTransfer))
     {
         // Is this transaction actually changing anything ?
-        if (txFlags == 0 && !ctx.tx.isFieldPresent(sfDomainID) && !isMutate)
+        if (txFlags == 0 && !ctx.tx.isFieldPresent(sfDomainID) &&
+            !ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) && !isMutate)
             return temMALFORMED;
     }
 
@@ -264,6 +275,19 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
+    // cannot update public key
+    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
+        sleMptIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
+    {
+        return tecNO_PERMISSION;
+    }
+
+    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
+        sleMptIssuance->isFlag(tfMPTNoConfidentialTransfer))
+    {
+        return tecNO_PERMISSION;
+    }
+
     return tesSUCCESS;
 }
 
@@ -349,6 +373,16 @@ MPTokenIssuanceSet::doApply()
             if (sle->isFieldPresent(sfDomainID))
                 sle->makeFieldAbsent(sfDomainID);
         }
+    }
+
+    if (auto const pubKey = ctx_.tx[~sfIssuerElGamalPublicKey])
+    {
+        // This is enforced in preflight.
+        XRPL_ASSERT(
+            sle->getType() == ltMPTOKEN_ISSUANCE,
+            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+
+        sle->setFieldVL(sfIssuerElGamalPublicKey, *pubKey);
     }
 
     view().update(sle);
