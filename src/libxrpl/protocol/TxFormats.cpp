@@ -48,6 +48,7 @@ TxFormats::TxFormats()
         {sfNetworkID, soeOPTIONAL},
         {sfDelegate, soeOPTIONAL},
         {sfSponsor, soeOPTIONAL},
+        {sfSponsorSignature, soeOPTIONAL},
     };
 
 #pragma push_macro("UNWRAP")

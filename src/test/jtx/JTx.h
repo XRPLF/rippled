@@ -20,7 +20,6 @@
 #ifndef RIPPLE_TEST_JTX_JTX_H_INCLUDED
 #define RIPPLE_TEST_JTX_JTX_H_INCLUDED
 
-#include <test/jtx/Account.h>
 #include <test/jtx/basic_prop.h>
 #include <test/jtx/requires.h>
 
@@ -55,8 +54,11 @@ struct JTx
     bool fill_sig = true;
     bool fill_netid = true;
     std::shared_ptr<STTx const> stx;
-    std::function<void(Env&, JTx&)> signer;
-    std::function<void(Env&, JTx&)> sponsorSigner;
+    // Functions that sign the transaction from the Account
+    std::vector<std::function<void(Env&, JTx&)>> mainSigners;
+    // Functions that sign something else after the mainSigners, such as
+    // sfCounterpartySignature and sfSponsorSignature
+    std::vector<std::function<void(Env&, JTx&)>> postSigners;
 
     JTx() = default;
     JTx(JTx const&) = default;

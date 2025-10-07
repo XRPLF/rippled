@@ -86,13 +86,13 @@ checkValidity(
         if (tx.isFieldPresent(sfSponsor) && rules.enabled(featureSponsor))
         {
             auto const sponsorObj = tx.getFieldObject(sfSponsor);
-            auto const isCoSigned = sponsorObj.isFieldPresent(sfTxnSignature) ||
-                !sponsorObj.getFieldVL(sfSigningPubKey).empty() ||
-                sponsorObj.isFieldPresent(sfSigners);
+            auto const isCoSigned = tx.isFieldPresent(sfSponsorSignature);
             if (isCoSigned)
             {
-                auto const sigVerify =
-                    tx.checkSponsorSign(requireCanonicalSig, rules);
+                auto const sponsorSignatureObj =
+                    tx.getFieldObject(sfSponsorSignature);
+                auto const sigVerify = tx.checkSign(
+                    requireCanonicalSig, rules, &sponsorSignatureObj);
                 if (!sigVerify)
                 {
                     router.setFlags(id, SF_SIGBAD);

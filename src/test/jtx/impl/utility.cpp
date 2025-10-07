@@ -44,12 +44,20 @@ parse(Json::Value const& jv)
 }
 
 void
+sign(Json::Value& jv, Account const& account, Json::Value& sigObject)
+{
+    sigObject[jss::SigningPubKey] = strHex(account.pk().slice());
+    Serializer ss;
+    ss.add32(HashPrefix::txSign);
+    parse(jv).addWithoutSigningFields(ss);
+    auto const sig = ripple::sign(account.pk(), account.sk(), ss.slice());
+    sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
+}
+
+void
 sign(Json::Value& jv, Account const& account)
 {
-    jv[jss::SigningPubKey] = strHex(account.pk().slice());
-    auto const blob = STTx::getSigningData(parse(jv));
-    auto const sig = ripple::sign(account.pk(), account.sk(), makeSlice(blob));
-    jv[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
+    sign(jv, account, jv);
 }
 
 void

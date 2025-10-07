@@ -244,10 +244,11 @@ public:
     getFieldPathSet(SField const& field) const;
     STVector256 const&
     getFieldV256(SField const& field) const;
+    // If not found, returns an object constructed with the given field
+    STObject
+    getFieldObject(SField const& field) const;
     STArray const&
     getFieldArray(SField const& field) const;
-    STObject const&
-    getFieldObject(SField const& field) const;
     STCurrency const&
     getFieldCurrency(SField const& field) const;
     STNumber const&
@@ -392,6 +393,8 @@ public:
     setFieldV256(SField const& field, STVector256 const& v);
     void
     setFieldArray(SField const& field, STArray const& v);
+    void
+    setFieldObject(SField const& field, STObject const& v);
 
     template <class Tag>
     void

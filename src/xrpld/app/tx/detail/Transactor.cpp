@@ -322,9 +322,7 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     auto const sponsorAcc = txSponsor.getAccountID(sfAccount);
     auto const sponseeAcc = tx.getAccountID(sfAccount);
 
-    auto const hasSponsorSignature = txSponsor.isFieldPresent(sfTxnSignature) ||
-        !txSponsor.getFieldVL(sfSigningPubKey).empty() ||
-        txSponsor.isFieldPresent(sfSigners);
+    auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
 
     if (!hasSponsorSignature)
     {
@@ -787,17 +785,20 @@ Transactor::checkSign(
         return tesSUCCESS;
     }
 
-    if (sigObject.isFieldPresent(sfSponsor))
+    if (sigObject.isFieldPresent(sfSponsorSignature))
     {
+        if (!sigObject.isFieldPresent(sfSponsor))
+            return temMALFORMED;
+
         auto const sponsorObj = sigObject.getFieldObject(sfSponsor);
-        auto const isCoSigned = sponsorObj.isFieldPresent(sfTxnSignature) ||
-            !sponsorObj.getFieldVL(sfSigningPubKey).empty() ||
-            sponsorObj.isFieldPresent(sfSigners);
+        auto const isCoSigned = sigObject.isFieldPresent(sfSponsorSignature);
         if (isCoSigned)
         {
             auto const sponsorAcc = sponsorObj.getAccountID(sfAccount);
+            auto const sponsorSignature =
+                sigObject.getFieldObject(sfSponsorSignature);
             if (auto const ret =
-                    checkSign(view, flags, sponsorAcc, sponsorObj, j);
+                    checkSign(view, flags, sponsorAcc, sponsorSignature, j);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -1266,9 +1267,7 @@ Transactor::getFeePayer(STTx const& tx)
         tx.getFieldObject(sfSponsor).isFlag(tfSponsorFee))
     {
         auto const sponsor = tx.getFieldObject(sfSponsor);
-        auto const hasSignature = sponsor.isFieldPresent(sfTxnSignature) ||
-            !sponsor.getFieldVL(sfSigningPubKey).empty() ||
-            sponsor.isFieldPresent(sfSigners);
+        auto const hasSignature = tx.isFieldPresent(sfSponsorSignature);
 
         if (!hasSignature)
         {

@@ -49,7 +49,6 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/Sponsor.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
@@ -185,24 +184,13 @@ STTx::getMentionedAccounts() const
     return list;
 }
 
-Blob
-STTx::getSigningData(STObject const& that)
+static Blob
+getSigningData(STTx const& that)
 {
     Serializer s;
     s.add32(HashPrefix::txSign);
     that.addWithoutSigningFields(s);
-    if (that.isFieldPresent(sfSponsor))
-    {
-        auto const sst = that.getFieldObject(sfSponsor);
-        addSerializeSponsorData(s, sst.getAccountID(sfAccount), sst.getFlags());
-    }
     return s.getData();
-}
-
-Blob
-STTx::getSponsorSigningData(STTx const& that)
-{
-    return startSponsorSigningData(that).getData();
 }
 
 uint256
@@ -212,11 +200,11 @@ STTx::getSigningHash() const
 }
 
 Blob
-STTx::getSignature() const
+STTx::getSignature(STObject const& sigObject) const
 {
     try
     {
-        return getFieldVL(sfTxnSignature);
+        return sigObject.getFieldVL(sfTxnSignature);
     }
     catch (std::exception const&)
     {
@@ -246,14 +234,49 @@ STTx::getSeqValue() const
 }
 
 void
-STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
+STTx::sign(
+    PublicKey const& publicKey,
+    SecretKey const& secretKey,
+    std::optional<std::reference_wrapper<SField const>> signatureTarget)
 {
     auto const data = getSigningData(*this);
 
     auto const sig = ripple::sign(publicKey, secretKey, makeSlice(data));
 
-    setFieldVL(sfTxnSignature, sig);
+    if (signatureTarget)
+    {
+        auto& target = peekFieldObject(*signatureTarget);
+        target.setFieldVL(sfTxnSignature, sig);
+    }
+    else
+    {
+        setFieldVL(sfTxnSignature, sig);
+    }
     tid_ = getHash(HashPrefix::transactionID);
+}
+
+Expected<void, std::string>
+STTx::checkSign(
+    RequireFullyCanonicalSig requireCanonicalSig,
+    Rules const& rules,
+    STObject const* pSig) const
+{
+    try
+    {
+        // Determine whether we're single- or multi-signing by looking
+        // at the SigningPubKey.  If it's empty we must be
+        // multi-signing.  Otherwise we're single-signing.
+        STObject const& sigObject{pSig ? *pSig : *this};
+
+        Blob const& signingPubKey = sigObject.getFieldVL(sfSigningPubKey);
+        return signingPubKey.empty()
+            ? checkMultiSign(requireCanonicalSig, rules, pSig)
+            : checkSingleSign(requireCanonicalSig, pSig);
+    }
+    catch (std::exception const&)
+    {
+    }
+    return Unexpected("Internal signature check failure.");
 }
 
 Expected<void, std::string>
@@ -261,20 +284,18 @@ STTx::checkSign(
     RequireFullyCanonicalSig requireCanonicalSig,
     Rules const& rules) const
 {
-    try
+    if (auto const ret = checkSign(requireCanonicalSig, rules, nullptr); !ret)
+        return ret;
+
+    if (isFieldPresent(sfSponsorSignature))
     {
-        // Determine whether we're single- or multi-signing by looking
-        // at the SigningPubKey.  If it's empty we must be
-        // multi-signing.  Otherwise we're single-signing.
-        Blob const& signingPubKey = getFieldVL(sfSigningPubKey);
-        return signingPubKey.empty()
-            ? checkMultiSign(requireCanonicalSig, rules)
-            : checkSingleSign(requireCanonicalSig);
+        auto const sponsorSignatureObj = getFieldObject(sfSponsorSignature);
+        if (auto const ret =
+                checkSign(requireCanonicalSig, rules, &sponsorSignatureObj);
+            !ret)
+            return Unexpected("Sponsor: " + ret.error());
     }
-    catch (std::exception const&)
-    {
-    }
-    return Unexpected("Internal signature check failure.");
+    return {};
 }
 
 Expected<void, std::string>
@@ -311,42 +332,6 @@ STTx::checkBatchSign(
             << "Batch signature check failed: " << e.what();
     }
     return Unexpected("Internal batch signature check failure.");
-}
-
-Expected<void, std::string>
-STTx::checkSponsorSign(
-    RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules) const
-{
-    try
-    {
-        XRPL_ASSERT(
-            isFieldPresent(sfSponsor),
-            "STTx::checkSponsorSign: not a sponsored transaction");
-        if (!isFieldPresent(sfSponsor))
-        {
-            JLOG(debugLog().fatal()) << "not a sponsored transaction";
-            return Unexpected("Not a sponsored transaction.");
-        }
-        STObject const& sponsorObj{getFieldObject(sfSponsor)};
-
-        Blob const& signingPubKey = sponsorObj.getFieldVL(sfSigningPubKey);
-
-        auto const result = signingPubKey.empty()
-            ? checkSponsorMultiSign(sponsorObj, requireCanonicalSig, rules)
-            : checkSponsorSingleSign(sponsorObj, requireCanonicalSig);
-
-        if (!result)
-            return result;
-
-        return {};
-    }
-    catch (std::exception const& e)
-    {
-        JLOG(debugLog().error())
-            << "Sponsor signature check failed: " << e.what();
-    }
-    return Unexpected("Sponsor signature check failure.");
 }
 
 Json::Value
@@ -430,23 +415,23 @@ STTx::getMetaSQL(
 
 static Expected<void, std::string>
 singleSignHelper(
-    STObject const& signer,
+    STObject const& sigObject,
     Slice const& data,
     bool const fullyCanonical)
 {
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
     // That would allow the transaction to be signed two ways.  So if both
     // fields are present the signature is invalid.
-    if (signer.isFieldPresent(sfSigners))
+    if (sigObject.isFieldPresent(sfSigners))
         return Unexpected("Cannot both single- and multi-sign.");
 
     bool validSig = false;
     try
     {
-        auto const spk = signer.getFieldVL(sfSigningPubKey);
+        auto const spk = sigObject.getFieldVL(sfSigningPubKey);
         if (publicKeyType(makeSlice(spk)))
         {
-            Blob const signature = signer.getFieldVL(sfTxnSignature);
+            Blob const signature = sigObject.getFieldVL(sfTxnSignature);
             validSig = verify(
                 PublicKey(makeSlice(spk)),
                 data,
@@ -466,12 +451,15 @@ singleSignHelper(
 }
 
 Expected<void, std::string>
-STTx::checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const
+STTx::checkSingleSign(
+    RequireFullyCanonicalSig requireCanonicalSig,
+    STObject const* pSig) const
 {
+    STObject const& sigObject{pSig ? *pSig : *this};
     auto const data = getSigningData(*this);
     bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
         (requireCanonicalSig == STTx::RequireFullyCanonicalSig::yes);
-    return singleSignHelper(*this, makeSlice(data), fullyCanonical);
+    return singleSignHelper(sigObject, makeSlice(data), fullyCanonical);
 }
 
 Expected<void, std::string>
@@ -487,42 +475,29 @@ STTx::checkBatchSingleSign(
 }
 
 Expected<void, std::string>
-STTx::checkSponsorSingleSign(
-    STObject const& signer,
-    RequireFullyCanonicalSig requireCanonicalSig) const
-{
-    auto const data = getSponsorSigningData(*this);
-    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
-        (requireCanonicalSig == STTx::RequireFullyCanonicalSig::yes);
-    return singleSignHelper(signer, makeSlice(data), fullyCanonical);
-}
-
-Expected<void, std::string>
 multiSignHelper(
-    STObject const& signerObj,
+    STObject const& sigObject,
+    std::optional<AccountID> txnAccountID,
     bool const fullyCanonical,
     std::function<Serializer(AccountID const&)> makeMsg,
     Rules const& rules)
 {
     // Make sure the MultiSigners are present.  Otherwise they are not
-    // attempting multi-signing and we just have a bad Signers.
-    if (!signerObj.isFieldPresent(sfSigners))
+    // attempting multi-signing and we just have a bad SigningPubKey.
+    if (!sigObject.isFieldPresent(sfSigners))
         return Unexpected("Empty SigningPubKey.");
 
     // We don't allow both an sfSigners and an sfTxnSignature.  Both fields
     // being present would indicate that the transaction is signed both ways.
-    if (signerObj.isFieldPresent(sfTxnSignature))
+    if (sigObject.isFieldPresent(sfTxnSignature))
         return Unexpected("Cannot both single- and multi-sign.");
 
-    STArray const& signers{signerObj.getFieldArray(sfSigners)};
+    STArray const& signers{sigObject.getFieldArray(sfSigners)};
 
     // There are well known bounds that the number of signers must be within.
     if (signers.size() < STTx::minMultiSigners ||
         signers.size() > STTx::maxMultiSigners(&rules))
         return Unexpected("Invalid Signers array size.");
-
-    // We also use the sfAccount field inside the loop.  Get it once.
-    auto const txnAccountID = signerObj.getAccountID(sfAccount);
 
     // Signers must be in sorted order by AccountID.
     AccountID lastAccountID(beast::zero);
@@ -531,8 +506,10 @@ multiSignHelper(
     {
         auto const accountID = signer.getAccountID(sfAccount);
 
-        // The account owner may not multisign for themselves.
-        if (accountID == txnAccountID)
+        // The account owner may not usually multisign for themselves.
+        // If they can, txnAccountID will be unseated, which is not equal to any
+        // value.
+        if (txnAccountID == accountID)
             return Unexpected("Invalid multisigner.");
 
         // No duplicate signers allowed.
@@ -548,6 +525,7 @@ multiSignHelper(
 
         // Verify the signature.
         bool validSig = false;
+        std::optional<std::string> errorWhat;
         try
         {
             auto spk = signer.getFieldVL(sfSigningPubKey);
@@ -561,15 +539,16 @@ multiSignHelper(
                     fullyCanonical);
             }
         }
-        catch (std::exception const&)
+        catch (std::exception const& e)
         {
             // We assume any problem lies with the signature.
             validSig = false;
+            errorWhat = e.what();
         }
         if (!validSig)
             return Unexpected(
                 std::string("Invalid signature on account ") +
-                toBase58(accountID) + ".");
+                toBase58(accountID) + errorWhat.value_or("") + ".");
     }
     // All signatures verified.
     return {};
@@ -591,8 +570,9 @@ STTx::checkBatchMultiSign(
     serializeBatch(dataStart, getFlags(), getBatchTransactionIDs());
     return multiSignHelper(
         batchSigner,
+        std::nullopt,
         fullyCanonical,
-        [&dataStart](AccountID const& accountID) mutable -> Serializer {
+        [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
             return s;
@@ -601,47 +581,30 @@ STTx::checkBatchMultiSign(
 }
 
 Expected<void, std::string>
-STTx::checkSponsorMultiSign(
-    STObject const& sponsorObj,
-    RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules) const
-{
-    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
-        (requireCanonicalSig == RequireFullyCanonicalSig::yes);
-
-    // We can ease the computational load inside the loop a bit by
-    // pre-constructing part of the data that we hash.  Fill a Serializer
-    // with the stuff that stays constant from signature to signature.
-    auto const data = startSponsorSigningData(*this);
-    Serializer dataStart = Serializer(data.data(), data.size());
-
-    return multiSignHelper(
-        sponsorObj,
-        fullyCanonical,
-        [&dataStart](AccountID const& accountID) mutable -> Serializer {
-            Serializer s = dataStart;
-            finishSponsorSigningData(accountID, s);
-            return s;
-        },
-        rules);
-}
-
-Expected<void, std::string>
 STTx::checkMultiSign(
     RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules) const
+    Rules const& rules,
+    STObject const* pSig) const
 {
+    STObject const& sigObject{pSig ? *pSig : *this};
+
     bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
         (requireCanonicalSig == RequireFullyCanonicalSig::yes);
+
+    // Used inside the loop in multiSignHelper to enforce that
+    // the account owner may not multisign for themselves.
+    auto const txnAccountID =
+        pSig ? std::nullopt : std::optional<AccountID>(getAccountID(sfAccount));
 
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.
     Serializer dataStart = startMultiSigningData(*this);
     return multiSignHelper(
-        *this,
+        sigObject,
+        txnAccountID,
         fullyCanonical,
-        [&dataStart](AccountID const& accountID) mutable -> Serializer {
+        [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
             return s;
@@ -673,11 +636,12 @@ STTx::getBatchTransactionIDs() const
     XRPL_ASSERT(
         getFieldArray(sfRawTransactions).size() != 0,
         "STTx::getBatchTransactionIDs : empty raw transactions");
-    if (batch_txn_ids_.size() != 0)
-        return batch_txn_ids_;
-
-    for (STObject const& rb : getFieldArray(sfRawTransactions))
-        batch_txn_ids_.push_back(rb.getHash(HashPrefix::transactionID));
+    // Don't early return so that the size assert is always hit.
+    if (batch_txn_ids_.size() == 0)
+    {
+        for (STObject const& rb : getFieldArray(sfRawTransactions))
+            batch_txn_ids_.push_back(rb.getHash(HashPrefix::transactionID));
+    }
 
     XRPL_ASSERT(
         batch_txn_ids_.size() == getFieldArray(sfRawTransactions).size(),
@@ -912,92 +876,6 @@ isPseudoTx(STObject const& tx)
     auto const tt = safe_cast<TxType>(*t);
 
     return tt == ttAMENDMENT || tt == ttFEE || tt == ttUNL_MODIFY;
-}
-
-// Questions regarding buildMultiSigningData:
-//
-// Why do we include the Signer.Account in the blob to be signed?
-//
-// Unless you include the Account which is signing in the signing blob,
-// you could swap out any Signer.Account for any other, which may also
-// be on the SignerList and have a RegularKey matching the
-// Signer.SigningPubKey.
-//
-// That RegularKey may be set to allow some 3rd party to sign transactions
-// on the account's behalf, and that RegularKey could be common amongst all
-// users of the 3rd party. That's just one example of sharing the same
-// RegularKey amongst various accounts and just one vulnerability.
-//
-//   "When you have something that's easy to do that makes entire classes of
-//    attacks clearly and obviously impossible, you need a damn good reason
-//    not to do it."  --  David Schwartz
-//
-// Why would we include the signingFor account in the blob to be signed?
-//
-// In the current signing scheme, the account that a signer is `signing
-// for/on behalf of` is the tx_json.Account.
-//
-// Later we might support more levels of signing.  Suppose Bob is a signer
-// for Alice, and Carol is a signer for Bob, so Carol can sign for Bob who
-// signs for Alice.  But suppose Alice has two signers: Bob and Dave.  If
-// Carol is a signer for both Bob and Dave, then the signature needs to
-// distinguish between Carol signing for Bob and Carol signing for Dave.
-//
-// So, if we support multiple levels of signing, then we'll need to
-// incorporate the "signing for" accounts into the signing data as well.
-Serializer
-buildMultiSigningData(STObject const& obj, AccountID const& signingID)
-{
-    Serializer s{startMultiSigningData(obj)};
-    finishMultiSigningData(signingID, s);
-    return s;
-}
-
-Serializer
-startMultiSigningData(STObject const& obj)
-{
-    Serializer s;
-    s.add32(HashPrefix::txMultiSign);
-    obj.addWithoutSigningFields(s);
-    // if (obj.isFieldPresent(sfSponsor))
-    // {
-    //     auto const sst = obj.getFieldObject(sfSponsor);
-    //     addSerializeSponsorData(s, sst.getAccountID(sfAccount),
-    //     sst.getFlags());
-    // }
-    return s;
-}
-
-Serializer
-buildSponsorMultiSigningData(
-    STObject const& obj,
-    AccountID const& signingID,
-    uint32_t flags)
-{
-    Serializer s{startSponsorSigningData(obj)};
-    finishSponsorSigningData(signingID, s);
-    return s;
-}
-
-Serializer
-startSponsorSigningData(STObject const& obj)
-{
-    Serializer s;
-    s.add32(HashPrefix::sponsor);
-    STObject tmp = obj;
-    tmp.setFieldVL(sfSigningPubKey, Blob{});
-    tmp.addWithoutSigningFields(s);
-
-    XRPL_ASSERT(
-        tmp.isFieldPresent(sfSponsor),
-        "STTx::getSponsorSigningData : sponsor is not set");
-
-    if (tmp.isFieldPresent(sfSponsor))
-    {
-        auto const sst = tmp.getFieldObject(sfSponsor);
-        addSerializeSponsorData(s, sst.getAccountID(sfAccount), sst.getFlags());
-    }
-    return s;
 }
 
 }  // namespace ripple

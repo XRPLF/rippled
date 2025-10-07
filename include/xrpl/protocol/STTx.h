@@ -88,7 +88,13 @@ public:
 
     // Outer transaction functions / signature functions.
     Blob
-    getSignature() const;
+    getSignature(STObject const& sigObject) const;
+
+    Blob
+    getSignature() const
+    {
+        return getSignature(*this);
+    }
 
     uint256
     getSigningHash() const;
@@ -109,12 +115,6 @@ public:
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
-    static Blob
-    getSigningData(STObject const& that);
-
-    static Blob
-    getSponsorSigningData(STTx const& that);
-
     uint256
     getTransactionID() const;
 
@@ -125,24 +125,40 @@ public:
     getJson(JsonOptions options, bool binary) const;
 
     void
-    sign(PublicKey const& publicKey, SecretKey const& secretKey);
+    sign(
+        PublicKey const& publicKey,
+        SecretKey const& secretKey,
+        std::optional<std::reference_wrapper<SField const>> signatureTarget =
+            {});
 
-    /** Check the signature.
-        @return `true` if valid signature. If invalid, the error message string.
-    */
     enum class RequireFullyCanonicalSig : bool { no, yes };
 
+    /** Check the signature.
+        @param requireCanonicalSig If `true`, check that the signature is fully
+            canonical. If `false`, only check that the signature is valid.
+        @param rules The current ledger rules.
+        @param pSig Pointer to object that contains the signature fields, if not
+            using "this". Will most often be null
+        @return `true` if valid signature. If invalid, the error message string.
+    */
+    Expected<void, std::string>
+    checkSign(
+        RequireFullyCanonicalSig requireCanonicalSig,
+        Rules const& rules,
+        STObject const* pSig) const;
+
+    /** Check the signature.
+        @param requireCanonicalSig If `true`, check that the signature is fully
+            canonical. If `false`, only check that the signature is valid.
+        @param rules The current ledger rules.
+        @return `true` if valid signature. If invalid, the error message string.
+    */
     Expected<void, std::string>
     checkSign(RequireFullyCanonicalSig requireCanonicalSig, Rules const& rules)
         const;
 
     Expected<void, std::string>
     checkBatchSign(
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules) const;
-
-    Expected<void, std::string>
-    checkSponsorSign(
         RequireFullyCanonicalSig requireCanonicalSig,
         Rules const& rules) const;
 
@@ -166,12 +182,15 @@ public:
 
 private:
     Expected<void, std::string>
-    checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const;
+    checkSingleSign(
+        RequireFullyCanonicalSig requireCanonicalSig,
+        STObject const* pSig) const;
 
     Expected<void, std::string>
     checkMultiSign(
         RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules) const;
+        Rules const& rules,
+        STObject const* pSig) const;
 
     Expected<void, std::string>
     checkBatchSingleSign(
@@ -179,19 +198,8 @@ private:
         RequireFullyCanonicalSig requireCanonicalSig) const;
 
     Expected<void, std::string>
-    checkSponsorSingleSign(
-        STObject const& signer,
-        RequireFullyCanonicalSig requireCanonicalSig) const;
-
-    Expected<void, std::string>
     checkBatchMultiSign(
         STObject const& batchSigner,
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules) const;
-
-    Expected<void, std::string>
-    checkSponsorMultiSign(
-        STObject const& signer,
         RequireFullyCanonicalSig requireCanonicalSig,
         Rules const& rules) const;
 
@@ -241,46 +249,6 @@ inline uint256
 STTx::getTransactionID() const
 {
     return tid_;
-}
-
-/** Return a Serializer suitable for computing a multisigning TxnSignature. */
-Serializer
-buildMultiSigningData(STObject const& obj, AccountID const& signingID);
-
-/** Break the multi-signing hash computation into 2 parts for optimization.
-
-    We can optimize verifying multiple multisignatures by splitting the
-    data building into two parts;
-     o A large part that is shared by all of the computations.
-     o A small part that is unique to each signer in the multisignature.
-
-    The following methods support that optimization:
-     1. startMultiSigningData provides the large part which can be shared.
-     2. finishMultiSigningData caps the passed in serializer with each
-        signer's unique data.
-*/
-Serializer
-startMultiSigningData(STObject const& obj);
-
-inline void
-finishMultiSigningData(AccountID const& signingID, Serializer& s)
-{
-    s.addBitString(signingID);
-}
-
-Serializer
-buildSponsorMultiSigningData(
-    STObject const& obj,
-    AccountID const& signingID,
-    uint32_t flags);
-
-Serializer
-startSponsorSigningData(STObject const& obj);
-
-inline void
-finishSponsorSigningData(AccountID const& signerID, Serializer& s)
-{
-    s.addBitString(signerID);
 }
 
 }  // namespace ripple
