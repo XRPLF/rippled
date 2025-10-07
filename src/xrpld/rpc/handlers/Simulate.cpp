@@ -72,7 +72,7 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
 }
 
 static std::optional<Json::Value>
-autofillSigunature(Json::Value& sigObject)
+autofillSignature(Json::Value& sigObject)
 {
     if (!sigObject.isMember(jss::SigningPubKey))
     {
@@ -146,7 +146,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         tx_json[jss::Fee] = feeOrError;
     }
 
-    if (auto error = autofillSigunature(tx_json))
+    if (auto error = autofillSignature(tx_json))
         return *error;
 
     if (!tx_json.isMember(jss::Sequence))
