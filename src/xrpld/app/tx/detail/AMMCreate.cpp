@@ -272,8 +272,15 @@ applyCreate(
 
     // Send LPT to LP.
     auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
-    auto res =
-        accountSend(sb, accountId, account_, lpTokens, ctx_.journal, sponsor);
+    auto const isSponsorCoSigning = isSponsorReserveCoSigning(ctx_.tx);
+    auto res = accountSend(
+        sb,
+        accountId,
+        account_,
+        lpTokens,
+        ctx_.journal,
+        sponsor,
+        isSponsorCoSigning);
     if (res != tesSUCCESS)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
@@ -288,6 +295,7 @@ applyCreate(
                 amount,
                 ctx_.journal,
                 std::nullopt,  // don't sponsor for AMM Trustline
+                false,
                 WaiveTransferFee::Yes))
             return res;
         // Set AMM flag on AMM trustline

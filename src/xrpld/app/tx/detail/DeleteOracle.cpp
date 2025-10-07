@@ -83,7 +83,7 @@ DeleteOracle::deleteOracle(
         sle->getFieldArray(sfPriceDataSeries).size() > 5 ? -2 : -1;
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
-    adjustOwnerCount(view, sleOwner, sponsor, count, j);
+    reduceOwnerCount(view, sleOwner, sponsor, count, j);
 
     view.erase(sle);
 

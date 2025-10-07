@@ -162,10 +162,10 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), account_, vault))
         return ter;
     auto const sponsor = getTxReserveSponsor(view(), tx);
-    adjustOwnerCount(view(), owner, sponsor, 1, j_);
+    adjustOwnerCount(view(), tx, owner, sponsor, 1, j_);
     addSponsorToLedgerEntry(vault, sponsor);
-    if (auto const ret =
-            checkInsufficientReserve(view(), owner, mPriorBalance, sponsor, 0);
+    if (auto const ret = checkInsufficientReserve(
+            view(), tx, owner, mPriorBalance, sponsor, 0);
         !isTesSuccess(ret))
         return ret;
 

@@ -75,7 +75,7 @@ MPTokenIssuanceDestroy::doApply()
     view().erase(mpt);
 
     auto const sponsor = getLedgerEntryReserveSponsor(view(), mpt);
-    adjustOwnerCount(
+    reduceOwnerCount(
         view(), view().peek(keylet::account(account_)), sponsor, -1, j_);
 
     return tesSUCCESS;

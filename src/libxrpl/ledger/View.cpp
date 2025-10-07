@@ -1041,9 +1041,19 @@ ownerCount(std::shared_ptr<SLE const> const& sponsorSle)
     return ownerCount + sponsoringOwnerCount - sponsoredOwnerCount;
 }
 
+bool
+isSponsorReserveCoSigning(STTx const& tx)
+{
+    if (!tx.isFieldPresent(sfSponsorSignature))
+        return false;
+    auto const sponsor = tx.getFieldObject(sfSponsor);
+    return sponsor.isFlag(tfSponsorReserve);
+}
+
 TER
 checkInsufficientReserve(
     ReadView const& view,
+    STTx const& tx,
     std::shared_ptr<SLE const> accSle,
     STAmount const& accBalance,
     std::optional<std::shared_ptr<SLE const>> const& sponsorSle,
@@ -1052,18 +1062,39 @@ checkInsufficientReserve(
 {
     if (sponsorSle)
     {
-        auto const sponsorBalance = (*sponsorSle)->getFieldAmount(sfBalance);
-        STAmount const sponsorReserve{view.fees().accountReserve(
-            (*sponsorSle)->getFieldU32(sfOwnerCount),
-            (*sponsorSle)->getFieldU32(sfSponsoredOwnerCount),
-            (*sponsorSle)->getFieldU32(sfSponsoringOwnerCount) +
-                ownerCountDelta,
-            (*sponsorSle)->isFieldPresent(sfSponsorAccount),
-            (*sponsorSle)->getFieldU32(sfSponsoringAccountCount) +
-                accountCountDelta)};
+        auto const isCoSigning = isSponsorReserveCoSigning(tx);
 
-        if (sponsorBalance < sponsorReserve)
-            return tecINSUFFICIENT_RESERVE;
+        if (isCoSigning)
+        {
+            auto const sponsorBalance =
+                (*sponsorSle)->getFieldAmount(sfBalance);
+            STAmount const sponsorReserve{view.fees().accountReserve(
+                (*sponsorSle)->getFieldU32(sfOwnerCount),
+                (*sponsorSle)->getFieldU32(sfSponsoredOwnerCount),
+                (*sponsorSle)->getFieldU32(sfSponsoringOwnerCount) +
+                    ownerCountDelta,
+                (*sponsorSle)->isFieldPresent(sfSponsorAccount),
+                (*sponsorSle)->getFieldU32(sfSponsoringAccountCount) +
+                    accountCountDelta)};
+
+            if (sponsorBalance < sponsorReserve)
+                return tecINSUFFICIENT_RESERVE;
+        }
+        else
+        {
+            // pre funded
+            auto const sle = view.read(keylet::sponsor(
+                (*sponsorSle)->getAccountID(sfAccount),
+                accSle->getAccountID(sfAccount)));
+            if (!sle)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            auto const reserveCountAllowed = sle->getFieldU32(sfReserveCount);
+            if (reserveCountAllowed < ownerCountDelta)
+            {
+                return tecINSUFFICIENT_RESERVE;
+            }
+        }
     }
     else
     {
@@ -1162,6 +1193,7 @@ adjustOwnerCount(
     std::shared_ptr<SLE> const& accountSle,
     std::optional<std::shared_ptr<SLE>> const& sponsorSle,
     std::int32_t amount,
+    bool const isSponsorCoSigning,
     beast::Journal j)
 {
     if (!accountSle)
@@ -1198,6 +1230,24 @@ adjustOwnerCount(
             else
                 accountSle->at(sfSponsoredOwnerCount) = adjusted;
             view.update(accountSle);
+        }
+
+        if (!isSponsorCoSigning && amount > 0)
+        {
+            // pre funded
+            // modify sponsor's ReserveCount
+            auto sle = view.peek(keylet::sponsor(
+                (*sponsorSle)->getAccountID(sfAccount),
+                accountSle->getAccountID(sfAccount)));
+
+            XRPL_ASSERT(
+                sle, "ripple::adjustOwnerCount : co-signing sponsor not found");
+            XRPL_ASSERT(
+                sle->at(sfReserveCount) >= amount,
+                "ripple::adjustOwnerCount : reserve count not enough");
+
+            sle->at(sfReserveCount) = sle->getFieldU32(sfReserveCount) + amount;
+            view.update(sle);
         }
     }
     std::uint32_t const current{accountSle->getFieldU32(sfOwnerCount)};
@@ -1408,6 +1458,7 @@ addEmptyHolding(
     auto const& sponsorAccountID = !isPseudoAccount(sleDst)
         ? getTxReserveSponsorAccountID(tx)
         : std::nullopt;
+    auto const isSponsorCoSigning = tx.isFieldPresent(sfSponsorSignature);
     return trustCreate(
         view,
         high,
@@ -1424,6 +1475,7 @@ addEmptyHolding(
         /*qualityIn=*/0,
         /*qualityOut=*/0,
         sponsorAccountID,
+        isSponsorCoSigning,
         journal);
 }
 
@@ -1486,7 +1538,7 @@ authorizeMPToken(
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             auto const sponsor = getLedgerEntryReserveSponsor(view, sleMpt);
-            adjustOwnerCount(view, sleAcct, sponsor, -1, journal);
+            reduceOwnerCount(view, sleAcct, sponsor, -1, journal);
 
             view.erase(sleMpt);
             return tesSUCCESS;
@@ -1506,7 +1558,7 @@ authorizeMPToken(
         if (ownerCount(sponsor.value_or(sleAcct)) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
-                    view, sleAcct, priorBalance, sponsor, 1);
+                    view, tx, sleAcct, priorBalance, sponsor, 1);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -1522,7 +1574,7 @@ authorizeMPToken(
         view.insert(mptoken);
 
         // Update owner count.
-        adjustOwnerCount(view, sleAcct, sponsor, 1, journal);
+        adjustOwnerCount(view, tx, sleAcct, sponsor, 1, journal);
         addSponsorToLedgerEntry(mptoken, sponsor);
 
         return tesSUCCESS;
@@ -1580,6 +1632,7 @@ trustCreate(
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
     std::optional<AccountID> const& sponsorAccountID,
+    bool const isSponsorCoSigning,
     beast::Journal j)
 {
     JLOG(j.trace()) << "trustCreate: " << to_string(uSrcAccountID) << ", "
@@ -1673,7 +1726,7 @@ trustCreate(
         sponsorSle = view.peek(keylet::account(*sponsorAccountID));
 
     sleRippleState->setFieldU32(sfFlags, uFlags);
-    adjustOwnerCount(view, sleAccount, sponsorSle, 1, j);
+    adjustOwnerCount(view, sleAccount, sponsorSle, 1, isSponsorCoSigning, j);
 
     addSponsorToLedgerEntry(
         sleRippleState,
@@ -1724,7 +1777,7 @@ removeEmptyHolding(
             view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
         if (!sleLowAccount)
             return tecINTERNAL;
-        adjustOwnerCount(view, sleLowAccount, std::nullopt, -1, journal);
+        reduceOwnerCount(view, sleLowAccount, std::nullopt, -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -1738,7 +1791,7 @@ removeEmptyHolding(
             view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
         if (!sleHighAccount)
             return tecINTERNAL;
-        adjustOwnerCount(view, sleHighAccount, std::nullopt, -1, journal);
+        reduceOwnerCount(view, sleHighAccount, std::nullopt, -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -1873,7 +1926,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
     }
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
-    adjustOwnerCount(view, view.peek(keylet::account(owner)), sponsor, -1, j);
+    reduceOwnerCount(view, view.peek(keylet::account(owner)), sponsor, -1, j);
 
     view.erase(sle);
 
@@ -1892,6 +1945,7 @@ rippleCreditIOU(
     STAmount const& saAmount,
     bool bCheckIssuer,
     std::optional<AccountID> const& sponsorAccount,
+    bool isSponsorCoSigning,
     beast::Journal j)
 {
     AccountID const& issuer = saAmount.getIssuer();
@@ -1971,7 +2025,7 @@ rippleCreditIOU(
                 view,
                 sleRippleState,
                 !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
-            adjustOwnerCount(
+            reduceOwnerCount(
                 view,
                 view.peek(keylet::account(uSenderID)),
                 currentSponsor,
@@ -2046,6 +2100,7 @@ rippleCreditIOU(
         0,
         0,
         sponsorAccount,
+        isSponsorCoSigning,
         j);
 }
 
@@ -2061,6 +2116,7 @@ rippleSendIOU(
     STAmount& saActual,
     beast::Journal j,
     std::optional<AccountID> const& sponsorAccount,
+    bool isSponsorCoSigning,
     WaiveTransferFee waiveFee)
 {
     auto const issuer = saAmount.getIssuer();
@@ -2076,7 +2132,14 @@ rippleSendIOU(
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         auto const ter = rippleCreditIOU(
-            view, uSenderID, uReceiverID, saAmount, false, sponsorAccount, j);
+            view,
+            uSenderID,
+            uReceiverID,
+            saAmount,
+            false,
+            sponsorAccount,
+            isSponsorCoSigning,
+            j);
         if (view.rules().enabled(featureDeletableAccounts) && ter != tesSUCCESS)
             return ter;
         saActual = saAmount;
@@ -2097,11 +2160,25 @@ rippleSendIOU(
                     << " cost=" << saActual.getFullText();
 
     TER terResult = rippleCreditIOU(
-        view, issuer, uReceiverID, saAmount, true, sponsorAccount, j);
+        view,
+        issuer,
+        uReceiverID,
+        saAmount,
+        true,
+        sponsorAccount,
+        isSponsorCoSigning,
+        j);
 
     if (tesSUCCESS == terResult)
         terResult = rippleCreditIOU(
-            view, uSenderID, issuer, saActual, true, sponsorAccount, j);
+            view,
+            uSenderID,
+            issuer,
+            saActual,
+            true,
+            sponsorAccount,
+            isSponsorCoSigning,
+            j);
 
     return terResult;
 }
@@ -2114,6 +2191,7 @@ accountSendIOU(
     STAmount const& saAmount,
     beast::Journal j,
     std::optional<AccountID> const& sponsorAccount,
+    bool isSponsorCoSigning,
     WaiveTransferFee waiveFee)
 {
     if (view.rules().enabled(fixAMMv1_1))
@@ -2152,6 +2230,7 @@ accountSendIOU(
             saActual,
             j,
             sponsorAccount,
+            isSponsorCoSigning,
             waiveFee);
     }
 
@@ -2395,6 +2474,7 @@ accountSend(
     STAmount const& saAmount,
     beast::Journal j,
     std::optional<AccountID> const& sponsorAcc,
+    bool isSponsorCoSigning,
     WaiveTransferFee waiveFee)
 {
     return std::visit(
@@ -2407,6 +2487,7 @@ accountSend(
                     saAmount,
                     j,
                     sponsorAcc,
+                    isSponsorCoSigning,
                     waiveFee);
             else
                 return accountSendMPT(
@@ -2458,7 +2539,7 @@ updateTrustLine(
             view,
             state,
             !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
-        adjustOwnerCount(view, sle, currentSponsor, -1, j);
+        reduceOwnerCount(view, sle, currentSponsor, -1, j);
 
         // Clear reserve flag.
         state->setFieldU32(
@@ -2573,6 +2654,7 @@ issueIOU(
         0,
         0,
         std::nullopt,
+        false,
         j);
 }
 
@@ -3056,7 +3138,7 @@ deleteAMMTrustLine(
 
     auto const sponsorSle = getLedgerEntryReserveSponsor(
         view, sleState, !ammLow ? sfLowSponsorAccount : sfHighSponsorAccount);
-    adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, -1, j);
+    reduceOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, -1, j);
     removeSponsorFromLedgerEntry(
         sleState, !ammLow ? sfLowSponsorAccount : sfHighSponsorAccount);
 
@@ -3083,6 +3165,7 @@ rippleCredit(
                     saAmount,
                     bCheckIssuer,
                     std::nullopt,
+                    false,
                     j);
             }
             else

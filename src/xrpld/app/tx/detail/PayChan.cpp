@@ -156,7 +156,7 @@ closeChannel(
     (*sle)[sfBalance] =
         (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     auto const sponsor = getLedgerEntryReserveSponsor(view, slep);
-    adjustOwnerCount(view, sle, sponsor, -1, j);
+    reduceOwnerCount(view, sle, sponsor, -1, j);
     view.update(sle);
 
     // Remove PayChan from ledger
@@ -206,13 +206,13 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
     {
         auto const balance = (*sle)[sfBalance];
         auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (auto const ret =
-                checkInsufficientReserve(ctx.view, sle, balance, sponsor, 1);
+        if (auto const ret = checkInsufficientReserve(
+                ctx.view, ctx.tx, sle, balance, sponsor, 1);
             !isTesSuccess(ret))
             return ret;
 
         if (auto const ret = checkInsufficientReserve(
-                ctx.view, sle, balance - ctx.tx[sfAmount], sponsor, 1);
+                ctx.view, ctx.tx, sle, balance - ctx.tx[sfAmount], sponsor, 1);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }
@@ -321,7 +321,7 @@ PayChanCreate::doApply()
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-    adjustOwnerCount(ctx_.view(), sle, sponsor, 1, ctx_.journal);
+    adjustOwnerCount(ctx_.view(), ctx_.tx, sle, sponsor, 1, ctx_.journal);
     addSponsorToLedgerEntry(slep, sponsor);
 
     ctx_.view().update(sle);
@@ -401,13 +401,14 @@ PayChanFund::doApply()
         // Check reserve and funds availability
         auto const balance = (*sle)[sfBalance];
         auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-        if (auto const ret =
-                checkInsufficientReserve(ctx_.view(), sle, balance, sponsor, 0);
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(), ctx_.tx, sle, balance, sponsor, 0);
             !isTesSuccess(ret))
             return ret;
 
         if (auto const ret = checkInsufficientReserve(
                 ctx_.view(),
+                ctx_.tx,
                 sle,
                 balance - ctx_.tx[sfAmount],
                 std::optional<std::shared_ptr<SLE const>>(),

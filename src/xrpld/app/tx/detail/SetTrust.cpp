@@ -640,7 +640,8 @@ SetTrust::doApply()
         if (bLowReserveSet && !bLowReserved)
         {
             // Set reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, txSponsorSle, 1, viewJ);
+            adjustOwnerCount(
+                view(), ctx_.tx, sleLowAccount, txSponsorSle, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
             addSponsorToLedgerEntry(
@@ -653,7 +654,7 @@ SetTrust::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            adjustOwnerCount(
+            reduceOwnerCount(
                 view(), sleLowAccount, currentLowSponsor, -1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
 
@@ -663,7 +664,8 @@ SetTrust::doApply()
         if (bHighReserveSet && !bHighReserved)
         {
             // Set reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, txSponsorSle, 1, viewJ);
+            adjustOwnerCount(
+                view(), ctx_.tx, sleHighAccount, txSponsorSle, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
             addSponsorToLedgerEntry(
@@ -676,7 +678,7 @@ SetTrust::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            adjustOwnerCount(
+            reduceOwnerCount(
                 view(), sleHighAccount, currentHighSponsor, -1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
 
@@ -695,7 +697,7 @@ SetTrust::doApply()
         }
         // Reserve is not scaled by load.
         else if (auto const ret = checkInsufficientReserve(
-                     view(), sle, mPriorBalance, txSponsorSle, 0);
+                     view(), ctx_.tx, sle, mPriorBalance, txSponsorSle, 0);
                  !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
@@ -727,6 +729,7 @@ SetTrust::doApply()
     }
     else if (auto const ret = checkInsufficientReserve(
                  ctx_.view(),
+                 ctx_.tx,
                  sle,
                  mPriorBalance,
                  txSponsorSle,
@@ -751,6 +754,8 @@ SetTrust::doApply()
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: "
                          << to_string(k.key);
 
+        auto const isSponsorCoSigning = isSponsorReserveCoSigning(ctx_.tx);
+
         // Create a new ripple line.
         terResult = trustCreate(
             view(),
@@ -768,6 +773,7 @@ SetTrust::doApply()
             uQualityIn,
             uQualityOut,
             txSponsorAcc,
+            isSponsorCoSigning,
             viewJ);
     }
 

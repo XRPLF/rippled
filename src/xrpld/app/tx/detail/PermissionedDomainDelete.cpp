@@ -76,7 +76,7 @@ PermissionedDomainDelete::doApply()
         ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
         "ripple::PermissionedDomainDelete::doApply : nonzero owner count");
     auto const sponsor = getLedgerEntryReserveSponsor(view(), slePd);
-    adjustOwnerCount(view(), ownerSle, sponsor, -1, ctx_.journal);
+    reduceOwnerCount(view(), ownerSle, sponsor, -1, ctx_.journal);
     view().erase(slePd);
 
     return tesSUCCESS;

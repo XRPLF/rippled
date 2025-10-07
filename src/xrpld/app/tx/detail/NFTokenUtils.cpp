@@ -65,11 +65,13 @@ locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
 static std::shared_ptr<SLE>
 getPageForToken(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& owner,
     std::optional<AccountID> const& sponsor,
     uint256 const& id,
     std::function<void(
         ApplyView&,
+        STTx const&,
         std::shared_ptr<SLE> const&,
         AccountID const&,
         std::optional<AccountID> const&)> const& createCallback)
@@ -92,7 +94,7 @@ getPageForToken(
         cp = std::make_shared<SLE>(last);
         cp->setFieldArray(sfNFTokens, arr);
         view.insert(cp);
-        createCallback(view, cp, owner, sponsor);
+        createCallback(view, tx, cp, owner, sponsor);
         return cp;
     }
 
@@ -220,7 +222,7 @@ getPageForToken(
     cp->setFieldH256(sfPreviousPageMin, np->key());
     view.update(cp);
 
-    createCallback(view, np, owner, sponsor);
+    createCallback(view, tx, np, owner, sponsor);
 
     // fixNFTokenDirV1 corrects a bug in the initial implementation that
     // would put an NFT in the wrong page.  The problem was caused by an
@@ -284,6 +286,7 @@ changeTokenURI(
 TER
 insertToken(
     ApplyView& view,
+    STTx const& tx,
     AccountID owner,
     std::optional<AccountID> const& sponsor,
     STObject&& nft)
@@ -297,10 +300,12 @@ insertToken(
     // the NFT.
     std::shared_ptr<SLE> page = getPageForToken(
         view,
+        tx,
         owner,
         sponsor,
         nft[sfNFTokenID],
         [](ApplyView& view,
+           STTx const& tx,
            std::shared_ptr<SLE> const& newPage,
            AccountID const& owner,
            std::optional<AccountID> const& sponsor) {
@@ -309,6 +314,7 @@ insertToken(
                 : std::optional<std::shared_ptr<SLE>>{std::nullopt};
             adjustOwnerCount(
                 view,
+                tx,
                 view.peek(keylet::account(owner)),
                 sponsorSle,
                 1,
@@ -470,7 +476,7 @@ removeToken(
         if (prev && mergePages(view, prev, curr))
         {
             auto const sponsor = getLedgerEntryReserveSponsor(view, prev);
-            adjustOwnerCount(
+            reduceOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
                 sponsor,
@@ -481,7 +487,7 @@ removeToken(
         if (next && mergePages(view, curr, next))
         {
             auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
-            adjustOwnerCount(
+            reduceOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
                 sponsor,
@@ -522,7 +528,7 @@ removeToken(
             }
 
             auto const sponsor = getLedgerEntryReserveSponsor(view, prev);
-            adjustOwnerCount(
+            reduceOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
                 sponsor,
@@ -556,7 +562,7 @@ removeToken(
     }
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
-    adjustOwnerCount(
+    reduceOwnerCount(
         view,
         view.peek(keylet::account(owner)),
         getLedgerEntryReserveSponsor(view, curr),
@@ -579,7 +585,7 @@ removeToken(
             view.peek(Keylet(ltNFTOKEN_PAGE, prev->key())),
             view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
     {
-        adjustOwnerCount(
+        reduceOwnerCount(
             view,
             view.peek(keylet::account(owner)),
             getLedgerEntryReserveSponsor(view, prev),
@@ -738,7 +744,7 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
         return false;
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, offer);
-    adjustOwnerCount(
+    reduceOwnerCount(
         view,
         view.peek(keylet::account(owner)),
         sponsor,
@@ -1073,7 +1079,7 @@ tokenOfferCreateApply(
     auto const acct = view.read(acctKeylet);
     auto const sponsor = getTxReserveSponsor(view, tx);
     if (auto const ret =
-            checkInsufficientReserve(view, acct, priorBalance, sponsor, 1);
+            checkInsufficientReserve(view, tx, acct, priorBalance, sponsor, 1);
         !isTesSuccess(ret))
         return ret;
 
@@ -1130,7 +1136,7 @@ tokenOfferCreateApply(
     }
 
     // Update owner count.
-    adjustOwnerCount(view, view.peek(acctKeylet), sponsor, 1, j);
+    adjustOwnerCount(view, tx, view.peek(acctKeylet), sponsor, 1, j);
 
     return tesSUCCESS;
 }

@@ -141,7 +141,7 @@ CredentialCreate::doApply()
 
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
     if (auto const ret = checkInsufficientReserve(
-            view(), sleIssuer, mPriorBalance, sponsor, 1);
+            view(), ctx_.tx, sleIssuer, mPriorBalance, sponsor, 1);
         !isTesSuccess(ret))
         return ret;
 
@@ -164,7 +164,7 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        adjustOwnerCount(view(), sleIssuer, sponsor, 1, j_);
+        adjustOwnerCount(view(), ctx_.tx, sleIssuer, sponsor, 1, j_);
         addSponsorToLedgerEntry(sleCred, sponsor);
     }
 
@@ -346,7 +346,7 @@ CredentialAccept::doApply()
 
     auto const newSponsor = getTxReserveSponsor(view(), ctx_.tx);
     if (auto const ret = checkInsufficientReserve(
-            view(), sleSubject, mPriorBalance, newSponsor, 1);
+            view(), ctx_.tx, sleSubject, mPriorBalance, newSponsor, 1);
         !isTesSuccess(ret))
         return ret;
 
@@ -366,9 +366,9 @@ CredentialAccept::doApply()
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
 
-    adjustOwnerCount(view(), sleIssuer, currentSponsor, -1, j_);
+    reduceOwnerCount(view(), sleIssuer, currentSponsor, -1, j_);
     removeSponsorFromLedgerEntry(sleCred);
-    adjustOwnerCount(view(), sleSubject, newSponsor, 1, j_);
+    adjustOwnerCount(view(), ctx_.tx, sleSubject, newSponsor, 1, j_);
     addSponsorToLedgerEntry(sleCred, newSponsor);
 
     return tesSUCCESS;

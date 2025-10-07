@@ -514,6 +514,7 @@ AMMDeposit::deposit(
     std::uint16_t tfee)
 {
     auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
+    auto const isSponsorCoSigning = isSponsorReserveCoSigning(ctx_.tx);
 
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
@@ -588,6 +589,7 @@ AMMDeposit::deposit(
         amountDepositActual,
         ctx_.journal,
         std::nullopt,  // don't sponsor for AMM Trustline
+        false,
         WaiveTransferFee::Yes);
     if (res != tesSUCCESS)
     {
@@ -615,6 +617,7 @@ AMMDeposit::deposit(
             *amount2DepositActual,
             ctx_.journal,
             std::nullopt,  // don't sponsor for AMM Trustline
+            false,
             WaiveTransferFee::Yes);
         if (res != tesSUCCESS)
         {
@@ -631,7 +634,8 @@ AMMDeposit::deposit(
         account_,
         lpTokensDepositActual,
         ctx_.journal,
-        sponsor);
+        sponsor,
+        isSponsorCoSigning);
     if (res != tesSUCCESS)
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit LPTokens";

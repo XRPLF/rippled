@@ -112,7 +112,7 @@ MPTokenIssuanceCreate::create(
     if (args.priorBalance)
     {
         if (auto const ret = checkInsufficientReserve(
-                view, acct, *(args.priorBalance), sponsor, 1);
+                view, tx, acct, *(args.priorBalance), sponsor, 1);
             !isTesSuccess(ret))
             return Unexpected(ret);  // tecINSUFFICIENT_RESERVE
     }
@@ -161,7 +161,7 @@ MPTokenIssuanceCreate::create(
     }
 
     // Update owner count.
-    adjustOwnerCount(view, acct, sponsor, 1, journal);
+    adjustOwnerCount(view, tx, acct, sponsor, 1, journal);
 
     return mptId;
 }

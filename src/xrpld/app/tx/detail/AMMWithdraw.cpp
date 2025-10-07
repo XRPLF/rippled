@@ -610,6 +610,7 @@ AMMWithdraw::withdraw(
             {
                 if (auto const ret = checkInsufficientReserve(
                         view,
+                        tx,
                         sleAccount,
                         std::max(priorBalance, balance),
                         sponsor ? view.read(keylet::account(*sponsor))
@@ -625,6 +626,8 @@ AMMWithdraw::withdraw(
     if (auto const err = sufficientReserve(amountWithdrawActual.issue()))
         return {err, STAmount{}, STAmount{}, STAmount{}};
 
+    auto const isSponsorCoSigning = isSponsorReserveCoSigning(tx);
+
     // Withdraw amountWithdraw
     auto res = accountSend(
         view,
@@ -633,6 +636,7 @@ AMMWithdraw::withdraw(
         amountWithdrawActual,
         journal,
         sponsor,
+        isSponsorCoSigning,
         WaiveTransferFee::Yes);
     if (res != tesSUCCESS)
     {
@@ -657,6 +661,7 @@ AMMWithdraw::withdraw(
             *amount2WithdrawActual,
             journal,
             sponsor,
+            isSponsorCoSigning,
             WaiveTransferFee::Yes);
         if (res != tesSUCCESS)
         {

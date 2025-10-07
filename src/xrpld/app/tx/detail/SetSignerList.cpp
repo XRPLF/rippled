@@ -229,7 +229,7 @@ removeSignersFromLedger(
     }
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, signers);
-    adjustOwnerCount(
+    reduceOwnerCount(
         view,
         view.peek(accountKeylet),
         sponsor,
@@ -366,7 +366,7 @@ SetSignerList::replaceSignerList()
     // with CreateTicket.
     auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
     if (auto const ret = checkInsufficientReserve(
-            ctx_.view(), sle, mPriorBalance, sponsor, addedOwnerCount);
+            ctx_.view(), ctx_.tx, sle, mPriorBalance, sponsor, addedOwnerCount);
         !isTesSuccess(ret))
         return ret;
 
@@ -390,7 +390,7 @@ SetSignerList::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle, sponsor, addedOwnerCount, viewJ);
+    adjustOwnerCount(view(), ctx_.tx, sle, sponsor, addedOwnerCount, viewJ);
     addSponsorToLedgerEntry(signerList, sponsor);
     return tesSUCCESS;
 }

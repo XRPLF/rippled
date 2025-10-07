@@ -166,7 +166,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
     auto const& balance = sleSetter->getFieldAmount(sfBalance);
     auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
     if (auto const ret = checkInsufficientReserve(
-            ctx.view, sleSetter, balance, sponsor, adjustReserve);
+            ctx.view, ctx.tx, sleSetter, balance, sponsor, adjustReserve);
         !isTesSuccess(ret))
         return ret;
 
@@ -182,7 +182,12 @@ adjustOwnerCount(
     if (auto const sleAccount =
             ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
     {
-        adjustOwnerCount(ctx.view(), sleAccount, sponsor, count, ctx.journal);
+        if (count > 0)
+            adjustOwnerCount(
+                ctx.view(), ctx.tx, sleAccount, sponsor, count, ctx.journal);
+        else
+            reduceOwnerCount(
+                ctx.view(), sleAccount, sponsor, count, ctx.journal);
         return true;
     }
 

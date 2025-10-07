@@ -325,7 +325,7 @@ NFTokenMint::doApply()
 
     auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
     if (TER const ret = nft::insertToken(
-            ctx_.view(), account_, sponsor, std::move(newToken));
+            ctx_.view(), ctx_.tx, account_, sponsor, std::move(newToken));
         ret != tesSUCCESS)
         return ret;
 
@@ -360,6 +360,7 @@ NFTokenMint::doApply()
         auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
         if (auto const ret = checkInsufficientReserve(
                 ctx_.view(),
+                ctx_.tx,
                 view().read(keylet::account(account_)),
                 mPriorBalance,
                 sponsor,

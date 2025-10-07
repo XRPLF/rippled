@@ -767,7 +767,7 @@ finalizeClaimHelper(
 
             auto const sponsor =
                 getLedgerEntryReserveSponsor(outerSb, sleClaimID);
-            adjustOwnerCount(outerSb, sleOwner, sponsor, -1, j);
+            reduceOwnerCount(outerSb, sleOwner, sponsor, -1, j);
         }
     }
 
@@ -1079,8 +1079,8 @@ applyCreateAccountAttestations(
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
             auto const sponsor = std::optional<std::shared_ptr<SLE const>>();
-            if (auto const ret =
-                    checkInsufficientReserve(psb, sleDoor, balance, sponsor, 1);
+            if (auto const ret = checkInsufficientReserve(
+                    psb, tx, sleDoor, balance, sponsor, 1);
                 !isTesSuccess(ret))
                 return Unexpected(ret);  // tecINSUFFICIENT_RESERVE
         }
@@ -1194,7 +1194,7 @@ applyCreateAccountAttestations(
 
         // Reserve was already checked
         auto const sponsor = getTxReserveSponsor(psb, tx);
-        adjustOwnerCount(psb, sleDoor, sponsor, 1, j);
+        adjustOwnerCount(psb, tx, sleDoor, sponsor, 1, j);
         addSponsorToLedgerEntry(createdSleClaimID, sponsor);
         psb.insert(createdSleClaimID);
         psb.update(sleDoor);
@@ -1502,8 +1502,8 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
         auto const balance = (*sleAcc)[sfBalance];
         auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (auto const ret =
-                checkInsufficientReserve(ctx.view, sleAcc, balance, sponsor, 1);
+        if (auto const ret = checkInsufficientReserve(
+                ctx.view, ctx.tx, sleAcc, balance, sponsor, 1);
             !isTesSuccess(ret))
             return ret;
     }
@@ -1548,7 +1548,7 @@ XChainCreateBridge::doApply()
     }
 
     auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-    adjustOwnerCount(ctx_.view(), sleAcct, sponsor, 1, ctx_.journal);
+    adjustOwnerCount(ctx_.view(), ctx_.tx, sleAcct, sponsor, 1, ctx_.journal);
     addSponsorToLedgerEntry(sleBridge, sponsor);
 
     ctx_.view().insert(sleBridge);
@@ -2039,8 +2039,8 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
 
         auto const balance = (*sleAcc)[sfBalance];
         auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (auto const ret =
-                checkInsufficientReserve(ctx.view, sleAcc, balance, sponsor, 1);
+        if (auto const ret = checkInsufficientReserve(
+                ctx.view, ctx.tx, sleAcc, balance, sponsor, 1);
             !isTesSuccess(ret))
             return ret;
     }
@@ -2096,7 +2096,7 @@ XChainCreateClaimID::doApply()
     }
 
     auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-    adjustOwnerCount(ctx_.view(), sleAcct, sponsor, 1, ctx_.journal);
+    adjustOwnerCount(ctx_.view(), ctx_.tx, sleAcct, sponsor, 1, ctx_.journal);
     addSponsorToLedgerEntry(sleClaimID, sponsor);
 
     ctx_.view().insert(sleClaimID);

@@ -270,6 +270,7 @@ VaultClawback::doApply()
             sharesDestroyed,
             j_,
             std::nullopt,
+            false,
             WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
@@ -310,6 +311,7 @@ VaultClawback::doApply()
             assetsRecovered,
             j_,
             std::nullopt,
+            false,
             WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;

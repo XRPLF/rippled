@@ -444,7 +444,7 @@ NFTokenAcceptOffer::transferNFToken(
 
     auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
     auto const insertRet = nft::insertToken(
-        view(), buyer, sponsor, std::move(tokenAndPage->token));
+        view(), ctx_.tx, buyer, sponsor, std::move(tokenAndPage->token));
 
     // if fixNFTokenReserve is enabled, check if the buyer has sufficient
     // reserve to own a new object, if their OwnerCount changed.
@@ -468,7 +468,7 @@ NFTokenAcceptOffer::transferNFToken(
                 ? getTxReserveSponsor(ctx_.view(), ctx_.tx)
                 : std::optional<std::shared_ptr<SLE const>>();
             if (auto const ret = checkInsufficientReserve(
-                    ctx_.view(), sleBuyer, buyerBalance, sponsor, 0);
+                    ctx_.view(), ctx_.tx, sleBuyer, buyerBalance, sponsor, 0);
                 !isTesSuccess(ret))
                 return ret;
         }

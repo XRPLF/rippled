@@ -821,7 +821,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         auto const sponsor = getTxReserveSponsor(sb, ctx_.tx);
         if (auto const ret = checkInsufficientReserve(
-                sb, sleCreator, mPriorBalance, sponsor, 1);
+                sb, ctx_.tx, sleCreator, mPriorBalance, sponsor, 1);
             !isTesSuccess(ret))
         {
             // If we are here, the signing account had an insufficient reserve
@@ -855,7 +855,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     // Update owner count.
     auto const sponsor = getTxReserveSponsor(sb, ctx_.tx);
-    adjustOwnerCount(sb, sleCreator, sponsor, 1, viewJ);
+    adjustOwnerCount(sb, ctx_.tx, sleCreator, sponsor, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.issue())
                      << " : " << to_string(saTakerGets.issue())

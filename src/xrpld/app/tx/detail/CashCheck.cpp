@@ -360,7 +360,7 @@ CashCheck::doApply()
 
                 // Can the account cover the trust line's reserve?
                 if (auto const ret = checkInsufficientReserve(
-                        psb, sleDst, mPriorBalance, sponsorSle, 1);
+                        psb, ctx_.tx, sleDst, mPriorBalance, sponsorSle, 1);
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
@@ -372,6 +372,9 @@ CashCheck::doApply()
                 Currency const currency = flowDeliver.getCurrency();
                 STAmount initialBalance(flowDeliver.issue());
                 initialBalance.setIssuer(noAccount());
+
+                auto const isSponsorCoSigning =
+                    isSponsorReserveCoSigning(ctx_.tx);
 
                 // clang-format off
                 if (TER const ter = trustCreate(
@@ -389,7 +392,8 @@ CashCheck::doApply()
                         Issue(currency, account_),      // limit of zero
                         0,                              // quality in
                         0,                              // quality out
-                        sponsorAcc,                        // sponsor
+                        sponsorAcc,                     // sponsor
+                        isSponsorCoSigning,             // is sponsor co-signing
                         viewJ);                         // journal
                     !isTesSuccess(ter))
                 {
@@ -503,7 +507,7 @@ CashCheck::doApply()
     // If we succeeded, update the check owner's reserve.
 
     auto const sponsorSle = getLedgerEntryReserveSponsor(psb, sleCheck);
-    adjustOwnerCount(
+    reduceOwnerCount(
         psb, psb.peek(keylet::account(srcId)), sponsorSle, -1, viewJ);
 
     // Remove check from ledger.

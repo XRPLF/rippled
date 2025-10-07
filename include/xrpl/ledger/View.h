@@ -454,12 +454,16 @@ areCompatible(
 uint32_t
 ownerCount(std::shared_ptr<SLE const> const& sponsorSle);
 
+bool
+isSponsorReserveCoSigning(STTx const& tx);
+
 TER
 checkInsufficientReserve(
     ReadView const& view,
+    STTx const& tx,
     std::shared_ptr<SLE const> accSle,
     STAmount const& accBalance,
-    std::optional<std::shared_ptr<SLE const>> const& _sponsorSle,
+    std::optional<std::shared_ptr<SLE const>> const& sponsorSle,
     std::int32_t ownerCountDelta,
     std::int32_t accountCountDelta = 0);
 
@@ -502,11 +506,26 @@ adjustOwnerCount(
     std::shared_ptr<SLE> const& accountSle,
     std::optional<std::shared_ptr<SLE>> const& sponsorSle,
     std::int32_t amount,
+    bool const isSponsorCoSigning,
     beast::Journal j);
 
 inline void
 adjustOwnerCount(
     ApplyView& view,
+    STTx const& tx,
+    std::shared_ptr<SLE> const& accountSle,
+    std::optional<std::shared_ptr<SLE>> const& sponsorSle,
+    std::int32_t amount,
+    beast::Journal j)
+{
+    auto const isCoSigning = isSponsorReserveCoSigning(tx);
+    adjustOwnerCount(view, accountSle, sponsorSle, amount, isCoSigning, j);
+}
+
+inline void
+adjustOwnerCount(
+    ApplyView& view,
+    STTx const& tx,
     AccountID const& account,
     std::optional<AccountID> const& sponsor,
     std::int32_t amount,
@@ -514,11 +533,25 @@ adjustOwnerCount(
 {
     return adjustOwnerCount(
         view,
+        tx,
         view.peek(keylet::account(account)),
         sponsor ? view.peek(keylet::account(*sponsor))
                 : std::optional<std::shared_ptr<SLE>>(),
         amount,
         j);
+}
+
+inline void
+reduceOwnerCount(
+    ApplyView& view,
+    std::shared_ptr<SLE> const& accountSle,
+    std::optional<std::shared_ptr<SLE>> const& sponsorSle,
+    std::int32_t amount,
+    beast::Journal j)
+{
+    XRPL_ASSERT(
+        amount <= 0, "ripple::reduceOwnerCount : amount must be negative");
+    adjustOwnerCount(view, accountSle, sponsorSle, amount, true, j);
 }
 
 /** @{ */
@@ -711,6 +744,7 @@ trustCreate(
     std::uint32_t uSrcQualityIn,
     std::uint32_t uSrcQualityOut,
     std::optional<AccountID> const& sponsorAccountID,
+    bool const isSponsorCoSigning,
     beast::Journal j);
 
 [[nodiscard]] TER
@@ -813,6 +847,7 @@ accountSend(
     STAmount const& saAmount,
     beast::Journal j,
     std::optional<AccountID> const& sponsorAcc = std::nullopt,
+    bool isSponsorCoSigning = false,
     WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
 [[nodiscard]] TER

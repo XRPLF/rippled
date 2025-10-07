@@ -165,11 +165,10 @@ CreateCheck::doApply()
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret =
-            checkInsufficientReserve(view(), sle, mPriorBalance, sponsor, 1);
+    if (auto const ret = checkInsufficientReserve(
+            view(), ctx_.tx, sle, mPriorBalance, sponsor, 1);
         !isTesSuccess(ret))
         return ret;
-
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     std::uint32_t const seq = ctx_.tx.getSeqValue();
@@ -228,7 +227,8 @@ CreateCheck::doApply()
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }
     // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(), sle, sponsor, 1, viewJ);
+
+    adjustOwnerCount(view(), ctx_.tx, sle, sponsor, 1, viewJ);
     addSponsorToLedgerEntry(sleCheck, sponsor);
     return tesSUCCESS;
 }

@@ -116,7 +116,7 @@ PermissionedDomainSet::doApply()
         auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
         auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ownerSle, balance, sponsor, 1);
+                ctx_.view(), ctx_.tx, ownerSle, balance, sponsor, 1);
             !isTesSuccess(ret))
             return ret;
 
@@ -136,7 +136,7 @@ PermissionedDomainSet::doApply()
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), ownerSle, sponsor, 1, ctx_.journal);
+        adjustOwnerCount(view(), ctx_.tx, ownerSle, sponsor, 1, ctx_.journal);
         addSponsorToLedgerEntry(slePd, sponsor);
         view().insert(slePd);
     }

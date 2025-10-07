@@ -72,6 +72,7 @@ findTokenAndPage(
 TER
 insertToken(
     ApplyView& view,
+    STTx const& tx,
     AccountID owner,
     std::optional<AccountID> const& sponsor,
     STObject&& nft);

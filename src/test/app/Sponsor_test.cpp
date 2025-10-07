@@ -26,6 +26,8 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
 
+#include "test/jtx/sponsor.h"
+
 namespace ripple {
 namespace test {
 
@@ -2271,7 +2273,6 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
-
         {
             // check INSUFFICIENT_RESERVE for MPToken
             Env env{*this, testable_amendments()};
@@ -3992,8 +3993,7 @@ public:
 
         testSingleSigning();
         testMultiSigning();
-        // testInvalidSigninig(); // borh TxnSignature and Signers are present
-        // -> error
+
         testSimpleSponsorshipSet();
 
         testTransferSponsor();

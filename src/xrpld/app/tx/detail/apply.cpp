@@ -86,7 +86,7 @@ checkValidity(
         if (tx.isFieldPresent(sfSponsor) && rules.enabled(featureSponsor))
         {
             auto const sponsorObj = tx.getFieldObject(sfSponsor);
-            auto const isCoSigned = tx.isFieldPresent(sfSponsorSignature);
+            auto const isCoSigned = isSponsorReserveCoSigning(tx);
             if (isCoSigned)
             {
                 auto const sponsorSignatureObj =

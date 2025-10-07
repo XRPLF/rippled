@@ -212,6 +212,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         // check new sponsor have sufficient balance
         if (auto const ter = checkInsufficientReserve(
                 ctx.view,
+                ctx.tx,
                 accSle,
                 accSle->getFieldAmount(sfBalance),
                 newSponsor,
@@ -242,6 +243,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         // check account have sufficient balance
         if (auto const ter = checkInsufficientReserve(
                 ctx.view,
+                ctx.tx,
                 accSle,
                 accSle->getFieldAmount(sfBalance),
                 newSponsor,

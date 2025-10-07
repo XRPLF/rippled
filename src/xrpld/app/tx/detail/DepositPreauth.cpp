@@ -172,7 +172,7 @@ DepositPreauth::doApply()
         // reserve to pay fees.
         auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
         if (auto const ret = checkInsufficientReserve(
-                view(), sleOwner, mPriorBalance, sponsor, 1);
+                view(), ctx_.tx, sleOwner, mPriorBalance, sponsor, 1);
             !isTesSuccess(ret))
             return ret;
 
@@ -201,7 +201,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), sleOwner, sponsor, 1, j_);
+        adjustOwnerCount(view(), ctx_.tx, sleOwner, sponsor, 1, j_);
         addSponsorToLedgerEntry(slePreauth, sponsor);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
@@ -222,7 +222,7 @@ DepositPreauth::doApply()
         // reserve to pay fees.
         auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
         if (auto const ret = checkInsufficientReserve(
-                view(), sleOwner, mPriorBalance, sponsor, 1);
+                view(), ctx_.tx, sleOwner, mPriorBalance, sponsor, 1);
             !isTesSuccess(ret))
             return ret;
 
@@ -264,7 +264,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), sleOwner, sponsor, 1, j_);
+        adjustOwnerCount(view(), ctx_.tx, sleOwner, sponsor, 1, j_);
         addSponsorToLedgerEntry(slePreauth, sponsor);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
@@ -307,7 +307,7 @@ DepositPreauth::removeFromLedger(
         return tefINTERNAL;
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, slePreauth);
-    adjustOwnerCount(view, sleOwner, sponsor, -1, j);
+    reduceOwnerCount(view, sleOwner, sponsor, -1, j);
 
     // Remove DepositPreauth from ledger.
     view.erase(slePreauth);

@@ -498,7 +498,7 @@ EscrowCreate::doApply()
 
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
     if (auto const ret = checkInsufficientReserve(
-            ctx_.view(), sle, mSourceBalance, sponsor, 1);
+            ctx_.view(), ctx_.tx, sle, mSourceBalance, sponsor, 1);
         !isTesSuccess(ret))
         return ret;
 
@@ -506,6 +506,7 @@ EscrowCreate::doApply()
     {
         if (auto const ret = checkInsufficientReserve(
                 ctx_.view(),
+                ctx_.tx,
                 sle,
                 mSourceBalance - STAmount(amount).xrp(),
                 std::optional<std::shared_ptr<SLE const>>(),
@@ -610,7 +611,7 @@ EscrowCreate::doApply()
     }
 
     // increment owner count
-    adjustOwnerCount(ctx_.view(), sle, sponsor, 1, ctx_.journal);
+    adjustOwnerCount(ctx_.view(), ctx_.tx, sle, sponsor, 1, ctx_.journal);
     addSponsorToLedgerEntry(slep, sponsor);
     ctx_.view().update(sle);
     return tesSUCCESS;
@@ -861,7 +862,7 @@ escrowUnlockApplyHelper<Issue>(
         if (sponeorAcc)
             sponsorSle = view.peek(keylet::account(*sponeorAcc));
         if (auto const ret = checkInsufficientReserve(
-                view, sleDest, xrpBalance, sponsorSle, 1);
+                view, tx, sleDest, xrpBalance, sponsorSle, 1);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
@@ -873,6 +874,8 @@ escrowUnlockApplyHelper<Issue>(
         Currency const currency = amount.getCurrency();
         STAmount initialBalance(amount.issue());
         initialBalance.setIssuer(noAccount());
+
+        auto const isSponsorCoSigning = isSponsorReserveCoSigning(tx);
 
         // clang-format off
         if (TER const ter = trustCreate(
@@ -891,6 +894,7 @@ escrowUnlockApplyHelper<Issue>(
                 0,                              // quality in
                 0,                              // quality out
                 sponeorAcc,                     // sponsor
+                isSponsorCoSigning,             // is sponsor co-signing
                 journal);                       // journal
             !isTesSuccess(ter))
         {
@@ -990,8 +994,8 @@ escrowUnlockApplyHelper<MPTIssue>(
         createAsset && !receiverIssuer)
     {
         auto const sponsor = getTxReserveSponsor(view, tx);
-        if (auto const ret =
-                checkInsufficientReserve(view, sleDest, xrpBalance, sponsor, 1);
+        if (auto const ret = checkInsufficientReserve(
+                view, tx, sleDest, xrpBalance, sponsor, 1);
             !isTesSuccess(ret))
             return ret;
 
@@ -1003,7 +1007,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         }
 
         // update owner count.
-        adjustOwnerCount(view, sleDest, sponsor, 1, journal);
+        adjustOwnerCount(view, tx, sleDest, sponsor, 1, journal);
         addSponsorToLedgerEntry(sleDest, sponsor);
     }
 
@@ -1221,7 +1225,7 @@ EscrowFinish::doApply()
     // Adjust source owner count
     auto const sle = ctx_.view().peek(keylet::account(account));
     auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), slep);
-    adjustOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
+    reduceOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
     ctx_.view().update(sle);
 
     // Remove escrow from ledger
@@ -1435,7 +1439,7 @@ EscrowCancel::doApply()
     }
 
     auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), slep);
-    adjustOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
+    reduceOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
     ctx_.view().update(sle);
 
     // Remove escrow from ledger

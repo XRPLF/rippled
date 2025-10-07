@@ -220,7 +220,7 @@ SponsorshipSet::doApply()
 
         auto const sponsor =
             getLedgerEntryReserveSponsor(ctx_.view(), sponsorObjSle);
-        adjustOwnerCount(ctx_.view(), sponsorAccSle, sponsor, -1, ctx_.journal);
+        reduceOwnerCount(ctx_.view(), sponsorAccSle, sponsor, -1, ctx_.journal);
 
         ctx_.view().dirRemove(
             keylet::ownerDir(sponsorAcc),
@@ -255,6 +255,7 @@ SponsorshipSet::doApply()
 
         if (auto const ret = checkInsufficientReserve(
                 ctx_.view(),
+                ctx_.tx,
                 sponsorAccSle,
                 mPriorBalance,
                 reserveSponsorAccSle,
@@ -297,7 +298,8 @@ SponsorshipSet::doApply()
 
         auto viewJ = ctx_.app.journal("View");
 
-        adjustOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, viewJ);
+        adjustOwnerCount(
+            view(), ctx_.tx, sponsorAccSle, reserveSponsorAccSle, 1, viewJ);
         addSponsorToLedgerEntry(newSle, reserveSponsorAccSle);
 
         ctx_.view().insert(newSle);
@@ -361,7 +363,7 @@ SponsorshipSet::deleteSponsorship(
     (*sponsorAccSle)[sfBalance] += feeAmount;
 
     auto const reserveSponsor = getLedgerEntryReserveSponsor(view, sle);
-    adjustOwnerCount(view, sponsorAccSle, reserveSponsor, -1, j);
+    reduceOwnerCount(view, sponsorAccSle, reserveSponsor, -1, j);
 
     view.update(sponsorAccSle);
 

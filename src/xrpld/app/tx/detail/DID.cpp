@@ -82,7 +82,7 @@ addSLE(
     auto const sponsor = getTxReserveSponsor(ctx.view(), ctx.tx);
     auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
     if (auto const ret = checkInsufficientReserve(
-            ctx.view(), sleAccount, balance, sponsor, 1);
+            ctx.view(), ctx.tx, sleAccount, balance, sponsor, 1);
         !isTesSuccess(ret))
         return ret;
 
@@ -97,7 +97,7 @@ addSLE(
             return tecDIR_FULL;
         (*sle)[sfOwnerNode] = *page;
     }
-    adjustOwnerCount(ctx.view(), sleAccount, sponsor, 1, ctx.journal);
+    adjustOwnerCount(ctx.view(), ctx.tx, sleAccount, sponsor, 1, ctx.journal);
     addSponsorToLedgerEntry(sle, sponsor);
     ctx.view().update(sleAccount);
 
@@ -197,7 +197,7 @@ DIDDelete::deleteSLE(
         return tecINTERNAL;
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
-    adjustOwnerCount(view, sleOwner, sponsor, -1, j);
+    reduceOwnerCount(view, sleOwner, sponsor, -1, j);
     view.update(sleOwner);
 
     // Remove object from ledger
