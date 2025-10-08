@@ -226,7 +226,13 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = ctx.view.read(
                 keylet::line(accountID, lpIssue.account, lpIssue.currency));
-            if (xrpLiquid(ctx.view, accountID, !sle, ctx.j) >= deposit)
+            auto const accountSle = ctx.view.read(keylet::account(accountID));
+            if (auto const ret = checkInsufficientReserve(
+                    ctx.view,
+                    accountSle,
+                    accountSle->getFieldAmount(sfBalance) - deposit,
+                    !sle);
+                isTesSuccess(ret))
                 return TER(tesSUCCESS);
             if (sle)
                 return tecUNFUNDED_AMM;
@@ -354,9 +360,11 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     // We checked above but need to check again if depositing IOU only.
     if (ammLPHolds(ctx.view, *ammSle, accountID, ctx.j) == beast::zero)
     {
-        STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
+        auto const accountSle = ctx.view.read(keylet::account(accountID));
         // Insufficient reserve
-        if (xrpBalance <= beast::zero)
+        if (auto const ret = checkInsufficientReserve(
+                ctx.view, accountSle, accountSle->getFieldAmount(sfBalance), 1);
+            !isTesSuccess(ret))
         {
             JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
             return tecINSUF_RESERVE_LINE;

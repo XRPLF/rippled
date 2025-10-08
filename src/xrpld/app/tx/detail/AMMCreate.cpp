@@ -136,14 +136,17 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     }
 
     // Check the reserve for LPToken trustline
-    STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
     // Insufficient reserve
-    if (xrpBalance <= beast::zero)
+    auto const accountSle = ctx.view.read(keylet::account(accountID));
+    if (auto const ret = checkInsufficientReserve(
+            ctx.view, accountSle, accountSle->getFieldAmount(sfBalance), 1);
+        !isTesSuccess(ret))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
         return tecINSUF_RESERVE_LINE;
     }
 
+    STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
     auto insufficientBalance = [&](STAmount const& asset) {
         if (isXRP(asset))
             return xrpBalance < asset;
