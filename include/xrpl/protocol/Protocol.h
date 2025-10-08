@@ -183,6 +183,9 @@ std::size_t constexpr ecGamalEncryptedLength = 33;
 
 /** EC ElGamal ciphertext length: two 33-byte components concatenated */
 std::size_t constexpr ecGamalEncryptedTotalLength = 66;
+
+/** Length of quality ZKProof */
+std::size_t constexpr ecEqualityProofLength = 98;
 }  // namespace ripple
 
 #endif
