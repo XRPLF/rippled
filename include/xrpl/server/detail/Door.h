@@ -30,29 +30,15 @@
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/post.hpp>
 #include <boost/asio/spawn.hpp>
-#include <boost/asio/steady_timer.hpp>
 #include <boost/beast/core/detect_ssl.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/container/flat_map.hpp>
-#include <boost/predef.h>
 
-#if !BOOST_OS_WINDOWS
-#include <sys/resource.h>
-
-#include <dirent.h>
-#include <unistd.h>
-#endif
-
-#include <algorithm>
 #include <chrono>
-#include <cstdint>
 #include <functional>
 #include <memory>
-#include <optional>
-#include <sstream>
 
 namespace ripple {
 
@@ -112,26 +98,9 @@ private:
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     bool ssl_;
     bool plain_;
-    static constexpr std::chrono::milliseconds INITIAL_ACCEPT_DELAY{50};
-    static constexpr std::chrono::milliseconds MAX_ACCEPT_DELAY{2000};
-    std::chrono::milliseconds accept_delay_{INITIAL_ACCEPT_DELAY};
-    boost::asio::steady_timer backoff_timer_;
-    static constexpr double FREE_FD_THRESHOLD = 0.70;
-
-    struct FDStats
-    {
-        std::uint64_t used{0};
-        std::uint64_t limit{0};
-    };
 
     void
     reOpen();
-
-    std::optional<FDStats>
-    query_fd_stats() const;
-
-    bool
-    should_throttle_for_fds();
 
 public:
     Door(
@@ -330,7 +299,6 @@ Door<Handler>::Door(
     , plain_(
           port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
           port_.protocol.count("ws2"))
-    , backoff_timer_(io_context)
 {
     reOpen();
 }
@@ -355,7 +323,6 @@ Door<Handler>::close()
         return boost::asio::post(
             strand_,
             std::bind(&Door<Handler>::close, this->shared_from_this()));
-    backoff_timer_.cancel();
     error_code ec;
     acceptor_.close(ec);
 }
@@ -401,17 +368,6 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
 {
     while (acceptor_.is_open())
     {
-        if (should_throttle_for_fds())
-        {
-            backoff_timer_.expires_after(accept_delay_);
-            boost::system::error_code tec;
-            backoff_timer_.async_wait(do_yield[tec]);
-            accept_delay_ = std::min(accept_delay_ * 2, MAX_ACCEPT_DELAY);
-            JLOG(j_.warn()) << "Throttling do_accept for "
-                            << accept_delay_.count() << "ms.";
-            continue;
-        }
-
         error_code ec;
         endpoint_type remote_address;
         stream_type stream(ioc_);
@@ -421,27 +377,14 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
         {
             if (ec == boost::asio::error::operation_aborted)
                 break;
-
-            if (ec == boost::asio::error::no_descriptors ||
-                ec == boost::asio::error::no_buffer_space)
+            JLOG(j_.error()) << "accept: " << ec.message();
+            if (ec == boost::asio::error::no_descriptors)
             {
-                JLOG(j_.warn()) << "accept: Too many open files. Pausing for "
-                                << accept_delay_.count() << "ms.";
-
-                backoff_timer_.expires_after(accept_delay_);
-                boost::system::error_code tec;
-                backoff_timer_.async_wait(do_yield[tec]);
-
-                accept_delay_ = std::min(accept_delay_ * 2, MAX_ACCEPT_DELAY);
-            }
-            else
-            {
-                JLOG(j_.error()) << "accept error: " << ec.message();
+                JLOG(j_.info()) << "re-opening acceptor";
+                reOpen();
             }
             continue;
         }
-
-        accept_delay_ = INITIAL_ACCEPT_DELAY;
 
         if (ssl_ && plain_)
         {
@@ -463,60 +406,6 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
                 remote_address);
         }
     }
-}
-
-template <class Handler>
-std::optional<typename Door<Handler>::FDStats>
-Door<Handler>::query_fd_stats() const
-{
-#if BOOST_OS_WINDOWS
-    return std::nullopt;
-#else
-    FDStats s;
-    struct rlimit rl;
-    if (getrlimit(RLIMIT_NOFILE, &rl) != 0 || rl.rlim_cur == RLIM_INFINITY)
-        return std::nullopt;
-    s.limit = static_cast<std::uint64_t>(rl.rlim_cur);
-#if BOOST_OS_LINUX
-    constexpr char const* kFdDir = "/proc/self/fd";
-#else
-    constexpr char const* kFdDir = "/dev/fd";
-#endif
-    if (DIR* d = ::opendir(kFdDir))
-    {
-        std::uint64_t cnt = 0;
-        while (::readdir(d) != nullptr)
-            ++cnt;
-        ::closedir(d);
-        // readdir counts '.', '..', and the DIR* itself shows in the list
-        s.used = (cnt >= 3) ? (cnt - 3) : 0;
-        return s;
-    }
-    return std::nullopt;
-#endif
-}
-
-template <class Handler>
-bool
-Door<Handler>::should_throttle_for_fds()
-{
-#if BOOST_OS_WINDOWS
-    return false;
-#else
-    auto const stats = query_fd_stats();
-    if (!stats || stats->limit == 0)
-        return false;
-
-    auto const& s = *stats;
-    auto const free = (s.limit > s.used) ? (s.limit - s.used) : 0ull;
-    double const free_ratio =
-        static_cast<double>(free) / static_cast<double>(s.limit);
-    if (free_ratio < FREE_FD_THRESHOLD)
-    {
-        return true;
-    }
-    return false;
-#endif
 }
 
 }  // namespace ripple
