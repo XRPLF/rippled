@@ -58,6 +58,12 @@ SetOracle::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+uint32_t
+calculateOracleReserve(std::size_t count)
+{
+    return count > 5 ? 2 : 1;
+}
+
 TER
 SetOracle::preclaim(PreclaimContext const& ctx)
 {
@@ -143,10 +149,18 @@ SetOracle::preclaim(PreclaimContext const& ctx)
         if (!pairsDel.empty())
             return tecTOKEN_PAIR_NOT_FOUND;
 
-        auto const oldCount =
-            sle->getFieldArray(sfPriceDataSeries).size() > 5 ? 2 : 1;
-        auto const newCount = pairs.size() > 5 ? 2 : 1;
-        adjustReserve = newCount - oldCount;
+        auto const oldCount = calculateOracleReserve(
+            sle->getFieldArray(sfPriceDataSeries).size());
+        auto const newCount = calculateOracleReserve(pairs.size());
+
+        // if different sponsors, check with newCount
+        auto const currentSponsor = getLedgerEntryReserveSponsorAccountID(sle);
+        auto const newSponsor = getTxReserveSponsorAccountID(ctx.tx);
+        if ((!currentSponsor && !newSponsor) ||
+            (currentSponsor && newSponsor && *currentSponsor == *newSponsor))
+            adjustReserve = newCount - oldCount;
+        else
+            adjustReserve = newCount;
     }
     else
     {
@@ -155,7 +169,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
         if (!ctx.tx.isFieldPresent(sfProvider) ||
             !ctx.tx.isFieldPresent(sfAssetClass))
             return temMALFORMED;
-        adjustReserve = pairs.size() > 5 ? 2 : 1;
+        adjustReserve = calculateOracleReserve(pairs.size());
     }
 
     if (pairs.empty())
@@ -237,7 +251,7 @@ SetOracle::doApply()
                 sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
             pairs.emplace(tokenPairKey(entry), std::move(priceData));
         }
-        auto const oldCount = pairs.size() > 5 ? 2 : 1;
+        auto const oldCount = calculateOracleReserve(pairs.size());
         // update/add/delete pairs
         for (auto const& entry : ctx_.tx.getFieldArray(sfPriceDataSeries))
         {
@@ -276,7 +290,7 @@ SetOracle::doApply()
             (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
         }
 
-        auto const newCount = pairs.size() > 5 ? 2 : 1;
+        auto const newCount = calculateOracleReserve(pairs.size());
         auto const adjust = newCount - oldCount;
 
         if (adjust > 0)
@@ -353,7 +367,7 @@ SetOracle::doApply()
 
         (*sle)[sfOwnerNode] = *page;
 
-        auto const count = series.size() > 5 ? 2 : 1;
+        auto const count = calculateOracleReserve(series.size());
         auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
         if (!adjustOwnerCount(ctx_, sponsor, count))
             return tefINTERNAL;  // LCOV_EXCL_LINE

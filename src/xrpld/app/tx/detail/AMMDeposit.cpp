@@ -169,8 +169,6 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    auto const sponsor = getTxReserveSponsorAccountID(ctx.tx);
-
     auto const ammSle =
         ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
@@ -228,8 +226,18 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = ctx.view.read(
                 keylet::line(accountID, lpIssue.account, lpIssue.currency));
-            if (xrpLiquid(ctx.view, sponsor.value_or(accountID), !sle, ctx.j) >=
-                deposit)
+
+            auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+            auto const accountSle = ctx.view.read(keylet::account(accountID));
+            if (auto const ret = checkInsufficientReserve(
+                    ctx.view,
+                    ctx.tx,
+                    accountSle,
+                    accountSle->getFieldAmount(sfBalance) - deposit,
+                    sponsorSle,
+                    1,
+                    !sle);
+                isTesSuccess(ret))
                 return TER(tesSUCCESS);
             if (sle)
                 return tecUNFUNDED_AMM;
@@ -357,10 +365,17 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     // We checked above but need to check again if depositing IOU only.
     if (ammLPHolds(ctx.view, *ammSle, accountID, ctx.j) == beast::zero)
     {
-        STAmount const xrpBalance =
-            xrpLiquid(ctx.view, sponsor.value_or(accountID), 1, ctx.j);
+        auto const accountSle = ctx.view.read(keylet::account(accountID));
+        auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
         // Insufficient reserve
-        if (xrpBalance <= beast::zero)
+        if (auto const ret = checkInsufficientReserve(
+                ctx.view,
+                ctx.tx,
+                accountSle,
+                accountSle->getFieldAmount(sfBalance),
+                sponsor,
+                1);
+            !isTesSuccess(ret))
         {
             JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
             return tecINSUF_RESERVE_LINE;

@@ -403,7 +403,12 @@ SetTrust::doApply()
         txSponsorSle = view().peek(keylet::account(*txSponsorAcc));
 
     std::uint32_t const uOwnerCount = ownerCount(txSponsorSle.value_or(sle));
-    bool const freeTrustLine = uOwnerCount < 2;
+
+    bool const isSponsoredAndPreFunded =
+        txSponsorSle && !isSponsorReserveCoSigning(ctx_.tx);
+    // If PreFunded Sponsor, it must be checked whether sufficient
+    // ReserveCount exists.
+    bool const freeTrustLine = uOwnerCount < 2 && !isSponsoredAndPreFunded;
 
     std::uint32_t uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(
@@ -639,6 +644,17 @@ SetTrust::doApply()
 
         if (bLowReserveSet && !bLowReserved)
         {
+            // should be checked PreFunded Sponsor before adjustOwnerCount()
+            if (auto const ret = checkInsufficientReserve(
+                    view(),
+                    ctx_.tx,
+                    sleLowAccount,
+                    mPriorBalance,
+                    txSponsorSle,
+                    1);
+                isSponsoredAndPreFunded && !isTesSuccess(ret))
+                return tecINSUF_RESERVE_LINE;
+
             // Set reserve for low account.
             adjustOwnerCount(
                 view(), ctx_.tx, sleLowAccount, txSponsorSle, 1, viewJ);
@@ -663,6 +679,17 @@ SetTrust::doApply()
 
         if (bHighReserveSet && !bHighReserved)
         {
+            // should be checked PreFunded Sponsor before adjustOwnerCount()
+            if (auto const ret = checkInsufficientReserve(
+                    view(),
+                    ctx_.tx,
+                    sleHighAccount,
+                    mPriorBalance,
+                    txSponsorSle,
+                    1);
+                isSponsoredAndPreFunded && !isTesSuccess(ret))
+                return tecINSUF_RESERVE_LINE;
+
             // Set reserve for high account.
             adjustOwnerCount(
                 view(), ctx_.tx, sleHighAccount, txSponsorSle, 1, viewJ);

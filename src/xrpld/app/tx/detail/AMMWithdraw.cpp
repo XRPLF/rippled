@@ -600,12 +600,13 @@ AMMWithdraw::withdraw(
             return tesSUCCESS;
         if (!view.exists(keylet::line(account, issue)))
         {
-            auto const sleAccount =
-                view.read(keylet::account(sponsor.value_or(account)));
+            auto const sleAccount = view.read(keylet::account(account));
+            auto const sponsorSle = getTxReserveSponsor(view, tx);
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             auto const balance = (*sleAccount)[sfBalance].xrp();
-            std::uint32_t const count = ownerCount(sleAccount);
+            std::uint32_t const count =
+                ownerCount(sponsorSle ? *sponsorSle : sleAccount);
             if (count >= 2)
             {
                 if (auto const ret = checkInsufficientReserve(

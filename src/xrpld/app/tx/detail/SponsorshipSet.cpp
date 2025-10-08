@@ -311,7 +311,17 @@ SponsorshipSet::doApply()
     {
         // transfer feeAmount to ledger entry
         (*sponsorAccSle)[sfBalance] -= *feeAmount;
-        (*sponsorObjSle)[sfFeeAmount] += *feeAmount;
+        if ((*sponsorObjSle).isFieldPresent(sfFeeAmount))
+        {
+            auto const oldFeeAmount =
+                (*sponsorObjSle).getFieldAmount(sfFeeAmount);
+            auto const newFeeAmount = oldFeeAmount + *feeAmount;
+            (*sponsorObjSle).setFieldAmount(sfFeeAmount, newFeeAmount);
+        }
+        else
+        {
+            (*sponsorObjSle).setFieldAmount(sfFeeAmount, *feeAmount);
+        }
     }
 
     if (maxFee)
@@ -321,7 +331,7 @@ SponsorshipSet::doApply()
 
     if (reserveCount)
         (*sponsorObjSle)[sfReserveCount] =
-            (*sponsorObjSle)[sfReserveCount] + *reserveCount;
+            (*sponsorObjSle).getFieldU32(sfReserveCount) + *reserveCount;
 
     // update Flags
     auto flags = sponsorObjSle->getFieldU32(sfFlags);

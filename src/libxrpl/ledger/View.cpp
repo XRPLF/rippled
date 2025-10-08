@@ -1042,12 +1042,18 @@ ownerCount(std::shared_ptr<SLE const> const& sponsorSle)
 }
 
 bool
+isReserveSponsored(STTx const& tx)
+{
+    auto const sponsor = tx.getFieldObject(sfSponsor);
+    return sponsor.isFlag(tfSponsorReserve);
+}
+
+bool
 isSponsorReserveCoSigning(STTx const& tx)
 {
     if (!tx.isFieldPresent(sfSponsorSignature))
         return false;
-    auto const sponsor = tx.getFieldObject(sfSponsor);
-    return sponsor.isFlag(tfSponsorReserve);
+    return isReserveSponsored(tx);
 }
 
 TER
@@ -1141,14 +1147,37 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
     return std::nullopt;
 }
 
+std::optional<AccountID>
+getLedgerEntryReserveSponsorAccountID(
+    std::shared_ptr<SLE const> sle,
+    SF_ACCOUNT const& field)
+{
+    if (sle->isFieldPresent(field))
+        return sle->getAccountID(field);
+    return std::nullopt;
+}
+
 std::optional<std::shared_ptr<SLE>>
 getLedgerEntryReserveSponsor(
     ApplyView& view,
     std::shared_ptr<SLE> sle,
     SF_ACCOUNT const& field)
 {
-    if (sle->isFieldPresent(field))
-        return view.peek(keylet::account(sle->getAccountID(field)));
+    auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
+    if (sponsorID)
+        return view.peek(keylet::account(*sponsorID));
+    return std::nullopt;
+}
+
+std::optional<std::shared_ptr<SLE const>>
+getLedgerEntryReserveSponsor(
+    ReadView const& view,
+    std::shared_ptr<SLE const> sle,
+    SF_ACCOUNT const& field)
+{
+    auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
+    if (sponsorID)
+        return view.read(keylet::account(*sponsorID));
     return std::nullopt;
 }
 
@@ -1242,11 +1271,13 @@ adjustOwnerCount(
 
             XRPL_ASSERT(
                 sle, "ripple::adjustOwnerCount : co-signing sponsor not found");
+
+            auto const currentReserveCount = sle->getFieldU32(sfReserveCount);
             XRPL_ASSERT(
-                sle->at(sfReserveCount) >= amount,
+                currentReserveCount >= amount,
                 "ripple::adjustOwnerCount : reserve count not enough");
 
-            sle->at(sfReserveCount) = sle->getFieldU32(sfReserveCount) + amount;
+            sle->at(sfReserveCount) = currentReserveCount - amount;
             view.update(sle);
         }
     }
@@ -1550,12 +1581,18 @@ authorizeMPToken(
 
         auto const sponsor = getTxReserveSponsor(view, tx);
 
+        auto const isSponsoredAndPreFunded =
+            sponsor && !isSponsorReserveCoSigning(tx);
+
         // The reserve that is required to create the MPToken. Note
         // that although the reserve increases with every item
         // an account owns, in the case of MPTokens we only
         // *enforce* a reserve if the user owns more than two
         // items. This is similar to the reserve requirements of trust lines.
-        if (ownerCount(sponsor.value_or(sleAcct)) >= 2)
+        // If PreFunded Sponsor, it must be checked whether sufficient
+        // ReserveCount exists.
+        if (ownerCount(sponsor.value_or(sleAcct)) >= 2 ||
+            isSponsoredAndPreFunded)
         {
             if (auto const ret = checkInsufficientReserve(
                     view, tx, sleAcct, priorBalance, sponsor, 1);

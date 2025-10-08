@@ -455,6 +455,9 @@ uint32_t
 ownerCount(std::shared_ptr<SLE const> const& sponsorSle);
 
 bool
+isReserveSponsored(STTx const& tx);
+
+bool
 isSponsorReserveCoSigning(STTx const& tx);
 
 TER
@@ -476,10 +479,21 @@ getTxReserveSponsor(ApplyView& view, STTx const& tx);
 std::optional<std::shared_ptr<SLE const>>
 getTxReserveSponsor(ReadView const& view, STTx const& tx);
 
+std::optional<AccountID>
+getLedgerEntryReserveSponsorAccountID(
+    std::shared_ptr<SLE const> sle,
+    SF_ACCOUNT const& field = sfSponsorAccount);
+
 std::optional<std::shared_ptr<SLE>>
 getLedgerEntryReserveSponsor(
     ApplyView& view,
     std::shared_ptr<SLE> sle,
+    SF_ACCOUNT const& field = sfSponsorAccount);
+
+std::optional<std::shared_ptr<SLE const>>
+getLedgerEntryReserveSponsor(
+    ReadView const& view,
+    std::shared_ptr<SLE const> sle,
     SF_ACCOUNT const& field = sfSponsorAccount);
 
 void

@@ -162,12 +162,25 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), account_, vault))
         return ter;
     auto const sponsor = getTxReserveSponsor(view(), tx);
-    adjustOwnerCount(view(), tx, owner, sponsor, 1, j_);
-    addSponsorToLedgerEntry(vault, sponsor);
-    if (auto const ret = checkInsufficientReserve(
-            view(), tx, owner, mPriorBalance, sponsor, 0);
-        !isTesSuccess(ret))
-        return ret;
+    if (!ctx_.view().rules().enabled(featureSponsor))
+    {
+        adjustOwnerCount(view(), tx, owner, sponsor, 1, j_);
+        addSponsorToLedgerEntry(vault, sponsor);
+        if (auto const ret = checkInsufficientReserve(
+                view(), tx, owner, mPriorBalance, sponsor, 0);
+            !isTesSuccess(ret))
+            return ret;
+    }
+    else
+    {
+        // after Sponsor Amendment, check insufficient reserve first
+        if (auto const ret = checkInsufficientReserve(
+                view(), tx, owner, mPriorBalance, sponsor, 1);
+            !isTesSuccess(ret))
+            return ret;
+        adjustOwnerCount(view(), tx, owner, sponsor, 1, j_);
+        addSponsorToLedgerEntry(vault, sponsor);
+    }
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)

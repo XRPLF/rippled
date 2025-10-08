@@ -62,19 +62,19 @@ locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
         view.succ(first.key, last.key.next()).value_or(last.key)));
 }
 
-static std::shared_ptr<SLE>
+static Expected<std::shared_ptr<SLE>, TER>
 getPageForToken(
     ApplyView& view,
     STTx const& tx,
     AccountID const& owner,
     std::optional<AccountID> const& sponsor,
     uint256 const& id,
-    std::function<void(
-        ApplyView&,
-        STTx const&,
-        std::shared_ptr<SLE> const&,
-        AccountID const&,
-        std::optional<AccountID> const&)> const& createCallback)
+    std::function<
+        TER(ApplyView&,
+            STTx const&,
+            std::shared_ptr<SLE> const&,
+            AccountID const&,
+            std::optional<AccountID> const&)> const& createCallback)
 {
     auto const base = keylet::nftpage_min(owner);
     auto const first = keylet::nftpage(base, id);
@@ -94,7 +94,10 @@ getPageForToken(
         cp = std::make_shared<SLE>(last);
         cp->setFieldArray(sfNFTokens, arr);
         view.insert(cp);
-        createCallback(view, tx, cp, owner, sponsor);
+
+        if (auto const ret = createCallback(view, tx, cp, owner, sponsor);
+            !isTesSuccess(ret))
+            return Unexpected(ret);
         return cp;
     }
 
@@ -222,7 +225,9 @@ getPageForToken(
     cp->setFieldH256(sfPreviousPageMin, np->key());
     view.update(cp);
 
-    createCallback(view, tx, np, owner, sponsor);
+    if (auto const ret = createCallback(view, tx, np, owner, sponsor);
+        ret != tesSUCCESS)
+        return Unexpected(ret);
 
     // fixNFTokenDirV1 corrects a bug in the initial implementation that
     // would put an NFT in the wrong page.  The problem was caused by an
@@ -298,7 +303,7 @@ insertToken(
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
     // the NFT.
-    std::shared_ptr<SLE> page = getPageForToken(
+    auto page = getPageForToken(
         view,
         tx,
         owner,
@@ -308,10 +313,20 @@ insertToken(
            STTx const& tx,
            std::shared_ptr<SLE> const& newPage,
            AccountID const& owner,
-           std::optional<AccountID> const& sponsor) {
+           std::optional<AccountID> const& sponsor) -> TER {
             std::optional<std::shared_ptr<SLE>> const sponsorSle = sponsor
                 ? view.peek(keylet::account(*sponsor))
                 : std::optional<std::shared_ptr<SLE>>{std::nullopt};
+
+            if (isReserveSponsored(tx))
+            {
+                auto const ownerSle = view.read(keylet::account(owner));
+                auto const ownerBalance = ownerSle->getFieldAmount(sfBalance);
+                if (auto const ret = checkInsufficientReserve(
+                        view, tx, ownerSle, ownerBalance, sponsorSle, 1);
+                    !isTesSuccess(ret))
+                    return ret;
+            }
             adjustOwnerCount(
                 view,
                 tx,
@@ -320,13 +335,17 @@ insertToken(
                 1,
                 beast::Journal{beast::Journal::getNullSink()});
             addSponsorToLedgerEntry(newPage, sponsorSle);
+            return tesSUCCESS;
         });
 
-    if (!page)
+    if (!page.has_value())
+        return page.error();
+
+    if (!(*page))
         return tecNO_SUITABLE_NFTOKEN_PAGE;
 
     {
-        auto arr = page->getFieldArray(sfNFTokens);
+        auto arr = (*page)->getFieldArray(sfNFTokens);
         arr.push_back(std::move(nft));
 
         arr.sort([](STObject const& o1, STObject const& o2) {
@@ -334,10 +353,10 @@ insertToken(
                 o1.getFieldH256(sfNFTokenID), o2.getFieldH256(sfNFTokenID));
         });
 
-        page->setFieldArray(sfNFTokens, arr);
+        (*page)->setFieldArray(sfNFTokens, arr);
     }
 
-    view.update(page);
+    view.update((*page));
 
     return tesSUCCESS;
 }

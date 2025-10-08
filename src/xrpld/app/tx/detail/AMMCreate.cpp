@@ -135,17 +135,26 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return terNO_RIPPLE;
     }
 
-    auto const sponsor = getTxReserveSponsorAccountID(ctx.tx);
+    auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
     // Check the reserve for LPToken trustline
-    STAmount const xrpBalance =
-        xrpLiquid(ctx.view, sponsor.value_or(accountID), 1, ctx.j);
     // Insufficient reserve
-    if (xrpBalance <= beast::zero)
+    auto const accountSle = ctx.view.read(keylet::account(accountID));
+    if (auto const ret = checkInsufficientReserve(
+            ctx.view,
+            ctx.tx,
+            accountSle,
+            accountSle->getFieldAmount(sfBalance),
+            sponsorSle,
+            1);
+        !isTesSuccess(ret))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
         return tecINSUF_RESERVE_LINE;
     }
 
+    auto const ownerCountAdj = isReserveSponsored(ctx.tx) ? 0 : 1;
+    STAmount const xrpBalance =
+        xrpLiquid(ctx.view, accountID, ownerCountAdj, ctx.j);
     auto insufficientBalance = [&](STAmount const& asset) {
         if (isXRP(asset))
             return xrpBalance < asset;
