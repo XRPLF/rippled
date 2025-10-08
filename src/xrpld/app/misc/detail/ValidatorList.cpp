@@ -1167,15 +1167,17 @@ ValidatorList::applyList(
     }
 
     if (!publicKeyType(*pubKeyOpt))
-    {  // LCOV_EXCL_START
-       // This is an impossible situation because we will never load an
-       // invalid public key type (see checks in `ValidatorList::load`) however
-       // we can only arrive here if the key used by the manifest matched one of
-       // the loaded keys
+    {
+        // This is an impossible situation because we will never load an
+        // invalid public key type (see checks in `ValidatorList::load`) however
+        // we can only arrive here if the key used by the manifest matched one
+        // of the loaded keys
+        // LCOV_EXCL_START
         UNREACHABLE(
             "ripple::ValidatorList::applyList : invalid public key type");
         return PublisherListStats{result};
-    }  // LCOV_EXCL_STOP
+        // LCOV_EXCL_STOP
+    }
 
     PublicKey pubKey = *pubKeyOpt;
     if (result > ListDisposition::pending)

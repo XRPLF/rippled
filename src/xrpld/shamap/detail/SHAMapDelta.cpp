@@ -149,8 +149,10 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
 
         if (!ourNode || !otherNode)
         {
+            // LCOV_EXCL_START
             UNREACHABLE("ripple::SHAMap::compare : missing a node");
             Throw<SHAMapMissingNode>(type_, uint256());
+            // LCOV_EXCL_STOP
         }
 
         if (ourNode->isLeaf() && otherNode->isLeaf())
@@ -230,7 +232,11 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
                 }
         }
         else
+        {
+            // LCOV_EXCL_START
             UNREACHABLE("ripple::SHAMap::compare : invalid node");
+            // LCOV_EXCL_STOP
+        }
     }
 
     return true;
