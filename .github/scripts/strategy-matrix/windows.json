@@ -10,7 +10,8 @@
       "distro_name": "windows",
       "distro_version": "",
       "compiler_name": "",
-      "compiler_version": ""
+      "compiler_version": "",
+      "image_sha": ""
     }
   ],
   "build_type": ["Debug", "Release"],

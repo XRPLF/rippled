@@ -1134,7 +1134,7 @@ createPseudoAccount(
     uint256 const& pseudoOwnerKey,
     SField const& ownerField)
 {
-    auto const& fields = getPseudoAccountFields();
+    [[maybe_unused]] auto const& fields = getPseudoAccountFields();
     XRPL_ASSERT(
         std::count_if(
             fields.begin(),
