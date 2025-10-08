@@ -1170,11 +1170,13 @@ Transactor::operator()()
 
         if (!s2.isEquivalent(ctx_.tx))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
             JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
             UNREACHABLE(
                 "ripple::Transactor::operator() : transaction serdes mismatch");
+            // LCOV_EXCL_STOP
         }
     }
 #endif

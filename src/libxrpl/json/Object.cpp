@@ -174,7 +174,7 @@ Array::append(Json::Value const& v)
             return;
         }
     }
-    UNREACHABLE("Json::Array::append : invalid type");
+    UNREACHABLE("Json::Array::append : invalid type");  // LCOV_EXCL_LINE
 }
 
 void
@@ -209,7 +209,7 @@ Object::set(std::string const& k, Json::Value const& v)
             return;
         }
     }
-    UNREACHABLE("Json::Object::set : invalid type");
+    UNREACHABLE("Json::Object::set : invalid type");  // LCOV_EXCL_LINE
 }
 
 //------------------------------------------------------------------------------
