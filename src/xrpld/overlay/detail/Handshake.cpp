@@ -326,7 +326,7 @@ verifyHandshake(
     {
         boost::system::error_code ec;
         auto const local_ip =
-            boost::asio::ip::make_address(std::string_view(iter->value()), ec);
+            boost::asio::ip::address::from_string(iter->value(), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Local-IP");
@@ -341,7 +341,7 @@ verifyHandshake(
     {
         boost::system::error_code ec;
         auto const remote_ip =
-            boost::asio::ip::make_address(std::string_view(iter->value()), ec);
+            boost::asio::ip::address::from_string(iter->value(), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");

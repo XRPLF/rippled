@@ -485,7 +485,7 @@ public:
         };
         auto handshake = [&](int outboundEnable, int inboundEnable) {
             beast::IP::Address addr =
-                boost::asio::ip::make_address("172.1.1.100");
+                boost::asio::ip::address::from_string("172.1.1.100");
 
             auto env = getEnv(outboundEnable);
             auto request = ripple::makeRequest(

@@ -69,7 +69,7 @@ private:
         stream_type stream_;
         socket_type& socket_;
         endpoint_type remote_address_;
-        boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+        boost::asio::io_context::strand strand_;
         beast::Journal const j_;
 
     public:
@@ -95,7 +95,7 @@ private:
     Handler& handler_;
     boost::asio::io_context& ioc_;
     acceptor_type acceptor_;
-    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    boost::asio::io_context::strand strand_;
     bool ssl_;
     bool plain_;
 
@@ -155,7 +155,7 @@ Door<Handler>::Detector::Detector(
     , stream_(std::move(stream))
     , socket_(stream_.socket())
     , remote_address_(remote_address)
-    , strand_(boost::asio::make_strand(ioc_))
+    , strand_(ioc_)
     , j_(j)
 {
 }
@@ -164,7 +164,7 @@ template <class Handler>
 void
 Door<Handler>::Detector::run()
 {
-    util::spawn(
+    boost::asio::spawn(
         strand_,
         std::bind(
             &Detector::do_detect,
@@ -269,7 +269,7 @@ Door<Handler>::reOpen()
         Throw<std::exception>();
     }
 
-    acceptor_.listen(boost::asio::socket_base::max_listen_connections, ec);
+    acceptor_.listen(boost::asio::socket_base::max_connections, ec);
     if (ec)
     {
         JLOG(j_.error()) << "Listen on port '" << port_.name
@@ -291,7 +291,7 @@ Door<Handler>::Door(
     , handler_(handler)
     , ioc_(io_context)
     , acceptor_(io_context)
-    , strand_(boost::asio::make_strand(io_context))
+    , strand_(io_context)
     , ssl_(
           port_.protocol.count("https") > 0 ||
           port_.protocol.count("wss") > 0 || port_.protocol.count("wss2") > 0 ||
@@ -307,7 +307,7 @@ template <class Handler>
 void
 Door<Handler>::run()
 {
-    util::spawn(
+    boost::asio::spawn(
         strand_,
         std::bind(
             &Door<Handler>::do_accept,
@@ -320,8 +320,7 @@ void
 Door<Handler>::close()
 {
     if (!strand_.running_in_this_thread())
-        return boost::asio::post(
-            strand_,
+        return strand_.post(
             std::bind(&Door<Handler>::close, this->shared_from_this()));
     error_code ec;
     acceptor_.close(ec);

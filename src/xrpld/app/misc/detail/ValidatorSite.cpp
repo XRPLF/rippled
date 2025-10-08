@@ -91,7 +91,7 @@ ValidatorSite::ValidatorSite(
     std::chrono::seconds timeout)
     : app_{app}
     , j_{j ? *j : app_.logs().journal("ValidatorSite")}
-    , timer_{app_.getIOContext()}
+    , timer_{app_.getIOService()}
     , fetching_{false}
     , pending_{false}
     , stopping_{false}
@@ -271,7 +271,7 @@ ValidatorSite::makeRequest(
             resource->pUrl.domain,
             resource->pUrl.path,
             std::to_string(*resource->pUrl.port),
-            app_.getIOContext(),
+            app_.getIOService(),
             j_,
             app_.config(),
             sites_[siteIdx].lastRequestEndpoint,
@@ -284,7 +284,7 @@ ValidatorSite::makeRequest(
             resource->pUrl.domain,
             resource->pUrl.path,
             std::to_string(*resource->pUrl.port),
-            app_.getIOContext(),
+            app_.getIOService(),
             sites_[siteIdx].lastRequestEndpoint,
             sites_[siteIdx].lastRequestSuccessful,
             onFetch);
@@ -293,7 +293,7 @@ ValidatorSite::makeRequest(
     {
         BOOST_ASSERT(resource->pUrl.scheme == "file");
         sp = std::make_shared<detail::WorkFile>(
-            resource->pUrl.path, app_.getIOContext(), onFetchFile);
+            resource->pUrl.path, app_.getIOService(), onFetchFile);
     }
 
     sites_[siteIdx].lastRequestSuccessful = false;

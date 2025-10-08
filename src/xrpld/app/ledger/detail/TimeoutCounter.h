@@ -120,7 +120,7 @@ protected:
         return complete_ || failed_;
     }
 
-    // Used in this class for access to boost::asio::io_context and
+    // Used in this class for access to boost::asio::io_service and
     // ripple::Overlay. Used in subtypes for the kitchen sink.
     Application& app_;
     beast::Journal journal_;

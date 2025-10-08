@@ -183,7 +183,7 @@ public:
         bool immediateStart = true,
         int sequence = 1)
         : sock_{ioc}
-        , ep_{boost::asio::ip::make_address(
+        , ep_{beast::IP::Address::from_string(
                   ripple::test::getEnvLocalhostAddr()),
               // 0 means let OS pick the port based on what's available
               0}
@@ -284,7 +284,7 @@ public:
         acceptor_.set_option(
             boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
         acceptor_.bind(ep_);
-        acceptor_.listen(boost::asio::socket_base::max_listen_connections);
+        acceptor_.listen(boost::asio::socket_base::max_connections);
         acceptor_.async_accept(
             sock_,
             [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](

@@ -669,7 +669,7 @@ PeerImp::PeerImp(
     , stream_ptr_(std::move(stream_ptr))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)
-    , strand_(boost::asio::make_strand(socket_.get_executor()))
+    , strand_(socket_.get_executor())
     , timer_(waitable_timer{socket_.get_executor()})
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)

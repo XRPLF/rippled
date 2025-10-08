@@ -22,7 +22,7 @@
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/io_service.hpp>
 
 #include <memory>
 
@@ -32,7 +32,7 @@ namespace PeerFinder {
 /** Create a new Manager. */
 std::unique_ptr<Manager>
 make_Manager(
-    boost::asio::io_context& io_context,
+    boost::asio::io_service& io_service,
     clock_type& clock,
     beast::Journal journal,
     BasicConfig const& config,

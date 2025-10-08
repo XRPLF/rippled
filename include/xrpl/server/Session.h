@@ -88,7 +88,9 @@ public:
              ++iter)
         {
             typename BufferSequence::value_type const& buffer(*iter);
-            write(buffer.data(), boost::asio::buffer_size(buffer));
+            write(
+                boost::asio::buffer_cast<void const*>(buffer),
+                boost::asio::buffer_size(buffer));
         }
     }
 
@@ -102,7 +104,7 @@ public:
 
     /** Detach the session.
         This holds the session open so that the response can be sent
-        asynchronously. Calls to io_context::run made by the server
+        asynchronously. Calls to io_service::run made by the server
         will not return until all detached sessions are closed.
     */
     virtual std::shared_ptr<Session>

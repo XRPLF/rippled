@@ -23,7 +23,7 @@
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/InfoSub.h>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/io_service.hpp>
 
 namespace ripple {
 
@@ -40,11 +40,11 @@ protected:
     explicit RPCSub(InfoSub::Source& source);
 };
 
-// VFALCO Why is the io_context needed?
+// VFALCO Why is the io_service needed?
 std::shared_ptr<RPCSub>
 make_RPCSub(
     InfoSub::Source& source,
-    boost::asio::io_context& io_context,
+    boost::asio::io_service& io_service,
     JobQueue& jobQueue,
     std::string const& strUrl,
     std::string const& strUsername,

@@ -23,8 +23,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/post.hpp>
+#include <boost/asio/io_service.hpp>
 
 #include <chrono>
 #include <condition_variable>
@@ -33,7 +32,7 @@
 
 namespace beast {
 
-/** Measures handler latency on an io_context queue. */
+/** Measures handler latency on an io_service queue. */
 template <class Clock>
 class io_latency_probe
 {
@@ -45,12 +44,12 @@ private:
     std::condition_variable_any m_cond;
     std::size_t m_count;
     duration const m_period;
-    boost::asio::io_context& m_ios;
+    boost::asio::io_service& m_ios;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> m_timer;
     bool m_cancel;
 
 public:
-    io_latency_probe(duration const& period, boost::asio::io_context& ios)
+    io_latency_probe(duration const& period, boost::asio::io_service& ios)
         : m_count(1)
         , m_period(period)
         , m_ios(ios)
@@ -65,16 +64,16 @@ public:
         cancel(lock, true);
     }
 
-    /** Return the io_context associated with the latency probe. */
+    /** Return the io_service associated with the latency probe. */
     /** @{ */
-    boost::asio::io_context&
-    get_io_context()
+    boost::asio::io_service&
+    get_io_service()
     {
         return m_ios;
     }
 
-    boost::asio::io_context const&
-    get_io_context() const
+    boost::asio::io_service const&
+    get_io_service() const
     {
         return m_ios;
     }
@@ -110,10 +109,8 @@ public:
         std::lock_guard lock(m_mutex);
         if (m_cancel)
             throw std::logic_error("io_latency_probe is canceled");
-        boost::asio::post(
-            m_ios,
-            sample_op<Handler>(
-                std::forward<Handler>(handler), Clock::now(), false, this));
+        m_ios.post(sample_op<Handler>(
+            std::forward<Handler>(handler), Clock::now(), false, this));
     }
 
     /** Initiate continuous i/o latency sampling.
@@ -127,10 +124,8 @@ public:
         std::lock_guard lock(m_mutex);
         if (m_cancel)
             throw std::logic_error("io_latency_probe is canceled");
-        boost::asio::post(
-            m_ios,
-            sample_op<Handler>(
-                std::forward<Handler>(handler), Clock::now(), true, this));
+        m_ios.post(sample_op<Handler>(
+            std::forward<Handler>(handler), Clock::now(), true, this));
     }
 
 private:
@@ -241,13 +236,12 @@ private:
                     // The latency is too high to maintain the desired
                     // period so don't bother with a timer.
                     //
-                    boost::asio::post(
-                        m_probe->m_ios,
+                    m_probe->m_ios.post(
                         sample_op<Handler>(m_handler, now, m_repeat, m_probe));
                 }
                 else
                 {
-                    m_probe->m_timer.expires_after(when - now);
+                    m_probe->m_timer.expires_from_now(when - now);
                     m_probe->m_timer.async_wait(
                         sample_op<Handler>(m_handler, now, m_repeat, m_probe));
                 }
@@ -260,8 +254,7 @@ private:
             if (!m_probe)
                 return;
             typename Clock::time_point const now(Clock::now());
-            boost::asio::post(
-                m_probe->m_ios,
+            m_probe->m_ios.post(
                 sample_op<Handler>(m_handler, now, m_repeat, m_probe));
         }
     };

@@ -35,14 +35,14 @@ class RPCSubImp : public RPCSub
 public:
     RPCSubImp(
         InfoSub::Source& source,
-        boost::asio::io_context& io_context,
+        boost::asio::io_service& io_service,
         JobQueue& jobQueue,
         std::string const& strUrl,
         std::string const& strUsername,
         std::string const& strPassword,
         Logs& logs)
         : RPCSub(source)
-        , m_io_context(io_context)
+        , m_io_service(io_service)
         , m_jobQueue(jobQueue)
         , mUrl(strUrl)
         , mSSL(false)
@@ -155,7 +155,7 @@ private:
                     JLOG(j_.info()) << "RPCCall::fromNetwork: " << mIp;
 
                     RPCCall::fromNetwork(
-                        m_io_context,
+                        m_io_service,
                         mIp,
                         mPort,
                         mUsername,
@@ -177,7 +177,7 @@ private:
     }
 
 private:
-    boost::asio::io_context& m_io_context;
+    boost::asio::io_service& m_io_service;
     JobQueue& m_jobQueue;
 
     std::string mUrl;
@@ -207,7 +207,7 @@ RPCSub::RPCSub(InfoSub::Source& source) : InfoSub(source, Consumer())
 std::shared_ptr<RPCSub>
 make_RPCSub(
     InfoSub::Source& source,
-    boost::asio::io_context& io_context,
+    boost::asio::io_service& io_service,
     JobQueue& jobQueue,
     std::string const& strUrl,
     std::string const& strUsername,
@@ -216,7 +216,7 @@ make_RPCSub(
 {
     return std::make_shared<RPCSubImp>(
         std::ref(source),
-        std::ref(io_context),
+        std::ref(io_service),
         std::ref(jobQueue),
         strUrl,
         strUsername,

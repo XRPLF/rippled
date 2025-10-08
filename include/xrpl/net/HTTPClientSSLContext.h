@@ -153,7 +153,7 @@ public:
             {
                 strm.set_verify_callback(
                     std::bind(
-                        &rfc6125_verify,
+                        &rfc2818_verify,
                         host,
                         std::placeholders::_1,
                         std::placeholders::_2,
@@ -167,7 +167,7 @@ public:
 
     /**
      * @brief callback invoked for name verification - just passes through
-     * to the asio `host_name_verification` (rfc6125) implementation.
+     * to the asio rfc2818 implementation.
      *
      * @param domain hostname expected
      * @param preverified passed by implementation
@@ -175,13 +175,13 @@ public:
      * @param j journal for logging
      */
     static bool
-    rfc6125_verify(
+    rfc2818_verify(
         std::string const& domain,
         bool preverified,
         boost::asio::ssl::verify_context& ctx,
         beast::Journal j)
     {
-        if (boost::asio::ssl::host_name_verification(domain)(preverified, ctx))
+        if (boost::asio::ssl::rfc2818_verification(domain)(preverified, ctx))
             return true;
 
         JLOG(j.warn()) << "Outbound SSL connection to " << domain

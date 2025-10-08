@@ -24,7 +24,6 @@
 #include <xrpl/net/HTTPClientSSLContext.h>
 
 #include <boost/asio.hpp>
-#include <boost/asio/ip/resolver_query_base.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/regex.hpp>
@@ -56,16 +55,16 @@ class HTTPClientImp : public std::enable_shared_from_this<HTTPClientImp>,
 {
 public:
     HTTPClientImp(
-        boost::asio::io_context& io_context,
+        boost::asio::io_service& io_service,
         unsigned short const port,
         std::size_t maxResponseSize,
         beast::Journal& j)
-        : mSocket(io_context, httpClientSSLContext->context())
-        , mResolver(io_context)
+        : mSocket(io_service, httpClientSSLContext->context())
+        , mResolver(io_service)
         , mHeader(maxClientHeaderBytes)
         , mPort(port)
         , maxResponseSize_(maxResponseSize)
-        , mDeadline(io_context)
+        , mDeadline(io_service)
         , j_(j)
     {
     }
@@ -147,21 +146,18 @@ public:
     {
         JLOG(j_.trace()) << "Fetch: " << mDeqSites[0];
 
-        auto query = std::make_shared<Query>(
+        auto query = std::make_shared<boost::asio::ip::tcp::resolver::query>(
             mDeqSites[0],
             std::to_string(mPort),
             boost::asio::ip::resolver_query_base::numeric_service);
         mQuery = query;
 
-        try
-        {
-            mDeadline.expires_after(mTimeout);
-        }
-        catch (boost::system::system_error const& e)
-        {
-            mShutdown = e.code();
+        mDeadline.expires_from_now(mTimeout, mShutdown);
 
-            JLOG(j_.trace()) << "expires_after: " << mShutdown.message();
+        JLOG(j_.trace()) << "expires_from_now: " << mShutdown.message();
+
+        if (!mShutdown)
+        {
             mDeadline.async_wait(std::bind(
                 &HTTPClientImp::handleDeadline,
                 shared_from_this(),
@@ -173,9 +169,7 @@ public:
             JLOG(j_.trace()) << "Resolving: " << mDeqSites[0];
 
             mResolver.async_resolve(
-                mQuery->host,
-                mQuery->port,
-                mQuery->flags,
+                *mQuery,
                 std::bind(
                     &HTTPClientImp::handleResolve,
                     shared_from_this(),
@@ -239,7 +233,7 @@ public:
     void
     handleResolve(
         boost::system::error_code const& ecResult,
-        boost::asio::ip::tcp::resolver::results_type result)
+        boost::asio::ip::tcp::resolver::iterator itrEndpoint)
     {
         if (!mShutdown)
         {
@@ -261,7 +255,7 @@ public:
 
             boost::asio::async_connect(
                 mSocket.lowest_layer(),
-                result,
+                itrEndpoint,
                 std::bind(
                     &HTTPClientImp::handleConnect,
                     shared_from_this(),
@@ -481,15 +475,13 @@ public:
         std::string const& strData = "")
     {
         boost::system::error_code ecCancel;
-        try
+
+        (void)mDeadline.cancel(ecCancel);
+
+        if (ecCancel)
         {
-            mDeadline.cancel();
-        }
-        catch (boost::system::system_error const& e)
-        {
-            JLOG(j_.trace())
-                << "invokeComplete: Deadline cancel error: " << e.what();
-            ecCancel = e.code();
+            JLOG(j_.trace()) << "invokeComplete: Deadline cancel error: "
+                             << ecCancel.message();
         }
 
         JLOG(j_.debug()) << "invokeComplete: Deadline popping: "
@@ -523,15 +515,7 @@ private:
     bool mSSL;
     AutoSocket mSocket;
     boost::asio::ip::tcp::resolver mResolver;
-
-    struct Query
-    {
-        std::string host;
-        std::string port;
-        boost::asio::ip::resolver_query_base::flags flags;
-    };
-    std::shared_ptr<Query> mQuery;
-
+    std::shared_ptr<boost::asio::ip::tcp::resolver::query> mQuery;
     boost::asio::streambuf mRequest;
     boost::asio::streambuf mHeader;
     boost::asio::streambuf mResponse;
@@ -562,7 +546,7 @@ private:
 void
 HTTPClient::get(
     bool bSSL,
-    boost::asio::io_context& io_context,
+    boost::asio::io_service& io_service,
     std::deque<std::string> deqSites,
     unsigned short const port,
     std::string const& strPath,
@@ -575,14 +559,14 @@ HTTPClient::get(
     beast::Journal& j)
 {
     auto client =
-        std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
+        std::make_shared<HTTPClientImp>(io_service, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
 }
 
 void
 HTTPClient::get(
     bool bSSL,
-    boost::asio::io_context& io_context,
+    boost::asio::io_service& io_service,
     std::string strSite,
     unsigned short const port,
     std::string const& strPath,
@@ -597,14 +581,14 @@ HTTPClient::get(
     std::deque<std::string> deqSites(1, strSite);
 
     auto client =
-        std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
+        std::make_shared<HTTPClientImp>(io_service, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
 }
 
 void
 HTTPClient::request(
     bool bSSL,
-    boost::asio::io_context& io_context,
+    boost::asio::io_service& io_service,
     std::string strSite,
     unsigned short const port,
     std::function<void(boost::asio::streambuf& sb, std::string const& strHost)>
@@ -620,7 +604,7 @@ HTTPClient::request(
     std::deque<std::string> deqSites(1, strSite);
 
     auto client =
-        std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
+        std::make_shared<HTTPClientImp>(io_service, port, responseMax, j);
     client->request(bSSL, deqSites, setRequest, timeout, complete);
 }
 

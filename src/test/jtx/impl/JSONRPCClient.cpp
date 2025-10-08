@@ -78,7 +78,7 @@ class JSONRPCClient : public AbstractClient
     }
 
     boost::asio::ip::tcp::endpoint ep_;
-    boost::asio::io_context ios_;
+    boost::asio::io_service ios_;
     boost::asio::ip::tcp::socket stream_;
     boost::beast::multi_buffer bin_;
     boost::beast::multi_buffer bout_;

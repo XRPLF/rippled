@@ -290,7 +290,7 @@ make_NetworkOPs(
     JobQueue& job_queue,
     LedgerMaster& ledgerMaster,
     ValidatorKeys const& validatorKeys,
-    boost::asio::io_context& io_svc,
+    boost::asio::io_service& io_svc,
     beast::Journal journal,
     beast::insight::Collector::ptr const& collector);
 

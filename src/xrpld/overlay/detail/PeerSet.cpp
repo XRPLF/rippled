@@ -46,7 +46,7 @@ public:
     getPeerIds() const override;
 
 private:
-    // Used in this class for access to boost::asio::io_context and
+    // Used in this class for access to boost::asio::io_service and
     // ripple::Overlay.
     Application& app_;
     beast::Journal journal_;

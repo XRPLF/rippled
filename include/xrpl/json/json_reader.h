@@ -217,7 +217,7 @@ Reader::parse(Value& root, BufferSequence const& bs)
     std::string s;
     s.reserve(buffer_size(bs));
     for (auto const& b : bs)
-        s.append(static_cast<char const*>(b.data()), buffer_size(b));
+        s.append(buffer_cast<char const*>(b), buffer_size(b));
     return parse(s, root);
 }
 

@@ -118,7 +118,7 @@ option(beast_no_unit_test_inline
   "Prevents unit test definitions from being inserted into global table"
   OFF)
 option(single_io_service_thread
-  "Restricts the number of threads calling io_context::run to one. \
+  "Restricts the number of threads calling io_service::run to one. \
   This can be useful when debugging."
   OFF)
 option(boost_show_deprecated

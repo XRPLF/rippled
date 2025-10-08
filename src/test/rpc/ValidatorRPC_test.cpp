@@ -187,14 +187,14 @@ public:
         for (auto const& val : validators)
             expectedKeys.insert(toStr(val.masterPublic));
 
-        // Manage single-thread io_context for server.
+        // Manage single-thread io_service for server.
         BasicApp worker{1};
         using namespace std::chrono_literals;
         NetClock::time_point const validUntil{3600s};
         NetClock::time_point const validFrom2{validUntil - 60s};
         NetClock::time_point const validUntil2{validFrom2 + 3600s};
         auto server = make_TrustedPublisherServer(
-            worker.get_io_context(),
+            worker.get_io_service(),
             validators,
             validUntil,
             {{validFrom2, validUntil2}},

@@ -39,7 +39,7 @@ TimeoutCounter::TimeoutCounter(
     , progress_(false)
     , timerInterval_(interval)
     , queueJobParameter_(std::move(jobParameter))
-    , timer_(app_.getIOContext())
+    , timer_(app_.getIOService())
 {
     XRPL_ASSERT(
         (timerInterval_ > 10ms) && (timerInterval_ < 30s),

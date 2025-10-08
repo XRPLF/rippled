@@ -25,7 +25,7 @@
 #include <xrpl/server/Port.h>
 #include <xrpl/server/detail/ServerImpl.h>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/io_service.hpp>
 
 namespace ripple {
 
@@ -34,10 +34,10 @@ template <class Handler>
 std::unique_ptr<Server>
 make_Server(
     Handler& handler,
-    boost::asio::io_context& io_context,
+    boost::asio::io_service& io_service,
     beast::Journal journal)
 {
-    return std::make_unique<ServerImpl<Handler>>(handler, io_context, journal);
+    return std::make_unique<ServerImpl<Handler>>(handler, io_service, journal);
 }
 
 }  // namespace ripple

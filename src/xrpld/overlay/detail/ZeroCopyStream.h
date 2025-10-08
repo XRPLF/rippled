@@ -78,7 +78,7 @@ template <class Buffers>
 bool
 ZeroCopyInputStream<Buffers>::Next(void const** data, int* size)
 {
-    *data = pos_.data();
+    *data = boost::asio::buffer_cast<void const*>(pos_);
     *size = boost::asio::buffer_size(pos_);
     if (first_ == last_)
         return false;
@@ -195,7 +195,7 @@ ZeroCopyOutputStream<Streambuf>::Next(void** data, int* size)
         pos_ = buffers_.begin();
     }
 
-    *data = *pos_.data();
+    *data = boost::asio::buffer_cast<void*>(*pos_);
     *size = boost::asio::buffer_size(*pos_);
     commit_ = *size;
     ++pos_;

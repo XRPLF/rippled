@@ -23,17 +23,12 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/unit_test.h>
 
-#include <boost/asio/bind_executor.hpp>
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/read_until.hpp>
+#include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/asio/streambuf.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
-#include <condition_variable>
 #include <functional>
+#include <optional>
 #include <thread>
 #include <utility>
 
@@ -54,7 +49,7 @@ class short_read_test : public beast::unit_test::suite
 {
 private:
     using io_context_type = boost::asio::io_context;
-    using strand_type = boost::asio::strand<io_context_type::executor_type>;
+    using strand_type = boost::asio::io_context::strand;
     using timer_type =
         boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
     using acceptor_type = boost::asio::ip::tcp::acceptor;
@@ -65,8 +60,7 @@ private:
     using address_type = boost::asio::ip::address;
 
     io_context_type io_context_;
-    boost::optional<boost::asio::executor_work_guard<
-        boost::asio::io_context::executor_type>>
+    std::optional<boost::asio::executor_work_guard<boost::asio::executor>>
         work_;
     std::thread thread_;
     std::shared_ptr<boost::asio::ssl::context> context_;
@@ -78,7 +72,7 @@ private:
         using boost::asio::buffer;
         using boost::asio::buffer_copy;
         using boost::asio::buffer_size;
-        boost::asio::const_buffer buf(s.data(), s.size());
+        boost::asio::const_buffers_1 buf(s.data(), s.size());
         sb.commit(buffer_copy(sb.prepare(buffer_size(buf)), buf));
     }
 
@@ -191,11 +185,11 @@ private:
                 , acceptor_(
                       test_.io_context_,
                       endpoint_type(
-                          boost::asio::ip::make_address(
+                          beast::IP::Address::from_string(
                               test::getEnvLocalhostAddr()),
                           0))
                 , socket_(test_.io_context_)
-                , strand_(boost::asio::make_strand(test_.io_context_))
+                , strand_(test_.io_context_)
             {
                 acceptor_.listen();
                 server_.endpoint_ = acceptor_.local_endpoint();
@@ -271,7 +265,7 @@ private:
                 , test_(server_.test_)
                 , socket_(std::move(socket))
                 , stream_(socket_, *test_.context_)
-                , strand_(boost::asio::make_strand(test_.io_context_))
+                , strand_(test_.io_context_)
                 , timer_(test_.io_context_)
             {
             }
@@ -293,7 +287,7 @@ private:
             void
             run()
             {
-                timer_.expires_after(std::chrono::seconds(3));
+                timer_.expires_from_now(std::chrono::seconds(3));
                 timer_.async_wait(bind_executor(
                     strand_,
                     std::bind(
@@ -456,7 +450,7 @@ private:
                 , test_(client_.test_)
                 , socket_(test_.io_context_)
                 , stream_(socket_, *test_.context_)
-                , strand_(boost::asio::make_strand(test_.io_context_))
+                , strand_(test_.io_context_)
                 , timer_(test_.io_context_)
                 , ep_(ep)
             {
@@ -479,7 +473,7 @@ private:
             void
             run(endpoint_type const& ep)
             {
-                timer_.expires_after(std::chrono::seconds(3));
+                timer_.expires_from_now(std::chrono::seconds(3));
                 timer_.async_wait(bind_executor(
                     strand_,
                     std::bind(

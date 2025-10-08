@@ -23,8 +23,7 @@
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/deadline_timer.hpp>
-#include <boost/asio/executor_work_guard.hpp>
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/io_service.hpp>
 
 #include <algorithm>
 #include <mutex>
@@ -61,10 +60,8 @@ class io_latency_probe_test : public beast::unit_test::suite,
         measure_asio_timers(duration interval = 100ms, size_t num_samples = 50)
         {
             using namespace std::chrono;
-            boost::asio::io_context ios;
-            std::optional<boost::asio::executor_work_guard<
-                boost::asio::io_context::executor_type>>
-                work{boost::asio::make_work_guard(ios)};
+            boost::asio::io_service ios;
+            std::optional<boost::asio::io_service::work> work{ios};
             std::thread worker{[&] { ios.run(); }};
             boost::asio::basic_waitable_timer<Clock> timer{ios};
             elapsed_times_.reserve(num_samples);
@@ -138,7 +135,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
 
         test_sampler(
             std::chrono::milliseconds interval,
-            boost::asio::io_context& ios)
+            boost::asio::io_service& ios)
             : probe_(interval, ios)
         {
         }
@@ -167,9 +164,9 @@ class io_latency_probe_test : public beast::unit_test::suite,
     {
         testcase << "sample one";
         boost::system::error_code ec;
-        test_sampler io_probe{100ms, get_io_context()};
+        test_sampler io_probe{100ms, get_io_service()};
         io_probe.start_one();
-        MyTimer timer{get_io_context(), 1s};
+        MyTimer timer{get_io_service(), 1s};
         timer.async_wait(yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -201,9 +198,9 @@ class io_latency_probe_test : public beast::unit_test::suite,
                 duration_cast<milliseconds>(probe_duration).count()) /
             static_cast<size_t>(tt.getMean<milliseconds>());
 #endif
-        test_sampler io_probe{interval, get_io_context()};
+        test_sampler io_probe{interval, get_io_service()};
         io_probe.start();
-        MyTimer timer{get_io_context(), probe_duration};
+        MyTimer timer{get_io_service(), probe_duration};
         timer.async_wait(yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -215,7 +212,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
         io_probe.probe_.cancel_async();
         // wait again in order to flush the remaining
         // probes from the work queue
-        timer.expires_after(1s);
+        timer.expires_from_now(1s);
         timer.async_wait(yield[ec]);
     }
 
@@ -223,7 +220,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
     testCanceled(boost::asio::yield_context& yield)
     {
         testcase << "canceled";
-        test_sampler io_probe{100ms, get_io_context()};
+        test_sampler io_probe{100ms, get_io_service()};
         io_probe.probe_.cancel_async();
         except<std::logic_error>([&io_probe]() { io_probe.start_one(); });
         except<std::logic_error>([&io_probe]() { io_probe.start(); });

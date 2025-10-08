@@ -29,7 +29,6 @@
 #include <xrpl/server/detail/BasePeer.h>
 #include <xrpl/server/detail/LowestLayer.h>
 
-#include <boost/asio/error.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/websocket.hpp>
@@ -421,17 +420,11 @@ BaseWSPeer<Handler, Impl>::start_timer()
     // Max seconds without completing a message
     static constexpr std::chrono::seconds timeout{30};
     static constexpr std::chrono::seconds timeoutLocal{3};
-
-    try
-    {
-        timer_.expires_after(
-            remote_endpoint().address().is_loopback() ? timeoutLocal : timeout);
-    }
-    catch (boost::system::system_error const& e)
-    {
-        return fail(e.code(), "start_timer");
-    }
-
+    error_code ec;
+    timer_.expires_from_now(
+        remote_endpoint().address().is_loopback() ? timeoutLocal : timeout, ec);
+    if (ec)
+        return fail(ec, "start_timer");
     timer_.async_wait(bind_executor(
         strand_,
         std::bind(
@@ -445,14 +438,8 @@ template <class Handler, class Impl>
 void
 BaseWSPeer<Handler, Impl>::cancel_timer()
 {
-    try
-    {
-        timer_.cancel();
-    }
-    catch (boost::system::system_error const&)
-    {
-        // ignored
-    }
+    error_code ec;
+    timer_.cancel(ec);
 }
 
 template <class Handler, class Impl>

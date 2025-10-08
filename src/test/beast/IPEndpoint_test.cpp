@@ -45,13 +45,13 @@ public:
         std::string const& normal = "")
     {
         boost::system::error_code ec;
-        Address const result{boost::asio::ip::make_address(s, ec)};
+        Address const result{Address::from_string(s, ec)};
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
         if (!BEAST_EXPECTS(result.is_v4(), s + " not v4"))
             return;
         if (!BEAST_EXPECTS(
-                result.to_v4().to_uint() == value, s + " value mismatch"))
+                result.to_v4().to_ulong() == value, s + " value mismatch"))
             return;
         BEAST_EXPECTS(
             result.to_string() == (normal.empty() ? s : normal),
@@ -62,7 +62,7 @@ public:
     failParseAddr(std::string const& s)
     {
         boost::system::error_code ec;
-        auto a = boost::asio::ip::make_address(s, ec);
+        auto a = Address::from_string(s, ec);
         BEAST_EXPECTS(ec, s + " parses as " + a.to_string());
     }
 
@@ -71,24 +71,24 @@ public:
     {
         testcase("AddressV4");
 
-        BEAST_EXPECT(AddressV4{}.to_uint() == 0);
+        BEAST_EXPECT(AddressV4{}.to_ulong() == 0);
         BEAST_EXPECT(is_unspecified(AddressV4{}));
-        BEAST_EXPECT(AddressV4{0x01020304}.to_uint() == 0x01020304);
+        BEAST_EXPECT(AddressV4{0x01020304}.to_ulong() == 0x01020304);
 
         {
             AddressV4::bytes_type d = {{1, 2, 3, 4}};
-            BEAST_EXPECT(AddressV4{d}.to_uint() == 0x01020304);
+            BEAST_EXPECT(AddressV4{d}.to_ulong() == 0x01020304);
 
             unexpected(is_unspecified(AddressV4{d}));
         }
 
         AddressV4 const v1{1};
-        BEAST_EXPECT(AddressV4{v1}.to_uint() == 1);
+        BEAST_EXPECT(AddressV4{v1}.to_ulong() == 1);
 
         {
             AddressV4 v;
             v = v1;
-            BEAST_EXPECT(v.to_uint() == v1.to_uint());
+            BEAST_EXPECT(v.to_ulong() == v1.to_ulong());
         }
 
         {
@@ -99,7 +99,7 @@ public:
             d[2] = 3;
             d[3] = 4;
             v = AddressV4{d};
-            BEAST_EXPECT(v.to_uint() == 0x01020304);
+            BEAST_EXPECT(v.to_ulong() == 0x01020304);
         }
 
         BEAST_EXPECT(AddressV4(0x01020304).to_string() == "1.2.3.4");
@@ -161,7 +161,7 @@ public:
         testcase("Address");
 
         boost::system::error_code ec;
-        Address result{boost::asio::ip::make_address("1.2.3.4", ec)};
+        Address result{Address::from_string("1.2.3.4", ec)};
         AddressV4::bytes_type d = {{1, 2, 3, 4}};
         BEAST_EXPECT(!ec);
         BEAST_EXPECT(result.is_v4() && result.to_v4() == AddressV4{d});
@@ -263,10 +263,7 @@ public:
         BEAST_EXPECT(is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "127.0.0.1:80");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(
-            boost::asio::ip::make_address_v6(
-                boost::asio::ip::v4_mapped, AddressV4{d}),
-            80);
+        ep = Endpoint(AddressV6::v4_mapped(AddressV4{d}), 80);
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
         BEAST_EXPECT(is_private(ep));
@@ -284,11 +281,8 @@ public:
         BEAST_EXPECT(!is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "10.0.0.1");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(boost::asio::ip::make_address_v6(
-            boost::asio::ip::v4_mapped, AddressV4{d}));
-        BEAST_EXPECT(
-            get_class(boost::asio::ip::make_address_v4(
-                boost::asio::ip::v4_mapped, ep.to_v6())) == 'A');
+        ep = Endpoint(AddressV6::v4_mapped(AddressV4{d}));
+        BEAST_EXPECT(get_class(ep.to_v6().to_v4()) == 'A');
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
         BEAST_EXPECT(is_private(ep));
@@ -305,8 +299,7 @@ public:
         BEAST_EXPECT(!is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "166.78.151.147");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(boost::asio::ip::make_address_v6(
-            boost::asio::ip::v4_mapped, AddressV4{d}));
+        ep = Endpoint(AddressV6::v4_mapped(AddressV4{d}));
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(is_public(ep));
         BEAST_EXPECT(!is_private(ep));

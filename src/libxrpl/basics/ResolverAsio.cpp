@@ -25,9 +25,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
-#include <boost/asio/bind_executor.hpp>
 #include <boost/asio/error.hpp>
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/system/detail/error_code.hpp>
 
@@ -125,8 +124,8 @@ public:
 
     beast::Journal m_journal;
 
-    boost::asio::io_context& m_io_context;
-    boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
+    boost::asio::io_service& m_io_service;
+    boost::asio::io_service::strand m_strand;
     boost::asio::ip::tcp::resolver m_resolver;
 
     std::condition_variable m_cv;
@@ -156,12 +155,12 @@ public:
     std::deque<Work> m_work;
 
     ResolverAsioImpl(
-        boost::asio::io_context& io_context,
+        boost::asio::io_service& io_service,
         beast::Journal journal)
         : m_journal(journal)
-        , m_io_context(io_context)
-        , m_strand(boost::asio::make_strand(io_context))
-        , m_resolver(io_context)
+        , m_io_service(io_service)
+        , m_strand(io_service)
+        , m_resolver(io_service)
         , m_asyncHandlersCompleted(true)
         , m_stop_called(false)
         , m_stopped(true)
@@ -217,14 +216,8 @@ public:
     {
         if (m_stop_called.exchange(true) == false)
         {
-            boost::asio::dispatch(
-                m_io_context,
-                boost::asio::bind_executor(
-                    m_strand,
-                    std::bind(
-                        &ResolverAsioImpl::do_stop,
-                        this,
-                        CompletionCounter(this))));
+            m_io_service.dispatch(m_strand.wrap(std::bind(
+                &ResolverAsioImpl::do_stop, this, CompletionCounter(this))));
 
             JLOG(m_journal.debug()) << "Queued a stop request";
         }
@@ -255,16 +248,12 @@ public:
 
         // TODO NIKB use rvalue references to construct and move
         //           reducing cost.
-        boost::asio::dispatch(
-            m_io_context,
-            boost::asio::bind_executor(
-                m_strand,
-                std::bind(
-                    &ResolverAsioImpl::do_resolve,
-                    this,
-                    names,
-                    handler,
-                    CompletionCounter(this))));
+        m_io_service.dispatch(m_strand.wrap(std::bind(
+            &ResolverAsioImpl::do_resolve,
+            this,
+            names,
+            handler,
+            CompletionCounter(this))));
     }
 
     //-------------------------------------------------------------------------
@@ -290,20 +279,19 @@ public:
         std::string name,
         boost::system::error_code const& ec,
         HandlerType handler,
-        boost::asio::ip::tcp::resolver::results_type results,
+        boost::asio::ip::tcp::resolver::iterator iter,
         CompletionCounter)
     {
         if (ec == boost::asio::error::operation_aborted)
             return;
 
         std::vector<beast::IP::Endpoint> addresses;
-        auto iter = results.begin();
 
         // If we get an error message back, we don't return any
         // results that we may have gotten.
         if (!ec)
         {
-            while (iter != results.end())
+            while (iter != boost::asio::ip::tcp::resolver::iterator())
             {
                 addresses.push_back(
                     beast::IPAddressConversion::from_asio(*iter));
@@ -313,14 +301,8 @@ public:
 
         handler(name, addresses);
 
-        boost::asio::post(
-            m_io_context,
-            boost::asio::bind_executor(
-                m_strand,
-                std::bind(
-                    &ResolverAsioImpl::do_work,
-                    this,
-                    CompletionCounter(this))));
+        m_io_service.post(m_strand.wrap(std::bind(
+            &ResolverAsioImpl::do_work, this, CompletionCounter(this))));
     }
 
     HostAndPort
@@ -401,21 +383,16 @@ public:
         {
             JLOG(m_journal.error()) << "Unable to parse '" << name << "'";
 
-            boost::asio::post(
-                m_io_context,
-                boost::asio::bind_executor(
-                    m_strand,
-                    std::bind(
-                        &ResolverAsioImpl::do_work,
-                        this,
-                        CompletionCounter(this))));
+            m_io_service.post(m_strand.wrap(std::bind(
+                &ResolverAsioImpl::do_work, this, CompletionCounter(this))));
 
             return;
         }
 
+        boost::asio::ip::tcp::resolver::query query(host, port);
+
         m_resolver.async_resolve(
-            host,
-            port,
+            query,
             std::bind(
                 &ResolverAsioImpl::do_finish,
                 this,
@@ -446,14 +423,10 @@ public:
 
             if (m_work.size() > 0)
             {
-                boost::asio::post(
-                    m_io_context,
-                    boost::asio::bind_executor(
-                        m_strand,
-                        std::bind(
-                            &ResolverAsioImpl::do_work,
-                            this,
-                            CompletionCounter(this))));
+                m_io_service.post(m_strand.wrap(std::bind(
+                    &ResolverAsioImpl::do_work,
+                    this,
+                    CompletionCounter(this))));
             }
         }
     }
@@ -462,9 +435,9 @@ public:
 //-----------------------------------------------------------------------------
 
 std::unique_ptr<ResolverAsio>
-ResolverAsio::New(boost::asio::io_context& io_context, beast::Journal journal)
+ResolverAsio::New(boost::asio::io_service& io_service, beast::Journal journal)
 {
-    return std::make_unique<ResolverAsioImpl>(io_context, journal);
+    return std::make_unique<ResolverAsioImpl>(io_service, journal);
 }
 
 //-----------------------------------------------------------------------------
