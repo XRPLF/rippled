@@ -112,6 +112,8 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
                         return tecHAS_OBLIGATIONS;
                 }
             }
+
+            return tesSUCCESS;
         }
 
         // Now test when the holder wants to hold/create/authorize a new MPT
