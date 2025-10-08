@@ -3729,6 +3729,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
     if (databaseType == DatabaseType::None)
     {
         // LCOV_EXCL_START
+        UNREACHABLE(
+            "ripple::NetworkOPsImp::addAccountHistoryJob : no database");
         JLOG(m_journal.error())
             << "AccountHistory job for account "
             << toBase58(subInfo.index_->accountId_) << " no database";
@@ -3904,6 +3906,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     if (!dbResult)
                     {
                         // LCOV_EXCL_START
+                        UNREACHABLE(
+                            "ripple::NetworkOPsImp::addAccountHistoryJob: "
+                            "getMoreTxns failed");
                         JLOG(m_journal.debug())
                             << "AccountHistory job for account "
                             << toBase58(accountId) << " getMoreTxns failed.";
@@ -3933,6 +3938,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         if (!curTxLedger)
                         {
                             // LCOV_EXCL_START
+                            UNREACHABLE(
+                                "ripple::NetworkOPsImp::addAccountHistoryJob: "
+                                "getLedgerBySeq failed");
                             JLOG(m_journal.debug())
                                 << "AccountHistory job for account "
                                 << toBase58(accountId) << " no ledger.";
@@ -3945,6 +3953,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         if (!stTxn)
                         {
                             // LCOV_EXCL_START
+                            UNREACHABLE(
+                                "NetworkOPsImp::addAccountHistoryJob: "
+                                "getSTransaction failed");
                             JLOG(m_journal.debug())
                                 << "AccountHistory job for account "
                                 << toBase58(accountId)
