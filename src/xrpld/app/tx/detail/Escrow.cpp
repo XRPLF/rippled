@@ -1090,7 +1090,7 @@ EscrowFinish::doApply()
             auto const fb = ctx_.tx[~sfFulfillment];
 
             if (!fb)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
+                return tecINTERNAL;
 
             if (checkCondition(*fb, *cb))
                 flags = SF_CF_VALID;
