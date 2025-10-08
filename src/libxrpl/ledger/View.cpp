@@ -19,6 +19,7 @@
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/CredentialHelpers.h>
@@ -383,6 +384,39 @@ isLPTokenFrozen(
         isFrozen(view, account, asset2.currency, asset2.account);
 }
 
+bool
+isAuthorized(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer)
+{
+    auto const sleIssuer = view.read(keylet::account(issuer));
+    auto const sleAccount = view.read(keylet::account(account));
+
+    if (!sleIssuer || !sleAccount)
+        return false;  // LCOV_EXCL_LINE
+
+    // For LP tokens, check if the account is authorized to hold both
+    // underlying assets.
+    if (sleIssuer->isFieldPresent(sfAMMID) &&
+        checkLPTokenAuthorization(
+            view, account, sleIssuer->getFieldH256(sfAMMID)) != tesSUCCESS)
+    {
+        return false;
+    }
+
+    // Pseudo accounts don't have authorization requirements.
+    if (isPseudoAccount(sleAccount) || isPseudoAccount(sleIssuer))
+        return true;
+
+    // Check standard trustline authorization.
+    if (requireAuth(view, Issue{currency, issuer}, account) != tesSUCCESS)
+        return false;
+
+    return true;
+}
+
 STAmount
 accountHolds(
     ReadView const& view,
@@ -390,6 +424,7 @@ accountHolds(
     Currency const& currency,
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j)
 {
     STAmount amount;
@@ -441,6 +476,13 @@ accountHolds(
             }
         }
 
+        if (view.rules().enabled(fixEnforceTrustlineAuth) &&
+            zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
+        {
+            if (!isAuthorized(view, account, currency, issuer))
+                return false;
+        }
+
         return true;
     }();
 
@@ -472,10 +514,17 @@ accountHolds(
     AccountID const& account,
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j)
 {
     return accountHolds(
-        view, account, issue.currency, issue.account, zeroIfFrozen, j);
+        view,
+        account,
+        issue.currency,
+        issue.account,
+        zeroIfFrozen,
+        zeroIfUnauthorized,
+        j);
 }
 
 STAmount
@@ -542,7 +591,8 @@ accountHolds(
                               std::remove_cvref_t<decltype(value)>,
                               Issue>)
             {
-                return accountHolds(view, account, value, zeroIfFrozen, j);
+                return accountHolds(
+                    view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
             }
             return accountHolds(
                 view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
@@ -556,6 +606,7 @@ accountFunds(
     AccountID const& id,
     STAmount const& saDefault,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal j)
 {
     if (!saDefault.native() && saDefault.getIssuer() == id)
@@ -567,6 +618,7 @@ accountFunds(
         saDefault.getCurrency(),
         saDefault.getIssuer(),
         freezeHandling,
+        authHandling,
         j);
 }
 
@@ -3243,6 +3295,26 @@ bool
 after(NetClock::time_point now, std::uint32_t mark)
 {
     return now.time_since_epoch().count() > mark;
+}
+
+TER
+checkLPTokenAuthorization(
+    ReadView const& view,
+    AccountID const& acct,
+    uint256 const& ammID)
+{
+    auto const sleAmm = view.read(keylet::amm(ammID));
+    if (!sleAmm)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    if (TER const res = requireAuth(view, (*sleAmm)[sfAsset], acct);
+        !isTesSuccess(res))
+        return res;
+    if (TER const res = requireAuth(view, (*sleAmm)[sfAsset2], acct);
+        !isTesSuccess(res))
+        return res;
+
+    return tesSUCCESS;
 }
 
 }  // namespace ripple

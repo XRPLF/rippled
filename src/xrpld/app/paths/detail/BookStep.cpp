@@ -757,35 +757,77 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 strandSrc_, strandDst_, offer, ofrQ, offers, offerAttempted))
             return true;
 
+        auto const removeOffer = [&]() {
+            // Offer owner not authorized to hold IOU from issuer.
+            // Remove this offer even if no crossing occurs.
+            if (auto const key = offer.key())
+                offers.permRmOffer(*key);
+            if (!offerAttempted)
+                // Change quality only if no previous offers were tried.
+                ofrQ = std::nullopt;
+        };
+
         // Make sure offer owner has authorization to own IOUs from issuer.
         // An account can always own XRP or their own IOUs.
         if (!isXRP(offer.issueIn().currency) &&
             offer.owner() != offer.issueIn().account)
         {
-            auto const& issuerID = offer.issueIn().account;
-            auto const issuer = afView.read(keylet::account(issuerID));
-            if (issuer && ((*issuer)[sfFlags] & lsfRequireAuth))
+            if (requireAuth(afView, offer.issueIn(), offer.owner()) !=
+                tesSUCCESS)
             {
-                // Issuer requires authorization.  See if offer owner has that.
-                auto const& ownerID = offer.owner();
-                auto const authFlag =
-                    issuerID > ownerID ? lsfHighAuth : lsfLowAuth;
+                removeOffer();
+                // Returning true causes offers.step() to delete the
+                // offer.
+                return true;
+            }
+        }
 
-                auto const line = afView.read(
-                    keylet::line(ownerID, issuerID, offer.issueIn().currency));
+        if (sb.rules().enabled(fixEnforceTrustlineAuth))
+        {
+            bool badAuth = false;
 
-                if (!line || (((*line)[sfFlags] & authFlag) == 0))
+            if (auto const sleAcct =
+                    afView.read(keylet::account(offer.issueIn().account));
+                sleAcct && sleAcct->isFieldPresent(sfAMMID) &&
+                offer.owner() != offer.issueIn().account)
+            {
+                if (auto const ter = checkLPTokenAuthorization(
+                        afView, offer.owner(), sleAcct->getFieldH256(sfAMMID));
+                    !isTesSuccess(ter))
+                    badAuth = true;
+            }
+
+            // Following is theoretically defensive check since
+            // TOfferStreamBase::step() already checks for the auth of the
+            // selling asset when it calls accountFundsHelper
+            {
+                // LCOV_EXCL_START
+                if (auto const sleAcct =
+                        afView.read(keylet::account(offer.issueOut().account));
+                    sleAcct && sleAcct->isFieldPresent(sfAMMID) &&
+                    offer.owner() != offer.issueOut().account)
                 {
-                    // Offer owner not authorized to hold IOU from issuer.
-                    // Remove this offer even if no crossing occurs.
-                    if (auto const key = offer.key())
-                        offers.permRmOffer(*key);
-                    if (!offerAttempted)
-                        // Change quality only if no previous offers were tried.
-                        ofrQ = std::nullopt;
-                    // Returning true causes offers.step() to delete the offer.
-                    return true;
+                    if (auto const ter = checkLPTokenAuthorization(
+                            afView,
+                            offer.owner(),
+                            sleAcct->getFieldH256(sfAMMID));
+                        !isTesSuccess(ter))
+                        badAuth = true;
                 }
+
+                if (requireAuth(afView, offer.issueOut(), offer.owner()) !=
+                    tesSUCCESS)
+                {
+                    badAuth = true;
+                }
+                // LCOV_EXCL_STOP
+            }
+
+            if (badAuth)
+            {
+                removeOffer();
+                // Returning true causes offers.step() to delete the offer.
+                return true;
             }
         }
 

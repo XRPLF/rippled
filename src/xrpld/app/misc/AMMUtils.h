@@ -43,6 +43,7 @@ ammPoolHolds(
     Issue const& issue1,
     Issue const& issue2,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal const j);
 
 /** Get AMM pool and LP token balances. If both optIssue are
@@ -56,6 +57,7 @@ ammHolds(
     std::optional<Issue> const& optIssue1,
     std::optional<Issue> const& optIssue2,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal const j);
 
 /** Get the balance of LP tokens.
