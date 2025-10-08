@@ -134,8 +134,10 @@ SetSignerList::doApply()
         default:
             break;
     }
+    // LCOV_EXCL_START
     UNREACHABLE("ripple::SetSignerList::doApply : invalid operation");
     return temMALFORMED;
+    // LCOV_EXCL_STOP
 }
 
 void

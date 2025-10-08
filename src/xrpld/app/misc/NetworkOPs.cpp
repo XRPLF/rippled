@@ -1798,11 +1798,13 @@ NetworkOPsImp::getOwnerInfo(
 
                     case ltACCOUNT_ROOT:
                     case ltDIR_NODE:
+                    // LCOV_EXCL_START
                     default:
                         UNREACHABLE(
                             "ripple::NetworkOPsImp::getOwnerInfo : invalid "
                             "type");
                         break;
+                        // LCOV_EXCL_STOP
                 }
             }
 
@@ -3833,12 +3835,14 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             accountId, minLedger, maxLedger, marker, 0, true};
                         return db->newestAccountTxPage(options);
                     }
+                    // LCOV_EXCL_START
                     default: {
                         UNREACHABLE(
                             "ripple::NetworkOPsImp::addAccountHistoryJob::"
                             "getMoreTxns : invalid database type");
                         return {};
                     }
+                        // LCOV_EXCL_STOP
                 }
             };
 
@@ -4038,10 +4042,12 @@ NetworkOPsImp::subAccountHistoryStart(
         }
         else
         {
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::NetworkOPsImp::subAccountHistoryStart : failed to "
                 "access genesis account");
             return;
+            // LCOV_EXCL_STOP
         }
     }
     subInfo.index_->historyLastLedgerSeq_ = ledger->seq();
@@ -4148,7 +4154,11 @@ NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
     if (auto listeners = app_.getOrderBookDB().makeBookListeners(book))
         listeners->addSubscriber(isrListener);
     else
+    {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::NetworkOPsImp::subBook : null book listeners");
+        // LCOV_EXCL_STOP
+    }
     return true;
 }
 
