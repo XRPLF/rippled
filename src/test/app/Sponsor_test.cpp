@@ -26,8 +26,6 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
 
-#include "test/jtx/sponsor.h"
-
 namespace ripple {
 namespace test {
 
@@ -316,6 +314,14 @@ public:
             sponsor::sponseeAcc(alice),
             ter(tesSUCCESS));
         env.close();
+
+        auto sle = env.le(keylet::sponsor(sponsor, alice));
+        BEAST_EXPECT(sle);
+        BEAST_EXPECT(sle->getFieldU32(sfReserveCount) == 100);
+        BEAST_EXPECT(sle->getFieldAmount(sfFeeAmount) == XRP(100));
+        BEAST_EXPECT(sle->getFieldAmount(sfMaxFee) == XRP(1));
+        BEAST_EXPECT(sle->isFlag(lsfSponsorshipRequireSignForFee));
+        BEAST_EXPECT(sle->isFlag(lsfSponsorshipRequireSignForReserve));
 
         // delete from sponsor
         env(sponsor::del(sponsor), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
@@ -868,39 +874,76 @@ public:
     void
     testRequireFlag()
     {
-        testcase("SponsorshipRequireSignForReserve");
         using namespace test::jtx;
+        {
+            testcase("SponsorshipRequireSignForReserve");
 
-        Env env{*this, testable_amendments()};
-        Account const alice("alice");
-        Account const bob("bob");
-        Account const sponsor("sponsor");
-        env.fund(XRP(10000), alice, bob, sponsor);
-        env.close();
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
 
-        // set flag
-        env(sponsor::set_reserve(
-                sponsor, tfSponsorshipSetRequireSignForReserve, 10),
-            sponsor::sponseeAcc(alice));
-        env.close();
+            // set flag
+            env(sponsor::set_reserve(
+                    sponsor, tfSponsorshipSetRequireSignForReserve, 10),
+                sponsor::sponseeAcc(alice));
+            env.close();
 
-        env(check::create(alice, bob, XRP(100)),
-            fee(XRP(10)),
-            sponsor::as(sponsor, tfSponsorReserve),
-            ter(terNO_SPONSORSHIP));
-        env.close();
+            env(check::create(alice, bob, XRP(100)),
+                fee(XRP(10)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                ter(terNO_SPONSORSHIP));
+            env.close();
 
-        // clear flag
-        env(sponsor::set_reserve(
-                sponsor, tfSponsorshipClearRequireSignForReserve, 1),
-            sponsor::sponseeAcc(alice));
-        env.close();
+            // clear flag
+            env(sponsor::set_reserve(
+                    sponsor, tfSponsorshipClearRequireSignForReserve, 1),
+                sponsor::sponseeAcc(alice));
+            env.close();
 
-        env(check::create(alice, bob, XRP(100)),
-            fee(XRP(10)),
-            sponsor::as(sponsor, tfSponsorReserve),
-            ter(tesSUCCESS));
-        env.close();
+            env(check::create(alice, bob, XRP(100)),
+                fee(XRP(10)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                ter(tesSUCCESS));
+            env.close();
+        }
+
+        {
+            testcase("SponsorshipRequireSignForFee");
+
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            // set flag
+            env(sponsor::set_fee(
+                    sponsor, tfSponsorshipSetRequireSignForFee, XRP(10)),
+                sponsor::sponseeAcc(alice));
+            env.close();
+
+            env(check::create(alice, bob, XRP(100)),
+                fee(XRP(10)),
+                sponsor::as(sponsor, tfSponsorFee),
+                ter(terNO_SPONSORSHIP));
+            env.close();
+
+            // clear flag
+            env(sponsor::set_fee(
+                    sponsor, tfSponsorshipClearRequireSignForFee, XRP(10)),
+                sponsor::sponseeAcc(alice));
+            env.close();
+
+            env(check::create(alice, bob, XRP(100)),
+                fee(XRP(10)),
+                sponsor::as(sponsor, tfSponsorFee),
+                ter(tesSUCCESS));
+            env.close();
+        }
     }
 
     void
@@ -965,8 +1008,6 @@ public:
             env.close();
 
             {
-                // AMMCreate doesn't check INSUFFICIENT_RESERVE now
-                // see: https://github.com/XRPLF/rippled/issues/5812
                 // check INSUFFICIENT_RESERVE
                 adjustAccountXRPBalance(
                     env, sponsor, reserve(env, 1) - drops(1));
