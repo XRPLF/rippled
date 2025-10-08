@@ -232,6 +232,13 @@ public:
     {
         return {asset_};
     }
+
+    template <ValidIssueType TIss>
+    bool
+    holds() const
+    {
+        return asset_.holds<TIss>();
+    }
 };
 //------------------------------------------------------------------------------
 
