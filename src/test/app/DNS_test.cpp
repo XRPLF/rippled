@@ -63,7 +63,7 @@ public:
             pUrl_.domain,
             pUrl_.path,
             port_,
-            env_.app().getIOContext(),
+            env_.app().getIOService(),
             env_.journal,
             env_.app().config(),
             lastEndpoint,
@@ -80,11 +80,10 @@ public:
     isMultipleEndpoints()
     {
         using boost::asio::ip::tcp;
-        tcp::resolver resolver(env_.app().getIOContext());
+        tcp::resolver resolver(env_.app().getIOService());
         std::string port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
-        auto results = resolver.resolve(pUrl_.domain, port);
-        auto it = results.begin();
-        auto end = results.end();
+        tcp::resolver::iterator it = resolver.resolve(pUrl_.domain, port);
+        tcp::resolver::iterator end;
         int n = 0;
         for (; it != end; ++it)
             ++n;

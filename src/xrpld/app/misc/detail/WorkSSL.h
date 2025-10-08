@@ -52,7 +52,7 @@ public:
         std::string const& host,
         std::string const& path,
         std::string const& port,
-        boost::asio::io_context& ios,
+        boost::asio::io_service& ios,
         beast::Journal j,
         Config const& config,
         endpoint_type const& lastEndpoint,

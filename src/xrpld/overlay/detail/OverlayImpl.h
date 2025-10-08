@@ -38,7 +38,6 @@
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
@@ -101,11 +100,9 @@ private:
     };
 
     Application& app_;
-    boost::asio::io_context& io_context_;
-    std::optional<boost::asio::executor_work_guard<
-        boost::asio::io_context::executor_type>>
-        work_;
-    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    boost::asio::io_service& io_service_;
+    std::optional<boost::asio::io_service::work> work_;
+    boost::asio::io_service::strand strand_;
     mutable std::recursive_mutex mutex_;  // VFALCO use std::mutex
     std::condition_variable_any cond_;
     std::weak_ptr<Timer> timer_;
@@ -146,7 +143,7 @@ public:
         ServerHandler& serverHandler,
         Resource::Manager& resourceManager,
         Resolver& resolver,
-        boost::asio::io_context& io_context,
+        boost::asio::io_service& io_service,
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector);
 

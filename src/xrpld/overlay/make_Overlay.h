@@ -25,7 +25,7 @@
 
 #include <xrpl/basics/Resolver.h>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/io_service.hpp>
 
 namespace ripple {
 
@@ -40,7 +40,7 @@ make_Overlay(
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
-    boost::asio::io_context& io_context,
+    boost::asio::io_service& io_service,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector);
 

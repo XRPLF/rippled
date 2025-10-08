@@ -84,7 +84,7 @@ PeerImp::PeerImp(
     , stream_ptr_(std::move(stream_ptr))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)
-    , strand_(boost::asio::make_strand(socket_.get_executor()))
+    , strand_(socket_.get_executor())
     , timer_(waitable_timer{socket_.get_executor()})
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
@@ -581,16 +581,9 @@ PeerImp::close()
     if (socket_.is_open())
     {
         detaching_ = true;  // DEPRECATED
-        try
-        {
-            timer_.cancel();
-            socket_.close();
-        }
-        catch (boost::system::system_error const&)
-        {
-            // ignored
-        }
-
+        error_code ec;
+        timer_.cancel(ec);
+        socket_.close(ec);
         overlay_.incPeerDisconnect();
         if (inbound_)
         {
@@ -661,13 +654,12 @@ PeerImp::gracefulClose()
 void
 PeerImp::setTimer()
 {
-    try
+    error_code ec;
+    timer_.expires_from_now(peerTimerInterval, ec);
+
+    if (ec)
     {
-        timer_.expires_after(peerTimerInterval);
-    }
-    catch (boost::system::system_error const& e)
-    {
-        JLOG(journal_.error()) << "setTimer: " << e.code();
+        JLOG(journal_.error()) << "setTimer: " << ec.message();
         return;
     }
     timer_.async_wait(bind_executor(
@@ -680,14 +672,8 @@ PeerImp::setTimer()
 void
 PeerImp::cancelTimer()
 {
-    try
-    {
-        timer_.cancel();
-    }
-    catch (boost::system::system_error const&)
-    {
-        // ignored
-    }
+    error_code ec;
+    timer_.cancel(ec);
 }
 
 //------------------------------------------------------------------------------

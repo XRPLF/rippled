@@ -205,7 +205,7 @@ private:
             NetClock::time_point const expires2 =
                 effective2 + cfg.expiresFromNow;
             item.server = make_TrustedPublisherServer(
-                env.app().getIOContext(),
+                env.app().getIOService(),
                 item.list,
                 expires,
                 {{effective2, expires2}},

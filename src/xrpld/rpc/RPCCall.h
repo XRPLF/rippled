@@ -25,7 +25,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/json/json_value.h>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/io_service.hpp>
 
 #include <functional>
 #include <string>
@@ -51,7 +51,7 @@ fromCommandLine(
 
 void
 fromNetwork(
-    boost::asio::io_context& io_context,
+    boost::asio::io_service& io_service,
     std::string const& strIp,
     std::uint16_t const iPort,
     std::string const& strUsername,

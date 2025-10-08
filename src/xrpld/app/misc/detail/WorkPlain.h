@@ -37,7 +37,7 @@ public:
         std::string const& host,
         std::string const& path,
         std::string const& port,
-        boost::asio::io_context& ios,
+        boost::asio::io_service& ios,
         endpoint_type const& lastEndpoint,
         bool lastStatus,
         callback_type cb);
@@ -60,7 +60,7 @@ WorkPlain::WorkPlain(
     std::string const& host,
     std::string const& path,
     std::string const& port,
-    boost::asio::io_context& ios,
+    boost::asio::io_service& ios,
     endpoint_type const& lastEndpoint,
     bool lastStatus,
     callback_type cb)

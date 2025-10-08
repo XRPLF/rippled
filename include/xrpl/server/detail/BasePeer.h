@@ -91,8 +91,8 @@ BasePeer<Handler, Impl>::BasePeer(
               return "##" + std::to_string(++id) + " ";
           }())
     , j_(sink_)
-    , work_(boost::asio::make_work_guard(executor))
-    , strand_(boost::asio::make_strand(executor))
+    , work_(executor)
+    , strand_(executor)
 {
 }
 

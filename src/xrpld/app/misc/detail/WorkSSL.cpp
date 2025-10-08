@@ -26,7 +26,7 @@ WorkSSL::WorkSSL(
     std::string const& host,
     std::string const& path,
     std::string const& port,
-    boost::asio::io_context& ios,
+    boost::asio::io_service& ios,
     beast::Journal j,
     Config const& config,
     endpoint_type const& lastEndpoint,
@@ -56,12 +56,8 @@ WorkSSL::onConnect(error_code const& ec)
 
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
-        boost::asio::bind_executor(
-            strand_,
-            std::bind(
-                &WorkSSL::onHandshake,
-                shared_from_this(),
-                std::placeholders::_1)));
+        strand_.wrap(std::bind(
+            &WorkSSL::onHandshake, shared_from_this(), std::placeholders::_1)));
 }
 
 void

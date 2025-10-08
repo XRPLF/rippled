@@ -20,30 +20,28 @@
 #ifndef RIPPLE_APP_BASICAPP_H_INCLUDED
 #define RIPPLE_APP_BASICAPP_H_INCLUDED
 
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/io_service.hpp>
 
 #include <optional>
 #include <thread>
 #include <vector>
 
-// This is so that the io_context can outlive all the children
+// This is so that the io_service can outlive all the children
 class BasicApp
 {
 private:
-    std::optional<boost::asio::executor_work_guard<
-        boost::asio::io_context::executor_type>>
-        work_;
+    std::optional<boost::asio::io_service::work> work_;
     std::vector<std::thread> threads_;
-    boost::asio::io_context io_context_;
+    boost::asio::io_service io_service_;
 
 public:
     BasicApp(std::size_t numberOfThreads);
     ~BasicApp();
 
-    boost::asio::io_context&
-    get_io_context()
+    boost::asio::io_service&
+    get_io_service()
     {
-        return io_context_;
+        return io_service_;
     }
 };
 
