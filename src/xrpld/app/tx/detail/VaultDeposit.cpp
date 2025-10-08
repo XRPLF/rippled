@@ -36,15 +36,6 @@ namespace ripple {
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
-
-    if (auto const ter = preflight1(ctx))
-        return ter;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
     if (ctx.tx[sfVaultID] == beast::zero)
     {
         JLOG(ctx.j.debug()) << "VaultDeposit: zero/empty vault ID.";
@@ -54,7 +45,7 @@ VaultDeposit::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -165,7 +156,10 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(ter))
         return ter;
 
-    if (accountHolds(
+    // Asset issuer does not have any balance, they can just create funds by
+    // depositing in the vault.
+    if ((vaultAsset.native() || vaultAsset.getIssuer() != account) &&
+        accountHolds(
             ctx.view,
             account,
             vaultAsset,

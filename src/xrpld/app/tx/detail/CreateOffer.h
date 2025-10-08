@@ -43,6 +43,12 @@ public:
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
+
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
     /** Enforce constraints beyond those of the Transactor base class. */
     static NotTEC
     preflight(PreflightContext const& ctx);

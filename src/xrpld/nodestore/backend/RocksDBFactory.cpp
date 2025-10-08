@@ -232,11 +232,13 @@ public:
     {
         if (m_db)
         {
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::NodeStore::RocksDBBackend::open : database is already "
                 "open");
             JLOG(m_journal.error()) << "database is already open";
             return;
+            // LCOV_EXCL_STOP
         }
         rocksdb::DB* db = nullptr;
         m_options.create_if_missing = createIfMissing;

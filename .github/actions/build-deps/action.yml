@@ -20,14 +20,18 @@ runs:
   steps:
     - name: Install Conan dependencies
       shell: bash
+      env:
+        BUILD_DIR: ${{ inputs.build_dir }}
+        BUILD_OPTION: ${{ inputs.force_build == 'true' && '*' || 'missing' }}
+        BUILD_TYPE: ${{ inputs.build_type }}
       run: |
         echo 'Installing dependencies.'
-        mkdir -p ${{ inputs.build_dir }}
-        cd ${{ inputs.build_dir }}
+        mkdir -p '${{ env.BUILD_DIR }}'
+        cd '${{ env.BUILD_DIR }}'
         conan install \
           --output-folder . \
-          --build ${{ inputs.force_build == 'true' && '"*"' || 'missing' }} \
-          --options:host '&:tests=True' \
-          --options:host '&:xrpld=True' \
-          --settings:all build_type=${{ inputs.build_type }} \
+          --build=${{ env.BUILD_OPTION }} \
+          --options:host='&:tests=True' \
+          --options:host='&:xrpld=True' \
+          --settings:all build_type='${{ env.BUILD_TYPE }}' \
           ..

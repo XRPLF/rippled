@@ -129,10 +129,12 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
     {
         // should never happen, but if it does then it seems natural to define
         // the a null set of numbers to be zero, so the remainder is also zero.
+        // LCOV_EXCL_START
         UNREACHABLE(
             "ripple::b58_fast::detail::inplace_bigint_div_rem : empty "
             "numerator");
         return 0;
+        // LCOV_EXCL_STOP
     }
 
     auto to_u128 = [](std::uint64_t high,

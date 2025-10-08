@@ -30,27 +30,21 @@
 
 namespace ripple {
 
+bool
+VaultSet::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return !ctx.tx.isFieldPresent(sfDomainID) ||
+        ctx.rules.enabled(featurePermissionedDomains);
+}
+
 NotTEC
 VaultSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
-
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDomains))
-        return temDISABLED;
-
-    if (auto const ter = preflight1(ctx))
-        return ter;
-
     if (ctx.tx[sfVaultID] == beast::zero)
     {
         JLOG(ctx.j.debug()) << "VaultSet: zero/empty vault ID.";
         return temMALFORMED;
     }
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
 
     if (auto const data = ctx.tx[~sfData])
     {
@@ -78,7 +72,7 @@ VaultSet::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -189,6 +183,9 @@ VaultSet::doApply()
         view().update(sleIssuance);
     }
 
+    // Note, we must update Vault object even if only DomainID is being updated
+    // in Issuance object. Otherwise it's really difficult for Vault invariants
+    // to verify the operation.
     view().update(vault);
 
     return tesSUCCESS;

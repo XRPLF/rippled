@@ -36,20 +36,11 @@ CreateTicket::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 CreateTicket::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureTicketBatch))
-        return temDISABLED;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
     if (std::uint32_t const count = ctx.tx[sfTicketCount];
         count < minValidCount || count > maxValidCount)
         return temINVALID_COUNT;
 
-    if (NotTEC const ret{preflight1(ctx)}; !isTesSuccess(ret))
-        return ret;
-
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
