@@ -681,7 +681,7 @@ class ServerStatus_test : public beast::unit_test::suite,
             resp["Upgrade"] == "websocket");
         BEAST_EXPECT(
             resp.find("Connection") != resp.end() &&
-            resp["Connection"] == "Upgrade");
+            resp["Connection"] == "upgrade");
     }
 
     void
