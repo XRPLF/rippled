@@ -239,9 +239,11 @@ Logs::fromSeverity(beast::severities::Severity level)
         case kError:
             return lsERROR;
 
+        // LCOV_EXCL_START
         default:
             UNREACHABLE("ripple::Logs::fromSeverity : invalid severity");
             [[fallthrough]];
+        // LCOV_EXCL_STOP
         case kFatal:
             break;
     }
@@ -265,9 +267,11 @@ Logs::toSeverity(LogSeverity level)
             return kWarning;
         case lsERROR:
             return kError;
+        // LCOV_EXCL_START
         default:
             UNREACHABLE("ripple::Logs::toSeverity : invalid severity");
             [[fallthrough]];
+        // LCOV_EXCL_STOP
         case lsFATAL:
             break;
     }
@@ -292,9 +296,11 @@ Logs::toString(LogSeverity s)
             return "Error";
         case lsFATAL:
             return "Fatal";
+        // LCOV_EXCL_START
         default:
             UNREACHABLE("ripple::Logs::toString : invalid severity");
             return "Unknown";
+            // LCOV_EXCL_STOP
     }
 }
 
@@ -356,9 +362,11 @@ Logs::format(
         case kError:
             output += "ERR ";
             break;
+        // LCOV_EXCL_START
         default:
             UNREACHABLE("ripple::Logs::format : invalid severity");
             [[fallthrough]];
+        // LCOV_EXCL_STOP
         case kFatal:
             output += "FTL ";
             break;

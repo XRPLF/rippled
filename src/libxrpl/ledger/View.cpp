@@ -324,10 +324,12 @@ isVaultPseudoAccountFrozen(
     auto const issuer = mptIssuance->getAccountID(sfIssuer);
     auto const mptIssuer = view.read(keylet::account(issuer));
     if (mptIssuer == nullptr)
-    {  // LCOV_EXCL_START
+    {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null MPToken issuer");
         return false;
-    }  // LCOV_EXCL_STOP
+        // LCOV_EXCL_STOP
+    }
 
     if (!mptIssuer->isFieldPresent(sfVaultID))
         return false;  // not a Vault pseudo-account, common case
@@ -338,7 +340,8 @@ isVaultPseudoAccountFrozen(
     {  // LCOV_EXCL_START
         UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null vault");
         return false;
-    }  // LCOV_EXCL_STOP
+        // LCOV_EXCL_STOP
+    }
 
     return isAnyFrozen(view, {issuer, account}, vault->at(sfAsset), depth + 1);
 }
@@ -2676,7 +2679,8 @@ enforceMPTokenAuthorization(
     UNREACHABLE(
         "ripple::enforceMPTokenAuthorization : condition list is incomplete");
     return tefINTERNAL;
-}  // LCOV_EXCL_STOP
+    // LCOV_EXCL_STOP
+}
 
 TER
 canTransfer(

@@ -399,12 +399,14 @@ DeleteAccount::doApply()
                 return {result, SkipEntry::No};
             }
 
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::DeleteAccount::doApply : undeletable item not found "
                 "in preclaim");
             JLOG(j_.error()) << "DeleteAccount undeletable item not "
                                 "found in preclaim.";
             return {tecHAS_OBLIGATIONS, SkipEntry::No};
+            // LCOV_EXCL_STOP
         },
         ctx_.journal);
     if (ter != tesSUCCESS)
