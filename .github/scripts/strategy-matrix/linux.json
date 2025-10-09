@@ -78,42 +78,42 @@
       "distro_version": "9",
       "compiler_name": "gcc",
       "compiler_version": "12",
-      "image_sha": "0ab1e4c"
+      "image_sha": "d133ce3"
     },
     {
       "distro_name": "rhel",
       "distro_version": "9",
       "compiler_name": "gcc",
       "compiler_version": "13",
-      "image_sha": "0ab1e4c"
+      "image_sha": "d133ce3"
     },
     {
       "distro_name": "rhel",
       "distro_version": "9",
       "compiler_name": "gcc",
       "compiler_version": "14",
-      "image_sha": "0ab1e4c"
+      "image_sha": "d133ce3"
     },
     {
       "distro_name": "rhel",
       "distro_version": "9",
       "compiler_name": "clang",
       "compiler_version": "any",
-      "image_sha": "0ab1e4c"
+      "image_sha": "d133ce3"
     },
     {
       "distro_name": "rhel",
       "distro_version": "10",
       "compiler_name": "gcc",
       "compiler_version": "14",
-      "image_sha": "0ab1e4c"
+      "image_sha": "d133ce3"
     },
     {
       "distro_name": "rhel",
       "distro_version": "10",
       "compiler_name": "clang",
       "compiler_version": "any",
-      "image_sha": "0ab1e4c"
+      "image_sha": "d133ce3"
     },
     {
       "distro_name": "ubuntu",
