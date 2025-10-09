@@ -218,6 +218,14 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     Asset const asset = vault->at(sfAsset);
+
+    if (auto const err =
+            requireAuth(ctx.view, asset, borrower, AuthType::WeakAuth))
+    {
+        JLOG(ctx.j.warn()) << "Borrower not authorized to hold asset";
+        return tecNO_AUTH;
+    }
+
     auto const vaultPseudo = vault->at(sfAccount);
 
     if (auto const ter = canAddHolding(ctx.view, asset))

@@ -1999,32 +1999,17 @@ class Loan_test : public beast::unit_test::suite
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
 
-                testcase("MPT successsful loan");
+                testcase("MPT unauthorized borrower, borrower submits");
                 env(set(borrower, broker.brokerID, principalRequest),
                     counterparty(lender),
                     sig(sfCounterpartySignature, lender),
-                    fee(env.current()->fees().base * 5));
-            },
-            [&, this](Env& env, BrokerInfo const& broker) {
-                using namespace loan;
-                Number const principalRequest = broker.asset(1'000).value();
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_AUTH});
 
-                testcase("IOU successsful loan");
-                env(set(borrower, broker.brokerID, principalRequest),
-                    counterparty(lender),
-                    sig(sfCounterpartySignature, lender),
-                    fee(env.current()->fees().base * 5));
-            });
-
-        testCase(
-            [&, this](Env& env, BrokerInfo const& broker) {
-                using namespace loan;
-                Number const principalRequest = broker.asset(1'000).value();
-
-                testcase("MPT unauthorized borrower");
-                env(set(borrower, broker.brokerID, principalRequest),
-                    counterparty(lender),
-                    sig(sfCounterpartySignature, lender),
+                testcase("MPT unauthorized borrower, lender submits");
+                env(set(lender, broker.brokerID, principalRequest),
+                    counterparty(borrower),
+                    sig(sfCounterpartySignature, borrower),
                     fee(env.current()->fees().base * 5),
                     ter{tecNO_AUTH});
             },
@@ -2032,10 +2017,17 @@ class Loan_test : public beast::unit_test::suite
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
 
-                testcase("IOU unauthorized borrower");
+                testcase("IOU unauthorized borrower, borrower submits");
                 env(set(borrower, broker.brokerID, principalRequest),
                     counterparty(lender),
                     sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_AUTH});
+
+                testcase("IOU unauthorized borrower, lender submits");
+                env(set(lender, broker.brokerID, principalRequest),
+                    counterparty(borrower),
+                    sig(sfCounterpartySignature, borrower),
                     fee(env.current()->fees().base * 5),
                     ter{tecNO_AUTH});
             },
@@ -2046,7 +2038,7 @@ class Loan_test : public beast::unit_test::suite
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
 
-                testcase("MPT authorized borrower");
+                testcase("MPT authorized borrower, borrower submits");
                 env(set(borrower, broker.brokerID, principalRequest),
                     counterparty(lender),
                     sig(sfCounterpartySignature, lender),
@@ -2056,10 +2048,33 @@ class Loan_test : public beast::unit_test::suite
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
 
-                testcase("IOU authorized borrower");
+                testcase("IOU authorized borrower, borrower submits");
                 env(set(borrower, broker.brokerID, principalRequest),
                     counterparty(lender),
                     sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5));
+            },
+            CaseArgs{.requireAuth = true, .authorizeBorrower = true});
+
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("MPT authorized borrower, lender submits");
+                env(set(lender, broker.brokerID, principalRequest),
+                    counterparty(borrower),
+                    sig(sfCounterpartySignature, borrower),
+                    fee(env.current()->fees().base * 5));
+            },
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("IOU authorized borrower, lender submits");
+                env(set(lender, broker.brokerID, principalRequest),
+                    counterparty(borrower),
+                    sig(sfCounterpartySignature, borrower),
                     fee(env.current()->fees().base * 5));
             },
             CaseArgs{.requireAuth = true, .authorizeBorrower = true});
