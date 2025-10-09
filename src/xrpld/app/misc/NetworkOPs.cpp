@@ -3840,7 +3840,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     // LCOV_EXCL_START
                     default: {
                         UNREACHABLE(
-                            "ripple::NetworkOPsImp::addAccountHistoryJob::"
+                            "ripple::NetworkOPsImp::addAccountHistoryJob : "
                             "getMoreTxns : invalid database type");
                         return {};
                     }
@@ -3907,7 +3907,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     {
                         // LCOV_EXCL_START
                         UNREACHABLE(
-                            "ripple::NetworkOPsImp::addAccountHistoryJob: "
+                            "ripple::NetworkOPsImp::addAccountHistoryJob : "
                             "getMoreTxns failed");
                         JLOG(m_journal.debug())
                             << "AccountHistory job for account "
@@ -3939,7 +3939,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         {
                             // LCOV_EXCL_START
                             UNREACHABLE(
-                                "ripple::NetworkOPsImp::addAccountHistoryJob: "
+                                "ripple::NetworkOPsImp::addAccountHistoryJob : "
                                 "getLedgerBySeq failed");
                             JLOG(m_journal.debug())
                                 << "AccountHistory job for account "
@@ -3954,7 +3954,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         {
                             // LCOV_EXCL_START
                             UNREACHABLE(
-                                "NetworkOPsImp::addAccountHistoryJob: "
+                                "NetworkOPsImp::addAccountHistoryJob : "
                                 "getSTransaction failed");
                             JLOG(m_journal.debug())
                                 << "AccountHistory job for account "
