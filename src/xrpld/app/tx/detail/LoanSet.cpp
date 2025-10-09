@@ -226,6 +226,17 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tecNO_AUTH;
     }
 
+    if (auto const originationFee = tx[~sfLoanOriginationFee];
+        originationFee && *originationFee != Number())
+    {
+        if (auto const err =
+                requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
+        {
+            JLOG(ctx.j.warn()) << "Broker not authorized to receive fee";
+            return tecNO_AUTH;
+        }
+    }
+
     auto const vaultPseudo = vault->at(sfAccount);
 
     if (auto const ter = canAddHolding(ctx.view, asset))
