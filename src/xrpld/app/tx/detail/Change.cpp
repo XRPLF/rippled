@@ -151,9 +151,11 @@ Change::doApply()
             return applyFee();
         case ttUNL_MODIFY:
             return applyUNLModify();
+        // LCOV_EXCL_START
         default:
             UNREACHABLE("ripple::Change::doApply : invalid transaction type");
             return tefFAILURE;
+            // LCOV_EXCL_STOP
     }
 }
 
