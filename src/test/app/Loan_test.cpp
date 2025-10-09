@@ -1902,6 +1902,170 @@ class Loan_test : public beast::unit_test::suite
     }
 
     void
+    testLoanSet()
+    {
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        struct CaseArgs
+        {
+            bool requireAuth = false;
+            bool authorizeBorrower = false;
+            int initialXRP = 1'000'000;
+        };
+
+        auto const testCase =
+            [&, this](
+                std::optional<std::function<void(Env&, BrokerInfo const&)>>
+                    mptTest,
+                std::optional<std::function<void(Env&, BrokerInfo const&)>>
+                    iouTest,
+                CaseArgs args = {}) {
+                Env env(*this, all);
+                env.fund(XRP(args.initialXRP), issuer, lender, borrower);
+                env.close();
+                if (args.requireAuth)
+                {
+                    env(fset(issuer, asfRequireAuth));
+                    env.close();
+                }
+
+                // We need two different asset types, MPT and IOU. Prepare MPT
+                // first
+                MPTTester mptt{env, issuer, mptInitNoFund};
+
+                auto const none = LedgerSpecificFlags(0);
+                mptt.create(
+                    {.flags = tfMPTCanTransfer | tfMPTCanLock |
+                         (args.requireAuth ? tfMPTRequireAuth : none)});
+                env.close();
+                PrettyAsset mptAsset = mptt.issuanceID();
+                mptt.authorize({.account = lender});
+                mptt.authorize({.account = borrower});
+                env.close();
+                if (args.requireAuth)
+                {
+                    mptt.authorize({.account = issuer, .holder = lender});
+                    if (args.authorizeBorrower)
+                        mptt.authorize({.account = issuer, .holder = borrower});
+                    env.close();
+                }
+
+                env(pay(issuer, lender, mptAsset(10'000'000)));
+                env.close();
+
+                // Prepare IOU
+                PrettyAsset const iouAsset = issuer[iouCurrency];
+                env(trust(lender, iouAsset(10'000'000)));
+                env(trust(borrower, iouAsset(10'000'000)));
+                env.close();
+                if (args.requireAuth)
+                {
+                    env(trust(issuer, iouAsset(0), lender, tfSetfAuth));
+                    env(pay(issuer, lender, iouAsset(10'000'000)));
+                    if (args.authorizeBorrower)
+                    {
+                        env(trust(issuer, iouAsset(0), borrower, tfSetfAuth));
+                        env(pay(issuer, borrower, iouAsset(10'000)));
+                    }
+                }
+                else
+                {
+                    env(pay(issuer, lender, iouAsset(10'000'000)));
+                    env(pay(issuer, borrower, iouAsset(10'000)));
+                }
+                env.close();
+
+                // Create vaults and loan brokers
+                std::array const assets{mptAsset, iouAsset};
+                std::vector<BrokerInfo> brokers;
+                for (auto const& asset : assets)
+                {
+                    brokers.emplace_back(
+                        createVaultAndBroker(env, asset, lender));
+                }
+
+                if (mptTest)
+                    (*mptTest)(env, brokers[0]);
+                if (iouTest)
+                    (*iouTest)(env, brokers[1]);
+            };
+
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("MPT successsful loan");
+                env(set(borrower, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5));
+            },
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("IOU successsful loan");
+                env(set(borrower, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5));
+            });
+
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("MPT unauthorized borrower");
+                env(set(borrower, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_AUTH});
+            },
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("IOU unauthorized borrower");
+                env(set(borrower, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_AUTH});
+            },
+            CaseArgs{.requireAuth = true});
+
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("MPT authorized borrower");
+                env(set(borrower, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5));
+            },
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("IOU authorized borrower");
+                env(set(borrower, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5));
+            },
+            CaseArgs{.requireAuth = true, .authorizeBorrower = true});
+    }
+
+    void
     testLifecycle()
     {
         testcase("Lifecycle");
@@ -2709,6 +2873,7 @@ public:
     {
         testDisabled();
         testSelfLoan();
+        testLoanSet();
         testLifecycle();
         testBatchBypassCounterparty();
         testWrongMaxDebtBehavior();
