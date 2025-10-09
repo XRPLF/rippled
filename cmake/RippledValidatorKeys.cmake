@@ -14,6 +14,7 @@ if (validator_keys)
     GIT_TAG        "${current_branch}"
   )
   FetchContent_MakeAvailable(validator_keys)
+  set_target_properties(validator-keys PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
   install(TARGETS validator-keys RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 endif ()
