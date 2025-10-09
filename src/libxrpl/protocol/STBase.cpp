@@ -112,7 +112,9 @@ void
 STBase::add(Serializer& s) const
 {
     // Should never be called
+    // LCOV_EXCL_START
     UNREACHABLE("ripple::STBase::add : not implemented");
+    // LCOV_EXCL_STOP
 }
 
 bool
