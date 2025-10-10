@@ -10,7 +10,7 @@ on:
   push:
     branches:
       - develop
-      - release
+      - release*
       - master
     paths:
       # These paths are unique to `on-trigger.yml`.
