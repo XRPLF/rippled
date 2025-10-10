@@ -1479,7 +1479,12 @@ ValidMPTIssuance::visitEntry(
         if (isDelete)
             mptokensDeleted_++;
         else if (!before)
+        {
             mptokensCreated_++;
+            MPTIssue const mptIssue{after->at(sfMPTokenIssuanceID)};
+            if (mptIssue.getIssuer() == after->at(sfAccount))
+                mptCreatedByIssuer_ = true;
+        }
     }
 }
 
@@ -1493,6 +1498,15 @@ ValidMPTIssuance::finalize(
 {
     if (result == tesSUCCESS)
     {
+        if (mptCreatedByIssuer_)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: MPT authorize submitted by issuer "
+                   "succeeded but created mptokens";
+            return false;
+        }
+
+        auto const txnType = tx.getTxnType();
         if (hasPrivilege(tx, createMPTIssuance))
         {
             if (mptIssuancesCreated_ == 0)
@@ -1540,7 +1554,7 @@ ValidMPTIssuance::finalize(
         // ttESCROW_FINISH may authorize an MPT, but it can't have the
         // mayAuthorizeMPT privilege, because that may cause
         // non-amendment-gated side effects.
-        bool const enforceEscrowFinish = (tx.getTxnType() == ttESCROW_FINISH) &&
+        bool const enforceEscrowFinish = (txnType == ttESCROW_FINISH) &&
             (view.rules().enabled(featureSingleAssetVault) ||
              lendingProtocolEnabled);
         if (hasPrivilege(tx, mustAuthorizeMPT | mayAuthorizeMPT) ||
@@ -1591,7 +1605,7 @@ ValidMPTIssuance::finalize(
 
             return true;
         }
-        if (tx.getTxnType() == ttESCROW_FINISH)
+        if (txnType == ttESCROW_FINISH)
         {
             // ttESCROW_FINISH may authorize an MPT, but it can't have the
             // mayAuthorizeMPT privilege, because that may cause
