@@ -1228,6 +1228,8 @@ addEmptyHolding(
         return tesSUCCESS;
 
     auto const& issuerId = issue.getIssuer();
+    if (issuerId == accountID)
+        return tecNO_PERMISSION;
     auto const& currency = issue.currency;
     if (isGlobalFrozen(view, issuerId))
         return tecFROZEN;  // LCOV_EXCL_LINE
@@ -1281,6 +1283,8 @@ addEmptyHolding(
     auto const mpt = view.peek(keylet::mptIssuance(mptID));
     if (!mpt)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+    if (mpt->getAccountID(sfIssuer) == accountID)
+        return tecNO_PERMISSION;
     if (mpt->isFlag(lsfMPTLocked))
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (view.peek(keylet::mptoken(mptID, accountID)))
@@ -1348,6 +1352,12 @@ authorizeMPToken(
         if (priorBalance < reserveCreate)
             return tecINSUFFICIENT_RESERVE;
 
+        // Defensive check before we attempt to create MPToken for the issuer
+        auto const mpt = view.read(keylet::mptIssuance(mptIssuanceID));
+        if (!mpt)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        if (mpt->getAccountID(sfIssuer) == account)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
         auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
         auto mptoken = std::make_shared<SLE>(mptokenKey);
         if (auto ter = dirLink(view, account, mptoken))
@@ -1423,6 +1433,8 @@ trustCreate(
 
     auto const& uLowAccountID = !bSrcHigh ? uSrcAccountID : uDstAccountID;
     auto const& uHighAccountID = bSrcHigh ? uSrcAccountID : uDstAccountID;
+    if (uLowAccountID == uHighAccountID)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleRippleState = std::make_shared<SLE>(ltRIPPLE_STATE, uIndex);
     view.insert(sleRippleState);
