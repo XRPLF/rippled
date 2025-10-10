@@ -9,9 +9,9 @@ name: Trigger
 on:
   push:
     branches:
-      - develop
-      - release
-      - master
+      - "develop"
+      - "release*"
+      - "master"
     paths:
       # These paths are unique to `on-trigger.yml`.
       - ".github/workflows/reusable-check-missing-commits.yml"
