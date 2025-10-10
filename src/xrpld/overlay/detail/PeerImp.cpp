@@ -2249,10 +2249,12 @@ PeerImp::onValidatorListMessage(
         case ListDisposition::invalid:
         case ListDisposition::unsupported_version:
             break;
+        // LCOV_EXCL_START
         default:
             UNREACHABLE(
                 "ripple::PeerImp::onValidatorListMessage : invalid best list "
                 "disposition");
+            // LCOV_EXCL_STOP
     }
 
     // Charge based on the worst result
@@ -2293,10 +2295,12 @@ PeerImp::onValidatorListMessage(
             // If it happens frequently, that's probably bad.
             fee_.update(Resource::feeInvalidData, "version");
             break;
+        // LCOV_EXCL_START
         default:
             UNREACHABLE(
                 "ripple::PeerImp::onValidatorListMessage : invalid worst list "
                 "disposition");
+            // LCOV_EXCL_STOP
     }
 
     // Log based on all the results.
@@ -2353,10 +2357,12 @@ PeerImp::onValidatorListMessage(
                     << "Ignored " << count << "invalid " << messageType
                     << "(s) from peer " << remote_address_;
                 break;
+            // LCOV_EXCL_START
             default:
                 UNREACHABLE(
                     "ripple::PeerImp::onValidatorListMessage : invalid list "
                     "disposition");
+                // LCOV_EXCL_STOP
         }
     }
 }

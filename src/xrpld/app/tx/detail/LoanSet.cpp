@@ -466,6 +466,10 @@ LoanSet::doApply()
     // Update the balances in the vault
     vaultSle->at(sfAssetsAvailable) -= principalRequested;
     vaultSle->at(sfAssetsTotal) += loanInterestToVault;
+    XRPL_ASSERT_PARTS(
+        *vaultSle->at(sfAssetsAvailable) <= *vaultSle->at(sfAssetsTotal),
+        "ripple::LoanSet::doApply",
+        "assets available must not be greater than assets outstanding");
     view.update(vaultSle);
 
     // Update the balances in the loan broker

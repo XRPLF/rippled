@@ -184,6 +184,7 @@ LoanManage::defaultLoan(
     {
         // Decrease the Total Value of the Vault:
         auto vaultAssetsTotalProxy = vaultSle->at(sfAssetsTotal);
+        auto vaultAssetsAvailableProxy = vaultSle->at(sfAssetsAvailable);
         if (vaultAssetsTotalProxy < vaultDefaultAmount)
         {
             // LCOV_EXCL_START
@@ -195,7 +196,40 @@ LoanManage::defaultLoan(
         vaultAssetsTotalProxy -= vaultDefaultAmount;
         // Increase the Asset Available of the Vault by liquidated First-Loss
         // Capital and any unclaimed funds amount:
-        vaultSle->at(sfAssetsAvailable) += returnToVault;
+        vaultAssetsAvailableProxy += returnToVault;
+        if (*vaultAssetsAvailableProxy > *vaultAssetsTotalProxy &&
+            !vaultAsset.native() && vaultAsset.holds<Issue>())
+        {
+            auto const difference =
+                vaultAssetsAvailableProxy - vaultAssetsTotalProxy;
+            JLOG(j.debug())
+                << "Vault assets available: " << *vaultAssetsAvailableProxy
+                << "(" << vaultAssetsAvailableProxy->value().exponent()
+                << "), Total: " << *vaultAssetsTotalProxy << "("
+                << vaultAssetsTotalProxy->value().exponent()
+                << "), Difference: " << difference << "("
+                << difference.exponent() << ")";
+            if (vaultAssetsAvailableProxy->value().exponent() -
+                    difference.exponent() >
+                13)
+            {
+                // If the difference is dust, bring the total up to match
+                // the available
+                JLOG(j.debug())
+                    << "Difference between vault assets available and total is "
+                       "dust. Set both to the larger value.";
+                vaultAssetsTotalProxy = vaultAssetsAvailableProxy;
+            }
+        }
+        if (*vaultAssetsAvailableProxy > *vaultAssetsTotalProxy)
+        {
+            JLOG(j.warn()) << "Vault assets available must not be greater "
+                              "than assets outstanding. Available: "
+                           << *vaultAssetsAvailableProxy
+                           << ", Total: " << *vaultAssetsTotalProxy;
+            return tecLIMIT_EXCEEDED;
+        }
+
         // The loss has been realized
         if (loanSle->isFlag(lsfLoanImpaired))
         {

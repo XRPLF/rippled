@@ -275,6 +275,10 @@ LoanPay::doApply()
 
     vaultSle->at(sfAssetsAvailable) += totalPaidToVault;
     vaultSle->at(sfAssetsTotal) += vaultValueChange;
+    XRPL_ASSERT_PARTS(
+        *vaultSle->at(sfAssetsAvailable) <= *vaultSle->at(sfAssetsTotal),
+        "ripple::LoanPay::doApply",
+        "assets available must not be greater than assets outstanding");
 
     // Move funds
     STAmount const paidToVault(asset, totalPaidToVault);

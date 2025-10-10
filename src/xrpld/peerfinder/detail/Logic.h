@@ -976,11 +976,13 @@ public:
                                         << slot->remote_endpoint();
                 break;
 
+            // LCOV_EXCL_START
             default:
                 UNREACHABLE(
                     "ripple::PeerFinder::Logic::on_closed : invalid slot "
                     "state");
                 break;
+                // LCOV_EXCL_STOP
         }
     }
 
