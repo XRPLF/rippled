@@ -118,7 +118,7 @@ public:
     }
 
     void
-    open(bool createIfMissing) override
+    open(bool) override
     {
         db_ = &memoryFactory->open(name_);
     }
