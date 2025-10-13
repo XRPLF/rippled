@@ -237,11 +237,11 @@ TxMeta::getAsObject() const
     metaData.setFieldU8(sfTransactionResult, result);
     metaData.setFieldU32(sfTransactionIndex, index);
     metaData.emplace_back(nodes);
-    if (hasDeliveredAmount())
-        metaData.setFieldAmount(sfDeliveredAmount, getDeliveredAmount());
+    if (deliveredAmount.has_value())
+        metaData.setFieldAmount(sfDeliveredAmount, *deliveredAmount);
 
-    if (hasParentBatchId())
-        metaData.setFieldH256(sfParentBatchID, getParentBatchId());
+    if (parentBatchID.has_value())
+        metaData.setFieldH256(sfParentBatchID, *parentBatchID);
 
     return metaData;
 }

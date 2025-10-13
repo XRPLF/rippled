@@ -115,16 +115,10 @@ public:
     setAdditionalFields(STObject const& obj)
     {
         if (obj.isFieldPresent(sfDeliveredAmount))
-            setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
+            deliveredAmount = obj.getFieldAmount(sfDeliveredAmount);
 
         if (obj.isFieldPresent(sfParentBatchID))
-            setParentBatchId(obj.getFieldH256(sfParentBatchID));
-    }
-
-    void
-    setDeliveredAmount(STAmount const& delivered)
-    {
-        deliveredAmount = delivered;
+            parentBatchID = obj.getFieldH256(sfParentBatchID);
     }
 
     STAmount
@@ -140,27 +134,6 @@ public:
     hasDeliveredAmount() const
     {
         return deliveredAmount.has_value();
-    }
-
-    void
-    setParentBatchId(uint256 const& parentBatchID)
-    {
-        parentBatchID = parentBatchID;
-    }
-
-    uint256
-    getParentBatchId() const
-    {
-        XRPL_ASSERT(
-            hasParentBatchId(),
-            "ripple::TxMeta::getParentBatchId : non-null batch id");
-        return *parentBatchID;
-    }
-
-    bool
-    hasParentBatchId() const
-    {
-        return parentBatchID.has_value();
     }
 
 private:
