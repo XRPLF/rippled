@@ -1360,7 +1360,14 @@ authorizeMPToken(
         if (!mpt)
             return tecINTERNAL;  // LCOV_EXCL_LINE
         if (mpt->getAccountID(sfIssuer) == account)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("ripple::authorizeMPToken : MPToken to issuer");
+            if (view.rules().enabled(featureLendingProtocol))
+                return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
         auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
         auto mptoken = std::make_shared<SLE>(mptokenKey);
         if (auto ter = dirLink(view, account, mptoken))
@@ -1437,7 +1444,13 @@ trustCreate(
     auto const& uLowAccountID = !bSrcHigh ? uSrcAccountID : uDstAccountID;
     auto const& uHighAccountID = bSrcHigh ? uSrcAccountID : uDstAccountID;
     if (uLowAccountID == uHighAccountID)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("ripple::trustCreate : trust line to self");
+        if (view.rules().enabled(featureLendingProtocol))
+            return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto const sleRippleState = std::make_shared<SLE>(ltRIPPLE_STATE, uIndex);
     view.insert(sleRippleState);
