@@ -58,9 +58,11 @@ to_string(TableType type)
             return "Transactions";
         case TableType::AccountTransactions:
             return "AccountTransactions";
+        // LCOV_EXCL_START
         default:
             UNREACHABLE("ripple::detail::to_string : invalid TableType");
             return "Unknown";
+            // LCOV_EXCL_STOP
     }
 }
 
@@ -202,18 +204,22 @@ saveValidatedLedger(
 
     if (!ledger->info().accountHash.isNonZero())
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "AH is zero: " << getJson({*ledger, {}});
         UNREACHABLE("ripple::detail::saveValidatedLedger : zero account hash");
+        // LCOV_EXCL_STOP
     }
 
     if (ledger->info().accountHash != ledger->stateMap().getHash().as_uint256())
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "sAL: " << ledger->info().accountHash
                         << " != " << ledger->stateMap().getHash();
         JLOG(j.fatal()) << "saveAcceptedLedger: seq=" << seq
                         << ", current=" << current;
         UNREACHABLE(
             "ripple::detail::saveValidatedLedger : mismatched account hash");
+        // LCOV_EXCL_STOP
     }
 
     XRPL_ASSERT(

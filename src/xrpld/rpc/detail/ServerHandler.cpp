@@ -507,10 +507,12 @@ ServerHandler::processSession(
     }
     catch (std::exception const& ex)
     {
+        // LCOV_EXCL_START
         jr[jss::result] = RPC::make_error(rpcINTERNAL);
         JLOG(m_journal.error())
             << "Exception while processing WS: " << ex.what() << "\n"
             << "Input JSON: " << Json::Compact{Json::Value{jv}};
+        // LCOV_EXCL_STOP
     }
 
     is->getConsumer().charge(loadType);
@@ -904,10 +906,12 @@ ServerHandler::processRequest(
         }
         catch (std::exception const& ex)
         {
+            // LCOV_EXCL_START
             result = RPC::make_error(rpcINTERNAL);
             JLOG(m_journal.error()) << "Internal error : " << ex.what()
                                     << " when processing request: "
                                     << Json::Compact{Json::Value{params}};
+            // LCOV_EXCL_STOP
         }
 
         auto end = std::chrono::system_clock::now();
