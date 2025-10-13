@@ -32,9 +32,12 @@ doFee(RPC::JsonContext& context)
     auto result = context.app.getTxQ().doRPC(context.app);
     if (result.type() == Json::objectValue)
         return result;
+
+    // LCOV_EXCL_START
     UNREACHABLE("ripple::doFee : invalid result type");
     RPC::inject_error(rpcINTERNAL, context.params);
     return context.params;
+    // LCOV_EXCL_STOP
 }
 
 }  // namespace ripple

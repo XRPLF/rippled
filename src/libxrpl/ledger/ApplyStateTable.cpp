@@ -259,9 +259,11 @@ ApplyStateTable::apply(
             }
             else
             {
+                // LCOV_EXCL_START
                 UNREACHABLE(
                     "ripple::detail::ApplyStateTable::apply : unsupported "
                     "operation type");
+                // LCOV_EXCL_STOP
             }
         }
 
