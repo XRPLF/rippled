@@ -45,25 +45,25 @@ TxMeta::TxMeta(
     std::uint32_t ledger,
     T const& data,
     CtorHelper)
-    : mTransactionID(txid), mLedger(ledger), mNodes(sfAffectedNodes, 32)
+    : transactionID(txid), ledgerSqn(ledger), nodes(sfAffectedNodes, 32)
 {
     SerialIter sit(makeSlice(data));
 
     STObject obj(sit, sfMetadata);
-    mResult = obj.getFieldU8(sfTransactionResult);
-    mIndex = obj.getFieldU32(sfTransactionIndex);
-    mNodes = *dynamic_cast<STArray*>(&obj.getField(sfAffectedNodes));
+    result = obj.getFieldU8(sfTransactionResult);
+    index = obj.getFieldU32(sfTransactionIndex);
+    nodes = *dynamic_cast<STArray*>(&obj.getField(sfAffectedNodes));
 
     setAdditionalFields(obj);
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
-    : mTransactionID(txid)
-    , mLedger(ledger)
-    , mNodes(obj.getFieldArray(sfAffectedNodes))
+    : transactionID(txid)
+    , ledgerSqn(ledger)
+    , nodes(obj.getFieldArray(sfAffectedNodes))
 {
-    mResult = obj.getFieldU8(sfTransactionResult);
-    mIndex = obj.getFieldU32(sfTransactionIndex);
+    result = obj.getFieldU8(sfTransactionResult);
+    index = obj.getFieldU32(sfTransactionIndex);
 
     auto affectedNodes =
         dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
@@ -71,7 +71,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
         affectedNodes,
         "ripple::TxMeta::TxMeta(STObject) : type cast succeeded");
     if (affectedNodes)
-        mNodes = *affectedNodes;
+        nodes = *affectedNodes;
 
     setAdditionalFields(obj);
 }
@@ -85,14 +85,14 @@ TxMeta::TxMeta(
     uint256 const& transactionID,
     std::uint32_t ledger,
     std::optional<uint256> parentBatchId)
-    : mTransactionID(transactionID)
-    , mLedger(ledger)
-    , mIndex(static_cast<std::uint32_t>(-1))
-    , mResult(255)
-    , mParentBatchId(parentBatchId)
-    , mNodes(sfAffectedNodes)
+    : transactionID(transactionID)
+    , ledgerSqn(ledger)
+    , index(static_cast<std::uint32_t>(-1))
+    , result(255)
+    , parentBatchID(parentBatchId)
+    , nodes(sfAffectedNodes)
 {
-    mNodes.reserve(32);
+    nodes.reserve(32);
 }
 
 void
@@ -102,7 +102,7 @@ TxMeta::setAffectedNode(
     std::uint16_t nodeType)
 {
     // make sure the node exists and force its type
-    for (auto& n : mNodes)
+    for (auto& n : nodes)
     {
         if (n.getFieldH256(sfLedgerIndex) == node)
         {
@@ -112,8 +112,8 @@ TxMeta::setAffectedNode(
         }
     }
 
-    mNodes.push_back(STObject(type));
-    STObject& obj = mNodes.back();
+    nodes.push_back(STObject(type));
+    STObject& obj = nodes.back();
 
     XRPL_ASSERT(
         obj.getFName() == type,
@@ -130,7 +130,7 @@ TxMeta::getAffectedAccounts() const
 
     // This code should match the behavior of the JS method:
     // Meta#getAffectedAccounts
-    for (auto const& it : mNodes)
+    for (auto const& it : nodes)
     {
         int index = it.getFieldIndex(
             (it.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
@@ -197,13 +197,13 @@ STObject&
 TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 {
     uint256 index = node->key();
-    for (auto& n : mNodes)
+    for (auto& n : nodes)
     {
         if (n.getFieldH256(sfLedgerIndex) == index)
             return n;
     }
-    mNodes.push_back(STObject(type));
-    STObject& obj = mNodes.back();
+    nodes.push_back(STObject(type));
+    STObject& obj = nodes.back();
 
     XRPL_ASSERT(
         obj.getFName() == type,
@@ -217,7 +217,7 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 STObject&
 TxMeta::getAffectedNode(uint256 const& node)
 {
-    for (auto& n : mNodes)
+    for (auto& n : nodes)
     {
         if (n.getFieldH256(sfLedgerIndex) == node)
             return n;
@@ -225,7 +225,7 @@ TxMeta::getAffectedNode(uint256 const& node)
     // LCOV_EXCL_START
     UNREACHABLE("ripple::TxMeta::getAffectedNode(uint256) : node not found");
     Throw<std::runtime_error>("Affected node not found");
-    return *(mNodes.begin());  // Silence compiler warning.
+    return *(nodes.begin());  // Silence compiler warning.
     // LCOV_EXCL_STOP
 }
 
@@ -233,10 +233,10 @@ STObject
 TxMeta::getAsObject() const
 {
     STObject metaData(sfTransactionMetaData);
-    XRPL_ASSERT(mResult != 255, "ripple::TxMeta::getAsObject : result is set");
-    metaData.setFieldU8(sfTransactionResult, mResult);
-    metaData.setFieldU32(sfTransactionIndex, mIndex);
-    metaData.emplace_back(mNodes);
+    XRPL_ASSERT(result != 255, "ripple::TxMeta::getAsObject : result is set");
+    metaData.setFieldU8(sfTransactionResult, result);
+    metaData.setFieldU32(sfTransactionIndex, index);
+    metaData.emplace_back(nodes);
     if (hasDeliveredAmount())
         metaData.setFieldAmount(sfDeliveredAmount, getDeliveredAmount());
 
@@ -249,13 +249,13 @@ TxMeta::getAsObject() const
 void
 TxMeta::addRaw(Serializer& s, TER result, std::uint32_t index)
 {
-    mResult = TERtoInt(result);
-    mIndex = index;
+    result = TERtoInt(result);
+    index = index;
     XRPL_ASSERT(
-        (mResult == 0) || ((mResult > 100) && (mResult <= 255)),
+        (result == 0) || ((result > 100) && (result <= 255)),
         "ripple::TxMeta::addRaw : valid TER input");
 
-    mNodes.sort([](STObject const& o1, STObject const& o2) {
+    nodes.sort([](STObject const& o1, STObject const& o2) {
         return o1.getFieldH256(sfLedgerIndex) < o2.getFieldH256(sfLedgerIndex);
     });
 

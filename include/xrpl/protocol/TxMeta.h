@@ -49,34 +49,34 @@ public:
     TxMeta(
         uint256 const& transactionID,
         std::uint32_t ledger,
-        std::optional<uint256> parentBatchId = std::nullopt);
+        std::optional<uint256> parentBatchID = std::nullopt);
     TxMeta(uint256 const& txID, std::uint32_t ledger, Blob const&);
     TxMeta(uint256 const& txID, std::uint32_t ledger, STObject const&);
 
     uint256 const&
     getTxID() const
     {
-        return mTransactionID;
+        return transactionID;
     }
     std::uint32_t
     getLgrSeq() const
     {
-        return mLedger;
+        return ledgerSqn;
     }
     int
     getResult() const
     {
-        return mResult;
+        return result;
     }
     TER
     getResultTER() const
     {
-        return TER::fromInt(mResult);
+        return TER::fromInt(result);
     }
     std::uint32_t
     getIndex() const
     {
-        return mIndex;
+        return index;
     }
 
     void
@@ -103,12 +103,12 @@ public:
     STArray&
     getNodes()
     {
-        return (mNodes);
+        return (nodes);
     }
     STArray const&
     getNodes() const
     {
-        return (mNodes);
+        return (nodes);
     }
 
     void
@@ -124,7 +124,7 @@ public:
     void
     setDeliveredAmount(STAmount const& delivered)
     {
-        mDelivered = delivered;
+        deliveredAmount = delivered;
     }
 
     STAmount
@@ -133,19 +133,19 @@ public:
         XRPL_ASSERT(
             hasDeliveredAmount(),
             "ripple::TxMeta::getDeliveredAmount : non-null delivered amount");
-        return *mDelivered;
+        return *deliveredAmount;
     }
 
     bool
     hasDeliveredAmount() const
     {
-        return static_cast<bool>(mDelivered);
+        return static_cast<bool>(deliveredAmount);
     }
 
     void
-    setParentBatchId(uint256 const& parentBatchId)
+    setParentBatchId(uint256 const& parentBatchID)
     {
-        mParentBatchId = parentBatchId;
+        parentBatchID = parentBatchID;
     }
 
     uint256
@@ -154,25 +154,25 @@ public:
         XRPL_ASSERT(
             hasParentBatchId(),
             "ripple::TxMeta::getParentBatchId : non-null batch id");
-        return *mParentBatchId;
+        return *parentBatchID;
     }
 
     bool
     hasParentBatchId() const
     {
-        return static_cast<bool>(mParentBatchId);
+        return static_cast<bool>(parentBatchID);
     }
 
 private:
-    uint256 mTransactionID;
-    std::uint32_t mLedger;
-    std::uint32_t mIndex;
-    int mResult;
+    uint256 transactionID;
+    std::uint32_t ledgerSqn;
+    std::uint32_t index;
+    int result;
 
-    std::optional<STAmount> mDelivered;
-    std::optional<uint256> mParentBatchId;
+    std::optional<STAmount> deliveredAmount;
+    std::optional<uint256> parentBatchID;
 
-    STArray mNodes;
+    STArray nodes;
 };
 
 }  // namespace ripple
