@@ -38,6 +38,7 @@ struct MPTCreateArgs
     std::optional<std::uint16_t> transferFee{};
     std::optional<Slice> const& metadata{};
     std::optional<uint256> domainId{};
+    std::optional<std::uint32_t> mutableFlags{};
 };
 
 class MPTokenIssuanceCreate : public Transactor
@@ -48,6 +49,12 @@ public:
     explicit MPTokenIssuanceCreate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
+
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);

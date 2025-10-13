@@ -59,7 +59,8 @@ TxFormats::TxFormats()
 #undef TRANSACTION
 
 #define UNWRAP(...) __VA_ARGS__
-#define TRANSACTION(tag, value, name, delegatable, fields) \
+#define TRANSACTION(                                              \
+    tag, value, name, delegatable, amendment, privileges, fields) \
     add(jss::name, tag, UNWRAP fields, getCommonFields());
 
 #include <xrpl/protocol/detail/transactions.macro>

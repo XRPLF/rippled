@@ -20,9 +20,9 @@
 #include <xrpld/app/paths/Credit.h>
 #include <xrpld/app/paths/detail/StepChecks.h>
 #include <xrpld/app/paths/detail/Steps.h>
-#include <xrpld/ledger/PaymentSandbox.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
@@ -931,10 +931,12 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         {
             if (!ctx.prevStep)
             {
+                // LCOV_EXCL_START
                 UNREACHABLE(
                     "ripple::DirectStepI::check : prev seen book without a "
                     "prev step");
                 return temBAD_PATH_LOOP;
+                // LCOV_EXCL_STOP
             }
 
             // This is OK if the previous step is a book step that outputs this

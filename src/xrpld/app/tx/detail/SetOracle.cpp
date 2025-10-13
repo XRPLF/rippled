@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/SetOracle.h>
-#include <xrpld/ledger/Sandbox.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -39,15 +39,6 @@ tokenPairKey(STObject const& pair)
 NotTEC
 SetOracle::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePriceOracle))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
     auto const& dataSeries = ctx.tx.getFieldArray(sfPriceDataSeries);
     if (dataSeries.empty())
         return temARRAY_EMPTY;
@@ -64,7 +55,7 @@ SetOracle::preflight(PreflightContext const& ctx)
         isInvalidLength(sfAssetClass, maxOracleSymbolClass))
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -271,6 +262,11 @@ SetOracle::doApply()
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);
+        if (!sle->isFieldPresent(sfOracleDocumentID) &&
+            ctx_.view().rules().enabled(fixIncludeKeyletFields))
+        {
+            (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
+        }
 
         auto const newCount = pairs.size() > 5 ? 2 : 1;
         auto const adjust = newCount - oldCount;
@@ -285,6 +281,10 @@ SetOracle::doApply()
 
         sle = std::make_shared<SLE>(oracleID);
         sle->setAccountID(sfOwner, ctx_.tx.getAccountID(sfAccount));
+        if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+        {
+            (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
+        }
         sle->setFieldVL(sfProvider, ctx_.tx[sfProvider]);
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);

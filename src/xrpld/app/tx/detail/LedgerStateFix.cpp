@@ -19,8 +19,8 @@
 
 #include <xrpld/app/tx/detail/LedgerStateFix.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -30,15 +30,6 @@ namespace ripple {
 NotTEC
 LedgerStateFix::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(fixNFTokenPageLinks))
-        return temDISABLED;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     switch (ctx.tx[sfLedgerFixType])
     {
         case FixType::nfTokenPageLink:
@@ -50,7 +41,7 @@ LedgerStateFix::preflight(PreflightContext const& ctx)
             return tefINVALID_LEDGER_FIX_TYPE;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 XRPAmount
@@ -58,7 +49,7 @@ LedgerStateFix::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // The fee required for LedgerStateFix is one owner reserve, just like
     // the fee for AccountDelete.
-    return view.fees().increment;
+    return calculateOwnerReserveFee(view, tx);
 }
 
 TER
@@ -76,7 +67,7 @@ LedgerStateFix::preclaim(PreclaimContext const& ctx)
     }
 
     // preflight is supposed to verify that only valid FixTypes get to preclaim.
-    return tecINTERNAL;
+    return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
 TER
@@ -92,7 +83,7 @@ LedgerStateFix::doApply()
     }
 
     // preflight is supposed to verify that only valid FixTypes get to doApply.
-    return tecINTERNAL;
+    return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
 }  // namespace ripple

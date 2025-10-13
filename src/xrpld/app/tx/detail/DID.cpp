@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/DID.h>
-#include <xrpld/ledger/ApplyView.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -45,15 +45,6 @@ namespace ripple {
 NotTEC
 DIDSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureDID))
-        return temDISABLED;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     if (!ctx.tx.isFieldPresent(sfURI) &&
         !ctx.tx.isFieldPresent(sfDIDDocument) && !ctx.tx.isFieldPresent(sfData))
         return temEMPTY_DID;
@@ -74,7 +65,7 @@ DIDSet::preflight(PreflightContext const& ctx)
         isTooLong(sfData, maxDIDAttestationLength))
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -85,7 +76,7 @@ addSLE(
 {
     auto const sleAccount = ctx.view().peek(keylet::account(owner));
     if (!sleAccount)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check reserve availability for new object creation
     {
@@ -105,7 +96,7 @@ addSLE(
         auto page = ctx.view().dirInsert(
             keylet::ownerDir(owner), sle->key(), describeOwnerDir(owner));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
     adjustOwnerCount(ctx.view(), sleAccount, 1, ctx.journal);
@@ -174,16 +165,7 @@ DIDSet::doApply()
 NotTEC
 DIDDelete::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureDID))
-        return temDISABLED;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -207,13 +189,15 @@ DIDDelete::deleteSLE(
     if (!view.dirRemove(
             keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete DID Token from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     auto const sleOwner = view.peek(keylet::account(owner));
     if (!sleOwner)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     adjustOwnerCount(view, sleOwner, -1, j);
     view.update(sleOwner);

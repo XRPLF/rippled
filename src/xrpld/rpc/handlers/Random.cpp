@@ -51,7 +51,7 @@ doRandom(RPC::JsonContext& context)
     }
     catch (std::exception const&)
     {
-        return rpcError(rpcINTERNAL);
+        return rpcError(rpcINTERNAL);  // LCOV_EXCL_LINE
     }
 }
 

@@ -1,0 +1,69 @@
+name: Test rippled
+
+on:
+  workflow_call:
+    inputs:
+      verify_voidstar:
+        description: "Whether to verify the presence of voidstar instrumentation."
+        required: true
+        type: boolean
+      run_tests:
+        description: "Whether to run unit tests"
+        required: true
+        type: boolean
+
+      runs_on:
+        description: Runner to run the job on as a JSON string
+        required: true
+        type: string
+      image:
+        description: "The image to run in (leave empty to run natively)"
+        required: true
+        type: string
+
+      config_name:
+        description: "The name of the configuration."
+        required: true
+        type: string
+
+jobs:
+  test:
+    name: Test ${{ inputs.config_name }}
+    runs-on: ${{ fromJSON(inputs.runs_on) }}
+    container: ${{ inputs.image != '' && inputs.image || null }}
+    steps:
+      - name: Download rippled artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: rippled-${{ inputs.config_name }}
+
+      - name: Make binary executable (Linux and macOS)
+        shell: bash
+        if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
+        run: |
+          chmod +x ./rippled
+
+      - name: Check linking (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        shell: bash
+        run: |
+          ldd ./rippled
+          if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+            echo 'The binary is statically linked.'
+          else
+            echo 'The binary is dynamically linked.'
+            exit 1
+          fi
+
+      - name: Verifying presence of instrumentation
+        if: ${{ inputs.verify_voidstar }}
+        shell: bash
+        run: |
+          ./rippled --version | grep libvoidstar
+
+      - name: Test the binary
+        if: ${{ inputs.run_tests }}
+        shell: bash
+        run: |
+          ./rippled --unittest --unittest-jobs $(nproc)
+          ctest -j $(nproc) --output-on-failure

@@ -18,11 +18,11 @@
 //==============================================================================
 
 #include <xrpld/app/paths/TrustLine.h>
-#include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
@@ -193,8 +193,10 @@ doAccountLines(RPC::JsonContext& context)
                     std::shared_ptr<SLE const> const& sleCur) {
                     if (!sleCur)
                     {
+                        // LCOV_EXCL_START
                         UNREACHABLE("ripple::doAccountLines : null SLE");
                         return false;
+                        // LCOV_EXCL_STOP
                     }
 
                     if (++count == limit)

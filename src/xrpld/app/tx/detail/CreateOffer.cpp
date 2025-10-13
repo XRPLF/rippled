@@ -21,10 +21,10 @@
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
-#include <xrpld/ledger/PaymentSandbox.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
@@ -43,29 +43,35 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
 }
 
-NotTEC
-CreateOffer::preflight(PreflightContext const& ctx)
+bool
+CreateOffer::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfDomainID) &&
         !ctx.rules.enabled(featurePermissionedDEX))
-        return temDISABLED;
+        return false;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+    return true;
+}
 
+std::uint32_t
+CreateOffer::getFlagsMask(PreflightContext const& ctx)
+{
+    // The tfOfferCreateMask is built assuming that PermissionedDEX is
+    // enabled
+    if (ctx.rules.enabled(featurePermissionedDEX))
+        return tfOfferCreateMask;
+    // If PermissionedDEX is not enabled, add tfHybrid to the mask,
+    // indicating it is not allowed.
+    return tfOfferCreateMask | tfHybrid;
+}
+
+NotTEC
+CreateOffer::preflight(PreflightContext const& ctx)
+{
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
     std::uint32_t const uTxFlags = tx.getFlags();
-
-    if (uTxFlags & tfOfferCreateMask)
-    {
-        JLOG(j.debug()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
-
-    if (!ctx.rules.enabled(featurePermissionedDEX) && tx.isFlag(tfHybrid))
-        return temINVALID_FLAG;
 
     if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
         return temINVALID_FLAG;
@@ -136,7 +142,7 @@ CreateOffer::preflight(PreflightContext const& ctx)
         return temBAD_ISSUER;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -842,9 +848,11 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     if (!ownerNode)
     {
+        // LCOV_EXCL_START
         JLOG(j_.debug())
             << "final result: failed to add offer to owner's directory";
         return {tecDIR_FULL, true};
+        // LCOV_EXCL_STOP
     }
 
     // Update owner count.
@@ -888,8 +896,10 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     if (!bookNode)
     {
+        // LCOV_EXCL_START
         JLOG(j_.debug()) << "final result: failed to add offer to book";
         return {tecDIR_FULL, true};
+        // LCOV_EXCL_STOP
     }
 
     auto sleOffer = std::make_shared<SLE>(offer_index);

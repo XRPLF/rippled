@@ -49,6 +49,16 @@ struct disabled_t
 };
 static disabled_t const disabled;
 
+/** Used for fee() calls that use an owner reserve increment */
+struct increment_t
+{
+    increment_t()
+    {
+    }
+};
+
+static increment_t const increment;
+
 }  // namespace jtx
 
 }  // namespace test

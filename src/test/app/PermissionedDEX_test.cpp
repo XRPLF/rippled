@@ -22,11 +22,11 @@
 #include <test/jtx/AMMTest.h>
 
 #include <xrpld/app/tx/detail/PermissionedDomainSet.h>
-#include <xrpld/ledger/ApplyViewImpl.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>

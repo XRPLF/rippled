@@ -233,7 +233,7 @@ public:
         JobQueue& job_queue,
         LedgerMaster& ledgerMaster,
         ValidatorKeys const& validatorKeys,
-        boost::asio::io_service& io_svc,
+        boost::asio::io_context& io_svc,
         beast::Journal journal,
         beast::insight::Collector::ptr const& collector)
         : app_(app)
@@ -588,31 +588,35 @@ public:
     stop() override
     {
         {
-            boost::system::error_code ec;
-            heartbeatTimer_.cancel(ec);
-            if (ec)
+            try
+            {
+                heartbeatTimer_.cancel();
+            }
+            catch (boost::system::system_error const& e)
             {
                 JLOG(m_journal.error())
-                    << "NetworkOPs: heartbeatTimer cancel error: "
-                    << ec.message();
+                    << "NetworkOPs: heartbeatTimer cancel error: " << e.what();
             }
 
-            ec.clear();
-            clusterTimer_.cancel(ec);
-            if (ec)
+            try
+            {
+                clusterTimer_.cancel();
+            }
+            catch (boost::system::system_error const& e)
             {
                 JLOG(m_journal.error())
-                    << "NetworkOPs: clusterTimer cancel error: "
-                    << ec.message();
+                    << "NetworkOPs: clusterTimer cancel error: " << e.what();
             }
 
-            ec.clear();
-            accountHistoryTxTimer_.cancel(ec);
-            if (ec)
+            try
+            {
+                accountHistoryTxTimer_.cancel();
+            }
+            catch (boost::system::system_error const& e)
             {
                 JLOG(m_journal.error())
                     << "NetworkOPs: accountHistoryTxTimer cancel error: "
-                    << ec.message();
+                    << e.what();
             }
         }
         // Make sure that any waitHandlers pending in our timers are done.
@@ -984,7 +988,7 @@ NetworkOPsImp::setTimer(
                 }
             }))
     {
-        timer.expires_from_now(expiry_time);
+        timer.expires_after(expiry_time);
         timer.async_wait(std::move(*optionalCountedHandler));
     }
 }
@@ -1448,6 +1452,11 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
         for (auto& t : transactions)
             mTransactions.push_back(std::move(t));
     }
+    if (mTransactions.empty())
+    {
+        JLOG(m_journal.debug()) << "No transaction to process!";
+        return;
+    }
 
     doTransactionSyncBatch(lock, [&](std::unique_lock<std::mutex> const&) {
         XRPL_ASSERT(
@@ -1789,11 +1798,13 @@ NetworkOPsImp::getOwnerInfo(
 
                     case ltACCOUNT_ROOT:
                     case ltDIR_NODE:
+                    // LCOV_EXCL_START
                     default:
                         UNREACHABLE(
                             "ripple::NetworkOPsImp::getOwnerInfo : invalid "
                             "type");
                         break;
+                        // LCOV_EXCL_STOP
                 }
             }
 
@@ -3717,6 +3728,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
     if (databaseType == DatabaseType::None)
     {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "ripple::NetworkOPsImp::addAccountHistoryJob : no database");
         JLOG(m_journal.error())
             << "AccountHistory job for account "
             << toBase58(subInfo.index_->accountId_) << " no database";
@@ -3726,6 +3740,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             unsubAccountHistory(sptr, subInfo.index_->accountId_, false);
         }
         return;
+        // LCOV_EXCL_STOP
     }
 
     app_.getJobQueue().addJob(
@@ -3822,12 +3837,14 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             accountId, minLedger, maxLedger, marker, 0, true};
                         return db->newestAccountTxPage(options);
                     }
+                    // LCOV_EXCL_START
                     default: {
                         UNREACHABLE(
-                            "ripple::NetworkOPsImp::addAccountHistoryJob::"
+                            "ripple::NetworkOPsImp::addAccountHistoryJob : "
                             "getMoreTxns : invalid database type");
                         return {};
                     }
+                        // LCOV_EXCL_STOP
                 }
             };
 
@@ -3888,11 +3905,16 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         getMoreTxns(startLedgerSeq, lastLedgerSeq, marker);
                     if (!dbResult)
                     {
+                        // LCOV_EXCL_START
+                        UNREACHABLE(
+                            "ripple::NetworkOPsImp::addAccountHistoryJob : "
+                            "getMoreTxns failed");
                         JLOG(m_journal.debug())
                             << "AccountHistory job for account "
                             << toBase58(accountId) << " getMoreTxns failed.";
                         send(rpcError(rpcINTERNAL), true);
                         return;
+                        // LCOV_EXCL_STOP
                     }
 
                     auto const& txns = dbResult->first;
@@ -3915,22 +3937,32 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                                 tx->getLedger());
                         if (!curTxLedger)
                         {
+                            // LCOV_EXCL_START
+                            UNREACHABLE(
+                                "ripple::NetworkOPsImp::addAccountHistoryJob : "
+                                "getLedgerBySeq failed");
                             JLOG(m_journal.debug())
                                 << "AccountHistory job for account "
                                 << toBase58(accountId) << " no ledger.";
                             send(rpcError(rpcINTERNAL), true);
                             return;
+                            // LCOV_EXCL_STOP
                         }
                         std::shared_ptr<STTx const> stTxn =
                             tx->getSTransaction();
                         if (!stTxn)
                         {
+                            // LCOV_EXCL_START
+                            UNREACHABLE(
+                                "NetworkOPsImp::addAccountHistoryJob : "
+                                "getSTransaction failed");
                             JLOG(m_journal.debug())
                                 << "AccountHistory job for account "
                                 << toBase58(accountId)
                                 << " getSTransaction failed.";
                             send(rpcError(rpcINTERNAL), true);
                             return;
+                            // LCOV_EXCL_STOP
                         }
 
                         auto const mRef = std::ref(*meta);
@@ -4021,10 +4053,12 @@ NetworkOPsImp::subAccountHistoryStart(
         }
         else
         {
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::NetworkOPsImp::subAccountHistoryStart : failed to "
                 "access genesis account");
             return;
+            // LCOV_EXCL_STOP
         }
     }
     subInfo.index_->historyLastLedgerSeq_ = ledger->seq();
@@ -4131,7 +4165,11 @@ NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
     if (auto listeners = app_.getOrderBookDB().makeBookListeners(book))
         listeners->addSubscriber(isrListener);
     else
+    {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::NetworkOPsImp::subBook : null book listeners");
+        // LCOV_EXCL_STOP
+    }
     return true;
 }
 
@@ -4855,7 +4893,7 @@ make_NetworkOPs(
     JobQueue& job_queue,
     LedgerMaster& ledgerMaster,
     ValidatorKeys const& validatorKeys,
-    boost::asio::io_service& io_svc,
+    boost::asio::io_context& io_svc,
     beast::Journal journal,
     beast::insight::Collector::ptr const& collector)
 {

@@ -130,6 +130,7 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfMutable, 0x00000010))                   \
                                                           \
     TRANSACTION(MPTokenIssuanceCreate,                    \
+        /* Note: tf/lsfMPTLocked is intentionally omitted since this transaction is not allowed to modify it. */ \
         TF_FLAG(tfMPTCanLock, lsfMPTCanLock)              \
         TF_FLAG(tfMPTRequireAuth, lsfMPTRequireAuth)      \
         TF_FLAG(tfMPTCanEscrow, lsfMPTCanEscrow)          \
@@ -248,8 +249,41 @@ std::vector<std::pair<std::string, FlagMap>> const allTxFlags = {
 constexpr std::uint32_t tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
 constexpr std::uint32_t tfTrustSetPermissionMask =
     ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
-constexpr std::uint32_t const tfMPTokenIssuanceSetPermissionMask =
-    ~(tfUniversal | tfMPTLock | tfMPTUnlock);
+
+// clang-format off
+// MPTokenIssuanceCreate MutableFlags:
+// Indicating specific fields or flags may be changed after issuance.
+constexpr std::uint32_t const tmfMPTCanMutateCanLock = lsmfMPTCanMutateCanLock;
+constexpr std::uint32_t const tmfMPTCanMutateRequireAuth = lsmfMPTCanMutateRequireAuth;
+constexpr std::uint32_t const tmfMPTCanMutateCanEscrow = lsmfMPTCanMutateCanEscrow;
+constexpr std::uint32_t const tmfMPTCanMutateCanTrade = lsmfMPTCanMutateCanTrade;
+constexpr std::uint32_t const tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTransfer;
+constexpr std::uint32_t const tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
+constexpr std::uint32_t const tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
+constexpr std::uint32_t const tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
+constexpr std::uint32_t const tmfMPTokenIssuanceCreateMutableMask =
+  ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow | tmfMPTCanMutateCanTrade
+    | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback | tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
+
+// MPTokenIssuanceSet MutableFlags:
+// Set or Clear flags.
+constexpr std::uint32_t const tmfMPTSetCanLock             = 0x00000001;
+constexpr std::uint32_t const tmfMPTClearCanLock           = 0x00000002;
+constexpr std::uint32_t const tmfMPTSetRequireAuth         = 0x00000004;
+constexpr std::uint32_t const tmfMPTClearRequireAuth       = 0x00000008;
+constexpr std::uint32_t const tmfMPTSetCanEscrow           = 0x00000010;
+constexpr std::uint32_t const tmfMPTClearCanEscrow         = 0x00000020;
+constexpr std::uint32_t const tmfMPTSetCanTrade            = 0x00000040;
+constexpr std::uint32_t const tmfMPTClearCanTrade          = 0x00000080;
+constexpr std::uint32_t const tmfMPTSetCanTransfer         = 0x00000100;
+constexpr std::uint32_t const tmfMPTClearCanTransfer       = 0x00000200;
+constexpr std::uint32_t const tmfMPTSetCanClawback         = 0x00000400;
+constexpr std::uint32_t const tmfMPTClearCanClawback       = 0x00000800;
+constexpr std::uint32_t const tmfMPTokenIssuanceSetMutableMask = ~(tmfMPTSetCanLock | tmfMPTClearCanLock |
+    tmfMPTSetRequireAuth | tmfMPTClearRequireAuth | tmfMPTSetCanEscrow | tmfMPTClearCanEscrow |
+    tmfMPTSetCanTrade | tmfMPTClearCanTrade | tmfMPTSetCanTransfer | tmfMPTClearCanTransfer |
+    tmfMPTSetCanClawback | tmfMPTClearCanClawback);
+// clang-format on
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
 // accounts allowed a TrustLine to be added to the issuer of that token

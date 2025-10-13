@@ -163,7 +163,7 @@ public:
 
     /** Returns the total number of inbound slots. */
     int
-    inboundSlots() const
+    in_max() const
     {
         return m_in_max;
     }
@@ -295,10 +295,12 @@ private:
                 m_closingCount += n;
                 break;
 
+            // LCOV_EXCL_START
             default:
                 UNREACHABLE(
                     "ripple::PeerFinder::Counts::adjust : invalid input state");
                 break;
+                // LCOV_EXCL_STOP
         };
     }
 
