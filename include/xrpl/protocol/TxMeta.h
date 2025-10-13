@@ -139,7 +139,7 @@ public:
     bool
     hasDeliveredAmount() const
     {
-        return static_cast<bool>(deliveredAmount);
+        return deliveredAmount.has_value();
     }
 
     void
@@ -160,7 +160,7 @@ public:
     bool
     hasParentBatchId() const
     {
-        return static_cast<bool>(parentBatchID);
+        return parentBatchID.has_value();
     }
 
 private:
