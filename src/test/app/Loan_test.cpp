@@ -1856,6 +1856,12 @@ class Loan_test : public beast::unit_test::suite
                     auto const borrowerBalanceBeforePayment =
                         env.balance(borrower, broker.asset);
 
+                    if (canImpairLoan(env, broker, state))
+                        // Making a payment will unimpair the loan
+                        env(manage(lender, loanKeylet.key, tfLoanImpair));
+
+                    env.close();
+
                     // Make the payment
                     env(pay(borrower, loanKeylet.key, transactionAmount));
 

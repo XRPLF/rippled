@@ -2857,7 +2857,7 @@ ValidVault::finalize(
 
     if (!beforeVault_.empty() &&
         afterVault.lossUnrealized != beforeVault_[0].lossUnrealized &&
-        tx.getTxnType() != ttLOAN_MANAGE)
+        txnType != ttLOAN_MANAGE && txnType != ttLOAN_PAY)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault transaction must not change loss "
