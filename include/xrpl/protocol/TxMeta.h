@@ -46,37 +46,34 @@ private:
         CtorHelper);
 
 public:
-    TxMeta(
-        uint256 const& transactionID,
-        std::uint32_t ledger,
-        std::optional<uint256> parentBatchID = std::nullopt);
+    TxMeta(uint256 const& transactionID, std::uint32_t ledger);
     TxMeta(uint256 const& txID, std::uint32_t ledger, Blob const&);
     TxMeta(uint256 const& txID, std::uint32_t ledger, STObject const&);
 
     uint256 const&
     getTxID() const
     {
-        return transactionID;
+        return transactionID_;
     }
     std::uint32_t
     getLgrSeq() const
     {
-        return ledgerSqn;
+        return ledgerSeq_;
     }
     int
     getResult() const
     {
-        return result;
+        return result_;
     }
     TER
     getResultTER() const
     {
-        return TER::fromInt(result);
+        return TER::fromInt(result_);
     }
     std::uint32_t
     getIndex() const
     {
-        return index;
+        return index_;
     }
 
     void
@@ -96,47 +93,59 @@ public:
         return getAsObject().getJson(p);
     }
     void
-    addRaw(Serializer&, TER, std::uint32_t index);
+    addRaw(Serializer&, TER, std::uint32_t index_);
 
     STObject
     getAsObject() const;
     STArray&
     getNodes()
     {
-        return (nodes);
+        return (nodes_);
     }
     STArray const&
     getNodes() const
     {
-        return (nodes);
+        return (nodes_);
     }
 
     void
     setAdditionalFields(STObject const& obj)
     {
         if (obj.isFieldPresent(sfDeliveredAmount))
-            deliveredAmount = obj.getFieldAmount(sfDeliveredAmount);
+            deliveredAmount_ = obj.getFieldAmount(sfDeliveredAmount);
 
         if (obj.isFieldPresent(sfParentBatchID))
-            parentBatchID = obj.getFieldH256(sfParentBatchID);
+            parentBatchID_ = obj.getFieldH256(sfParentBatchID);
     }
 
     std::optional<STAmount>
     getDeliveredAmount() const
     {
-        return deliveredAmount;
+        return deliveredAmount_;
+    }
+
+    void
+    setDeliveredAmount(std::optional<STAmount> const& amount)
+    {
+        deliveredAmount_ = amount;
+    }
+
+    void
+    setParentBatchID(std::optional<uint256> const& id)
+    {
+        parentBatchID_ = id;
     }
 
 private:
-    uint256 transactionID;
-    std::uint32_t ledgerSqn;
-    std::uint32_t index;
-    int result;
+    uint256 transactionID_;
+    std::uint32_t ledgerSeq_;
+    std::uint32_t index_;
+    int result_;
 
-    std::optional<STAmount> deliveredAmount;
-    std::optional<uint256> parentBatchID;
+    std::optional<STAmount> deliveredAmount_;
+    std::optional<uint256> parentBatchID_;
 
-    STArray nodes;
+    STArray nodes_;
 };
 
 }  // namespace ripple
