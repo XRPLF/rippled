@@ -18,12 +18,14 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/mpt.h>
 
 #include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/tx/detail/LoanSet.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/SField.h>
 
 namespace ripple {
 namespace test {
@@ -1925,8 +1927,8 @@ class Loan_test : public beast::unit_test::suite
 
         auto const testCase =
             [&, this](
-                std::optional<std::function<void(Env&, BrokerInfo const&)>>
-                    mptTest,
+                std::optional<std::function<void(
+                    Env&, BrokerInfo const&, MPTTester&)>> mptTest,
                 std::optional<std::function<void(Env&, BrokerInfo const&)>>
                     iouTest,
                 CaseArgs args = {}) {
@@ -1995,13 +1997,13 @@ class Loan_test : public beast::unit_test::suite
                 }
 
                 if (mptTest)
-                    (*mptTest)(env, brokers[0]);
+                    (*mptTest)(env, brokers[0], mptt);
                 if (iouTest)
                     (*iouTest)(env, brokers[1]);
             };
 
         testCase(
-            [&, this](Env& env, BrokerInfo const& broker) {
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
 
@@ -2039,8 +2041,214 @@ class Loan_test : public beast::unit_test::suite
             },
             CaseArgs{.requireAuth = true});
 
+        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+            Env env{*this, testable_amendments()};
+            return {
+                env.current()->fees().accountReserve(0).drops() /
+                    DROPS_PER_XRP.drops(),
+                env.current()->fees().increment.drops() /
+                    DROPS_PER_XRP.drops()};
+        }();
+
         testCase(
+            [&, this](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase(
+                    "MPT authorized borrower, borrower submits, borrower has "
+                    "no reserve");
+                mptt.authorize(
+                    {.account = borrower, .flags = tfMPTUnauthorize});
+                env.close();
+
+                auto const mptoken =
+                    keylet::mptoken(mptt.issuanceID(), borrower);
+                auto const sleMPT1 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT1 == nullptr);
+
+                // Send some reserve and use up the remainder on tickets
+                env(pay(borrower, issuer, XRP(acctReserve * 2)));
+                env(ticket::create(borrower, 2));
+                env.close();
+
+                // Cannot create loan, not enough reserve to create MPToken
+                env(set(borrower, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecINSUFFICIENT_RESERVE});
+                env.close();
+
+                // Can create loan now, will implicitly create MPToken
+                env(pay(issuer, borrower, XRP(incReserve)));
+                env.close();
+                env(set(borrower, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5));
+                env.close();
+
+                auto const sleMPT2 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT2 != nullptr);
+            },
+            std::nullopt,
+            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+
+        testCase(
+            std::nullopt,
             [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase(
+                    "IOU authorized borrower, borrower submits, borrower has "
+                    "no reserve");
+                // Remove trust line from borrower to issuer
+                env.trust(broker.asset(0), borrower);
+                env.close();
+
+                env(pay(borrower, issuer, broker.asset(10'000)));
+                env.close();
+                auto const trustline =
+                    keylet::line(borrower, broker.asset.raw().get<Issue>());
+                auto const sleLine1 = env.le(trustline);
+                BEAST_EXPECT(sleLine1 == nullptr);
+
+                // Send some reserve and use up the remainder on tickets
+                env(pay(borrower, issuer, XRP(acctReserve * 2)));
+                env(ticket::create(borrower, 2));
+                env.close();
+
+                // Cannot create loan, not enough reserve to create trust line
+                env(set(borrower, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_LINE_INSUF_RESERVE});
+                env.close();
+
+                // Can create loan now, will implicitly create trust line
+                env(pay(issuer, borrower, XRP(incReserve)));
+                env.close();
+                env(set(borrower, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5));
+                env.close();
+
+                auto const sleLine2 = env.le(trustline);
+                BEAST_EXPECT(sleLine2 != nullptr);
+            },
+            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase(
+                    "MPT authorized borrower, borrower submits, lender has "
+                    "no reserve");
+                auto const mptoken = keylet::mptoken(mptt.issuanceID(), lender);
+                auto const sleMPT1 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT1 != nullptr);
+
+                env(pay(
+                    lender, issuer, broker.asset(sleMPT1->at(sfMPTAmount))));
+                env.close();
+
+                mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
+                env.close();
+
+                auto const sleMPT2 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT2 == nullptr);
+
+                // Create some tickets to use up reserve
+                env(ticket::create(lender, 1));
+                env.close();
+
+                // Cannot create loan, not enough reserve to create MPToken
+                env(set(borrower, broker.brokerID, principalRequest),
+                    loanOriginationFee(broker.asset(1).value()),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecINSUFFICIENT_RESERVE});
+                env.close();
+
+                // Can create loan now, will implicitly create MPToken
+                env(pay(issuer, lender, XRP(incReserve)));
+                env.close();
+                env(set(borrower, broker.brokerID, principalRequest),
+                    loanOriginationFee(broker.asset(1).value()),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5));
+                env.close();
+
+                auto const sleMPT3 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT3 != nullptr);
+            },
+            std::nullopt,
+            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+
+        testCase(
+            std::nullopt,
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase(
+                    "IOU authorized borrower, borrower submits, lender has no "
+                    "reserve");
+                // Remove trust line from lender to issuer
+                env.trust(broker.asset(0), lender);
+                env.close();
+
+                auto const trustline =
+                    keylet::line(lender, broker.asset.raw().get<Issue>());
+                auto const sleLine1 = env.le(trustline);
+                BEAST_EXPECT(sleLine1 != nullptr);
+
+                env(
+                    pay(lender,
+                        issuer,
+                        broker.asset(abs(sleLine1->at(sfBalance).value()))));
+                env.close();
+                auto const sleLine2 = env.le(trustline);
+                BEAST_EXPECT(sleLine2 == nullptr);
+
+                // Create some tickets to use up reserve
+                env(ticket::create(lender, 1));
+                env.close();
+
+                // Cannot create loan, not enough reserve to create trust line
+                env(set(borrower, broker.brokerID, principalRequest),
+                    loanOriginationFee(broker.asset(1).value()),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_LINE_INSUF_RESERVE});
+                env.close();
+
+                // Can create loan now, will implicitly create trust line
+                env(pay(issuer, lender, XRP(incReserve)));
+                env.close();
+                env(set(borrower, broker.brokerID, principalRequest),
+                    loanOriginationFee(broker.asset(1).value()),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5));
+                env.close();
+
+                auto const sleLine3 = env.le(trustline);
+                BEAST_EXPECT(sleLine3 != nullptr);
+            },
+            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
 
@@ -2063,7 +2271,7 @@ class Loan_test : public beast::unit_test::suite
             CaseArgs{.requireAuth = true, .authorizeBorrower = true});
 
         testCase(
-            [&, this](Env& env, BrokerInfo const& broker) {
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
 
