@@ -67,7 +67,7 @@ LedgerStateFix::preclaim(PreclaimContext const& ctx)
     }
 
     // preflight is supposed to verify that only valid FixTypes get to preclaim.
-    return tecINTERNAL;
+    return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
 TER
@@ -83,7 +83,7 @@ LedgerStateFix::doApply()
     }
 
     // preflight is supposed to verify that only valid FixTypes get to doApply.
-    return tecINTERNAL;
+    return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
 }  // namespace ripple
