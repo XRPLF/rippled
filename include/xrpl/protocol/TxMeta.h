@@ -93,7 +93,7 @@ public:
         return getAsObject().getJson(p);
     }
     void
-    addRaw(Serializer&, TER, std::uint32_t index_);
+    addRaw(Serializer&, TER, std::uint32_t index);
 
     STObject
     getAsObject() const;
