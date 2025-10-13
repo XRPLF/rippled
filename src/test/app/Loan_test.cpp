@@ -2248,6 +2248,49 @@ class Loan_test : public beast::unit_test::suite
             CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
 
         testCase(
+            [&, this](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("MPT authorized borrower, unauthorized lender");
+                auto const mptoken = keylet::mptoken(mptt.issuanceID(), lender);
+                auto const sleMPT1 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT1 != nullptr);
+
+                env(pay(
+                    lender, issuer, broker.asset(sleMPT1->at(sfMPTAmount))));
+                env.close();
+
+                mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
+                env.close();
+
+                auto const sleMPT2 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT2 == nullptr);
+
+                // Cannot create loan, lender not authorized to receive fee
+                env(set(borrower, broker.brokerID, principalRequest),
+                    loanOriginationFee(broker.asset(1).value()),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_AUTH});
+                env.close();
+
+                // Can create loan without origination fee
+                env(set(borrower, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5));
+                env.close();
+
+                // No MPToken for lender - no authorization and no payment
+                auto const sleMPT3 = env.le(mptoken);
+                BEAST_EXPECT(sleMPT3 == nullptr);
+            },
+            std::nullopt,
+            CaseArgs{.requireAuth = true, .authorizeBorrower = true});
+
+        testCase(
             [&, this](Env& env, BrokerInfo const& broker, auto&) {
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
