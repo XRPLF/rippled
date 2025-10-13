@@ -2007,6 +2007,45 @@ class Loan_test : public beast::unit_test::suite
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
 
+                testcase("MPT issuer is borrower, issuer submits");
+                env(set(issuer, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_PERMISSION});
+
+                testcase("MPT issuer is borrower, lender submits");
+                env(set(lender, broker.brokerID, principalRequest),
+                    counterparty(issuer),
+                    sig(sfCounterpartySignature, issuer),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_PERMISSION});
+            },
+            [&, this](Env& env, BrokerInfo const& broker) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
+                testcase("IOU issuer is borrower, issuer submits");
+                env(set(issuer, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_PERMISSION});
+
+                testcase("IOU issuer is borrower, lender submits");
+                env(set(lender, broker.brokerID, principalRequest),
+                    counterparty(issuer),
+                    sig(sfCounterpartySignature, issuer),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_PERMISSION});
+            },
+            CaseArgs{.requireAuth = true});
+
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+
                 testcase("MPT unauthorized borrower, borrower submits");
                 env(set(borrower, broker.brokerID, principalRequest),
                     counterparty(lender),
