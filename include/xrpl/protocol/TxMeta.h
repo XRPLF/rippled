@@ -121,19 +121,10 @@ public:
             parentBatchID = obj.getFieldH256(sfParentBatchID);
     }
 
-    STAmount
+    std::optional<STAmount>
     getDeliveredAmount() const
     {
-        XRPL_ASSERT(
-            hasDeliveredAmount(),
-            "ripple::TxMeta::getDeliveredAmount : non-null delivered amount");
-        return *deliveredAmount;
-    }
-
-    bool
-    hasDeliveredAmount() const
-    {
-        return deliveredAmount.has_value();
+        return deliveredAmount;
     }
 
 private:
