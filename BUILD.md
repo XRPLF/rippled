@@ -140,20 +140,21 @@ locally:
 
 ```bash
 cd external
+mkdir -p conan-center-index
+cd conan-center-index
 git init
 git remote add origin git@github.com:XRPLF/conan-center-index.git
 git sparse-checkout init
 git sparse-checkout set recipes/grpc
-git sparse-checkout add recipes/protobuf
 git sparse-checkout add recipes/snappy
 git sparse-checkout add recipes/soci
 git fetch origin master
 git checkout master
-conan export --version 1.72.0 recipes/grpc/all
-conan export --version 6.30.1 recipes/protobuf/all
-conan export --version 1.1.10 recipes/snappy/all
-conan export --version 4.0.3 recipes/soci/all
 rm -rf .git
+cd ../..
+conan export --version 1.72.0 external/conan-center-index/recipes/grpc/all
+conan export --version 1.1.10 external/conan-center-index/recipes/snappy/all
+conan export --version 4.0.3 external/conan-center-index/recipes/soci/all
 ```
 
 In the case we switch to a newer version of a dependency that still requires a
