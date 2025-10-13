@@ -419,7 +419,6 @@ simulateTxn(
 
     OpenView origView = OpenView(&*lpLedger);
     OpenView view(batch_view, origView);
-    LedgerIndex const seq = view.seq();
     for (auto const& transaction : transactions)
     {
         OpenView perTxView(batch_view, view);
