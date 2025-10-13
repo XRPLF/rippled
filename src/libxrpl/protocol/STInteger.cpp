@@ -249,4 +249,33 @@ STUInt64::getJson(JsonOptions) const
     return convertToString(value_, 16);  // Convert to base 16
 }
 
+//------------------------------------------------------------------------------
+
+template <>
+STInteger<std::int32_t>::STInteger(SerialIter& sit, SField const& name)
+    : STInteger(name, sit.get32())
+{
+}
+
+template <>
+SerializedTypeID
+STInt32::getSType() const
+{
+    return STI_INT32;
+}
+
+template <>
+std::string
+STInt32::getText() const
+{
+    return std::to_string(value_);
+}
+
+template <>
+Json::Value
+STInt32::getJson(JsonOptions) const
+{
+    return value_;
+}
+
 }  // namespace ripple

@@ -77,19 +77,16 @@ SetSignerList::determineOperation(
     return std::make_tuple(tesSUCCESS, quorum, sign, op);
 }
 
+std::uint32_t
+SetSignerList::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
+}
+
 NotTEC
 SetSignerList::preflight(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.rules.enabled(fixInvalidTxFlags) &&
-        (ctx.tx.getFlags() & tfUniversalMask))
-    {
-        JLOG(ctx.j.debug()) << "SetSignerList: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
 
     if (std::get<0>(result) != tesSUCCESS)
@@ -119,7 +116,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -137,8 +134,10 @@ SetSignerList::doApply()
         default:
             break;
     }
+    // LCOV_EXCL_START
     UNREACHABLE("ripple::SetSignerList::doApply : invalid operation");
     return temMALFORMED;
+    // LCOV_EXCL_STOP
 }
 
 void
@@ -227,8 +226,10 @@ removeSignersFromLedger(
 
     if (!view.dirRemove(ownerDirKeylet, hint, signerListKeylet.key, false))
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete SignerList from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     adjustOwnerCount(
@@ -350,7 +351,7 @@ SetSignerList::replaceSignerList()
 
     auto const sle = view().peek(accountKeylet);
     if (!sle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Compute new reserve.  Verify the account has funds to meet the reserve.
     std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
@@ -388,7 +389,7 @@ SetSignerList::replaceSignerList()
                      << ": " << (page ? "success" : "failure");
 
     if (!page)
-        return tecDIR_FULL;
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     signerList->setFieldU64(sfOwnerNode, *page);
 
@@ -406,7 +407,7 @@ SetSignerList::destroySignerList()
     // is enabled or there is a regular key.
     SLE::pointer ledgerEntry = view().peek(accountKeylet);
     if (!ledgerEntry)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if ((ledgerEntry->isFlag(lsfDisableMaster)) &&
         (!ledgerEntry->isFieldPresent(sfRegularKey)))

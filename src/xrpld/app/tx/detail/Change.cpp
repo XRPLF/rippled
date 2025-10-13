@@ -33,11 +33,12 @@
 
 namespace ripple {
 
+template <>
 NotTEC
-Change::preflight(PreflightContext const& ctx)
+Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 {
-    auto const ret = preflight0(ctx);
-    if (!isTesSuccess(ret))
+    // 0 means "Allow any flags"
+    if (auto const ret = preflight0(ctx, 0))
         return ret;
 
     auto account = ctx.tx.getAccountID(sfAccount);
@@ -150,9 +151,11 @@ Change::doApply()
             return applyFee();
         case ttUNL_MODIFY:
             return applyUNLModify();
+        // LCOV_EXCL_START
         default:
             UNREACHABLE("ripple::Change::doApply : invalid transaction type");
             return tefFAILURE;
+            // LCOV_EXCL_STOP
     }
 }
 
