@@ -340,13 +340,13 @@ static Json::Value
 processResult(
     ApplyResult const& result,
     // easier to type as this due to sfRawTransactions in batch transactions
-    STObject const& transaction,
+    STTx const& transaction,
     bool const isBinaryOutput,
-    LedgerIndex const seq)
+    ReadView const& view)
 {
     Json::Value jvResult = Json::objectValue;
     jvResult[jss::applied] = result.applied;
-    jvResult[jss::ledger_index] = seq;
+    jvResult[jss::ledger_index] = view.seq();
 
     // Convert the TER to human-readable values
     std::string token;
@@ -385,18 +385,12 @@ processResult(
         else
         {
             jvResult[jss::meta] = result.metadata->getJson(JsonOptions::none);
-            // TODO: fix
-            // RPC::insertDeliveredAmount(
-            //     jvResult[jss::meta],
-            //     view,
-            //     transaction->getSTransaction(),
-            //     *result.metadata);
-            // RPC::insertNFTSyntheticInJson(
-            //     jvResult, transaction->getSTransaction(), *result.metadata);
-            // RPC::insertMPTokenIssuanceID(
-            //     jvResult[jss::meta],
-            //     transaction->getSTransaction(),
-            //     *result.metadata);
+            auto const shared = std::make_shared<STTx const>(transaction);
+            RPC::insertDeliveredAmount(
+                jvResult[jss::meta], view, shared, *result.metadata);
+            RPC::insertNFTSyntheticInJson(jvResult, shared, *result.metadata);
+            RPC::insertMPTokenIssuanceID(
+                jvResult[jss::meta], shared, *result.metadata);
         }
     }
 
@@ -442,7 +436,7 @@ simulateTxn(
             apply(context.app, perTxView, txn, tapDRY_RUN, context.j);
         if (isTesSuccess(result.ter) || isTecClaim(result.ter))
             perTxView.apply(view);
-        jvTransactions.append(processResult(result, txn, isBinaryOutput, seq));
+        jvTransactions.append(processResult(result, txn, isBinaryOutput, view));
 
         if (isTesSuccess(result.ter) && txn.getTxnType() == ttBATCH)
         {
@@ -455,11 +449,13 @@ simulateTxn(
                 for (int i = 0; i < batchResults->size(); ++i)
                 {
                     auto const& innerResult = (*batchResults)[i];
+                    auto rawTxn = txn.getFieldArray(sfRawTransactions)[i];
+                    STTx const txn(
+                        static_cast<TxType>(
+                            rawTxn.getFieldU16(sfTransactionType)),
+                        [&rawTxn](STObject& obj) { obj = STObject(rawTxn); });
                     jvTransactions.append(processResult(
-                        innerResult,
-                        txn.getFieldArray(sfRawTransactions)[i],
-                        isBinaryOutput,
-                        seq));
+                        innerResult, txn, isBinaryOutput, wholeBatchView));
                 }
                 wholeBatchView.apply(view);
             }
