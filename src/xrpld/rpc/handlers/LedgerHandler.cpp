@@ -22,6 +22,7 @@
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/handlers/LedgerHandler.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
