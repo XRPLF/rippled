@@ -78,7 +78,7 @@
       "distro_version": "9",
       "compiler_name": "gcc",
       "compiler_version": "12",
-      "image_sha": "d133ce3"
+      "image_sha": "bthomee"
     },
     {
       "distro_name": "rhel",
