@@ -237,16 +237,14 @@ inject_error(error_code_i code, Json::Value json)
     json[jss::error_message] = info.message;
 }
 
-template <class JsonValue>
 void
-inject_error(int code, JsonValue& json)
+inject_error(int code, Json::Value json)
 {
     inject_error(error_code_i(code), json);
 }
 
-template <class JsonValue>
 void
-inject_error(error_code_i code, std::string const& message, JsonValue& json)
+inject_error(error_code_i code, std::string const& message, Json::Value json)
 {
     ErrorInfo const& info(get_error_info(code));
     json[jss::error] = info.token;
