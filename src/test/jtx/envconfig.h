@@ -22,6 +22,9 @@
 
 #include <xrpld/core/Config.h>
 
+#include <random>
+#include <string>
+
 namespace ripple {
 namespace test {
 
@@ -32,10 +35,43 @@ namespace test {
 
 extern std::atomic<bool> envUseIPv4;
 
+inline std::uint32_t
+getRandomIPv4Loopback()
+{
+    // When running multiple unit tests in parallel, especially on a shared
+    // machine using in CI pipelines, it is possible to run out of ports on the
+    // default loopback interface. While IPv6 only has a single loopback, ::1,
+    // for IPv4 the entire 127.0.0.0/8 block is available on Linux and Windows
+    // (except 127.0.0.0 and 127.255.255.255 that are reserved), which we should
+    // use as the majority of our tests use IPv4. On macOS only 127.0.0.1 is
+    // available as loopback address, unless the loopback interface is aliased
+    // to more addresses, e.g. sudo ifconfig lo0 alias 127.0.0.* up.
+#if defined(__clang__) && defined(__APPLE__)
+    return 0x7F000001;  // 127.0.0.1
+#else
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<std::uint32_t> dist(
+        0x7F000001,  // 127.0.0.1
+        0x7FFFFFFE   // 127.255.255.254
+    );
+    return dist(gen);
+#endif
+}
+
 inline char const*
 getEnvLocalhostAddr()
 {
-    return envUseIPv4 ? "127.0.0.1" : "::1";
+    if (envUseIPv4)
+    {
+        auto const loopback_v4 = getRandomIPv4Loopback();
+        auto const& addr_v4 = std::to_string((loopback_v4 >> 24) & 0xFF) + "." +
+            std::to_string((loopback_v4 >> 16) & 0xFF) + "." +
+            std::to_string((loopback_v4 >> 8) & 0xFF) + "." +
+            std::to_string(loopback_v4 & 0xFF);
+        return addr_v4.c_str();
+    }
+    return "::1";
 }
 
 /// @brief initializes a config object for use with jtx::Env

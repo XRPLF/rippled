@@ -279,7 +279,7 @@ Door<Handler>::reOpen()
     if (ec)
     {
         JLOG(j_.error()) << "Open port '" << port_.name
-                         << "' failed:" << ec.message();
+                         << "' failed: " << ec.message();
         Throw<std::exception>();
     }
 
@@ -288,7 +288,7 @@ Door<Handler>::reOpen()
     if (ec)
     {
         JLOG(j_.error()) << "Option for port '" << port_.name
-                         << "' failed:" << ec.message();
+                         << "' failed: " << ec.message();
         Throw<std::exception>();
     }
 
@@ -296,7 +296,7 @@ Door<Handler>::reOpen()
     if (ec)
     {
         JLOG(j_.error()) << "Bind port '" << port_.name
-                         << "' failed:" << ec.message();
+                         << "' failed: " << ec.message();
         Throw<std::exception>();
     }
 
@@ -304,7 +304,7 @@ Door<Handler>::reOpen()
     if (ec)
     {
         JLOG(j_.error()) << "Listen on port '" << port_.name
-                         << "' failed:" << ec.message();
+                         << "' failed: " << ec.message();
         Throw<std::exception>();
     }
 
