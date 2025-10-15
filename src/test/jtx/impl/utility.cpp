@@ -22,7 +22,6 @@
 #include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/json/Object.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>

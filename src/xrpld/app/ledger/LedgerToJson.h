@@ -26,7 +26,6 @@
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/basics/chrono.h>
-#include <xrpl/json/Object.h>
 #include <xrpl/protocol/serialize.h>
 
 namespace ripple {

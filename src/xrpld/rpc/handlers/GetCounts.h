@@ -22,8 +22,6 @@
 
 #include <xrpld/app/main/Application.h>
 
-#include <xrpl/json/Object.h>
-
 namespace ripple {
 
 Json::Value
