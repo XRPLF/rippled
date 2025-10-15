@@ -302,7 +302,7 @@ struct Escrow_test : public beast::unit_test::suite
         {
             testcase("Implied Finish Time (without fix1571)");
 
-            Env env(*this, testable_amendments() - fix1571);
+            Env env(*this, features - fix1571);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "carol");
             env.close();
@@ -1559,7 +1559,7 @@ struct Escrow_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const bob{"bob"};
         Account const carol{"carol"};
-        Account const dillon{"dillon "};
+        Account const dillon{"dillon"};
         Account const zelda{"zelda"};
 
         char const credType[] = "abcde";
@@ -1726,6 +1726,8 @@ public:
         FeatureBitset const all{testable_amendments()};
         testWithFeats(all);
         testWithFeats(all - featureTokenEscrow);
+        testWithFeats(all - featureSmartEscrow);
+        testWithFeats(all - featureTokenEscrow - featureSmartEscrow);
         testTags(all - fixIncludeKeyletFields);
     }
 };
