@@ -355,4 +355,19 @@ getJson(LedgerFill const& fill)
     return json;
 }
 
+void
+copyFrom(Json::Value& to, Json::Value const& from)
+{
+    if (!to)  // Short circuit this very common case.
+        to = from;
+    else
+    {
+        XRPL_ASSERT(
+            from.isObjectOrNull(), "Json::doCopyFrom : valid input type");
+        auto members = from.getMemberNames();
+        for (auto& m : members)
+            to[m] = from[m];
+    }
+}
+
 }  // namespace ripple

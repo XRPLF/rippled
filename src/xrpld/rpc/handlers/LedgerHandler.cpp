@@ -98,7 +98,7 @@ LedgerHandler::writeResult(Json::Value& value)
 {
     if (ledger_)
     {
-        Json::copyFrom(value, result_);
+        copyFrom(value, result_);
         addJson(value, {*ledger_, &context_, options_, queueTxs_});
     }
     else

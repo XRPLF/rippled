@@ -70,6 +70,10 @@ addJson(Json::Value&, LedgerFill const&);
 Json::Value
 getJson(LedgerFill const&);
 
+/** Copy all the keys and values from one object into another. */
+void
+copyFrom(Json::Value& to, Json::Value const& from);
+
 }  // namespace ripple
 
 #endif

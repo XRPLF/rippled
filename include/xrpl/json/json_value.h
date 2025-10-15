@@ -691,10 +691,6 @@ public:
     }
 };
 
-/** Copy all the keys and values from one object into another. */
-void
-copyFrom(Json::Value& to, Json::Value const& from);
-
 }  // namespace Json
 
 #endif  // CPPTL_JSON_H_INCLUDED
