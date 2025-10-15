@@ -40,7 +40,7 @@ public:
     }
 
     void
-    writeResult(Json::Value obj)
+    writeResult(Json::Value& obj)
     {
         setVersion(obj, apiVersion_, betaEnabled_);
     }

@@ -228,8 +228,8 @@ get_error_info(error_code_i code);
 
 /** Add or update the json update to reflect the error code. */
 /** @{ */
-void
-inject_error(error_code_i code, Json::Value json)
+inline void
+inject_error(error_code_i code, Json::Value& json)
 {
     ErrorInfo const& info(get_error_info(code));
     json[jss::error] = info.token;
@@ -237,8 +237,8 @@ inject_error(error_code_i code, Json::Value json)
     json[jss::error_message] = info.message;
 }
 
-void
-inject_error(error_code_i code, std::string const& message, Json::Value json)
+inline void
+inject_error(error_code_i code, std::string const& message, Json::Value& json)
 {
     ErrorInfo const& info(get_error_info(code));
     json[jss::error] = info.token;

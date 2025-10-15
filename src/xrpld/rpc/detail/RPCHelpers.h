@@ -208,8 +208,8 @@ extern beast::SemanticVersion const firstVersion;
 extern beast::SemanticVersion const goodVersion;
 extern beast::SemanticVersion const lastVersion;
 
-void
-setVersion(Json::Value parent, unsigned int apiVersion, bool betaEnabled)
+inline void
+setVersion(Json::Value& parent, unsigned int apiVersion, bool betaEnabled)
 {
     XRPL_ASSERT(
         apiVersion != apiInvalidVersion,

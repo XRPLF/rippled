@@ -114,7 +114,7 @@ public:
     /** Apply the Status to a JsonObject
      */
     void
-    inject(Json::Value object) const
+    inject(Json::Value& object) const
     {
         if (auto ec = toErrorCode())
         {
