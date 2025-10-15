@@ -85,6 +85,7 @@ setVersion(JsonObject& parent, unsigned int apiVersion, bool betaEnabled)
         apiVersion != apiInvalidVersion,
         "ripple::RPC::setVersion : input is valid");
     auto& retObj = addObject(parent, jss::version);
+
     if (apiVersion == apiVersionIfUnspecified)
     {
         // API version numbers used in API version 1
@@ -122,21 +123,29 @@ inline unsigned int
 getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
 {
     static Json::Value const minVersion(RPC::apiMinimumSupportedVersion);
-    static Json::Value const invalidVersion(RPC::apiInvalidVersion);
-
     Json::Value const maxVersion(
         betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion);
-    Json::Value requestedVersion(RPC::apiVersionIfUnspecified);
+
     if (jv.isObject())
     {
-        requestedVersion = jv.get(jss::api_version, requestedVersion);
+        if (jv.isMember(jss::api_version))
+        {
+            auto const specifiedVersion = jv[jss::api_version];
+            if (!specifiedVersion.isInt() && !specifiedVersion.isUInt())
+            {
+                return RPC::apiInvalidVersion;
+            }
+            auto const specifiedVersionInt = specifiedVersion.asInt();
+            if (specifiedVersionInt < minVersion ||
+                specifiedVersionInt > maxVersion)
+            {
+                return RPC::apiInvalidVersion;
+            }
+            return specifiedVersionInt;
+        }
     }
-    if (!(requestedVersion.isInt() || requestedVersion.isUInt()) ||
-        requestedVersion < minVersion || requestedVersion > maxVersion)
-    {
-        requestedVersion = invalidVersion;
-    }
-    return requestedVersion.asUInt();
+
+    return RPC::apiVersionIfUnspecified;
 }
 
 }  // namespace RPC
