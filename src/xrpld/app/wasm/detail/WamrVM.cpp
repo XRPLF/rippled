@@ -31,6 +31,8 @@
 
 // #define SHOW_CALL_TIME 1
 
+#define DISABLE_WM_LOG 1
+
 namespace ripple {
 
 namespace {
@@ -95,8 +97,11 @@ wamr_log_to_rippled(
     char const* fmt,
     ...)
 {
-    beast::Journal j = WasmEngine::instance().getJournal();
+#ifdef DISABLE_WM_LOG
+    return;
+#endif
 
+    beast::Journal j = WasmEngine::instance().getJournal();
     std::ostringstream oss;
 
     // Format the variadic args
