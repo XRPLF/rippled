@@ -77,31 +77,29 @@ static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
 static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
 static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
 
-template <class Object>
+template <class JsonObject>
 void
-setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
+setVersion(JsonObject& parent, unsigned int apiVersion, bool betaEnabled)
 {
     XRPL_ASSERT(
         apiVersion != apiInvalidVersion,
         "ripple::RPC::setVersion : input is valid");
-    auto&& object = addObject(parent, jss::version);
+    auto& retObj = addObject(parent, jss::version);
     if (apiVersion == apiVersionIfUnspecified)
     {
-        /**
-         * API version numbers used in API version 1
-         */
+        // API version numbers used in API version 1
         static beast::SemanticVersion const firstVersion{"1.0.0"};
         static beast::SemanticVersion const goodVersion{"1.0.0"};
         static beast::SemanticVersion const lastVersion{"1.0.0"};
 
-        object[jss::first] = firstVersion.print();
-        object[jss::good] = goodVersion.print();
-        object[jss::last] = lastVersion.print();
+        retObj[jss::first] = firstVersion.print();
+        retObj[jss::good] = goodVersion.print();
+        retObj[jss::last] = lastVersion.print();
     }
     else
     {
-        object[jss::first] = apiMinimumSupportedVersion.value;
-        object[jss::last] =
+        retObj[jss::first] = apiMinimumSupportedVersion.value;
+        retObj[jss::last] =
             betaEnabled ? apiBetaVersion : apiMaximumSupportedVersion;
     }
 }
@@ -115,7 +113,7 @@ setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
  * 3) the version number is unspecified and
  *    APIVersionIfUnspecified is out of the supported range
  *
- * @param value a Json value that may or may not specifies
+ * @param jv a Json value that may or may not specifies
  *        the api version number
  * @param betaEnabled if the beta API version is enabled
  * @return the api version number
