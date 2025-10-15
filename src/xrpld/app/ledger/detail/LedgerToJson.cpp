@@ -53,7 +53,7 @@ isBinary(LedgerFill const& fill)
 
 void
 fillJson(
-    Json::Value json,
+    Json::Value& json,
     bool closed,
     LedgerInfo const& info,
     bool bFull,
@@ -97,7 +97,7 @@ fillJson(
 }
 
 void
-fillJsonBinary(Json::Value json, bool closed, LedgerInfo const& info)
+fillJsonBinary(Json::Value& json, bool closed, LedgerInfo const& info)
 {
     if (!closed)
         json[jss::closed] = false;
@@ -225,7 +225,7 @@ fillJsonTx(
 }
 
 void
-fillJsonTx(Json::Value json, LedgerFill const& fill)
+fillJsonTx(Json::Value& json, LedgerFill const& fill)
 {
     auto& txns = json[jss::transactions] = Json::arrayValue;
     auto bBinary = isBinary(fill);
@@ -255,7 +255,7 @@ fillJsonTx(Json::Value json, LedgerFill const& fill)
 }
 
 void
-fillJsonState(Json::Value json, LedgerFill const& fill)
+fillJsonState(Json::Value& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
     auto& array = json[jss::accountState] = Json::arrayValue;
@@ -278,7 +278,7 @@ fillJsonState(Json::Value json, LedgerFill const& fill)
 }
 
 void
-fillJsonQueue(Json::Value json, LedgerFill const& fill)
+fillJsonQueue(Json::Value& json, LedgerFill const& fill)
 {
     auto& queueData = json[jss::queue_data] = Json::arrayValue;
     auto bBinary = isBinary(fill);
@@ -312,7 +312,7 @@ fillJsonQueue(Json::Value json, LedgerFill const& fill)
 }
 
 void
-fillJson(Json::Value json, LedgerFill const& fill)
+fillJson(Json::Value& json, LedgerFill const& fill)
 {
     // TODO: what happens if bBinary and bExtracted are both set?
     // Is there a way to report this back?
