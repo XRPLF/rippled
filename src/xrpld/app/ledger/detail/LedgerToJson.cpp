@@ -270,7 +270,7 @@ fillJsonState(Object& json, LedgerFill const& fill)
     {
         if (binary)
         {
-            auto&& obj = appendObject(array);
+            auto& obj = array.append(Json::objectValue);
             obj[jss::hash] = to_string(sle->key());
             obj[jss::tx_blob] = serializeHex(*sle);
         }
@@ -291,7 +291,7 @@ fillJsonQueue(Object& json, LedgerFill const& fill)
 
     for (auto const& tx : fill.txQueue)
     {
-        auto&& txJson = appendObject(queueData);
+        auto& txJson = queueData.append(Json::objectValue);
         txJson[jss::fee_level] = to_string(tx.feeLevel);
         if (tx.lastValid)
             txJson[jss::LastLedgerSequence] = *tx.lastValid;
