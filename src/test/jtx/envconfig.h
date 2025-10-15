@@ -39,13 +39,13 @@ inline std::uint32_t
 getRandomIPv4Loopback()
 {
     // When running multiple unit tests in parallel, especially on a shared
-    // machine using in CI pipelines, it is possible to run out of ports on the
+    // machine used in CI pipelines, it is possible to run out of ports on the
     // default loopback interface. While IPv6 only has a single loopback, ::1,
     // for IPv4 the entire 127.0.0.0/8 block is available on Linux and Windows
     // (except 127.0.0.0 and 127.255.255.255 that are reserved), which we should
     // use as the majority of our tests use IPv4. On macOS only 127.0.0.1 is
     // available as loopback address, unless the loopback interface is aliased
-    // to more addresses, e.g. sudo ifconfig lo0 alias 127.0.0.* up.
+    // to more addresses, e.g. `sudo ifconfig lo0 alias 127.0.0.* up`.
 #if defined(__clang__) && defined(__APPLE__)
     return 0x7F000001;  // 127.0.0.1
 #else
@@ -59,7 +59,7 @@ getRandomIPv4Loopback()
 #endif
 }
 
-inline char const*
+inline std::string
 getEnvLocalhostAddr()
 {
     if (envUseIPv4)
@@ -69,7 +69,7 @@ getEnvLocalhostAddr()
             std::to_string((loopback_v4 >> 16) & 0xFF) + "." +
             std::to_string((loopback_v4 >> 8) & 0xFF) + "." +
             std::to_string(loopback_v4 & 0xFF);
-        return addr_v4.c_str();
+        return addr_v4;
     }
     return "::1";
 }
