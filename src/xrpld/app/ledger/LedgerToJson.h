@@ -61,10 +61,9 @@ struct LedgerFill
     std::optional<NetClock::time_point> closeTime;
 };
 
-/** Given a Ledger and options, fill a Json::Object or Json::Value with a
+/** Given a Ledger and options, fill a Json::Value with a
     description of the ledger.
  */
-
 void
 addJson(Json::Value&, LedgerFill const&);
 
