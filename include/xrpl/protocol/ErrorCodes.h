@@ -228,9 +228,8 @@ get_error_info(error_code_i code);
 
 /** Add or update the json update to reflect the error code. */
 /** @{ */
-template <class JsonValue>
 void
-inject_error(error_code_i code, JsonValue& json)
+inject_error(error_code_i code, Json::Value json)
 {
     ErrorInfo const& info(get_error_info(code));
     json[jss::error] = info.token;

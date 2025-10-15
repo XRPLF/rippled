@@ -51,10 +51,9 @@ isBinary(LedgerFill const& fill)
     return fill.options & LedgerFill::binary;
 }
 
-template <class Object>
 void
 fillJson(
-    Object& json,
+    Json::Value json,
     bool closed,
     LedgerInfo const& info,
     bool bFull,
@@ -97,9 +96,8 @@ fillJson(
     }
 }
 
-template <class Object>
 void
-fillJsonBinary(Object& json, bool closed, LedgerInfo const& info)
+fillJsonBinary(Json::Value json, bool closed, LedgerInfo const& info)
 {
     if (!closed)
         json[jss::closed] = false;
@@ -226,9 +224,8 @@ fillJsonTx(
     return txJson;
 }
 
-template <class Object>
 void
-fillJsonTx(Object& json, LedgerFill const& fill)
+fillJsonTx(Json::Value json, LedgerFill const& fill)
 {
     auto& txns = json[jss::transactions] = Json::arrayValue;
     auto bBinary = isBinary(fill);
@@ -257,9 +254,8 @@ fillJsonTx(Object& json, LedgerFill const& fill)
     }
 }
 
-template <class Object>
 void
-fillJsonState(Object& json, LedgerFill const& fill)
+fillJsonState(Json::Value json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
     auto& array = json[jss::accountState] = Json::arrayValue;
@@ -281,9 +277,8 @@ fillJsonState(Object& json, LedgerFill const& fill)
     }
 }
 
-template <class Object>
 void
-fillJsonQueue(Object& json, LedgerFill const& fill)
+fillJsonQueue(Json::Value json, LedgerFill const& fill)
 {
     auto& queueData = json[jss::queue_data] = Json::arrayValue;
     auto bBinary = isBinary(fill);
@@ -316,9 +311,8 @@ fillJsonQueue(Object& json, LedgerFill const& fill)
     }
 }
 
-template <class Object>
 void
-fillJson(Object& json, LedgerFill const& fill)
+fillJson(Json::Value json, LedgerFill const& fill)
 {
     // TODO: what happens if bBinary and bExtracted are both set?
     // Is there a way to report this back?

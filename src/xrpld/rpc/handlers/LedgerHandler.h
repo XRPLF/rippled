@@ -55,9 +55,7 @@ public:
     Status
     check();
 
-    template <class Object>
-    void
-    writeResult(Object&);
+    void writeResult(Json::Value);
 
     static constexpr char name[] = "ledger";
 
@@ -82,9 +80,8 @@ private:
 //
 // Implementation.
 
-template <class Object>
 void
-LedgerHandler::writeResult(Object& value)
+LedgerHandler::writeResult(Json::Value value)
 {
     if (ledger_)
     {
