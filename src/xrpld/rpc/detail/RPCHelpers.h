@@ -215,7 +215,7 @@ setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
     XRPL_ASSERT(
         apiVersion != apiInvalidVersion,
         "ripple::RPC::setVersion : input is valid");
-    auto&& object = addObject(parent, jss::version);
+    auto& object = parent[jss::version] = Json::objectValue;
     if (apiVersion == apiVersionIfUnspecified)
     {
         object[jss::first] = firstVersion.print();

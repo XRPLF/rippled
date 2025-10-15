@@ -346,7 +346,7 @@ fillJson(Object& json, LedgerFill const& fill)
 void
 addJson(Json::Value& json, LedgerFill const& fill)
 {
-    auto&& object = Json::addObject(json, jss::ledger);
+    auto& object = json[jss::ledger] = Json::objectValue;
     fillJson(object, fill);
 
     if ((fill.options & LedgerFill::dumpQueue) && !fill.txQueue.empty())

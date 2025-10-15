@@ -96,11 +96,11 @@ LedgerHandler::writeResult(Object& value)
     {
         auto& master = context_.app.getLedgerMaster();
         {
-            auto&& closed = Json::addObject(value, jss::closed);
+            auto& closed = value[jss::closed] = Json::objectValue;
             addJson(closed, {*master.getClosedLedger(), &context_, 0});
         }
         {
-            auto&& open = Json::addObject(value, jss::open);
+            auto& open = value[jss::open] = Json::objectValue;
             addJson(open, {*master.getCurrentLedger(), &context_, 0});
         }
     }

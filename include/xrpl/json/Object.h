@@ -31,10 +31,6 @@ namespace Json {
 // Generic accessor functions to allow Json::Value and Collection to
 // interoperate.
 
-/** Add a new subobject at a named key in a Json object. */
-Json::Value&
-addObject(Json::Value&, Json::StaticString const& key);
-
 /** Append a new subarray to a Json array. */
 Json::Value&
 appendArray(Json::Value&);
@@ -46,18 +42,6 @@ appendObject(Json::Value&);
 /** Copy all the keys and values from one object into another. */
 void
 copyFrom(Json::Value& to, Json::Value const& from);
-
-inline Json::Value&
-setArray(Json::Value& json, Json::StaticString const& key)
-{
-    return (json[key] = Json::arrayValue);
-}
-
-inline Json::Value&
-addObject(Json::Value& json, Json::StaticString const& key)
-{
-    return (json[key] = Json::objectValue);
-}
 
 inline Json::Value&
 appendArray(Json::Value& json)
