@@ -230,7 +230,7 @@ template <class Object>
 void
 fillJsonTx(Object& json, LedgerFill const& fill)
 {
-    auto&& txns = setArray(json, jss::transactions);
+    auto& txns = json[jss::transactions] = Json::arrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
@@ -262,7 +262,7 @@ void
 fillJsonState(Object& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
-    auto&& array = Json::setArray(json, jss::accountState);
+    auto& array = json[jss::accountState] = Json::arrayValue;
     auto expanded = isExpanded(fill);
     auto binary = isBinary(fill);
 
@@ -285,7 +285,7 @@ template <class Object>
 void
 fillJsonQueue(Object& json, LedgerFill const& fill)
 {
-    auto&& queueData = Json::setArray(json, jss::queue_data);
+    auto& queueData = json[jss::queue_data] = Json::arrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 

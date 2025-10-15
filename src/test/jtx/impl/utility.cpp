@@ -96,7 +96,7 @@ cmdToJSONRPC(
     // If paramsObj is not empty, put it in a [params] array.
     if (paramsObj.begin() != paramsObj.end())
     {
-        auto& paramsArray = Json::setArray(jv, jss::params);
+        auto& paramsArray = jv[jss::params] = Json::arrayValue;
         paramsArray.append(paramsObj);
     }
     if (paramsObj.isMember(jss::jsonrpc))

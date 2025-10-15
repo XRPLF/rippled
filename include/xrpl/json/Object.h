@@ -31,10 +31,6 @@ namespace Json {
 // Generic accessor functions to allow Json::Value and Collection to
 // interoperate.
 
-/** Add a new subarray at a named key in a Json object. */
-Json::Value&
-setArray(Json::Value&, Json::StaticString const& key);
-
 /** Add a new subobject at a named key in a Json object. */
 Json::Value&
 addObject(Json::Value&, Json::StaticString const& key);
