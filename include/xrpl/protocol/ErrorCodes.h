@@ -238,12 +238,6 @@ inject_error(error_code_i code, Json::Value json)
 }
 
 void
-inject_error(int code, Json::Value json)
-{
-    inject_error(error_code_i(code), json);
-}
-
-void
 inject_error(error_code_i code, std::string const& message, Json::Value json)
 {
     ErrorInfo const& info(get_error_info(code));
