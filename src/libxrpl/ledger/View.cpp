@@ -1226,8 +1226,8 @@ addEmptyHolding(
     Issue const& issue,
     beast::Journal journal)
 {
-    // Every account can hold XRP.
-    if (issue.native())
+    // Every account can hold XRP. An issuer can issue directly.
+    if (issue.native() || accountID == issue.getIssuer())
         return tesSUCCESS;
 
     auto const& issuerId = issue.getIssuer();
