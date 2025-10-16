@@ -600,8 +600,8 @@ ConnectAttempt::processResponse()
             JLOG(journal_.info()) << "Cluster name: " << *member;
         }
 
-        auto const result =
-            overlay_.peerFinder().activate(slot_, publicKey, !member->empty());
+        auto const result = overlay_.peerFinder().activate(
+            slot_, publicKey, member.has_value());
         if (result != PeerFinder::Result::success)
         {
             std::stringstream ss;
