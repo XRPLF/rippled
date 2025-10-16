@@ -79,6 +79,9 @@ jobs:
           build_dir: .build
           build_type: ${{ matrix.build_type }}
           force_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
+          # The verbosity is set to "quiet" for Windows to avoid an excessive amount of logs, while it
+          # is set to "verbose" otherwise to provide more information during the build process.
+          verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
 
       - name: Log into Conan remote
         if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' }}
