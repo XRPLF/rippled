@@ -21,7 +21,8 @@
 #define RIPPLE_TX_AMMWITHDRAW_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
-#include <xrpld/ledger/View.h>
+
+#include <xrpl/ledger/View.h>
 
 namespace ripple {
 
@@ -74,6 +75,12 @@ public:
     explicit AMMWithdraw(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
+
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);

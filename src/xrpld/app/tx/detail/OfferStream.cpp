@@ -19,9 +19,9 @@
 
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/tx/detail/OfferStream.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 
@@ -369,10 +369,12 @@ TOfferStreamBase<TIn, TOut>::step()
                                 std::is_same_v<TOut, XRPAmount>))
                     return shouldRmSmallIncreasedQOffer<IOUAmount, IOUAmount>();
             }
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "rippls::TOfferStreamBase::step::rmSmallIncreasedQOffer : XRP "
                 "vs XRP offer");
             return false;
+            // LCOV_EXCL_STOP
         }();
 
         if (rmSmallIncreasedQOffer)

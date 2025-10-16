@@ -20,29 +20,30 @@
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/tx/detail/AMMWithdraw.h>
-#include <xrpld/ledger/Sandbox.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 
+bool
+AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return ammEnabled(ctx.rules);
+}
+
+std::uint32_t
+AMMWithdraw::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfWithdrawMask;
+}
+
 NotTEC
 AMMWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const flags = ctx.tx.getFlags();
-    if (flags & tfWithdrawMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
@@ -150,7 +151,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 static std::optional<STAmount>
@@ -195,9 +196,11 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (amountBalance <= beast::zero || amount2Balance <= beast::zero ||
         lptAMMBalance < beast::zero)
     {
+        // LCOV_EXCL_START
         JLOG(ctx.j.debug())
             << "AMM Withdraw: reserves or tokens balance is zero.";
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     auto const ammAccountID = ammSle->getAccountID(sfAccount);

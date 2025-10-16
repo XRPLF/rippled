@@ -1149,20 +1149,34 @@ ValidatorList::applyList(
 
     Json::Value list;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
-    auto [result, pubKeyOpt] = verify(lock, list, manifest, blob, signature);
+    auto m = deserializeManifest(base64_decode(manifest));
+    if (!m)
+    {
+        JLOG(j_.warn()) << "UNL manifest cannot be deserialized";
+        return PublisherListStats{ListDisposition::invalid};
+    }
+
+    auto [result, pubKeyOpt] =
+        verify(lock, list, std::move(*m), blob, signature);
 
     if (!pubKeyOpt)
     {
-        JLOG(j_.info()) << "ValidatorList::applyList unable to retrieve the "
-                           "master public key from the verify function\n";
+        JLOG(j_.warn())
+            << "UNL manifest is signed with an unrecognized master public key";
         return PublisherListStats{result};
     }
 
     if (!publicKeyType(*pubKeyOpt))
     {
-        JLOG(j_.info()) << "ValidatorList::applyList Invalid Public Key type"
-                           " retrieved from the verify function\n ";
+        // This is an impossible situation because we will never load an
+        // invalid public key type (see checks in `ValidatorList::load`) however
+        // we can only arrive here if the key used by the manifest matched one
+        // of the loaded keys
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "ripple::ValidatorList::applyList : invalid public key type");
         return PublisherListStats{result};
+        // LCOV_EXCL_STOP
     }
 
     PublicKey pubKey = *pubKeyOpt;
@@ -1356,19 +1370,17 @@ std::pair<ListDisposition, std::optional<PublicKey>>
 ValidatorList::verify(
     ValidatorList::lock_guard const& lock,
     Json::Value& list,
-    std::string const& manifest,
+    Manifest manifest,
     std::string const& blob,
     std::string const& signature)
 {
-    auto m = deserializeManifest(base64_decode(manifest));
-
-    if (!m || !publisherLists_.count(m->masterKey))
+    if (!publisherLists_.count(manifest.masterKey))
         return {ListDisposition::untrusted, {}};
 
-    PublicKey masterPubKey = m->masterKey;
-    auto const revoked = m->revoked();
+    PublicKey masterPubKey = manifest.masterKey;
+    auto const revoked = manifest.revoked();
 
-    auto const result = publisherManifests_.applyManifest(std::move(*m));
+    auto const result = publisherManifests_.applyManifest(std::move(manifest));
 
     if (revoked && result == ManifestDisposition::accepted)
     {
@@ -1796,7 +1808,7 @@ ValidatorList::getAvailable(
 
     if (!keyBlob || !publicKeyType(makeSlice(*keyBlob)))
     {
-        JLOG(j_.info()) << "Invalid requested validator list publisher key: "
+        JLOG(j_.warn()) << "Invalid requested validator list publisher key: "
                         << pubKey;
         return {};
     }

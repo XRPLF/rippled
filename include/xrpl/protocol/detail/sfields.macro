@@ -114,6 +114,7 @@ TYPED_SFIELD(sfVoteWeight,               UINT32,    48)
 TYPED_SFIELD(sfFirstNFTokenSequence,     UINT32,    50)
 TYPED_SFIELD(sfOracleDocumentID,         UINT32,    51)
 TYPED_SFIELD(sfPermissionValue,          UINT32,    52)
+TYPED_SFIELD(sfMutableFlags,             UINT32,    53)
 
 // 64-bit integers (common)
 TYPED_SFIELD(sfIndexNext,                UINT64,     1)
@@ -173,7 +174,8 @@ TYPED_SFIELD(sfNFTokenID,                UINT256,   10)
 TYPED_SFIELD(sfEmitParentTxnID,          UINT256,   11)
 TYPED_SFIELD(sfEmitNonce,                UINT256,   12)
 TYPED_SFIELD(sfEmitHookHash,             UINT256,   13)
-TYPED_SFIELD(sfAMMID,                    UINT256,   14)
+TYPED_SFIELD(sfAMMID,                    UINT256,   14,
+    SField::sMD_PseudoAccount | SField::sMD_Default)
 
 // 256-bit (uncommon)
 TYPED_SFIELD(sfBookDirectory,            UINT256,   16)
@@ -195,7 +197,8 @@ TYPED_SFIELD(sfHookHash,                 UINT256,   31)
 TYPED_SFIELD(sfHookNamespace,            UINT256,   32)
 TYPED_SFIELD(sfHookSetTxnID,             UINT256,   33)
 TYPED_SFIELD(sfDomainID,                 UINT256,   34)
-TYPED_SFIELD(sfVaultID,                  UINT256,   35)
+TYPED_SFIELD(sfVaultID,                  UINT256,   35,
+    SField::sMD_PseudoAccount | SField::sMD_Default)
 TYPED_SFIELD(sfParentBatchID,            UINT256,   36)
 
 // number (common)
@@ -204,6 +207,12 @@ TYPED_SFIELD(sfAssetsAvailable,          NUMBER,     2)
 TYPED_SFIELD(sfAssetsMaximum,            NUMBER,     3)
 TYPED_SFIELD(sfAssetsTotal,              NUMBER,     4)
 TYPED_SFIELD(sfLossUnrealized,           NUMBER,     5)
+
+// int32
+// NOTE: Do not use `sfDummyInt32`. It's so far the only use of INT32
+// in this file and has been defined here for test only.
+// TODO: Replace `sfDummyInt32` with actually useful field.
+TYPED_SFIELD(sfDummyInt32,               INT32,      1) // for tests only
 
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)

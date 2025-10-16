@@ -398,7 +398,7 @@ private:
     }
 
     void
-    testCreate()
+    testCreate(FeatureBitset features)
     {
         testcase("Create");
         using namespace jtx;
@@ -413,18 +413,30 @@ private:
                 env, {.owner = owner, .series = series, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
             BEAST_EXPECT(ownerCount(env, owner) == (count + adj));
+            auto const entry = oracle.ledgerEntry();
+            BEAST_EXPECT(entry[jss::node][jss::Owner] == owner.human());
+            if (features[fixIncludeKeyletFields])
+            {
+                BEAST_EXPECT(
+                    entry[jss::node][jss::OracleDocumentID] ==
+                    oracle.documentID());
+            }
+            else
+            {
+                BEAST_EXPECT(!entry[jss::node].isMember(jss::OracleDocumentID));
+            }
             BEAST_EXPECT(oracle.expectLastUpdateTime(946694810));
         };
 
         {
             // owner count is adjusted by 1
-            Env env(*this);
+            Env env(*this, features);
             test(env, {{"XRP", "USD", 740, 1}}, 1);
         }
 
         {
             // owner count is adjusted by 2
-            Env env(*this);
+            Env env(*this, features);
             test(
                 env,
                 {{"XRP", "USD", 740, 1},
@@ -438,7 +450,7 @@ private:
 
         {
             // Different owner creates a new object
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee =
                 static_cast<int>(env.current()->fees().base.drops());
             Account const some("some");
@@ -580,10 +592,8 @@ private:
                 jvParams[field] = value;
                 jvParams[jss::binary] = false;
                 jvParams[jss::type] = jss::oracle;
-                Json::Value jrr = env.rpc(
-                    "json",
-                    "ledger_data",
-                    boost::lexical_cast<std::string>(jvParams));
+                Json::Value jrr =
+                    env.rpc("json", "ledger_data", to_string(jvParams));
                 BEAST_EXPECT(jrr[jss::result][jss::state].size() == 2);
             };
             verifyLedgerData(jss::ledger_index, index);
@@ -864,7 +874,8 @@ public:
         auto const all = testable_amendments();
         testInvalidSet();
         testInvalidDelete();
-        testCreate();
+        testCreate(all);
+        testCreate(all - fixIncludeKeyletFields);
         testDelete();
         testUpdate();
         testAmendment();

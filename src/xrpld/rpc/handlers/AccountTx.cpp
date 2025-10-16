@@ -22,13 +22,13 @@
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Role.h>
 
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -353,9 +353,13 @@ populateJsonResponse(
                             jvObj[jss::meta], sttx, *txnMeta);
                     }
                     else
+                    {
+                        // LCOV_EXCL_START
                         UNREACHABLE(
                             "ripple::populateJsonResponse : missing "
                             "transaction medatata");
+                        // LCOV_EXCL_STOP
+                    }
                 }
             }
         }

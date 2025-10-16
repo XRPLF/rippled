@@ -218,7 +218,9 @@ Env::balance(Account const& account, MPTIssue const& mptIssue) const
         if (!sle)
             return {STAmount(mptIssue, 0), account.name()};
 
-        STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount)};
+        // Make it negative
+        STAmount const amount{
+            mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
         return {amount, lookup(issuer).name()};
     }
     else
@@ -231,6 +233,14 @@ Env::balance(Account const& account, MPTIssue const& mptIssue) const
         STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
         return {amount, lookup(issuer).name()};
     }
+}
+
+PrettyAmount
+Env::balance(Account const& account, Asset const& asset) const
+{
+    return std::visit(
+        [&](auto const& issue) { return balance(account, issue); },
+        asset.value());
 }
 
 PrettyAmount
@@ -401,7 +411,7 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
     if (params.isNull())
     {
         // Use the command line interface
-        auto const jv = boost::lexical_cast<std::string>(jt.jv);
+        auto const jv = to_string(jt.jv);
         jr = rpc("submit", passphrase, jv);
     }
     else
@@ -499,7 +509,16 @@ Env::meta()
         close();
     }
     auto const item = closed()->txRead(txid_);
-    return item.second;
+    auto const result = item.second;
+    if (result == nullptr)
+    {
+        test.log << "Env::meta: no metadata for txid: " << txid_ << std::endl;
+        test.log << "This is probably because the transaction failed with a "
+                    "non-tec error."
+                 << std::endl;
+        Throw<std::runtime_error>("Env::meta: no metadata for txid");
+    }
+    return result;
 }
 
 std::shared_ptr<STTx const>

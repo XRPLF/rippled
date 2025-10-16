@@ -20,10 +20,9 @@
 #ifndef RIPPLE_APP_BOOK_OFFER_H_INCLUDED
 #define RIPPLE_APP_BOOK_OFFER_H_INCLUDED
 
-#include <xrpld/ledger/View.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -226,11 +225,13 @@ template <class TIn, class TOut>
 void
 TOffer<TIn, TOut>::setFieldAmounts()
 {
+    // LCOV_EXCL_START
 #ifdef _MSC_VER
     UNREACHABLE("ripple::TOffer::setFieldAmounts : must be specialized");
 #else
     static_assert(sizeof(TOut) == -1, "Must be specialized");
 #endif
+    // LCOV_EXCL_STOP
 }
 
 template <class TIn, class TOut>

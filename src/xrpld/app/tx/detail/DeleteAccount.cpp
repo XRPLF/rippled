@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/DID.h>
 #include <xrpld/app/tx/detail/DelegateSet.h>
 #include <xrpld/app/tx/detail/DeleteAccount.h>
@@ -25,35 +24,36 @@
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
 
 namespace ripple {
+
+bool
+DeleteAccount::checkExtraFeatures(PreflightContext const& ctx)
+{
+    if (!ctx.rules.enabled(featureDeletableAccounts))
+        return false;
+
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        !ctx.rules.enabled(featureCredentials))
+        return false;
+
+    return true;
+}
 
 NotTEC
 DeleteAccount::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureDeletableAccounts))
-        return temDISABLED;
-
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         // An account cannot be deleted and give itself the resulting XRP.
         return temDST_IS_SRC;
@@ -62,14 +62,14 @@ DeleteAccount::preflight(PreflightContext const& ctx)
         !isTesSuccess(err))
         return err;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 XRPAmount
 DeleteAccount::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // The fee required for AccountDelete is one owner reserve.
-    return view.fees().increment;
+    return calculateOwnerReserveFee(view, tx);
 }
 
 namespace {
@@ -141,7 +141,7 @@ removeNFTokenOfferFromLedger(
     beast::Journal)
 {
     if (!nft::deleteTokenOffer(view, sleDel))
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     return tesSUCCESS;
 }
@@ -336,11 +336,13 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
         if (!sleItem)
         {
             // Directory node has an invalid index.  Bail out.
+            // LCOV_EXCL_START
             JLOG(ctx.j.fatal())
                 << "DeleteAccount: directory node in ledger " << ctx.view.seq()
                 << " has index to object that is missing: "
                 << to_string(dirEntry);
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
 
         LedgerEntryType const nodeType{
@@ -373,7 +375,7 @@ DeleteAccount::doApply()
         dst, "ripple::DeleteAccount::doApply : non-null destination account");
 
     if (!src || !dst)
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     if (ctx_.view().rules().enabled(featureDepositAuth) &&
         ctx_.tx.isFieldPresent(sfCredentialIDs))
@@ -399,12 +401,14 @@ DeleteAccount::doApply()
                 return {result, SkipEntry::No};
             }
 
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::DeleteAccount::doApply : undeletable item not found "
                 "in preclaim");
             JLOG(j_.error()) << "DeleteAccount undeletable item not "
                                 "found in preclaim.";
             return {tecHAS_OBLIGATIONS, SkipEntry::No};
+            // LCOV_EXCL_STOP
         },
         ctx_.journal);
     if (ter != tesSUCCESS)

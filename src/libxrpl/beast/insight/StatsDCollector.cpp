@@ -30,9 +30,11 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/error.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/system/detail/error_code.hpp>
@@ -238,9 +240,11 @@ private:
     Journal m_journal;
     IP::Endpoint m_address;
     std::string m_prefix;
-    boost::asio::io_service m_io_service;
-    std::optional<boost::asio::io_service::work> m_work;
-    boost::asio::io_service::strand m_strand;
+    boost::asio::io_context m_io_context;
+    std::optional<boost::asio::executor_work_guard<
+        boost::asio::io_context::executor_type>>
+        m_work;
+    boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> m_timer;
     boost::asio::ip::udp::socket m_socket;
     std::deque<std::string> m_data;
@@ -264,18 +268,24 @@ public:
         : m_journal(journal)
         , m_address(address)
         , m_prefix(prefix)
-        , m_work(std::ref(m_io_service))
-        , m_strand(m_io_service)
-        , m_timer(m_io_service)
-        , m_socket(m_io_service)
+        , m_work(boost::asio::make_work_guard(m_io_context))
+        , m_strand(boost::asio::make_strand(m_io_context))
+        , m_timer(m_io_context)
+        , m_socket(m_io_context)
         , m_thread(&StatsDCollectorImp::run, this)
     {
     }
 
     ~StatsDCollectorImp() override
     {
-        boost::system::error_code ec;
-        m_timer.cancel(ec);
+        try
+        {
+            m_timer.cancel();
+        }
+        catch (boost::system::system_error const&)
+        {
+            // ignored
+        }
 
         m_work.reset();
         m_thread.join();
@@ -334,10 +344,10 @@ public:
 
     //--------------------------------------------------------------------------
 
-    boost::asio::io_service&
-    get_io_service()
+    boost::asio::io_context&
+    get_io_context()
     {
-        return m_io_service;
+        return m_io_context;
     }
 
     std::string const&
@@ -355,8 +365,14 @@ public:
     void
     post_buffer(std::string&& buffer)
     {
-        m_io_service.dispatch(m_strand.wrap(std::bind(
-            &StatsDCollectorImp::do_post_buffer, this, std::move(buffer))));
+        boost::asio::dispatch(
+            m_io_context,
+            boost::asio::bind_executor(
+                m_strand,
+                std::bind(
+                    &StatsDCollectorImp::do_post_buffer,
+                    this,
+                    std::move(buffer))));
     }
 
     // The keepAlive parameter makes sure the buffers sent to
@@ -386,8 +402,7 @@ public:
         for (auto const& buffer : buffers)
         {
             std::string const s(
-                boost::asio::buffer_cast<char const*>(buffer),
-                boost::asio::buffer_size(buffer));
+                buffer.data(), boost::asio::buffer_size(buffer));
             std::cerr << s;
         }
         std::cerr << '\n';
@@ -456,7 +471,7 @@ public:
     set_timer()
     {
         using namespace std::chrono_literals;
-        m_timer.expires_from_now(1s);
+        m_timer.expires_after(1s);
         m_timer.async_wait(std::bind(
             &StatsDCollectorImp::on_timer, this, std::placeholders::_1));
     }
@@ -498,13 +513,13 @@ public:
 
         set_timer();
 
-        m_io_service.run();
+        m_io_context.run();
 
         m_socket.shutdown(boost::asio::ip::udp::socket::shutdown_send, ec);
 
         m_socket.close();
 
-        m_io_service.poll();
+        m_io_context.poll();
     }
 };
 
@@ -547,10 +562,12 @@ StatsDCounterImpl::~StatsDCounterImpl()
 void
 StatsDCounterImpl::increment(CounterImpl::value_type amount)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDCounterImpl::do_increment,
-        std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()),
-        amount));
+    boost::asio::dispatch(
+        m_impl->get_io_context(),
+        std::bind(
+            &StatsDCounterImpl::do_increment,
+            std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()),
+            amount));
 }
 
 void
@@ -592,10 +609,12 @@ StatsDEventImpl::StatsDEventImpl(
 void
 StatsDEventImpl::notify(EventImpl::value_type const& value)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDEventImpl::do_notify,
-        std::static_pointer_cast<StatsDEventImpl>(shared_from_this()),
-        value));
+    boost::asio::dispatch(
+        m_impl->get_io_context(),
+        std::bind(
+            &StatsDEventImpl::do_notify,
+            std::static_pointer_cast<StatsDEventImpl>(shared_from_this()),
+            value));
 }
 
 void
@@ -625,19 +644,23 @@ StatsDGaugeImpl::~StatsDGaugeImpl()
 void
 StatsDGaugeImpl::set(GaugeImpl::value_type value)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDGaugeImpl::do_set,
-        std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
-        value));
+    boost::asio::dispatch(
+        m_impl->get_io_context(),
+        std::bind(
+            &StatsDGaugeImpl::do_set,
+            std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
+            value));
 }
 
 void
 StatsDGaugeImpl::increment(GaugeImpl::difference_type amount)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDGaugeImpl::do_increment,
-        std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
-        amount));
+    boost::asio::dispatch(
+        m_impl->get_io_context(),
+        std::bind(
+            &StatsDGaugeImpl::do_increment,
+            std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
+            amount));
 }
 
 void
@@ -713,10 +736,12 @@ StatsDMeterImpl::~StatsDMeterImpl()
 void
 StatsDMeterImpl::increment(MeterImpl::value_type amount)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDMeterImpl::do_increment,
-        std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()),
-        amount));
+    boost::asio::dispatch(
+        m_impl->get_io_context(),
+        std::bind(
+            &StatsDMeterImpl::do_increment,
+            std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()),
+            amount));
 }
 
 void

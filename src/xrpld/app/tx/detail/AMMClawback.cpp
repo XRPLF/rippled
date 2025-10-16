@@ -21,9 +21,9 @@
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/tx/detail/AMMClawback.h>
 #include <xrpld/app/tx/detail/AMMWithdraw.h>
-#include <xrpld/ledger/Sandbox.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -33,19 +33,15 @@
 
 namespace ripple {
 
+std::uint32_t
+AMMClawback::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfAMMClawbackMask;
+}
+
 NotTEC
 AMMClawback::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureAMMClawback))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;  // LCOV_EXCL_LINE
-
-    auto const flags = ctx.tx.getFlags();
-    if (flags & tfAMMClawbackMask)
-        return temINVALID_FLAG;
-
     AccountID const issuer = ctx.tx[sfAccount];
     AccountID const holder = ctx.tx[sfHolder];
 
@@ -62,6 +58,8 @@ AMMClawback::preflight(PreflightContext const& ctx)
 
     if (isXRP(asset))
         return temMALFORMED;
+
+    auto const flags = ctx.tx.getFlags();
 
     if (flags & tfClawTwoAssets && asset.account != asset2.account)
     {
@@ -88,7 +86,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
     if (clawAmount && *clawAmount <= beast::zero)
         return temBAD_AMOUNT;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

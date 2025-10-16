@@ -105,7 +105,7 @@ PlainHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remote_address_))
     {
-        boost::asio::spawn(
+        util::spawn(
             this->strand_,
             std::bind(&PlainHTTPPeer::do_close, this->shared_from_this()));
         return;
@@ -114,7 +114,7 @@ PlainHTTPPeer<Handler>::run()
     if (!socket_.is_open())
         return;
 
-    boost::asio::spawn(
+    util::spawn(
         this->strand_,
         std::bind(
             &PlainHTTPPeer::do_read,

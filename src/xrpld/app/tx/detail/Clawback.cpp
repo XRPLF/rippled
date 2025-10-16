@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/Clawback.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
@@ -75,25 +75,22 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+std::uint32_t
+Clawback::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfClawbackMask;
+}
+
 NotTEC
 Clawback::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureClawback))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfClawbackMask)
-        return temINVALID_FLAG;
-
     if (auto const ret = std::visit(
             [&]<typename T>(T const&) { return preflightHelper<T>(ctx); },
             ctx.tx[sfAmount].asset().value());
         !isTesSuccess(ret))
         return ret;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 template <ValidIssueType T>
@@ -238,7 +235,7 @@ applyHelper<Issue>(ApplyContext& ctx)
     // Replace the `issuer` field with issuer's account
     clawAmount.setIssuer(issuer);
     if (holder == issuer)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Get the spendable balance. Must use `accountHolds`.
     STAmount const spendableAmount = accountHolds(

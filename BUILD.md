@@ -39,16 +39,11 @@ found here](./docs/build/environment.md).
 
 - [Python 3.11](https://www.python.org/downloads/), or higher
 - [Conan 2.17](https://conan.io/downloads.html)[^1], or higher
-- [CMake 3.22](https://cmake.org/download/)[^2], or higher
+- [CMake 3.22](https://cmake.org/download/), or higher
 
 [^1]:
     It is possible to build with Conan 1.60+, but the instructions are
     significantly different, which is why we are not recommending it.
-
-[^2]:
-    CMake 4 is not yet supported by all dependencies required by this project.
-    If you are affected by this issue, follow [conan workaround for cmake
-    4](#workaround-for-cmake-4)
 
 `rippled` is written in the C++20 dialect and includes the `<concepts>` header.
 The [minimum compiler versions][2] required are:
@@ -132,7 +127,7 @@ higher index than the default Conan Center remote, so it is consulted first. You
 can do this by running:
 
 ```bash
-conan remote add --index 0 xrplf "https://conan.ripplex.io"
+conan remote add --index 0 xrplf https://conan.ripplex.io
 ```
 
 Alternatively, you can pull the patched recipes into the repository and use them
@@ -157,6 +152,10 @@ patch, it will be necessary for you to pull in the changes and re-export the
 updated dependencies with the newer version. However, if we switch to a newer
 version that no longer requires a patch, no action is required on your part, as
 the new recipe will be automatically pulled from the official Conan Center.
+
+> [!NOTE]
+> You might need to add `--lockfile=""` to your `conan install` command
+> to avoid automatic use of the existing `conan.lock` file when you run `conan export` manually on your machine
 
 ### Conan profile tweaks
 
@@ -277,21 +276,6 @@ sed -i.bak -e 's|^arch=.*$|arch=x86_64|' $(conan config home)/profiles/default
 ```bash
 sed -i.bak -e 's|^compiler\.runtime=.*$|compiler.runtime=static|' $(conan config home)/profiles/default
 ```
-
-#### Workaround for CMake 4
-
-If your system CMake is version 4 rather than 3, you may have to configure Conan
-profile to use CMake version 3 for dependencies, by adding the following two
-lines to your profile:
-
-```text
-[tool_requires]
-!cmake/*: cmake/[>=3 <4]
-```
-
-This will force Conan to download and use a locally cached CMake 3 version, and
-is needed because some of the dependencies used by this project do not support
-CMake 4.
 
 #### Clang workaround for grpc
 
@@ -466,6 +450,33 @@ tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
    The location of `rippled` binary in your build directory depends on your
    CMake generator. Pass `--help` to see the rest of the command line options.
 
+#### Conan lockfile
+
+To achieve reproducible dependencies, we use [Conan lockfile](https://docs.conan.io/2/tutorial/versioning/lockfiles.html).
+
+The `conan.lock` file in the repository contains a "snapshot" of the current dependencies.
+It is implicitly used when running `conan` commands, you don't need to specify it.
+
+You have to update this file every time you add a new dependency or change a revision or version of an existing dependency.
+
+> [!NOTE]
+> Conan uses local cache by default when creating a lockfile.
+>
+> To ensure, that lockfile creation works the same way on all developer machines, you should clear the local cache before creating a new lockfile.
+
+To create a new lockfile, run the following commands in the repository root:
+
+```bash
+conan remove '*' --confirm
+rm conan.lock
+# This ensure that xrplf remote is the first to be consulted
+conan remote add --force --index 0 xrplf https://conan.ripplex.io
+conan lock create . -o '&:jemalloc=True' -o '&:rocksdb=True'
+```
+
+> [!NOTE]
+> If some dependencies are exclusive for some OS, you may need to run the last command for them adding `--profile:all <PROFILE>`.
+
 ## Coverage report
 
 The coverage report is intended for developers using compilers GCC
@@ -564,7 +575,13 @@ After any updates or changes to dependencies, you may need to do the following:
    ```
 
 3. Re-run [conan export](#patched-recipes) if needed.
-4. Re-run [conan install](#build-and-test).
+4. [Regenerate lockfile](#conan-lockfile).
+5. Re-run [conan install](#build-and-test).
+
+#### ERROR: Package not resolved
+
+If you're seeing an error like `ERROR: Package 'snappy/1.1.10' not resolved: Unable to find 'snappy/1.1.10#968fef506ff261592ec30c574d4a7809%1756234314.246' in remotes.`,
+please add `xrplf` remote or re-run `conan export` for [patched recipes](#patched-recipes).
 
 ### `protobuf/port_def.inc` file not found
 
