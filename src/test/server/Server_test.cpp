@@ -466,37 +466,37 @@ public:
             messages.find("Missing 'protocol' in [port_rpc]") !=
             std::string::npos);
 
-        except(
-            [&]  // this creates a standard test config without the server
-                 // section
-            {
-                Env env{
-                    *this,
-                    envconfig([](std::unique_ptr<Config> cfg) {
-                        cfg = std::make_unique<Config>();
-                        cfg->overwrite(
-                            ConfigSection::nodeDatabase(), "type", "memory");
-                        cfg->overwrite(
-                            ConfigSection::nodeDatabase(), "path", "main");
-                        cfg->deprecatedClearSection(
-                            ConfigSection::importNodeDatabase());
-                        cfg->legacy("database_path", "");
-                        cfg->setupControl(true, true, true);
-                        (*cfg)["port_peer"].set("ip", getEnvLocalhostAddr());
-                        (*cfg)["port_peer"].set("port", "8080");
-                        (*cfg)["port_peer"].set("protocol", "peer");
-                        (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
-                        (*cfg)["port_rpc"].set("port", "8081");
-                        (*cfg)["port_rpc"].set("protocol", "http,ws2");
-                        (*cfg)["port_rpc"].set("admin", getEnvLocalhostAddr());
-                        (*cfg)["port_ws"].set("ip", getEnvLocalhostAddr());
-                        (*cfg)["port_ws"].set("port", "8082");
-                        (*cfg)["port_ws"].set("protocol", "ws");
-                        (*cfg)["port_ws"].set("admin", getEnvLocalhostAddr());
-                        return cfg;
-                    }),
-                    std::make_unique<CaptureLogs>(&messages)};
-            });
+        except([&]  // this creates a standard test config without the server
+                    // section
+               {
+                   Env env{
+                       *this,
+                       envconfig([](std::unique_ptr<Config> cfg) {
+                           auto const& localhost = getEnvLocalhostAddr();
+                           cfg = std::make_unique<Config>();
+                           cfg->overwrite(
+                               ConfigSection::nodeDatabase(), "type", "memory");
+                           cfg->overwrite(
+                               ConfigSection::nodeDatabase(), "path", "main");
+                           cfg->deprecatedClearSection(
+                               ConfigSection::importNodeDatabase());
+                           cfg->legacy("database_path", "");
+                           cfg->setupControl(true, true, true);
+                           (*cfg)["port_peer"].set("ip", localhost);
+                           (*cfg)["port_peer"].set("port", "8080");
+                           (*cfg)["port_peer"].set("protocol", "peer");
+                           (*cfg)["port_rpc"].set("ip", localhost);
+                           (*cfg)["port_rpc"].set("port", "8081");
+                           (*cfg)["port_rpc"].set("protocol", "http,ws2");
+                           (*cfg)["port_rpc"].set("admin", localhost);
+                           (*cfg)["port_ws"].set("ip", localhost);
+                           (*cfg)["port_ws"].set("port", "8082");
+                           (*cfg)["port_ws"].set("protocol", "ws");
+                           (*cfg)["port_ws"].set("admin", localhost);
+                           return cfg;
+                       }),
+                       std::make_unique<CaptureLogs>(&messages)};
+               });
         BEAST_EXPECT(
             messages.find("Required section [server] is missing") !=
             std::string::npos);

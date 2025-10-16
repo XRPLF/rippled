@@ -31,6 +31,10 @@ void
 setupConfigForUnitTests(Config& cfg)
 {
     using namespace jtx;
+
+    // Use the loopback address for IPv4 or IPv6, as appropriate.
+    auto const& localhost = getEnvLocalhostAddr();
+
     // Default fees to old values, so tests don't have to worry about changes in
     // Config.h
     cfg.FEES.reference_fee = UNIT_TEST_REFERENCE_FEE;
@@ -46,7 +50,7 @@ setupConfigForUnitTests(Config& cfg)
     cfg.legacy("database_path", "");
     cfg.setupControl(true, true, true);
     cfg["server"].append(PORT_PEER);
-    cfg[PORT_PEER].set("ip", getEnvLocalhostAddr());
+    cfg[PORT_PEER].set("ip", localhost);
 
     // Using port 0 asks the operating system to allocate an unused port, which
     // can be obtained after a "bind" call.
@@ -57,14 +61,14 @@ setupConfigForUnitTests(Config& cfg)
     cfg[PORT_PEER].set("protocol", "peer");
 
     cfg["server"].append(PORT_RPC);
-    cfg[PORT_RPC].set("ip", getEnvLocalhostAddr());
-    cfg[PORT_RPC].set("admin", getEnvLocalhostAddr());
+    cfg[PORT_RPC].set("ip", localhost);
+    cfg[PORT_RPC].set("admin", localhost);
     cfg[PORT_RPC].set("port", "0");
     cfg[PORT_RPC].set("protocol", "http,ws2");
 
     cfg["server"].append(PORT_WS);
-    cfg[PORT_WS].set("ip", getEnvLocalhostAddr());
-    cfg[PORT_WS].set("admin", getEnvLocalhostAddr());
+    cfg[PORT_WS].set("ip", localhost);
+    cfg[PORT_WS].set("admin", localhost);
     cfg[PORT_WS].set("port", "0");
     cfg[PORT_WS].set("protocol", "ws");
     cfg.SSL_VERIFY = false;
@@ -83,9 +87,11 @@ no_admin(std::unique_ptr<Config> cfg)
 std::unique_ptr<Config>
 secure_gateway(std::unique_ptr<Config> cfg)
 {
+    // Use the same IP address as assigned to the other IP fields.
+    auto const localhost = (*cfg)[PORT_PEER].get<std::string>("ip");
     (*cfg)[PORT_RPC].set("admin", "");
     (*cfg)[PORT_WS].set("admin", "");
-    (*cfg)[PORT_RPC].set("secure_gateway", getEnvLocalhostAddr());
+    (*cfg)[PORT_RPC].set("secure_gateway", *localhost);
     return cfg;
 }
 
@@ -115,28 +121,6 @@ validator(std::unique_ptr<Config> cfg, std::string const& seed)
     // If the config has valid validation keys then we run as a validator.
     cfg->section(SECTION_VALIDATION_SEED)
         .append(std::vector<std::string>{seed.empty() ? defaultseed : seed});
-    return cfg;
-}
-
-std::unique_ptr<Config>
-addGrpcConfig(std::unique_ptr<Config> cfg)
-{
-    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
-    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-    return cfg;
-}
-
-std::unique_ptr<Config>
-addGrpcConfigWithSecureGateway(
-    std::unique_ptr<Config> cfg,
-    std::string const& secureGateway)
-{
-    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
-
-    // Check https://man7.org/linux/man-pages/man7/ip.7.html
-    // "ip_local_port_range" section for using 0 ports
-    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-    (*cfg)[SECTION_PORT_GRPC].set("secure_gateway", secureGateway);
     return cfg;
 }
 

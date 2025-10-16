@@ -80,14 +80,17 @@ class ServerStatus_test : public beast::unit_test::suite,
 
         if (proto == "https")
         {
+            // Use the same IP address as assigned to the other IP address
+            // fields.
+            auto const localhost = (*p)[PORT_PEER].get<std::string>("ip");
             // this port is here to allow the env to create its internal client,
             // which requires an http endpoint to talk to. In the connection
             // failure test, this endpoint should never be used
             (*p)["server"].append("port_alt");
-            (*p)["port_alt"].set("ip", getEnvLocalhostAddr());
+            (*p)["port_alt"].set("ip", *localhost);
             (*p)["port_alt"].set("port", "7099");
             (*p)["port_alt"].set("protocol", "http");
-            (*p)["port_alt"].set("admin", getEnvLocalhostAddr());
+            (*p)["port_alt"].set("admin", *localhost);
         }
 
         return p;

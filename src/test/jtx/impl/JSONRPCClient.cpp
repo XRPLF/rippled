@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/JSONRPCClient.h>
+#include <test/jtx/envconfig.h>
 
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/to_string.h>
@@ -54,8 +55,17 @@ class JSONRPCClient : public AbstractClient
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
-                *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
-                                        : address{address_v4::loopback()};
+            {
+                if (pp.ip->is_v6())
+                {
+                    *pp.ip = address{address_v6::loopback()};
+                }
+                else
+                {
+                    auto const loopback_v4 = getRandomIPv4Loopback();
+                    *pp.ip = address{address_v4(loopback_v4)};
+                }
+            }
 
             if (!pp.port)
                 Throw<std::runtime_error>("Use fixConfigPorts with auto ports");

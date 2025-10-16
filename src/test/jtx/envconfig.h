@@ -45,7 +45,7 @@ getRandomIPv4Loopback()
     // (except 127.0.0.0 and 127.255.255.255 that are reserved), which we should
     // use as the majority of our tests use IPv4. On macOS only 127.0.0.1 is
     // available as loopback address, unless the loopback interface is aliased
-    // to more addresses, e.g. `sudo ifconfig lo0 alias 127.0.0.* up`.
+    // to more addresses, e.g. `sudo ifconfig lo0 alias 127.0.0.2 up` etc.
 #if defined(__clang__) && defined(__APPLE__)
     return 0x7F000001;  // 127.0.0.1
 #else
@@ -141,27 +141,6 @@ std::unique_ptr<Config> secure_gateway_localnet(std::unique_ptr<Config>);
 /// @return unique_ptr to Config instance
 std::unique_ptr<Config>
 validator(std::unique_ptr<Config>, std::string const&);
-
-/// @brief add a grpc address and port to config
-///
-/// This is intended for use with envconfig, for tests that require a grpc
-/// server. If this function is not called, grpc server will not start
-///
-///
-/// @param cfg config instance to be modified
-std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
-
-/// @brief add a grpc address, port and secure_gateway to config
-///
-/// This is intended for use with envconfig, for tests that require a grpc
-/// server. If this function is not called, grpc server will not start
-///
-///
-/// @param cfg config instance to be modified
-std::unique_ptr<Config>
-addGrpcConfigWithSecureGateway(
-    std::unique_ptr<Config>,
-    std::string const& secureGateway);
 
 std::unique_ptr<Config>
 makeConfig(
