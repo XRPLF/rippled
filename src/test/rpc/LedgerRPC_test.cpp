@@ -527,7 +527,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         // Alice
         auto aliceSeq = env.seq(alice);
         env(pay(alice, "george", XRP(1000)),
-            json(R"({"LastLedgerSequence":7})"),
+            last_ledger_seq(7),
             ter(terQUEUED));
         env(offer(alice, XRP(50000), alice["USD"](5000)),
             seq(aliceSeq + 1),
