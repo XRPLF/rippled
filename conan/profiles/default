@@ -19,7 +19,6 @@ compiler.runtime=dynamic
 compiler.libcxx={{detect_api.detect_libcxx(compiler, version, compiler_exe)}}
 {% endif %}
 
-[settings.overrides]
 # The gnulib copy included in m4 1.4.19 does not detect properly the default C
 # language standard of gcc 15, which has been changed from "gnu17" to "gnu23",
 # see https://lists.buildroot.org/pipermail/buildroot/2025-May/777741.html.
