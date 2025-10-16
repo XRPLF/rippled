@@ -377,7 +377,7 @@ SetTrust::doApply()
 
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // The reserve that is required to create the line. Note
     // that although the reserve increases with every item

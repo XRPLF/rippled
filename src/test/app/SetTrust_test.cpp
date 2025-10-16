@@ -192,7 +192,7 @@ public:
         auto const& assistor = createOnHighAcct ? acctC : acctD;
 
         auto const txFee = env.current()->fees().base;
-        auto const baseReserve = env.current()->fees().accountReserve(0);
+        auto const baseReserve = env.current()->fees().reserve;
         auto const threelineReserve = env.current()->fees().accountReserve(3);
 
         env.fund(XRP(10000), gwA, gwB, assistor);

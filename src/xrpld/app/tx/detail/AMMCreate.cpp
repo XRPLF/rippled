@@ -208,7 +208,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             return tesSUCCESS;
         if (auto const sle = ctx.view.read(keylet::account(issue.account));
             !sle)
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
         else if (sle->getFlags() & lsfAllowTrustLineClawback)
             return tecNO_PERMISSION;
         return tesSUCCESS;
@@ -313,7 +313,7 @@ applyCreate(
             if (SLE::pointer sleRippleState =
                     sb.peek(keylet::line(accountId, amount.issue()));
                 !sleRippleState)
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
             else
             {
                 auto const flags = sleRippleState->getFlags();

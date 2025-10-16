@@ -169,8 +169,10 @@ doAccountChannels(RPC::JsonContext& context)
                 std::shared_ptr<SLE const> const& sleCur) {
                 if (!sleCur)
                 {
+                    // LCOV_EXCL_START
                     UNREACHABLE("ripple::doAccountChannels : null SLE");
                     return false;
+                    // LCOV_EXCL_STOP
                 }
 
                 if (++count == limit)

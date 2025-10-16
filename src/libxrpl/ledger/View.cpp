@@ -324,10 +324,12 @@ isVaultPseudoAccountFrozen(
     auto const issuer = mptIssuance->getAccountID(sfIssuer);
     auto const mptIssuer = view.read(keylet::account(issuer));
     if (mptIssuer == nullptr)
-    {  // LCOV_EXCL_START
+    {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null MPToken issuer");
         return false;
-    }  // LCOV_EXCL_STOP
+        // LCOV_EXCL_STOP
+    }
 
     if (!mptIssuer->isFieldPresent(sfVaultID))
         return false;  // not a Vault pseudo-account, common case
@@ -338,7 +340,8 @@ isVaultPseudoAccountFrozen(
     {  // LCOV_EXCL_START
         UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null vault");
         return false;
-    }  // LCOV_EXCL_STOP
+        // LCOV_EXCL_STOP
+    }
 
     return isAnyFrozen(view, {issuer, account}, vault->at(sfAsset), depth + 1);
 }
@@ -1377,7 +1380,7 @@ createPseudoAccount(
     uint256 const& pseudoOwnerKey,
     SField const& ownerField)
 {
-    auto const& fields = getPseudoAccountFields();
+    [[maybe_unused]] auto const& fields = getPseudoAccountFields();
     XRPL_ASSERT(
         std::count_if(
             fields.begin(),
@@ -1544,7 +1547,7 @@ authorizeMPToken(
 {
     auto const sleAcct = view.peek(keylet::account(account));
     if (!sleAcct)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the account that submitted the tx is a holder
     // Note: `account_` is holder's account
@@ -1619,17 +1622,17 @@ authorizeMPToken(
 
     auto const sleMptIssuance = view.read(keylet::mptIssuance(mptIssuanceID));
     if (!sleMptIssuance)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the account that submitted this tx is the issuer of the MPT
     // Note: `account_` is issuer's account
     //       `holderID` is holder's account
     if (account != (*sleMptIssuance)[sfIssuer])
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleMpt = view.peek(keylet::mptoken(mptIssuanceID, *holderID));
     if (!sleMpt)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     std::uint32_t const flagsIn = sleMpt->getFieldU32(sfFlags);
     std::uint32_t flagsOut = flagsIn;
@@ -1688,7 +1691,7 @@ trustCreate(
         describeOwnerDir(uLowAccountID));
 
     if (!lowNode)
-        return tecDIR_FULL;
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     auto highNode = view.dirInsert(
         keylet::ownerDir(uHighAccountID),
@@ -1696,14 +1699,14 @@ trustCreate(
         describeOwnerDir(uHighAccountID));
 
     if (!highNode)
-        return tecDIR_FULL;
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     bool const bSetDst = saLimit.getIssuer() == uDstAccountID;
     bool const bSetHigh = bSrcHigh ^ bSetDst;
 
     XRPL_ASSERT(sleAccount, "ripple::trustCreate : non-null SLE");
     if (!sleAccount)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(
         sleAccount->getAccountID(sfAccount) ==
@@ -1792,10 +1795,12 @@ removeEmptyHolding(
     {
         auto const sle = view.read(keylet::account(accountID));
         if (!sle)
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
         auto const balance = sle->getFieldAmount(sfBalance);
         if (balance.xrp() != 0)
             return tecHAS_OBLIGATIONS;
+
         return tesSUCCESS;
     }
 
@@ -1813,7 +1818,8 @@ removeEmptyHolding(
         auto sleLowAccount =
             view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
         if (!sleLowAccount)
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
         reduceOwnerCount(view, sleLowAccount, std::nullopt, -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
@@ -1827,7 +1833,8 @@ removeEmptyHolding(
         auto sleHighAccount =
             view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
         if (!sleHighAccount)
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
         reduceOwnerCount(view, sleHighAccount, std::nullopt, -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
@@ -1889,7 +1896,7 @@ trustDelete(
             sleRippleState->key(),
             false))
     {
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: high";
@@ -1900,7 +1907,7 @@ trustDelete(
             sleRippleState->key(),
             false))
     {
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsorAccount);
@@ -1929,7 +1936,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
             offerIndex,
             false))
     {
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     if (!view.dirRemove(
@@ -1938,7 +1945,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
             offerIndex,
             false))
     {
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     if (sle->isFieldPresent(sfAdditionalBooks))
@@ -2117,7 +2124,7 @@ rippleCreditIOU(
 
     auto const sleAccount = view.peek(keylet::account(uReceiverID));
     if (!sleAccount)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     bool const noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
 
@@ -2235,14 +2242,16 @@ accountSendIOU(
     {
         if (saAmount < beast::zero || saAmount.holds<MPTIssue>())
         {
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
         }
     }
     else
     {
+        // LCOV_EXCL_START
         XRPL_ASSERT(
             saAmount >= beast::zero && !saAmount.holds<MPTIssue>(),
             "ripple::accountSendIOU : minimum amount and not MPT");
+        // LCOV_EXCL_STOP
     }
 
     /* If we aren't sending anything or if the sender is the same as the
@@ -2307,8 +2316,10 @@ accountSendIOU(
         {
             // VFALCO Its laborious to have to mutate the
             //        TER based on params everywhere
+            // LCOV_EXCL_START
             terResult = view.open() ? TER{telFAILED_PROCESSING}
                                     : TER{tecFAILED_PROCESSING};
+            // LCOV_EXCL_STOP
         }
         else
         {
@@ -2395,7 +2406,7 @@ rippleCreditMPT(
             view.update(sleIssuance);
         }
         else
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
     }
     else
     {
@@ -2671,7 +2682,7 @@ issueIOU(
 
     auto const receiverAccount = view.peek(keylet::account(account));
     if (!receiverAccount)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     bool noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
 
@@ -2761,11 +2772,13 @@ redeemIOU(
     // In order to hold an IOU, a trust line *MUST* exist to track the
     // balance. If it doesn't, then something is very wrong. Don't try
     // to continue.
+    // LCOV_EXCL_START
     JLOG(j.fatal()) << "redeemIOU: " << to_string(account)
                     << " attempts to redeem " << amount.getFullText()
                     << " but no trust line exists!";
 
     return tefINTERNAL;
+    // LCOV_EXCL_STOP
 }
 
 TER
@@ -2785,7 +2798,7 @@ transferXRP(
     SLE::pointer const sender = view.peek(keylet::account(from));
     SLE::pointer const receiver = view.peek(keylet::account(to));
     if (!sender || !receiver)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     JLOG(j.trace()) << "transferXRP: " << to_string(from) << " -> "
                     << to_string(to) << ") : " << amount.getFullText();
@@ -2795,8 +2808,10 @@ transferXRP(
         // VFALCO Its unfortunate we have to keep
         //        mutating these TER everywhere
         // FIXME: this logic should be moved to callers maybe?
+        // LCOV_EXCL_START
         return view.open() ? TER{telFAILED_PROCESSING}
                            : TER{tecFAILED_PROCESSING};
+        // LCOV_EXCL_STOP
     }
 
     // Decrement XRP balance.
@@ -3029,7 +3044,8 @@ enforceMPTokenAuthorization(
     UNREACHABLE(
         "ripple::enforceMPTokenAuthorization : condition list is incomplete");
     return tefINTERNAL;
-}  // LCOV_EXCL_STOP
+    // LCOV_EXCL_STOP
+}
 
 TER
 canTransfer(
@@ -3078,11 +3094,13 @@ cleanupOnAccountDelete(
             if (!sleItem)
             {
                 // Directory node has an invalid index.  Bail out.
+                // LCOV_EXCL_START
                 JLOG(j.fatal())
                     << "DeleteAccount: Directory node in ledger " << view.seq()
                     << " has index to object that is missing: "
                     << to_string(dirEntry);
                 return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
             }
 
             LedgerEntryType const nodeType{safe_cast<LedgerEntryType>(
@@ -3115,9 +3133,11 @@ cleanupOnAccountDelete(
                 "ripple::cleanupOnAccountDelete : minimum dir entries");
             if (uDirEntry == 0)
             {
+                // LCOV_EXCL_START
                 JLOG(j.error())
                     << "DeleteAccount iterator re-validation failed.";
                 return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
             }
             if (skipEntry == SkipEntry::No)
                 uDirEntry--;
@@ -3137,7 +3157,7 @@ deleteAMMTrustLine(
     beast::Journal j)
 {
     if (!sleState || sleState->getType() != ltRIPPLE_STATE)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& [low, high] = std::minmax(
         sleState->getFieldAmount(sfLowLimit).getIssuer(),
@@ -3145,13 +3165,14 @@ deleteAMMTrustLine(
     auto sleLow = view.peek(keylet::account(low));
     auto sleHigh = view.peek(keylet::account(high));
     if (!sleLow || !sleHigh)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
     bool const ammLow = sleLow->isFieldPresent(sfAMMID);
     bool const ammHigh = sleHigh->isFieldPresent(sfAMMID);
 
     // can't both be AMM
     if (ammLow && ammHigh)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // at least one must be
     if (!ammLow && !ammHigh)
@@ -3171,7 +3192,7 @@ deleteAMMTrustLine(
 
     auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
     if (!(sleState->getFlags() & uFlags))
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sponsorSle = getLedgerEntryReserveSponsor(
         view, sleState, !ammLow ? sfLowSponsorAccount : sfHighSponsorAccount);

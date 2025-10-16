@@ -76,7 +76,7 @@ addSLE(
 {
     auto const sleAccount = ctx.view().peek(keylet::account(owner));
     if (!sleAccount)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check reserve availability for new object creation
     auto const sponsor = getTxReserveSponsor(ctx.view(), ctx.tx);
@@ -94,7 +94,7 @@ addSLE(
         auto page = ctx.view().dirInsert(
             keylet::ownerDir(owner), sle->key(), describeOwnerDir(owner));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
     adjustOwnerCount(ctx.view(), ctx.tx, sleAccount, sponsor, 1, ctx.journal);
@@ -188,13 +188,15 @@ DIDDelete::deleteSLE(
     if (!view.dirRemove(
             keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete DID Token from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     auto const sleOwner = view.peek(keylet::account(owner));
     if (!sleOwner)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
     reduceOwnerCount(view, sleOwner, sponsor, -1, j);

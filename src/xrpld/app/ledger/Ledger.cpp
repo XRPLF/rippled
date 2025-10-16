@@ -433,8 +433,10 @@ Ledger::read(Keylet const& k) const
 {
     if (k.key == beast::zero)
     {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::Ledger::read : zero key");
         return nullptr;
+        // LCOV_EXCL_STOP
     }
     auto const& item = stateMap_.peekItem(k.key);
     if (!item)
@@ -860,6 +862,7 @@ Ledger::assertSensible(beast::Journal ledgerJ) const
         return true;
     }
 
+    // LCOV_EXCL_START
     Json::Value j = getJson({*this, {}});
 
     j[jss::accountTreeHash] = to_string(info_.accountHash);
@@ -870,6 +873,7 @@ Ledger::assertSensible(beast::Journal ledgerJ) const
     UNREACHABLE("ripple::Ledger::assertSensible : ledger is not sensible");
 
     return false;
+    // LCOV_EXCL_STOP
 }
 
 // update the skip list with the information from our previous ledger

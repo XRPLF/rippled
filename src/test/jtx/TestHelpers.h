@@ -520,7 +520,6 @@ expectLedgerEntryRoot(
 
 /* Payment Channel */
 /******************************************************************************/
-
 namespace paychan {
 
 Json::Value
