@@ -4,6 +4,10 @@ description: "Install Conan dependencies, optionally forcing a rebuild of all de
 # Note that actions do not support 'type' and all inputs are strings, see
 # https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#inputs.
 inputs:
+  verbosity:
+    description: "The build verbosity."
+    required: false
+    default: "verbose"
   build_dir:
     description: "The directory where to build."
     required: true
@@ -34,4 +38,7 @@ runs:
           --options:host='&:tests=True' \
           --options:host='&:xrpld=True' \
           --settings:all build_type='${{ env.BUILD_TYPE }}' \
+          --conf:all tools.build:verbosity='${{ inputs.verbosity }}' \
+          --conf:all tools.compilation:verbosity='${{ inputs.verbosity }}' \
+          --conf:all tools.build:jobs=$(nproc) \
           ..

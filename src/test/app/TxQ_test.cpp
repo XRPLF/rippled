@@ -747,11 +747,9 @@ public:
 
         BEAST_EXPECT(env.current()->info().seq == 6);
         // Fail to queue an item with a low LastLedgerSeq
-        env(noop(alice),
-            json(R"({"LastLedgerSequence":7})"),
-            ter(telCAN_NOT_QUEUE));
+        env(noop(alice), last_ledger_seq(7), ter(telCAN_NOT_QUEUE));
         // Queue an item with a sufficient LastLedgerSeq.
-        env(noop(alice), json(R"({"LastLedgerSequence":8})"), queued);
+        env(noop(alice), last_ledger_seq(8), queued);
 
         constexpr auto largeFeeMultiplier = 700;
         auto const largeFee = baseFee * largeFeeMultiplier;
@@ -2705,21 +2703,15 @@ public:
 
         auto const aliceSeq = env.seq(alice);
         BEAST_EXPECT(env.current()->info().seq == 3);
-        env(noop(alice),
-            seq(aliceSeq),
-            json(R"({"LastLedgerSequence":5})"),
-            ter(terQUEUED));
-        env(noop(alice),
-            seq(aliceSeq + 1),
-            json(R"({"LastLedgerSequence":5})"),
-            ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq), last_ledger_seq(5), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 1), last_ledger_seq(5), ter(terQUEUED));
         env(noop(alice),
             seq(aliceSeq + 2),
-            json(R"({"LastLedgerSequence":10})"),
+            last_ledger_seq(10),
             ter(terQUEUED));
         env(noop(alice),
             seq(aliceSeq + 3),
-            json(R"({"LastLedgerSequence":11})"),
+            last_ledger_seq(11),
             ter(terQUEUED));
         checkMetrics(*this, env, 4, std::nullopt, 2, 1);
         auto const bobSeq = env.seq(bob);
@@ -2816,39 +2808,39 @@ public:
             ter(terQUEUED));
         env(noop(alice),
             seq(aliceSeq + 11),
-            json(R"({"LastLedgerSequence":11})"),
+            last_ledger_seq(11),
             ter(terQUEUED));
         env(noop(alice),
             seq(aliceSeq + 12),
-            json(R"({"LastLedgerSequence":11})"),
+            last_ledger_seq(11),
             ter(terQUEUED));
         env(noop(alice),
             seq(aliceSeq + 13),
-            json(R"({"LastLedgerSequence":11})"),
+            last_ledger_seq(11),
             ter(terQUEUED));
         env(noop(alice),
             seq(aliceSeq + 14),
-            json(R"({"LastLedgerSequence":11})"),
+            last_ledger_seq(11),
             ter(terQUEUED));
         env(noop(alice),
             seq(aliceSeq + 15),
-            json(R"({"LastLedgerSequence":11})"),
+            last_ledger_seq(11),
             ter(terQUEUED));
         env(noop(alice),
             seq(aliceSeq + 16),
-            json(R"({"LastLedgerSequence": 5})"),
+            last_ledger_seq(5),
             ter(terQUEUED));
         env(noop(alice),
             seq(aliceSeq + 17),
-            json(R"({"LastLedgerSequence": 5})"),
+            last_ledger_seq(5),
             ter(terQUEUED));
         env(noop(alice),
             seq(aliceSeq + 18),
-            json(R"({"LastLedgerSequence": 5})"),
+            last_ledger_seq(5),
             ter(terQUEUED));
         env(noop(alice),
             seq(aliceSeq + 19),
-            json(R"({"LastLedgerSequence":11})"),
+            last_ledger_seq(11),
             ter(terQUEUED));
         checkMetrics(*this, env, 10, std::nullopt, 2, 1);
 
@@ -4575,7 +4567,7 @@ public:
         env(noop(alice),
             seq(seqAlice++),
             fee(--feeDrops),
-            json(R"({"LastLedgerSequence": 7})"),
+            last_ledger_seq(7),
             ter(terQUEUED));
         env(noop(alice), seq(seqAlice++), fee(--feeDrops), ter(terQUEUED));
         env(noop(alice), seq(seqAlice++), fee(--feeDrops), ter(terQUEUED));
@@ -4585,7 +4577,7 @@ public:
         // The drop penalty works a little differently with tickets.
         env(noop(bob),
             ticket::use(bobTicketSeq + 0),
-            json(R"({"LastLedgerSequence": 7})"),
+            last_ledger_seq(7),
             ter(terQUEUED));
         env(noop(bob),
             ticket::use(bobTicketSeq + 1),

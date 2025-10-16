@@ -346,7 +346,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
-        else if (dstAmount < STAmount(ctx.view.fees().accountReserve(0)))
+        else if (dstAmount < STAmount(ctx.view.fees().reserve))
         {
             // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.
@@ -632,7 +632,7 @@ Payment::doApply()
 
     auto const sleSrc = view().peek(keylet::account(account_));
     if (!sleSrc)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // ownerCount is the number of entries in this ledger for this
     // account that require a reserve.
@@ -690,7 +690,7 @@ Payment::doApply()
         // to get the account un-wedged.
 
         // Get the base reserve.
-        XRPAmount const dstReserve{view().fees().accountReserve(0)};
+        XRPAmount const dstReserve{view().fees().reserve};
 
         if (dstAmount > dstReserve ||
             sleDst->getFieldAmount(sfBalance) > dstReserve)

@@ -226,8 +226,10 @@ removeSignersFromLedger(
 
     if (!view.dirRemove(ownerDirKeylet, hint, signerListKeylet.key, false))
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete SignerList from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     adjustOwnerCount(
@@ -349,7 +351,7 @@ SetSignerList::replaceSignerList()
 
     auto const sle = view().peek(accountKeylet);
     if (!sle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Compute new reserve.  Verify the account has funds to meet the reserve.
     std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
@@ -387,7 +389,7 @@ SetSignerList::replaceSignerList()
                      << ": " << (page ? "success" : "failure");
 
     if (!page)
-        return tecDIR_FULL;
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     signerList->setFieldU64(sfOwnerNode, *page);
 
@@ -405,7 +407,7 @@ SetSignerList::destroySignerList()
     // is enabled or there is a regular key.
     SLE::pointer ledgerEntry = view().peek(accountKeylet);
     if (!ledgerEntry)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if ((ledgerEntry->isFlag(lsfDisableMaster)) &&
         (!ledgerEntry->isFieldPresent(sfRegularKey)))
