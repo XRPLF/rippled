@@ -1,0 +1,174 @@
+//------------------------------------------------------------------------------
+/*
+  This file is part of rippled: https://github.com/ripple/rippled
+  Copyright (c) 2025 Ripple Labs Inc.
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose  with  or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+//==============================================================================
+
+#include <xrpld/app/tx/detail/ConfidentialConvertBack.h>
+
+#include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+
+namespace ripple {
+
+NotTEC
+ConfidentialConvertBack::preflight(PreflightContext const& ctx)
+{
+    if (!ctx.rules.enabled(featureConfidentialTransfer))
+        return temDISABLED;
+
+    // issuer cannot convert
+    if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
+        return temMALFORMED;
+
+    if (ctx.tx[sfHolderEncryptedAmount].length() !=
+            ecGamalEncryptedTotalLength ||
+        ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
+        return temMALFORMED;
+
+    if (ctx.tx[sfMPTAmount] == 0)
+        return temMALFORMED;
+
+    // todo: update with correct size of proof since it might also contain range
+    // proof
+    if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
+        return temMALFORMED;
+
+    return tesSUCCESS;
+}
+
+TER
+ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
+{
+    // ensure that issuance exists
+    auto const sleIssuance =
+        ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    if (sleIssuance->isFlag(lsfMPTNoConfidentialTransfer))
+        return tecNO_PERMISSION;
+
+    auto const sleMptoken = ctx.view.read(
+        keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
+    if (!sleMptoken)
+        return tecOBJECT_NOT_FOUND;
+
+    if (!sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
+        !sleMptoken->isFieldPresent(sfHolderElGamalPublicKey))
+    {
+        return tecINSUFFICIENT_FUNDS;
+    }
+
+    // if the total circulating confidential balance is smaller than what the
+    // holder is trying to convert back, we know for sure this txn should
+    // fail
+    if (!sleIssuance->isFieldPresent(sfConfidentialOutstandingAmount) ||
+        (*sleIssuance)[sfConfidentialOutstandingAmount] < ctx.tx[sfMPTAmount])
+    {
+        return tecINSUFFICIENT_FUNDS;
+    }
+
+    // todo: need addtional parsing, the proof should contain multiple proofs
+    auto checkEqualityProof = [&](auto const& encryptedAmount,
+                                  auto const& pubKey) -> TER {
+        return proveEquality(
+            ctx.tx[sfZKProof],
+            encryptedAmount,
+            pubKey,
+            ctx.tx[sfMPTAmount],
+            ctx.tx.getTransactionID(),
+            (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0));
+    };
+
+    if (!isTesSuccess(checkEqualityProof(
+            ctx.tx[sfHolderEncryptedAmount],
+            (*sleMptoken)[sfHolderElGamalPublicKey])) ||
+        !isTesSuccess(checkEqualityProof(
+            ctx.tx[sfIssuerEncryptedAmount],
+            (*sleIssuance)[sfIssuerElGamalPublicKey])))
+    {
+        return tecBAD_PROOF;
+    }
+
+    // todo: also check range proof that
+    // sfHolderEncryptedAmount <= sfConfidentialBalanceSpending AND
+    // sfIssuerEncryptedAmount <= sfIssuerEncryptedBalance
+
+    return tesSUCCESS;
+}
+
+TER
+ConfidentialConvertBack::doApply()
+{
+    auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
+
+    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, account_));
+    if (!sleMptoken)
+        return tecINTERNAL;
+
+    auto sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
+        return tecINTERNAL;
+
+    auto const amtToConvertBack = ctx_.tx[sfMPTAmount];
+    auto const amt = (*sleMptoken)[~sfMPTAmount].value_or(0);
+
+    (*sleMptoken)[sfMPTAmount] = amt + amtToConvertBack;
+    (*sleIssuance)[sfConfidentialOutstandingAmount] =
+        (*sleIssuance)[sfConfidentialOutstandingAmount] - amtToConvertBack;
+
+    // it's fine if it reaches max uint32, it just resets to 0
+    (*sleMptoken)[sfConfidentialBalanceVersion] =
+        (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
+
+    // todo: support homomophic sub
+    // // homomorphically subtract holder's encrypted balance
+    // {
+    //     Buffer res(ecGamalEncryptedTotalLength);
+    //     if (TER const ter = homomorphicSub(
+    //             (*sleMptoken)[sfConfidentialBalanceSpending],
+    //             ctx_.tx[sfHolderEncryptedAmount],
+    //             res);
+    //         isTesSuccess(ter))
+    //         return tecINTERNAL;
+
+    //     (*sleMptoken)[sfConfidentialBalanceSpending] = res;
+    // }
+
+    // // homomorphically subtract issuer's encrypted balance
+    // {
+    //     Buffer res(ecGamalEncryptedTotalLength);
+    //     if (TER const ter = homomorphicSub(
+    //             (*sleMptoken)[sfIssuerEncryptedBalance],
+    //             ctx_.tx[sfIssuerEncryptedAmount],
+    //             res);
+    //         isTesSuccess(ter))
+    //         return tecINTERNAL;
+
+    //     (*sleMptoken)[sfIssuerEncryptedBalance] = res;
+    // }
+
+    view().update(sleIssuance);
+    view().update(sleMptoken);
+    return tesSUCCESS;
+}
+
+}  // namespace ripple
