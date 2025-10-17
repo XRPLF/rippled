@@ -178,16 +178,16 @@ ConfidentialConvert::doApply()
         (*sleMptoken)[sfIssuerEncryptedBalance] = issuerEc;
         (*sleMptoken)[sfConfidentialBalanceVersion] = 0;
 
-        // // encrypt sfConfidentialBalanceSpending with zero balance
-        // Buffer out(ecGamalEncryptedTotalLength);
-        // if (TER res = encryptAmount(
-        //         account_, 1, (*sleMptoken)[sfHolderElGamalPublicKey], out);
-        //     !isTesSuccess(res))
-        // {
-        //     return tecINTERNAL;
-        // }
+        // encrypt sfConfidentialBalanceSpending with zero balance
+        Buffer out(ecGamalEncryptedTotalLength);
+        if (TER res = encryptAmount(
+                account_, 0, (*sleMptoken)[sfHolderElGamalPublicKey], out);
+            !isTesSuccess(res))
+        {
+            return tecINTERNAL;
+        }
 
-        // (*sleMptoken)[sfConfidentialBalanceSpending] = out;
+        (*sleMptoken)[sfConfidentialBalanceSpending] = out;
     }
     else
     {

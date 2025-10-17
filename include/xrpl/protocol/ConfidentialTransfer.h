@@ -35,12 +35,18 @@
 
 namespace ripple {
 
+/**
+ * @brief Generates a new secp256k1 key pair.
+ */
 SECP256K1_API int
 secp256k1_elgamal_generate_keypair(
     secp256k1_context const* ctx,
     unsigned char* privkey,
     secp256k1_pubkey* pubkey);
 
+/**
+ * @brief Encrypts a 64-bit amount using ElGamal.
+ */
 SECP256K1_API int
 secp256k1_elgamal_encrypt(
     secp256k1_context const* ctx,
@@ -50,6 +56,9 @@ secp256k1_elgamal_encrypt(
     uint64_t amount,
     unsigned char const* blinding_factor);
 
+/**
+ * @brief Decrypts an ElGamal ciphertext to recover the amount.
+ */
 SECP256K1_API int
 secp256k1_elgamal_decrypt(
     secp256k1_context const* ctx,
@@ -58,6 +67,9 @@ secp256k1_elgamal_decrypt(
     secp256k1_pubkey const* c2,
     unsigned char const* privkey);
 
+/**
+ * @brief Homomorphically adds two ElGamal ciphertexts.
+ */
 SECP256K1_API int
 secp256k1_elgamal_add(
     secp256k1_context const* ctx,
@@ -68,6 +80,9 @@ secp256k1_elgamal_add(
     secp256k1_pubkey const* b_c1,
     secp256k1_pubkey const* b_c2);
 
+/**
+ * @brief Homomorphically subtracts two ElGamal ciphertexts.
+ */
 SECP256K1_API int
 secp256k1_elgamal_subtract(
     secp256k1_context const* ctx,
@@ -77,6 +92,19 @@ secp256k1_elgamal_subtract(
     secp256k1_pubkey const* a_c2,
     secp256k1_pubkey const* b_c1,
     secp256k1_pubkey const* b_c2);
+
+/**
+ * @brief Generates the canonical encrypted zero for a given trust line.
+ */
+SECP256K1_API int
+generate_canonical_encrypted_zero(
+    secp256k1_context const* ctx,
+    secp256k1_pubkey* enc_zero_c1,
+    secp256k1_pubkey* enc_zero_c2,
+    secp256k1_pubkey const* pubkey,
+    char const* acct,
+    char const* issuer,
+    char const* curr);
 
 // breaks a 66-byte encrypted amount into two 33-byte components
 // then parses each 33-byte component into 64-byte secp256k1_pubkey format
