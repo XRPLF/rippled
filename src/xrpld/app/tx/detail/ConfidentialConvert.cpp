@@ -190,13 +190,6 @@ ConfidentialConvert::doApply()
         {
             return tecINTERNAL;
         }
-        // if (Buffer res = encryptAmount(
-        //         account_, 0, (*sleMptoken)[sfHolderElGamalPublicKey],
-        //         out);
-        //     !isTesSuccess(res))
-        // {
-        //     return tecINTERNAL;
-        // }
 
         (*sleMptoken)[sfConfidentialBalanceSpending] = out;
     }
