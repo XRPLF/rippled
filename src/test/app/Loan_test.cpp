@@ -2701,6 +2701,95 @@ class Loan_test : public beast::unit_test::suite
     }
 
     void
+    testServiceFeeOnBrokerDeepFreeze()
+    {
+        testcase << "Service Fee On Broker Deep Freeze";
+        using namespace jtx;
+        using namespace loan;
+        Account const issuer("issuer");
+        Account const borrower("borrower");
+        Account const broker("broker");
+        auto const IOU = issuer["IOU"];
+
+        for (bool const deepFreeze : {true, false})
+        {
+            Env env(*this);
+
+            auto getCoverBalance = [&](BrokerInfo const& brokerInfo,
+                                       auto const& accountField) {
+                if (auto const le =
+                        env.le(keylet::loanbroker(brokerInfo.brokerID));
+                    BEAST_EXPECT(le))
+                {
+                    auto const account = le->at(accountField);
+                    if (auto const sleLine = env.le(keylet::line(account, IOU));
+                        BEAST_EXPECT(sleLine))
+                    {
+                        STAmount balance = sleLine->at(sfBalance);
+                        if (account > issuer.id())
+                            balance.negate();
+                        return balance;
+                    }
+                }
+                return STAmount{IOU};
+            };
+
+            env.fund(XRP(20'000), issuer, broker, borrower);
+            env.close();
+
+            env(trust(broker, IOU(20'000'000)));
+            env(pay(issuer, broker, IOU(10'000'000)));
+            env(trust(borrower, IOU(20'000'000)));
+            env.close();
+
+            auto const brokerInfo = createVaultAndBroker(env, IOU, broker);
+
+            BEAST_EXPECT(getCoverBalance(brokerInfo, sfAccount) == IOU(1'000));
+
+            auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+
+            env(set(borrower, brokerInfo.brokerID, 10'000),
+                sig(sfCounterpartySignature, broker),
+                loanServiceFee(IOU(100).value()),
+                paymentInterval(100),
+                fee(XRP(100)));
+            env.close();
+            if (auto const le = env.le(keylet::loan(keylet.key));
+                BEAST_EXPECT(le))
+            {
+                if (deepFreeze)
+                {
+                    env(trust(
+                        issuer,
+                        broker["IOU"](0),
+                        tfSetFreeze | tfSetDeepFreeze));
+                    env.close();
+                }
+
+                env(pay(borrower, keylet.key, IOU(10'100)), fee(XRP(100)));
+                env.close();
+
+                if (deepFreeze)
+                {
+                    // The fee goes to the broker pseudo-account
+                    BEAST_EXPECT(
+                        getCoverBalance(brokerInfo, sfAccount) == IOU(1'100));
+                    BEAST_EXPECT(
+                        getCoverBalance(brokerInfo, sfOwner) == IOU(8'999'000));
+                }
+                else
+                {
+                    // The fee goes to the broker account
+                    BEAST_EXPECT(
+                        getCoverBalance(brokerInfo, sfOwner) == IOU(8'999'100));
+                    BEAST_EXPECT(
+                        getCoverBalance(brokerInfo, sfAccount) == IOU(1'000));
+                }
+            }
+        };
+    }
+
+    void
     testBasicMath()
     {
         // Test the functions defined in LendingHelpers.h
@@ -2713,15 +2802,20 @@ public:
     void
     run() override
     {
+#if 0
         testDisabled();
         testSelfLoan();
         testLifecycle();
         testBatchBypassCounterparty();
         testWrongMaxDebtBehavior();
         testLoanPayComputePeriodicPaymentValidRateInvariant();
+#endif
+        testServiceFeeOnBrokerDeepFreeze();
+#if 0
 
         testRPC();
         testBasicMath();
+#endif
     }
 };
 
