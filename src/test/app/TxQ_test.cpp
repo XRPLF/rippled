@@ -3081,16 +3081,23 @@ public:
         env.fund(XRP(1000000), alice);
         env.close();
 
-        auto const withQueue =
-            R"({ "account": ")" + alice.human() + R"(", "queue": true })";
-        auto const withoutQueue = R"({ "account": ")" + alice.human() + R"("})";
-        auto const prevLedgerWithQueue = R"({ "account": ")" + alice.human() +
-            R"(", "queue": true, "ledger_index": 3 })";
+        Json::Value withQueue;
+        withQueue[jss::account] = alice.human();
+        withQueue[jss::queue] = true;
+
+        Json::Value withoutQueue;
+        withoutQueue[jss::account] = alice.human();
+
+        Json::Value prevLedgerWithQueue;
+        prevLedgerWithQueue[jss::account] = alice.human();
+        prevLedgerWithQueue[jss::queue] = true;
+        prevLedgerWithQueue[jss::ledger_index] = 3;
         BEAST_EXPECT(env.current()->info().seq > 3);
 
         {
             // account_info without the "queue" argument.
-            auto const info = env.rpc("json", "account_info", withoutQueue);
+            auto const info =
+                env.rpc("json", "account_info", to_string(withoutQueue));
             BEAST_EXPECT(
                 info.isMember(jss::result) &&
                 info[jss::result].isMember(jss::account_data));
@@ -3098,7 +3105,8 @@ public:
         }
         {
             // account_info with the "queue" argument.
-            auto const info = env.rpc("json", "account_info", withQueue);
+            auto const info =
+                env.rpc("json", "account_info", to_string(withQueue));
             BEAST_EXPECT(
                 info.isMember(jss::result) &&
                 info[jss::result].isMember(jss::account_data));
@@ -3120,7 +3128,8 @@ public:
         checkMetrics(*this, env, 0, 6, 4, 3);
 
         {
-            auto const info = env.rpc("json", "account_info", withQueue);
+            auto const info =
+                env.rpc("json", "account_info", to_string(withQueue));
             BEAST_EXPECT(
                 info.isMember(jss::result) &&
                 info[jss::result].isMember(jss::account_data));
@@ -3149,7 +3158,8 @@ public:
         checkMetrics(*this, env, 4, 6, 4, 3);
 
         {
-            auto const info = env.rpc("json", "account_info", withQueue);
+            auto const info =
+                env.rpc("json", "account_info", to_string(withQueue));
             BEAST_EXPECT(
                 info.isMember(jss::result) &&
                 info[jss::result].isMember(jss::account_data));
@@ -3212,7 +3222,8 @@ public:
         checkMetrics(*this, env, 1, 8, 5, 4);
 
         {
-            auto const info = env.rpc("json", "account_info", withQueue);
+            auto const info =
+                env.rpc("json", "account_info", to_string(withQueue));
             BEAST_EXPECT(
                 info.isMember(jss::result) &&
                 info[jss::result].isMember(jss::account_data));
@@ -3276,7 +3287,8 @@ public:
         checkMetrics(*this, env, 1, 8, 5, 4);
 
         {
-            auto const info = env.rpc("json", "account_info", withQueue);
+            auto const info =
+                env.rpc("json", "account_info", to_string(withQueue));
             BEAST_EXPECT(
                 info.isMember(jss::result) &&
                 info[jss::result].isMember(jss::account_data));
@@ -3344,7 +3356,7 @@ public:
 
         {
             auto const info =
-                env.rpc("json", "account_info", prevLedgerWithQueue);
+                env.rpc("json", "account_info", to_string(prevLedgerWithQueue));
             BEAST_EXPECT(
                 info.isMember(jss::result) &&
                 RPC::contains_error(info[jss::result]));
@@ -3356,7 +3368,8 @@ public:
         checkMetrics(*this, env, 0, 10, 0, 5);
 
         {
-            auto const info = env.rpc("json", "account_info", withQueue);
+            auto const info =
+                env.rpc("json", "account_info", to_string(withQueue));
             BEAST_EXPECT(
                 info.isMember(jss::result) &&
                 info[jss::result].isMember(jss::account_data));
