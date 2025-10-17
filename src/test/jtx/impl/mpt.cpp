@@ -625,15 +625,6 @@ MPTTester::convert(MPTConvert const& arg)
     auto const holderAmt = getBalance(*arg.account);
     auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
 
-    auto getDecryptedBalance =
-        [&](auto const& account, EncryptedBalanceType balanceType) -> uint64_t {
-        auto maybeEncrypted = getEncryptedBalance(account, balanceType);
-        auto accountToDecrypt =
-            balanceType == ISSUER_ENCRYPTED_BALANCE ? issuer_ : account;
-        return maybeEncrypted ? decryptAmount(accountToDecrypt, *maybeEncrypted)
-                              : 0;
-    };
-
     uint64_t prevInboxBalance =
         getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
     uint64_t prevSpendingBalance =
@@ -651,26 +642,35 @@ MPTTester::convert(MPTConvert const& arg)
                 curConfidentialOutstanding;
         }));
 
+        uint64_t postInboxBalance =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+        uint64_t postIssuerBalance =
+            getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+        uint64_t postSpendingBalance =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+        std::cout << "\n postIssuerBalance is " << postIssuerBalance << '\n';
+        std::cout << "\n postInboxBalance is " << postInboxBalance << '\n';
+
         // spending balance should not change
         env_.require(requireAny([&]() -> bool {
-            uint64_t postSpendingBalance =
-                getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
             return postSpendingBalance == prevSpendingBalance;
         }));
 
+        // issuer's encrypted balance is updated correctly
         env_.require(requireAny([&]() -> bool {
-            uint64_t postIssuerBalance =
-                getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
-            std::cout << "\n postIssuerBalance is " << postIssuerBalance
-                      << '\n';
             return prevIssuerBalance + *arg.amt == postIssuerBalance;
         }));
 
+        // holder's inbox balance is updated correctly
         env_.require(requireAny([&]() -> bool {
-            uint64_t postInboxBalance =
-                getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
-            std::cout << "\n postInboxBalance is " << postInboxBalance << '\n';
             return prevInboxBalance + *arg.amt == postInboxBalance;
+        }));
+
+        // sum of holder's inbox and spending balance should equal to issuer's
+        // encrypted balance
+        env_.require(requireAny([&]() -> bool {
+            return postInboxBalance + postSpendingBalance == postIssuerBalance;
         }));
     }
 }
@@ -740,6 +740,19 @@ MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
 
     return decryptedAmt;
 }
+
+uint64_t
+MPTTester::getDecryptedBalance(
+    Account const& account,
+    EncryptedBalanceType balanceType) const
+
+{
+    auto maybeEncrypted = getEncryptedBalance(account, balanceType);
+    auto accountToDecrypt =
+        balanceType == ISSUER_ENCRYPTED_BALANCE ? issuer_ : account;
+    return maybeEncrypted ? decryptAmount(accountToDecrypt, *maybeEncrypted)
+                          : 0;
+};
 
 }  // namespace jtx
 }  // namespace test

@@ -295,6 +295,11 @@ public:
     uint64_t
     decryptAmount(Account const& account, Buffer const& amt) const;
 
+    uint64_t
+    getDecryptedBalance(
+        Account const& account,
+        EncryptedBalanceType balanceType) const;
+
 private:
     using SLEP = std::shared_ptr<SLE const>;
     bool
