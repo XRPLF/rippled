@@ -71,6 +71,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .proof = "123",
         });
 
+        mptAlice.printMPT(bob);
+
+        mptAlice.convert({
+            .account = bob,
+            .amt = 40,
+            .proof = "123",
+        });
+
         env.close();
         mptAlice.printMPT(bob);
     }

@@ -625,11 +625,21 @@ MPTTester::convert(MPTConvert const& arg)
     auto const holderAmt = getBalance(*arg.account);
     auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
 
-    auto maybeEncrypted =
-        getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+    auto getDecryptedBalance =
+        [&](auto const& account, EncryptedBalanceType balanceType) -> uint64_t {
+        auto maybeEncrypted = getEncryptedBalance(account, balanceType);
+        auto accountToDecrypt =
+            balanceType == ISSUER_ENCRYPTED_BALANCE ? issuer_ : account;
+        return maybeEncrypted ? decryptAmount(accountToDecrypt, *maybeEncrypted)
+                              : 0;
+    };
 
     uint64_t prevInboxBalance =
-        maybeEncrypted ? decryptAmount(*arg.account, *maybeEncrypted) : 0;
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+    uint64_t prevSpendingBalance =
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+    uint64_t prevIssuerBalance =
+        getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
 
     if (submit(arg, jv) == tesSUCCESS)
     {
@@ -640,15 +650,27 @@ MPTTester::convert(MPTConvert const& arg)
             return prevConfidentialOutstanding + *arg.amt ==
                 curConfidentialOutstanding;
         }));
-        env_.require(requireAny([&]() -> bool {
-            auto maybeEncrypted =
-                getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
 
-            uint64_t decryptedAmt = maybeEncrypted
-                ? decryptAmount(*arg.account, *maybeEncrypted)
-                : 0;
-            std::cout << "\n decrpypted amt is " << decryptedAmt << '\n';
-            return prevInboxBalance + *arg.amt == decryptedAmt;
+        // spending balance should not change
+        env_.require(requireAny([&]() -> bool {
+            uint64_t postSpendingBalance =
+                getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+            return postSpendingBalance == prevSpendingBalance;
+        }));
+
+        env_.require(requireAny([&]() -> bool {
+            uint64_t postIssuerBalance =
+                getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+            std::cout << "\n postIssuerBalance is " << postIssuerBalance
+                      << '\n';
+            return prevIssuerBalance + *arg.amt == postIssuerBalance;
+        }));
+
+        env_.require(requireAny([&]() -> bool {
+            uint64_t postInboxBalance =
+                getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+            std::cout << "\n postInboxBalance is " << postInboxBalance << '\n';
+            return prevInboxBalance + *arg.amt == postInboxBalance;
         }));
     }
 }
@@ -693,33 +715,7 @@ MPTTester::getPrivKey(Account const& account) const
 Buffer
 MPTTester::encryptAmount(Account const& account, uint64_t amt) const
 {
-    Buffer buf(ecGamalEncryptedTotalLength);
-
-    // Allocate ciphertext placeholders
-    secp256k1_pubkey c1, c2;
-
-    // Prepare a random blinding factor
-    unsigned char blinding_factor[32];
-    if (RAND_bytes(blinding_factor, 32) != 1)
-        Throw<std::runtime_error>("Failed to generate random number");
-
-    secp256k1_pubkey pubKey;
-
-    auto keyData = getPubKey(account);
-
-    std::memcpy(pubKey.data, keyData.data(), ecPubKeyLength);
-
-    // Encrypt the amount
-    if (!secp256k1_elgamal_encrypt(
-            secp256k1Context(), &c1, &c2, &pubKey, amt, blinding_factor))
-        Throw<std::runtime_error>("Failed to encrypt amount");
-
-    // Serialize the ciphertext pair into the buffer
-    if (!serializeEcPair(c1, c2, buf))
-        Throw<std::runtime_error>(
-            "Failed to serialize into 66 byte compressed format");
-
-    return buf;
+    return ripple::encryptAmount(amt, getPubKey(account));
 }
 
 uint64_t

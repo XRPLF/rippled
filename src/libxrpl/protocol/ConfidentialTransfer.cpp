@@ -412,20 +412,18 @@ proveEquality(
     return tesSUCCESS;
 }
 
-TER
-encryptAmount(
-    AccountID const& account,
-    uint64_t amt,
-    Slice const& pubKeySlice,
-    Buffer& out)
+Buffer
+encryptAmount(uint64_t amt, Slice const& pubKeySlice)
 {
+    Buffer buf(ecGamalEncryptedTotalLength);
+
     // Allocate ciphertext placeholders
     secp256k1_pubkey c1, c2;
 
     // Prepare a random blinding factor
     unsigned char blinding_factor[32];
     if (RAND_bytes(blinding_factor, 32) != 1)
-        return tecINTERNAL;
+        Throw<std::runtime_error>("Failed to generate random number");
 
     secp256k1_pubkey pubKey;
 
@@ -434,13 +432,14 @@ encryptAmount(
     // Encrypt the amount
     if (!secp256k1_elgamal_encrypt(
             secp256k1Context(), &c1, &c2, &pubKey, amt, blinding_factor))
-        return tecINTERNAL;
+        Throw<std::runtime_error>("Failed to encrypt amount");
 
     // Serialize the ciphertext pair into the buffer
-    if (!serializeEcPair(c1, c2, out))
-        return tecINTERNAL;
+    if (!serializeEcPair(c1, c2, buf))
+        Throw<std::runtime_error>(
+            "Failed to serialize into 66 byte compressed format");
 
-    return tesSUCCESS;
+    return buf;
 }
 
 }  // namespace ripple
