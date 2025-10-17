@@ -65,6 +65,7 @@ jobs:
   build-test:
     uses: ./.github/workflows/reusable-build-test.yml
     strategy:
+      fail-fast: ${{ github.event_name == 'merge_group' }}
       matrix:
         os: [linux, macos, windows]
     with:

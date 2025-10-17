@@ -142,7 +142,7 @@ FeeVoteImpl::doValidation(
         };
         vote(lastFees.base, target_.reference_fee, "base fee", sfBaseFeeDrops);
         vote(
-            lastFees.accountReserve(0),
+            lastFees.reserve,
             target_.account_reserve,
             "base reserve",
             sfReserveBaseDrops);
@@ -178,7 +178,7 @@ FeeVoteImpl::doValidation(
 
         vote(lastFees.base, target_.reference_fee, to64, "base fee", sfBaseFee);
         vote(
-            lastFees.accountReserve(0),
+            lastFees.reserve,
             target_.account_reserve,
             to32,
             "base reserve",
@@ -207,7 +207,7 @@ FeeVoteImpl::doVoting(
         lastClosedLedger->fees().base, target_.reference_fee);
 
     detail::VotableValue baseReserveVote(
-        lastClosedLedger->fees().accountReserve(0), target_.account_reserve);
+        lastClosedLedger->fees().reserve, target_.account_reserve);
 
     detail::VotableValue incReserveVote(
         lastClosedLedger->fees().increment, target_.owner_reserve);
