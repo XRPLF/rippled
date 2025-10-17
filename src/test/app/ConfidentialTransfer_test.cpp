@@ -55,16 +55,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.generateKeyPair(bob);
 
-        auto const issuerAmt = mptAlice.encryptAmount(alice, 10);
-        auto const holderAmt = mptAlice.encryptAmount(bob, 10);
-
         mptAlice.convert({
             .account = bob,
-            .amt = 10,
+            .amt = 0,
             .proof = "123",
             .holderPubKey = mptAlice.getPubKey(bob),
-            .holderEncryptedAmt = holderAmt,
-            .issuerEncryptedAmt = issuerAmt,
         });
         env.close();
 

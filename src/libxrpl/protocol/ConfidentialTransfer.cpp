@@ -22,9 +22,9 @@
 #include <xrpl/protocol/TER.h>
 
 #include <openssl/rand.h>
+#include <openssl/sha.h>
 
 namespace ripple {
-
 int
 secp256k1_elgamal_generate_keypair(
     secp256k1_context const* ctx,
@@ -61,33 +61,59 @@ secp256k1_elgamal_encrypt(
     uint64_t amount,
     unsigned char const* blinding_factor)
 {
-    unsigned char amount_scalar[32] = {0};
-    secp256k1_pubkey M, S;
-    secp256k1_pubkey const* points_to_add[2];
+    secp256k1_pubkey S;
 
-    // CORRECTED: Convert uint64_t to a 32-byte BIG-ENDIAN scalar.
-    for (int i = 0; i < 8; ++i)
+    // First, calculate C1 = k * G
+    if (secp256k1_ec_pubkey_create(ctx, c1, blinding_factor) != 1)
     {
-        amount_scalar[31 - i] = (amount >> (i * 8)) & 0xFF;
+        return 0;
     }
 
-    if (secp256k1_ec_pubkey_create(ctx, &M, amount_scalar) != 1)
-        return 0;
-    if (secp256k1_ec_pubkey_create(ctx, c1, blinding_factor) != 1)
-        return 0;
-
+    // Next, calculate the shared secret S = k * Q
     S = *pubkey_Q;
     if (secp256k1_ec_pubkey_tweak_mul(ctx, &S, blinding_factor) != 1)
+    {
         return 0;
+    }
 
-    points_to_add[0] = &M;
-    points_to_add[1] = &S;
-    if (secp256k1_ec_pubkey_combine(ctx, c2, points_to_add, 2) != 1)
-        return 0;
+    // --- Handle the amount ---
+    if (amount == 0)
+    {
+        // For amount = 0, C2 = S.
+        *c2 = S;
+    }
+    else
+    {
+        // For non-zero amounts, proceed as before.
+        unsigned char amount_scalar[32] = {0};
+        secp256k1_pubkey M;
+        secp256k1_pubkey const* points_to_add[2];
 
-    return 1;
+        // Convert amount to a 32-byte BIG-ENDIAN scalar.
+        for (int i = 0; i < 8; ++i)
+        {
+            amount_scalar[31 - i] = (amount >> (i * 8)) & 0xFF;
+        }
+
+        // Calculate M = amount * G
+        if (secp256k1_ec_pubkey_create(ctx, &M, amount_scalar) != 1)
+        {
+            return 0;
+        }
+
+        // Calculate C2 = M + S
+        points_to_add[0] = &M;
+        points_to_add[1] = &S;
+        if (secp256k1_ec_pubkey_combine(ctx, c2, points_to_add, 2) != 1)
+        {
+            return 0;
+        }
+    }
+
+    return 1;  // Success
 }
-// ... implementation of secp256k1_elgamal_encrypt ...
+
+// ... implementation of secp256k1_elgamal_decrypt ...
 int
 secp256k1_elgamal_decrypt(
     secp256k1_context const* ctx,
@@ -96,21 +122,27 @@ secp256k1_elgamal_decrypt(
     secp256k1_pubkey const* c2,
     unsigned char const* privkey)
 {
+    /* C90-compliant variable declarations */
     secp256k1_pubkey S, M, G_point, current_M, next_M;
     secp256k1_pubkey const* points_to_add[2];
     unsigned char c2_bytes[33], s_bytes[33], m_bytes[33], current_m_bytes[33];
     size_t len;
     uint64_t i;
 
-    // CORRECTED: Create the scalar '1' in big-endian format.
+    /* Create the scalar '1' in big-endian format */
     unsigned char one_scalar[32] = {0};
     one_scalar[31] = 1;
 
+    /* --- Executable Code --- */
+
+    // 1. Calculate S = privkey * C1
     S = *c1;
     if (secp256k1_ec_pubkey_tweak_mul(ctx, &S, privkey) != 1)
+    {
         return 0;
+    }
 
-    // CORRECTED: Reset 'len' before each serialize call.
+    // 2. Check for amount = 0 by comparing serialized points
     len = sizeof(c2_bytes);
     if (secp256k1_ec_pubkey_serialize(
             ctx, c2_bytes, &len, c2, SECP256K1_EC_COMPRESSED) != 1)
@@ -125,23 +157,28 @@ secp256k1_elgamal_decrypt(
         return 1;
     }
 
+    // 3. Recover M = C2 - S
     if (secp256k1_ec_pubkey_negate(ctx, &S) != 1)
         return 0;
     points_to_add[0] = c2;
     points_to_add[1] = &S;
     if (secp256k1_ec_pubkey_combine(ctx, &M, points_to_add, 2) != 1)
+    {
         return 0;
+    }
 
+    // 4. Serialize M once for comparison in the loop
     len = sizeof(m_bytes);
     if (secp256k1_ec_pubkey_serialize(
             ctx, m_bytes, &len, &M, SECP256K1_EC_COMPRESSED) != 1)
         return 0;
 
+    // 5. Brute-force search loop
     if (secp256k1_ec_pubkey_create(ctx, &G_point, one_scalar) != 1)
         return 0;
     current_M = G_point;
 
-    for (i = 1; i <= 100000; ++i)
+    for (i = 1; i <= 1000000; ++i)
     {
         len = sizeof(current_m_bytes);
         if (secp256k1_ec_pubkey_serialize(
@@ -164,7 +201,7 @@ secp256k1_elgamal_decrypt(
         current_M = next_M;
     }
 
-    return 0;
+    return 0;  // Not found
 }
 
 int
@@ -227,6 +264,41 @@ secp256k1_elgamal_subtract(
     }
 
     return 1;  // Success
+}
+
+// The canonical encrypted zero
+int
+generate_canonical_encrypted_zero(
+    secp256k1_context const* ctx,
+    secp256k1_pubkey* enc_zero_c1,
+    secp256k1_pubkey* enc_zero_c2,
+    secp256k1_pubkey const* pubkey,
+    char const* acct,
+    char const* issuer,
+    char const* curr)
+{
+    unsigned char deterministic_scalar[32];
+    char input_str[256];
+
+    /* 1. Create the input string for hashing */
+    snprintf(input_str, sizeof(input_str), "EncZero%s%s%s", acct, issuer, curr);
+
+    /* 2. Hash the string to create the deterministic scalar 'r' */
+    do
+    {
+        SHA256(
+            (unsigned char*)input_str, strlen(input_str), deterministic_scalar);
+
+    } while (secp256k1_ec_seckey_verify(ctx, deterministic_scalar) != 1);
+
+    /* 3. Encrypt the amount 0 using the deterministic scalar */
+    return secp256k1_elgamal_encrypt(
+        ctx,
+        enc_zero_c1,
+        enc_zero_c2,
+        pubkey,
+        0, /* The amount is zero */
+        deterministic_scalar);
 }
 
 bool
@@ -358,8 +430,7 @@ encryptAmount(
     secp256k1_pubkey pubKey;
 
     std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
-    std::cout << "\n encryptAmount pub key " << strHex(pubKeySlice)
-              << std::endl;
+
     // Encrypt the amount
     if (!secp256k1_elgamal_encrypt(
             secp256k1Context(), &c1, &c2, &pubKey, amt, blinding_factor))
