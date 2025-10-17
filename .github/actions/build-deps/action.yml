@@ -28,6 +28,7 @@ runs:
         BUILD_DIR: ${{ inputs.build_dir }}
         BUILD_OPTION: ${{ inputs.force_build == 'true' && '*' || 'missing' }}
         BUILD_TYPE: ${{ inputs.build_type }}
+        VERBOSITY: ${{ inputs.verbosity }}
       run: |
         echo 'Installing dependencies.'
         mkdir -p '${{ env.BUILD_DIR }}'
@@ -38,7 +39,6 @@ runs:
           --options:host='&:tests=True' \
           --options:host='&:xrpld=True' \
           --settings:all build_type='${{ env.BUILD_TYPE }}' \
-          --conf:all tools.build:verbosity='${{ inputs.verbosity }}' \
-          --conf:all tools.compilation:verbosity='${{ inputs.verbosity }}' \
-          --conf:all tools.build:jobs=$(nproc) \
+          --conf:all tools.build:verbosity='${{ env.VERBOSITY }}' \
+          --conf:all tools.compilation:verbosity='${{ env.VERBOSITY }}' \
           ..
