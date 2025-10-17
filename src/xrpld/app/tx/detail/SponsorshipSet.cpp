@@ -95,14 +95,11 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
 
         if (maxFee.xrp().drops() <= 0)
             return temBAD_AMOUNT;
-
-        // TODO: check maxFee > basefee
     }
 
     if (ctx.tx.isFieldPresent(sfReserveCount))
     {
         auto const reserveCount = ctx.tx.getFieldU32(sfReserveCount);
-        // TODO: max reserveCount?
         if (reserveCount < 1)
             return temMALFORMED;
     }

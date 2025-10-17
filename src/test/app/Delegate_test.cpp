@@ -1718,7 +1718,10 @@ class Delegate_test : public beast::unit_test::suite
             {"VaultDelete", featureSingleAssetVault},
             {"VaultDeposit", featureSingleAssetVault},
             {"VaultWithdraw", featureSingleAssetVault},
-            {"VaultClawback", featureSingleAssetVault}};
+            {"VaultClawback", featureSingleAssetVault},
+            {"SponsorshipTransfer", featureSponsor},
+            {"SponsorshipSet", featureSponsor},
+        };
 
         // fixDelegateV1_1 post-amendment: can not delegate tx if any
         // required feature disabled.

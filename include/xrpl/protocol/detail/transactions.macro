@@ -949,7 +949,7 @@ TRANSACTION(ttBATCH, 71, Batch,
 #   include <xrpld/app/tx/detail/SponsorshipTransfer.h>
 #endif
 TRANSACTION(ttSPONSORSHIP_TRANSFER, 72, SponsorshipTransfer,
-    Delegation::notDelegatable,
+    Delegation::delegatable,
     featureSponsor,
     noPriv,
     ({
@@ -961,7 +961,7 @@ TRANSACTION(ttSPONSORSHIP_TRANSFER, 72, SponsorshipTransfer,
 #   include <xrpld/app/tx/detail/SponsorshipSet.h>
 #endif
 TRANSACTION(ttSPONSORSHIP_SET, 73, SponsorshipSet,
-    Delegation::notDelegatable,
+    Delegation::delegatable,
     featureSponsor,
     noPriv,
     ({
