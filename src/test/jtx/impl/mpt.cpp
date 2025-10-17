@@ -257,60 +257,77 @@ MPTTester::set(MPTSet const& arg)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
     if (arg.pubKey)
         jv[sfIssuerElGamalPublicKey] = strHex(*arg.pubKey);
-    if (submit(arg, jv) == tesSUCCESS && (arg.flags || arg.mutableFlags))
+    if (submit(arg, jv) == tesSUCCESS)
     {
-        auto require = [&](std::optional<Account> const& holder,
-                           bool unchanged) {
-            auto flags = getFlags(holder);
-            if (!unchanged)
-            {
-                if (arg.flags)
+        if ((arg.flags || arg.mutableFlags))
+        {
+            auto require = [&](std::optional<Account> const& holder,
+                               bool unchanged) {
+                auto flags = getFlags(holder);
+                if (!unchanged)
                 {
-                    if (*arg.flags & tfMPTLock)
-                        flags |= lsfMPTLocked;
-                    else if (*arg.flags & tfMPTUnlock)
-                        flags &= ~lsfMPTLocked;
+                    if (arg.flags)
+                    {
+                        if (*arg.flags & tfMPTLock)
+                            flags |= lsfMPTLocked;
+                        else if (*arg.flags & tfMPTUnlock)
+                            flags &= ~lsfMPTLocked;
+                    }
+
+                    if (arg.mutableFlags)
+                    {
+                        if (*arg.mutableFlags & tmfMPTSetCanLock)
+                            flags |= lsfMPTCanLock;
+                        else if (*arg.mutableFlags & tmfMPTClearCanLock)
+                            flags &= ~lsfMPTCanLock;
+
+                        if (*arg.mutableFlags & tmfMPTSetRequireAuth)
+                            flags |= lsfMPTRequireAuth;
+                        else if (*arg.mutableFlags & tmfMPTClearRequireAuth)
+                            flags &= ~lsfMPTRequireAuth;
+
+                        if (*arg.mutableFlags & tmfMPTSetCanEscrow)
+                            flags |= lsfMPTCanEscrow;
+                        else if (*arg.mutableFlags & tmfMPTClearCanEscrow)
+                            flags &= ~lsfMPTCanEscrow;
+
+                        if (*arg.mutableFlags & tmfMPTSetCanClawback)
+                            flags |= lsfMPTCanClawback;
+                        else if (*arg.mutableFlags & tmfMPTClearCanClawback)
+                            flags &= ~lsfMPTCanClawback;
+
+                        if (*arg.mutableFlags & tmfMPTSetCanTrade)
+                            flags |= lsfMPTCanTrade;
+                        else if (*arg.mutableFlags & tmfMPTClearCanTrade)
+                            flags &= ~lsfMPTCanTrade;
+
+                        if (*arg.mutableFlags & tmfMPTSetCanTransfer)
+                            flags |= lsfMPTCanTransfer;
+                        else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
+                            flags &= ~lsfMPTCanTransfer;
+                    }
                 }
+                env_.require(mptflags(*this, flags, holder));
+            };
+            if (arg.account)
+                require(std::nullopt, arg.holder.has_value());
+            if (arg.holder)
+                require(*arg.holder, false);
+        }
 
-                if (arg.mutableFlags)
-                {
-                    if (*arg.mutableFlags & tmfMPTSetCanLock)
-                        flags |= lsfMPTCanLock;
-                    else if (*arg.mutableFlags & tmfMPTClearCanLock)
-                        flags &= ~lsfMPTCanLock;
-
-                    if (*arg.mutableFlags & tmfMPTSetRequireAuth)
-                        flags |= lsfMPTRequireAuth;
-                    else if (*arg.mutableFlags & tmfMPTClearRequireAuth)
-                        flags &= ~lsfMPTRequireAuth;
-
-                    if (*arg.mutableFlags & tmfMPTSetCanEscrow)
-                        flags |= lsfMPTCanEscrow;
-                    else if (*arg.mutableFlags & tmfMPTClearCanEscrow)
-                        flags &= ~lsfMPTCanEscrow;
-
-                    if (*arg.mutableFlags & tmfMPTSetCanClawback)
-                        flags |= lsfMPTCanClawback;
-                    else if (*arg.mutableFlags & tmfMPTClearCanClawback)
-                        flags &= ~lsfMPTCanClawback;
-
-                    if (*arg.mutableFlags & tmfMPTSetCanTrade)
-                        flags |= lsfMPTCanTrade;
-                    else if (*arg.mutableFlags & tmfMPTClearCanTrade)
-                        flags &= ~lsfMPTCanTrade;
-
-                    if (*arg.mutableFlags & tmfMPTSetCanTransfer)
-                        flags |= lsfMPTCanTransfer;
-                    else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
-                        flags &= ~lsfMPTCanTransfer;
-                }
-            }
-            env_.require(mptflags(*this, flags, holder));
-        };
-        if (arg.account)
-            require(std::nullopt, arg.holder.has_value());
-        if (arg.holder)
-            require(*arg.holder, false);
+        if (arg.pubKey)
+        {
+            env_.require(requireAny([&]() -> bool {
+                return forObject([&](SLEP const& sle) -> bool {
+                    if (sle)
+                    {
+                        return strHex((*sle)[sfIssuerElGamalPublicKey]) ==
+                            strHex(getPubKey(issuer_));
+                    }
+                    return false;
+                });
+            }));
+        }
     }
 }
 
@@ -634,12 +651,12 @@ MPTTester::convert(MPTConvert const& arg)
 
     if (submit(arg, jv) == tesSUCCESS)
     {
-        auto const curConfidentialOutstanding =
+        auto const postConfidentialOutstanding =
             getIssuanceConfidentialBalance();
         env_.require(mptbalance(*this, *arg.account, holderAmt - *arg.amt));
         env_.require(requireAny([&]() -> bool {
             return prevConfidentialOutstanding + *arg.amt ==
-                curConfidentialOutstanding;
+                postConfidentialOutstanding;
         }));
 
         uint64_t postInboxBalance =
@@ -672,6 +689,22 @@ MPTTester::convert(MPTConvert const& arg)
         env_.require(requireAny([&]() -> bool {
             return postInboxBalance + postSpendingBalance == postIssuerBalance;
         }));
+
+        if (arg.holderPubKey)
+        {
+            env_.require(requireAny([&]() -> bool {
+                return forObject(
+                    [&](SLEP const& sle) -> bool {
+                        if (sle)
+                        {
+                            return strHex((*sle)[sfHolderElGamalPublicKey]) ==
+                                strHex(getPubKey(*arg.account));
+                        }
+                        return false;
+                    },
+                    *arg.account);
+            }));
+        }
     }
 }
 

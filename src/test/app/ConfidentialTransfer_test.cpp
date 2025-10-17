@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <test/jtx/confidentialTransfer.h>
 #include <test/jtx/trust.h>
 
 #include <xrpl/protocol/ConfidentialTransfer.h>
