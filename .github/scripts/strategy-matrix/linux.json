@@ -75,6 +75,20 @@
     },
     {
       "distro_name": "rhel",
+      "distro_version": "8",
+      "compiler_name": "gcc",
+      "compiler_version": "14",
+      "image_sha": "10e69b4"
+    },
+    {
+      "distro_name": "rhel",
+      "distro_version": "8",
+      "compiler_name": "clang",
+      "compiler_version": "any",
+      "image_sha": "10e69b4"
+    },
+    {
+      "distro_name": "rhel",
       "distro_version": "9",
       "compiler_name": "gcc",
       "compiler_version": "12",
