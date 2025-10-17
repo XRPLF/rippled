@@ -85,6 +85,63 @@ getAutofillSequence(
 }
 
 static std::optional<Json::Value>
+autofillSignature(Json::Value& sigObject)
+{
+    if (!sigObject.isMember(jss::SigningPubKey))
+    {
+        // autofill SigningPubKey
+        sigObject[jss::SigningPubKey] = "";
+    }
+
+    if (sigObject.isMember(jss::Signers))
+    {
+        if (!sigObject[jss::Signers].isArray())
+            return RPC::invalid_field_error("tx.Signers");
+        // check multisigned signers
+        for (unsigned index = 0; index < sigObject[jss::Signers].size();
+             index++)
+        {
+            auto& signer = sigObject[jss::Signers][index];
+            if (!signer.isObject() || !signer.isMember(jss::Signer) ||
+                !signer[jss::Signer].isObject())
+                return RPC::invalid_field_error(
+                    "tx.Signers[" + std::to_string(index) + "]");
+
+            if (!signer[jss::Signer].isMember(jss::SigningPubKey))
+            {
+                // autofill SigningPubKey
+                signer[jss::Signer][jss::SigningPubKey] = "";
+            }
+
+            if (!signer[jss::Signer].isMember(jss::TxnSignature))
+            {
+                // autofill TxnSignature
+                signer[jss::Signer][jss::TxnSignature] = "";
+            }
+            else if (signer[jss::Signer][jss::TxnSignature] != "")
+            {
+                // Transaction must not be signed
+                return rpcError(rpcTX_SIGNED);
+            }
+        }
+    }
+
+    if (sigObject.isMember(jss::TxnSignature))
+    {
+        if (sigObject[jss::TxnSignature] != "")
+        {
+            // Transaction must not be signed
+            return rpcError(rpcTX_SIGNED);
+        }
+        else
+        {
+            sigObject.removeMember(jss::TxnSignature);
+        }
+    }
+    return std::nullopt;
+}
+
+static std::optional<Json::Value>
 autofillTx(
     Json::Value& tx_json,
     RPC::JsonContext& context,
@@ -116,56 +173,8 @@ autofillTx(
         }
     }
 
-    if (!tx_json.isMember(jss::SigningPubKey))
-    {
-        // autofill SigningPubKey
-        tx_json[jss::SigningPubKey] = "";
-    }
-
-    if (tx_json.isMember(jss::Signers))
-    {
-        if (!tx_json[jss::Signers].isArray())
-            return RPC::invalid_field_error("tx.Signers");
-        // check multisigned signers
-        for (unsigned index = 0; index < tx_json[jss::Signers].size(); index++)
-        {
-            auto& signer = tx_json[jss::Signers][index];
-            if (!signer.isObject() || !signer.isMember(jss::Signer) ||
-                !signer[jss::Signer].isObject())
-                return RPC::invalid_field_error(
-                    "tx.Signers[" + std::to_string(index) + "]");
-
-            if (!signer[jss::Signer].isMember(jss::SigningPubKey))
-            {
-                // autofill SigningPubKey
-                signer[jss::Signer][jss::SigningPubKey] = "";
-            }
-
-            if (!signer[jss::Signer].isMember(jss::TxnSignature))
-            {
-                // autofill TxnSignature
-                signer[jss::Signer][jss::TxnSignature] = "";
-            }
-            else if (signer[jss::Signer][jss::TxnSignature] != "")
-            {
-                // Transaction must not be signed
-                return rpcError(rpcTX_SIGNED);
-            }
-        }
-    }
-
-    if (tx_json.isMember(jss::TxnSignature))
-    {
-        if (tx_json[jss::TxnSignature] != "")
-        {
-            // Transaction must not be signed
-            return rpcError(rpcTX_SIGNED);
-        }
-        else
-        {
-            tx_json.removeMember(jss::TxnSignature);
-        }
-    }
+    if (auto error = autofillSignature(tx_json))
+        return *error;
 
     if (!tx_json.isMember(jss::Sequence))
     {
