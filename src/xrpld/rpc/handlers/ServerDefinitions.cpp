@@ -354,6 +354,17 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::TRANSACTION_FLAGS][name] = txObj;
     }
 
+    defs_[jss::LEDGER_FLAGS] = Json::objectValue;
+    for (auto const& [name, value] : allLedgerFlags)
+    {
+        Json::Value ledgerObj = Json::objectValue;
+        for (auto const& [flagName, flagValue] : value)
+        {
+            ledgerObj[flagName] = flagValue;
+        }
+        defs_[jss::LEDGER_FLAGS][name] = ledgerObj;
+    }
+
     defs_[jss::ACCOUNT_SET_FLAGS] = Json::objectValue;
     for (auto const& [name, value] : asfFlagMap)
     {
