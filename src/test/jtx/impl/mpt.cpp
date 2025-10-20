@@ -257,60 +257,77 @@ MPTTester::set(MPTSet const& arg)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
     if (arg.pubKey)
         jv[sfIssuerElGamalPublicKey] = strHex(*arg.pubKey);
-    if (submit(arg, jv) == tesSUCCESS && (arg.flags || arg.mutableFlags))
+    if (submit(arg, jv) == tesSUCCESS)
     {
-        auto require = [&](std::optional<Account> const& holder,
-                           bool unchanged) {
-            auto flags = getFlags(holder);
-            if (!unchanged)
-            {
-                if (arg.flags)
+        if ((arg.flags || arg.mutableFlags))
+        {
+            auto require = [&](std::optional<Account> const& holder,
+                               bool unchanged) {
+                auto flags = getFlags(holder);
+                if (!unchanged)
                 {
-                    if (*arg.flags & tfMPTLock)
-                        flags |= lsfMPTLocked;
-                    else if (*arg.flags & tfMPTUnlock)
-                        flags &= ~lsfMPTLocked;
+                    if (arg.flags)
+                    {
+                        if (*arg.flags & tfMPTLock)
+                            flags |= lsfMPTLocked;
+                        else if (*arg.flags & tfMPTUnlock)
+                            flags &= ~lsfMPTLocked;
+                    }
+
+                    if (arg.mutableFlags)
+                    {
+                        if (*arg.mutableFlags & tmfMPTSetCanLock)
+                            flags |= lsfMPTCanLock;
+                        else if (*arg.mutableFlags & tmfMPTClearCanLock)
+                            flags &= ~lsfMPTCanLock;
+
+                        if (*arg.mutableFlags & tmfMPTSetRequireAuth)
+                            flags |= lsfMPTRequireAuth;
+                        else if (*arg.mutableFlags & tmfMPTClearRequireAuth)
+                            flags &= ~lsfMPTRequireAuth;
+
+                        if (*arg.mutableFlags & tmfMPTSetCanEscrow)
+                            flags |= lsfMPTCanEscrow;
+                        else if (*arg.mutableFlags & tmfMPTClearCanEscrow)
+                            flags &= ~lsfMPTCanEscrow;
+
+                        if (*arg.mutableFlags & tmfMPTSetCanClawback)
+                            flags |= lsfMPTCanClawback;
+                        else if (*arg.mutableFlags & tmfMPTClearCanClawback)
+                            flags &= ~lsfMPTCanClawback;
+
+                        if (*arg.mutableFlags & tmfMPTSetCanTrade)
+                            flags |= lsfMPTCanTrade;
+                        else if (*arg.mutableFlags & tmfMPTClearCanTrade)
+                            flags &= ~lsfMPTCanTrade;
+
+                        if (*arg.mutableFlags & tmfMPTSetCanTransfer)
+                            flags |= lsfMPTCanTransfer;
+                        else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
+                            flags &= ~lsfMPTCanTransfer;
+                    }
                 }
+                env_.require(mptflags(*this, flags, holder));
+            };
+            if (arg.account)
+                require(std::nullopt, arg.holder.has_value());
+            if (arg.holder)
+                require(*arg.holder, false);
+        }
 
-                if (arg.mutableFlags)
-                {
-                    if (*arg.mutableFlags & tmfMPTSetCanLock)
-                        flags |= lsfMPTCanLock;
-                    else if (*arg.mutableFlags & tmfMPTClearCanLock)
-                        flags &= ~lsfMPTCanLock;
-
-                    if (*arg.mutableFlags & tmfMPTSetRequireAuth)
-                        flags |= lsfMPTRequireAuth;
-                    else if (*arg.mutableFlags & tmfMPTClearRequireAuth)
-                        flags &= ~lsfMPTRequireAuth;
-
-                    if (*arg.mutableFlags & tmfMPTSetCanEscrow)
-                        flags |= lsfMPTCanEscrow;
-                    else if (*arg.mutableFlags & tmfMPTClearCanEscrow)
-                        flags &= ~lsfMPTCanEscrow;
-
-                    if (*arg.mutableFlags & tmfMPTSetCanClawback)
-                        flags |= lsfMPTCanClawback;
-                    else if (*arg.mutableFlags & tmfMPTClearCanClawback)
-                        flags &= ~lsfMPTCanClawback;
-
-                    if (*arg.mutableFlags & tmfMPTSetCanTrade)
-                        flags |= lsfMPTCanTrade;
-                    else if (*arg.mutableFlags & tmfMPTClearCanTrade)
-                        flags &= ~lsfMPTCanTrade;
-
-                    if (*arg.mutableFlags & tmfMPTSetCanTransfer)
-                        flags |= lsfMPTCanTransfer;
-                    else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
-                        flags &= ~lsfMPTCanTransfer;
-                }
-            }
-            env_.require(mptflags(*this, flags, holder));
-        };
-        if (arg.account)
-            require(std::nullopt, arg.holder.has_value());
-        if (arg.holder)
-            require(*arg.holder, false);
+        if (arg.pubKey)
+        {
+            env_.require(requireAny([&]() -> bool {
+                return forObject([&](SLEP const& sle) -> bool {
+                    if (sle)
+                    {
+                        return strHex((*sle)[sfIssuerElGamalPublicKey]) ==
+                            strHex(getPubKey(issuer_));
+                    }
+                    return false;
+                });
+            }));
+        }
     }
 }
 
@@ -625,31 +642,69 @@ MPTTester::convert(MPTConvert const& arg)
     auto const holderAmt = getBalance(*arg.account);
     auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
 
-    auto maybeEncrypted =
-        getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
-
     uint64_t prevInboxBalance =
-        maybeEncrypted ? decryptAmount(*arg.account, *maybeEncrypted) : 0;
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+    uint64_t prevSpendingBalance =
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+    uint64_t prevIssuerBalance =
+        getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
 
     if (submit(arg, jv) == tesSUCCESS)
     {
-        auto const curConfidentialOutstanding =
+        auto const postConfidentialOutstanding =
             getIssuanceConfidentialBalance();
         env_.require(mptbalance(*this, *arg.account, holderAmt - *arg.amt));
         env_.require(requireAny([&]() -> bool {
             return prevConfidentialOutstanding + *arg.amt ==
-                curConfidentialOutstanding;
+                postConfidentialOutstanding;
         }));
-        env_.require(requireAny([&]() -> bool {
-            auto maybeEncrypted =
-                getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
 
-            uint64_t decryptedAmt = maybeEncrypted
-                ? decryptAmount(*arg.account, *maybeEncrypted)
-                : 0;
-            std::cout << "\n decrpypted amt is " << decryptedAmt << '\n';
-            return prevInboxBalance + *arg.amt == decryptedAmt;
+        uint64_t postInboxBalance =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+        uint64_t postIssuerBalance =
+            getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+        uint64_t postSpendingBalance =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+        std::cout << "\n postIssuerBalance is " << postIssuerBalance << '\n';
+        std::cout << "\n postInboxBalance is " << postInboxBalance << '\n';
+
+        // spending balance should not change
+        env_.require(requireAny([&]() -> bool {
+            return postSpendingBalance == prevSpendingBalance;
         }));
+
+        // issuer's encrypted balance is updated correctly
+        env_.require(requireAny([&]() -> bool {
+            return prevIssuerBalance + *arg.amt == postIssuerBalance;
+        }));
+
+        // holder's inbox balance is updated correctly
+        env_.require(requireAny([&]() -> bool {
+            return prevInboxBalance + *arg.amt == postInboxBalance;
+        }));
+
+        // sum of holder's inbox and spending balance should equal to issuer's
+        // encrypted balance
+        env_.require(requireAny([&]() -> bool {
+            return postInboxBalance + postSpendingBalance == postIssuerBalance;
+        }));
+
+        if (arg.holderPubKey)
+        {
+            env_.require(requireAny([&]() -> bool {
+                return forObject(
+                    [&](SLEP const& sle) -> bool {
+                        if (sle)
+                        {
+                            return strHex((*sle)[sfHolderElGamalPublicKey]) ==
+                                strHex(getPubKey(*arg.account));
+                        }
+                        return false;
+                    },
+                    *arg.account);
+            }));
+        }
     }
 }
 
@@ -693,33 +748,7 @@ MPTTester::getPrivKey(Account const& account) const
 Buffer
 MPTTester::encryptAmount(Account const& account, uint64_t amt) const
 {
-    Buffer buf(ecGamalEncryptedTotalLength);
-
-    // Allocate ciphertext placeholders
-    secp256k1_pubkey c1, c2;
-
-    // Prepare a random blinding factor
-    unsigned char blinding_factor[32];
-    if (RAND_bytes(blinding_factor, 32) != 1)
-        Throw<std::runtime_error>("Failed to generate random number");
-
-    secp256k1_pubkey pubKey;
-
-    auto keyData = getPubKey(account);
-
-    std::memcpy(pubKey.data, keyData.data(), ecPubKeyLength);
-
-    // Encrypt the amount
-    if (!secp256k1_elgamal_encrypt(
-            secp256k1Context(), &c1, &c2, &pubKey, amt, blinding_factor))
-        Throw<std::runtime_error>("Failed to encrypt amount");
-
-    // Serialize the ciphertext pair into the buffer
-    if (!serializeEcPair(c1, c2, buf))
-        Throw<std::runtime_error>(
-            "Failed to serialize into 66 byte compressed format");
-
-    return buf;
+    return ripple::encryptAmount(amt, getPubKey(account));
 }
 
 uint64_t
@@ -744,6 +773,19 @@ MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
 
     return decryptedAmt;
 }
+
+uint64_t
+MPTTester::getDecryptedBalance(
+    Account const& account,
+    EncryptedBalanceType balanceType) const
+
+{
+    auto maybeEncrypted = getEncryptedBalance(account, balanceType);
+    auto accountToDecrypt =
+        balanceType == ISSUER_ENCRYPTED_BALANCE ? issuer_ : account;
+    return maybeEncrypted ? decryptAmount(accountToDecrypt, *maybeEncrypted)
+                          : 0;
+};
 
 }  // namespace jtx
 }  // namespace test

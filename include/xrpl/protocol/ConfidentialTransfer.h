@@ -130,12 +130,8 @@ proveEquality(
     uint256 const& txHash,  // Transaction context data
     std::uint32_t const spendVersion);
 
-TER
-encryptAmount(
-    AccountID const& account,
-    uint64_t amt,
-    Slice const& pubKeySlice,
-    Buffer& out);
+Buffer
+encryptAmount(uint64_t amt, Slice const& pubKeySlice);
 
 }  // namespace ripple
 

@@ -44,6 +44,9 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
         ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
         return temMALFORMED;
 
+    if (ctx.tx[sfMPTAmount] > maxMPTokenAmount)
+        return temMALFORMED;
+
     // if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
     //     return temMALFORMED;
 
@@ -83,7 +86,7 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     // can't update if there's already a pk
     if (sleMptoken->isFieldPresent(sfHolderElGamalPublicKey) &&
         ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
-        return tecNO_PERMISSION;
+        return tecDUPLICATE;
 
     auto const holderPubKey = ctx.tx.isFieldPresent(sfHolderElGamalPublicKey)
         ? ctx.tx[sfHolderElGamalPublicKey]
@@ -146,7 +149,8 @@ ConfidentialConvert::doApply()
     // todo: we should check sfConfidentialBalanceSpending depending on if we
     // encrypt zero amount
     if (sleMptoken->isFieldPresent(sfIssuerEncryptedBalance) &&
-        sleMptoken->isFieldPresent(sfConfidentialBalanceInbox))
+        sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) &&
+        sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
     {
         // homomorphically add holder's encrypted balance
         {
@@ -172,22 +176,24 @@ ConfidentialConvert::doApply()
     }
     else if (
         !sleMptoken->isFieldPresent(sfIssuerEncryptedBalance) &&
-        !sleMptoken->isFieldPresent(sfConfidentialBalanceInbox))
+        !sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) &&
+        !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
     {
         (*sleMptoken)[sfConfidentialBalanceInbox] = holderEc;
         (*sleMptoken)[sfIssuerEncryptedBalance] = issuerEc;
         (*sleMptoken)[sfConfidentialBalanceVersion] = 0;
 
-        // encrypt sfConfidentialBalanceSpending with zero balance
-        Buffer out(ecGamalEncryptedTotalLength);
-        if (TER res = encryptAmount(
-                account_, 0, (*sleMptoken)[sfHolderElGamalPublicKey], out);
-            !isTesSuccess(res))
+        try
+        {
+            // encrypt sfConfidentialBalanceSpending with zero balance
+            Buffer out;
+            out = encryptAmount(0, (*sleMptoken)[sfHolderElGamalPublicKey]);
+            (*sleMptoken)[sfConfidentialBalanceSpending] = out;
+        }
+        catch (std::exception const& e)
         {
             return tecINTERNAL;
         }
-
-        (*sleMptoken)[sfConfidentialBalanceSpending] = out;
     }
     else
     {
