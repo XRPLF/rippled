@@ -2802,20 +2802,16 @@ public:
     void
     run() override
     {
-#if 0
         testDisabled();
         testSelfLoan();
         testLifecycle();
         testBatchBypassCounterparty();
         testWrongMaxDebtBehavior();
         testLoanPayComputePeriodicPaymentValidRateInvariant();
-#endif
         testServiceFeeOnBrokerDeepFreeze();
-#if 0
 
         testRPC();
         testBasicMath();
-#endif
     }
 };
 
