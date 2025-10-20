@@ -1,0 +1,109 @@
+diff --git a/crates/c_api/CMakeLists.txt b/crates/c_api/CMakeLists.txt
+index b15c787a..0d0a04b7 100644
+--- a/crates/c_api/CMakeLists.txt
++++ b/crates/c_api/CMakeLists.txt
+@@ -43,6 +43,11 @@ endif()
+ list(TRANSFORM WASMI_SHARED_FILES PREPEND ${WASMI_TARGET_DIR}/)
+ list(TRANSFORM WASMI_STATIC_FILES PREPEND ${WASMI_TARGET_DIR}/)
+ 
++if(NOT BUILD_SHARED_LIBS)
++  set(WASMI_SHARED_FILES )
++endif()
++
++
+ # Instructions on how to build and install the Wasmi Rust crate.
+ find_program(WASMI_CARGO_BINARY cargo REQUIRED)
+ include(ExternalProject)
+diff --git a/crates/c_api/include/wasm.h b/crates/c_api/include/wasm.h
+index 5ee617ff..0199192d 100644
+--- a/crates/c_api/include/wasm.h
++++ b/crates/c_api/include/wasm.h
+@@ -146,6 +146,13 @@ WASM_DECLARE_OWN(store)
+ 
+ WASM_API_EXTERN own wasm_store_t* wasm_store_new(wasm_engine_t*);
+ 
++// Store fuel functions (forward declarations)
++struct wasmi_error;
++
++WASM_API_EXTERN struct wasmi_error* wasm_store_get_fuel(const wasm_store_t*, uint64_t* fuel);
++WASM_API_EXTERN struct wasmi_error* wasm_store_set_fuel(wasm_store_t*, uint64_t fuel);
++//WASM_API_EXTERN void *wasm_store_get_data(const wasm_store_t*);
++//WASM_API_EXTERN void wasm_store_set_data(wasm_store_t*, void *data);
+ 
+ ///////////////////////////////////////////////////////////////////////////////
+ // Type Representations
+diff --git a/crates/c_api/include/wasmi.h b/crates/c_api/include/wasmi.h
+index 2caffa37..0c0584ec 100644
+--- a/crates/c_api/include/wasmi.h
++++ b/crates/c_api/include/wasmi.h
+@@ -10,7 +10,7 @@
+ /**
+  * \brief Wasmi version string.
+  */
+-#define WASMI_VERSION "0.35.0"
++#define WASMI_VERSION "0.42.1"
+ /**
+  * \brief Wasmi major version number.
+  */
+@@ -18,10 +18,10 @@
+ /**
+  * \brief Wasmi minor version number.
+  */
+-#define WASMI_VERSION_MINOR 35
++#define WASMI_VERSION_MINOR 42
+ /**
+  * \brief Wasmi patch version number.
+  */
+-#define WASMI_VERSION_PATCH 0
++#define WASMI_VERSION_PATCH 1
+ 
+ #endif // WASMI_H
+diff --git a/crates/c_api/src/store.rs b/crates/c_api/src/store.rs
+index 56d4898f..543dbff8 100644
+--- a/crates/c_api/src/store.rs
++++ b/crates/c_api/src/store.rs
+@@ -175,3 +175,44 @@ pub extern "C" fn wasmi_context_set_fuel(
+ ) -> Option<Box<wasmi_error_t>> {
+     crate::handle_result(store.set_fuel(fuel), |()| {})
+ }
++
++////////////////////////////////////////////////////////////////////////////////////////
++////////////////////////////////////////////////////////////////////////////////////////
++////////////////////////////////////////////////////////////////////////////////////////
++////////////////////////////////////////////////////////////////////////////////////////
++
++/// Returns the current fuel of the wasm store context in `fuel`.
++///
++/// Wraps [`Store::get_fuel`].
++///
++/// # Errors
++///
++/// If [`Store::get_fuel`] errors.
++#[no_mangle]
++pub extern "C" fn wasm_store_get_fuel(
++    store: &wasm_store_t,
++    fuel: &mut u64,
++) -> Option<Box<wasmi_error_t>> {
++    let context = unsafe { store.inner.context() };
++    crate::handle_result(context.get_fuel(), |amt| {
++        *fuel = amt;
++    })
++}
++
++/// Sets the current fuel of the wasm store context to `fuel`.
++///
++/// Wraps [`Store::set_fuel`].
++///
++/// # Errors
++///
++/// If [`Store::set_fuel`] errors.
++#[no_mangle]
++pub extern "C" fn wasm_store_set_fuel(
++    store: &mut wasm_store_t,
++    fuel: u64,
++) -> Option<Box<wasmi_error_t>> {
++
++    let mut context = unsafe { store.inner.context_mut() };
++    crate::handle_result(context.set_fuel(fuel), |()| {})
++}
++

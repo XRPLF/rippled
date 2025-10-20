@@ -144,6 +144,7 @@ git fetch origin master
 git checkout master
 conan export --version 1.1.10 recipes/snappy/all
 conan export --version 4.0.3 recipes/soci/all
+conan export --version 0.42.1 external/wasmi
 rm -rf .git
 ```
 

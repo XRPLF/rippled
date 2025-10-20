@@ -245,7 +245,7 @@ std::nullptr_t
 hfResult(wasm_val_vec_t* results, int32_t value)
 {
     results->data[0] = WASM_I32_VAL(value);
-    results->num_elems = 1;
+    // results->size = 1;
     return nullptr;
 }
 
@@ -253,7 +253,7 @@ std::nullptr_t
 hfResult(wasm_val_vec_t* results, HostFunctionError value)
 {
     results->data[0] = WASM_I32_VAL(HfErrorToInt(value));
-    results->num_elems = 1;
+    // results->size = 1;
     return nullptr;
 }
 
@@ -1919,7 +1919,7 @@ testGetDataIncrement()
 
     {
         // test int32_t
-        wasm_val_vec_t params = {1, &values[0], 1, sizeof(wasm_val_t), nullptr};
+        wasm_val_vec_t params = {1, &values[0]};
 
         values[0] = WASM_I32_VAL(42);
 
@@ -1931,7 +1931,7 @@ testGetDataIncrement()
 
     {
         // test int64_t
-        wasm_val_vec_t params = {1, &values[0], 1, sizeof(wasm_val_t), nullptr};
+        wasm_val_vec_t params = {1, &values[0]};
 
         values[0] = WASM_I64_VAL(1234);
 
@@ -1943,7 +1943,7 @@ testGetDataIncrement()
 
     {
         // test SFieldCRef
-        wasm_val_vec_t params = {1, &values[0], 1, sizeof(wasm_val_t), nullptr};
+        wasm_val_vec_t params = {1, &values[0]};
 
         values[0] = WASM_I32_VAL(sfAccount.fieldCode);
 
@@ -1955,7 +1955,7 @@ testGetDataIncrement()
 
     {
         // test Slice
-        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+        wasm_val_vec_t params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
         values[1] = WASM_I32_VAL(3);
@@ -1968,7 +1968,7 @@ testGetDataIncrement()
 
     {
         // test string
-        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+        wasm_val_vec_t params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
         values[1] = WASM_I32_VAL(5);
@@ -1988,7 +1988,7 @@ testGetDataIncrement()
         AccountID const id(calcAccountID(
             generateKeyPair(KeyType::secp256k1, generateSeed("alice")).first));
 
-        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+        wasm_val_vec_t params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
         values[1] = WASM_I32_VAL(id.bytes);
@@ -2004,7 +2004,7 @@ testGetDataIncrement()
         // test uint256
 
         Hash h1 = sha512Half(Slice(buffer.data(), 8));
-        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+        wasm_val_vec_t params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
         values[1] = WASM_I32_VAL(h1.bytes);
@@ -2020,7 +2020,7 @@ testGetDataIncrement()
         // test Currency
 
         Currency const c = xrpCurrency();
-        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+        wasm_val_vec_t params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
         values[1] = WASM_I32_VAL(c.bytes);
