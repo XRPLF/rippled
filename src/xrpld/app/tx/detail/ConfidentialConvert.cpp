@@ -44,6 +44,9 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
         ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
         return temMALFORMED;
 
+    if (ctx.tx[sfMPTAmount] > maxMPTokenAmount)
+        return temMALFORMED;
+
     // if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
     //     return temMALFORMED;
 
@@ -83,7 +86,7 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     // can't update if there's already a pk
     if (sleMptoken->isFieldPresent(sfHolderElGamalPublicKey) &&
         ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
-        return tecNO_PERMISSION;
+        return tecDUPLICATE;
 
     auto const holderPubKey = ctx.tx.isFieldPresent(sfHolderElGamalPublicKey)
         ? ctx.tx[sfHolderElGamalPublicKey]
@@ -180,18 +183,17 @@ ConfidentialConvert::doApply()
         (*sleMptoken)[sfIssuerEncryptedBalance] = issuerEc;
         (*sleMptoken)[sfConfidentialBalanceVersion] = 0;
 
-        // encrypt sfConfidentialBalanceSpending with zero balance
-        Buffer out;
         try
         {
+            // encrypt sfConfidentialBalanceSpending with zero balance
+            Buffer out;
             out = encryptAmount(0, (*sleMptoken)[sfHolderElGamalPublicKey]);
+            (*sleMptoken)[sfConfidentialBalanceSpending] = out;
         }
         catch (std::exception const& e)
         {
             return tecINTERNAL;
         }
-
-        (*sleMptoken)[sfConfidentialBalanceSpending] = out;
     }
     else
     {

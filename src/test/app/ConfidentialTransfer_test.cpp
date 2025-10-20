@@ -31,7 +31,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     void
     testConvert(FeatureBitset features)
     {
-        testcase("test convert");
+        testcase("Convert");
         using namespace test::jtx;
         Env env{*this, features};
         Account const alice("alice");
@@ -85,7 +85,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     void
     testConvertPreflight(FeatureBitset features)
     {
-        testcase("test convert");
+        testcase("Convert preflight");
         using namespace test::jtx;
 
         Env env{*this, features - featureConfidentialTransfer};
@@ -146,6 +146,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
              .issuerEncryptedAmt = Buffer{},
              .err = temMALFORMED});
 
+        mptAlice.convert(
+            {.account = bob,
+             .amt = maxMPTokenAmount + 1,
+             .proof = "123",
+             .holderPubKey = mptAlice.getPubKey(bob),
+             .err = temMALFORMED});
+
         // todo: change to to check proof size
         // mptAlice.convert(
         //     {.account = bob,
@@ -161,28 +168,249 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testcase("Set preflight");
         using namespace test::jtx;
 
-        Env env{*this, features - featureConfidentialTransfer};
-        Account const alice("alice");
-        Account const bob("bob");
-        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        {
+            Env env{*this, features - featureConfidentialTransfer};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-        mptAlice.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanTransfer | tfMPTCanLock});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
 
-        mptAlice.authorize({.account = bob});
-        env.close();
-        mptAlice.pay(alice, bob, 100);
-        env.close();
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
 
-        mptAlice.generateKeyPair(alice);
-        mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
 
-        mptAlice.set(
-            {.account = alice,
-             .pubKey = mptAlice.getPubKey(alice),
-             .err = temDISABLED});
+            mptAlice.set(
+                {.account = alice,
+                 .pubKey = mptAlice.getPubKey(alice),
+                 .err = temDISABLED});
+        }
+
+        // issuance has disabled confidential transfer
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock |
+                     tfMPTNoConfidentialTransfer});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.set(
+                {.account = alice,
+                 .pubKey = mptAlice.getPubKey(alice),
+                 .err = tecNO_PERMISSION});
+        }
+    }
+
+    void
+    testConvertPreclaim(FeatureBitset features)
+    {
+        testcase("Convert preclaim");
+        using namespace test::jtx;
+
+        // tfMPTNoConfidentialTransfer is set on issuance
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock |
+                     tfMPTNoConfidentialTransfer});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = tecNO_PERMISSION});
+        }
+
+        // issuer has not uploaded their sfIssuerElGamalPublicKey
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = tecNO_PERMISSION});
+        }
+
+        // issuance does not exist
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.destroy();
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = tecOBJECT_NOT_FOUND});
+        }
+
+        // bob has not created MPToken
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = tecOBJECT_NOT_FOUND});
+        }
+
+        // trying to convert more than what bob has
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 200,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = tecINSUFFICIENT_FUNDS});
+        }
+
+        // holder cannot upload pk again
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob)});
+
+            // cannot upload pk again
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = tecDUPLICATE});
+        }
+
+        // todo: test well formed proof
     }
 
     void
@@ -190,6 +418,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     {
         testConvert(features);
         testConvertPreflight(features);
+        testConvertPreclaim(features);
+
         testSetPreflight(features);
     }
 
