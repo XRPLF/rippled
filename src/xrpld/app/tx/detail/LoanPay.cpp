@@ -247,12 +247,8 @@ LoanPay::doApply()
         // Add the fee to First Loss Cover Pool
         coverAvailableField += totalPaidToBroker;
     }
-    // If broker is deep-frozen then transfer the fees to the broker's
-    // pseudo-account.
-    auto const brokerDeepFrozen = isDeepFrozen(view, brokerOwner, asset);
-    auto const brokerPayee = (sufficientCover && !brokerDeepFrozen)
-        ? brokerOwner
-        : brokerPseudoAccount;
+    auto const brokerPayee =
+        sufficientCover ? brokerOwner : brokerPseudoAccount;
 
     // Decrease LoanBroker Debt by the amount paid, add the Loan value change,
     // and subtract the change in the management fee
