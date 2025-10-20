@@ -9,9 +9,9 @@ name: Trigger
 on:
   push:
     branches:
-      - develop
-      - release
-      - master
+      - "develop"
+      - "release*"
+      - "master"
     paths:
       # These paths are unique to `on-trigger.yml`.
       - ".github/workflows/reusable-check-missing-commits.yml"
@@ -65,6 +65,7 @@ jobs:
   build-test:
     uses: ./.github/workflows/reusable-build-test.yml
     strategy:
+      fail-fast: ${{ github.event_name == 'merge_group' }}
       matrix:
         os: [linux, macos, windows]
     with:

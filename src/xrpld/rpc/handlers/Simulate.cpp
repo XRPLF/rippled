@@ -72,39 +72,23 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
 }
 
 static std::optional<Json::Value>
-autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
+autofillSignature(Json::Value& sigObject)
 {
-    if (!tx_json.isMember(jss::Fee))
-    {
-        // autofill Fee
-        // Must happen after all the other autofills happen
-        // Error handling/messaging works better that way
-        auto feeOrError = RPC::getCurrentNetworkFee(
-            context.role,
-            context.app.config(),
-            context.app.getFeeTrack(),
-            context.app.getTxQ(),
-            context.app,
-            tx_json);
-        if (feeOrError.isMember(jss::error))
-            return feeOrError;
-        tx_json[jss::Fee] = feeOrError;
-    }
-
-    if (!tx_json.isMember(jss::SigningPubKey))
+    if (!sigObject.isMember(jss::SigningPubKey))
     {
         // autofill SigningPubKey
-        tx_json[jss::SigningPubKey] = "";
+        sigObject[jss::SigningPubKey] = "";
     }
 
-    if (tx_json.isMember(jss::Signers))
+    if (sigObject.isMember(jss::Signers))
     {
-        if (!tx_json[jss::Signers].isArray())
+        if (!sigObject[jss::Signers].isArray())
             return RPC::invalid_field_error("tx.Signers");
         // check multisigned signers
-        for (unsigned index = 0; index < tx_json[jss::Signers].size(); index++)
+        for (unsigned index = 0; index < sigObject[jss::Signers].size();
+             index++)
         {
-            auto& signer = tx_json[jss::Signers][index];
+            auto& signer = sigObject[jss::Signers][index];
             if (!signer.isObject() || !signer.isMember(jss::Signer) ||
                 !signer[jss::Signer].isObject())
                 return RPC::invalid_field_error(
@@ -129,16 +113,41 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         }
     }
 
-    if (!tx_json.isMember(jss::TxnSignature))
+    if (!sigObject.isMember(jss::TxnSignature))
     {
         // autofill TxnSignature
-        tx_json[jss::TxnSignature] = "";
+        sigObject[jss::TxnSignature] = "";
     }
-    else if (tx_json[jss::TxnSignature] != "")
+    else if (sigObject[jss::TxnSignature] != "")
     {
         // Transaction must not be signed
         return rpcError(rpcTX_SIGNED);
     }
+    return std::nullopt;
+}
+
+static std::optional<Json::Value>
+autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
+{
+    if (!tx_json.isMember(jss::Fee))
+    {
+        // autofill Fee
+        // Must happen after all the other autofills happen
+        // Error handling/messaging works better that way
+        auto feeOrError = RPC::getCurrentNetworkFee(
+            context.role,
+            context.app.config(),
+            context.app.getFeeTrack(),
+            context.app.getTxQ(),
+            context.app,
+            tx_json);
+        if (feeOrError.isMember(jss::error))
+            return feeOrError;
+        tx_json[jss::Fee] = feeOrError;
+    }
+
+    if (auto error = autofillSignature(tx_json))
+        return *error;
 
     if (!tx_json.isMember(jss::Sequence))
     {

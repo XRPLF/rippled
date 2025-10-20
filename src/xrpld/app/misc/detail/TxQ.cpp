@@ -1113,7 +1113,7 @@ TxQ::apply(
                comparable scale to the base fee, ignore the
                reserve. Only check the account balance.
             */
-            auto const reserve = view.fees().accountReserve(0);
+            auto const reserve = view.fees().reserve;
             auto const base = view.fees().base;
             if (totalFee >= balance ||
                 (reserve > 10 * base && totalFee >= reserve))

@@ -4,6 +4,10 @@ description: "Install Conan dependencies, optionally forcing a rebuild of all de
 # Note that actions do not support 'type' and all inputs are strings, see
 # https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#inputs.
 inputs:
+  verbosity:
+    description: "The build verbosity."
+    required: false
+    default: "verbose"
   build_dir:
     description: "The directory where to build."
     required: true
@@ -24,6 +28,7 @@ runs:
         BUILD_DIR: ${{ inputs.build_dir }}
         BUILD_OPTION: ${{ inputs.force_build == 'true' && '*' || 'missing' }}
         BUILD_TYPE: ${{ inputs.build_type }}
+        VERBOSITY: ${{ inputs.verbosity }}
       run: |
         echo 'Installing dependencies.'
         mkdir -p '${{ env.BUILD_DIR }}'
@@ -34,4 +39,6 @@ runs:
           --options:host='&:tests=True' \
           --options:host='&:xrpld=True' \
           --settings:all build_type='${{ env.BUILD_TYPE }}' \
+          --conf:all tools.build:verbosity='${{ env.VERBOSITY }}' \
+          --conf:all tools.compilation:verbosity='${{ env.VERBOSITY }}' \
           ..

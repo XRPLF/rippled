@@ -64,7 +64,9 @@ jobs:
           conan_remote_name: ${{ inputs.conan_remote_name }}
           conan_remote_url: ${{ inputs.conan_remote_url }}
       - name: Log into Conan remote
-        run: conan remote login ${{ inputs.conan_remote_name }} "${{ secrets.conan_remote_username }}" --password "${{ secrets.conan_remote_password }}"
+        env:
+          CONAN_REMOTE_NAME: ${{ inputs.conan_remote_name }}
+        run: conan remote login ${{ env.CONAN_REMOTE_NAME }} "${{ secrets.conan_remote_username }}" --password "${{ secrets.conan_remote_password }}"
       - name: Upload package
         env:
           CONAN_REMOTE_NAME: ${{ inputs.conan_remote_name }}
