@@ -69,3 +69,5 @@ git-subtree. See those directories' README files for more details.
 - [Clio API Server for the XRP Ledger](https://github.com/XRPLF/clio)
 - [Mailing List for Release Announcements](https://groups.google.com/g/ripple-server)
 - [Learn more about the XRP Ledger (YouTube)](https://www.youtube.com/playlist?list=PLJQ55Tj1hIVZtJ_JdTvSum2qMTsedWkNi)
+<br>## Welcome to XRPL Consensus<br>Ripple's XRPL enables fast cross-border payments—new contributors, start with the Hooks tutorial for your first smart contract. Tip: Use XRPL.js for clients! <br>
+
