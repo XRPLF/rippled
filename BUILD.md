@@ -39,16 +39,11 @@ found here](./docs/build/environment.md).
 
 - [Python 3.11](https://www.python.org/downloads/), or higher
 - [Conan 2.17](https://conan.io/downloads.html)[^1], or higher
-- [CMake 3.22](https://cmake.org/download/)[^2], or higher
+- [CMake 3.22](https://cmake.org/download/), or higher
 
 [^1]:
     It is possible to build with Conan 1.60+, but the instructions are
     significantly different, which is why we are not recommending it.
-
-[^2]:
-    CMake 4 is not yet supported by all dependencies required by this project.
-    If you are affected by this issue, follow [conan workaround for cmake
-    4](#workaround-for-cmake-4)
 
 `rippled` is written in the C++20 dialect and includes the `<concepts>` header.
 The [minimum compiler versions][2] required are:
@@ -281,21 +276,6 @@ sed -i.bak -e 's|^arch=.*$|arch=x86_64|' $(conan config home)/profiles/default
 ```bash
 sed -i.bak -e 's|^compiler\.runtime=.*$|compiler.runtime=static|' $(conan config home)/profiles/default
 ```
-
-#### Workaround for CMake 4
-
-If your system CMake is version 4 rather than 3, you may have to configure Conan
-profile to use CMake version 3 for dependencies, by adding the following two
-lines to your profile:
-
-```text
-[tool_requires]
-!cmake/*: cmake/[>=3 <4]
-```
-
-This will force Conan to download and use a locally cached CMake 3 version, and
-is needed because some of the dependencies used by this project do not support
-CMake 4.
 
 #### Clang workaround for grpc
 

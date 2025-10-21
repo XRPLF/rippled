@@ -476,7 +476,7 @@ transferHelper(
                 // Already checked, but OK to check again
                 return tecNO_DST;
             }
-            if (amt < psb.fees().accountReserve(0))
+            if (amt < psb.fees().reserve)
             {
                 JLOG(j.trace()) << "Insufficient payment to create account.";
                 return tecNO_DST_INSUF_XRP;
