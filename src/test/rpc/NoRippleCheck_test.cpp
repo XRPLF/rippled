@@ -59,9 +59,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             Json::Value params;
             params[jss::account] = alice.human();
             auto const result = env.rpc(
-                "json",
-                "noripple_check",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::error_message] == "Missing field 'role'.");
         }
@@ -92,9 +90,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::account] = alice.human();
             params[jss::role] = "not_a_role";
             auto const result = env.rpc(
-                "json",
-                "noripple_check",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'role'.");
         }
@@ -105,9 +101,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::role] = "user";
             params[jss::limit] = -1;
             auto const result = env.rpc(
-                "json",
-                "noripple_check",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(
                 result[jss::error_message] ==
@@ -120,9 +114,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::role] = "user";
             params[jss::ledger_hash] = 1;
             auto const result = env.rpc(
-                "json",
-                "noripple_check",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::error_message] == "ledgerHashNotString");
         }
@@ -133,9 +125,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::role] = "user";
             params[jss::ledger] = "current";
             auto const result = env.rpc(
-                "json",
-                "noripple_check",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actNotFound");
             BEAST_EXPECT(result[jss::error_message] == "Account not found.");
         }
@@ -147,9 +137,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::role] = "user";
             params[jss::ledger] = "current";
             auto const result = env.rpc(
-                "json",
-                "noripple_check",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
         }
@@ -184,10 +172,8 @@ class NoRippleCheck_test : public beast::unit_test::suite
         params[jss::account] = alice.human();
         params[jss::role] = (user ? "user" : "gateway");
         params[jss::ledger] = "current";
-        auto result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        auto result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
 
         auto const pa = result["problems"];
         if (!BEAST_EXPECT(pa.isArray()))
@@ -221,10 +207,8 @@ class NoRippleCheck_test : public beast::unit_test::suite
         // now make a second request asking for the relevant transactions this
         // time.
         params[jss::transactions] = true;
-        result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
         if (!BEAST_EXPECT(result[jss::transactions].isArray()))
             return;
 
@@ -343,43 +327,33 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
         params[jss::account] = alice.human();
         params[jss::role] = "user";
         params[jss::ledger] = "current";
-        auto result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        auto result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
 
         BEAST_EXPECT(result["problems"].size() == 301);
 
         // one below minimum
         params[jss::limit] = 9;
-        result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
         BEAST_EXPECT(result["problems"].size() == (admin ? 10 : 11));
 
         // at minimum
         params[jss::limit] = 10;
-        result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
         BEAST_EXPECT(result["problems"].size() == 11);
 
         // at max
         params[jss::limit] = 400;
-        result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
         BEAST_EXPECT(result["problems"].size() == 401);
 
         // at max+1
         params[jss::limit] = 401;
-        result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
         BEAST_EXPECT(result["problems"].size() == (admin ? 402 : 401));
     }
 
