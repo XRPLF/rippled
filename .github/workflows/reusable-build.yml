@@ -48,6 +48,7 @@ jobs:
     name: Build ${{ inputs.config_name }}
     runs-on: ${{ fromJSON(inputs.runs_on) }}
     container: ${{ inputs.image != '' && inputs.image || null }}
+    timeout-minutes: 60
     steps:
       - name: Cleanup workspace
         if: ${{ runner.os == 'macOS' }}
