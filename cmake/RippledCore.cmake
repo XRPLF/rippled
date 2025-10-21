@@ -62,7 +62,7 @@ target_link_libraries(xrpl.imports.main
     date::date
     ed25519::ed25519
     secp256k1::secp256k1
-    wasmtime::wasmtime
+    wwinch::wwinch
     xrpl.libpb
     xxHash::xxhash
     $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>

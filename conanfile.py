@@ -30,7 +30,7 @@ class Xrpl(ConanFile):
         'nudb/2.0.9',
         'openssl/3.5.4',
         'soci/4.0.3',
-        'wasmtime/37.0.0',
+        'wwinch/37.0.0',
         'zlib/1.3.1',
     ]
 
@@ -193,7 +193,7 @@ class Xrpl(ConanFile):
             'protobuf::libprotobuf',
             'soci::soci',
             'sqlite3::sqlite',
-            'wasmtime::wasmtime',
+            'wwinch::wwinch',
             'xxhash::xxhash',
             'zlib::zlib',
         ]

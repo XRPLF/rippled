@@ -12,8 +12,8 @@ import os
 
 required_conan_version = ">=1.55.0"
 
-class WasmtimeConan(ConanFile):
-    name = "wasmtime"
+class WWinchConan(ConanFile):
+    name = "wwinch"
     version = "37.0.0"
     license = "Apache License v2.0"
     url = "https://github.com/bytecodealliance/wasmtime.git"
@@ -58,7 +58,7 @@ class WasmtimeConan(ConanFile):
         tc.variables["CMAKE_CXX_STANDARD"] = 20
         tc.variables["BUILD_SHARED_LIBS"] = 0
         tc.variables["WASMTIME_DISABLE_ALL_FEATURES"] = 1
-        tc.variables["WASMTIME_USER_CARGO_BUILD_OPTIONS"] = "--features;disable-logging;--features;cranelift;--features;gc-null;--features;pulley"
+        tc.variables["WASMTIME_USER_CARGO_BUILD_OPTIONS"] = "--features;disable-logging;--features;winch;--features;gc-null"
 
         tc.generate()
 
@@ -88,6 +88,6 @@ class WasmtimeConan(ConanFile):
 
     def package_info(self):
         self.cpp_info.libs = ["wasmtime"]
-        self.cpp_info.names["cmake_find_package"] = "wasmtime"
-        self.cpp_info.names["cmake_find_package_multi"] = "wasmtime"
+        self.cpp_info.names["cmake_find_package"] = "wwinch"
+        self.cpp_info.names["cmake_find_package_multi"] = "wwinch"
 

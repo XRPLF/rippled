@@ -631,7 +631,7 @@ ModuleWrapper::getGas()
 bool
 WasmtimeEngine::setInterp(wasm_config_t* c, beast::Journal j)
 {
-    // return true;  // enable jit
+    return true;  // enable jit
 
     wasmtime_error_t* err = wasmtime_config_target_set(c, "pulley64");
     if (err)
