@@ -103,6 +103,7 @@ jobs:
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-build-test.yml
     strategy:
+      fail-fast: false
       matrix:
         os: [linux, macos, windows]
     with:

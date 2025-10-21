@@ -278,7 +278,7 @@ Pathfinder::findPaths(
             return false;
         }
 
-        auto const reserve = STAmount(mLedger->fees().accountReserve(0));
+        auto const reserve = STAmount(mLedger->fees().reserve);
         if (mDstAmount < reserve)
         {
             JLOG(j_.debug())

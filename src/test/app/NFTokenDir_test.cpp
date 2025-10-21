@@ -47,10 +47,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary] = false;
         {
-            Json::Value jrr = env.rpc(
-                "json",
-                "ledger_data",
-                boost::lexical_cast<std::string>(jvParams));
+            Json::Value jrr =
+                env.rpc("json", "ledger_data", to_string(jvParams));
 
             // Iterate the state and print all NFTokenPages.
             if (!jrr.isMember(jss::result) ||

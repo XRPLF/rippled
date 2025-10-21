@@ -156,7 +156,10 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(ter))
         return ter;
 
-    if (accountHolds(
+    // Asset issuer does not have any balance, they can just create funds by
+    // depositing in the vault.
+    if ((vaultAsset.native() || vaultAsset.getIssuer() != account) &&
+        accountHolds(
             ctx.view,
             account,
             vaultAsset,
@@ -199,8 +202,7 @@ VaultDeposit::doApply()
     else  // !vault->isFlag(lsfVaultPrivate) || account_ == vault->at(sfOwner)
     {
         // No authorization needed, but must ensure there is MPToken
-        auto sleMpt = view().read(keylet::mptoken(mptIssuanceID, account_));
-        if (!sleMpt)
+        if (!view().exists(keylet::mptoken(mptIssuanceID, account_)))
         {
             if (auto const err = authorizeMPToken(
                     view(),

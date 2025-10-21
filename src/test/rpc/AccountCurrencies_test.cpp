@@ -43,9 +43,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
             params[jss::account] = Account{"bob"}.human();
             params[jss::ledger_hash] = 1;
             auto const result = env.rpc(
-                "json",
-                "account_currencies",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::error_message] == "ledgerHashNotString");
         }
@@ -107,9 +105,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
             params[jss::account] =
                 "llIIOO";  // these are invalid in bitcoin alphabet
             auto const result = env.rpc(
-                "json",
-                "account_currencies",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
         }
@@ -119,9 +115,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
             Json::Value params;
             params[jss::account] = "Bob";
             auto const result = env.rpc(
-                "json",
-                "account_currencies",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
         }
@@ -130,9 +124,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
             Json::Value params;
             params[jss::account] = Account{"bob"}.human();
             auto const result = env.rpc(
-                "json",
-                "account_currencies",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actNotFound");
             BEAST_EXPECT(result[jss::error_message] == "Account not found.");
         }
@@ -161,9 +153,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         Json::Value params;
         params[jss::account] = alice.human();
         auto result = env.rpc(
-            "json",
-            "account_currencies",
-            boost::lexical_cast<std::string>(params))[jss::result];
+            "json", "account_currencies", to_string(params))[jss::result];
 
         auto arrayCheck =
             [&result](
@@ -189,9 +179,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
 
         // send_currencies should be populated now
         result = env.rpc(
-            "json",
-            "account_currencies",
-            boost::lexical_cast<std::string>(params))[jss::result];
+            "json", "account_currencies", to_string(params))[jss::result];
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
         BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrencies));
 
@@ -203,9 +191,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 l[jss::freeze].asBool() == (l[jss::currency] == "USD"));
         result = env.rpc(
-            "json",
-            "account_currencies",
-            boost::lexical_cast<std::string>(params))[jss::result];
+            "json", "account_currencies", to_string(params))[jss::result];
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
         BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrencies));
         // clear the freeze
@@ -215,9 +201,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         env(pay(gw, alice, gw["USA"](50)));
         // USA should now be missing from receive_currencies
         result = env.rpc(
-            "json",
-            "account_currencies",
-            boost::lexical_cast<std::string>(params))[jss::result];
+            "json", "account_currencies", to_string(params))[jss::result];
         decltype(gwCurrencies) gwCurrenciesNoUSA(
             gwCurrencies.begin() + 1, gwCurrencies.end());
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrenciesNoUSA));
@@ -228,9 +212,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         env(trust(gw, alice["USA"](100)));
         env(pay(alice, gw, alice["USA"](200)));
         result = env.rpc(
-            "json",
-            "account_currencies",
-            boost::lexical_cast<std::string>(params))[jss::result];
+            "json", "account_currencies", to_string(params))[jss::result];
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
         BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrenciesNoUSA));
     }
