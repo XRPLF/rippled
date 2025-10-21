@@ -87,8 +87,8 @@ public:
     getFullText() const override;
 
     // Outer transaction functions / signature functions.
-    Blob
-    getSignature(STObject const& sigObject) const;
+    static Blob
+    getSignature(STObject const& sigObject);
 
     Blob
     getSignature() const
@@ -137,20 +137,6 @@ public:
         @param requireCanonicalSig If `true`, check that the signature is fully
             canonical. If `false`, only check that the signature is valid.
         @param rules The current ledger rules.
-        @param pSig Pointer to object that contains the signature fields, if not
-            using "this". Will most often be null
-        @return `true` if valid signature. If invalid, the error message string.
-    */
-    Expected<void, std::string>
-    checkSign(
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules,
-        STObject const* pSig) const;
-
-    /** Check the signature.
-        @param requireCanonicalSig If `true`, check that the signature is fully
-            canonical. If `false`, only check that the signature is valid.
-        @param rules The current ledger rules.
         @return `true` if valid signature. If invalid, the error message string.
     */
     Expected<void, std::string>
@@ -177,20 +163,34 @@ public:
         char status,
         std::string const& escapedMetaData) const;
 
-    std::vector<uint256>
+    std::vector<uint256> const&
     getBatchTransactionIDs() const;
 
 private:
+    /** Check the signature.
+        @param requireCanonicalSig If `true`, check that the signature is fully
+            canonical. If `false`, only check that the signature is valid.
+        @param rules The current ledger rules.
+        @param sigObject Reference to object that contains the signature fields.
+            Will be *this more often than not.
+        @return `true` if valid signature. If invalid, the error message string.
+    */
+    Expected<void, std::string>
+    checkSign(
+        RequireFullyCanonicalSig requireCanonicalSig,
+        Rules const& rules,
+        STObject const& sigObject) const;
+
     Expected<void, std::string>
     checkSingleSign(
         RequireFullyCanonicalSig requireCanonicalSig,
-        STObject const* pSig) const;
+        STObject const& sigObject) const;
 
     Expected<void, std::string>
     checkMultiSign(
         RequireFullyCanonicalSig requireCanonicalSig,
         Rules const& rules,
-        STObject const* pSig) const;
+        STObject const& sigObject) const;
 
     Expected<void, std::string>
     checkBatchSingleSign(
@@ -209,7 +209,7 @@ private:
     move(std::size_t n, void* buf) override;
 
     friend class detail::STVar;
-    mutable std::vector<uint256> batch_txn_ids_;
+    mutable std::vector<uint256> batchTxnIds_;
 };
 
 bool

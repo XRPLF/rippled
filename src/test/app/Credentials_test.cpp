@@ -578,7 +578,7 @@ struct Credentials_test : public beast::unit_test::suite
             using namespace jtx;
             Env env{*this, features};
 
-            auto const reserve = drops(env.current()->fees().accountReserve(0));
+            auto const reserve = drops(env.current()->fees().reserve);
             env.fund(reserve, subject, issuer);
             env.close();
 

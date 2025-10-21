@@ -138,7 +138,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
                 return tecNO_ISSUER;
             auto [it, ins] = sorted.emplace(issuer, o[sfCredentialType]);
             if (!ins)
-                return tefINTERNAL;
+                return tefINTERNAL;  // LCOV_EXCL_LINE
         }
 
         // Verify that the Preauth entry they asked to add is not already
@@ -198,7 +198,7 @@ DepositPreauth::doApply()
                          << (page ? "success" : "failure");
 
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
@@ -216,7 +216,7 @@ DepositPreauth::doApply()
     {
         auto const sleOwner = view().peek(keylet::account(account_));
         if (!sleOwner)
-            return tefINTERNAL;
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
@@ -246,7 +246,7 @@ DepositPreauth::doApply()
         Keylet const preauthKey = keylet::depositPreauth(account_, sortedTX);
         auto slePreauth = std::make_shared<SLE>(preauthKey);
         if (!slePreauth)
-            return tefINTERNAL;
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         slePreauth->setAccountID(sfAccount, account_);
         slePreauth->peekFieldArray(sfAuthorizeCredentials) =
@@ -262,7 +262,7 @@ DepositPreauth::doApply()
                          << (page ? "success" : "failure");
 
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
@@ -299,14 +299,16 @@ DepositPreauth::removeFromLedger(
     std::uint64_t const page{(*slePreauth)[sfOwnerNode]};
     if (!view.dirRemove(keylet::ownerDir(account), page, preauthIndex, false))
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete DepositPreauth from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     // If we succeeded, update the DepositPreauth owner's reserve.
     auto const sleOwner = view.peek(keylet::account(account));
     if (!sleOwner)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     adjustOwnerCount(view, sleOwner, -1, j);
 

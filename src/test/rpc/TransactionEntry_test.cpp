@@ -258,15 +258,13 @@ class TransactionEntry_test : public beast::unit_test::suite
         Account A2{"A2"};
 
         env.fund(XRP(10000), A1);
-        auto fund_1_tx =
-            boost::lexical_cast<std::string>(env.tx()->getTransactionID());
+        auto fund_1_tx = to_string(env.tx()->getTransactionID());
         BEAST_EXPECT(
             fund_1_tx ==
             "F4E9DF90D829A9E8B423FF68C34413E240D8D8BB0EFD080DF08114ED398E2506");
 
         env.fund(XRP(10000), A2);
-        auto fund_2_tx =
-            boost::lexical_cast<std::string>(env.tx()->getTransactionID());
+        auto fund_2_tx = to_string(env.tx()->getTransactionID());
         BEAST_EXPECT(
             fund_2_tx ==
             "6853CD8226A05068C951CB1F54889FF4E40C5B440DC1C5BA38F114C4E0B1E705");
@@ -308,15 +306,13 @@ class TransactionEntry_test : public beast::unit_test::suite
         // the trust tx is actually a payment since the trust method
         // refunds fees with a payment after TrustSet..so just ignore the type
         // in the check below
-        auto trust_tx =
-            boost::lexical_cast<std::string>(env.tx()->getTransactionID());
+        auto trust_tx = to_string(env.tx()->getTransactionID());
         BEAST_EXPECT(
             trust_tx ==
             "C992D97D88FF444A1AB0C06B27557EC54B7F7DA28254778E60238BEA88E0C101");
 
         env(pay(A2, A1, A2["USD"](5)));
-        auto pay_tx =
-            boost::lexical_cast<std::string>(env.tx()->getTransactionID());
+        auto pay_tx = to_string(env.tx()->getTransactionID());
         env.close();
         BEAST_EXPECT(
             pay_tx ==
@@ -362,8 +358,7 @@ class TransactionEntry_test : public beast::unit_test::suite
             "2000-01-01T00:00:20Z");
 
         env(offer(A2, XRP(100), A2["USD"](1)));
-        auto offer_tx =
-            boost::lexical_cast<std::string>(env.tx()->getTransactionID());
+        auto offer_tx = to_string(env.tx()->getTransactionID());
         BEAST_EXPECT(
             offer_tx ==
             "5FCC1A27A7664F82A0CC4BE5766FBBB7C560D52B93AA7B550CD33B27AEC7EFFB");

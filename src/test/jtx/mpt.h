@@ -288,7 +288,7 @@ public:
     getBalance(Account const& account) const;
 
     MPT
-    operator[](std::string const& name);
+    operator[](std::string const& name) const;
 
     PrettyAmount
     operator()(std::uint64_t amount) const;

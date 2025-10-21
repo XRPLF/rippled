@@ -37,10 +37,8 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         auto const aliceSequence = env.seq(alice);
 
         auto const tx1 = env.jt(noop(alice), seq(aliceSequence));
-        auto const tx2 = env.jt(
-            noop(alice),
-            seq(aliceSequence + 1),
-            json(R"({"LastLedgerSequence":7})"));
+        auto const tx2 =
+            env.jt(noop(alice), seq(aliceSequence + 1), last_ledger_seq(7));
 
         env(tx1);
         env.close();
@@ -83,10 +81,8 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         auto const aliceSequence = env.seq(alice);
 
         auto const tx1 = env.jt(noop(alice), seq(aliceSequence));
-        auto const tx2 = env.jt(
-            noop(alice),
-            seq(aliceSequence + 1),
-            json(R"({"LastLedgerSequence":7})"));
+        auto const tx2 =
+            env.jt(noop(alice), seq(aliceSequence + 1), last_ledger_seq(7));
 
         env(tx2, ter(terPRE_SEQ));
         BEAST_EXPECT(env.seq(alice) == aliceSequence);
@@ -131,9 +127,7 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         for (auto i = 0; i < 5; ++i)
         {
             tx.emplace_back(env.jt(
-                noop(alice),
-                seq(aliceSequence + i),
-                json(R"({"LastLedgerSequence":7})")));
+                noop(alice), seq(aliceSequence + i), last_ledger_seq(7)));
         }
 
         for (auto i = 1; i < 5; ++i)
