@@ -323,7 +323,7 @@ computeRoundedInterestComponent(
 {
     // Start by just using the non-principal part of the payment for interest
     Number roundedInterest = roundedPeriodicPayment - roundedPrincipal;
-    XRPL_ASSERT(
+    XRPL_ASSERT_PARTS(
         isRounded(asset, roundedInterest, scale),
         "ripple::detail::computeRoundedInterestComponent",
         "initial interest computation is rounded");
