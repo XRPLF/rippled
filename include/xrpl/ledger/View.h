@@ -828,6 +828,22 @@ accountSend(
     beast::Journal j,
     WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
+using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
+/** Like accountSend, except one account is sending multiple payments (with the
+ *  same asset!) simultaneously
+ *
+ * Calls static accountSendMultiIOU if saAmount represents Issue.
+ * Calls static accountSendMultiMPT if saAmount represents MPTIssue.
+ */
+[[nodiscard]] TER
+accountSendMulti(
+    ApplyView& view,
+    AccountID const& senderID,
+    Asset const& asset,
+    MultiplePaymentDestinations const& receivers,
+    beast::Journal j,
+    WaiveTransferFee waiveFee = WaiveTransferFee::No);
+
 [[nodiscard]] TER
 issueIOU(
     ApplyView& view,

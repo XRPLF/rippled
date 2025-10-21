@@ -200,7 +200,7 @@ STTx::getSigningHash() const
 }
 
 Blob
-STTx::getSignature(STObject const& sigObject) const
+STTx::getSignature(STObject const& sigObject)
 {
     try
     {
@@ -259,19 +259,18 @@ Expected<void, std::string>
 STTx::checkSign(
     RequireFullyCanonicalSig requireCanonicalSig,
     Rules const& rules,
-    STObject const* pSig) const
+    STObject const& sigObject) const
 {
     try
     {
         // Determine whether we're single- or multi-signing by looking
         // at the SigningPubKey.  If it's empty we must be
         // multi-signing.  Otherwise we're single-signing.
-        STObject const& sigObject{pSig ? *pSig : *this};
 
         Blob const& signingPubKey = sigObject.getFieldVL(sfSigningPubKey);
         return signingPubKey.empty()
-            ? checkMultiSign(requireCanonicalSig, rules, pSig)
-            : checkSingleSign(requireCanonicalSig, pSig);
+            ? checkMultiSign(requireCanonicalSig, rules, sigObject)
+            : checkSingleSign(requireCanonicalSig, sigObject);
     }
     catch (std::exception const&)
     {
@@ -284,13 +283,13 @@ STTx::checkSign(
     RequireFullyCanonicalSig requireCanonicalSig,
     Rules const& rules) const
 {
-    if (auto const ret = checkSign(requireCanonicalSig, rules, nullptr); !ret)
+    if (auto const ret = checkSign(requireCanonicalSig, rules, *this); !ret)
         return ret;
 
     if (isFieldPresent(sfCounterpartySignature))
     {
         auto const counterSig = getFieldObject(sfCounterpartySignature);
-        if (auto const ret = checkSign(requireCanonicalSig, rules, &counterSig);
+        if (auto const ret = checkSign(requireCanonicalSig, rules, counterSig);
             !ret)
             return Unexpected("Counterparty: " + ret.error());
     }
@@ -452,9 +451,8 @@ singleSignHelper(
 Expected<void, std::string>
 STTx::checkSingleSign(
     RequireFullyCanonicalSig requireCanonicalSig,
-    STObject const* pSig) const
+    STObject const& sigObject) const
 {
-    STObject const& sigObject{pSig ? *pSig : *this};
     auto const data = getSigningData(*this);
     bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
         (requireCanonicalSig == STTx::RequireFullyCanonicalSig::yes);
@@ -583,17 +581,16 @@ Expected<void, std::string>
 STTx::checkMultiSign(
     RequireFullyCanonicalSig requireCanonicalSig,
     Rules const& rules,
-    STObject const* pSig) const
+    STObject const& sigObject) const
 {
-    STObject const& sigObject{pSig ? *pSig : *this};
-
     bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
         (requireCanonicalSig == RequireFullyCanonicalSig::yes);
 
     // Used inside the loop in multiSignHelper to enforce that
     // the account owner may not multisign for themselves.
-    auto const txnAccountID =
-        pSig ? std::nullopt : std::optional<AccountID>(getAccountID(sfAccount));
+    auto const txnAccountID = &sigObject != this
+        ? std::nullopt
+        : std::optional<AccountID>(getAccountID(sfAccount));
 
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
@@ -616,7 +613,7 @@ STTx::checkMultiSign(
  *
  * This function returns a vector of transaction IDs by extracting them from
  * the field array `sfRawTransactions` within the STTx. If the batch
- * transaction IDs have already been computed and cached in `batch_txn_ids_`,
+ * transaction IDs have already been computed and cached in `batchTxnIds_`,
  * it returns the cached vector. Otherwise, it computes the transaction IDs,
  * caches them, and then returns the vector.
  *
@@ -626,7 +623,7 @@ STTx::checkMultiSign(
  * empty and that the size of the computed batch transaction IDs matches the
  * size of the `sfRawTransactions` field array.
  */
-std::vector<uint256>
+std::vector<uint256> const&
 STTx::getBatchTransactionIDs() const
 {
     XRPL_ASSERT(
@@ -635,17 +632,20 @@ STTx::getBatchTransactionIDs() const
     XRPL_ASSERT(
         getFieldArray(sfRawTransactions).size() != 0,
         "STTx::getBatchTransactionIDs : empty raw transactions");
-    // Don't early return so that the size assert is always hit.
-    if (batch_txn_ids_.size() == 0)
+
+    // The list of inner ids is built once, then reused on subsequent calls.
+    // After the list is built, it must always have the same size as the array
+    // `sfRawTransactions`. The assert below verifies that.
+    if (batchTxnIds_.size() == 0)
     {
         for (STObject const& rb : getFieldArray(sfRawTransactions))
-            batch_txn_ids_.push_back(rb.getHash(HashPrefix::transactionID));
+            batchTxnIds_.push_back(rb.getHash(HashPrefix::transactionID));
     }
 
     XRPL_ASSERT(
-        batch_txn_ids_.size() == getFieldArray(sfRawTransactions).size(),
+        batchTxnIds_.size() == getFieldArray(sfRawTransactions).size(),
         "STTx::getBatchTransactionIDs : batch transaction IDs size mismatch");
-    return batch_txn_ids_;
+    return batchTxnIds_;
 }
 
 //------------------------------------------------------------------------------

@@ -48,6 +48,9 @@ public:
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
 
+    static std::vector<OptionaledField<STNumber>> const&
+    getValueFields();
+
     static TER
     preclaim(PreclaimContext const& ctx);
 
