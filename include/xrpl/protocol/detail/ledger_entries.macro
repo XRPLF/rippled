@@ -548,30 +548,78 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfLoanBrokerID,         soeREQUIRED},
     {sfLoanSequence,         soeREQUIRED},
     {sfBorrower,             soeREQUIRED},
-    {sfLoanOriginationFee,   soeREQUIRED},
-    {sfLoanServiceFee,       soeREQUIRED},
-    {sfLatePaymentFee,       soeREQUIRED},
-    {sfClosePaymentFee,      soeREQUIRED},
-    {sfOverpaymentFee,       soeREQUIRED},
-    {sfInterestRate,         soeREQUIRED},
-    {sfLateInterestRate,     soeREQUIRED},
-    {sfCloseInterestRate,    soeREQUIRED},
-    {sfOverpaymentInterestRate, soeREQUIRED},
+    {sfLoanOriginationFee,   soeDEFAULT},
+    {sfLoanServiceFee,       soeDEFAULT},
+    {sfLatePaymentFee,       soeDEFAULT},
+    {sfClosePaymentFee,      soeDEFAULT},
+    {sfOverpaymentFee,       soeDEFAULT},
+    {sfInterestRate,         soeDEFAULT},
+    {sfLateInterestRate,     soeDEFAULT},
+    {sfCloseInterestRate,    soeDEFAULT},
+    {sfOverpaymentInterestRate, soeDEFAULT},
     {sfStartDate,            soeREQUIRED},
     {sfPaymentInterval,      soeREQUIRED},
     {sfGracePeriod,          soeREQUIRED},
-    {sfPreviousPaymentDate,  soeREQUIRED},
-    {sfNextPaymentDueDate,   soeREQUIRED},
-    {sfPaymentRemaining,     soeREQUIRED},
-//#if LOANDRAW
-// TODO: Remove this when you remove the rest of the LOANDRAW blocks.
-// Directives don't work with macro expansion.
-    {sfAssetsAvailable,      soeDEFAULT},
-//#endif
-    {sfPrincipalOutstanding, soeREQUIRED},
-    // Save the original request amount for rounding / scaling of
-    // other computations, particularly for IOUs
-    {sfPrincipalRequested,   soeREQUIRED},
+    {sfPreviousPaymentDate,  soeDEFAULT},
+    {sfNextPaymentDueDate,   soeOPTIONAL},
+    // The loan object tracks these values:
+    //
+    // - PaymentRemaining: The number of payments left in the loan. When it
+    //   reaches 0, the loan is paid off, and all other relevant values
+    //   must also be 0.
+    //
+    // - PeriodicPayment: The fixed, unrounded amount to be paid each
+    //   interval. Stored with as much precision as possible.
+    //   Payment transactions must round this value *UP*.
+    //
+    // - TotalValueOutstanding: The rounded total amount owed by the
+    //   borrower to the lender / vault.
+    //
+    // - PrincipalOutstanding: The rounded portion of the
+    //   TotalValueOutstanding that is from the principal borrowed.
+    //
+    // - ManagementFeeOutstanding: The rounded portion of the
+    //   TotalValueOutstanding that represents management fees
+    //   specifically owed to the broker based on the initial
+    //   loan parameters.
+    //
+    // There are additional values that can be computed from these:
+    //
+    // - InterestOutstanding = TotalValueOutstanding - PrincipalOutstanding
+    //   The total amount of interest still pending on the loan,
+    //   independent of management fees.
+    //
+    // - InterestOwedToVault = InterestOutstanding - ManagementFeeOutstanding
+    //   The amount of the total interest that is owed to the vault, and
+    //   will be sent to as part of a payment.
+    //
+    // - TrueTotalLoanValue = PaymentRemaining * PeriodicPayment
+    //   The unrounded true total value of the loan.
+    //
+    // - TrueTotalPrincialOutstanding can be computed using the algorithm
+    //   in the ripple::detail::loanPrincipalFromPeriodicPayment function.
+    //
+    // - TrueTotalInterestOutstanding = TrueTotalLoanValue -
+    //      TrueTotalPrincipalOutstanding
+    //   The unrounded true total interest remaining.
+    //
+    // - TrueTotalManagementFeeOutstanding = TrueTotalInterestOutstanding *
+    //      LoanBroker.ManagementFeeRate
+    //   The unrounded true total fee still owed to the broker.
+    //
+    // Note the the "True" values may differ significantly from the tracked
+    // rounded values.
+    {sfPaymentRemaining,         soeDEFAULT},
+    {sfPeriodicPayment,          soeREQUIRED},
+    {sfPrincipalOutstanding,     soeDEFAULT},
+    {sfTotalValueOutstanding,    soeDEFAULT},
+    {sfManagementFeeOutstanding, soeDEFAULT},
+    // Based on the computed total value at creation, used for
+    // rounding calculated values so they are all on a
+    // consistent scale - that is, they all have the same
+    // number of digits after the decimal point (excluding
+    // trailing zeros).
+    {sfLoanScale,                soeDEFAULT},
 }))
 
 #undef EXPAND

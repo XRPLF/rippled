@@ -285,10 +285,14 @@ constexpr std::uint32_t tfIndependent                  = 0x00080000;
 constexpr std::uint32_t const tfBatchMask =
     ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent) | tfInnerBatchTxn;
 
-// LoanSet flags:
-// True, indicates the loan supports overpayments
+// LoanSet and LoanPay flags:
+// LoanSet: True, indicates the loan supports overpayments
+// LoanPay: True, indicates any excess in this payment can be used
+// as an overpayment. False, no overpayments will be taken.
 constexpr std::uint32_t const tfLoanOverpayment = 0x00010000;
+// Use two separate mask variables in case the set of flags diverges
 constexpr std::uint32_t const tfLoanSetMask = ~(tfUniversal | tfLoanOverpayment);
+constexpr std::uint32_t const tfLoanPayMask = ~(tfUniversal | tfLoanOverpayment);
 
 // LoanManage flags:
 constexpr std::uint32_t const tfLoanDefault = 0x00010000;
