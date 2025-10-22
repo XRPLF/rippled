@@ -231,7 +231,7 @@ get_error_info(error_code_i code);
 void
 inject_error(error_code_i code, Json::Value& json);
 
-inline void
+void
 inject_error(error_code_i code, std::string const& message, Json::Value& json);
 /** @} */
 
