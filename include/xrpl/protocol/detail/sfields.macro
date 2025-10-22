@@ -294,6 +294,8 @@ TYPED_SFIELD(sfHolderElGamalPublicKey,   VL,        36)
 TYPED_SFIELD(sfZKProof,                  VL,        37)
 TYPED_SFIELD(sfHolderEncryptedAmount,    VL,        38)
 TYPED_SFIELD(sfIssuerEncryptedAmount,    VL,        39)
+TYPED_SFIELD(sfSenderEncryptedAmount,    VL,        40)
+TYPED_SFIELD(sfDestinationEncryptedAmount, VL,      41)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)

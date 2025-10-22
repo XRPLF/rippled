@@ -402,6 +402,40 @@ homomorphicAdd(Slice const& a, Slice const& b, Buffer& out)
 }
 
 TER
+homomorphicSubtract(Slice const& a, Slice const& b, Buffer& out)
+{
+    if (a.length() != ecGamalEncryptedTotalLength ||
+        b.length() != ecGamalEncryptedTotalLength)
+        return tecINTERNAL;
+
+    secp256k1_pubkey a_c1;
+    secp256k1_pubkey a_c2;
+    secp256k1_pubkey b_c1;
+    secp256k1_pubkey b_c2;
+
+    if (!makeEcPair(a, a_c1, a_c2) || !makeEcPair(b, b_c1, b_c2))
+        return tecINTERNAL;
+
+    secp256k1_pubkey diff_c1;
+    secp256k1_pubkey diff_c2;
+
+    if (secp256k1_elgamal_subtract(
+            secp256k1Context(),
+            &diff_c1,
+            &diff_c2,
+            &a_c1,
+            &a_c2,
+            &b_c1,
+            &b_c2) != 1)
+        return tecINTERNAL;
+
+    if (!serializeEcPair(diff_c1, diff_c2, out))
+        return tecINTERNAL;
+
+    return tesSUCCESS;
+}
+
+TER
 proveEquality(
     Slice const& proof,
     Slice const& encAmt,  // encrypted amount
@@ -508,6 +542,67 @@ encryptCanonicalZeroAmount(
             "Failed to serialize into 66 byte compressed format");
 
     return buf;
+}
+
+TER
+verifyConfidentialSendProof(
+    Slice const& proof,
+    Slice const& encSenderBalance,
+    Slice const& encSenderAmt,
+    Slice const& encDestAmt,
+    Slice const& encIssuerAmt,
+    Slice const& senderPubKey,
+    Slice const& destPubKey,
+    Slice const& issuerPubKey,
+    std::uint32_t const version,
+    uint256 const& txHash)
+{
+    // if (proof.length() != ecConfidentialSendProofLength)
+    //     return tecINTERNAL;
+
+    secp256k1_pubkey bal_c1, bal_c2;
+    if (!makeEcPair(encSenderBalance, bal_c1, bal_c2))
+        return tecINTERNAL;
+
+    secp256k1_pubkey sender_c1, sender_c2;
+    if (!makeEcPair(encSenderAmt, sender_c1, sender_c2))
+        return tecINTERNAL;
+
+    secp256k1_pubkey dest_c1, dest_c2;
+    if (!makeEcPair(encDestAmt, dest_c1, dest_c2))
+        return tecINTERNAL;
+
+    secp256k1_pubkey issuer_c1, issuer_c2;
+    if (!makeEcPair(encIssuerAmt, issuer_c1, issuer_c2))
+        return tecINTERNAL;
+
+    Serializer s;
+    s.addRaw(txHash.data(), txHash.bytes);
+    s.add32(version);
+    auto const txContextId = s.getSHA512Half();
+
+    // todo: equality and range proof verification
+    // if (secp256k1_equal_range_verify(
+    //         secp256k1Context(),
+    //         reinterpret_cast<unsigned char const*>(proof.data()),
+    //         proof.length(),
+    //         txContextId.data(),
+    //         &bal_c1,
+    //         &bal_c2,
+    //         &sender_c1,
+    //         &sender_c2,
+    //         reinterpret_cast<unsigned char const*>(senderPubKey.data()),
+    //         &dest_c1,
+    //         &dest_c2,
+    //         reinterpret_cast<unsigned char const*>(destPubKey.data()),
+    //         &issuer_c1,
+    //         &issuer_c2,
+    //         reinterpret_cast<unsigned char const*>(issuerPubKey.data()),
+    //         txContextId.data(),
+    //         txContextId.bytes) != 1)
+    //     return tecBAD_PROOF;
+
+    return tesSUCCESS;
 }
 
 }  // namespace ripple

@@ -666,8 +666,8 @@ MPTTester::convert(MPTConvert const& arg)
         uint64_t postSpendingBalance =
             getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
 
-        std::cout << "\n postIssuerBalance is " << postIssuerBalance << '\n';
-        std::cout << "\n postInboxBalance is " << postInboxBalance << '\n';
+        // std::cout << "\n postIssuerBalance is " << postIssuerBalance << '\n';
+        // std::cout << "\n postInboxBalance is " << postInboxBalance << '\n';
 
         // spending balance should not change
         env_.require(requireAny([&]() -> bool {
@@ -705,6 +705,135 @@ MPTTester::convert(MPTConvert const& arg)
                     *arg.account);
             }));
         }
+    }
+}
+
+void
+MPTTester::send(MPTConfidentialSend const& arg)
+{
+    Json::Value jv;
+    if (arg.account)
+        jv[sfAccount] = arg.account->human();
+    else
+        Throw<std::runtime_error>("Account not specified");
+
+    if (arg.dest)
+        jv[sfDestination] = arg.dest->human();
+    else
+        Throw<std::runtime_error>("Destination not specified");
+
+    jv[jss::TransactionType] = jss::ConfidentialSend;
+    if (arg.id)
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    // Generate the encrypted amounts if not provided
+    if (arg.senderEncryptedAmt)
+        jv[sfSenderEncryptedAmount.jsonName] = strHex(*arg.senderEncryptedAmt);
+    else
+        jv[sfSenderEncryptedAmount.jsonName] =
+            strHex(encryptAmount(*arg.account, *arg.amt));
+
+    if (arg.destEncryptedAmt)
+        jv[sfDestinationEncryptedAmount.jsonName] =
+            strHex(*arg.destEncryptedAmt);
+    else
+        jv[sfDestinationEncryptedAmount.jsonName] =
+            strHex(encryptAmount(*arg.dest, *arg.amt));
+
+    if (arg.issuerEncryptedAmt)
+        jv[sfIssuerEncryptedAmount.jsonName] = strHex(*arg.issuerEncryptedAmt);
+    else
+        jv[sfIssuerEncryptedAmount.jsonName] =
+            strHex(encryptAmount(issuer_, *arg.amt));
+
+    if (arg.proof)
+        jv[sfZKProof.jsonName] = *arg.proof;
+
+    auto const senderPubAmt = getBalance(*arg.account);
+    auto const destPubAmt = getBalance(*arg.dest);
+    auto const prevCOA = getIssuanceConfidentialBalance();
+    auto const prevOA = getIssuanceOutstandingBalance();
+
+    // Sender's previous confidential state
+    uint64_t prevSenderInbox =
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+    uint64_t prevSenderSpending =
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+    uint64_t prevSenderIssuer =
+        getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+
+    // Destination's previous confidential state
+    uint64_t prevDestInbox =
+        getDecryptedBalance(*arg.dest, HOLDER_ENCRYPTED_INBOX);
+    uint64_t prevDestSpending =
+        getDecryptedBalance(*arg.dest, HOLDER_ENCRYPTED_SPENDING);
+    uint64_t prevDestIssuer =
+        getDecryptedBalance(*arg.dest, ISSUER_ENCRYPTED_BALANCE);
+
+    if (submit(arg, jv) == tesSUCCESS)
+    {
+        auto const postCOA = getIssuanceConfidentialBalance();
+        auto const postOA = getIssuanceOutstandingBalance();
+
+        // Sender's post confidential state
+        uint64_t postSenderInbox =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+        uint64_t postSenderSpending =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+        uint64_t postSenderIssuer =
+            getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+
+        // Destination's post confidential state
+        uint64_t postDestInbox =
+            getDecryptedBalance(*arg.dest, HOLDER_ENCRYPTED_INBOX);
+        uint64_t postDestSpending =
+            getDecryptedBalance(*arg.dest, HOLDER_ENCRYPTED_SPENDING);
+        uint64_t postDestIssuer =
+            getDecryptedBalance(*arg.dest, ISSUER_ENCRYPTED_BALANCE);
+
+        // Public balances unchanged
+        env_.require(mptbalance(*this, *arg.account, senderPubAmt));
+        env_.require(mptbalance(*this, *arg.dest, destPubAmt));
+
+        // OA and COA unchanged
+        env_.require(requireAny([&]() -> bool { return prevOA == postOA; }));
+        env_.require(requireAny([&]() -> bool { return prevCOA == postCOA; }));
+
+        // Verify sender changes
+        env_.require(requireAny([&]() -> bool {
+            return prevSenderSpending >= *arg.amt &&
+                postSenderSpending == prevSenderSpending - *arg.amt;
+        }));
+        env_.require(requireAny(
+            [&]() -> bool { return postSenderInbox == prevSenderInbox; }));
+        env_.require(requireAny([&]() -> bool {
+            return prevSenderIssuer >= *arg.amt &&
+                postSenderIssuer == prevSenderIssuer - *arg.amt;
+        }));
+
+        // Verify destination changes
+        env_.require(requireAny([&]() -> bool {
+            return postDestInbox == prevDestInbox + *arg.amt;
+        }));
+        env_.require(requireAny(
+            [&]() -> bool { return postDestSpending == prevDestSpending; }));
+        env_.require(requireAny([&]() -> bool {
+            return postDestIssuer == prevDestIssuer + *arg.amt;
+        }));
+
+        // Cross checks
+        env_.require(requireAny([&]() -> bool {
+            return postSenderInbox + postSenderSpending == postSenderIssuer;
+        }));
+        env_.require(requireAny([&]() -> bool {
+            return postDestInbox + postDestSpending == postDestIssuer;
+        }));
     }
 }
 
@@ -822,6 +951,21 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
                 postInboxBalance == 0;
         }));
     }
+}
+
+std::int64_t
+MPTTester::getIssuanceOutstandingBalance() const
+{
+    if (!id_)
+        Throw<std::runtime_error>("Issuance ID does not exist");
+
+    auto const sle = env_.current()->read(keylet::mptIssuance(*id_));
+
+    if (!sle || !sle->isFieldPresent(sfOutstandingAmount))
+        Throw<std::runtime_error>(
+            "Issuance object does not contain outstanding amount");
+
+    return (*sle)[sfOutstandingAmount];
 }
 
 }  // namespace jtx

@@ -134,6 +134,9 @@ TER
 homomorphicAdd(Slice const& a, Slice const& b, Buffer& out);
 
 TER
+homomorphicSubtract(Slice const& a, Slice const& b, Buffer& out);
+
+TER
 proveEquality(
     Slice const& proof,
     Slice const& encAmt,  // encrypted amount
@@ -150,6 +153,20 @@ encryptCanonicalZeroAmount(
     Slice const& pubKeySlice,
     AccountID const& account,
     MPTID const& mptId);
+
+TER
+verifyConfidentialSendProof(
+    Slice const& proof,
+    Slice const& encSenderBalance,
+    Slice const& encSenderAmt,
+    Slice const& encDestAmt,
+    Slice const& encIssuerAmt,
+    Slice const& senderPubKey,
+    Slice const& destPubKey,
+    Slice const& issuerPubKey,
+    std::uint32_t const version,
+    uint256 const& txHash);
+
 }  // namespace ripple
 
 #endif

@@ -176,6 +176,23 @@ struct MPTMergeInbox
     std::optional<TER> err = std::nullopt;
 };
 
+struct MPTConfidentialSend
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<Account> dest = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    // amt is to generate encrypted amounts for testing purposes
+    std::optional<std::uint64_t> amt = std::nullopt;
+    std::optional<std::string> proof = std::nullopt;
+    std::optional<Buffer> senderEncryptedAmt = std::nullopt;
+    std::optional<Buffer> destEncryptedAmt = std::nullopt;
+    std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
 class MPTTester
 {
     Env& env_;
@@ -212,6 +229,9 @@ public:
 
     void
     mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
+
+    void
+    send(MPTConfidentialSend const& arg = MPTConfidentialSend{});
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
@@ -312,6 +332,9 @@ public:
     getDecryptedBalance(
         Account const& account,
         EncryptedBalanceType balanceType) const;
+
+    std::int64_t
+    getIssuanceOutstandingBalance() const;
 
 private:
     using SLEP = std::shared_ptr<SLE const>;
