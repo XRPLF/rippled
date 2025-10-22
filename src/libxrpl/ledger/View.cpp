@@ -1242,6 +1242,12 @@ addEmptyHolding(
     // If the line already exists, don't create it again.
     if (view.read(index))
         return tecDUPLICATE;
+
+    // Can the account cover the trust line reserve ?
+    std::uint32_t const ownerCount = sleDst->at(sfOwnerCount);
+    if (priorBalance < view.fees().accountReserve(ownerCount + 1))
+        return tecNO_LINE_INSUF_RESERVE;
+
     return trustCreate(
         view,
         high,
