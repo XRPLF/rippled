@@ -75,9 +75,6 @@ ConfidentialMergeInbox::doApply()
 
     (*sleMptoken)[sfConfidentialBalanceSpending] = sum;
 
-    // todo: encrypted inbox with zero balance
-    //  (*sleMptoken)[sfConfidentialBalanceInbox] = encrypted(0);
-
     Buffer zeroEncyption;
     zeroEncyption = encryptCanonicalZeroAmount(
         (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
