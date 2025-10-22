@@ -288,12 +288,7 @@ public:
     getBalance(Account const& account) const;
 
     MPT
-    operator[](std::string const& name);
-
-    PrettyAmount
-    operator()(std::uint64_t amount) const;
-
-    operator Asset() const;
+    operator[](std::string const& name) const;
 
     PrettyAmount
     operator()(std::uint64_t amount) const;
@@ -301,7 +296,7 @@ public:
     operator Asset() const;
 
 private:
-    using SLEP = std::shared_ptr<SLE const>;
+    using SLEP = SLE::const_pointer;
     bool
     forObject(
         std::function<bool(SLEP const& sle)> const& cb,
