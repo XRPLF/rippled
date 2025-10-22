@@ -117,7 +117,6 @@ XRPL_FIX    (1543,                       Supported::yes, VoteBehavior::DefaultYe
 XRPL_FIX    (1571,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Checks,                     Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DepositAuth,                Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FIX    (1513,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
 
 // The following amendments are obsolete, but must remain supported
@@ -156,3 +155,4 @@ XRPL_RETIRE(fix1512)
 XRPL_RETIRE(fix1523)
 XRPL_RETIRE(fix1528)
 XRPL_RETIRE(FlowCross)
+XRPL_RETIRE(fix1513)
