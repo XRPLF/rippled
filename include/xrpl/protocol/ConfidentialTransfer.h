@@ -94,7 +94,19 @@ secp256k1_elgamal_subtract(
     secp256k1_pubkey const* b_c2);
 
 /**
- * @brief Generates the canonical encrypted zero for a given trust line.
+ * @brief Generates the canonical encrypted zero for a given MPT token instance.
+ *
+ * This ciphertext represents a zero balance for a specific account's holding
+ * of a token defined by its MPTokenIssuanceID.
+ *
+ * @param[in]   ctx             A pointer to a valid secp256k1 context.
+ * @param[out]  enc_zero_c1     The C1 component of the canonical ciphertext.
+ * @param[out]  enc_zero_c2     The C2 component of the canonical ciphertext.
+ * @param[in]   pubkey          The ElGamal public key of the account holder.
+ * @param[in]   account_id      A pointer to the 20-byte AccountID.
+ * @param[in]   mpt_issuance_id A pointer to the 24-byte MPTokenIssuanceID.
+ *
+ * @return 1 on success, 0 on failure.
  */
 SECP256K1_API int
 generate_canonical_encrypted_zero(
@@ -102,9 +114,9 @@ generate_canonical_encrypted_zero(
     secp256k1_pubkey* enc_zero_c1,
     secp256k1_pubkey* enc_zero_c2,
     secp256k1_pubkey const* pubkey,
-    char const* acct,
-    char const* issuer,
-    char const* curr);
+    unsigned char const* account_id,      // 20 bytes
+    unsigned char const* mpt_issuance_id  // 24 bytes
+);
 
 // breaks a 66-byte encrypted amount into two 33-byte components
 // then parses each 33-byte component into 64-byte secp256k1_pubkey format
@@ -133,6 +145,11 @@ proveEquality(
 Buffer
 encryptAmount(uint64_t amt, Slice const& pubKeySlice);
 
+Buffer
+encryptCanonicalZeroAmount(
+    Slice const& pubKeySlice,
+    AccountID const& account,
+    MPTID const& mptId);
 }  // namespace ripple
 
 #endif

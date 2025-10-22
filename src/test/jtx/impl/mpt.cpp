@@ -787,6 +787,43 @@ MPTTester::getDecryptedBalance(
                           : 0;
 };
 
+void
+MPTTester::mergeInbox(MPTMergeInbox const& arg)
+{
+    Json::Value jv;
+    if (arg.account)
+        jv[sfAccount] = arg.account->human();
+    else
+        Throw<std::runtime_error>("Account not specified");
+    if (arg.id)
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+    jv[sfTransactionType] = jss::ConfidentialMergeInbox;
+    uint64_t preInboxBalance =
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+    uint64_t prevSpendingBalance =
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+    if (submit(arg, jv) == tesSUCCESS)
+    {
+        uint64_t postInboxBalance =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+        uint64_t postSpendingBalance =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+        env_.require(requireAny([&]() -> bool {
+            return postSpendingBalance ==
+                preInboxBalance + prevSpendingBalance &&
+                postInboxBalance == 0;
+        }));
+    }
+}
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

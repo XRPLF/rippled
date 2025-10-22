@@ -166,6 +166,16 @@ struct MPTConvert
     std::optional<TER> err = std::nullopt;
 };
 
+struct MPTMergeInbox
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
 class MPTTester
 {
     Env& env_;
@@ -199,6 +209,9 @@ public:
 
     void
     convert(MPTConvert const& arg = MPTConvert{});
+
+    void
+    mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;

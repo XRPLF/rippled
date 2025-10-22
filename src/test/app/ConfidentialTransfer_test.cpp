@@ -414,12 +414,57 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testMergeInbox(FeatureBitset features)
+    {
+        testcase("Merge inbox");
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create(
+            {.ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+        mptAlice.authorize({.account = bob});
+        env.close();
+        mptAlice.pay(alice, bob, 100);
+        env.close();
+
+        mptAlice.generateKeyPair(alice);
+
+        mptAlice.set({.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.generateKeyPair(bob);
+
+        mptAlice.convert({
+            .account = bob,
+            .amt = 40,
+            .proof = "123",
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+
+        env.close();
+        mptAlice.printMPT(bob);
+
+        mptAlice.mergeInbox({
+            .account = bob,
+        });
+
+        env.close();
+        mptAlice.printMPT(bob);
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testConvert(features);
         testConvertPreflight(features);
         testConvertPreclaim(features);
 
+        testMergeInbox(features);
         testSetPreflight(features);
     }
 

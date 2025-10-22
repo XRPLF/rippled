@@ -122,7 +122,6 @@ secp256k1_elgamal_decrypt(
     secp256k1_pubkey const* c2,
     unsigned char const* privkey)
 {
-    /* C90-compliant variable declarations */
     secp256k1_pubkey S, M, G_point, current_M, next_M;
     secp256k1_pubkey const* points_to_add[2];
     unsigned char c2_bytes[33], s_bytes[33], m_bytes[33], current_m_bytes[33];
@@ -266,29 +265,60 @@ secp256k1_elgamal_subtract(
     return 1;  // Success
 }
 
+// Helper function to concatenate data for hashing
+static void
+build_hash_input(
+    unsigned char* output_buffer,
+    size_t buffer_size,
+    unsigned char const* account_id,      // 20 bytes
+    unsigned char const* mpt_issuance_id  // 24 bytes
+)
+{
+    char const* domain_separator = "EncZero";
+    size_t domain_len = strlen(domain_separator);
+    size_t offset = 0;
+
+    // Ensure buffer is large enough (should be checked by caller if necessary)
+    // Size = strlen("EncZero") + 20 + 24 = 7 + 20 + 24 = 51 bytes
+
+    memcpy(output_buffer + offset, domain_separator, domain_len);
+    offset += domain_len;
+
+    memcpy(output_buffer + offset, account_id, 20);
+    offset += 20;
+
+    memcpy(output_buffer + offset, mpt_issuance_id, 24);
+    // offset += 24; // Final size is offset + 24
+}
+
 // The canonical encrypted zero
+
 int
 generate_canonical_encrypted_zero(
     secp256k1_context const* ctx,
     secp256k1_pubkey* enc_zero_c1,
     secp256k1_pubkey* enc_zero_c2,
     secp256k1_pubkey const* pubkey,
-    char const* acct,
-    char const* issuer,
-    char const* curr)
+    unsigned char const* account_id,      // 20 bytes
+    unsigned char const* mpt_issuance_id  // 24 bytes
+)
 {
     unsigned char deterministic_scalar[32];
-    char input_str[256];
+    unsigned char hash_input[51];  // Size calculated above
 
-    /* 1. Create the input string for hashing */
-    snprintf(input_str, sizeof(input_str), "EncZero%s%s%s", acct, issuer, curr);
+    /* 1. Create the input buffer for hashing */
+    build_hash_input(
+        hash_input, sizeof(hash_input), account_id, mpt_issuance_id);
 
-    /* 2. Hash the string to create the deterministic scalar 'r' */
+    /* 2. Hash the buffer to create the deterministic scalar 'r' */
     do
     {
-        SHA256(
-            (unsigned char*)input_str, strlen(input_str), deterministic_scalar);
+        // Hash the concatenated bytes
+        SHA256(hash_input, sizeof(hash_input), deterministic_scalar);
 
+        /* Note: If the hash output could be invalid (0 or >= n),
+         * you might need to add a nonce/counter to hash_input
+         * and re-hash in a loop until a valid scalar is produced. */
     } while (secp256k1_ec_seckey_verify(ctx, deterministic_scalar) != 1);
 
     /* 3. Encrypt the amount 0 using the deterministic scalar */
@@ -432,6 +462,44 @@ encryptAmount(uint64_t amt, Slice const& pubKeySlice)
     // Encrypt the amount
     if (!secp256k1_elgamal_encrypt(
             secp256k1Context(), &c1, &c2, &pubKey, amt, blinding_factor))
+        Throw<std::runtime_error>("Failed to encrypt amount");
+
+    // Serialize the ciphertext pair into the buffer
+    if (!serializeEcPair(c1, c2, buf))
+        Throw<std::runtime_error>(
+            "Failed to serialize into 66 byte compressed format");
+
+    return buf;
+}
+
+Buffer
+encryptCanonicalZeroAmount(
+    Slice const& pubKeySlice,
+    AccountID const& account,
+    MPTID const& mptId)
+{
+    Buffer buf(ecGamalEncryptedTotalLength);
+
+    // Allocate ciphertext placeholders
+    secp256k1_pubkey c1, c2;
+
+    // Prepare a random blinding factor
+    unsigned char blinding_factor[32];
+    if (RAND_bytes(blinding_factor, 32) != 1)
+        Throw<std::runtime_error>("Failed to generate random number");
+
+    secp256k1_pubkey pubKey;
+
+    std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
+
+    // Encrypt the amount
+    if (!generate_canonical_encrypted_zero(
+            secp256k1Context(),
+            &c1,
+            &c2,
+            &pubKey,
+            account.data(),
+            mptId.data()))
         Throw<std::runtime_error>("Failed to encrypt amount");
 
     // Serialize the ciphertext pair into the buffer

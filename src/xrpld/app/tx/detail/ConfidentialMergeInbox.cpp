@@ -51,7 +51,7 @@ ConfidentialMergeInbox::preclaim(PreclaimContext const& ctx)
 
     if (!sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
-        return tecNO_TARGET;
+        return tecNO_PERMISSION;
 
     return tesSUCCESS;
 }
@@ -70,13 +70,18 @@ ConfidentialMergeInbox::doApply()
             (*sleMptoken)[sfConfidentialBalanceSpending],
             (*sleMptoken)[sfConfidentialBalanceInbox],
             sum);
-        isTesSuccess(ter))
+        !isTesSuccess(ter))
         return tecINTERNAL;
 
     (*sleMptoken)[sfConfidentialBalanceSpending] = sum;
 
     // todo: encrypted inbox with zero balance
     //  (*sleMptoken)[sfConfidentialBalanceInbox] = encrypted(0);
+
+    Buffer zeroEncyption;
+    zeroEncyption = encryptCanonicalZeroAmount(
+        (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
+    (*sleMptoken)[sfConfidentialBalanceInbox] = zeroEncyption;
 
     // it's fine if it reaches max uint32, it just resets to 0
     (*sleMptoken)[sfConfidentialBalanceVersion] =
