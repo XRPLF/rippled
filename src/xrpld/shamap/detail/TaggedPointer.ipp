@@ -35,8 +35,8 @@ namespace {
 // element must be the number of children in a dense array.
 constexpr std::array<std::uint8_t, 4> boundaries{
     2,
-    4,
-    6,
+    3,
+    5,
     SHAMapInnerNode::branchFactor};
 static_assert(
     boundaries.size() <= 4,

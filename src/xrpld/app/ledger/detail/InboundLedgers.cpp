@@ -404,7 +404,7 @@ public:
                     it->second->touch();
                     ++it;
                 }
-                else if ((la + std::chrono::minutes(1)) < start)
+                else if ((la + std::chrono::seconds(10)) < start)
                 {
                     stuffToSweep.push_back(it->second);
                     // shouldn't cause the actual final delete
