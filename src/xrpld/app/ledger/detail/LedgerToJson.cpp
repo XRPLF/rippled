@@ -362,10 +362,9 @@ copyFrom(Json::Value& to, Json::Value const& from)
         to = from;
     else
     {
-        XRPL_ASSERT(
-            from.isObjectOrNull(), "Json::doCopyFrom : valid input type");
-        auto members = from.getMemberNames();
-        for (auto& m : members)
+        XRPL_ASSERT(from.isObjectOrNull(), "Json::copyFrom : valid input type");
+        auto const members = from.getMemberNames();
+        for (auto const& m : members)
             to[m] = from[m];
     }
 }
