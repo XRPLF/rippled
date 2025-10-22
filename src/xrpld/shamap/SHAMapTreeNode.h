@@ -51,8 +51,6 @@ enum class SHAMapNodeType {
 class SHAMapTreeNode : public IntrusiveRefCounts
 {
 protected:
-    SHAMapHash hash_;
-
     /** Determines the owning SHAMap, if any. Used for copy-on-write semantics.
 
         If this value is 0, the node is not dirty and does not need to be
@@ -73,13 +71,6 @@ protected:
      */
     /** @{ */
     explicit SHAMapTreeNode(std::uint32_t cowid) noexcept : cowid_(cowid)
-    {
-    }
-
-    explicit SHAMapTreeNode(
-        std::uint32_t cowid,
-        SHAMapHash const& hash) noexcept
-        : hash_(hash), cowid_(cowid)
     {
     }
     /** @} */
@@ -144,7 +135,9 @@ public:
     SHAMapHash const&
     getHash() const
     {
-        return hash_;
+        // TODO
+        static SHAMapHash s;
+        return s;
     }
 
     /** Determines the type of node. */
