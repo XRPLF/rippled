@@ -284,12 +284,14 @@ public:
     {
         if (key.type != ltOFFER)
         {
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::ApplyView::dirAppend : only Offers are appended to "
                 "book directories");
             // Only Offers are appended to book directories. Call dirInsert()
             // instead
             return std::nullopt;
+            // LCOV_EXCL_STOP
         }
         return dirAdd(true, directory, key.key, describe);
     }

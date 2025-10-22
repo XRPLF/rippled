@@ -295,6 +295,11 @@ public:
 
     operator Asset() const;
 
+    PrettyAmount
+    operator()(std::uint64_t amount) const;
+
+    operator Asset() const;
+
 private:
     using SLEP = std::shared_ptr<SLE const>;
     bool

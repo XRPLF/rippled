@@ -851,7 +851,7 @@ TRANSACTION(ttDELEGATE_SET, 64, DelegateSet,
 TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     Delegation::delegatable,
     featureSingleAssetVault,
-    createPseudoAcct | createMPTIssuance,
+    createPseudoAcct | createMPTIssuance | mustModifyVault,
     ({
     {sfAsset, soeREQUIRED, soeMPTSupported},
     {sfAssetsMaximum, soeOPTIONAL},
@@ -869,7 +869,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
 TRANSACTION(ttVAULT_SET, 66, VaultSet,
     Delegation::delegatable,
     featureSingleAssetVault,
-    noPriv,
+    mustModifyVault,
     ({
     {sfVaultID, soeREQUIRED},
     {sfAssetsMaximum, soeOPTIONAL},
@@ -884,7 +884,7 @@ TRANSACTION(ttVAULT_SET, 66, VaultSet,
 TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
     Delegation::delegatable,
     featureSingleAssetVault,
-    mustDeleteAcct | destroyMPTIssuance,
+    mustDeleteAcct | destroyMPTIssuance | mustModifyVault,
     ({
     {sfVaultID, soeREQUIRED},
 }))
@@ -896,7 +896,7 @@ TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
 TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
     Delegation::delegatable,
     featureSingleAssetVault,
-    mayAuthorizeMPT,
+    mayAuthorizeMPT | mustModifyVault,
     ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
@@ -909,7 +909,7 @@ TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
 TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     Delegation::delegatable,
     featureSingleAssetVault,
-    mayDeleteMPT,
+    mayDeleteMPT | mayAuthorizeMPT | mustModifyVault,
     ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
@@ -924,7 +924,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
 TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
     Delegation::delegatable,
     featureSingleAssetVault,
-    mayDeleteMPT,
+    mayDeleteMPT | mustModifyVault,
     ({
     {sfVaultID, soeREQUIRED},
     {sfHolder, soeREQUIRED},
@@ -993,7 +993,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit,
 TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
     Delegation::delegatable,
     featureLendingProtocol,
-    noPriv, ({
+    mayAuthorizeMPT, ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfDestination, soeOPTIONAL},
@@ -1020,7 +1020,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_CLAWBACK, 78, LoanBrokerCoverClawback,
 TRANSACTION(ttLOAN_SET, 80, LoanSet,
     Delegation::delegatable,
     featureLendingProtocol,
-    noPriv, ({
+    mayAuthorizeMPT | mustModifyVault, ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfData, soeOPTIONAL},
     {sfCounterparty, soeOPTIONAL},
@@ -1058,23 +1058,12 @@ TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
 TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
     Delegation::delegatable,
     featureLendingProtocol,
-    noPriv, ({
+    // All of the LoanManage options will modify the vault, but the
+    // transaction can succeed without options, essentially making it
+    // a noop.
+    mayModifyVault, ({
     {sfLoanID, soeREQUIRED},
 }))
-
-#if LOANDRAW
-/** The Borrower uses this transaction to draws funds from the Loan. */
-#if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/LoanDraw.h>
-#endif
-TRANSACTION(ttLOAN_DRAW, 83, LoanDraw,
-    Delegation::delegatable,
-    featureLendingProtocol,
-    noPriv, ({
-    {sfLoanID, soeREQUIRED},
-    {sfAmount, soeREQUIRED, soeMPTSupported},
-}))
-#endif
 
 /** The Borrower uses this transaction to make a Payment on the Loan. */
 #if TRANSACTION_INCLUDE
@@ -1083,7 +1072,7 @@ TRANSACTION(ttLOAN_DRAW, 83, LoanDraw,
 TRANSACTION(ttLOAN_PAY, 84, LoanPay,
     Delegation::delegatable,
     featureLendingProtocol,
-    noPriv, ({
+    mayAuthorizeMPT | mustModifyVault, ({
     {sfLoanID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
 }))

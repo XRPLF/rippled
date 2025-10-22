@@ -233,6 +233,18 @@ public:
         return {asset_};
     }
 
+    bool
+    integral() const
+    {
+        return asset_.integral();
+    }
+
+    bool
+    native() const
+    {
+        return asset_.native();
+    }
+
     template <ValidIssueType TIss>
     bool
     holds() const

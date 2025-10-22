@@ -527,6 +527,7 @@ expectLedgerEntryRoot(
 
 /* Payment Channel */
 /******************************************************************************/
+namespace paychan {
 
 Json::Value
 create(
@@ -585,6 +586,8 @@ channelBalance(ReadView const& view, uint256 const& chan);
 
 bool
 channelExists(ReadView const& view, uint256 const& chan);
+
+}  // namespace paychan
 
 /* Crossing Limits */
 /******************************************************************************/
@@ -831,15 +834,6 @@ manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags);
 
 Json::Value
 del(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
-
-#if loandraw
-Json::Value
-draw(
-    AccountID const& account,
-    uint256 const& loanID,
-    STAmount const& amount,
-    std::uint32_t flags = 0);
-#endif
 
 Json::Value
 pay(AccountID const& account,

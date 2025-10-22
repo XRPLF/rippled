@@ -117,7 +117,7 @@ CredentialCreate::doApply()
 
     auto const sleCred = std::make_shared<SLE>(credentialKey);
     if (!sleCred)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const optExp = ctx_.tx[~sfExpiration];
     if (optExp)
@@ -137,7 +137,7 @@ CredentialCreate::doApply()
 
     auto const sleIssuer = view().peek(keylet::account(account_));
     if (!sleIssuer)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
         STAmount const reserve{view().fees().accountReserve(
@@ -162,7 +162,7 @@ CredentialCreate::doApply()
                          << to_string(credentialKey.key) << ": "
                          << (page ? "success" : "failure");
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         sleCred->setFieldU64(sfIssuerNode, *page);
 
         adjustOwnerCount(view(), sleIssuer, 1, j_);
@@ -182,7 +182,7 @@ CredentialCreate::doApply()
                          << to_string(credentialKey.key) << ": "
                          << (page ? "success" : "failure");
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         sleCred->setFieldU64(sfSubjectNode, *page);
         view().update(view().peek(keylet::account(subject)));
     }
@@ -258,7 +258,7 @@ CredentialDelete::doApply()
     auto const sleCred =
         view().peek(keylet::credential(subject, issuer, credType));
     if (!sleCred)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if ((subject != account_) && (issuer != account_) &&
         !checkExpired(sleCred, ctx_.view().info().parentCloseTime))
@@ -342,7 +342,7 @@ CredentialAccept::doApply()
     auto const sleIssuer = view().peek(keylet::account(issuer));
 
     if (!sleSubject || !sleIssuer)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
         STAmount const reserve{view().fees().accountReserve(
