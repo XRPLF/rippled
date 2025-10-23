@@ -19,3 +19,12 @@ run from the repository root.
 1. `.github/scripts/rename/definitions.sh`: This script will rename all
    definitions, such as include guards, from `RIPPLE_XXX` and `RIPPLED_XXX` to
    `XRPL_XXX`.
+2. `.github/scripts/rename/copyright.sh`: This script will remove superflous
+   copyright notices.
+
+You can run all these scripts from the repository root as follows:
+
+```shell
+./.github/scripts/rename/definitions.sh .
+./.github/scripts/rename/copyright.sh .
+```

@@ -21,6 +21,8 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Check definitions
         run: .github/scripts/rename/definitions.sh .
+      - name: Check copyright notices
+        run: .github/scripts/rename/copyright.sh .
       - name: Check for differences
         env:
           MESSAGE: |
