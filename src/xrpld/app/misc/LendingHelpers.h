@@ -1158,7 +1158,7 @@ computeLoanProperties(
 
     auto const periodicPayment = detail::loanPeriodicPayment(
         principalOutstanding, periodicRate, paymentsRemaining);
-    Number const totalValueOutstanding = [&]() {
+    STAmount const totalValueOutstanding = [&]() {
         NumberRoundModeGuard mg(Number::to_nearest);
         // Use STAmount's internal rounding instead of roundToAsset, because
         // we're going to use this result to determine the scale for all the
@@ -1176,6 +1176,13 @@ computeLoanProperties(
     // biggest number involved (barring unusual parameters for late, full, or
     // over payments)
     auto const loanScale = totalValueOutstanding.exponent();
+    XRPL_ASSERT_PARTS(
+        totalValueOutstanding.integral() && loanScale == 0 ||
+            !totalValueOutstanding.integral() &&
+                loanScale ==
+                    static_cast<Number>(totalValueOutstanding).exponent(),
+        "ripple::computeLoanProperties",
+        "loanScale value fits expectations");
 
     // Since we just figured out the loan scale, we haven't been able to
     // validate that the principal fits in it, so to allow this function to

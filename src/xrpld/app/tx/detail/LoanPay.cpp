@@ -23,6 +23,7 @@
 #include <xrpld/app/tx/detail/LoanManage.h>
 
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 
