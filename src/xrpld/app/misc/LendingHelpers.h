@@ -866,7 +866,7 @@ computeLatePayment(
         roundedLateInterest >= 0,
         "ripple::detail::computeLatePayment : valid late interest");
     XRPL_ASSERT_PARTS(
-        !periodic.extra,
+        periodic.specialCase != SpecialCase::extra,
         "ripple::detail::computeLatePayment",
         "no extra parts to this payment");
     // Copy the periodic payment values, and add on the late interest.
@@ -874,6 +874,7 @@ computeLatePayment(
     PaymentComponents inner = periodic;
     inner.rawInterest += rawLateInterest;
     inner.roundedInterest += roundedLateInterest;
+
     PaymentComponentsPlus const late{
         inner,
         // A late payment pays both the normal fee, and the extra fees
@@ -1581,7 +1582,6 @@ loanMakePayment(
     auto const periodicPayment = loan->at(sfPeriodicPayment);
 
     auto prevPaymentDateProxy = loan->at(sfPreviousPaymentDate);
-    std::uint32_t const startDate = loan->at(sfStartDate);
 
     std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
     // Compute the normal periodic rate, payment, etc.
