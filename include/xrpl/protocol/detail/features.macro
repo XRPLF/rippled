@@ -109,8 +109,6 @@ XRPL_FIX    (MasterKeyAsRegularKey,      Supported::yes, VoteBehavior::DefaultYe
 XRPL_FIX    (TakerDryOfferRemoval,       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(MultiSignReserve,           Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1578,                       Supported::yes, VoteBehavior::DefaultYes)
-// fix1515: Use liquidity from strands that consume max offers, but mark as dry
-XRPL_FIX    (1515,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DepositPreauth,             Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1623,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1543,                       Supported::yes, VoteBehavior::DefaultYes)
@@ -156,3 +154,4 @@ XRPL_RETIRE(fix1523)
 XRPL_RETIRE(fix1528)
 XRPL_RETIRE(FlowCross)
 XRPL_RETIRE(fix1513)
+XRPL_RETIRE(fix1515)
