@@ -1346,14 +1346,11 @@ struct Flow_manual_test : public Flow_test
     {
         using namespace jtx;
         auto const all = testable_amendments();
-        FeatureBitset const f1513{fix1513};
         FeatureBitset const permDex{featurePermissionedDEX};
 
-        testWithFeats(all - f1513 - permDex);
         testWithFeats(all - permDex);
         testWithFeats(all);
 
-        testEmptyStrand(all - f1513 - permDex);
         testEmptyStrand(all - permDex);
         testEmptyStrand(all);
     }
