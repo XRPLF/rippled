@@ -55,6 +55,12 @@ XRPAmount
 LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
+
+    if (tx.isFlag(tfLoanFullPayment))
+        // The loan will be making one set of calculations for one (large)
+        // payment
+        return normalCost;
+
     auto const paymentsPerFeeIncrement = 20;
 
     // The fee is based on the potential number of payments, unless the loan is
@@ -97,21 +103,6 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     if (amount < regularPayment * paymentsPerFeeIncrement)
         // This is definitely paying fewer than paymentsPerFeeIncrement payments
-        return normalCost;
-
-    if (auto const fullInterest = calculateFullPaymentInterest(
-            loanSle->at(sfPeriodicPayment),
-            loanPeriodicRate(
-                TenthBips32(loanSle->at(sfInterestRate)),
-                loanSle->at(sfPaymentInterval)),
-            loanSle->at(sfPaymentRemaining),
-            view.parentCloseTime(),
-            loanSle->at(sfPaymentInterval),
-            loanSle->at(sfPreviousPaymentDate),
-            loanSle->at(sfStartDate),
-            TenthBips32(loanSle->at(sfCloseInterestRate)));
-        amount > loanSle->at(sfPrincipalOutstanding) + fullInterest +
-            loanSle->at(sfClosePaymentFee))
         return normalCost;
 
     NumberRoundModeGuard mg(Number::downward);
@@ -210,10 +201,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     // Do not support "partial payments" - if the transaction says to pay X,
     // then the account must have X available, even if the loan payment takes
     // less.
-    // Also assume that anybody taking loans is not using "community credit",
-    // which would let an IOU balance go negative up to the other side's limit.
-    // This may change in a later version.
-    if (auto const balance = accountHolds(
+    if (auto const balance = accountCanSend(
             ctx.view,
             account,
             asset,
@@ -304,14 +292,23 @@ LoanPay::doApply()
         LoanManage::unimpairLoan(view, loanSle, vaultSle, j_);
     }
 
-    Expected<LoanPaymentParts, TER> paymentParts = loanMakePayment(
-        asset,
-        view,
-        loanSle,
-        brokerSle,
-        amount,
-        tx.isFlag(tfLoanOverpayment),
-        j_);
+    Expected<LoanPaymentParts, TER> const paymentParts =
+        tx.isFlag(tfLoanFullPayment) ? loanMakeFullPayment(
+                                           asset,
+                                           view,
+                                           loanSle,
+                                           brokerSle,
+                                           amount,
+                                           tx.isFlag(tfLoanOverpayment),
+                                           j_)
+                                     : loanMakePayment(
+                                           asset,
+                                           view,
+                                           loanSle,
+                                           brokerSle,
+                                           amount,
+                                           tx.isFlag(tfLoanOverpayment),
+                                           j_);
 
     if (!paymentParts)
     {
@@ -342,16 +339,12 @@ LoanPay::doApply()
         "ripple::LoanPay::doApply",
         "valid principal paid");
     XRPL_ASSERT_PARTS(
-        paymentParts->extraFeePaid >= 0,
+        paymentParts->feePaid >= 0,
         "ripple::LoanPay::doApply",
         "valid fee paid");
-    XRPL_ASSERT_PARTS(
-        paymentParts->managementFeePaid >= 0,
-        "ripple::LoanPay::doApply",
-        "valid management fee paid");
 
     if (paymentParts->principalPaid < 0 || paymentParts->interestPaid < 0 ||
-        paymentParts->extraFeePaid < 0 || paymentParts->managementFeePaid < 0)
+        paymentParts->feePaid < 0)
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Loan payment computation returned invalid values.";
@@ -375,13 +368,12 @@ LoanPay::doApply()
     auto const totalPaidToVaultForDebt =
         totalPaidToVaultRaw - paymentParts->valueChange;
 
-    auto const totalPaidToBroker =
-        paymentParts->managementFeePaid + paymentParts->extraFeePaid;
+    auto const totalPaidToBroker = paymentParts->feePaid;
 
     XRPL_ASSERT_PARTS(
         (totalPaidToVaultRaw + totalPaidToBroker) ==
             (paymentParts->principalPaid + paymentParts->interestPaid +
-             paymentParts->managementFeePaid + paymentParts->extraFeePaid),
+             paymentParts->feePaid),
         "ripple::LoanPay::doApply",
         "payments add up");
 
@@ -432,11 +424,11 @@ LoanPay::doApply()
     }
 
 #if !NDEBUG
-    auto const accountBalanceBefore =
-        accountHolds(view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+    auto const accountBalanceBefore = accountCanSend(
+        view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
     auto const vaultBalanceBefore = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
-        : accountHolds(
+        : accountCanSend(
               view,
               vaultPseudoAccount,
               asset,
@@ -445,7 +437,7 @@ LoanPay::doApply()
               j_);
     auto const brokerBalanceBefore = account_ == brokerPayee
         ? STAmount{asset, 0}
-        : accountHolds(
+        : accountCanSend(
               view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
 #endif
 
@@ -488,11 +480,11 @@ LoanPay::doApply()
         return ter;
 
 #if !NDEBUG
-    auto const accountBalanceAfter =
-        accountHolds(view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+    auto const accountBalanceAfter = accountCanSend(
+        view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
     auto const vaultBalanceAfter = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
-        : accountHolds(
+        : accountCanSend(
               view,
               vaultPseudoAccount,
               asset,
@@ -501,7 +493,7 @@ LoanPay::doApply()
               j_);
     auto const brokerBalanceAfter = account_ == brokerPayee
         ? STAmount{asset, 0}
-        : accountHolds(
+        : accountCanSend(
               view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
 
     XRPL_ASSERT_PARTS(
