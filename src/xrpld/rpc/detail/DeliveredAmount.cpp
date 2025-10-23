@@ -78,51 +78,35 @@ getDeliveredAmount(
 }
 
 // Returns true if transaction meta could contain a delivered amount field,
-// based on transaction type, transaction result and whether fix1623 is enabled
-template <class GetFix1623Enabled>
+// based on transaction type and transaction result
 bool
 canHaveDeliveredAmountHelp(
-    GetFix1623Enabled const& getFix1623Enabled,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
     if (!serializedTx)
         return false;
 
+    TxType const tt{serializedTx->getTxnType()};
+    // Transaction type should be ttPAYMENT, ttACCOUNT_DELETE or ttCHECK_CASH
+    // and if the transaction failed nothing could have been delivered.
+    if ((tt == ttPAYMENT || tt == ttCHECK_CASH || tt == ttACCOUNT_DELETE) &&
+        transactionMeta.getResultTER() == tesSUCCESS)
     {
-        TxType const tt{serializedTx->getTxnType()};
-        if (tt != ttPAYMENT && tt != ttCHECK_CASH && tt != ttACCOUNT_DELETE)
-            return false;
-
-        if (tt == ttCHECK_CASH && !getFix1623Enabled())
-            return false;
+        return true;
     }
 
-    // if the transaction failed nothing could have been delivered.
-    if (transactionMeta.getResultTER() != tesSUCCESS)
-        return false;
-
-    return true;
+    return false;
 }
 
 // Returns true if transaction meta could contain a delivered amount field,
-// based on transaction type, transaction result and whether fix1623 is enabled
+// based on transaction type and transaction result
 bool
 canHaveDeliveredAmount(
-    RPC::Context const& context,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
-    // These lambdas are used to compute the values lazily
-    auto const getFix1623Enabled = [&context]() -> bool {
-        auto const view = context.app.openLedger().current();
-        if (!view)
-            return false;
-        return view->rules().enabled(fix1623);
-    };
-
-    return canHaveDeliveredAmountHelp(
-        getFix1623Enabled, serializedTx, transactionMeta);
+    return canHaveDeliveredAmountHelp(serializedTx, transactionMeta);
 }
 
 void
@@ -133,12 +117,8 @@ insertDeliveredAmount(
     TxMeta const& transactionMeta)
 {
     auto const info = ledger.info();
-    auto const getFix1623Enabled = [&ledger] {
-        return ledger.rules().enabled(fix1623);
-    };
 
-    if (canHaveDeliveredAmountHelp(
-            getFix1623Enabled, serializedTx, transactionMeta))
+    if (canHaveDeliveredAmountHelp(serializedTx, transactionMeta))
     {
         auto const getLedgerIndex = [&info] { return info.seq; };
         auto const getCloseTime = [&info] { return info.closeTime; };
@@ -167,7 +147,7 @@ getDeliveredAmount(
     TxMeta const& transactionMeta,
     GetLedgerIndex const& getLedgerIndex)
 {
-    if (canHaveDeliveredAmount(context, serializedTx, transactionMeta))
+    if (canHaveDeliveredAmount(serializedTx, transactionMeta))
     {
         auto const getCloseTime =
             [&context,
@@ -212,7 +192,7 @@ insertDeliveredAmount(
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
-    if (canHaveDeliveredAmount(context, transaction, transactionMeta))
+    if (canHaveDeliveredAmount(transaction, transactionMeta))
     {
         auto amt = getDeliveredAmount(
             context, transaction, transactionMeta, [&transactionMeta]() {
