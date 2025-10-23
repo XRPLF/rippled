@@ -7,8 +7,8 @@ developers located around the world. The XRPL community is larger than ever.
 In light of the decentralized and diversified nature of XRPL, we will rename any
 references to `ripple` and `rippled` to `xrpl` and `xrpld`, when appropriate.
 
-See [here](https://github.com/XRPLF/XRPL-Standards/discussions/384) for more
-information.
+See [here](https://xls.xrpl.org/xls/XLS-0095-rename-rippled-to-xrpld.html) for
+more information.
 
 ### Scripts
 
@@ -16,5 +16,6 @@ To facilitate this transition, there will be multiple scripts that developers
 can run on their own PRs and forks to minimize conflicts. Each script should be
 run from the repository root.
 
-1. `bin/rename/definitions.sh`: This script will rename all definitions, such
-   as include guards, from `RIPPLE_XXX` and `RIPPLED_XXX` to `XRPL_XXX`.
+1. `.github/scripts/rename/definitions.sh`: This script will rename all
+   definitions, such as include guards, from `RIPPLE_XXX` and `RIPPLED_XXX` to
+   `XRPL_XXX`.

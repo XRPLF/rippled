@@ -98,6 +98,11 @@ jobs:
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-check-levelization.yml
 
+  check-rename:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-rename.yml
+
   build-test:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}

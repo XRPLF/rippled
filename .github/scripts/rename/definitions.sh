@@ -4,7 +4,7 @@
 # Specifically, it renames "RIPPLED_XXX" and "RIPPLE_XXX" to "XRPL_XXX" by
 # scanning all cmake, header, and source files in the specified directory and
 # its subdirectories.
-# Usage: bin/rename/definitions.sh <directory>
+# Usage: .github/scripts/rename/definitions.sh <directory>
 
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <directory>"
