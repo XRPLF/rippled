@@ -91,8 +91,16 @@ ApplyView::dirAdd(
         return page;
     }
 
+    // We rely on modulo arithmetic of unsigned integers (guaranteed in
+    // [basic.fundamental] paragraph 2) to detect page representation overflow.
+    // For signed integers this would be UB, hence static_assert here.
+    static_assert(std::is_unsigned_v<decltype(page)>);
+    ++page;
     // Check whether we're out of pages.
-    if (++page >= dirNodeMaxPages)
+    if (page == 0)
+        return std::nullopt;
+    if (!rules().enabled(fixDirectoryLimit) &&
+        page >= dirNodeMaxPages)  // Old pages limit
         return std::nullopt;
 
     // We are about to create a new node; we'll link it to
