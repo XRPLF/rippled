@@ -108,7 +108,7 @@ insertDeliveredAmount(
 {
     auto const info = ledger.info();
 
-    if (canHaveDeliveredAmountHelp(serializedTx, transactionMeta))
+    if (canHaveDeliveredAmount(serializedTx, transactionMeta))
     {
         auto const getLedgerIndex = [&info] { return info.seq; };
         auto const getCloseTime = [&info] { return info.closeTime; };
