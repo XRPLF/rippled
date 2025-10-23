@@ -496,73 +496,14 @@ struct Directory_test : public beast::unit_test::suite
         using namespace test::jtx;
         Account alice("alice");
 
-        auto const prepareDir =
-            [&, this](Env& env, std::uint64_t lastPage, auto adjust) {
-                auto const directory = keylet::ownerDir(alice.id());
-
-                auto const res = env.app().openLedger().modify(
-                    [&](OpenView& view, beast::Journal j) -> bool {
-                        Sandbox sb(&view, tapNONE);
-
-                        // Find modifiable SLE object for root page
-                        auto sleRoot = sb.peek(directory);
-                        if (!BEAST_EXPECT(sleRoot))
-                            return false;
-                        BEAST_EXPECT(sleRoot->at(sfIndexNext) == 1);
-                        BEAST_EXPECT(sleRoot->at(sfIndexPrevious) == 1);
-
-                        // Find modifiable SLE object for page 1 and delete it
-                        auto slePage = sb.peek(keylet::page(directory, 1));
-                        if (!BEAST_EXPECT(slePage))
-                            return false;
-                        // Verify that sfIndexNext or sfIndexPrevious are not
-                        // set back to root
-                        BEAST_EXPECT(!slePage->at(~sfIndexNext));
-                        BEAST_EXPECT(!slePage->at(~sfIndexPrevious));
-                        auto indexes = slePage->getFieldV256(sfIndexes);
-                        sb.erase(slePage);
-
-                        // Create new page to replace slePage
-                        auto sleNew = std::make_shared<SLE>(
-                            keylet::page(directory, lastPage));
-                        sleNew->setFieldH256(sfRootIndex, directory.key);
-                        sleNew->setFieldV256(sfIndexes, indexes);
-                        sleNew->setAccountID(sfOwner, alice.id());
-                        // We do not set sfIndexNext or sfIndexPrevious back to
-                        // root as verified above
-                        sb.insert(sleNew);
-
-                        // Adjust root previous and next for new page
-                        sleRoot->setFieldU64(sfIndexNext, lastPage);
-                        sleRoot->setFieldU64(sfIndexPrevious, lastPage);
-                        sb.update(sleRoot);
-
-                        // Fixup page number in objects stored in indexes
-                        for (auto const key : indexes)
-                        {
-                            if (!adjust(sb, key, lastPage))
-                                return false;
-                        }
-
-                        sb.apply(view);
-                        return true;
-                    });
-
-                BEAST_EXPECT(res);
-            };
-
-        auto const testCase = [&, this](
-                                  std::uint64_t lastPage,
-                                  FeatureBitset features,
-                                  std::string name) {
+        auto const testCase = [&, this](FeatureBitset features, auto setup) {
             using namespace test::jtx;
-            testcase(name);
-
-            BEAST_EXPECT(lastPage > 2);
 
             Env env(*this, features);
             env.fund(XRP(20000), alice);
             env.close();
+
+            auto const lastPage = setup(env);
 
             // Populate root page and last page
             for (int i = 0; i < 63; ++i)
@@ -570,21 +511,22 @@ struct Directory_test : public beast::unit_test::suite
             env.close();
 
             // NOTE, everything below can only be tested on open ledger because
-            // there is no transaction type to express what prepareDir is doing.
+            // there is no transaction type to express what bumpLastPage does.
 
-            // Bump position of last page from 1 to lastPage
-            prepareDir(
+            // Bump position of last page from 1 to highest possible
+            auto const res = directory::bumpLastPage(
                 env,
-                lastPage,
+                keylet::ownerDir(alice.id()),
                 [this](ApplyView& view, uint256 key, std::uint64_t page) {
                     auto sle = view.peek({ltCREDENTIAL, key});
                     if (!BEAST_EXPECT(sle))
                         return false;
                     sle->setFieldU64(sfIssuerNode, page);
-                    // sfSubjectNode is not used in self-issued creds.
+                    // sfSubjectNode is not set in self-issued credentials
                     view.update(sle);
                     return true;
                 });
+            BEAST_EXPECT(res.has_value() && res.value() == lastPage);
 
             // Create one more credential
             env(credentials::create(alice, alice, std::to_string(63)));
@@ -606,13 +548,17 @@ struct Directory_test : public beast::unit_test::suite
         };
 
         testCase(
-            dirNodeMaxPages - 1,
             testable_amendments() - fixDirectoryLimit,
-            "directory full without fixDirectoryLimit");
+            [this](Env&) -> std::uint64_t {
+                testcase("directory full without fixDirectoryLimit");
+                return dirNodeMaxPages - 1;
+            });
         testCase(
-            std::numeric_limits<uint64_t>::max(),
-            testable_amendments(),
-            "directory full with fixDirectoryLimit");
+            testable_amendments(),  //
+            [this](Env&) -> std::uint64_t {
+                testcase("directory full with fixDirectoryLimit");
+                return std::numeric_limits<std::uint64_t>::max();
+            });
     }
 
     void
