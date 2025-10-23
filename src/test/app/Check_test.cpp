@@ -1867,9 +1867,9 @@ class Check_test : public beast::unit_test::suite
     }
 
     void
-    testDeliveredAmountForCheckCashTnx(FeatureBitset features)
+    testDeliveredAmountForCheckCashTxn(FeatureBitset features)
     {
-        testcase("DeliveredAmount For CheckCash Tnx");
+        testcase("DeliveredAmount For CheckCash Txn");
 
         using namespace test::jtx;
         Account const alice{"alice"};
@@ -2697,7 +2697,7 @@ class Check_test : public beast::unit_test::suite
         testCashInvalid(features);
         testCancelValid(features);
         testCancelInvalid(features);
-        testDeliveredAmountForCheckCashTnx(features);
+        testDeliveredAmountForCheckCashTxn(features);
         testWithTickets(features);
     }
 

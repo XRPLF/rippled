@@ -80,7 +80,7 @@ getDeliveredAmount(
 // Returns true if transaction meta could contain a delivered amount field,
 // based on transaction type and transaction result
 bool
-canHaveDeliveredAmountHelp(
+canHaveDeliveredAmount(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
@@ -97,16 +97,6 @@ canHaveDeliveredAmountHelp(
     }
 
     return false;
-}
-
-// Returns true if transaction meta could contain a delivered amount field,
-// based on transaction type and transaction result
-bool
-canHaveDeliveredAmount(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta)
-{
-    return canHaveDeliveredAmountHelp(serializedTx, transactionMeta);
 }
 
 void
