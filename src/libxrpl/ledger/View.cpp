@@ -383,6 +383,99 @@ isLPTokenFrozen(
         isFrozen(view, account, asset2.currency, asset2.account);
 }
 
+static SLE::const_pointer
+getLineIfUsable(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer,
+    FreezeHandling zeroIfFrozen,
+    beast::Journal j)
+{
+    auto const sle = view.read(keylet::line(account, issuer, currency));
+
+    if (!sle)
+    {
+        return nullptr;
+    }
+
+    if (zeroIfFrozen == fhZERO_IF_FROZEN)
+    {
+        if (isFrozen(view, account, currency, issuer) ||
+            isDeepFrozen(view, account, currency, issuer))
+        {
+            return nullptr;
+        }
+
+        // when fixFrozenLPTokenTransfer is enabled, if currency is lptoken,
+        // we need to check if the associated assets have been frozen
+        if (view.rules().enabled(fixFrozenLPTokenTransfer))
+        {
+            auto const sleIssuer = view.read(keylet::account(issuer));
+            if (!sleIssuer)
+            {
+                return nullptr;  // LCOV_EXCL_LINE
+            }
+            else if (sleIssuer->isFieldPresent(sfAMMID))
+            {
+                auto const sleAmm =
+                    view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+
+                if (!sleAmm ||
+                    isLPTokenFrozen(
+                        view,
+                        account,
+                        (*sleAmm)[sfAsset].get<Issue>(),
+                        (*sleAmm)[sfAsset2].get<Issue>()))
+                {
+                    return nullptr;
+                }
+            }
+        }
+    }
+
+    return sle;
+}
+
+static STAmount
+getTrustLineBalance(
+    ReadView const& view,
+    SLE::const_ref sle,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer,
+    bool includeOppositeLimit,
+    beast::Journal j)
+{
+    STAmount amount;
+    if (sle)
+    {
+        amount = sle->getFieldAmount(sfBalance);
+        bool const accountHigh = account > issuer;
+        auto const& oppositeField = accountHigh ? sfLowLimit : sfHighLimit;
+        if (accountHigh)
+        {
+            // Put balance in account terms.
+            amount.negate();
+        }
+        if (includeOppositeLimit)
+        {
+            amount += sle->getFieldAmount(oppositeField);
+        }
+        amount.setIssuer(issuer);
+    }
+    else
+    {
+        amount.clear(Issue{currency, issuer});
+    }
+
+    JLOG(j.trace()) << "getTrustLineBalance:"
+                    << " account=" << to_string(account)
+                    << " amount=" << amount.getFullText();
+
+    return view.balanceHook(account, issuer, amount);
+}
+
 STAmount
 accountHolds(
     ReadView const& view,
@@ -399,71 +492,10 @@ accountHolds(
     }
 
     // IOU: Return balance on trust line modulo freeze
-    auto const sle = view.read(keylet::line(account, issuer, currency));
-    auto const allowBalance = [&]() {
-        if (!sle)
-        {
-            return false;
-        }
+    SLE::const_pointer const sle =
+        getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
 
-        if (zeroIfFrozen == fhZERO_IF_FROZEN)
-        {
-            if (isFrozen(view, account, currency, issuer) ||
-                isDeepFrozen(view, account, currency, issuer))
-            {
-                return false;
-            }
-
-            // when fixFrozenLPTokenTransfer is enabled, if currency is lptoken,
-            // we need to check if the associated assets have been frozen
-            if (view.rules().enabled(fixFrozenLPTokenTransfer))
-            {
-                auto const sleIssuer = view.read(keylet::account(issuer));
-                if (!sleIssuer)
-                {
-                    return false;  // LCOV_EXCL_LINE
-                }
-                else if (sleIssuer->isFieldPresent(sfAMMID))
-                {
-                    auto const sleAmm =
-                        view.read(keylet::amm((*sleIssuer)[sfAMMID]));
-
-                    if (!sleAmm ||
-                        isLPTokenFrozen(
-                            view,
-                            account,
-                            (*sleAmm)[sfAsset].get<Issue>(),
-                            (*sleAmm)[sfAsset2].get<Issue>()))
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        return true;
-    }();
-
-    if (allowBalance)
-    {
-        amount = sle->getFieldAmount(sfBalance);
-        if (account > issuer)
-        {
-            // Put balance in account terms.
-            amount.negate();
-        }
-        amount.setIssuer(issuer);
-    }
-    else
-    {
-        amount.clear(Issue{currency, issuer});
-    }
-
-    JLOG(j.trace()) << "accountHolds:"
-                    << " account=" << to_string(account)
-                    << " amount=" << amount.getFullText();
-
-    return view.balanceHook(account, issuer, amount);
+    return getTrustLineBalance(view, sle, account, currency, issuer, false, j);
 }
 
 STAmount
@@ -545,6 +577,96 @@ accountHolds(
                 return accountHolds(view, account, value, zeroIfFrozen, j);
             }
             return accountHolds(
+                view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
+        },
+        asset.value());
+}
+
+STAmount
+accountCanSend(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer,
+    FreezeHandling zeroIfFrozen,
+    beast::Journal j)
+{
+    if (isXRP(currency))
+        return accountHolds(view, account, currency, issuer, zeroIfFrozen, j);
+
+    if (account == issuer)
+        // If the account is the issuer, then their limit is effectively
+        // infinite
+        return STAmount{
+            Issue{currency, issuer}, STAmount::cMaxValue, STAmount::cMaxOffset};
+
+    // IOU: Return balance on trust line modulo freeze
+    SLE::const_pointer const sle =
+        getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
+
+    return getTrustLineBalance(view, sle, account, currency, issuer, true, j);
+}
+
+STAmount
+accountCanSend(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    FreezeHandling zeroIfFrozen,
+    beast::Journal j)
+{
+    return accountCanSend(
+        view, account, issue.currency, issue.account, zeroIfFrozen, j);
+}
+
+STAmount
+accountCanSend(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j)
+{
+    if (account == mptIssue.getIssuer())
+    {
+        // if the account is the issuer, and the issuance exists, their limit is
+        // the issuance limit minus the outstanding value
+        auto const issuance =
+            view.read(keylet::mptIssuance(mptIssue.getMptID()));
+
+        if (!issuance)
+        {
+            return STAmount{mptIssue};
+        }
+        return STAmount{
+            mptIssue,
+            issuance->at(~sfMaximumAmount).value_or(maxMPTokenAmount) -
+                issuance->at(sfOutstandingAmount)};
+    }
+
+    return accountHolds(
+        view, account, mptIssue, zeroIfFrozen, zeroIfUnauthorized, j);
+}
+
+[[nodiscard]] STAmount
+accountCanSend(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j)
+{
+    return std::visit(
+        [&](auto const& value) {
+            if constexpr (std::is_same_v<
+                              std::remove_cvref_t<decltype(value)>,
+                              Issue>)
+            {
+                return accountCanSend(view, account, value, zeroIfFrozen, j);
+            }
+            return accountCanSend(
                 view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
         },
         asset.value());

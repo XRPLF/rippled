@@ -241,9 +241,11 @@ LoanManage::defaultLoan(
             auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
             if (vaultLossUnrealizedProxy < totalDefaultAmount)
             {
+                // LCOV_EXCL_START
                 JLOG(j.warn())
                     << "Vault unrealized loss is less than the default amount";
                 return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
             }
             vaultLossUnrealizedProxy -= totalDefaultAmount;
         }

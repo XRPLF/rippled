@@ -361,6 +361,49 @@ accountHolds(
     AuthHandling zeroIfUnauthorized,
     beast::Journal j);
 
+// Returns the amount an account can spend total.
+//
+// These functions use accountHolds, but unlike accountHolds:
+// * The account can go into debt.
+// * If the account is the asset issuer the only limit is defined by the asset /
+//   issuance.
+//
+// <-- saAmount: amount of currency held by account. May be negative.
+[[nodiscard]] STAmount
+accountCanSend(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer,
+    FreezeHandling zeroIfFrozen,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
+accountCanSend(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    FreezeHandling zeroIfFrozen,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
+accountCanSend(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
+accountCanSend(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j);
+
 // Returns the amount an account can spend of the currency type saDefault, or
 // returns saDefault if this account is the issuer of the currency in
 // question. Should be used in favor of accountHolds when questioning how much

@@ -31,14 +31,14 @@ runs:
         VERBOSITY: ${{ inputs.verbosity }}
       run: |
         echo 'Installing dependencies.'
-        mkdir -p '${{ env.BUILD_DIR }}'
-        cd '${{ env.BUILD_DIR }}'
+        mkdir -p "${BUILD_DIR}"
+        cd "${BUILD_DIR}"
         conan install \
           --output-folder . \
-          --build=${{ env.BUILD_OPTION }} \
+          --build="${BUILD_OPTION}" \
           --options:host='&:tests=True' \
           --options:host='&:xrpld=True' \
-          --settings:all build_type='${{ env.BUILD_TYPE }}' \
-          --conf:all tools.build:verbosity='${{ env.VERBOSITY }}' \
-          --conf:all tools.compilation:verbosity='${{ env.VERBOSITY }}' \
+          --settings:all build_type="${BUILD_TYPE}" \
+          --conf:all tools.build:verbosity="${VERBOSITY}" \
+          --conf:all tools.compilation:verbosity="${VERBOSITY}" \
           ..

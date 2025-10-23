@@ -84,8 +84,8 @@ jobs:
           cmake \
             -G '${{ runner.os == 'Windows' && 'Visual Studio 17 2022' || 'Ninja' }}' \
             -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
-            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
-            ${{ env.CMAKE_ARGS }} \
+            -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+            ${CMAKE_ARGS} \
             ..
 
       - name: Build the binary
@@ -97,9 +97,9 @@ jobs:
         run: |
           cmake \
             --build . \
-            --config ${{ env.BUILD_TYPE }} \
+            --config "${BUILD_TYPE}" \
             --parallel $(nproc) \
-            --target ${{ env.CMAKE_TARGET }}
+            --target "${CMAKE_TARGET}"
 
       - name: Upload rippled artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

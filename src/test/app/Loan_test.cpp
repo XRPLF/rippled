@@ -1325,19 +1325,23 @@ class Loan_test : public beast::unit_test::suite
                                  LoanState& state,
                                  STAmount const& payoffAmount,
                                  std::uint32_t numPayments,
-                                 std::uint32_t baseFlag) {
+                                 std::uint32_t baseFlag,
+                                 std::uint32_t txFlags) {
             // toEndOfLife
             //
             verifyLoanStatus(state);
 
             // Send some bogus pay transactions
-            env(pay(borrower, keylet::loan(uint256(0)).key, broker.asset(10)),
+            env(pay(borrower,
+                    keylet::loan(uint256(0)).key,
+                    broker.asset(10),
+                    txFlags),
                 ter(temINVALID));
-            env(pay(borrower, loanKeylet.key, broker.asset(-100)),
+            env(pay(borrower, loanKeylet.key, broker.asset(-100), txFlags),
                 ter(temBAD_AMOUNT));
-            env(pay(borrower, broker.brokerID, broker.asset(100)),
+            env(pay(borrower, broker.brokerID, broker.asset(100), txFlags),
                 ter(tecNO_ENTRY));
-            env(pay(evan, loanKeylet.key, broker.asset(500)),
+            env(pay(evan, loanKeylet.key, broker.asset(500), txFlags),
                 ter(tecNO_PERMISSION));
 
             // TODO: Write a general "isFlag" function? See STObject::isFlag.
@@ -1349,7 +1353,7 @@ class Loan_test : public beast::unit_test::suite
                 env(pay(borrower,
                         loanKeylet.key,
                         broker.asset(state.periodicPayment * 2),
-                        tfLoanOverpayment),
+                        tfLoanOverpayment | txFlags),
                     ter(temINVALID_FLAG));
             }
 
@@ -1357,12 +1361,15 @@ class Loan_test : public beast::unit_test::suite
                 auto const otherAsset = broker.asset.raw() == assets[0].raw()
                     ? assets[1]
                     : assets[0];
-                env(pay(borrower, loanKeylet.key, otherAsset(100)),
+                env(pay(borrower, loanKeylet.key, otherAsset(100), txFlags),
                     ter(tecWRONG_ASSET));
             }
 
             // Amount doesn't cover a single payment
-            env(pay(borrower, loanKeylet.key, STAmount{broker.asset, 1}),
+            env(pay(borrower,
+                    loanKeylet.key,
+                    STAmount{broker.asset, 1},
+                    txFlags),
                 ter(tecINSUFFICIENT_PAYMENT));
 
             // Get the balance after these failed transactions take
@@ -1381,10 +1388,11 @@ class Loan_test : public beast::unit_test::suite
                     loanKeylet.key,
                     STAmount{
                         broker.asset,
-                        borrowerBalanceBeforePayment.number() * 2}),
+                        borrowerBalanceBeforePayment.number() * 2},
+                    txFlags),
                 ter(tecINSUFFICIENT_FUNDS));
 
-            env(pay(borrower, loanKeylet.key, transactionAmount));
+            env(pay(borrower, loanKeylet.key, transactionAmount, txFlags));
 
             env.close();
 
@@ -1476,7 +1484,8 @@ class Loan_test : public beast::unit_test::suite
                     state,
                     payoffAmount,
                     1,
-                    baseFlag);
+                    baseFlag,
+                    tfLoanFullPayment);
             };
         };
 
@@ -1508,7 +1517,8 @@ class Loan_test : public beast::unit_test::suite
                     state,
                     payoffAmount,
                     state.paymentRemaining,
-                    baseFlag);
+                    baseFlag,
+                    0);
             };
         };
 
@@ -1678,7 +1688,7 @@ class Loan_test : public beast::unit_test::suite
                 testcase << "\tPayment components: "
                          << "Payments remaining, rawInterest, rawPrincipal, "
                             "rawMFee, roundedInterest, roundedPrincipal, "
-                            "roundedMFee, final, extra";
+                            "roundedMFee, special";
 
                 auto const serviceFee = broker.asset(2);
 
@@ -1760,8 +1770,12 @@ class Loan_test : public beast::unit_test::suite
                         << paymentComponents.roundedInterest << ", "
                         << paymentComponents.roundedPrincipal << ", "
                         << paymentComponents.roundedManagementFee << ", "
-                        << (paymentComponents.final ? "true" : "false") << ", "
-                        << (paymentComponents.extra ? "true" : "false");
+                        << (paymentComponents.specialCase == SpecialCase::final
+                                ? "final"
+                                : paymentComponents.specialCase ==
+                                    SpecialCase::final
+                                ? "extra"
+                                : "none");
 
                     auto const totalDueAmount = STAmount{
                         broker.asset,
@@ -1778,7 +1792,8 @@ class Loan_test : public beast::unit_test::suite
                     // IOUs, the difference should be after the 8th digit.
                     Number const diff = totalDue - totalDueAmount;
                     BEAST_EXPECT(
-                        paymentComponents.final || diff == beast::zero ||
+                        paymentComponents.specialCase == SpecialCase::final ||
+                        diff == beast::zero ||
                         (diff > beast::zero &&
                          ((broker.asset.integral() &&
                            (static_cast<Number>(diff) < 3)) ||
@@ -1805,11 +1820,11 @@ class Loan_test : public beast::unit_test::suite
                         paymentComponents.roundedPrincipal <=
                             state.principalOutstanding);
                     BEAST_EXPECT(
-                        !paymentComponents.final ||
+                        paymentComponents.specialCase != SpecialCase::final ||
                         paymentComponents.roundedPrincipal ==
                             state.principalOutstanding);
                     BEAST_EXPECT(
-                        paymentComponents.final ||
+                        paymentComponents.specialCase == SpecialCase::final ||
                         (state.periodicPayment.exponent() -
                          (paymentComponents.rawPrincipal +
                           paymentComponents.rawInterest +
@@ -1848,7 +1863,7 @@ class Loan_test : public beast::unit_test::suite
 
                     --state.paymentRemaining;
                     state.previousPaymentDate = state.nextPaymentDate;
-                    if (paymentComponents.final)
+                    if (paymentComponents.specialCase == SpecialCase::final)
                     {
                         state.paymentRemaining = 0;
                     }
@@ -3281,6 +3296,224 @@ class Loan_test : public beast::unit_test::suite
         pass();
     }
 
+    void
+    testInvalidLoanDelete()
+    {
+        testcase("Invalid LoanDelete");
+        using namespace jtx;
+        using namespace loan;
+
+        // preflight: temINVALID, LoanID == zero
+        {
+            Account const alice{"alice"};
+            Env env(*this);
+            env.fund(XRP(1'000), alice);
+            env.close();
+            env(del(alice, beast::zero), ter(temINVALID));
+        }
+    }
+
+    void
+    testInvalidLoanManage()
+    {
+        testcase("Invalid LoanManage");
+        using namespace jtx;
+        using namespace loan;
+
+        // preflight: temINVALID, LoanID == zero
+        {
+            Account const alice{"alice"};
+            Env env(*this);
+            env.fund(XRP(1'000), alice);
+            env.close();
+            env(manage(alice, beast::zero, tfLoanDefault), ter(temINVALID));
+        }
+    }
+
+    void
+    testInvalidLoanPay()
+    {
+        testcase("Invalid LoanPay");
+        using namespace jtx;
+        using namespace loan;
+        Account const lender{"lender"};
+        Account const issuer{"issuer"};
+        Account const borrower{"borrower"};
+        auto const IOU = issuer["IOU"];
+
+        // preclaim
+        Env env(*this);
+        env.fund(XRP(1'000), lender, issuer, borrower);
+        env(trust(lender, IOU(10'000'000)));
+        env(pay(issuer, lender, IOU(5'000'000)));
+        BrokerInfo brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
+
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        STAmount const debtMaximumRequest = brokerInfo.asset(1'000).value();
+
+        env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+            sig(sfCounterpartySignature, lender),
+            loanSetFee);
+
+        env.close();
+
+        std::uint32_t const loanSequence = 1;
+        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, loanSequence);
+
+        env(fset(issuer, asfGlobalFreeze));
+        env.close();
+
+        // preclaim: tecFROZEN
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecFROZEN));
+        env.close();
+
+        env(fclear(issuer, asfGlobalFreeze));
+        env.close();
+
+        auto const pseudoBroker = [&]() -> std::optional<Account> {
+            if (auto brokerSle =
+                    env.le(keylet::loanbroker(brokerInfo.brokerID));
+                BEAST_EXPECT(brokerSle))
+            {
+                return Account{"pseudo", brokerSle->at(sfAccount)};
+            }
+            else
+            {
+                return std::nullopt;
+            }
+        }();
+        if (!pseudoBroker)
+            return;
+
+        // Lender and pseudoaccount must both be frozen
+        env(trust(
+            issuer,
+            lender["IOU"](1'000),
+            lender,
+            tfSetFreeze | tfSetDeepFreeze));
+        env(trust(
+            issuer,
+            (*pseudoBroker)["IOU"](1'000),
+            *pseudoBroker,
+            tfSetFreeze | tfSetDeepFreeze));
+        env.close();
+
+        // preclaim: tecFROZEN due to deep frozen
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecFROZEN));
+        env.close();
+
+        // Only one needs to be unfrozen
+        env(trust(
+            issuer, lender["IOU"](1'000), tfClearFreeze | tfClearDeepFreeze));
+        env.close();
+
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest));
+        env.close();
+
+        // preclaim: tecKILLED
+        // note that tecKILLED in loanMakePayment()
+        // doesn't happen because of the preclaim check.
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecKILLED));
+    }
+
+    void
+    testInvalidLoanSet()
+    {
+        testcase("Invalid LoanSet");
+        using namespace jtx;
+        using namespace loan;
+        Account const lender{"lender"};
+        Account const issuer{"issuer"};
+        Account const borrower{"borrower"};
+        auto const IOU = issuer["IOU"];
+
+        auto testWrapper = [&](auto&& test) {
+            Env env(*this);
+            env.fund(XRP(1'000), lender, issuer, borrower);
+            env(trust(lender, IOU(10'000'000)));
+            env(pay(issuer, lender, IOU(5'000'000)));
+            BrokerInfo brokerInfo{
+                createVaultAndBroker(env, issuer["IOU"], lender)};
+
+            auto const loanSetFee = fee(env.current()->fees().base * 2);
+            Number const debtMaximumRequest = brokerInfo.asset(1'000).value();
+            test(env, brokerInfo, loanSetFee, debtMaximumRequest);
+        };
+
+        // preflight:
+        testWrapper([&](Env& env,
+                        BrokerInfo const& brokerInfo,
+                        jtx::fee const& loanSetFee,
+                        Number const& debtMaximumRequest) {
+            // first temBAD_SIGNER: TODO
+
+            // preflightCheckSigningKey() failure:
+            // can it happen? the signature is checked before transactor
+            // executes
+
+            JTx tx = env.jt(
+                set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+                sig(sfCounterpartySignature, lender),
+                loanSetFee);
+            STTx local = *(tx.stx);
+            auto counterpartySig =
+                local.getFieldObject(sfCounterpartySignature);
+            auto badPubKey = counterpartySig.getFieldVL(sfSigningPubKey);
+            badPubKey[20] ^= 0xAA;
+            counterpartySig.setFieldVL(sfSigningPubKey, badPubKey);
+            local.setFieldObject(sfCounterpartySignature, counterpartySig);
+            Json::Value jvResult;
+            jvResult[jss::tx_blob] = strHex(local.getSerializer().slice());
+            auto res = env.rpc("json", "submit", to_string(jvResult))["result"];
+            BEAST_EXPECT(
+                res[jss::error] == "invalidTransaction" &&
+                res[jss::error_exception] ==
+                    "fails local checks: Counterparty: Invalid signature.");
+        });
+
+        // preclaim:
+        testWrapper([&](Env& env,
+                        BrokerInfo const& brokerInfo,
+                        jtx::fee const& loanSetFee,
+                        Number const& debtMaximumRequest) {
+            // canAddHoldingFailure (IOU only, if MPT doesn't have
+            // MPTCanTransfer set, then can't create Vault/LoanBroker,
+            // and LoanSet will fail with different error
+            env(fclear(issuer, asfDefaultRipple));
+            env.close();
+            env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+                sig(sfCounterpartySignature, lender),
+                loanSetFee,
+                ter(terNO_RIPPLE));
+        });
+
+        // doApply:
+        testWrapper([&](Env& env,
+                        BrokerInfo const& brokerInfo,
+                        jtx::fee const& loanSetFee,
+                        Number const& debtMaximumRequest) {
+            auto const amt = env.balance(borrower) -
+                env.current()->fees().accountReserve(env.ownerCount(borrower));
+            env(pay(borrower, issuer, amt));
+
+            // tecINSUFFICIENT_RESERVE
+            env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+                sig(sfCounterpartySignature, lender),
+                loanSetFee,
+                ter(tecINSUFFICIENT_RESERVE));
+
+            // addEmptyHolding failure
+            env(pay(issuer, borrower, amt));
+            env(fset(issuer, asfGlobalFreeze));
+            env.close();
+
+            env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+                sig(sfCounterpartySignature, lender),
+                loanSetFee,
+                ter(tecFROZEN));
+        });
+    }
+
 public:
     void
     run() override
@@ -3296,6 +3529,11 @@ public:
 
         testRPC();
         testBasicMath();
+
+        testInvalidLoanDelete();
+        testInvalidLoanManage();
+        testInvalidLoanPay();
+        testInvalidLoanSet();
     }
 };
 
