@@ -371,6 +371,18 @@ serializeEcPair(
     return res1 && res2;
 }
 
+bool
+isValidCiphertext(Slice const& buffer)
+{
+    // Local/temporary variables to pass to makeEcPair.
+    // Their contents will be discarded when the function returns.
+    secp256k1_pubkey key1;
+    secp256k1_pubkey key2;
+
+    // Call makeEcPair and return its result.
+    return makeEcPair(buffer, key1, key2);
+}
+
 TER
 homomorphicAdd(Slice const& a, Slice const& b, Buffer& out)
 {
@@ -516,12 +528,6 @@ encryptCanonicalZeroAmount(
 
     // Allocate ciphertext placeholders
     secp256k1_pubkey c1, c2;
-
-    // Prepare a random blinding factor
-    unsigned char blinding_factor[32];
-    if (RAND_bytes(blinding_factor, 32) != 1)
-        Throw<std::runtime_error>("Failed to generate random number");
-
     secp256k1_pubkey pubKey;
 
     std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);

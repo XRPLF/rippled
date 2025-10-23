@@ -130,6 +130,14 @@ serializeEcPair(
     secp256k1_pubkey const& in2,
     Buffer& buffer);
 
+/**
+ * @brief Verifies that a buffer contains two valid, parsable EC public keys.
+ * @param buffer The input buffer containing two concatenated components.
+ * @return true if both components can be parsed successfully, false otherwise.
+ */
+bool
+isValidCiphertext(Slice const& buffer);
+
 TER
 homomorphicAdd(Slice const& a, Slice const& b, Buffer& out);
 

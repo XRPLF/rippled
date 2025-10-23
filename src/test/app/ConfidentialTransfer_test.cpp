@@ -153,6 +153,33 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
              .holderPubKey = mptAlice.getPubKey(bob),
              .err = temMALFORMED});
 
+        // A 66-byte array of random unsigned char values
+        unsigned char badCiphertext[ecGamalEncryptedTotalLength] = {
+            0x3E, 0x9A, 0x0F, 0x7C, 0x51, 0xD8, 0x22, 0x8B, 0x6E, 0x14, 0xC9,
+            0xF5, 0x4D, 0x6A, 0x03, 0x81, 0x77, 0x2B, 0xEE, 0x9F, 0x10, 0xC2,
+            0x57, 0x3D, 0x88, 0x65, 0x0C, 0xAB, 0xF1, 0x4E, 0x19, 0x96, 0x2A,
+            0x73, 0xDC, 0x44, 0xB8, 0x5F, 0x01, 0xEA, 0x87, 0x36, 0x60, 0xCE,
+            0x92, 0x25, 0x7D, 0x5B, 0xC0, 0x1E, 0x48, 0xF9, 0x84, 0x33, 0x67,
+            0xAD, 0x0B, 0xE3, 0x91, 0x50, 0xDA, 0x2F, 0x75, 0xC6, 0xBD, 0x42};
+
+        mptAlice.convert(
+            {.account = bob,
+             .amt = 1,
+             .proof = "123",
+             .holderPubKey = mptAlice.getPubKey(bob),
+             .holderEncryptedAmt =
+                 Buffer{badCiphertext, ecGamalEncryptedTotalLength},
+             .err = temBAD_CIPHERTEXT});
+
+        mptAlice.convert(
+            {.account = bob,
+             .amt = 1,
+             .proof = "123",
+             .holderPubKey = mptAlice.getPubKey(bob),
+             .issuerEncryptedAmt =
+                 Buffer{badCiphertext, ecGamalEncryptedTotalLength},
+             .err = temBAD_CIPHERTEXT});
+
         // todo: change to to check proof size
         // mptAlice.convert(
         //     {.account = bob,
