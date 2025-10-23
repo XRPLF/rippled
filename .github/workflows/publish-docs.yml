@@ -48,8 +48,8 @@ jobs:
           doxygen --version
       - name: Build documentation
         run: |
-          mkdir -p ${{ env.BUILD_DIR }}
-          cd ${{ env.BUILD_DIR }}
+          mkdir -p "${BUILD_DIR}"
+          cd "${BUILD_DIR}"
           cmake -Donly_docs=ON ..
           cmake --build . --target docs --parallel $(nproc)
       - name: Publish documentation
