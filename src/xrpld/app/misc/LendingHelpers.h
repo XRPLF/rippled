@@ -865,14 +865,18 @@ computeLatePayment(
     XRPL_ASSERT(
         roundedLateInterest >= 0,
         "ripple::detail::computeLatePayment : valid late interest");
+    XRPL_ASSERT_PARTS(
+        periodic.specialCase != SpecialCase::extra,
+        "ripple::detail::computeLatePayment",
+        "no extra parts to this payment");
+    // Copy the periodic payment values, and add on the late interest.
+    // This preserves all the other fields without having to enumerate them.
+    PaymentComponents inner = periodic;
+    inner.rawInterest += rawLateInterest;
+    inner.roundedInterest += roundedLateInterest;
+
     PaymentComponentsPlus const late{
-        PaymentComponents{
-            .rawInterest = periodic.rawInterest + rawLateInterest,
-            .rawPrincipal = periodic.rawPrincipal,
-            .rawManagementFee = periodic.rawManagementFee,
-            .roundedInterest = periodic.roundedInterest + roundedLateInterest,
-            .roundedPrincipal = periodic.roundedPrincipal,
-            .roundedManagementFee = periodic.roundedManagementFee},
+        inner,
         // A late payment pays both the normal fee, and the extra fees
         periodic.extraFee + latePaymentFee + roundedLateManagementFee,
         // A late payment increases the value of the loan by the difference
@@ -1186,10 +1190,10 @@ computeLoanProperties(
     // over payments)
     auto const loanScale = totalValueOutstanding.exponent();
     XRPL_ASSERT_PARTS(
-        totalValueOutstanding.integral() && loanScale == 0 ||
-            !totalValueOutstanding.integral() &&
-                loanScale ==
-                    static_cast<Number>(totalValueOutstanding).exponent(),
+        (totalValueOutstanding.integral() && loanScale == 0) ||
+            (!totalValueOutstanding.integral() &&
+             loanScale ==
+                 static_cast<Number>(totalValueOutstanding).exponent()),
         "ripple::computeLoanProperties",
         "loanScale value fits expectations");
 
@@ -1575,7 +1579,6 @@ loanMakePayment(
     auto const periodicPayment = loan->at(sfPeriodicPayment);
 
     auto prevPaymentDateProxy = loan->at(sfPreviousPaymentDate);
-    std::uint32_t const startDate = loan->at(sfStartDate);
 
     std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
     // Compute the normal periodic rate, payment, etc.

@@ -85,10 +85,10 @@ jobs:
 
       - name: Log into Conan remote
         if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' }}
-        run: conan remote login ${{ env.CONAN_REMOTE_NAME }} "${{ secrets.CONAN_REMOTE_USERNAME }}" --password "${{ secrets.CONAN_REMOTE_PASSWORD }}"
+        run: conan remote login "${CONAN_REMOTE_NAME}" "${{ secrets.CONAN_REMOTE_USERNAME }}" --password "${{ secrets.CONAN_REMOTE_PASSWORD }}"
 
       - name: Upload Conan packages
         if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' && github.event_name != 'schedule' }}
         env:
           FORCE_OPTION: ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
-        run: conan upload "*" --remote='${{ env.CONAN_REMOTE_NAME }}' --confirm ${{ env.FORCE_OPTION }}
+        run: conan upload "*" --remote="${CONAN_REMOTE_NAME}" --confirm ${FORCE_OPTION}
