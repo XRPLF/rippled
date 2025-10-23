@@ -1190,10 +1190,10 @@ computeLoanProperties(
     // over payments)
     auto const loanScale = totalValueOutstanding.exponent();
     XRPL_ASSERT_PARTS(
-        totalValueOutstanding.integral() && loanScale == 0 ||
-            !totalValueOutstanding.integral() &&
-                loanScale ==
-                    static_cast<Number>(totalValueOutstanding).exponent(),
+        (totalValueOutstanding.integral() && loanScale == 0) ||
+            (!totalValueOutstanding.integral() &&
+             loanScale ==
+                 static_cast<Number>(totalValueOutstanding).exponent()),
         "ripple::computeLoanProperties",
         "loanScale value fits expectations");
 
