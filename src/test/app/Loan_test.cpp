@@ -1323,19 +1323,23 @@ class Loan_test : public beast::unit_test::suite
                                  LoanState& state,
                                  STAmount const& payoffAmount,
                                  std::uint32_t numPayments,
-                                 std::uint32_t baseFlag) {
+                                 std::uint32_t baseFlag,
+                                 std::uint32_t txFlags) {
             // toEndOfLife
             //
             verifyLoanStatus(state);
 
             // Send some bogus pay transactions
-            env(pay(borrower, keylet::loan(uint256(0)).key, broker.asset(10)),
+            env(pay(borrower,
+                    keylet::loan(uint256(0)).key,
+                    broker.asset(10),
+                    txFlags),
                 ter(temINVALID));
-            env(pay(borrower, loanKeylet.key, broker.asset(-100)),
+            env(pay(borrower, loanKeylet.key, broker.asset(-100), txFlags),
                 ter(temBAD_AMOUNT));
-            env(pay(borrower, broker.brokerID, broker.asset(100)),
+            env(pay(borrower, broker.brokerID, broker.asset(100), txFlags),
                 ter(tecNO_ENTRY));
-            env(pay(evan, loanKeylet.key, broker.asset(500)),
+            env(pay(evan, loanKeylet.key, broker.asset(500), txFlags),
                 ter(tecNO_PERMISSION));
 
             // TODO: Write a general "isFlag" function? See STObject::isFlag.
@@ -1347,7 +1351,7 @@ class Loan_test : public beast::unit_test::suite
                 env(pay(borrower,
                         loanKeylet.key,
                         broker.asset(state.periodicPayment * 2),
-                        tfLoanOverpayment),
+                        tfLoanOverpayment | txFlags),
                     ter(temINVALID_FLAG));
             }
 
@@ -1355,12 +1359,15 @@ class Loan_test : public beast::unit_test::suite
                 auto const otherAsset = broker.asset.raw() == assets[0].raw()
                     ? assets[1]
                     : assets[0];
-                env(pay(borrower, loanKeylet.key, otherAsset(100)),
+                env(pay(borrower, loanKeylet.key, otherAsset(100), txFlags),
                     ter(tecWRONG_ASSET));
             }
 
             // Amount doesn't cover a single payment
-            env(pay(borrower, loanKeylet.key, STAmount{broker.asset, 1}),
+            env(pay(borrower,
+                    loanKeylet.key,
+                    STAmount{broker.asset, 1},
+                    txFlags),
                 ter(tecINSUFFICIENT_PAYMENT));
 
             // Get the balance after these failed transactions take
@@ -1379,10 +1386,11 @@ class Loan_test : public beast::unit_test::suite
                     loanKeylet.key,
                     STAmount{
                         broker.asset,
-                        borrowerBalanceBeforePayment.number() * 2}),
+                        borrowerBalanceBeforePayment.number() * 2},
+                    txFlags),
                 ter(tecINSUFFICIENT_FUNDS));
 
-            env(pay(borrower, loanKeylet.key, transactionAmount));
+            env(pay(borrower, loanKeylet.key, transactionAmount, txFlags));
 
             env.close();
 
@@ -1474,7 +1482,8 @@ class Loan_test : public beast::unit_test::suite
                     state,
                     payoffAmount,
                     1,
-                    baseFlag);
+                    baseFlag,
+                    tfLoanFullPayment);
             };
         };
 
@@ -1506,7 +1515,8 @@ class Loan_test : public beast::unit_test::suite
                     state,
                     payoffAmount,
                     state.paymentRemaining,
-                    baseFlag);
+                    baseFlag,
+                    0);
             };
         };
 
@@ -1676,7 +1686,7 @@ class Loan_test : public beast::unit_test::suite
                 testcase << "\tPayment components: "
                          << "Payments remaining, rawInterest, rawPrincipal, "
                             "rawMFee, roundedInterest, roundedPrincipal, "
-                            "roundedMFee, final, extra";
+                            "roundedMFee, special";
 
                 auto const serviceFee = broker.asset(2);
 
@@ -1758,8 +1768,12 @@ class Loan_test : public beast::unit_test::suite
                         << paymentComponents.roundedInterest << ", "
                         << paymentComponents.roundedPrincipal << ", "
                         << paymentComponents.roundedManagementFee << ", "
-                        << (paymentComponents.final ? "true" : "false") << ", "
-                        << (paymentComponents.extra ? "true" : "false");
+                        << (paymentComponents.specialCase == SpecialCase::final
+                                ? "final"
+                                : paymentComponents.specialCase ==
+                                    SpecialCase::final
+                                ? "extra"
+                                : "none");
 
                     auto const totalDueAmount = STAmount{
                         broker.asset,
@@ -1776,7 +1790,8 @@ class Loan_test : public beast::unit_test::suite
                     // IOUs, the difference should be after the 8th digit.
                     Number const diff = totalDue - totalDueAmount;
                     BEAST_EXPECT(
-                        paymentComponents.final || diff == beast::zero ||
+                        paymentComponents.specialCase == SpecialCase::final ||
+                        diff == beast::zero ||
                         (diff > beast::zero &&
                          ((broker.asset.integral() &&
                            (static_cast<Number>(diff) < 3)) ||
@@ -1803,11 +1818,11 @@ class Loan_test : public beast::unit_test::suite
                         paymentComponents.roundedPrincipal <=
                             state.principalOutstanding);
                     BEAST_EXPECT(
-                        !paymentComponents.final ||
+                        paymentComponents.specialCase != SpecialCase::final ||
                         paymentComponents.roundedPrincipal ==
                             state.principalOutstanding);
                     BEAST_EXPECT(
-                        paymentComponents.final ||
+                        paymentComponents.specialCase == SpecialCase::final ||
                         (state.periodicPayment.exponent() -
                          (paymentComponents.rawPrincipal +
                           paymentComponents.rawInterest +
@@ -1846,7 +1861,7 @@ class Loan_test : public beast::unit_test::suite
 
                     --state.paymentRemaining;
                     state.previousPaymentDate = state.nextPaymentDate;
-                    if (paymentComponents.final)
+                    if (paymentComponents.specialCase == SpecialCase::final)
                     {
                         state.paymentRemaining = 0;
                     }
