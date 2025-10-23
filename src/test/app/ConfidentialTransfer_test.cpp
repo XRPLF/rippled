@@ -819,6 +819,46 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                      Buffer(ripple::ecGamalEncryptedTotalLength),
                  .err = tecOBJECT_NOT_FOUND});
         }
+
+        // issuance is locked globally
+        {
+            mptAlice.set({.account = alice, .flags = tfMPTLock});
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = "123",
+                 .err = tecLOCKED});
+        }
+
+        // sender is locked
+        {
+            mptAlice.set(
+                {.account = alice, .flags = tfMPTUnlock});  // unlock issuance
+            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = "123",
+                 .err = tecLOCKED});
+        }
+
+        // destination is locked
+        {
+            mptAlice.set(
+                {.account = alice,
+                 .holder = bob,
+                 .flags = tfMPTUnlock});  // unlock bob
+            mptAlice.set(
+                {.account = alice, .holder = carol, .flags = tfMPTLock});
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = "123",
+                 .err = tecLOCKED});
+        }
     }
 
     void

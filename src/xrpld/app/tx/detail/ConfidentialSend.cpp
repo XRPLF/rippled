@@ -79,6 +79,10 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
+    // Check if the issuance allows transfer
+    if (!sleIssuance->isFlag(lsfMPTCanTransfer))
+        return tecLOCKED;
+
     // Check if issuance allows confidential transfer
     if (sleIssuance->isFlag(lsfMPTNoConfidentialTransfer))
         return tecNO_PERMISSION;
@@ -110,6 +114,16 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
         !sleDestinationMPToken->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleDestinationMPToken->isFieldPresent(sfIssuerEncryptedBalance))
         return tecNO_PERMISSION;
+
+    // Check lock
+    MPTIssue const mptIssue(mptIssuanceID);
+    if (auto const ter = checkFrozen(ctx.view, account, mptIssue);
+        ter != tesSUCCESS)
+        return ter;
+
+    if (auto const ter = checkFrozen(ctx.view, destination, mptIssue);
+        ter != tesSUCCESS)
+        return ter;
 
     // todo: check zkproof. equality proof and range proof, combined or separate
     // TBD. TER const terProof = verifyConfidentialSendProof(
