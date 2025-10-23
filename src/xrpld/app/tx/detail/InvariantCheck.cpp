@@ -1498,12 +1498,22 @@ ValidMPTIssuance::finalize(
 {
     if (result == tesSUCCESS)
     {
+        auto const& rules = view.rules();
+        [[maybe_unused]]
+        bool enforceCreatedByIssuer = rules.enabled(featureSingleAssetVault) ||
+            rules.enabled(featureLendingProtocol);
         if (mptCreatedByIssuer_)
         {
             JLOG(j.fatal())
-                << "Invariant failed: MPT authorize submitted by issuer "
-                   "succeeded but created mptokens";
-            return false;
+                << "Invariant failed: MPToken created for the MPT issuer";
+            // The comment above starting with "assert(enforce)" explains this
+            // assert.
+            XRPL_ASSERT_PARTS(
+                enforceCreatedByIssuer,
+                "ripple::ValidMPTIssuance::finalize",
+                "no issuer MPToken");
+            if (enforceCreatedByIssuer)
+                return false;
         }
 
         auto const txnType = tx.getTxnType();
