@@ -30,8 +30,6 @@ checkLendingProtocolDependencies(PreflightContext const& ctx)
         VaultCreate::checkExtraFeatures(ctx);
 }
 
-namespace detail {
-
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 {
@@ -47,9 +45,160 @@ loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 }
 
 Number
+calculateFullPaymentInterest(
+    Number const& rawPrincipalOutstanding,
+    Number const& periodicRate,
+    NetClock::time_point parentCloseTime,
+    std::uint32_t paymentInterval,
+    std::uint32_t prevPaymentDate,
+    std::uint32_t startDate,
+    TenthBips32 closeInterestRate)
+{
+    // If there is more than one payment remaining, see if enough was
+    // paid for a full payment
+    auto const accruedInterest = detail::loanAccruedInterest(
+        rawPrincipalOutstanding,
+        periodicRate,
+        parentCloseTime,
+        startDate,
+        prevPaymentDate,
+        paymentInterval);
+    XRPL_ASSERT(
+        accruedInterest >= 0,
+        "ripple::detail::computeFullPaymentInterest : valid accrued interest");
+
+    auto const prepaymentPenalty =
+        tenthBipsOfValue(rawPrincipalOutstanding, closeInterestRate);
+    XRPL_ASSERT(
+        prepaymentPenalty >= 0,
+        "ripple::detail::computeFullPaymentInterest : valid prepayment "
+        "interest");
+
+    return accruedInterest + prepaymentPenalty;
+}
+
+Number
+calculateFullPaymentInterest(
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentRemaining,
+    NetClock::time_point parentCloseTime,
+    std::uint32_t paymentInterval,
+    std::uint32_t prevPaymentDate,
+    std::uint32_t startDate,
+    TenthBips32 closeInterestRate)
+{
+    Number const rawPrincipalOutstanding =
+        detail::loanPrincipalFromPeriodicPayment(
+            periodicPayment, periodicRate, paymentRemaining);
+
+    return calculateFullPaymentInterest(
+        rawPrincipalOutstanding,
+        periodicRate,
+        parentCloseTime,
+        paymentInterval,
+        prevPaymentDate,
+        startDate,
+        closeInterestRate);
+}
+
+LoanState
+calculateRawLoanState(
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t const paymentRemaining,
+    TenthBips16 const managementFeeRate)
+{
+    Number const rawValueOutstanding = periodicPayment * paymentRemaining;
+    Number const rawPrincipalOutstanding =
+        detail::loanPrincipalFromPeriodicPayment(
+            periodicPayment, periodicRate, paymentRemaining);
+    Number const rawInterestOutstanding =
+        rawValueOutstanding - rawPrincipalOutstanding;
+    Number const rawManagementFeeOutstanding =
+        tenthBipsOfValue(rawInterestOutstanding, managementFeeRate);
+
+    return LoanState{
+        .valueOutstanding = rawValueOutstanding,
+        .principalOutstanding = rawPrincipalOutstanding,
+        .interestOutstanding = rawInterestOutstanding,
+        .interestDue = rawInterestOutstanding - rawManagementFeeOutstanding,
+        .managementFeeDue = rawManagementFeeOutstanding};
+};
+
+LoanState
+calculateRawLoanState(
+    Number const& periodicPayment,
+    TenthBips32 interestRate,
+    std::uint32_t paymentInterval,
+    std::uint32_t const paymentRemaining,
+    TenthBips16 const managementFeeRate)
+{
+    return calculateRawLoanState(
+        periodicPayment,
+        loanPeriodicRate(interestRate, paymentInterval),
+        paymentRemaining,
+        managementFeeRate);
+}
+
+LoanState
+calculateRoundedLoanState(
+    Number const& totalValueOutstanding,
+    Number const& principalOutstanding,
+    Number const& managementFeeOutstanding)
+{
+    // This implementation is pretty trivial, but ensures the calculations are
+    // consistent everywhere, and reduces copy/paste errors.
+    Number const interestOutstanding =
+        totalValueOutstanding - principalOutstanding;
+    return {
+        .valueOutstanding = totalValueOutstanding,
+        .principalOutstanding = principalOutstanding,
+        .interestOutstanding = interestOutstanding,
+        .interestDue = interestOutstanding - managementFeeOutstanding,
+        .managementFeeDue = managementFeeOutstanding};
+}
+
+LoanState
+calculateRoundedLoanState(SLE::const_ref loan)
+{
+    return calculateRoundedLoanState(
+        loan->at(sfTotalValueOutstanding),
+        loan->at(sfPrincipalOutstanding),
+        loan->at(sfManagementFeeOutstanding));
+}
+
+namespace detail {
+
+Number
+computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining)
+{
+    /*
+     * This formula is from the XLS-66 spec, section 3.2.4.1.1 (Regular
+     * Payment), though "raisedRate" is computed only once and used twice.
+     */
+    return power(1 + periodicRate, paymentsRemaining);
+}
+
+Number
+computePaymentFactor(
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining)
+{
+    /*
+     * This formula is from the XLS-66 spec, section 3.2.4.1.1 (Regular
+     * Payment), though "raisedRate" is computed only once and used twice.
+     */
+    Number const raisedRate =
+        computeRaisedRate(periodicRate, paymentsRemaining);
+
+    return (periodicRate * raisedRate) / (raisedRate - 1);
+}
+
+Number
 loanPeriodicPayment(
-    Number principalOutstanding,
-    Number periodicRate,
+    Number const& principalOutstanding,
+    Number const& periodicRate,
     std::uint32_t paymentsRemaining)
 {
     if (principalOutstanding == 0 || paymentsRemaining == 0)
@@ -61,18 +210,15 @@ loanPeriodicPayment(
 
     /*
      * This formula is from the XLS-66 spec, section 3.2.4.1.1 (Regular
-     * Payment), though the awkwardly-named "timeFactor" is computed only once
-     * and used twice.
+     * Payment).
      */
-    // TODO: Need a better name
-    Number const timeFactor = power(1 + periodicRate, paymentsRemaining);
-
-    return principalOutstanding * periodicRate * timeFactor / (timeFactor - 1);
+    return principalOutstanding *
+        computePaymentFactor(periodicRate, paymentsRemaining);
 }
 
 Number
 loanPeriodicPayment(
-    Number principalOutstanding,
+    Number const& principalOutstanding,
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining)
@@ -90,32 +236,58 @@ loanPeriodicPayment(
 }
 
 Number
+loanPrincipalFromPeriodicPayment(
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining)
+{
+    if (periodicRate == 0)
+        return periodicPayment * paymentsRemaining;
+
+    /*
+     * This formula is the reverse of the one from the XLS-66 spec,
+     * section 3.2.4.1.1 (Regular Payment) used in loanPeriodicPayment
+     */
+    return periodicPayment /
+        computePaymentFactor(periodicRate, paymentsRemaining);
+}
+
+std::pair<Number, Number>
+computeInterestAndFeeParts(
+    Number const& interest,
+    TenthBips16 managementFeeRate)
+{
+    auto const fee = tenthBipsOfValue(interest, managementFeeRate);
+
+    // No error tracking needed here because this is extra
+    return std::make_pair(interest - fee, fee);
+}
+
+Number
 loanLatePaymentInterest(
-    Number principalOutstanding,
+    Number const& principalOutstanding,
     TenthBips32 lateInterestRate,
     NetClock::time_point parentCloseTime,
-    std::uint32_t startDate,
-    std::uint32_t prevPaymentDate)
+    std::uint32_t nextPaymentDueDate)
 {
     /*
      * This formula is from the XLS-66 spec, section 3.2.4.1.2 (Late payment),
      * specifically "latePaymentInterest = ..."
+     *
+     * The spec is to be updated to base the duration on the next due date
      */
-    auto const lastPaymentDate = std::max(prevPaymentDate, startDate);
+    auto const secondsOverdue =
+        parentCloseTime.time_since_epoch().count() - nextPaymentDueDate;
 
-    auto const secondsSinceLastPayment =
-        parentCloseTime.time_since_epoch().count() - lastPaymentDate;
-
-    auto const rate =
-        loanPeriodicRate(lateInterestRate, secondsSinceLastPayment);
+    auto const rate = loanPeriodicRate(lateInterestRate, secondsOverdue);
 
     return principalOutstanding * rate;
 }
 
 Number
 loanAccruedInterest(
-    Number principalOutstanding,
-    Number periodicRate,
+    Number const& principalOutstanding,
+    Number const& periodicRate,
     NetClock::time_point parentCloseTime,
     std::uint32_t startDate,
     std::uint32_t prevPaymentDate,

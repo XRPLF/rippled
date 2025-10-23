@@ -321,7 +321,7 @@ STAmount::xrp() const
 IOUAmount
 STAmount::iou() const
 {
-    if (native() || !holds<Issue>())
+    if (integral())
         Throw<std::logic_error>("Cannot return non-IOU STAmount as IOUAmount");
 
     auto mantissa = static_cast<std::int64_t>(mValue);
@@ -1510,32 +1510,28 @@ canonicalizeRoundStrict(
 }
 
 STAmount
-roundToReference(
-    STAmount const value,
-    STAmount referenceValue,
-    Number::rounding_mode rounding)
+roundToScale(STAmount value, std::int32_t scale, Number::rounding_mode rounding)
 {
     // Nothing to do for intgral types.
-    if (value.asset().native() || !value.asset().holds<Issue>())
+    if (value.integral())
         return value;
 
-    // If the value is greater than or equal to the referenceValue (ignoring
-    // sign), then rounding will do nothing, so just return the value.
-    if (value.exponent() > referenceValue.exponent() ||
-        (value.exponent() == referenceValue.exponent() &&
-         value.mantissa() >= referenceValue.mantissa()))
+    // If the value's exponent is greater than or equal to the scale, then
+    // rounding will do nothing, and might even lose precision, so just return
+    // the value.
+    if (value.exponent() >= scale)
         return value;
 
-    if (referenceValue.negative() != value.negative())
-        referenceValue.negate();
+    STAmount referenceValue{
+        value.asset(), STAmount::cMinValue, scale, value.negative()};
 
     NumberRoundModeGuard mg(rounding);
     // With an IOU, the total will be truncated to the precision of the
     // larger value: referenceValue
-    STAmount const total = referenceValue + value;
+    value += referenceValue;
     // Remove the reference value, and we're left with the rounded value.
-    STAmount const result = total - referenceValue;
-    return result;
+    value -= referenceValue;
+    return value;
 }
 
 namespace {

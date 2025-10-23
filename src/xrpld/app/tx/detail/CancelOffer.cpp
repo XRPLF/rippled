@@ -68,7 +68,7 @@ CancelOffer::doApply()
 
     auto const sle = view().read(keylet::account(account_));
     if (!sle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (auto sleOffer = view().peek(keylet::offer(account_, offerSequence)))
     {

@@ -2217,7 +2217,7 @@ NoModifiedUnmodifiableFields::finalize(
                     fieldChanged(before, after, sfStartDate) ||
                     fieldChanged(before, after, sfPaymentInterval) ||
                     fieldChanged(before, after, sfGracePeriod) ||
-                    fieldChanged(before, after, sfPrincipalRequested);
+                    fieldChanged(before, after, sfLoanScale);
                 break;
             default:
                 /*
@@ -2493,17 +2493,33 @@ ValidLoan::finalize(
                 << "Invariant failed: Loan Overpayment flag changed";
             return false;
         }
-        if (after->at(sfAssetsAvailable) < 0)
+        // Must not be negative - STNumber
+        for (auto const field :
+             {&sfLoanServiceFee,
+              &sfLatePaymentFee,
+              &sfClosePaymentFee,
+              &sfPrincipalOutstanding,
+              &sfTotalValueOutstanding,
+              &sfManagementFeeOutstanding})
         {
-            JLOG(j.fatal())
-                << "Invariant failed: Loan assets available is negative";
-            return false;
+            if (after->at(*field) < 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: " << field->getName()
+                                << " is negative ";
+                return false;
+            }
         }
-        if (after->at(sfPrincipalOutstanding) < 0)
+        // Must be positive - STNumber
+        for (auto const field : {
+                 &sfPeriodicPayment,
+             })
         {
-            JLOG(j.fatal())
-                << "Invariant failed: Loan principal outstanding is negative";
-            return false;
+            if (after->at(*field) <= 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: " << field->getName()
+                                << " is zero or negative ";
+                return false;
+            }
         }
     }
     return true;
@@ -2871,7 +2887,7 @@ ValidVault::finalize(
 
     if (!beforeVault_.empty() &&
         afterVault.lossUnrealized != beforeVault_[0].lossUnrealized &&
-        tx.getTxnType() != ttLOAN_MANAGE)
+        txnType != ttLOAN_MANAGE && txnType != ttLOAN_PAY)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault transaction must not change loss "

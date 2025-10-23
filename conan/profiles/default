@@ -29,6 +29,3 @@ tools.build:cxxflags=['-Wno-missing-template-arg-list-after-template-kw']
 {% if compiler == "gcc" and compiler_version < 13 %}
 tools.build:cxxflags=['-Wno-restrict']
 {% endif %}
-
-[tool_requires]
-!cmake/*: cmake/[>=3 <4]

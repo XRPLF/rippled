@@ -909,7 +909,7 @@ TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
 TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     Delegation::delegatable,
     featureSingleAssetVault,
-    mayDeleteMPT | mustModifyVault,
+    mayDeleteMPT | mayAuthorizeMPT | mustModifyVault,
     ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
@@ -1064,20 +1064,6 @@ TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
     mayModifyVault, ({
     {sfLoanID, soeREQUIRED},
 }))
-
-#if LOANDRAW
-/** The Borrower uses this transaction to draws funds from the Loan. */
-#if TRANSACTION_INCLUDE
-#   include <xrpld/app/tx/detail/LoanDraw.h>
-#endif
-TRANSACTION(ttLOAN_DRAW, 83, LoanDraw,
-    Delegation::delegatable,
-    featureLendingProtocol,
-    noPriv, ({
-    {sfLoanID, soeREQUIRED},
-    {sfAmount, soeREQUIRED, soeMPTSupported},
-}))
-#endif
 
 /** The Borrower uses this transaction to make a Payment on the Loan. */
 #if TRANSACTION_INCLUDE

@@ -2937,8 +2937,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         if (!human)
         {
             l[jss::base_fee] = baseFee.jsonClipped();
-            l[jss::reserve_base] =
-                lpClosed->fees().accountReserve(0).jsonClipped();
+            l[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
             l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
             l[jss::close_time] = Json::Value::UInt(
                 lpClosed->info().closeTime.time_since_epoch().count());
@@ -2946,8 +2945,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         else
         {
             l[jss::base_fee_xrp] = baseFee.decimalXRP();
-            l[jss::reserve_base_xrp] =
-                lpClosed->fees().accountReserve(0).decimalXRP();
+            l[jss::reserve_base_xrp] = lpClosed->fees().reserve.decimalXRP();
             l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
 
             if (auto const closeOffset = app_.timeKeeper().closeOffset();
@@ -3139,8 +3137,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             if (!lpAccepted->rules().enabled(featureXRPFees))
                 jvObj[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
             jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
-            jvObj[jss::reserve_base] =
-                lpAccepted->fees().accountReserve(0).jsonClipped();
+            jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
             jvObj[jss::reserve_inc] =
                 lpAccepted->fees().increment.jsonClipped();
 
@@ -3731,6 +3728,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
     if (databaseType == DatabaseType::None)
     {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "ripple::NetworkOPsImp::addAccountHistoryJob : no database");
         JLOG(m_journal.error())
             << "AccountHistory job for account "
             << toBase58(subInfo.index_->accountId_) << " no database";
@@ -3740,6 +3740,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             unsubAccountHistory(sptr, subInfo.index_->accountId_, false);
         }
         return;
+        // LCOV_EXCL_STOP
     }
 
     app_.getJobQueue().addJob(
@@ -3839,7 +3840,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     // LCOV_EXCL_START
                     default: {
                         UNREACHABLE(
-                            "ripple::NetworkOPsImp::addAccountHistoryJob::"
+                            "ripple::NetworkOPsImp::addAccountHistoryJob : "
                             "getMoreTxns : invalid database type");
                         return {};
                     }
@@ -3904,11 +3905,16 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         getMoreTxns(startLedgerSeq, lastLedgerSeq, marker);
                     if (!dbResult)
                     {
+                        // LCOV_EXCL_START
+                        UNREACHABLE(
+                            "ripple::NetworkOPsImp::addAccountHistoryJob : "
+                            "getMoreTxns failed");
                         JLOG(m_journal.debug())
                             << "AccountHistory job for account "
                             << toBase58(accountId) << " getMoreTxns failed.";
                         send(rpcError(rpcINTERNAL), true);
                         return;
+                        // LCOV_EXCL_STOP
                     }
 
                     auto const& txns = dbResult->first;
@@ -3931,22 +3937,32 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                                 tx->getLedger());
                         if (!curTxLedger)
                         {
+                            // LCOV_EXCL_START
+                            UNREACHABLE(
+                                "ripple::NetworkOPsImp::addAccountHistoryJob : "
+                                "getLedgerBySeq failed");
                             JLOG(m_journal.debug())
                                 << "AccountHistory job for account "
                                 << toBase58(accountId) << " no ledger.";
                             send(rpcError(rpcINTERNAL), true);
                             return;
+                            // LCOV_EXCL_STOP
                         }
                         std::shared_ptr<STTx const> stTxn =
                             tx->getSTransaction();
                         if (!stTxn)
                         {
+                            // LCOV_EXCL_START
+                            UNREACHABLE(
+                                "NetworkOPsImp::addAccountHistoryJob : "
+                                "getSTransaction failed");
                             JLOG(m_journal.debug())
                                 << "AccountHistory job for account "
                                 << toBase58(accountId)
                                 << " getSTransaction failed.";
                             send(rpcError(rpcINTERNAL), true);
                             return;
+                            // LCOV_EXCL_STOP
                         }
 
                         auto const mRef = std::ref(*meta);
@@ -4199,8 +4215,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
         if (!lpClosed->rules().enabled(featureXRPFees))
             jvResult[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
-        jvResult[jss::reserve_base] =
-            lpClosed->fees().accountReserve(0).jsonClipped();
+        jvResult[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
         jvResult[jss::network_id] = app_.config().NETWORK_ID;
     }

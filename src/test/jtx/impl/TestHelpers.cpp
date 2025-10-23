@@ -237,6 +237,8 @@ expectLedgerEntryRoot(
 
 /* Payment Channel */
 /******************************************************************************/
+namespace paychan {
+
 Json::Value
 create(
     AccountID const& account,
@@ -327,6 +329,8 @@ channelExists(ReadView const& view, uint256 const& chan)
     auto const slep = view.read({ltPAYCHAN, chan});
     return bool(slep);
 }
+
+}  // namespace paychan
 
 /* Crossing Limits */
 /******************************************************************************/
@@ -482,24 +486,6 @@ del(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
     jv[sfFlags] = flags;
     return jv;
 }
-
-#if LOANDRAW
-Json::Value
-draw(
-    AccountID const& account,
-    uint256 const& loanID,
-    STAmount const& amount,
-    std::uint32_t flags)
-{
-    Json::Value jv;
-    jv[sfTransactionType] = jss::LoanDraw;
-    jv[sfAccount] = to_string(account);
-    jv[sfLoanID] = to_string(loanID);
-    jv[sfAmount] = amount.getJson();
-    jv[sfFlags] = flags;
-    return jv;
-}
-#endif
 
 Json::Value
 pay(AccountID const& account,
