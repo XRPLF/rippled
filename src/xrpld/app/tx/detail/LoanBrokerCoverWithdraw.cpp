@@ -209,7 +209,7 @@ LoanBrokerCoverWithdraw::doApply()
             Payment::getMaxSourceAmount(brokerPseudoID, amount);
         SLE::pointer sleDst = view().peek(keylet::account(dstAcct));
         if (!sleDst)
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         Payment::RipplePaymentParams paymentParams{
             .ctx = ctx_,

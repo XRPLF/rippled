@@ -851,12 +851,335 @@ class LoanBroker_test : public beast::unit_test::suite
         BEAST_EXPECT(env.ownerCount(alice) == aliceOriginalCount);
     }
 
+    enum LoanBrokerTest {
+        CoverClawback,
+        CoverDeposit,
+        CoverWithdraw,
+        Delete,
+        Set
+    };
+
+    void
+    testLoanBroker(
+        std::function<jtx::PrettyAsset(
+            jtx::Env&,
+            jtx::Account const&,
+            jtx::Account const&)> getAsset,
+        LoanBrokerTest brokerTest)
+    {
+        using namespace jtx;
+        using namespace loanBroker;
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Env env(*this);
+        Vault vault{env};
+
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        PrettyAsset const asset = [&]() {
+            if (getAsset)
+                return getAsset(env, issuer, alice);
+            env(trust(alice, issuer["IOU"](1'000'000)));
+            env.close();
+            return PrettyAsset(issuer["IOU"]);
+        }();
+
+        env(pay(issuer, alice, asset(100'000)));
+        env.close();
+
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx);
+        env.close();
+        auto const le = env.le(vaultKeylet);
+        VaultInfo vaultInfo = [&]() {
+            if (BEAST_EXPECT(le))
+                return VaultInfo{asset, vaultKeylet.key, le->at(sfAccount)};
+            return VaultInfo{asset, {}, {}};
+        }();
+        if (vaultInfo.vaultID == uint256{})
+            return;
+
+        env(vault.deposit(
+            {.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultInfo.vaultID));
+        env.close();
+
+        auto broker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(broker))
+            return;
+
+        if (brokerTest == CoverDeposit)
+        {
+            // preclaim: tecWRONG_ASET
+            env(coverDeposit(alice, brokerKeylet.key, issuer["BAD"](10)),
+                ter(tecWRONG_ASSET));
+
+            // preclaim: tecINSUFFICIENT_FUNDS
+            env(pay(alice, issuer, asset(100'000 - 50)));
+            env.close();
+            env(coverDeposit(alice, brokerKeylet.key, vaultInfo.asset(10)),
+                ter(tecINSUFFICIENT_FUNDS));
+
+            // preclaim: tecFROZEN
+            env(fset(issuer, asfGlobalFreeze));
+            env.close();
+            env(coverDeposit(alice, brokerKeylet.key, vaultInfo.asset(10)),
+                ter(tecFROZEN));
+        }
+        else
+            // Fund the cover deposit
+            env(coverDeposit(alice, brokerKeylet.key, vaultInfo.asset(10)));
+        env.close();
+
+        if (brokerTest == CoverWithdraw)
+        {
+            // preclaim: tecWRONG_ASSSET
+            env(coverWithdraw(alice, brokerKeylet.key, issuer["BAD"](10)),
+                ter(tecWRONG_ASSET));
+
+            // preclaim: tecNO_DST
+            Account const bogus{"bogus"};
+            env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
+                destination(bogus),
+                ter(tecNO_DST));
+
+            // preclaim: tecDST_TAG_NEEDED
+            Account const dest{"dest"};
+            env.fund(XRP(1'000), dest);
+            env(fset(dest, asfRequireDest));
+            env.close();
+            env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
+                destination(dest),
+                ter(tecDST_TAG_NEEDED));
+
+            // preclaim: tecNO_PERMISSION
+            env(fclear(dest, asfRequireDest));
+            env(fset(dest, asfDepositAuth));
+            env.close();
+            env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
+                destination(dest),
+                ter(tecNO_PERMISSION));
+
+            // preclaim: tecFROZEN
+            env(trust(dest, asset(1'000)));
+            env(fclear(dest, asfDepositAuth));
+            env(fset(issuer, asfGlobalFreeze));
+            env.close();
+            env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
+                destination(dest),
+                ter(tecFROZEN));
+
+            // preclaim:: tecFROZEN (deep frozen)
+            env(fclear(issuer, asfGlobalFreeze));
+            env(trust(
+                issuer, asset(1'000), dest, tfSetFreeze | tfSetDeepFreeze));
+            env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
+                destination(dest),
+                ter(tecFROZEN));
+        }
+
+        if (brokerTest == CoverClawback)
+        {
+            if (asset.holds<Issue>())
+            {
+                // preclaim: AllowTrustLineClaback is not set
+                env(coverClawback(issuer),
+                    loanBrokerID(brokerKeylet.key),
+                    amount(vaultInfo.asset(2)),
+                    ter(tecNO_PERMISSION));
+
+                // preclaim: NoFreeze is set
+                env(fset(issuer, asfAllowTrustLineClawback | asfNoFreeze));
+                env.close();
+                env(coverClawback(issuer),
+                    loanBrokerID(brokerKeylet.key),
+                    amount(vaultInfo.asset(2)),
+                    ter(tecNO_PERMISSION));
+            }
+            else
+            {
+                // preclaim: MPTCanClawback is not set or MPTCAnLock is not set
+                env(coverClawback(issuer),
+                    loanBrokerID(brokerKeylet.key),
+                    amount(vaultInfo.asset(2)),
+                    ter(tecNO_PERMISSION));
+            }
+            env.close();
+        }
+
+        if (brokerTest == Delete)
+        {
+            Account const borrower{"borrower"};
+            env.fund(XRP(1'000), borrower);
+            env(loan::set(borrower, brokerKeylet.key, asset(50).value()),
+                sig(sfCounterpartySignature, alice),
+                fee(env.current()->fees().base * 2));
+
+            // preclaim: tecHAS_OBLIGATIONS
+            env(del(alice, brokerKeylet.key), ter(tecHAS_OBLIGATIONS));
+        }
+        else
+            env(del(alice, brokerKeylet.key));
+
+        if (brokerTest == Set)
+        {
+            if (asset.holds<Issue>())
+            {
+                env(fclear(issuer, asfDefaultRipple));
+                env.close();
+                // preclaim: DefaultRipple is not set
+                env(set(alice, vaultInfo.vaultID), ter(terNO_RIPPLE));
+
+                env(fset(issuer, asfDefaultRipple));
+                env.close();
+            }
+
+            auto const amt = env.balance(alice) -
+                env.current()->fees().accountReserve(env.ownerCount(alice));
+            env(pay(alice, issuer, amt));
+
+            // preclaim:: tecINSUFFICIENT_RESERVE
+            env(set(alice, vaultInfo.vaultID), ter(tecINSUFFICIENT_RESERVE));
+        }
+    }
+
+    void
+    testInvalidLoanBrokerCoverClawback()
+    {
+        testcase("Invalid LoanBrokerCoverClawback");
+        using namespace jtx;
+        using namespace loanBroker;
+
+        // preflight
+        {
+            Account const alice{"alice"};
+            Account const issuer{"issuer"};
+            auto const USD = alice["USD"];
+            Env env(*this);
+            env.fund(XRP(100'000), alice);
+            env.close();
+
+            auto jtx = env.jt(coverClawback(alice), amount(USD(100)));
+
+            // holder == account
+            env(jtx, ter(temINVALID));
+
+            // holder == beast::zero
+            STAmount bad(Issue{USD.currency, beast::zero}, 100);
+            jtx.jv[sfAmount] = bad.getJson();
+            jtx.stx = env.ust(jtx);
+            Serializer s;
+            jtx.stx->add(s);
+            auto const jrr = env.rpc("submit", strHex(s.slice()))[jss::result];
+            // fails in doSubmit() on STTx construction
+            BEAST_EXPECT(jrr[jss::error] == "invalidTransaction");
+            BEAST_EXPECT(jrr[jss::error_exception] == "invalid native account");
+        }
+
+        // preclaim
+
+        // Issue:
+        // AllowTrustLineClawback is not set or NoFreeze is set
+        testLoanBroker({}, CoverClawback);
+
+        // MPTIssue:
+        // MPTCanClawback is not set
+        testLoanBroker(
+            [&](Env& env, Account const& issuer, Account const& alice) -> MPT {
+                MPTTester mpt(
+                    {.env = env, .issuer = issuer, .holders = {alice}});
+                return mpt;
+            },
+            CoverClawback);
+        // MPTCanLock is not set
+        testLoanBroker(
+            [&](Env& env, Account const& issuer, Account const& alice) -> MPT {
+                MPTTester mpt(
+                    {.env = env,
+                     .issuer = issuer,
+                     .holders = {alice},
+                     .flags = MPTDEXFlags | tfMPTCanClawback});
+                return mpt;
+            },
+            CoverClawback);
+    }
+
+    void
+    testInvalidLoanBrokerCoverDeposit()
+    {
+        testcase("Invalid LoanBrokerCoverDeposit");
+        using namespace jtx;
+
+        // preclaim:
+        // tecWRONG_ASSET, tecINSUFFICIENT_FUNDS, frozen asset
+        testLoanBroker({}, CoverDeposit);
+    }
+
+    void
+    testInvalidLoanBrokerCoverWithdraw()
+    {
+        testcase("Invalid LoanBrokerCoverWithdraw");
+        using namespace jtx;
+
+        /*
+        preflight: illegal net
+        isLegalNet() check is probably redundant. STAmount parsing
+        should throw an exception on deserialize
+
+        preclaim: tecWRONG_ASSET, tecNO_DST, tecDST_TAG_NEEDED,
+            tecNO_PERMISSION, checkFrozen failure, checkDeepFrozenFailure,
+            second+third tecINSUFFICIENT_FUNDS (can this happen)?
+        doApply: tecPATH_DRY (can it happen, funds already checked?)
+         */
+        testLoanBroker({}, CoverWithdraw);
+    }
+
+    void
+    testInvalidLoanBrokerDelete()
+    {
+        using namespace jtx;
+        testcase("Invalid LoanBrokerDelete");
+        /*
+        preclaim: tecHAS_OBLIGATIONS
+            doApply:
+            accountSend failure, removeEmptyHolding failure,
+            all tecHAS_OBLIGATIONS (can any of these happen?)
+        */
+        testLoanBroker({}, Delete);
+    }
+
+    void
+    testInvalidLoanBrokerSet()
+    {
+        using namespace jtx;
+        testcase("Invalid LoanBrokerSet");
+
+        /*preclaim: canAddHolding failure (can it happen with MPT?
+              can't create Vault if CanTransfer is not enabled.)
+            doApply:
+            first+second dirLink failure, createPseudoAccount failure,
+            addEmptyHolding failure
+            can any of these happen?
+        */
+        testLoanBroker({}, Set);
+    }
+
 public:
     void
     run() override
     {
         testDisabled();
         testLifecycle();
+        testInvalidLoanBrokerCoverClawback();
+        testInvalidLoanBrokerCoverDeposit();
+        testInvalidLoanBrokerCoverWithdraw();
+        testInvalidLoanBrokerDelete();
+        testInvalidLoanBrokerSet();
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.

@@ -1549,8 +1549,11 @@ loanMakePayment(
     if (paymentRemainingProxy == 0 || principalOutstandingProxy == 0)
     {
         // Loan complete
+        // This is already checked in LoanPay::preclaim()
+        // LCOV_EXCL_START
         JLOG(j.warn()) << "Loan is already paid off.";
         return Unexpected(tecKILLED);
+        // LCOV_EXCL_STOP
     }
 
     auto totalValueOutstandingProxy = loan->at(sfTotalValueOutstanding);

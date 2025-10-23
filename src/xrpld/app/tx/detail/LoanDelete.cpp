@@ -107,14 +107,14 @@ LoanDelete::doApply()
             loanSle->at(sfLoanBrokerNode),
             loanID,
             false))
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     // Remove LoanID from Directory of the Borrower.
     if (!view.dirRemove(
             keylet::ownerDir(borrower),
             loanSle->at(sfOwnerNode),
             loanID,
             false))
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     // Delete the Loan object
     view.erase(loanSle);

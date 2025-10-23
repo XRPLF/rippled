@@ -81,7 +81,7 @@ determineBrokerID(ReadView const& view, STTx const& tx)
 
     auto const dstAmount = tx[~sfAmount];
     if (!dstAmount || !dstAmount->holds<Issue>())
-        return Unexpected{tecINTERNAL};
+        return Unexpected{tecINTERNAL};  // LCOV_EXCL_LINE
 
     // Since we don't have a LoanBrokerID, holder _should_ be the loan broker's
     // pseudo-account, but we don't know yet whether it is, so use a generic
