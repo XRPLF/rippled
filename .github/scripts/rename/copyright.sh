@@ -13,12 +13,12 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   SED_COMMAND=gsed
 fi
 
-# This script removes superflous copyright notices in source and header files in
-# this project. Specifically, it removes all notices referencing Ripple, XRPLF,
-# and certain individual contributors upon mutual agreement, so the one in the
-# LICENSE.md file applies throughout. Copyright notices referencing external
-# contributions, e.g. from Bitcoin, remain as-is.
-# Usage: bin/rename/copyright.sh <directory>
+# This script removes superfluous copyright notices in source and header files
+# in this project. Specifically, it removes all notices referencing Ripple,
+# XRPLF, and certain individual contributors upon mutual agreement, so the one
+# in the LICENSE.md file applies throughout. Copyright notices referencing
+# external contributions, e.g. from Bitcoin, remain as-is.
+# Usage: .github/scripts/rename/copyright.sh <directory>
 
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <directory>"
