@@ -1340,26 +1340,6 @@ canAddHolding(ReadView const& view, Asset const& asset)
         asset.value());
 }
 
-[[nodiscard]] NotTEC
-preflightDestinationAndTag(
-    std::optional<AccountID> const& destination,
-    bool hasDestinationTag)
-{
-    if (destination)
-    {
-        if (*destination == beast::zero)
-        {
-            return temMALFORMED;
-        }
-    }
-    else if (hasDestinationTag)
-    {
-        return temMALFORMED;
-    }
-
-    return tesSUCCESS;
-}
-
 [[nodiscard]] TER
 checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag)
 {
@@ -1375,7 +1355,7 @@ checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag)
 }
 
 [[nodiscard]] TER
-canSendToAccount(
+canWithdraw(
     AccountID const& from,
     ReadView const& view,
     AccountID const& to,
@@ -1398,7 +1378,7 @@ canSendToAccount(
 }
 
 [[nodiscard]] TER
-canSendToAccount(
+canWithdraw(
     AccountID const& from,
     ReadView const& view,
     AccountID const& to,
@@ -1406,7 +1386,16 @@ canSendToAccount(
 {
     auto const toSle = view.read(keylet::account(to));
 
-    return canSendToAccount(from, view, to, toSle, hasDestinationTag);
+    return canWithdraw(from, view, to, toSle, hasDestinationTag);
+}
+
+[[nodiscard]] TER
+canWithdraw(ReadView const& view, STTx const& tx)
+{
+    auto const from = tx[sfAccount];
+    auto const to = tx[~sfDestination].value_or(from);
+
+    return canWithdraw(from, view, to, tx.isFieldPresent(sfDestinationTag));
 }
 
 [[nodiscard]] TER

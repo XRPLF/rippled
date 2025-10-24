@@ -43,9 +43,13 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
     if (!isLegalNet(dstAmount))
         return temBAD_AMOUNT;
 
-    if (auto const ret = preflightDestinationAndTag(
-            ctx.tx[~sfDestination], ctx.tx.isFieldPresent(sfDestinationTag)))
-        return ret;
+    if (auto const destination = ctx.tx[~sfDestination])
+    {
+        if (*destination == beast::zero)
+        {
+            return temMALFORMED;
+        }
+    }
 
     return tesSUCCESS;
 }
@@ -85,11 +89,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     AuthType authType = AuthType::Legacy;
     if (account != dstAcct)
     {
-        if (auto const ret = canSendToAccount(
-                account,
-                ctx.view,
-                dstAcct,
-                tx.isFieldPresent(sfDestinationTag)))
+        if (auto const ret = canWithdraw(ctx.view, tx))
             return ret;
 
         // The destination account must have consented to receive the asset by

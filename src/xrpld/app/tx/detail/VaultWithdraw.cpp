@@ -42,9 +42,13 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
-    if (auto const ret = preflightDestinationAndTag(
-            ctx.tx[~sfDestination], ctx.tx.isFieldPresent(sfDestinationTag)))
-        return ret;
+    if (auto const destination = ctx.tx[~sfDestination])
+    {
+        if (*destination == beast::zero)
+        {
+            return temMALFORMED;
+        }
+    }
 
     return tesSUCCESS;
 }
@@ -105,11 +109,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const account = ctx.tx[sfAccount];
     auto const dstAcct = ctx.tx[~sfDestination].value_or(account);
 
-    if (auto const ret = canSendToAccount(
-            account,
-            ctx.view,
-            dstAcct,
-            ctx.tx.isFieldPresent(sfDestinationTag)))
+    if (auto const ret = canWithdraw(ctx.view, ctx.tx))
         return ret;
 
     // If sending to Account (i.e. not a transfer), we will also create (only

@@ -384,13 +384,6 @@ class LoanBroker_test : public beast::unit_test::suite
                 destination(AccountID{}),
                 ter(temMALFORMED));
 
-            // If a destination tag is specified, a destination must be
-            // specified, too
-            env(coverWithdraw(alice, keylet.key, vault.asset(1)),
-                dtag(123),
-                ter(temMALFORMED));
-            verifyCoverAmount(10);
-
             // Withdraw some of the cover amount
             env(coverWithdraw(alice, keylet.key, vault.asset(7)));
             env.close();
