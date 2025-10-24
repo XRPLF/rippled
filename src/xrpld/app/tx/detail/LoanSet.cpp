@@ -235,24 +235,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     Asset const asset = vault->at(sfAsset);
 
-    if (auto const err =
-            requireAuth(ctx.view, asset, borrower, AuthType::WeakAuth))
-    {
-        JLOG(ctx.j.warn()) << "Borrower not authorized to hold asset";
-        return tecNO_AUTH;
-    }
-
-    if (auto const originationFee = tx[~sfLoanOriginationFee];
-        originationFee && *originationFee != Number())
-    {
-        if (auto const err =
-                requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
-        {
-            JLOG(ctx.j.warn()) << "Broker not authorized to receive fee";
-            return tecNO_AUTH;
-        }
-    }
-
     auto const vaultPseudo = vault->at(sfAccount);
 
     // Check that relevant values can be represented as the vault asset type.
