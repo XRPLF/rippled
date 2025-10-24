@@ -1535,12 +1535,11 @@ authorizeMPToken(
 
         // Defensive check before we attempt to create MPToken for the issuer
         auto const mpt = view.read(keylet::mptIssuance(mptIssuanceID));
-        if (!mpt)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        if (mpt->getAccountID(sfIssuer) == account)
+        if (!mpt || mpt->getAccountID(sfIssuer) == account)
         {
             // LCOV_EXCL_START
-            UNREACHABLE("ripple::authorizeMPToken : MPToken to issuer");
+            UNREACHABLE(
+                "ripple::authorizeMPToken : invalid issuance or issuers token");
             if (view.rules().enabled(featureLendingProtocol))
                 return tecINTERNAL;
             // LCOV_EXCL_STOP
