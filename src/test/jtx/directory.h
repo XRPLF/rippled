@@ -20,10 +20,10 @@
 #ifndef RIPPLE_TEST_JTX_DIRECTORY_H_INCLUDED
 #define RIPPLE_TEST_JTX_DIRECTORY_H_INCLUDED
 
-#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
 #include <xrpl/basics/Expected.h>
+#include <xrpl/protocol/Indexes.h>
 
 namespace ripple::test::jtx {
 
