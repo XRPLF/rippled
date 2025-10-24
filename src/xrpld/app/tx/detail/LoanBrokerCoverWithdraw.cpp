@@ -43,22 +43,12 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
     if (!isLegalNet(dstAmount))
         return temBAD_AMOUNT;
 
-    if (auto const destination = ctx.tx[~sfDestination];
-        destination.has_value())
+    if (auto const destination = ctx.tx[~sfDestination])
     {
         if (*destination == beast::zero)
         {
-            JLOG(ctx.j.debug())
-                << "LoanBrokerCoverWithdraw: zero/empty destination account.";
             return temMALFORMED;
         }
-    }
-    else if (ctx.tx.isFieldPresent(sfDestinationTag))
-    {
-        JLOG(ctx.j.debug())
-            << "LoanBrokerCoverWithdraw: sfDestinationTag is set but "
-               "sfDestination is not";
-        return temMALFORMED;
     }
 
     return tesSUCCESS;
@@ -73,11 +63,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
 
-    auto const dstAcct = [&]() -> AccountID {
-        if (auto const dst = tx[~sfDestination])
-            return *dst;
-        return account;
-    }();
+    auto const dstAcct = tx[~sfDestination].value_or(account);
 
     auto const sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
     if (!sleBroker)
@@ -103,19 +89,9 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     AuthType authType = AuthType::Legacy;
     if (account != dstAcct)
     {
-        auto const sleDst = ctx.view.read(keylet::account(dstAcct));
-        if (sleDst == nullptr)
-            return tecNO_DST;
+        if (auto const ret = canWithdraw(ctx.view, tx))
+            return ret;
 
-        if (sleDst->isFlag(lsfRequireDestTag) &&
-            !tx.isFieldPresent(sfDestinationTag))
-            return tecDST_TAG_NEEDED;  // Cannot send without a tag
-
-        if (sleDst->isFlag(lsfDepositAuth))
-        {
-            if (!ctx.view.exists(keylet::depositPreauth(dstAcct, account)))
-                return tecNO_PERMISSION;
-        }
         // The destination account must have consented to receive the asset by
         // creating a RippleState or MPToken
         authType = AuthType::StrongAuth;
@@ -171,11 +147,7 @@ LoanBrokerCoverWithdraw::doApply()
 
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
-    auto const dstAcct = [&]() -> AccountID {
-        if (auto const dst = tx[~sfDestination])
-            return *dst;
-        return account_;
-    }();
+    auto const dstAcct = tx[~sfDestination].value_or(account_);
 
     auto broker = view().peek(keylet::loanbroker(brokerID));
     if (!broker)

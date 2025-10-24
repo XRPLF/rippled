@@ -42,13 +42,10 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
-    if (auto const destination = ctx.tx[~sfDestination];
-        destination.has_value())
+    if (auto const destination = ctx.tx[~sfDestination])
     {
         if (*destination == beast::zero)
         {
-            JLOG(ctx.j.debug())
-                << "VaultWithdraw: zero/empty destination account.";
             return temMALFORMED;
         }
     }
@@ -111,21 +108,9 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const account = ctx.tx[sfAccount];
     auto const dstAcct = ctx.tx[~sfDestination].value_or(account);
-    auto const sleDst = ctx.view.read(keylet::account(dstAcct));
-    if (sleDst == nullptr)
-        return account == dstAcct ? tecINTERNAL : tecNO_DST;
 
-    if (sleDst->isFlag(lsfRequireDestTag) &&
-        !ctx.tx.isFieldPresent(sfDestinationTag))
-        return tecDST_TAG_NEEDED;  // Cannot send without a tag
-
-    // Withdrawal to a 3rd party destination account is essentially a transfer,
-    // via shares in the vault. Enforce all the usual asset transfer checks.
-    if (account != dstAcct && sleDst->isFlag(lsfDepositAuth))
-    {
-        if (!ctx.view.exists(keylet::depositPreauth(dstAcct, account)))
-            return tecNO_PERMISSION;
-    }
+    if (auto const ret = canWithdraw(ctx.view, ctx.tx))
+        return ret;
 
     // If sending to Account (i.e. not a transfer), we will also create (only
     // if authorized) a trust line or MPToken as needed, in doApply().

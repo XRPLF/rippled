@@ -1341,6 +1341,64 @@ canAddHolding(ReadView const& view, Asset const& asset)
 }
 
 [[nodiscard]] TER
+checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag)
+{
+    if (toSle == nullptr)
+        return tecNO_DST;
+
+    // The tag is basically account-specific information we don't
+    // understand, but we can require someone to fill it in.
+    if (toSle->isFlag(lsfRequireDestTag) && !hasDestinationTag)
+        return tecDST_TAG_NEEDED;  // Cannot send without a tag
+
+    return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+canWithdraw(
+    AccountID const& from,
+    ReadView const& view,
+    AccountID const& to,
+    SLE::const_ref toSle,
+    bool hasDestinationTag)
+{
+    if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
+        return ret;
+
+    if (from == to)
+        return tesSUCCESS;
+
+    if (toSle->isFlag(lsfDepositAuth))
+    {
+        if (!view.exists(keylet::depositPreauth(to, from)))
+            return tecNO_PERMISSION;
+    }
+
+    return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+canWithdraw(
+    AccountID const& from,
+    ReadView const& view,
+    AccountID const& to,
+    bool hasDestinationTag)
+{
+    auto const toSle = view.read(keylet::account(to));
+
+    return canWithdraw(from, view, to, toSle, hasDestinationTag);
+}
+
+[[nodiscard]] TER
+canWithdraw(ReadView const& view, STTx const& tx)
+{
+    auto const from = tx[sfAccount];
+    auto const to = tx[~sfDestination].value_or(from);
+
+    return canWithdraw(from, view, to, tx.isFieldPresent(sfDestinationTag));
+}
+
+[[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
     AccountID const& accountID,

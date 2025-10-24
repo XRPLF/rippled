@@ -694,13 +694,75 @@ isPseudoAccount(std::shared_ptr<SLE const> sleAcct);
 getPseudoAccountFields();
 
 [[nodiscard]] inline bool
-isPseudoAccount(ReadView const& view, AccountID accountId)
+isPseudoAccount(ReadView const& view, AccountID const& accountId)
 {
     return isPseudoAccount(view.read(keylet::account(accountId)));
 }
 
 [[nodiscard]] TER
 canAddHolding(ReadView const& view, Asset const& asset);
+
+/** Validates that the destination SLE and tag are valid
+
+   - Checks that the SLE is not null.
+   - If the SLE requires a destination tag, checks that there is a tag.
+*/
+[[nodiscard]] TER
+checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag);
+
+/** Checks that can withdraw funds from an object to itself or a destination.
+ *
+ * The receiver may be either the submitting account (sfAccount) or a different
+ * destination account (sfDestination).
+ *
+ *    - Checks that the receiver account exists.
+ *    - If the receiver requires a destination tag, check that one exists, even
+ *      if withdrawing to self.
+ *    - If withdrawing to self, succeed.
+ *    - If not, checks if the receiver requires deposit authorization, and if
+ *      the sender has it.
+ */
+[[nodiscard]] TER
+canWithdraw(
+    AccountID const& from,
+    ReadView const& view,
+    AccountID const& to,
+    SLE::const_ref toSle,
+    bool hasDestinationTag);
+
+/** Checks that can withdraw funds from an object to itself or a destination.
+ *
+ * The receiver may be either the submitting account (sfAccount) or a different
+ * destination account (sfDestination).
+ *
+ *    - Checks that the receiver account exists.
+ *    - If the receiver requires a destination tag, check that one exists, even
+ *      if withdrawing to self.
+ *    - If withdrawing to self, succeed.
+ *    - If not, checks if the receiver requires deposit authorization, and if
+ *      the sender has it.
+ */
+[[nodiscard]] TER
+canWithdraw(
+    AccountID const& from,
+    ReadView const& view,
+    AccountID const& to,
+    bool hasDestinationTag);
+
+/** Checks that can withdraw funds from an object to itself or a destination.
+ *
+ * The receiver may be either the submitting account (sfAccount) or a different
+ * destination account (sfDestination).
+ *
+ *    - Checks that the receiver account exists.
+ *    - If the receiver requires a destination tag, check that one exists, even
+ *      if withdrawing to self.
+ *    - If withdrawing to self, succeed.
+ *    - If not, checks if the receiver requires deposit authorization, and if
+ *      the sender has it.
+ */
+[[nodiscard]] TER
+canWithdraw(ReadView const& view, STTx const& tx);
 
 /// Any transactors that call addEmptyHolding() in doApply must call
 /// canAddHolding() in preflight with the same View and Asset
