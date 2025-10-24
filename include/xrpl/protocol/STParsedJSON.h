@@ -54,34 +54,6 @@ public:
     Json::Value error;
 };
 
-/** Holds the serialized result of parsing an input JSON array.
-    This does validation and checking on the provided JSON.
-*/
-class STParsedJSONArray
-{
-public:
-    /** Parses and creates an STParsedJSON array.
-        The result of the parsing is stored in array and error.
-        Exceptions:
-            Does not throw.
-        @param name The name of the JSON field, used in diagnostics.
-        @param json The JSON-RPC to parse.
-    */
-    STParsedJSONArray(std::string const& name, Json::Value const& json);
-
-    STParsedJSONArray() = delete;
-    STParsedJSONArray(STParsedJSONArray const&) = delete;
-    STParsedJSONArray&
-    operator=(STParsedJSONArray const&) = delete;
-    ~STParsedJSONArray() = default;
-
-    /** The STArray if the parse was successful. */
-    std::optional<STArray> array;
-
-    /** On failure, an appropriate set of error values. */
-    Json::Value error;
-};
-
 }  // namespace ripple
 
 #endif

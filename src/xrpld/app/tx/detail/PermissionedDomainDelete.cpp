@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/PermissionedDomainDelete.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
@@ -27,23 +27,11 @@ namespace ripple {
 NotTEC
 PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePermissionedDomains))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "PermissionedDomainDelete: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
     if (domain == beast::zero)
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -78,9 +66,11 @@ PermissionedDomainDelete::doApply()
 
     if (!view().dirRemove(keylet::ownerDir(account_), page, slePd->key(), true))
     {
-        JLOG(j_.fatal())  // LCOV_EXCL_LINE
-            << "Unable to delete permissioned domain directory entry.";  // LCOV_EXCL_LINE
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        JLOG(j_.fatal())
+            << "Unable to delete permissioned domain directory entry.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     auto const ownerSle = view().peek(keylet::account(account_));

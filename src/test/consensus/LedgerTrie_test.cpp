@@ -313,7 +313,6 @@ class LedgerTrie_test : public beast::unit_test::suite
     testSupport()
     {
         using namespace csf;
-        using Seq = Ledger::Seq;
 
         LedgerTrie<Ledger> t;
         LedgerHistoryHelper h;
@@ -596,7 +595,6 @@ class LedgerTrie_test : public beast::unit_test::suite
     testRootRelated()
     {
         using namespace csf;
-        using Seq = Ledger::Seq;
         // Since the root is a special node that breaks the no-single child
         // invariant, do some tests that exercise it.
 

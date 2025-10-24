@@ -24,9 +24,9 @@
 #include <xrpld/app/misc/NegativeUNLVote.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/tx/apply.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/View.h>
 
 namespace ripple {
 namespace test {
@@ -1885,8 +1885,8 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NegativeUNL, ledger, ripple);
-BEAST_DEFINE_TESTSUITE(NegativeUNLNoAmendment, ledger, ripple);
+BEAST_DEFINE_TESTSUITE(NegativeUNL, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(NegativeUNLNoAmendment, consensus, ripple);
 
 BEAST_DEFINE_TESTSUITE(NegativeUNLVoteInternal, consensus, ripple);
 BEAST_DEFINE_TESTSUITE_MANUAL(NegativeUNLVoteScoreTable, consensus, ripple);

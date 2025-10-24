@@ -280,5 +280,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SemanticVersion, beast_core, beast);
+BEAST_DEFINE_TESTSUITE(SemanticVersion, beast, beast);
 }  // namespace beast

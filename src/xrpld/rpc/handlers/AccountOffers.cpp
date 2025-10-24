@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <xrpld/ledger/ReadView.h>
-#include <xrpld/ledger/View.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
@@ -145,8 +145,10 @@ doAccountOffers(RPC::JsonContext& context)
                 std::shared_ptr<SLE const> const& sle) {
                 if (!sle)
                 {
+                    // LCOV_EXCL_START
                     UNREACHABLE("ripple::doAccountOffers : null SLE");
                     return false;
+                    // LCOV_EXCL_STOP
                 }
 
                 if (++count == limit)

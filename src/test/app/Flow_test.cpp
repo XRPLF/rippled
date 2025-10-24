@@ -23,10 +23,10 @@
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/ledger/PaymentSandbox.h>
-#include <xrpld/ledger/Sandbox.h>
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Feature.h>
 
 namespace ripple {
@@ -1346,14 +1346,11 @@ struct Flow_manual_test : public Flow_test
     {
         using namespace jtx;
         auto const all = testable_amendments();
-        FeatureBitset const f1513{fix1513};
         FeatureBitset const permDex{featurePermissionedDEX};
 
-        testWithFeats(all - f1513 - permDex);
         testWithFeats(all - permDex);
         testWithFeats(all);
 
-        testEmptyStrand(all - f1513 - permDex);
         testEmptyStrand(all - permDex);
         testEmptyStrand(all);
     }

@@ -208,7 +208,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // Fund alice and minter enough to exist, but not enough to meet
         // the reserve for creating their first NFT.
-        auto const acctReserve = env.current()->fees().accountReserve(0);
+        auto const acctReserve = env.current()->fees().reserve;
         auto const incReserve = env.current()->fees().increment;
         auto const baseFee = env.current()->fees().base;
 
@@ -6744,8 +6744,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             {
                 // check reserve
-                auto const acctReserve =
-                    env.current()->fees().accountReserve(0);
+                auto const acctReserve = env.current()->fees().reserve;
                 auto const incReserve = env.current()->fees().increment;
 
                 env.fund(acctReserve + incReserve, bob);
@@ -7134,7 +7133,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             Account const bob{"bob"};
 
             Env env{*this, features};
-            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const acctReserve = env.current()->fees().reserve;
             auto const incReserve = env.current()->fees().increment;
             auto const baseFee = env.current()->fees().base;
 
@@ -7217,7 +7216,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             Account const bob{"bob"};
 
             Env env{*this, features};
-            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const acctReserve = env.current()->fees().reserve;
             auto const incReserve = env.current()->fees().increment;
 
             env.fund(XRP(10000), alice);
@@ -7314,7 +7313,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             Account const bob{"bob"};
 
             Env env{*this, features};
-            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const acctReserve = env.current()->fees().reserve;
             auto const incReserve = env.current()->fees().increment;
             auto const baseFee = env.current()->fees().base;
 
@@ -7365,7 +7364,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             Account const broker{"broker"};
 
             Env env{*this, features};
-            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const acctReserve = env.current()->fees().reserve;
             auto const incReserve = env.current()->fees().increment;
             auto const baseFee = env.current()->fees().base;
 
@@ -8171,13 +8170,13 @@ class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBaseUtil, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDisallowIncoming, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOfixV1, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenReserve, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBaseUtil, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDisallowIncoming, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOfixV1, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenReserve, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, app, ripple, 2);
 
 }  // namespace ripple

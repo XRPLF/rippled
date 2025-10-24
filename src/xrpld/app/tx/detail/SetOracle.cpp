@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/SetOracle.h>
-#include <xrpld/ledger/Sandbox.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -39,15 +39,6 @@ tokenPairKey(STObject const& pair)
 NotTEC
 SetOracle::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePriceOracle))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
     auto const& dataSeries = ctx.tx.getFieldArray(sfPriceDataSeries);
     if (dataSeries.empty())
         return temARRAY_EMPTY;
@@ -64,7 +55,7 @@ SetOracle::preflight(PreflightContext const& ctx)
         isInvalidLength(sfAssetClass, maxOracleSymbolClass))
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -209,6 +200,17 @@ SetOracle::doApply()
 {
     auto const oracleID = keylet::oracle(account_, ctx_.tx[sfOracleDocumentID]);
 
+    auto populatePriceData = [](STObject& priceData, STObject const& entry) {
+        setPriceDataInnerObjTemplate(priceData);
+        priceData.setFieldCurrency(
+            sfBaseAsset, entry.getFieldCurrency(sfBaseAsset));
+        priceData.setFieldCurrency(
+            sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
+        priceData.setFieldU64(sfAssetPrice, entry.getFieldU64(sfAssetPrice));
+        if (entry.isFieldPresent(sfScale))
+            priceData.setFieldU8(sfScale, entry.getFieldU8(sfScale));
+    };
+
     if (auto sle = ctx_.view().peek(oracleID))
     {
         // update
@@ -249,15 +251,7 @@ SetOracle::doApply()
             {
                 // add a token pair with the price
                 STObject priceData{sfPriceData};
-                setPriceDataInnerObjTemplate(priceData);
-                priceData.setFieldCurrency(
-                    sfBaseAsset, entry.getFieldCurrency(sfBaseAsset));
-                priceData.setFieldCurrency(
-                    sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
-                priceData.setFieldU64(
-                    sfAssetPrice, entry.getFieldU64(sfAssetPrice));
-                if (entry.isFieldPresent(sfScale))
-                    priceData.setFieldU8(sfScale, entry.getFieldU8(sfScale));
+                populatePriceData(priceData, entry);
                 pairs.emplace(key, std::move(priceData));
             }
         }
@@ -268,6 +262,11 @@ SetOracle::doApply()
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);
+        if (!sle->isFieldPresent(sfOracleDocumentID) &&
+            ctx_.view().rules().enabled(fixIncludeKeyletFields))
+        {
+            (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
+        }
 
         auto const newCount = pairs.size() > 5 ? 2 : 1;
         auto const adjust = newCount - oldCount;
@@ -282,10 +281,33 @@ SetOracle::doApply()
 
         sle = std::make_shared<SLE>(oracleID);
         sle->setAccountID(sfOwner, ctx_.tx.getAccountID(sfAccount));
+        if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+        {
+            (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
+        }
         sle->setFieldVL(sfProvider, ctx_.tx[sfProvider]);
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);
-        auto const& series = ctx_.tx.getFieldArray(sfPriceDataSeries);
+
+        STArray series;
+        if (!ctx_.view().rules().enabled(fixPriceOracleOrder))
+        {
+            series = ctx_.tx.getFieldArray(sfPriceDataSeries);
+        }
+        else
+        {
+            std::map<std::pair<Currency, Currency>, STObject> pairs;
+            for (auto const& entry : ctx_.tx.getFieldArray(sfPriceDataSeries))
+            {
+                auto const key = tokenPairKey(entry);
+                STObject priceData{sfPriceData};
+                populatePriceData(priceData, entry);
+                pairs.emplace(key, std::move(priceData));
+            }
+            for (auto const& iter : pairs)
+                series.push_back(std::move(iter.second));
+        }
+
         sle->setFieldArray(sfPriceDataSeries, series);
         sle->setFieldVL(sfAssetClass, ctx_.tx[sfAssetClass]);
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);

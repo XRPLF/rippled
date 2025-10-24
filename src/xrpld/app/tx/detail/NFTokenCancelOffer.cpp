@@ -19,8 +19,8 @@
 
 #include <xrpld/app/tx/detail/NFTokenCancelOffer.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -28,18 +28,15 @@
 
 namespace ripple {
 
+std::uint32_t
+NFTokenCancelOffer::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfNFTokenCancelOfferMask;
+}
+
 NotTEC
 NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureNonFungibleTokensV1))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfNFTokenCancelOfferMask)
-        return temINVALID_FLAG;
-
     if (auto const& ids = ctx.tx[sfNFTokenOffers];
         ids.empty() || (ids.size() > maxTokenOfferCancelCount))
         return temMALFORMED;
@@ -51,7 +48,7 @@ NFTokenCancelOffer::preflight(PreflightContext const& ctx)
     if (std::adjacent_find(ids.begin(), ids.end()) != ids.end())
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -104,9 +101,11 @@ NFTokenCancelOffer::doApply()
         if (auto offer = view().peek(keylet::nftoffer(id));
             offer && !nft::deleteTokenOffer(view(), offer))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete token offer " << id
                              << " (ledger " << view().seq() << ")";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 

@@ -27,6 +27,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/format/free_funcs.hpp>
 
@@ -98,12 +99,10 @@ STXChainBridge::STXChainBridge(SField const& name, Json::Value const& v)
     };
     checkExtra(v);
 
-    Json::Value const& lockingChainDoorStr =
-        v[sfLockingChainDoor.getJsonName()];
-    Json::Value const& lockingChainIssue = v[sfLockingChainIssue.getJsonName()];
-    Json::Value const& issuingChainDoorStr =
-        v[sfIssuingChainDoor.getJsonName()];
-    Json::Value const& issuingChainIssue = v[sfIssuingChainIssue.getJsonName()];
+    Json::Value const& lockingChainDoorStr = v[jss::LockingChainDoor];
+    Json::Value const& lockingChainIssue = v[jss::LockingChainIssue];
+    Json::Value const& issuingChainDoorStr = v[jss::IssuingChainDoor];
+    Json::Value const& issuingChainIssue = v[jss::IssuingChainIssue];
 
     if (!lockingChainDoorStr.isString())
     {
@@ -161,10 +160,10 @@ Json::Value
 STXChainBridge::getJson(JsonOptions jo) const
 {
     Json::Value v;
-    v[sfLockingChainDoor.getJsonName()] = lockingChainDoor_.getJson(jo);
-    v[sfLockingChainIssue.getJsonName()] = lockingChainIssue_.getJson(jo);
-    v[sfIssuingChainDoor.getJsonName()] = issuingChainDoor_.getJson(jo);
-    v[sfIssuingChainIssue.getJsonName()] = issuingChainIssue_.getJson(jo);
+    v[jss::LockingChainDoor] = lockingChainDoor_.getJson(jo);
+    v[jss::LockingChainIssue] = lockingChainIssue_.getJson(jo);
+    v[jss::IssuingChainDoor] = issuingChainDoor_.getJson(jo);
+    v[jss::IssuingChainIssue] = issuingChainIssue_.getJson(jo);
     return v;
 }
 

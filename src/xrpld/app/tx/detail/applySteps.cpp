@@ -18,57 +18,20 @@
 //==============================================================================
 
 #include <xrpld/app/tx/applySteps.h>
-#include <xrpld/app/tx/detail/AMMBid.h>
-#include <xrpld/app/tx/detail/AMMClawback.h>
-#include <xrpld/app/tx/detail/AMMCreate.h>
-#include <xrpld/app/tx/detail/AMMDelete.h>
-#include <xrpld/app/tx/detail/AMMDeposit.h>
-#include <xrpld/app/tx/detail/AMMVote.h>
-#include <xrpld/app/tx/detail/AMMWithdraw.h>
-#include <xrpld/app/tx/detail/ApplyContext.h>
-#include <xrpld/app/tx/detail/Batch.h>
-#include <xrpld/app/tx/detail/CancelCheck.h>
-#include <xrpld/app/tx/detail/CancelOffer.h>
-#include <xrpld/app/tx/detail/CashCheck.h>
-#include <xrpld/app/tx/detail/Change.h>
-#include <xrpld/app/tx/detail/Clawback.h>
-#include <xrpld/app/tx/detail/CreateCheck.h>
-#include <xrpld/app/tx/detail/CreateOffer.h>
-#include <xrpld/app/tx/detail/CreateTicket.h>
-#include <xrpld/app/tx/detail/Credentials.h>
-#include <xrpld/app/tx/detail/DID.h>
-#include <xrpld/app/tx/detail/DelegateSet.h>
-#include <xrpld/app/tx/detail/DeleteAccount.h>
-#include <xrpld/app/tx/detail/DeleteOracle.h>
-#include <xrpld/app/tx/detail/DepositPreauth.h>
-#include <xrpld/app/tx/detail/Escrow.h>
-#include <xrpld/app/tx/detail/LedgerStateFix.h>
-#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
-#include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
-#include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
-#include <xrpld/app/tx/detail/MPTokenIssuanceSet.h>
-#include <xrpld/app/tx/detail/NFTokenAcceptOffer.h>
-#include <xrpld/app/tx/detail/NFTokenBurn.h>
-#include <xrpld/app/tx/detail/NFTokenCancelOffer.h>
-#include <xrpld/app/tx/detail/NFTokenCreateOffer.h>
-#include <xrpld/app/tx/detail/NFTokenMint.h>
-#include <xrpld/app/tx/detail/NFTokenModify.h>
-#include <xrpld/app/tx/detail/PayChan.h>
-#include <xrpld/app/tx/detail/Payment.h>
-#include <xrpld/app/tx/detail/PermissionedDomainDelete.h>
-#include <xrpld/app/tx/detail/PermissionedDomainSet.h>
-#include <xrpld/app/tx/detail/SetAccount.h>
-#include <xrpld/app/tx/detail/SetOracle.h>
-#include <xrpld/app/tx/detail/SetRegularKey.h>
-#include <xrpld/app/tx/detail/SetSignerList.h>
-#include <xrpld/app/tx/detail/SetTrust.h>
-#include <xrpld/app/tx/detail/VaultClawback.h>
-#include <xrpld/app/tx/detail/VaultCreate.h>
-#include <xrpld/app/tx/detail/VaultDelete.h>
-#include <xrpld/app/tx/detail/VaultDeposit.h>
-#include <xrpld/app/tx/detail/VaultSet.h>
-#include <xrpld/app/tx/detail/VaultWithdraw.h>
-#include <xrpld/app/tx/detail/XChainBridge.h>
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
+
+// Do nothing
+#define TRANSACTION(...)
+#define TRANSACTION_INCLUDE 1
+
+#include <xrpl/protocol/detail/transactions.macro>
+
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
+
+// DO NOT INCLUDE TRANSACTOR HEADER FILES HERE.
+// See the instructions at the top of transactions.macro instead.
 
 #include <xrpl/protocol/TxFormats.h>
 
@@ -97,8 +60,8 @@ with_txn_type(TxType txnType, F&& f)
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, fields) \
-    case tag:                                              \
+#define TRANSACTION(tag, value, name, ...) \
+    case tag:                              \
         return f.template operator()<name>();
 
 #include <xrpl/protocol/detail/transactions.macro>
@@ -156,7 +119,7 @@ invoke_preflight(PreflightContext const& ctx)
     try
     {
         return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
-            auto const tec = T::preflight(ctx);
+            auto const tec = Transactor::invokePreflight<T>(ctx);
             return std::make_pair(
                 tec,
                 isTesSuccess(tec) ? consequences_helper<T>(ctx)
@@ -166,10 +129,12 @@ invoke_preflight(PreflightContext const& ctx)
     catch (UnknownTxnType const& e)
     {
         // Should never happen
+        // LCOV_EXCL_START
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preflight: " << e.txnType;
         UNREACHABLE("ripple::invoke_preflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
+        // LCOV_EXCL_STOP
     }
 }
 
@@ -220,10 +185,12 @@ invoke_preclaim(PreclaimContext const& ctx)
     catch (UnknownTxnType const& e)
     {
         // Should never happen
+        // LCOV_EXCL_START
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preclaim: " << e.txnType;
         UNREACHABLE("ripple::invoke_preclaim : unknown transaction type");
         return temUNKNOWN;
+        // LCOV_EXCL_STOP
     }
 }
 
@@ -254,9 +221,11 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
     }
     catch (UnknownTxnType const& e)
     {
+        // LCOV_EXCL_START
         UNREACHABLE(
             "ripple::invoke_calculateBaseFee : unknown transaction type");
         return XRPAmount{0};
+        // LCOV_EXCL_STOP
     }
 }
 
@@ -314,10 +283,12 @@ invoke_apply(ApplyContext& ctx)
     catch (UnknownTxnType const& e)
     {
         // Should never happen
+        // LCOV_EXCL_START
         JLOG(ctx.journal.fatal())
             << "Unknown transaction type in apply: " << e.txnType;
         UNREACHABLE("ripple::invoke_apply : unknown transaction type");
         return {temUNKNOWN, false};
+        // LCOV_EXCL_STOP
     }
 }
 

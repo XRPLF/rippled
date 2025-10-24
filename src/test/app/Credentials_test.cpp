@@ -19,10 +19,9 @@
 
 #include <test/jtx.h>
 
-#include <xrpld/app/misc/CredentialHelpers.h>
-#include <xrpld/ledger/ApplyViewImpl.h>
-
 #include <xrpl/basics/strHex.h>
+#include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -33,15 +32,6 @@
 
 namespace ripple {
 namespace test {
-
-static inline bool
-checkVL(
-    std::shared_ptr<SLE const> const& sle,
-    SField const& field,
-    std::string const& expected)
-{
-    return strHex(expected) == strHex(sle->getFieldVL(field));
-}
 
 struct Credentials_test : public beast::unit_test::suite
 {
@@ -588,7 +578,7 @@ struct Credentials_test : public beast::unit_test::suite
             using namespace jtx;
             Env env{*this, features};
 
-            auto const reserve = drops(env.current()->fees().accountReserve(0));
+            auto const reserve = drops(env.current()->fees().reserve);
             env.fund(reserve, subject, issuer);
             env.close();
 

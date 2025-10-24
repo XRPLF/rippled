@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/DeleteOracle.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -29,19 +29,7 @@ namespace ripple {
 NotTEC
 DeleteOracle::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePriceOracle))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "Oracle Delete: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

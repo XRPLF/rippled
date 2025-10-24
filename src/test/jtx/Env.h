@@ -470,6 +470,9 @@ public:
     */
     // VFALCO NOTE This should return a unit-less amount
     PrettyAmount
+    balance(Account const& account, Asset const& asset) const;
+
+    PrettyAmount
     balance(Account const& account, Issue const& issue) const;
 
     PrettyAmount

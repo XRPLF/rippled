@@ -19,9 +19,9 @@
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/tx/detail/CancelCheck.h>
-#include <xrpld/ledger/ApplyView.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
@@ -32,21 +32,7 @@ namespace ripple {
 NotTEC
 CancelCheck::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureChecks))
-        return temDISABLED;
-
-    NotTEC const ret{preflight1(ctx)};
-    if (!isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        // There are no flags (other than universal) for CreateCheck yet.
-        JLOG(ctx.j.warn()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
-
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -107,8 +93,10 @@ CancelCheck::doApply()
         if (!view().dirRemove(
                 keylet::ownerDir(dstId), page, sleCheck->key(), true))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete check from destination.";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
     {
@@ -116,8 +104,10 @@ CancelCheck::doApply()
         if (!view().dirRemove(
                 keylet::ownerDir(srcId), page, sleCheck->key(), true))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete check from owner.";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 

@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
-#include <xrpld/ledger/Dir.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/algorithm.h>
+#include <xrpl/ledger/Dir.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -1046,7 +1046,7 @@ tokenOfferCreateApply(
             keylet::ownerDir(acctID), offerID, describeOwnerDir(acctID));
 
         if (!ownerNode)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         bool const isSellOffer = txFlags & tfSellNFToken;
 
@@ -1063,7 +1063,7 @@ tokenOfferCreateApply(
             });
 
         if (!offerNode)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         std::uint32_t sleFlags = 0;
 

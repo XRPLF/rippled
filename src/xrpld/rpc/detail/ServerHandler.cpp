@@ -104,7 +104,7 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
 ServerHandler::ServerHandler(
     ServerHandlerCreator const&,
     Application& app,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_context,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
     Resource::Manager& resourceManager,
@@ -113,7 +113,7 @@ ServerHandler::ServerHandler(
     , m_resourceManager(resourceManager)
     , m_journal(app_.journal("Server"))
     , m_networkOPs(networkOPs)
-    , m_server(make_Server(*this, io_service, app_.journal("Server")))
+    , m_server(make_Server(*this, io_context, app_.journal("Server")))
     , m_jobQueue(jobQueue)
 {
     auto const& group(cm.group("rpc"));
@@ -282,14 +282,13 @@ template <class ConstBufferSequence>
 static std::string
 buffers_to_string(ConstBufferSequence const& bs)
 {
-    using boost::asio::buffer_cast;
     using boost::asio::buffer_size;
     std::string s;
     s.reserve(buffer_size(bs));
     // Use auto&& so the right thing happens whether bs returns a copy or
     // a reference
     for (auto&& b : bs)
-        s.append(buffer_cast<char const*>(b), buffer_size(b));
+        s.append(static_cast<char const*>(b.data()), buffer_size(b));
     return s;
 }
 
@@ -508,10 +507,12 @@ ServerHandler::processSession(
     }
     catch (std::exception const& ex)
     {
+        // LCOV_EXCL_START
         jr[jss::result] = RPC::make_error(rpcINTERNAL);
         JLOG(m_journal.error())
             << "Exception while processing WS: " << ex.what() << "\n"
             << "Input JSON: " << Json::Compact{Json::Value{jv}};
+        // LCOV_EXCL_STOP
     }
 
     is->getConsumer().charge(loadType);
@@ -905,10 +906,12 @@ ServerHandler::processRequest(
         }
         catch (std::exception const& ex)
         {
+            // LCOV_EXCL_START
             result = RPC::make_error(rpcINTERNAL);
             JLOG(m_journal.error()) << "Internal error : " << ex.what()
                                     << " when processing request: "
                                     << Json::Compact{Json::Value{params}};
+            // LCOV_EXCL_STOP
         }
 
         auto end = std::chrono::system_clock::now();
@@ -1267,7 +1270,7 @@ setup_ServerHandler(Config const& config, std::ostream&& log)
 std::unique_ptr<ServerHandler>
 make_ServerHandler(
     Application& app,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_context,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
     Resource::Manager& resourceManager,
@@ -1276,7 +1279,7 @@ make_ServerHandler(
     return std::make_unique<ServerHandler>(
         ServerHandler::ServerHandlerCreator(),
         app,
-        io_service,
+        io_context,
         jobQueue,
         networkOPs,
         resourceManager,

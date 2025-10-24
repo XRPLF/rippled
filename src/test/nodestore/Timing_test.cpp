@@ -779,7 +779,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, NodeStore, ripple, 1);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, nodestore, ripple, 1);
 
 }  // namespace NodeStore
 }  // namespace ripple

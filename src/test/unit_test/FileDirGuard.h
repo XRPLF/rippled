@@ -26,8 +26,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <boost/filesystem.hpp>
 
+#include <fstream>
+
 namespace ripple {
-namespace test {
 namespace detail {
 
 /**
@@ -176,7 +177,6 @@ public:
 };
 
 }  // namespace detail
-}  // namespace test
 }  // namespace ripple
 
 #endif  // TEST_UNIT_TEST_DIRGUARD_H

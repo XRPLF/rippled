@@ -32,14 +32,20 @@
 // If you add an amendment here, then do not forget to increment `numFeatures`
 // in include/xrpl/protocol/Feature.h.
 
-XRPL_FIX    (AMMClawbackRounding,        Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FIX    (IncludeKeyletFields,        Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(DynamicMPT,                 Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FIX    (TokenEscrowV1,              Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (DelegateV1_1,               Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FIX    (PriceOracleOrder,           Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (MPTDeliveredAmount,         Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FIX    (AMMClawbackRounding,        Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(TokenEscrow,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (EnforceNFTokenTrustlineV2,  Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMv1_3,                    Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionedDEX,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Batch,                      Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(SingleAssetVault,           Supported::no, VoteBehavior::DefaultNo)
-XRPL_FEATURE(PermissionDelegation,       Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(SingleAssetVault,           Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(PermissionDelegation,       Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (PayChanCancelAfter,         Supported::yes, VoteBehavior::DefaultNo)
 // Check flags in Credential transactions
 XRPL_FIX    (InvalidTxFlags,             Supported::yes, VoteBehavior::DefaultNo)
@@ -103,15 +109,12 @@ XRPL_FIX    (MasterKeyAsRegularKey,      Supported::yes, VoteBehavior::DefaultYe
 XRPL_FIX    (TakerDryOfferRemoval,       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(MultiSignReserve,           Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1578,                       Supported::yes, VoteBehavior::DefaultYes)
-// fix1515: Use liquidity from strands that consume max offers, but mark as dry
-XRPL_FIX    (1515,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DepositPreauth,             Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1623,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1543,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1571,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Checks,                     Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DepositAuth,                Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FIX    (1513,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
 
 // The following amendments are obsolete, but must remain supported
@@ -150,3 +153,5 @@ XRPL_RETIRE(fix1512)
 XRPL_RETIRE(fix1523)
 XRPL_RETIRE(fix1528)
 XRPL_RETIRE(FlowCross)
+XRPL_RETIRE(fix1513)
+XRPL_RETIRE(fix1515)

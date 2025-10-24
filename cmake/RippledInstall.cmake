@@ -18,7 +18,9 @@ install (
     xrpl.libxrpl.json
     xrpl.libxrpl.protocol
     xrpl.libxrpl.resource
+    xrpl.libxrpl.ledger
     xrpl.libxrpl.server
+    xrpl.libxrpl.net
     xrpl.libxrpl
     antithesis-sdk-cpp
   EXPORT RippleExports
@@ -36,7 +38,7 @@ install(CODE "
   set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
   include(create_symbolic_link)
   create_symbolic_link(xrpl \
-    \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/ripple)
+    \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/ripple)
 ")
 
 install (EXPORT RippleExports
@@ -70,7 +72,7 @@ if (is_root_project AND TARGET rippled)
     set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
     include(create_symbolic_link)
     create_symbolic_link(rippled${suffix} \
-      \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix})
+       \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix})
   ")
 endif ()
 

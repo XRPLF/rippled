@@ -18,11 +18,11 @@
 //==============================================================================
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -94,9 +94,11 @@ doChannelAuthorize(RPC::JsonContext& context)
     }
     catch (std::exception const& ex)
     {
+        // LCOV_EXCL_START
         result = RPC::make_error(
             rpcINTERNAL,
             "Exception occurred during signing: " + std::string(ex.what()));
+        // LCOV_EXCL_STOP
     }
     return result;
 }
