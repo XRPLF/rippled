@@ -1406,13 +1406,11 @@ addEmptyHolding(
     Issue const& issue,
     beast::Journal journal)
 {
-    // Every account can hold XRP.
-    if (issue.native())
+    // Every account can hold XRP. An issuer can issue directly.
+    if (issue.native() || accountID == issue.getIssuer())
         return tesSUCCESS;
 
     auto const& issuerId = issue.getIssuer();
-    if (issuerId == accountID)
-        return tecNO_PERMISSION;
     auto const& currency = issue.currency;
     if (isGlobalFrozen(view, issuerId))
         return tecFROZEN;  // LCOV_EXCL_LINE
@@ -1466,12 +1464,12 @@ addEmptyHolding(
     auto const mpt = view.peek(keylet::mptIssuance(mptID));
     if (!mpt)
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    if (mpt->getAccountID(sfIssuer) == accountID)
-        return tecNO_PERMISSION;
     if (mpt->isFlag(lsfMPTLocked))
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (view.peek(keylet::mptoken(mptID, accountID)))
         return tecDUPLICATE;
+    if (accountID == mptIssue.getIssuer())
+        return tesSUCCESS;
 
     return authorizeMPToken(view, priorBalance, mptID, accountID, journal);
 }

@@ -2060,15 +2060,13 @@ class Loan_test : public beast::unit_test::suite
                 env(set(issuer, broker.brokerID, principalRequest),
                     counterparty(lender),
                     sig(sfCounterpartySignature, lender),
-                    fee(env.current()->fees().base * 5),
-                    ter{tecNO_PERMISSION});
+                    fee(env.current()->fees().base * 5));
 
                 testcase("MPT issuer is borrower, lender submits");
                 env(set(lender, broker.brokerID, principalRequest),
                     counterparty(issuer),
                     sig(sfCounterpartySignature, issuer),
-                    fee(env.current()->fees().base * 5),
-                    ter{tecNO_PERMISSION});
+                    fee(env.current()->fees().base * 5));
             },
             [&, this](Env& env, BrokerInfo const& broker) {
                 using namespace loan;
@@ -2078,15 +2076,13 @@ class Loan_test : public beast::unit_test::suite
                 env(set(issuer, broker.brokerID, principalRequest),
                     counterparty(lender),
                     sig(sfCounterpartySignature, lender),
-                    fee(env.current()->fees().base * 5),
-                    ter{tecNO_PERMISSION});
+                    fee(env.current()->fees().base * 5));
 
                 testcase("IOU issuer is borrower, lender submits");
                 env(set(lender, broker.brokerID, principalRequest),
                     counterparty(issuer),
                     sig(sfCounterpartySignature, issuer),
-                    fee(env.current()->fees().base * 5),
-                    ter{tecNO_PERMISSION});
+                    fee(env.current()->fees().base * 5));
             },
             CaseArgs{.requireAuth = true});
 
@@ -3294,6 +3290,46 @@ class Loan_test : public beast::unit_test::suite
     }
 
     void
+    testIssuerLoan()
+    {
+        testcase << "Issuer Loan";
+
+        using namespace jtx;
+        using namespace loan;
+        Account const issuer("issuer");
+        Account const borrower = issuer;
+        Account const lender("lender");
+        Env env(*this);
+
+        env.fund(XRP(1'000), issuer, lender);
+
+        std::int64_t constexpr issuerBalance = 10'000'000;
+        MPTTester asset(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {lender},
+             .pay = issuerBalance});
+
+        auto const broker = createVaultAndBroker(env, asset, lender, 200);
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        // Create Loan
+        env(set(borrower, broker.brokerID, 200),
+            sig(sfCounterpartySignature, lender),
+            loanSetFee);
+        env.close();
+        // Issuer should not create MPToken
+        BEAST_EXPECT(!env.le(keylet::mptoken(asset.issuanceID(), issuer)));
+        // Issuer "borrowed" 200, OutstandingAmount decreased by 200
+        BEAST_EXPECT(env.balance(issuer, asset) == asset(-issuerBalance + 200));
+        // Pay Loan
+        auto const loanKeylet = keylet::loan(broker.brokerID, 1);
+        env(pay(borrower, loanKeylet.key, asset(200)));
+        env.close();
+        // Issuer "re-payed" 200, OutstandingAmount increased by 200
+        BEAST_EXPECT(env.balance(issuer, asset) == asset(-issuerBalance));
+    }
+
+    void
     testInvalidLoanDelete()
     {
         testcase("Invalid LoanDelete");
@@ -3515,6 +3551,7 @@ public:
     void
     run() override
     {
+        testIssuerLoan();
         testDisabled();
         testSelfLoan();
         testLoanSet();
