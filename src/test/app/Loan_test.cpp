@@ -1977,10 +1977,9 @@ class Loan_test : public beast::unit_test::suite
 
         auto const testCase =
             [&, this](
-                std::optional<std::function<void(
-                    Env&, BrokerInfo const&, MPTTester&)>> mptTest,
-                std::optional<std::function<void(Env&, BrokerInfo const&)>>
-                    iouTest,
+                std::function<void(Env&, BrokerInfo const&, MPTTester&)>
+                    mptTest,
+                std::function<void(Env&, BrokerInfo const&)> iouTest,
                 CaseArgs args = {}) {
                 Env env(*this, all);
                 env.fund(XRP(args.initialXRP), issuer, lender, borrower);
@@ -2047,9 +2046,9 @@ class Loan_test : public beast::unit_test::suite
                 }
 
                 if (mptTest)
-                    (*mptTest)(env, brokers[0], mptt);
+                    (mptTest)(env, brokers[0], mptt);
                 if (iouTest)
-                    (*iouTest)(env, brokers[1]);
+                    (iouTest)(env, brokers[1]);
             };
 
         testCase(
@@ -2156,9 +2155,8 @@ class Loan_test : public beast::unit_test::suite
                 auto const sleMPT1 = env.le(mptoken);
                 BEAST_EXPECT(sleMPT1 == nullptr);
 
-                // Send some reserve and use up the remainder on tickets
-                env(pay(borrower, issuer, XRP(acctReserve * 2)));
-                env(ticket::create(borrower, 2));
+                // Burn some XRP
+                env(noop(borrower), fee(XRP(acctReserve * 2 + incReserve * 2)));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create MPToken
@@ -2181,11 +2179,11 @@ class Loan_test : public beast::unit_test::suite
                 auto const sleMPT2 = env.le(mptoken);
                 BEAST_EXPECT(sleMPT2 != nullptr);
             },
-            std::nullopt,
+            {},
             CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
 
         testCase(
-            std::nullopt,
+            {},
             [&, this](Env& env, BrokerInfo const& broker) {
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
@@ -2204,9 +2202,8 @@ class Loan_test : public beast::unit_test::suite
                 auto const sleLine1 = env.le(trustline);
                 BEAST_EXPECT(sleLine1 == nullptr);
 
-                // Send some reserve and use up the remainder on tickets
-                env(pay(borrower, issuer, XRP(acctReserve * 2)));
-                env(ticket::create(borrower, 2));
+                // Burn some XRP
+                env(noop(borrower), fee(XRP(acctReserve * 2 + incReserve * 2)));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create trust line
@@ -2253,8 +2250,8 @@ class Loan_test : public beast::unit_test::suite
                 auto const sleMPT2 = env.le(mptoken);
                 BEAST_EXPECT(sleMPT2 == nullptr);
 
-                // Create some tickets to use up reserve
-                env(ticket::create(lender, 1));
+                // Burn some XRP
+                env(noop(lender), fee(XRP(incReserve)));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create MPToken
@@ -2279,11 +2276,11 @@ class Loan_test : public beast::unit_test::suite
                 auto const sleMPT3 = env.le(mptoken);
                 BEAST_EXPECT(sleMPT3 != nullptr);
             },
-            std::nullopt,
+            {},
             CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
 
         testCase(
-            std::nullopt,
+            {},
             [&, this](Env& env, BrokerInfo const& broker) {
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
@@ -2308,8 +2305,8 @@ class Loan_test : public beast::unit_test::suite
                 auto const sleLine2 = env.le(trustline);
                 BEAST_EXPECT(sleLine2 == nullptr);
 
-                // Create some tickets to use up reserve
-                env(ticket::create(lender, 1));
+                // Burn some XRP
+                env(noop(lender), fee(XRP(incReserve)));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create trust line
@@ -2376,7 +2373,7 @@ class Loan_test : public beast::unit_test::suite
                 auto const sleMPT3 = env.le(mptoken);
                 BEAST_EXPECT(sleMPT3 == nullptr);
             },
-            std::nullopt,
+            {},
             CaseArgs{.requireAuth = true, .authorizeBorrower = true});
 
         testCase(
