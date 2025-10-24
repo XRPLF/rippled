@@ -20,6 +20,7 @@
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/ConfidentialSend.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>

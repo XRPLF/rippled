@@ -573,8 +573,6 @@ MPTTester::getEncryptedBalance(
             return Buffer(
                 (*sle)[sfIssuerEncryptedBalance].data(),
                 (*sle)[sfIssuerEncryptedBalance].size());
-
-        return {};
     }
 
     return {};

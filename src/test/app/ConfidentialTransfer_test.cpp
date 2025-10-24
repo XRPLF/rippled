@@ -60,9 +60,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .proof = "123",
             .holderPubKey = mptAlice.getPubKey(bob),
         });
-        env.close();
-
-        mptAlice.printMPT(bob);
 
         mptAlice.convert({
             .account = bob,
@@ -70,16 +67,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .proof = "123",
         });
 
-        mptAlice.printMPT(bob);
-
         mptAlice.convert({
             .account = bob,
             .amt = 40,
             .proof = "123",
         });
-
-        env.close();
-        mptAlice.printMPT(bob);
     }
 
     void
@@ -437,6 +429,100 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .err = tecDUPLICATE});
         }
 
+        // cannot convert if locked
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = tecINSUFFICIENT_FUNDS});
+
+            mptAlice.set(
+                {.account = alice, .holder = bob, .flags = tfMPTUnlock});
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 10,
+                .proof = "123",
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+        }
+
+        // cannot convert if unauth
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = alice, .holder = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            // Unauthorize bob
+            mptAlice.authorize(
+                {.account = alice, .holder = bob, .flags = tfMPTUnauthorize});
+
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = tecINSUFFICIENT_FUNDS});
+
+            // auth bob
+            mptAlice.authorize({
+                .account = alice,
+                .holder = bob,
+            });
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 10,
+                .proof = "123",
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+        }
+
         // todo: test well formed proof
     }
 
@@ -473,15 +559,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .holderPubKey = mptAlice.getPubKey(bob),
         });
 
-        env.close();
-        mptAlice.printMPT(bob);
-
         mptAlice.mergeInbox({
             .account = bob,
         });
-
-        env.close();
-        mptAlice.printMPT(bob);
     }
 
     void

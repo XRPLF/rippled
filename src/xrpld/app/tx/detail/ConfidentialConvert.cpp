@@ -20,6 +20,7 @@
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/ConfidentialConvert.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -78,9 +79,20 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
-    // we still allow conversion of zero amount
-    if ((*sleMptoken)[~sfMPTAmount].value_or(0) < ctx.tx[sfMPTAmount])
+    auto const mptIssue = MPTIssue{ctx.tx[sfMPTokenIssuanceID]};
+    STAmount const mptAmount = STAmount(
+        MPTAmount{static_cast<MPTAmount::value_type>(ctx.tx[sfMPTAmount])},
+        mptIssue);
+    if (accountHolds(
+            ctx.view,
+            ctx.tx[sfAccount],
+            mptIssue,
+            FreezeHandling::fhZERO_IF_FROZEN,
+            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            ctx.j) < mptAmount)
+    {
         return tecINSUFFICIENT_FUNDS;
+    }
 
     // must have pk to convert
     if (!sleMptoken->isFieldPresent(sfHolderElGamalPublicKey) &&

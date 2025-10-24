@@ -501,7 +501,8 @@ accountHolds(
         // Only if auth check is needed, as it needs to do an additional read
         // operation. Note featureSingleAssetVault will affect error codes.
         if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
-            view.rules().enabled(featureSingleAssetVault))
+            (view.rules().enabled(featureSingleAssetVault) ||
+             view.rules().enabled(featureConfidentialTransfer)))
         {
             if (auto const err =
                     requireAuth(view, mptIssue, account, AuthType::StrongAuth);
