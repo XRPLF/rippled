@@ -68,3 +68,12 @@ jobs:
         run: |
           ./rippled --unittest --unittest-jobs $(nproc)
           ctest -j $(nproc) --output-on-failure
+
+      - name: Debug failure (Linux)
+        if: ${{ failure() && runner.os == 'Linux' && inputs.run_tests }}
+        shell: bash
+        run: |
+          echo "IPv4 local port range:"
+          cat /proc/sys/net/ipv4/ip_local_port_range
+          echo "Netstat:"
+          netstat -an
