@@ -271,7 +271,7 @@ computeRoundedPrincipalComponent(
         roundToAsset(asset, rawPrincipal + diff, scale, Number::downward);
 
     // For particular loans, it's entirely possible for many of the first
-    // rounded payments to be all principal.
+    // rounded payments to be all interest.
     XRPL_ASSERT_PARTS(
         p >= 0,
         "rippled::detail::computeRoundedPrincipalComponent",
@@ -338,8 +338,7 @@ computeRoundedInterestComponent(
             interestOutstanding - rawInterestOutstanding,
             scale,
             Number::downward);
-        if (diff < beast::zero)
-            roundedInterest += diff;
+        roundedInterest += diff;
     }
 
     // However, we cannot allow negative interest payments, therefore we need to
@@ -974,9 +973,10 @@ computeFullPayment(
         // that's ok, because it's not used until it's recombined with
         // roundedManagementFee.
         closePaymentFee + roundedFullManagementFee - managementFeeOutstanding,
-        // A full payment decreases the value of the loan by the
-        // difference between the interest paid and the expected
-        // outstanding interest return
+        // A full payment changes the value of the loan by the difference
+        // between expected outstanding interest return and the actual interest
+        // paid. This value can be positive (increasing the value) or negative
+        // (decreasing the value).
         roundedFullInterest - totalInterestOutstanding};
 
     XRPL_ASSERT_PARTS(
@@ -1716,8 +1716,11 @@ loanMakePayment(
             paymentInterval);
         ++numPayments;
 
-        if (nextPayment.specialCase == SpecialCase::final)
-            break;
+        XRPL_ASSERT_PARTS(
+            (nextPayment.specialCase == SpecialCase::final) ==
+                (paymentRemainingProxy == 0),
+            "ripple::loanMakePayment",
+            "final payment is the final payment");
     }
 
     XRPL_ASSERT_PARTS(

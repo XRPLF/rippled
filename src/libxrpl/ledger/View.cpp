@@ -1340,6 +1340,75 @@ canAddHolding(ReadView const& view, Asset const& asset)
         asset.value());
 }
 
+[[nodiscard]] NotTEC
+preflightDestinationAndTag(
+    std::optional<AccountID> const& destination,
+    bool hasDestinationTag)
+{
+    if (destination)
+    {
+        if (*destination == beast::zero)
+        {
+            return temMALFORMED;
+        }
+    }
+    else if (hasDestinationTag)
+    {
+        return temMALFORMED;
+    }
+
+    return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag)
+{
+    if (toSle == nullptr)
+        return tecNO_DST;
+
+    // The tag is basically account-specific information we don't
+    // understand, but we can require someone to fill it in.
+    if (toSle->isFlag(lsfRequireDestTag) && !hasDestinationTag)
+        return tecDST_TAG_NEEDED;  // Cannot send without a tag
+
+    return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+canSendToAccount(
+    AccountID const& from,
+    ReadView const& view,
+    AccountID const& to,
+    SLE::const_ref toSle,
+    bool hasDestinationTag)
+{
+    if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
+        return ret;
+
+    if (from == to)
+        return tesSUCCESS;
+
+    if (toSle->isFlag(lsfDepositAuth))
+    {
+        if (!view.exists(keylet::depositPreauth(to, from)))
+            return tecNO_PERMISSION;
+    }
+
+    return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+canSendToAccount(
+    AccountID const& from,
+    ReadView const& view,
+    AccountID const& to,
+    bool hasDestinationTag)
+{
+    auto const toSle = view.read(keylet::account(to));
+
+    return canSendToAccount(from, view, to, toSle, hasDestinationTag);
+}
+
 [[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,

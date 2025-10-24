@@ -172,8 +172,8 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     // for the transaction. Note that unlike the base class, the single signer
     // is counted if present. It will only be absent in a batch inner
     // transaction.
-    std::size_t const signerCount = tx.isFieldPresent(sfSigners)
-        ? tx.getFieldArray(sfSigners).size()
+    std::size_t const signerCount = counterSig.isFieldPresent(sfSigners)
+        ? counterSig.getFieldArray(sfSigners).size()
         : (counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0);
 
     return normalCost + (signerCount * baseFee);
@@ -513,7 +513,7 @@ LoanSet::doApply()
                 brokerOwnerSle->at(sfBalance).value().xrp(),
                 vaultAsset,
                 j_);
-            !isTesSuccess(ter) && ter != tecDUPLICATE)
+            ter && ter != tecDUPLICATE)
             // ignore tecDUPLICATE. That means the holding already exists,
             // and is fine here
             return ter;

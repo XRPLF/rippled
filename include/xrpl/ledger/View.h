@@ -694,13 +694,59 @@ isPseudoAccount(std::shared_ptr<SLE const> sleAcct);
 getPseudoAccountFields();
 
 [[nodiscard]] inline bool
-isPseudoAccount(ReadView const& view, AccountID accountId)
+isPseudoAccount(ReadView const& view, AccountID const& accountId)
 {
     return isPseudoAccount(view.read(keylet::account(accountId)));
 }
 
 [[nodiscard]] TER
 canAddHolding(ReadView const& view, Asset const& asset);
+
+/** Checks that the destination and destination tag are valid.
+
+   - If destination is set, it must not be zero.
+   - If not set, there must not be a destination tag.
+*/
+[[nodiscard]] NotTEC
+preflightDestinationAndTag(
+    std::optional<AccountID> const& destination,
+    bool hasDestinationTag);
+
+/** Validates that the destination SLE and tag are valid
+
+   - Checks that the SLE is not null.
+   - If the SLE requires a destination tag, checks that there is a tag.
+*/
+[[nodiscard]] TER
+checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag);
+
+/** Checks that from can sent to to (with an SLE)
+
+   - Does the checkDestinationAndTag checks, plus:
+   - if the destination requires deposit auth, checks that the from account has
+     that auth.
+*/
+[[nodiscard]] TER
+canSendToAccount(
+    AccountID const& from,
+    ReadView const& view,
+    AccountID const& to,
+    SLE::const_ref toSle,
+    bool hasDestinationTag);
+
+/** Checks that from can sent to to (with an AccountID)
+
+   - Loads the SLE for "to"
+   - Checks whether the account is trying to send to itself.
+     Succeeds if the SLE exists, fails if not.
+   - Then does the checkDestinationAndTag check with an SLE.
+*/
+[[nodiscard]] TER
+canSendToAccount(
+    AccountID const& from,
+    ReadView const& view,
+    AccountID const& to,
+    bool hasDestinationTag);
 
 /// Any transactors that call addEmptyHolding() in doApply must call
 /// canAddHolding() in preflight with the same View and Asset
