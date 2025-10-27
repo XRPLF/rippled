@@ -2270,7 +2270,7 @@ struct PayChan_test : public beast::unit_test::suite
         testMalformedPK(features);
         testMetaAndOwnership(features);
         testAccountDelete(features);
-        // testUsingTickets(features);
+        testUsingTickets(features);
     }
 
 public:
