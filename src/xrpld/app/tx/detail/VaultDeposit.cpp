@@ -202,8 +202,7 @@ VaultDeposit::doApply()
     else  // !vault->isFlag(lsfVaultPrivate) || account_ == vault->at(sfOwner)
     {
         // No authorization needed, but must ensure there is MPToken
-        auto sleMpt = view().read(keylet::mptoken(mptIssuanceID, account_));
-        if (!sleMpt)
+        if (!view().exists(keylet::mptoken(mptIssuanceID, account_)))
         {
             if (auto const err = authorizeMPToken(
                     view(),

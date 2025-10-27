@@ -21,11 +21,11 @@ compiler.libcxx={{detect_api.detect_libcxx(compiler, version, compiler_exe)}}
 
 [conf]
 {% if compiler == "clang" and compiler_version >= 19 %}
-tools.build:cxxflags=['-Wno-missing-template-arg-list-after-template-kw']
+grpc/1.50.1:tools.build:cxxflags+=['-Wno-missing-template-arg-list-after-template-kw']
 {% endif %}
 {% if compiler == "apple-clang" and compiler_version >= 17 %}
-tools.build:cxxflags=['-Wno-missing-template-arg-list-after-template-kw']
+grpc/1.50.1:tools.build:cxxflags+=['-Wno-missing-template-arg-list-after-template-kw']
 {% endif %}
 {% if compiler == "gcc" and compiler_version < 13 %}
-tools.build:cxxflags=['-Wno-restrict']
+tools.build:cxxflags+=['-Wno-restrict']
 {% endif %}

@@ -5450,13 +5450,12 @@ class Offer_manual_test : public OfferBaseUtil_test
     {
         using namespace jtx;
         FeatureBitset const all{testable_amendments()};
-        FeatureBitset const f1513{fix1513};
         FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         FeatureBitset const fillOrKill{fixFillOrKill};
         FeatureBitset const permDEX{featurePermissionedDEX};
 
-        testAll(all - f1513 - immediateOfferKilled - permDEX);
+        testAll(all - immediateOfferKilled - permDEX);
         testAll(all - immediateOfferKilled - fillOrKill - permDEX);
         testAll(all - fillOrKill - permDEX);
         testAll(all - permDEX);
