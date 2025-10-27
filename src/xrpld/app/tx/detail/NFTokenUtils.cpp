@@ -1047,7 +1047,7 @@ tokenOfferCreateApply(
             keylet::ownerDir(acctID), offerID, describeOwnerDir(acctID));
 
         if (!ownerNode)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         bool const isSellOffer = txFlags & tfSellNFToken;
 
@@ -1064,7 +1064,7 @@ tokenOfferCreateApply(
             });
 
         if (!offerNode)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         std::uint32_t sleFlags = 0;
 

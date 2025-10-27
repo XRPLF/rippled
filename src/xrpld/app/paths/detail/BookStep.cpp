@@ -47,7 +47,7 @@ class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 protected:
     enum class OfferType { AMM, CLOB };
 
-    uint32_t const maxOffersToConsume_;
+    static constexpr uint32_t MaxOffersToConsume{1000};
     Book book_;
     AccountID strandSrc_;
     AccountID strandDst_;
@@ -82,18 +82,9 @@ protected:
 
     std::optional<Cache> cache_;
 
-    static uint32_t
-    getMaxOffersToConsume(StrandContext const& ctx)
-    {
-        if (ctx.view.rules().enabled(fix1515))
-            return 1000;
-        return 2000;
-    }
-
 public:
     BookStep(StrandContext const& ctx, Issue const& in, Issue const& out)
-        : maxOffersToConsume_(getMaxOffersToConsume(ctx))
-        , book_(in, out, ctx.domainID)
+        : book_(in, out, ctx.domainID)
         , strandSrc_(ctx.strandSrc)
         , strandDst_(ctx.strandDst)
         , prevStep_(ctx.prevStep)
@@ -738,7 +729,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         ownerPaysTransferFee_ ? rate(book_.out.account) : QUALITY_ONE;
 
     typename FlowOfferStream<TIn, TOut>::StepCounter counter(
-        maxOffersToConsume_, j_);
+        MaxOffersToConsume, j_);
 
     FlowOfferStream<TIn, TOut> offers(
         sb, afView, book_, sb.parentCloseTime(), counter, j_);
@@ -1093,18 +1084,9 @@ BookStep<TIn, TOut, TDerived>::revImp(
         offersUsed_ = offersConsumed;
         SetUnion(ofrsToRm, toRm);
 
-        if (offersConsumed >= maxOffersToConsume_)
+        // Too many iterations, mark this strand as inactive
+        if (offersConsumed >= MaxOffersToConsume)
         {
-            // Too many iterations, mark this strand as inactive
-            if (!afView.rules().enabled(fix1515))
-            {
-                // Don't use the liquidity
-                cache_.emplace(beast::zero, beast::zero);
-                return {beast::zero, beast::zero};
-            }
-
-            // Use the liquidity, but use this to mark the strand as inactive so
-            // it's not used further
             inactive_ = true;
         }
     }
@@ -1113,11 +1095,13 @@ BookStep<TIn, TOut, TDerived>::revImp(
     {
         case -1: {
             // something went very wrong
+            // LCOV_EXCL_START
             JLOG(j_.error())
                 << "BookStep remainingOut < 0 " << to_string(remainingOut);
             UNREACHABLE("ripple::BookStep::revImp : remaining less than zero");
             cache_.emplace(beast::zero, beast::zero);
             return {beast::zero, beast::zero};
+            // LCOV_EXCL_STOP
         }
         case 0: {
             // due to normalization, remainingOut can be zero without
@@ -1264,18 +1248,9 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         offersUsed_ = offersConsumed;
         SetUnion(ofrsToRm, toRm);
 
-        if (offersConsumed >= maxOffersToConsume_)
+        // Too many iterations, mark this strand as inactive (dry)
+        if (offersConsumed >= MaxOffersToConsume)
         {
-            // Too many iterations, mark this strand as inactive (dry)
-            if (!afView.rules().enabled(fix1515))
-            {
-                // Don't use the liquidity
-                cache_.emplace(beast::zero, beast::zero);
-                return {beast::zero, beast::zero};
-            }
-
-            // Use the liquidity, but use this to mark the strand as inactive so
-            // it's not used further
             inactive_ = true;
         }
     }
@@ -1283,12 +1258,14 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
     switch (remainingIn.signum())
     {
         case -1: {
+            // LCOV_EXCL_START
             // something went very wrong
             JLOG(j_.error())
                 << "BookStep remainingIn < 0 " << to_string(remainingIn);
             UNREACHABLE("ripple::BookStep::fwdImp : remaining less than zero");
             cache_.emplace(beast::zero, beast::zero);
             return {beast::zero, beast::zero};
+            // LCOV_EXCL_STOP
         }
         case 0: {
             // due to normalization, remainingIn can be zero without
@@ -1421,8 +1398,10 @@ bookStepEqual(Step const& step, ripple::Book const& book)
     bool const outXRP = isXRP(book.out.currency);
     if (inXRP && outXRP)
     {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::test::bookStepEqual : no XRP to XRP book step");
         return false;  // no such thing as xrp/xrp book step
+        // LCOV_EXCL_STOP
     }
     if (inXRP && !outXRP)
         return equalHelper<

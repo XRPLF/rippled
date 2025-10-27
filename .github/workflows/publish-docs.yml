@@ -27,7 +27,7 @@ env:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/ci/tools-rippled-documentation:sha-d1496b8
+    container: ghcr.io/xrplf/ci/tools-rippled-documentation:sha-a8c7be1
     permissions:
       contents: write
     steps:
@@ -48,8 +48,8 @@ jobs:
           doxygen --version
       - name: Build documentation
         run: |
-          mkdir -p ${{ env.BUILD_DIR }}
-          cd ${{ env.BUILD_DIR }}
+          mkdir -p "${BUILD_DIR}"
+          cd "${BUILD_DIR}"
           cmake -Donly_docs=ON ..
           cmake --build . --target docs --parallel $(nproc)
       - name: Publish documentation
