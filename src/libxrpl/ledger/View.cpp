@@ -1267,8 +1267,9 @@ addEmptyHolding(
         return tecDUPLICATE;
 
     // Can the account cover the trust line reserve ?
-    std::uint32_t const ownerCount = sleDst->at(sfOwnerCount);
-    if (priorBalance < view.fees().accountReserve(ownerCount + 1))
+    if (auto const ret =
+            checkInsufficientReserve(view, sleDst, priorBalance, 1);
+        !isTesSuccess(ret))
         return tecNO_LINE_INSUF_RESERVE;
 
     return trustCreate(
