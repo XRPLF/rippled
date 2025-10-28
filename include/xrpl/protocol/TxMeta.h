@@ -100,12 +100,12 @@ public:
     STArray&
     getNodes()
     {
-        return (nodes_);
+        return nodes_;
     }
     STArray const&
     getNodes() const
     {
-        return (nodes_);
+        return nodes_;
     }
 
     void
