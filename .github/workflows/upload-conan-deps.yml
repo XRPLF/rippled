@@ -34,6 +34,7 @@ on:
 env:
   CONAN_REMOTE_NAME: xrplf
   CONAN_REMOTE_URL: https://conan.ripplex.io
+  NPROC_SUBTRACT: 2
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -61,11 +62,22 @@ jobs:
         if: ${{ runner.os == 'macOS' }}
         uses: XRPLF/actions/.github/actions/cleanup-workspace@3f044c7478548e3c32ff68980eeb36ece02b364e
 
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
       - name: Prepare runner
         uses: XRPLF/actions/.github/actions/prepare-runner@638e0dc11ea230f91bd26622fb542116bb5254d5
         with:
           disable_ccache: false
+
+      - name: Print build environment
+        uses: ./.github/actions/print-env
+
+      - name: Get number of processors
+        uses: XRPLF/actions/.github/actions/get-nproc@046b1620f6bfd6cd0985dc82c3df02786801fe0a
+        id: nproc
+        with:
+          subtract: ${{ env.NPROC_SUBTRACT }}
 
       - name: Setup Conan
         uses: ./.github/actions/setup-conan
@@ -77,11 +89,12 @@ jobs:
         uses: ./.github/actions/build-deps
         with:
           build_dir: .build
+          build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ matrix.build_type }}
           force_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
-          # The verbosity is set to "quiet" for Windows to avoid an excessive amount of logs, while it
-          # is set to "verbose" otherwise to provide more information during the build process.
-          verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
+          # Set the verbosity to "quiet" for Windows to avoid an excessive
+          # amount of logs. For other OSes, the "verbose" logs are more useful.
+          log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
 
       - name: Log into Conan remote
         if: ${{ github.repository_owner == 'XRPLF' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}

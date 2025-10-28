@@ -34,6 +34,11 @@ on:
         required: true
         type: string
 
+      nproc_subtract:
+        description: "The number of processors to subtract when calculating parallelism."
+        required: true
+        type: number
+
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
@@ -65,6 +70,12 @@ jobs:
       - name: Print build environment
         uses: ./.github/actions/print-env
 
+      - name: Get number of processors
+        uses: XRPLF/actions/.github/actions/get-nproc@046b1620f6bfd6cd0985dc82c3df02786801fe0a
+        id: nproc
+        with:
+          subtract: ${{ inputs.nproc_subtract }}
+
       - name: Setup Conan
         uses: ./.github/actions/setup-conan
 
@@ -72,7 +83,11 @@ jobs:
         uses: ./.github/actions/build-deps
         with:
           build_dir: ${{ inputs.build_dir }}
+          build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ inputs.build_type }}
+          # Set the verbosity to "quiet" for Windows to avoid an excessive
+          # amount of logs. For other OSes, the "verbose" logs are more useful.
+          log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
 
       - name: Configure CMake
         shell: bash
@@ -92,13 +107,14 @@ jobs:
         shell: bash
         working-directory: ${{ inputs.build_dir }}
         env:
+          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_TARGET: ${{ inputs.cmake_target }}
         run: |
           cmake \
             --build . \
             --config "${BUILD_TYPE}" \
-            --parallel $(nproc) \
+            --parallel ${BUILD_NPROC} \
             --target "${CMAKE_TARGET}"
 
       - name: Put built binaries in one location
