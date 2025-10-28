@@ -126,7 +126,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload coverage report
-        if: ${{ inputs.cmake_target == 'coverage' }}
+        if: ${{ github.repository_owner == 'XRPLF' && inputs.cmake_target == 'coverage' }}
         uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
         with:
           disable_search: true
