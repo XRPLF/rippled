@@ -118,13 +118,6 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-std::uint32_t
-EscrowCreate::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
-}
-
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
@@ -637,13 +630,6 @@ EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
 {
     return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
         ctx.rules.enabled(featureCredentials);
-}
-
-std::uint32_t
-EscrowFinish::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
 }
 
 NotTEC
@@ -1224,13 +1210,6 @@ EscrowFinish::doApply()
 }
 
 //------------------------------------------------------------------------------
-
-std::uint32_t
-EscrowCancel::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
-}
 
 NotTEC
 EscrowCancel::preflight(PreflightContext const& ctx)
