@@ -22,6 +22,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
@@ -503,7 +504,7 @@ struct Directory_test : public beast::unit_test::suite
             env.fund(XRP(20000), alice);
             env.close();
 
-            auto const lastPage = setup(env);
+            auto const [lastPage, full] = setup(env);
 
             // Populate root page and last page
             for (int i = 0; i < 63; ++i)
@@ -535,13 +536,17 @@ struct Directory_test : public beast::unit_test::suite
             // Create one more credential
             env(credentials::create(alice, alice, std::to_string(63)));
 
-            // Not enough space for another object
-            env(credentials::create(alice, alice, "foo"), ter{tecDIR_FULL});
+            // Not enough space for another object if full
+            auto const expected = full ? ter{tecDIR_FULL} : ter{tesSUCCESS};
+            env(credentials::create(alice, alice, "foo"), expected);
 
             // Destroy all objects in directory
             for (int i = 0; i < 64; ++i)
                 env(credentials::deleteCred(
                     alice, alice, alice, std::to_string(i)));
+
+            if (!full)
+                env(credentials::deleteCred(alice, alice, alice, "foo"));
 
             // Verify directory is empty.
             auto const sle = env.le(keylet::ownerDir(alice.id()));
@@ -553,15 +558,21 @@ struct Directory_test : public beast::unit_test::suite
 
         testCase(
             testable_amendments() - fixDirectoryLimit,
-            [this](Env&) -> std::uint64_t {
+            [this](Env&) -> std::tuple<std::uint64_t, bool> {
                 testcase("directory full without fixDirectoryLimit");
-                return dirNodeMaxPages - 1;
+                return {dirNodeMaxPages - 1, true};
             });
         testCase(
             testable_amendments(),  //
-            [this](Env&) -> std::uint64_t {
+            [this](Env&) -> std::tuple<std::uint64_t, bool> {
+                testcase("directory not full with fixDirectoryLimit");
+                return {dirNodeMaxPages - 1, false};
+            });
+        testCase(
+            testable_amendments(),  //
+            [this](Env&) -> std::tuple<std::uint64_t, bool> {
                 testcase("directory full with fixDirectoryLimit");
-                return std::numeric_limits<std::uint64_t>::max();
+                return {std::numeric_limits<std::uint64_t>::max(), true};
             });
     }
 
