@@ -125,6 +125,21 @@ bumpLastPage(
 
     return res;
 }
+
+bool
+adjustOwnerNode(ApplyView& view, uint256 key, std::uint64_t page)
+{
+    auto sle = view.peek({ltANY, key});
+    if (sle && sle->isFieldPresent(sfOwnerNode))
+    {
+        sle->setFieldU64(sfOwnerNode, page);
+        view.update(sle);
+        return true;
+    }
+
+    return false;
+}
+
 }  // namespace directory
 
 }  // namespace ripple::test::jtx
