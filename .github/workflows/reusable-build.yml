@@ -101,11 +101,27 @@ jobs:
             --parallel $(nproc) \
             --target "${CMAKE_TARGET}"
 
+      - name: Put built binaries in one location
+        shell: bash
+        working-directory: ${{ inputs.build_dir }}
+        env:
+          BUILD_TYPE_DIR: ${{ runner.os == 'Windows' && inputs.build_type || '' }}
+          CMAKE_TARGET: ${{ inputs.cmake_target }}
+        run: |
+          mkdir -p ./binaries/doctest/
+
+          cp ./${BUILD_TYPE_DIR}/rippled* ./binaries/
+          if [ "${CMAKE_TARGET}" != 'coverage' ]; then
+            cp ./src/tests/libxrpl/${BUILD_TYPE_DIR}/xrpl.test.* ./binaries/doctest/
+          fi
+
       - name: Upload rippled artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        env:
+          BUILD_DIR: ${{ inputs.build_dir }}
         with:
           name: rippled-${{ inputs.config_name }}
-          path: ${{ inputs.build_dir }}/${{ runner.os == 'Windows' && inputs.build_type || '' }}/rippled${{ runner.os == 'Windows' && '.exe' || '' }}
+          path: ${{ env.BUILD_DIR }}/binaries/
           retention-days: 3
           if-no-files-found: error
 
