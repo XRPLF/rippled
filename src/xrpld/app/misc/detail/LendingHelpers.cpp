@@ -1248,14 +1248,54 @@ computePaymentComponents(
             "ripple::detail::computePaymentComponents",
             "excess non-negative");
     };
+    auto giveTo = [](Number& total,
+                     Number& component,
+                     Number& shortage,
+                     Number const& maximum) {
+        if (shortage > beast::zero)
+        {
+            // Put as much of the shortage as we can into the provided part and
+            // the total
+            auto part = std::min(maximum - component, shortage);
+            total += part;
+            component += part;
+            shortage -= part;
+        }
+        // If the shortage goes negative, we put too much, which should be
+        // impossible
+        XRPL_ASSERT_PARTS(
+            shortage >= beast::zero,
+            "ripple::detail::computePaymentComponents",
+            "excess non-negative");
+    };
     auto addressExcess = [&takeFrom](LoanDeltas& deltas, Number& excess) {
         takeFrom(deltas.valueDelta, deltas.interestDueDelta, excess);
         takeFrom(deltas.valueDelta, deltas.managementFeeDueDelta, excess);
         takeFrom(deltas.valueDelta, deltas.principalDelta, excess);
     };
+    auto addressShortage =
+        [&giveTo](
+            LoanDeltas& deltas, Number& shortage, LoanState const& current) {
+            // Opposite order as addressExcess
+            giveTo(
+                deltas.valueDelta,
+                deltas.principalDelta,
+                shortage,
+                current.principalOutstanding);
+            giveTo(
+                deltas.valueDelta,
+                deltas.managementFeeDueDelta,
+                shortage,
+                current.managementFeeDue);
+            giveTo(
+                deltas.valueDelta,
+                deltas.interestDueDelta,
+                shortage,
+                current.interestDue);
+        };
     Number totalOverpayment =
         deltas.valueDelta - currentLedgerState.valueOutstanding;
-    if (totalOverpayment > 0)
+    if (totalOverpayment > beast::zero)
     {
         // LCOV_EXCL_START
         UNREACHABLE(
@@ -1280,25 +1320,38 @@ computePaymentComponents(
 
         shortage = -excess;
     }
+    else if (shortage > beast::zero && totalOverpayment < beast::zero)
+    {
+        // If there's a shortage, and there's room in the loan itself, we can
+        // top up the parts to make the payment correct.
+        shortage = std::min(-totalOverpayment, shortage);
+        addressShortage(deltas, shortage, currentLedgerState);
+    }
 
     // The shortage should never be negative, which indicates that the parts are
-    // trying to take more than the whole payment. The shortage can be positive,
-    // which indicates that we're not going to take the whole payment amount,
-    // but if so, it must be small.
+    // trying to take more than the whole payment. The shortage should not be
+    // positive, either, which indicates that we're not going to take the whole
+    // payment amount. Only the last payment should be allowed to have a
+    // shortage, and that's handled in a special case above.
     XRPL_ASSERT_PARTS(
-        shortage == beast::zero ||
-            (shortage > beast::zero &&
-             ((asset.integral() && shortage < 3) ||
-              (scale - shortage.exponent() > 14))),
+        shortage == beast::zero,
         "ripple::detail::computePaymentComponents",
-        "excess is extremely small");
+        "no shortage or excess");
+#if LOANCOMPLETE
+    // This used to be part of the above assert. It will eventually be removed
+    // if proved accurate
+    ||
+        (shortage > beast::zero &&
+         ((asset.integral() && shortage < 3) ||
+          (scale - shortage.exponent() > 14)))
+#endif
 
-    XRPL_ASSERT_PARTS(
-        deltas.valueDelta ==
-            deltas.principalDelta + deltas.interestDueDelta +
-                deltas.managementFeeDueDelta,
-        "ripple::detail::computePaymentComponents",
-        "total value adds up");
+            XRPL_ASSERT_PARTS(
+                deltas.valueDelta ==
+                    deltas.principalDelta + deltas.interestDueDelta +
+                        deltas.managementFeeDueDelta,
+                "ripple::detail::computePaymentComponents",
+                "total value adds up");
 
     XRPL_ASSERT_PARTS(
         deltas.principalDelta >= beast::zero,

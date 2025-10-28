@@ -1939,7 +1939,7 @@ class Loan_test : public beast::unit_test::suite
                         << raw.managementFeeDue << ", "
                         << rounded.valueOutstanding << ", "
                         << rounded.principalOutstanding << ", "
-                        << rounded.interestOutstanding << ", "
+                        << rounded.interestDue << ", "
                         << rounded.managementFeeDue;
                 }
 
@@ -1986,8 +1986,12 @@ class Loan_test : public beast::unit_test::suite
                             managementFeeRateParameter);
 
                     BEAST_EXPECT(
-                        paymentComponents.trackedValueDelta <=
-                        roundedPeriodicPayment);
+                        paymentComponents.trackedValueDelta ==
+                            roundedPeriodicPayment ||
+                        (paymentComponents.specialCase ==
+                             detail::PaymentSpecialCase::final &&
+                         paymentComponents.trackedValueDelta <
+                             roundedPeriodicPayment));
 
                     ripple::LoanState const nextTrueState =
                         calculateRawLoanState(
