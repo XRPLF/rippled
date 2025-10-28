@@ -189,7 +189,9 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    adjustOwnerCount(view(), owner, -1, j_);
+
+    // We are destroying Vault and PseudoAccount, hence decrease by 2
+    adjustOwnerCount(view(), owner, -2, j_);
 
     // Destroy the vault.
     view().erase(vault);
