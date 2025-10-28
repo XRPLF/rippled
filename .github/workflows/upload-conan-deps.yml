@@ -84,11 +84,11 @@ jobs:
           verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
 
       - name: Log into Conan remote
-        if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' }}
+        if: ${{ github.repository_owner == 'XRPLF' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         run: conan remote login "${CONAN_REMOTE_NAME}" "${{ secrets.CONAN_REMOTE_USERNAME }}" --password "${{ secrets.CONAN_REMOTE_PASSWORD }}"
 
       - name: Upload Conan packages
-        if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' && github.event_name != 'schedule' }}
+        if: ${{ github.repository_owner == 'XRPLF' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
         env:
           FORCE_OPTION: ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
         run: conan upload "*" --remote="${CONAN_REMOTE_NAME}" --confirm ${FORCE_OPTION}
