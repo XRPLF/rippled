@@ -37,20 +37,22 @@ enum Error {
     DirectoryTooSmall,
     DirectoryPageDuplicate,
     DirectoryPageNotFound,
+    InvalidLastPage,
     AdjustmentError
 };
 
 /// Move the position of the last page in the user's directory on open ledger to
-/// the maximum possible position. Requirements:
+/// newLastPage. Requirements:
 /// - directory must have at least two pages (root and one more)
 /// - adjust should be used to update owner nodes of the objects affected
+/// - newLastPage must be greater than index of the last page in the directory
 ///
 /// Use this to test tecDIR_FULL errors in open ledger.
 /// NOTE: effects will be DISCARDED on env.close()
 auto
 bumpLastPage(
     Env& env,
-    std::uint64_t lastPage,
+    std::uint64_t newLastPage,
     Keylet directory,
     std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust)
     -> Expected<void, Error>;

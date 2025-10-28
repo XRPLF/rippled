@@ -29,7 +29,7 @@ namespace directory {
 auto
 bumpLastPage(
     Env& env,
-    std::uint64_t lastPage,
+    std::uint64_t newLastPage,
     Keylet directory,
     std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust)
     -> Expected<void, Error>
@@ -55,9 +55,15 @@ bumpLastPage(
                 return false;
             }
 
-            if (sb.exists(keylet::page(directory, lastPage)))
+            if (sb.exists(keylet::page(directory, newLastPage)))
             {
                 res = Unexpected<Error>(DirectoryPageDuplicate);
+                return false;
+            }
+
+            if (lastIndex >= newLastPage)
+            {
+                res = Unexpected<Error>(InvalidLastPage);
                 return false;
             }
 
@@ -76,7 +82,7 @@ bumpLastPage(
 
             // Create new page to replace slePage
             auto sleNew =
-                std::make_shared<SLE>(keylet::page(directory, lastPage));
+                std::make_shared<SLE>(keylet::page(directory, newLastPage));
             sleNew->setFieldH256(sfRootIndex, directory.key);
             sleNew->setFieldV256(sfIndexes, indexes);
             if (owner)
@@ -86,9 +92,9 @@ bumpLastPage(
             sb.insert(sleNew);
 
             // Adjust root previous and previous node's next
-            sleRoot->setFieldU64(sfIndexPrevious, lastPage);
+            sleRoot->setFieldU64(sfIndexPrevious, newLastPage);
             if (prevIndex.value_or(0) == 0)
-                sleRoot->setFieldU64(sfIndexNext, lastPage);
+                sleRoot->setFieldU64(sfIndexNext, newLastPage);
             else
             {
                 auto slePrev = sb.peek(keylet::page(directory, *prevIndex));
@@ -97,7 +103,7 @@ bumpLastPage(
                     res = Unexpected<Error>(DirectoryPageNotFound);
                     return false;
                 }
-                slePrev->setFieldU64(sfIndexNext, lastPage);
+                slePrev->setFieldU64(sfIndexNext, newLastPage);
                 sb.update(slePrev);
             }
             sb.update(sleRoot);
@@ -106,7 +112,7 @@ bumpLastPage(
             if (adjust)
                 for (auto const key : indexes)
                 {
-                    if (!adjust(sb, key, lastPage))
+                    if (!adjust(sb, key, newLastPage))
                     {
                         res = Unexpected<Error>(AdjustmentError);
                         return false;
