@@ -4313,6 +4313,84 @@ public:
     }
 
     void
+    testBatch()
+    {
+        testcase("Batch");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+
+        //
+        // Outer transaction
+        //
+        {
+            // test outer transaction with co-signing sponsor
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
+                batch::inner(noop(alice), seq + 1),
+                batch::inner(ticket::create(alice, 1), seq + 2),
+                sponsor::as(sponsor, tfSponsorReserve | tfSponsorFee),
+                sig(sfSponsorSignature, sponsor),
+                ter(tesSUCCESS));
+            env.close();
+
+            // does not affect reserve
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+
+            // fee is paid by sponsor
+            BEAST_EXPECT(env.balance(alice) == XRP(1000));
+            BEAST_EXPECT(env.balance(sponsor) == XRP(1000 - 1));
+        }
+        {
+            // test outer transaction with prefunded sponsor
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000), alice, bob);
+            env.fund(XRP(1001), sponsor);
+            env.close();
+
+            env(sponsor::set(sponsor, 0, 100, XRP(100)),
+                sponsor::sponseeAcc(alice),
+                fee(XRP(1)),
+                ter(tesSUCCESS));
+            env.close();
+
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
+                batch::inner(noop(alice), seq + 1),
+                batch::inner(ticket::create(alice, 1), seq + 2),
+                sponsor::as(sponsor, tfSponsorReserve | tfSponsorFee),
+                ter(tesSUCCESS));
+            env.close();
+
+            // does not affect reserve
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+
+            // fee is paid by sponsor object
+            BEAST_EXPECT(env.balance(alice) == XRP(1000));
+            BEAST_EXPECT(env.balance(sponsor) == XRP(900));
+
+            auto const sponsorshipSle = env.le(keylet::sponsor(sponsor, alice));
+            BEAST_EXPECT(sponsorshipSle);
+            BEAST_EXPECT(sponsorshipSle->at(sfFeeAmount) == XRP(100 - 1));
+            BEAST_EXPECT(sponsorshipSle->at(sfReserveCount) == 100);
+        }
+
+        //
+        // Inner transaction
+        //
+        // TEQU: TODO
+    }
+
+    void
     run() override
     {
         testDisabled();
@@ -4334,6 +4412,7 @@ public:
         testAccountDelete();
 
         testDelegatePermission();
+        testBatch();
     }
 };
 
