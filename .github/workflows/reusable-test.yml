@@ -74,9 +74,11 @@ jobs:
 
       - name: Run the separate tests
         if: ${{ inputs.run_tests }}
+        env:
+          EXT: ${{ runner.os == 'Windows' && '.exe' || '' }}
         shell: bash
         run: |
-          for test_file in ./doctest/*; do
+          for test_file in ./doctest/*${EXT}; do
             echo "Executing $test_file"
             chmod +x "$test_file"
             if [[ "${{ runner.os }}" == "Windows" && "$test_file" == "./doctest/xrpl.test.net.exe" ]]; then
