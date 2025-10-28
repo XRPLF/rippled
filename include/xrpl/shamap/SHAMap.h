@@ -21,6 +21,7 @@
 #define RIPPLE_SHAMAP_SHAMAP_H_INCLUDED
 
 #include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/nodestore/Database.h>
