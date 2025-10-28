@@ -190,12 +190,6 @@ public:
         }
 
         {
-            // now make a limit (= 0) query for the same data
-            // since we operate on the admin port, the limit
-            // value of 0 is not adjusted into tuned ranges for admin requests
-            // so we literally get 0 elements in that case. For non-admin
-            // requests, we get limit defaults applied thus all our results
-            // come back (we are below the min results limit)
             Json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::limit] = 0u;
@@ -203,18 +197,7 @@ public:
                 "json",
                 "account_offers",
                 jvParams.toStyledString())[jss::result];
-            auto const& jro = jrr[jss::offers];
-            if (asAdmin)
-            {
-                // limit == 0 is invalid
-                BEAST_EXPECT(jrr.isMember(jss::error_message));
-            }
-            else
-            {
-                // Call should enforce min limit of 10
-                BEAST_EXPECT(checkArraySize(jro, 3u));
-                BEAST_EXPECT(!jrr.isMember(jss::marker));
-            }
+            BEAST_EXPECT(jrr.isMember(jss::error_message));
         }
     }
 
