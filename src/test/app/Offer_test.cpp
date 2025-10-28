@@ -846,13 +846,8 @@ public:
         // Fill or Kill - unless we fully cross, just charge a fee and don't
         // place the offer on the books.  But also clean up expired offers
         // that are discovered along the way.
-        //
-        // fix1578 changes the return code.  Verify expected behavior
-        // without and with fix1578.
-        for (auto const& tweakedFeatures :
-             {features - fix1578, features | fix1578})
         {
-            Env env{*this, tweakedFeatures};
+            Env env{*this, features};
 
             auto const f = env.current()->fees().base;
 
@@ -878,9 +873,7 @@ public:
 
             // Order that can't be filled but will remove bob's expired offer:
             {
-                TER const killedCode{
-                    tweakedFeatures[fix1578] ? TER{tecKILLED}
-                                             : TER{tesSUCCESS}};
+                TER const killedCode{TER{tecKILLED}};
                 env(offer(alice, XRP(1000), USD(1000)),
                     txflags(tfFillOrKill),
                     ter(killedCode));
@@ -3008,8 +3001,7 @@ public:
         env.close();
 
         // Code returned if an offer is killed.
-        TER const killedCode{
-            features[fix1578] ? TER{tecKILLED} : TER{tesSUCCESS}};
+        TER const killedCode{TER{tecKILLED}};
 
         // bob offers XRP for USD.
         env(trust(bob, USD(200)));
