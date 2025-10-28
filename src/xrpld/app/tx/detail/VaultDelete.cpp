@@ -157,7 +157,7 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    reduceOwnerCount(view(), pseudoAcct, std::nullopt, -1, j_);
+    adjustOwnerCount(view(), pseudoAcct, std::nullopt, -1, j_);
 
     view().erase(mpt);
 
@@ -191,7 +191,7 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
     auto const vaultSponsor = getLedgerEntryReserveSponsor(view(), vault);
-    reduceOwnerCount(view(), owner, vaultSponsor, -1, j_);
+    adjustOwnerCount(view(), owner, vaultSponsor, -1, j_);
 
     // Destroy the vault.
     view().erase(vault);

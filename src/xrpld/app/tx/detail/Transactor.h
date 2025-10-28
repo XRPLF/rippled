@@ -337,7 +337,7 @@ private:
     reset(XRPAmount fee);
 
     static FeePayer
-    getFeePayer(STTx const& tx);
+    getFeePayer(ReadView const& view, STTx const& tx);
 
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);

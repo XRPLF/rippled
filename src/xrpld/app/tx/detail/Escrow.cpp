@@ -1237,7 +1237,7 @@ EscrowFinish::doApply()
     // Adjust source owner count
     auto const sle = ctx_.view().peek(keylet::account(account));
     auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), slep);
-    reduceOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
+    adjustOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
     ctx_.view().update(sle);
 
     // Remove escrow from ledger
@@ -1461,7 +1461,7 @@ EscrowCancel::doApply()
     }
 
     auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), slep);
-    reduceOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
+    adjustOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
     ctx_.view().update(sle);
 
     // Remove escrow from ledger

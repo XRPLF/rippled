@@ -769,7 +769,7 @@ finalizeClaimHelper(
 
             auto const sponsor =
                 getLedgerEntryReserveSponsor(outerSb, sleClaimID);
-            reduceOwnerCount(outerSb, sleOwner, sponsor, -1, j);
+            adjustOwnerCount(outerSb, sleOwner, sponsor, -1, j);
         }
     }
 

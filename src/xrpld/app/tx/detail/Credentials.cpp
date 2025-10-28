@@ -366,7 +366,7 @@ CredentialAccept::doApply()
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
 
-    reduceOwnerCount(view(), sleIssuer, currentSponsor, -1, j_);
+    adjustOwnerCount(view(), sleIssuer, currentSponsor, -1, j_);
     removeSponsorFromLedgerEntry(sleCred);
     adjustOwnerCount(view(), ctx_.tx, sleSubject, newSponsor, 1, j_);
     addSponsorToLedgerEntry(sleCred, newSponsor);

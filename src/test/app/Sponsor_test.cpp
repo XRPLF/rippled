@@ -26,6 +26,8 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
 
+#include "test/jtx/txflags.h"
+
 namespace ripple {
 namespace test {
 
@@ -422,6 +424,67 @@ public:
             env(sponsor::del(alice),
                 sponsor::sponsorAcc(sponsor),
                 ter(tesSUCCESS));
+            env.close();
+        }
+    }
+
+    void
+    testPreFundAndCosign()
+    {
+        testcase("PreFund and Cosign");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+
+        {
+            // both pre-funded and co-signed,pre-funded value is used
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(10000), alice, sponsor);
+            env.close();
+
+            env(sponsor::set(sponsor, 0, 100, XRP(100), XRP(1)),
+                sponsor::sponseeAcc(alice),
+                ter(tesSUCCESS));
+            env.close();
+
+            env(ticket::create(alice, 1),
+                sponsor::as(sponsor, tfSponsorReserve | tfSponsorFee),
+                sig(sfSponsorSignature, sponsor),
+                fee(XRP(1)),
+                ter(tesSUCCESS));
+            env.close();
+
+            auto const sle = env.le(keylet::sponsor(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(sle->at(sfReserveCount) == 99);
+            BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(99));
+        }
+
+        {
+            // if pre-funded value is not enough, error
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(10000), alice, sponsor);
+            env.close();
+
+            env(sponsor::set(sponsor, 0, 10, XRP(10), XRP(100)),
+                sponsor::sponseeAcc(alice),
+                ter(tesSUCCESS));
+            env.close();
+
+            // fee insufficient
+            env(ticket::create(alice, 1),
+                sponsor::as(sponsor, tfSponsorReserve | tfSponsorFee),
+                sig(sfSponsorSignature, sponsor),
+                fee(XRP(11)),
+                ter(terINSUF_FEE_B));
+            env.close();
+
+            // reserve insufficient
+            env(ticket::create(alice, 11),
+                sponsor::as(sponsor, tfSponsorReserve | tfSponsorFee),
+                sig(sfSponsorSignature, sponsor),
+                fee(XRP(1)),
+                ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
     }
@@ -4259,6 +4322,8 @@ public:
         testMultiSigning();
 
         testSimpleSponsorshipSet();
+
+        testPreFundAndCosign();
 
         testTransferSponsor();
         testSponsorFee();

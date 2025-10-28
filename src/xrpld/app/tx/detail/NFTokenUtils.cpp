@@ -495,7 +495,7 @@ removeToken(
         if (prev && mergePages(view, prev, curr))
         {
             auto const sponsor = getLedgerEntryReserveSponsor(view, prev);
-            reduceOwnerCount(
+            adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
                 sponsor,
@@ -506,7 +506,7 @@ removeToken(
         if (next && mergePages(view, curr, next))
         {
             auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
-            reduceOwnerCount(
+            adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
                 sponsor,
@@ -547,7 +547,7 @@ removeToken(
             }
 
             auto const sponsor = getLedgerEntryReserveSponsor(view, prev);
-            reduceOwnerCount(
+            adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
                 sponsor,
@@ -581,7 +581,7 @@ removeToken(
     }
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
-    reduceOwnerCount(
+    adjustOwnerCount(
         view,
         view.peek(keylet::account(owner)),
         getLedgerEntryReserveSponsor(view, curr),
@@ -604,7 +604,7 @@ removeToken(
             view.peek(Keylet(ltNFTOKEN_PAGE, prev->key())),
             view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
     {
-        reduceOwnerCount(
+        adjustOwnerCount(
             view,
             view.peek(keylet::account(owner)),
             getLedgerEntryReserveSponsor(view, prev),
@@ -763,7 +763,7 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
         return false;
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, offer);
-    reduceOwnerCount(
+    adjustOwnerCount(
         view,
         view.peek(keylet::account(owner)),
         sponsor,

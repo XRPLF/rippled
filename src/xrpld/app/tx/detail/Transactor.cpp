@@ -444,7 +444,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     std::optional<XRPAmount> availableBalance;
 
-    auto const result = getFeePayer(ctx.tx);
+    auto const result = getFeePayer(ctx.view, ctx.tx);
 
     if (result.type == FeePayerType::SponsorPreFunded)
     {
@@ -511,7 +511,7 @@ Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
-    auto const result = getFeePayer(ctx_.tx);
+    auto const result = getFeePayer(view(), ctx_.tx);
 
     auto const sle = view().peek(result.keylet);
 
@@ -711,7 +711,7 @@ Transactor::ticketDelete(
 
     // Update the Ticket owner's reserve.
     auto const sponsor = getLedgerEntryReserveSponsor(view, sleTicket);
-    reduceOwnerCount(view, sleAccount, sponsor, -1, j);
+    adjustOwnerCount(view, sleAccount, sponsor, -1, j);
 
     // Remove Ticket from ledger.
     view.erase(sleTicket);
@@ -1226,7 +1226,7 @@ Transactor::reset(XRPAmount fee)
     if (!txnAcct)
         return {tefINTERNAL, beast::zero};
 
-    auto const result = getFeePayer(ctx_.tx);
+    auto const result = getFeePayer(view(), ctx_.tx);
 
     auto const payerSle = view().peek(result.keylet);
 
@@ -1269,25 +1269,31 @@ Transactor::reset(XRPAmount fee)
 }
 
 FeePayer
-Transactor::getFeePayer(STTx const& tx)
+Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 {
     if (tx.isFieldPresent(sfSponsor) &&
         tx.getFieldObject(sfSponsor).isFlag(tfSponsorFee))
     {
         auto const sponsor = tx.getFieldObject(sfSponsor);
         auto const hasSignature = tx.isFieldPresent(sfSponsorSignature);
+        auto const keylet = keylet::sponsor(
+            sponsor.getAccountID(sfAccount), tx.getAccountID(sfAccount));
 
-        if (!hasSignature)
+        if (hasSignature)
         {
-            // pre funded
-            auto const keylet = keylet::sponsor(
-                sponsor.getAccountID(sfAccount), tx.getAccountID(sfAccount));
-            return FeePayer{
-                keylet, sfFeeAmount, FeePayerType::SponsorPreFunded};
+            // if pre-funded sponsorship exists, prefer it
+            if (view.exists(keylet))
+                return FeePayer{
+                    keylet, sfFeeAmount, FeePayerType::SponsorPreFunded};
+
+            // co-signed
+            auto const keylet =
+                keylet::account(sponsor.getAccountID(sfAccount));
+            return FeePayer{keylet, sfBalance, FeePayerType::SponsorCoSigned};
         }
-        // co-signed
-        auto const keylet = keylet::account(sponsor.getAccountID(sfAccount));
-        return FeePayer{keylet, sfBalance, FeePayerType::SponsorCoSigned};
+
+        // pre funded
+        return FeePayer{keylet, sfFeeAmount, FeePayerType::SponsorPreFunded};
     }
 
     if (tx.isFieldPresent(sfDelegate))

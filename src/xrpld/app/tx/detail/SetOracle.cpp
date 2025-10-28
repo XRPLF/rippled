@@ -200,7 +200,7 @@ adjustOwnerCount(
             adjustOwnerCount(
                 ctx.view(), ctx.tx, sleAccount, sponsor, count, ctx.journal);
         else
-            reduceOwnerCount(
+            adjustOwnerCount(
                 ctx.view(), sleAccount, sponsor, count, ctx.journal);
         return true;
     }

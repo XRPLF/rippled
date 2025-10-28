@@ -309,7 +309,7 @@ DepositPreauth::removeFromLedger(
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, slePreauth);
-    reduceOwnerCount(view, sleOwner, sponsor, -1, j);
+    adjustOwnerCount(view, sleOwner, sponsor, -1, j);
 
     // Remove DepositPreauth from ledger.
     view.erase(slePreauth);

@@ -520,7 +520,6 @@ adjustOwnerCount(
     std::shared_ptr<SLE> const& accountSle,
     std::optional<std::shared_ptr<SLE>> const& sponsorSle,
     std::int32_t amount,
-    bool const isSponsorCoSigning,
     beast::Journal j);
 
 inline void
@@ -532,8 +531,7 @@ adjustOwnerCount(
     std::int32_t amount,
     beast::Journal j)
 {
-    auto const isCoSigning = isSponsorReserveCoSigning(tx);
-    adjustOwnerCount(view, accountSle, sponsorSle, amount, isCoSigning, j);
+    adjustOwnerCount(view, accountSle, sponsorSle, amount, j);
 }
 
 inline void
@@ -553,19 +551,6 @@ adjustOwnerCount(
                 : std::optional<std::shared_ptr<SLE>>(),
         amount,
         j);
-}
-
-inline void
-reduceOwnerCount(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& accountSle,
-    std::optional<std::shared_ptr<SLE>> const& sponsorSle,
-    std::int32_t amount,
-    beast::Journal j)
-{
-    XRPL_ASSERT(
-        amount <= 0, "ripple::reduceOwnerCount : amount must be negative");
-    adjustOwnerCount(view, accountSle, sponsorSle, amount, true, j);
 }
 
 /** @{ */

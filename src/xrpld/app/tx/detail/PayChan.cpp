@@ -160,7 +160,7 @@ closeChannel(
     (*sle)[sfBalance] =
         (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     auto const sponsor = getLedgerEntryReserveSponsor(view, slep);
-    reduceOwnerCount(view, sle, sponsor, -1, j);
+    adjustOwnerCount(view, sle, sponsor, -1, j);
     view.update(sle);
 
     // Remove PayChan from ledger

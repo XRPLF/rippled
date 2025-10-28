@@ -99,7 +99,7 @@ deleteSLE(
         {
             auto const sponsor =
                 getLedgerEntryReserveSponsor(view, sleCredential);
-            reduceOwnerCount(view, sleAccount, sponsor, -1, j);
+            adjustOwnerCount(view, sleAccount, sponsor, -1, j);
         }
 
         return tesSUCCESS;

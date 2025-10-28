@@ -670,7 +670,7 @@ SetTrust::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            reduceOwnerCount(
+            adjustOwnerCount(
                 view(), sleLowAccount, currentLowSponsor, -1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
 
@@ -705,7 +705,7 @@ SetTrust::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            reduceOwnerCount(
+            adjustOwnerCount(
                 view(), sleHighAccount, currentHighSponsor, -1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
 

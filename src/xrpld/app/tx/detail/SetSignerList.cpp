@@ -233,7 +233,7 @@ removeSignersFromLedger(
     }
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, signers);
-    reduceOwnerCount(
+    adjustOwnerCount(
         view,
         view.peek(accountKeylet),
         sponsor,

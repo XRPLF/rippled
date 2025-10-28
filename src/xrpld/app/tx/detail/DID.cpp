@@ -199,7 +199,7 @@ DIDDelete::deleteSLE(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
-    reduceOwnerCount(view, sleOwner, sponsor, -1, j);
+    adjustOwnerCount(view, sleOwner, sponsor, -1, j);
     view.update(sleOwner);
 
     // Remove object from ledger
