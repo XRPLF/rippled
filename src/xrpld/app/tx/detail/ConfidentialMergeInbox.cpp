@@ -44,6 +44,14 @@ ConfidentialMergeInbox::preflight(PreflightContext const& ctx)
 TER
 ConfidentialMergeInbox::preclaim(PreclaimContext const& ctx)
 {
+    auto const sleIssuance =
+        ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    if (sleIssuance->isFlag(lsfMPTNoConfidentialTransfer))
+        return tecNO_PERMISSION;
+
     auto const sleMptoken = ctx.view.read(
         keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
     if (!sleMptoken)

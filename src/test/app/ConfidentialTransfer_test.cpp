@@ -72,6 +72,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .amt = 40,
             .proof = "123",
         });
+
+        mptAlice.convert({
+            .account = bob,
+            .amt = 40,
+            .proof = "123",
+        });
     }
 
     void
@@ -565,6 +571,149 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testMergeInboxPreflight(FeatureBitset features)
+    {
+        testcase("Merge inbox preflight");
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create(
+            {.ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+        mptAlice.authorize({.account = bob});
+        env.close();
+        mptAlice.pay(alice, bob, 100);
+        env.close();
+
+        mptAlice.generateKeyPair(alice);
+
+        mptAlice.set({.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.generateKeyPair(bob);
+
+        mptAlice.convert({
+            .account = bob,
+            .amt = 40,
+            .proof = "123",
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+
+        mptAlice.mergeInbox({.account = alice, .err = temMALFORMED});
+
+        env.disableFeature(featureConfidentialTransfer);
+        env.close();
+
+        mptAlice.mergeInbox({.account = bob, .err = temDISABLED});
+    }
+
+    void
+    testMergeInboxPreclaim(FeatureBitset features)
+    {
+        testcase("Merge inbox preclaim");
+        using namespace test::jtx;
+
+        // issuance does not exist
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.destroy();
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.mergeInbox({.account = bob, .err = tecOBJECT_NOT_FOUND});
+        }
+
+        // tfMPTNoConfidentialTransfer is set on issuance
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock |
+                     tfMPTNoConfidentialTransfer});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.mergeInbox({.account = bob, .err = tecNO_PERMISSION});
+        }
+
+        // no mptoken
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.mergeInbox({.account = bob, .err = tecOBJECT_NOT_FOUND});
+        }
+
+        // bob doesn't have encrypted balances
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.mergeInbox({.account = bob, .err = tecNO_PERMISSION});
+        }
+    }
+
+    void
     testSend(FeatureBitset features)
     {
         testcase("test confidential send");
@@ -942,6 +1091,174 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testDelete(FeatureBitset features)
+    {
+        testcase("Delete");
+        using namespace test::jtx;
+
+        // cannot delete mptoken where it has encrypted balance
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 100,
+                .proof = "123",
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            mptAlice.authorize(
+                {.account = bob,
+                 .flags = tfMPTUnauthorize,
+                 .err = tecHAS_OBLIGATIONS});
+        }
+
+        // cannot delete mptoken where it has encrypted balance
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 100,
+                .proof = "123",
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            mptAlice.convert({
+                .account = carol,
+                .amt = 0,
+                .proof = "123",
+                .holderPubKey = mptAlice.getPubKey(carol),
+            });
+
+            // carol cannot delete even if he has encrypted zero amount
+            mptAlice.authorize(
+                {.account = carol,
+                 .flags = tfMPTUnauthorize,
+                 .err = tecHAS_OBLIGATIONS});
+        }
+
+        // can delete mptoken if outstanding confidential balance is zero
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 0,
+                .proof = "123",
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            mptAlice.authorize({
+                .account = bob,
+                .flags = tfMPTUnauthorize,
+            });
+        }
+
+        // can delete mptoken if issuance has been destroyed and has encrypted
+        // zero balance
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 0,
+                .proof = "123",
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            mptAlice.destroy();
+
+            mptAlice.authorize({
+                .account = bob,
+                .flags = tfMPTUnauthorize,
+            });
+        }
+        // todo: test with convert back and delete
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testConvert(features);
@@ -949,12 +1266,17 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testConvertPreclaim(features);
 
         testMergeInbox(features);
+        testMergeInboxPreflight(features);
+        testMergeInboxPreclaim(features);
+
         testSetPreflight(features);
 
         // ConfidentialSend
         testSend(features);
         testSendPreflight(features);
         testSendPreclaim(features);
+
+        testDelete(features);
     }
 
 public:

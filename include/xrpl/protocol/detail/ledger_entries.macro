@@ -433,7 +433,7 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfPreviousTxnLgrSeq,        soeREQUIRED},
     {sfConfidentialBalanceInbox, soeOPTIONAL},
     {sfConfidentialBalanceSpending, soeOPTIONAL},
-    {sfConfidentialBalanceVersion, soeOPTIONAL},
+    {sfConfidentialBalanceVersion, soeDEFAULT},
     {sfIssuerEncryptedBalance,   soeOPTIONAL},
     {sfHolderElGamalPublicKey,   soeOPTIONAL},
 }))
