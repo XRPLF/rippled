@@ -150,15 +150,15 @@ VaultCreate::doApply()
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const ownerCount = owner->at(sfOwnerCount);
-    // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    if (mPriorBalance < view().fees().accountReserve(ownerCount + 2))
-        return tecINSUFFICIENT_RESERVE;
-    adjustOwnerCount(view(), owner, 2, j_);
-
     auto vault = std::make_shared<SLE>(keylet::vault(account_, sequence));
+
     if (auto ter = dirLink(view(), account_, vault))
         return ter;
+    // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
+    adjustOwnerCount(view(), owner, 2, j_);
+    auto const ownerCount = owner->at(sfOwnerCount);
+    if (mPriorBalance < view().fees().accountReserve(ownerCount))
+        return tecINSUFFICIENT_RESERVE;
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)
