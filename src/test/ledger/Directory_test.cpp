@@ -516,17 +516,21 @@ struct Directory_test : public beast::unit_test::suite
             // Bump position of last page from 1 to highest possible
             auto const res = directory::bumpLastPage(
                 env,
+                lastPage,
                 keylet::ownerDir(alice.id()),
-                [this](ApplyView& view, uint256 key, std::uint64_t page) {
+                [lastPage, this](
+                    ApplyView& view, uint256 key, std::uint64_t page) {
                     auto sle = view.peek({ltCREDENTIAL, key});
                     if (!BEAST_EXPECT(sle))
                         return false;
+
+                    BEAST_EXPECT(page == lastPage);
                     sle->setFieldU64(sfIssuerNode, page);
                     // sfSubjectNode is not set in self-issued credentials
                     view.update(sle);
                     return true;
                 });
-            BEAST_EXPECT(res.has_value() && res.value() == lastPage);
+            BEAST_EXPECT(res);
 
             // Create one more credential
             env(credentials::create(alice, alice, std::to_string(63)));

@@ -25,6 +25,8 @@
 #include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/Indexes.h>
 
+#include <cstdint>
+
 namespace ripple::test::jtx {
 
 /** Directory operations. */
@@ -33,6 +35,7 @@ namespace directory {
 enum Error {
     DirectoryRootNotFound,
     DirectoryTooSmall,
+    DirectoryPageDuplicate,
     DirectoryPageNotFound,
     AdjustmentError
 };
@@ -47,9 +50,10 @@ enum Error {
 auto
 bumpLastPage(
     Env& env,
+    std::uint64_t lastPage,
     Keylet directory,
     std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust)
-    -> Expected<std::uint64_t, Error>;
+    -> Expected<void, Error>;
 
 }  // namespace directory
 

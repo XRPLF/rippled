@@ -22,6 +22,9 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/Protocol.h>
 
+#include <limits>
+#include <type_traits>
+
 namespace ripple {
 
 std::optional<std::uint64_t>
@@ -95,6 +98,11 @@ ApplyView::dirAdd(
     // [basic.fundamental] paragraph 2) to detect page representation overflow.
     // For signed integers this would be UB, hence static_assert here.
     static_assert(std::is_unsigned_v<decltype(page)>);
+    // Defensive check against breaking changes in compiler.
+    static_assert([]<typename T>(std::type_identity<T>) constexpr -> T {
+        T tmp = std::numeric_limits<T>::max();
+        return ++tmp;
+    }(std::type_identity<decltype(page)>{}) == 0);
     ++page;
     // Check whether we're out of pages.
     if (page == 0)

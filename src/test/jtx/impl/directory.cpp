@@ -21,8 +21,6 @@
 
 #include <xrpl/ledger/Sandbox.h>
 
-#include <limits>
-
 namespace ripple::test::jtx {
 
 /** Directory operations. */
@@ -31,16 +29,12 @@ namespace directory {
 auto
 bumpLastPage(
     Env& env,
+    std::uint64_t lastPage,
     Keylet directory,
     std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust)
-    -> Expected<std::uint64_t, Error>
+    -> Expected<void, Error>
 {
-    std::uint64_t const lastPage =
-        (env.enabled(fixDirectoryLimit)
-             ? std::numeric_limits<std::uint64_t>::max()
-             : dirNodeMaxPages - 1);
-
-    Expected<std::uint64_t, Error> res(lastPage);
+    Expected<void, Error> res{};
     env.app().openLedger().modify(
         [&](OpenView& view, beast::Journal j) -> bool {
             Sandbox sb(&view, tapNONE);
@@ -49,7 +43,7 @@ bumpLastPage(
             auto sleRoot = sb.peek(directory);
             if (!sleRoot)
             {
-                res = DirectoryRootNotFound;
+                res = Unexpected<Error>(DirectoryRootNotFound);
                 return false;
             }
 
@@ -57,14 +51,20 @@ bumpLastPage(
             auto const lastIndex = sleRoot->getFieldU64(sfIndexPrevious);
             if (lastIndex == 0)
             {
-                res = DirectoryTooSmall;
+                res = Unexpected<Error>(DirectoryTooSmall);
+                return false;
+            }
+
+            if (sb.exists(keylet::page(directory, lastPage)))
+            {
+                res = Unexpected<Error>(DirectoryPageDuplicate);
                 return false;
             }
 
             auto slePage = sb.peek(keylet::page(directory, lastIndex));
             if (!slePage)
             {
-                res = DirectoryPageNotFound;
+                res = Unexpected<Error>(DirectoryPageNotFound);
                 return false;
             }
 
@@ -94,7 +94,7 @@ bumpLastPage(
                 auto slePrev = sb.peek(keylet::page(directory, *prevIndex));
                 if (!slePrev)
                 {
-                    res = DirectoryPageNotFound;
+                    res = Unexpected<Error>(DirectoryPageNotFound);
                     return false;
                 }
                 slePrev->setFieldU64(sfIndexNext, lastPage);
@@ -108,7 +108,7 @@ bumpLastPage(
                 {
                     if (!adjust(sb, key, lastPage))
                     {
-                        res = AdjustmentError;
+                        res = Unexpected<Error>(AdjustmentError);
                         return false;
                     }
                 }
