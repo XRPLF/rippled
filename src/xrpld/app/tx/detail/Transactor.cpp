@@ -571,15 +571,19 @@ Transactor::ticketDelete(
     SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
     if (!sleTicket)
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Ticket disappeared from ledger.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     std::uint64_t const page{(*sleTicket)[sfOwnerNode]};
     if (!view.dirRemove(keylet::ownerDir(account), page, ticketIndex, true))
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Ticket from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     // Update the account root's TicketCount.  If the ticket count drops to
@@ -587,8 +591,10 @@ Transactor::ticketDelete(
     auto sleAccount = view.peek(keylet::account(account));
     if (!sleAccount)
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Could not find Ticket owner account root.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     if (auto ticketCount = (*sleAccount)[~sfTicketCount])
@@ -600,8 +606,10 @@ Transactor::ticketDelete(
     }
     else
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "TicketCount field missing from account root.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     // Update the Ticket owner's reserve.

@@ -79,13 +79,16 @@ jobs:
           build_dir: .build
           build_type: ${{ matrix.build_type }}
           force_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
+          # The verbosity is set to "quiet" for Windows to avoid an excessive amount of logs, while it
+          # is set to "verbose" otherwise to provide more information during the build process.
+          verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
 
       - name: Log into Conan remote
         if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' }}
-        run: conan remote login ${{ env.CONAN_REMOTE_NAME }} "${{ secrets.CONAN_REMOTE_USERNAME }}" --password "${{ secrets.CONAN_REMOTE_PASSWORD }}"
+        run: conan remote login "${CONAN_REMOTE_NAME}" "${{ secrets.CONAN_REMOTE_USERNAME }}" --password "${{ secrets.CONAN_REMOTE_PASSWORD }}"
 
       - name: Upload Conan packages
         if: ${{ github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' && github.event_name != 'schedule' }}
         env:
           FORCE_OPTION: ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
-        run: conan upload "*" --remote='${{ env.CONAN_REMOTE_NAME }}' --confirm ${{ env.FORCE_OPTION }}
+        run: conan upload "*" --remote="${CONAN_REMOTE_NAME}" --confirm ${FORCE_OPTION}
