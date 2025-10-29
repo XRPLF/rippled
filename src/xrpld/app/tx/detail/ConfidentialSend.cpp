@@ -55,6 +55,11 @@ ConfidentialSend::preflight(PreflightContext const& ctx)
         ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
         return temMALFORMED;
 
+    if (!isValidCiphertext(ctx.tx[sfSenderEncryptedAmount]) ||
+        !isValidCiphertext(ctx.tx[sfDestinationEncryptedAmount]) ||
+        !isValidCiphertext(ctx.tx[sfIssuerEncryptedAmount]))
+        return temBAD_CIPHERTEXT;
+
     // if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
     //     return temMALFORMED;
 

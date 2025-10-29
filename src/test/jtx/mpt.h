@@ -35,6 +35,10 @@ namespace jtx {
 
 class MPTTester;
 
+// Generates a syntactically valid placeholder ciphertext
+ripple::Buffer
+generatePlaceholderCiphertext();
+
 // Check flags settings on MPT create
 class mptflags
 {

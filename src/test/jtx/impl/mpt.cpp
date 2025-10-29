@@ -33,6 +33,20 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
+ripple::Buffer
+generatePlaceholderCiphertext()
+{
+    Buffer buf(ecGamalEncryptedTotalLength);
+
+    buf.data()[0] = 0x02;
+    buf.data()[ecGamalEncryptedLength] = 0x02;
+
+    buf.data()[ecGamalEncryptedLength - 1] = 0x01;
+    buf.data()[ecGamalEncryptedTotalLength - 1] = 0x01;
+
+    return buf;
+}
+
 void
 mptflags::operator()(Env& env) const
 {

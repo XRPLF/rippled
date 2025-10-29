@@ -936,6 +936,42 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .issuerEncryptedAmt = Buffer(10),
                  .err = temMALFORMED});
 
+            auto const ciphertextHex = generatePlaceholderCiphertext();
+
+            // sender encrypted amount malformed
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = "123",
+                 .senderEncryptedAmt =
+                     Buffer(ripple::ecGamalEncryptedTotalLength),
+                 .destEncryptedAmt = ciphertextHex,
+                 .issuerEncryptedAmt = ciphertextHex,
+                 .err = temBAD_CIPHERTEXT});
+            // dest encrypted amount malformed
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = "123",
+                 .senderEncryptedAmt = ciphertextHex,
+                 .destEncryptedAmt =
+                     Buffer(ripple::ecGamalEncryptedTotalLength),
+                 .issuerEncryptedAmt = ciphertextHex,
+                 .err = temBAD_CIPHERTEXT});
+            // issuer encrypted amount malformed
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = "123",
+                 .senderEncryptedAmt = ciphertextHex,
+                 .destEncryptedAmt = ciphertextHex,
+                 .issuerEncryptedAmt =
+                     Buffer(ripple::ecGamalEncryptedTotalLength),
+                 .err = temBAD_CIPHERTEXT});
+
             // todo: proof length check
         }
     }
@@ -1006,6 +1042,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         //     env.close();
         // }
 
+        auto const ciphertextHex = generatePlaceholderCiphertext();
+
         // destination does not exist
         {
             Account const unknown("unknown");
@@ -1014,10 +1052,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .dest = unknown,
                  .amt = 10,
                  .proof = "123",
-                 .issuerEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .destEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
+                 .issuerEncryptedAmt = ciphertextHex,
+                 .destEncryptedAmt = ciphertextHex,
                  .err = tecNO_TARGET});
         }
 
@@ -1044,8 +1080,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .dest = eve,
                  .amt = 10,
                  .proof = "123",
-                 .destEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
+                 .destEncryptedAmt = ciphertextHex,
                  .err = tecOBJECT_NOT_FOUND});
         }
 
@@ -1058,12 +1093,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = "123",
                  .err = tecLOCKED});
+            mptAlice.set(
+                {.account = alice, .flags = tfMPTUnlock});  // unlock issuance
         }
 
         // sender is locked
         {
-            mptAlice.set(
-                {.account = alice, .flags = tfMPTUnlock});  // unlock issuance
             mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
             mptAlice.send(
                 {.account = bob,
@@ -1071,14 +1106,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = "123",
                  .err = tecLOCKED});
-        }
-
-        // destination is locked
-        {
             mptAlice.set(
                 {.account = alice,
                  .holder = bob,
                  .flags = tfMPTUnlock});  // unlock bob
+        }
+
+        // destination is locked
+        {
             mptAlice.set(
                 {.account = alice, .holder = carol, .flags = tfMPTLock});
             mptAlice.send(
@@ -1087,6 +1122,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = "123",
                  .err = tecLOCKED});
+            mptAlice.set(
+                {.account = alice,
+                 .holder = carol,
+                 .flags = tfMPTUnlock});  // unlock carol
         }
     }
 
