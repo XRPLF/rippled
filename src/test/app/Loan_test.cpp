@@ -30,6 +30,26 @@
 namespace ripple {
 namespace test {
 
+struct BrokerParameters
+{
+    int vaultDeposit = 1'000'000;
+    Number debtMax = 25'000;
+    TenthBips32 coverRateMin = percentageToTenthBips(10);
+    int coverDeposit = 1000;
+    TenthBips16 managementFeeRate{100};
+    TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
+
+    Number
+    maxCoveredLoanValue(Number const& currentDebt) const
+    {
+        auto debtLimit =
+            coverDeposit * tenthBipsPerUnity.value() / coverRateMin.value();
+
+        return debtLimit - currentDebt;
+    }
+};
+
+
 class Loan_test : public beast::unit_test::suite
 {
     // Ensure that all the features needed for Lending Protocol are included,
@@ -38,15 +58,6 @@ class Loan_test : public beast::unit_test::suite
         jtx::testable_amendments() | featureMPTokensV1 |
         featureSingleAssetVault | featureLendingProtocol};
 
-    static constexpr auto const coverDepositParameter = 1000;
-    static constexpr auto const coverRateMinParameter =
-        percentageToTenthBips(10);
-    static constexpr auto const coverRateLiquidationParameter =
-        percentageToTenthBips(25);
-    static constexpr auto const maxCoveredLoanValue = 1000 * 100 / 10;
-    static constexpr auto const vaultDeposit = 1'000'000;
-    static constexpr auto const debtMaximumParameter = 25'000;
-    static constexpr TenthBips16 const managementFeeRateParameter{100};
     std::string const iouCurrency{"IOU"};
 
     void
@@ -102,12 +113,12 @@ class Loan_test : public beast::unit_test::suite
     {
         jtx::PrettyAsset asset;
         uint256 brokerID;
-        TenthBips16 managementFeeRate;
+        BrokerParameters params;
         BrokerInfo(
             jtx::PrettyAsset const& asset_,
             uint256 const& brokerID_,
-            TenthBips16 mgmtRate)
-            : asset(asset_), brokerID(brokerID_), managementFeeRate(mgmtRate)
+            BrokerParameters const& p)
+            : asset(asset_), brokerID(brokerID_), params(p)
         {
         }
     };
@@ -398,22 +409,17 @@ class Loan_test : public beast::unit_test::suite
         jtx::Env& env,
         jtx::PrettyAsset const& asset,
         jtx::Account const& lender,
-        std::optional<Number> debtMax = std::nullopt,
-        std::optional<std::uint32_t> coverRateMin = std::nullopt)
+        BrokerParameters const& params = {})
     {
         using namespace jtx;
 
         Vault vault{env};
 
-        auto const deposit = asset(vaultDeposit);
-        auto const debtMaximumValue = debtMax
-            ? STAmount{asset.raw(), *debtMax}
-            : asset(debtMaximumParameter).value();
-        auto const coverDepositValue = asset(coverDepositParameter).value();
+        auto const deposit = asset(params.vaultDeposit);
+        auto const debtMaximumValue = asset(params.debtMax).value();
+        auto const coverDepositValue = asset(params.coverDeposit).value();
 
-        auto const coverRateMinValue = coverRateMin
-            ? TenthBips32(*coverRateMin)
-            : TenthBips32(coverRateMinParameter);
+        auto const coverRateMinValue = params.coverRateMin;
 
         auto [tx, vaultKeylet] =
             vault.create({.owner = lender, .asset = asset});
@@ -436,16 +442,16 @@ class Loan_test : public beast::unit_test::suite
         using namespace loanBroker;
         env(set(lender, vaultKeylet.key),
             data(testData),
-            managementFeeRate(managementFeeRateParameter),
+            managementFeeRate(params.managementFeeRate),
             debtMaximum(debtMaximumValue),
             coverRateMinimum(coverRateMinValue),
-            coverRateLiquidation(TenthBips32(coverRateLiquidationParameter)));
+            coverRateLiquidation(TenthBips32(params.coverRateLiquidation)));
 
         env(coverDeposit(lender, keylet.key, coverDepositValue));
 
         env.close();
 
-        return {asset, keylet.key, managementFeeRateParameter};
+        return {asset, keylet.key, params};
     }
 
     /// Get the state without checking anything
@@ -514,7 +520,7 @@ class Loan_test : public beast::unit_test::suite
             computeFee(
                 broker.asset,
                 state.totalValue - state.principalOutstanding,
-                managementFeeRateParameter,
+                broker.params.managementFeeRate,
                 state.loanScale));
 
         verifyLoanStatus(state);
@@ -772,7 +778,7 @@ class Loan_test : public beast::unit_test::suite
             state.interestRate,
             state.paymentInterval,
             state.paymentRemaining,
-            managementFeeRateParameter);
+            broker.params.managementFeeRate);
 
         verifyLoanStatus(
             0,
@@ -952,11 +958,14 @@ class Loan_test : public beast::unit_test::suite
         Account const alice{"alice"};
 
         Number const principalRequest = broker.asset(loanAmount).value();
+        Number const maxCoveredLoanValue = broker.params.maxCoveredLoanValue(0);
+        BEAST_EXPECT(maxCoveredLoanValue == 1000 * 100 / 10);
         Number const maxCoveredLoanRequest =
             broker.asset(maxCoveredLoanValue).value();
-        Number const totalVaultRequest = broker.asset(vaultDeposit).value();
+        Number const totalVaultRequest =
+            broker.asset(broker.params.vaultDeposit).value();
         Number const debtMaximumRequest =
-            broker.asset(debtMaximumParameter).value();
+            broker.asset(broker.params.debtMax).value();
 
         auto const loanSetFee = fee(env.current()->fees().base * 2);
 
@@ -1392,8 +1401,8 @@ class Loan_test : public beast::unit_test::suite
                         tenthBipsOfValue(
                             tenthBipsOfValue(
                                 brokerSle->at(sfDebtTotal),
-                                coverRateMinParameter),
-                            coverRateLiquidationParameter),
+                                broker.params.coverRateMin),
+                            broker.params.coverRateLiquidation),
                         state.totalValue - state.managementFeeOutstanding),
                     state.loanScale);
                 return std::make_pair(defaultAmount, brokerSle->at(sfOwner));
@@ -1432,7 +1441,7 @@ class Loan_test : public beast::unit_test::suite
                 auto const& broker = verifyLoanStatus.broker;
                 auto const startingCoverAvailable = coverAvailable(
                     broker.brokerID,
-                    broker.asset(coverDepositParameter).number());
+                    broker.asset(broker.params.coverDeposit).number());
 
                 if (impair)
                 {
@@ -1927,7 +1936,7 @@ class Loan_test : public beast::unit_test::suite
                         state.periodicPayment,
                         periodicRate,
                         state.paymentRemaining,
-                        managementFeeRateParameter);
+                        broker.params.managementFeeRate);
                     auto const rounded = calculateRoundedLoanState(
                         state.totalValue,
                         state.principalOutstanding,
@@ -1968,7 +1977,7 @@ class Loan_test : public beast::unit_test::suite
                     state.periodicPayment,
                     periodicRate,
                     state.paymentRemaining,
-                    managementFeeRateParameter);
+                    broker.params.managementFeeRate);
 
                 while (state.paymentRemaining > 0)
                 {
@@ -1983,7 +1992,7 @@ class Loan_test : public beast::unit_test::suite
                             state.periodicPayment,
                             periodicRate,
                             state.paymentRemaining,
-                            managementFeeRateParameter);
+                            broker.params.managementFeeRate);
 
                     BEAST_EXPECT(
                         paymentComponents.trackedValueDelta ==
@@ -1998,7 +2007,7 @@ class Loan_test : public beast::unit_test::suite
                             state.periodicPayment,
                             periodicRate,
                             state.paymentRemaining - 1,
-                            managementFeeRateParameter);
+                            broker.params.managementFeeRate);
                     detail::LoanDeltas const deltas =
                         currentTrueState - nextTrueState;
 
@@ -3092,12 +3101,14 @@ class Loan_test : public beast::unit_test::suite
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        env.fund(XRP(vaultDeposit * 100), lender, borrower);
+        BrokerParameters brokerParams;
+        env.fund(XRP(brokerParams.vaultDeposit * 100), lender, borrower);
         env.close();
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
-        BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender)};
+        BrokerInfo broker{
+            createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
         using namespace loan;
 
@@ -3143,15 +3154,6 @@ class Loan_test : public beast::unit_test::suite
         }
     }
 
-    BrokerInfo
-    createVaultAndBrokerNoMaxDebt(
-        jtx::Env& env,
-        jtx::PrettyAsset const& asset,
-        jtx::Account const& lender)
-    {
-        return createVaultAndBroker(env, asset, lender, Number(0));
-    }
-
     void
     testWrongMaxDebtBehavior()
     {
@@ -3165,12 +3167,15 @@ class Loan_test : public beast::unit_test::suite
         Account const issuer{"issuer"};
         Account const lender{"lender"};
 
-        env.fund(XRP(vaultDeposit * 100), issuer, noripple(lender));
+        BrokerParameters brokerParams{.debtMax = 0};
+        env.fund(
+            XRP(brokerParams.vaultDeposit * 100), issuer, noripple(lender));
         env.close();
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
-        BrokerInfo broker{createVaultAndBrokerNoMaxDebt(env, xrpAsset, lender)};
+        BrokerInfo broker{
+            createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
         if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             BEAST_EXPECT(brokerSle))
@@ -3214,11 +3219,14 @@ class Loan_test : public beast::unit_test::suite
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        env.fund(XRP(vaultDeposit * 100), issuer, lender, borrower);
+        BrokerParameters brokerParams;
+        env.fund(
+            XRP(brokerParams.vaultDeposit * 100), issuer, lender, borrower);
         env.close();
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-        BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender)};
+        BrokerInfo broker{
+            createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
         using namespace loan;
 
@@ -3726,7 +3734,11 @@ class Loan_test : public beast::unit_test::suite
              .holders = {lender},
              .pay = issuerBalance});
 
-        auto const broker = createVaultAndBroker(env, asset, lender, 200);
+        BrokerParameters const brokerParams{
+            .debtMax = 200,
+        };
+        auto const broker =
+            createVaultAndBroker(env, asset, lender, brokerParams);
         auto const loanSetFee = fee(env.current()->fees().base * 2);
         // Create Loan
         env(set(borrower, broker.brokerID, 200),
@@ -4427,11 +4439,9 @@ class Loan_test : public beast::unit_test::suite
         BrokerInfo broker{createVaultAndBroker(env, iouAsset, lender)};
         {
             auto const coverDepositValue =
-                broker.asset(coverDepositParameter).value();
+                broker.asset(broker.params.coverDeposit * 10).value();
             env(loanBroker::coverDeposit(
-                lender,
-                broker.brokerID,
-                STAmount{broker.asset, coverDepositValue * 10}));
+                lender, broker.brokerID, coverDepositValue));
             env.close();
         }
 
@@ -4520,8 +4530,9 @@ class Loan_test : public beast::unit_test::suite
         env(payIssuerTx);
         env.close();
 
+        BrokerParameters const brokerParams{.debtMax{0}, .coverRateMin{1}};
         BrokerInfo broker{
-            createVaultAndBroker(env, iouAsset, lender, Number(0), 1)};
+            createVaultAndBroker(env, iouAsset, lender, brokerParams)};
 
         using namespace loan;
 
