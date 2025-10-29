@@ -1015,6 +1015,13 @@ class LoanBroker_test : public beast::unit_test::suite
                 sig(sfCounterpartySignature, alice),
                 fee(env.current()->fees().base * 2));
 
+            // preflight: temINVALID (empty broker id)
+            {
+                auto jv = del(alice, brokerKeylet.key);
+                jv[sfLoanBrokerID] = "";
+                env(jv, ter(temINVALID));
+            }
+
             // preclaim: tecHAS_OBLIGATIONS
             env(del(alice, brokerKeylet.key), ter(tecHAS_OBLIGATIONS));
         }
