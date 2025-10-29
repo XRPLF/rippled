@@ -1021,6 +1021,16 @@ class LoanBroker_test : public beast::unit_test::suite
                 jv[sfLoanBrokerID] = "";
                 env(jv, ter(temINVALID));
             }
+            // preflight: temINVALID (zero broker id)
+            {
+                // needs a flag to distinguish the parsed STTx from the prior test
+                auto jv = del(alice, uint256{}, 1);
+                BEAST_EXPECT(
+                    jv[sfLoanBrokerID] ==
+                    "0000000000000000000000000000000000000000000000000000000000"
+                    "000000");
+                env(jv, ter(temINVALID));
+            }
 
             // preclaim: tecHAS_OBLIGATIONS
             env(del(alice, brokerKeylet.key), ter(tecHAS_OBLIGATIONS));
