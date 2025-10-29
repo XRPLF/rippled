@@ -5366,7 +5366,6 @@ public:
     {
         using namespace jtx;
         static FeatureBitset const all{testable_amendments()};
-        static FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         static FeatureBitset const rmSmallIncreasedQOffers{
             fixRmSmallIncreasedQOffers};
         static FeatureBitset const immediateOfferKilled{
@@ -5375,7 +5374,6 @@ public:
         FeatureBitset const permDEX{featurePermissionedDEX};
 
         static std::array<FeatureBitset, 6> const feats{
-            all - takerDryOffer - immediateOfferKilled - permDEX,
             all - immediateOfferKilled - permDEX,
             all - rmSmallIncreasedQOffers - immediateOfferKilled - fillOrKill -
                 permDEX,
@@ -5451,7 +5449,6 @@ class Offer_manual_test : public OfferBaseUtil_test
         using namespace jtx;
         FeatureBitset const all{testable_amendments()};
         FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
-        FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         FeatureBitset const fillOrKill{fixFillOrKill};
         FeatureBitset const permDEX{featurePermissionedDEX};
 
@@ -5460,8 +5457,6 @@ class Offer_manual_test : public OfferBaseUtil_test
         testAll(all - fillOrKill - permDEX);
         testAll(all - permDEX);
         testAll(all);
-
-        testAll(all - takerDryOffer - permDEX);
     }
 };
 
