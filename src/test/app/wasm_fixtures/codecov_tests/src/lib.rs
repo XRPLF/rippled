@@ -162,7 +162,7 @@ pub extern "C" fn finish() -> i32 {
     );
     check_result(
         unsafe { host::update_data(account.0.as_ptr(), account.0.len()) },
-        0,
+        20,
         "update_data",
     );
     with_buffer::<32, _, _>(|ptr, len| {

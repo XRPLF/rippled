@@ -757,7 +757,7 @@ fn test_data_update_functions() -> i32 {
 
     let update_result = unsafe { host::update_data(update_payload.as_ptr(), update_payload.len()) };
 
-    if update_result != 0 {
+    if update_result != update_payload.len() as i32 {
         let _ = trace_num("ERROR: update_data failed:", update_result as i64);
         return -701; // Data update failed
     }

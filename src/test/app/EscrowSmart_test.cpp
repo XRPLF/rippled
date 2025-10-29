@@ -853,7 +853,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             env(token::createOffer(carol, tokenId, XRP(100)),
                 token::owner(alice));
             env(offer(alice, carol["GBP"](0.1), XRP(100)));
-            env(create(alice, carol, XRP(1000), 100s, alice.pk()));
+            env(paychan::create(alice, carol, XRP(1000), 100s, alice.pk()));
             pdomain::Credentials credentials{{alice, "first credential"}};
             env(pdomain::setTx(alice, credentials));
             env(signers(alice, 1, {{carol, 1}}));

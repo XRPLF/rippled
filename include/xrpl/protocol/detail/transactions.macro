@@ -912,7 +912,7 @@ TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
 TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     Delegation::delegatable,
     featureSingleAssetVault,
-    mayDeleteMPT | mustModifyVault,
+    mayDeleteMPT | mayAuthorizeMPT | mustModifyVault,
     ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},

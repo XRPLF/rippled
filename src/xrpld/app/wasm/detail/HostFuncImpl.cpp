@@ -431,7 +431,7 @@ WasmHostFunctionsImpl::updateData(Slice const& data)
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
     data_ = Bytes(data.begin(), data.end());
-    return 0;
+    return data_->size();
 }
 
 Expected<int32_t, HostFunctionError>

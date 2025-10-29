@@ -2946,13 +2946,11 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         l[jss::hash] = to_string(lpClosed->info().hash);
 
         bool const smartEscrowEnabled =
-            m_ledgerMaster.getValidatedLedger()->rules().enabled(
-                featureSmartEscrow);
+            lpClosed->rules().enabled(featureSmartEscrow);
         if (!human)
         {
             l[jss::base_fee] = baseFee.jsonClipped();
-            l[jss::reserve_base] =
-                lpClosed->fees().accountReserve(0).jsonClipped();
+            l[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
             l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
             if (smartEscrowEnabled)
             {
@@ -2967,8 +2965,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         else
         {
             l[jss::base_fee_xrp] = baseFee.decimalXRP();
-            l[jss::reserve_base_xrp] =
-                lpClosed->fees().accountReserve(0).decimalXRP();
+            l[jss::reserve_base_xrp] = lpClosed->fees().reserve.decimalXRP();
             l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
             if (smartEscrowEnabled)
             {
@@ -3165,8 +3162,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             if (!lpAccepted->rules().enabled(featureXRPFees))
                 jvObj[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
             jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
-            jvObj[jss::reserve_base] =
-                lpAccepted->fees().accountReserve(0).jsonClipped();
+            jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
             jvObj[jss::reserve_inc] =
                 lpAccepted->fees().increment.jsonClipped();
             if (lpAccepted->rules().enabled(featureSmartEscrow))
@@ -4253,8 +4249,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
         if (!lpClosed->rules().enabled(featureXRPFees))
             jvResult[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
-        jvResult[jss::reserve_base] =
-            lpClosed->fees().accountReserve(0).jsonClipped();
+        jvResult[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
         if (lpClosed->rules().enabled(featureSmartEscrow))
         {

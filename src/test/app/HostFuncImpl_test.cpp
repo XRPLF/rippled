@@ -1315,7 +1315,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Should succeed for small data
         std::vector<uint8_t> data(10, 0x42);
         auto const result = hfs.updateData(Slice(data.data(), data.size()));
-        BEAST_EXPECT(result.has_value() && result.value() == 0);
+        BEAST_EXPECT(result.has_value() && result.value() == data.size());
 
         // Should fail for too large data
         std::vector<uint8_t> bigData(

@@ -292,7 +292,7 @@ public:
     Expected<int32_t, HostFunctionError>
     updateData(Slice const& data) override
     {
-        return 0;
+        return data.size();
     }
 
     Expected<int32_t, HostFunctionError>

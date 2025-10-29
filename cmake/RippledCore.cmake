@@ -65,7 +65,7 @@ target_link_libraries(xrpl.imports.main
     wasm-xrplf::wasm-xrplf
     xrpl.libpb
     xxHash::xxhash
-    $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>    
+    $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>  
 )
 
 if (WIN32)
