@@ -175,13 +175,6 @@ PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
-std::uint32_t
-PayChanCreate::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
-}
-
 NotTEC
 PayChanCreate::preflight(PreflightContext const& ctx)
 {
@@ -335,13 +328,6 @@ PayChanFund::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
-std::uint32_t
-PayChanFund::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
-}
-
 NotTEC
 PayChanFund::preflight(PreflightContext const& ctx)
 {
@@ -434,10 +420,9 @@ PayChanClaim::checkExtraFeatures(PreflightContext const& ctx)
 }
 
 std::uint32_t
-PayChanClaim::getFlagsMask(PreflightContext const& ctx)
+PayChanClaim::getFlagsMask(PreflightContext const&)
 {
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfPayChanClaimMask : 0;
+    return tfPayChanClaimMask;
 }
 
 NotTEC
