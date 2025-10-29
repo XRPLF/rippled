@@ -704,15 +704,21 @@ readLimitField(
     JsonContext const& context)
 {
     limit = range.rdefault;
-    if (auto const& jvLimit = context.params[jss::limit])
-    {
-        if (!(jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
-            return RPC::expected_field_error(jss::limit, "unsigned integer");
+    if (!context.params.isMember(jss::limit) ||
+        context.params[jss::limit].isNull())
+        return std::nullopt;
 
-        limit = jvLimit.asUInt();
-        if (!isUnlimited(context.role))
-            limit = std::max(range.rmin, std::min(range.rmax, limit));
-    }
+    auto const& jvLimit = context.params[jss::limit];
+    if (!(jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
+        return RPC::expected_field_error(jss::limit, "unsigned integer");
+
+    limit = jvLimit.asUInt();
+    if (limit == 0)
+        return RPC::invalid_field_error(jss::limit);
+
+    if (!isUnlimited(context.role))
+        limit = std::max(range.rmin, std::min(range.rmax, limit));
+
     return std::nullopt;
 }
 
