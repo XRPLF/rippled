@@ -545,8 +545,7 @@ public:
 
             for (auto const& [hash, nVotes] : votes)
             {
-                if (rules.enabled(fixAmendmentMajorityCalc) ? nVotes >= i
-                                                            : nVotes > i)
+                if (nVotes >= i)
                 {
                     // We vote yes on this amendment
                     field.push_back(hash);
@@ -982,10 +981,6 @@ public:
     void
     testChangedUNL(FeatureBitset const& feat)
     {
-        // This test doesn't work without fixAmendmentMajorityCalc enabled.
-        if (!feat[fixAmendmentMajorityCalc])
-            return;
-
         testcase("changedUNL");
 
         auto const testAmendment = amendmentId("changedUNL");
@@ -1143,10 +1138,6 @@ public:
     void
     testValidatorFlapping(FeatureBitset const& feat)
     {
-        // This test doesn't work without fixAmendmentMajorityCalc enabled.
-        if (!feat[fixAmendmentMajorityCalc])
-            return;
-
         testcase("validatorFlapping");
 
         // We run a test where a validator flaps on and off every 23 hours
@@ -1289,14 +1280,12 @@ public:
     run() override
     {
         FeatureBitset const all{test::jtx::testable_amendments()};
-        FeatureBitset const fixMajorityCalc{fixAmendmentMajorityCalc};
 
         testConstruct();
         testGet();
         testBadConfig();
         testEnableVeto();
         testHasUnsupported();
-        testFeature(all - fixMajorityCalc);
         testFeature(all);
     }
 };
