@@ -30,26 +30,6 @@
 namespace ripple {
 namespace test {
 
-struct BrokerParameters
-{
-    int vaultDeposit = 1'000'000;
-    Number debtMax = 25'000;
-    TenthBips32 coverRateMin = percentageToTenthBips(10);
-    int coverDeposit = 1000;
-    TenthBips16 managementFeeRate{100};
-    TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
-
-    Number
-    maxCoveredLoanValue(Number const& currentDebt) const
-    {
-        auto debtLimit =
-            coverDeposit * tenthBipsPerUnity.value() / coverRateMin.value();
-
-        return debtLimit - currentDebt;
-    }
-};
-
-
 class Loan_test : public beast::unit_test::suite
 {
     // Ensure that all the features needed for Lending Protocol are included,
@@ -108,6 +88,32 @@ class Loan_test : public beast::unit_test::suite
         failAll(all - featureSingleAssetVault);
         failAll(all - featureLendingProtocol);
     }
+
+    struct BrokerParameters
+    {
+        int vaultDeposit = 1'000'000;
+        Number debtMax = 25'000;
+        TenthBips32 coverRateMin = percentageToTenthBips(10);
+        int coverDeposit = 1000;
+        TenthBips16 managementFeeRate{100};
+        TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
+
+        Number
+        maxCoveredLoanValue(Number const& currentDebt) const
+        {
+            auto debtLimit =
+                coverDeposit * tenthBipsPerUnity.value() / coverRateMin.value();
+
+            return debtLimit - currentDebt;
+        }
+
+        static BrokerParameters const&
+        defaults()
+        {
+            static BrokerParameters const result{};
+            return result;
+        }
+    };
 
     struct BrokerInfo
     {
@@ -409,7 +415,7 @@ class Loan_test : public beast::unit_test::suite
         jtx::Env& env,
         jtx::PrettyAsset const& asset,
         jtx::Account const& lender,
-        BrokerParameters const& params = {})
+        BrokerParameters const& params = BrokerParameters::defaults())
     {
         using namespace jtx;
 
