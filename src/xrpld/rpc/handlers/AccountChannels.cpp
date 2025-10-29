@@ -103,9 +103,6 @@ doAccountChannels(RPC::JsonContext& context)
     if (auto err = readLimitField(limit, RPC::Tuning::accountChannels, context))
         return *err;
 
-    if (limit == 0u)
-        return rpcError(rpcINVALID_PARAMS);
-
     Json::Value jsonChannels{Json::arrayValue};
     struct VisitData
     {

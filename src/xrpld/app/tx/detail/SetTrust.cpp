@@ -576,7 +576,7 @@ SetTrust::doApply()
             if ((bHigh ? saHighBalance : saLowBalance) >= beast::zero)
                 uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
 
-            else if (view().rules().enabled(fix1578))
+            else
                 // Cannot set noRipple on a negative balance.
                 return tecNO_PERMISSION;
         }

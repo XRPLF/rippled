@@ -158,9 +158,6 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
             !std::is_same_v<TTakerGets, XRPAmount>,
         "Cannot have XRP/XRP offers");
 
-    if (!view_.rules().enabled(fixRmSmallIncreasedQOffers))
-        return false;
-
     // Consider removing the offer if:
     //  o `TakerPays` is XRP (because of XRP drops granularity) or
     //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
