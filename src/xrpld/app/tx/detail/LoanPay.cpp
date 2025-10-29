@@ -406,6 +406,18 @@ LoanPay::doApply()
     view.update(vaultSle);
 
     {
+        XRPL_ASSERT_PARTS(
+            assetsAvailableProxy ==
+                accountHolds(
+                    view,
+                    vaultPseudoAccount,
+                    asset,
+                    FreezeHandling::fhIGNORE_FREEZE,
+                    AuthHandling::ahIGNORE_AUTH,
+                    j_),
+            "ripple::LoanPay::doApply",
+            "vault pseudo balance agrees before");
+
         auto assetsTotalProxy = vaultSle->at(sfAssetsTotal);
 
         assetsAvailableProxy += totalPaidToVaultRounded;
@@ -487,6 +499,18 @@ LoanPay::doApply()
             j_,
             WaiveTransferFee::Yes))
         return ter;
+
+    XRPL_ASSERT_PARTS(
+        assetsAvailableProxy ==
+            accountHolds(
+                view,
+                vaultPseudoAccount,
+                asset,
+                FreezeHandling::fhIGNORE_FREEZE,
+                AuthHandling::ahIGNORE_AUTH,
+                j_),
+        "ripple::LoanPay::doApply",
+        "vault pseudo balance agrees before");
 
 #if !NDEBUG
     auto const accountBalanceAfter = accountCanSend(

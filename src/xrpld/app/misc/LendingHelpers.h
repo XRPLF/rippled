@@ -98,14 +98,24 @@ struct LoanState
     Number valueOutstanding;
     /// Prinicipal still due to be paid by the borrower.
     Number principalOutstanding;
-    /// Interest still due to be paid by the borrower.
-    Number interestOutstanding;
     /// Interest still due to be paid TO the Vault.
     // This is a portion of interestOutstanding
     Number interestDue;
     /// Management fee still due to be paid TO the broker.
     // This is a portion of interestOutstanding
     Number managementFeeDue;
+
+    /// Interest still due to be paid by the borrower.
+    Number
+    interestOutstanding() const
+    {
+        XRPL_ASSERT_PARTS(
+            interestDue + managementFeeDue ==
+                valueOutstanding - principalOutstanding,
+            "ripple::LoanState::interestOutstanding",
+            "other values add up correctly");
+        return interestDue + managementFeeDue;
+    }
 };
 
 LoanState
@@ -195,10 +205,26 @@ struct PaymentComponents
 
 struct LoanDeltas
 {
-    Number valueDelta;
     Number principalDelta;
     Number interestDueDelta;
     Number managementFeeDueDelta;
+
+    Number
+    valueDelta() const
+    {
+        return principalDelta + interestDueDelta + managementFeeDueDelta;
+    }
+
+    void
+    nonNegative()
+    {
+        if (principalDelta < beast::zero)
+            principalDelta = Number::zero;
+        if (interestDueDelta < beast::zero)
+            interestDueDelta = Number::zero;
+        if (managementFeeDueDelta < beast::zero)
+            managementFeeDueDelta = Number::zero;
+    }
 };
 
 PaymentComponents
@@ -217,6 +243,9 @@ computePaymentComponents(
 
 detail::LoanDeltas
 operator-(LoanState const& lhs, LoanState const& rhs);
+
+LoanState
+operator-(LoanState const& lhs, detail::LoanDeltas const& rhs);
 
 Number
 valueMinusFee(

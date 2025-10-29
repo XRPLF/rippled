@@ -102,7 +102,9 @@ std::uint16_t constexpr maxTransferFee = 50000;
  * Example: 50% is 0.50 * bipsPerUnity = 5,000 bps.
  */
 Bips32 constexpr bipsPerUnity(100 * 100);
+static_assert(bipsPerUnity == Bips32{10'000});
 TenthBips32 constexpr tenthBipsPerUnity(bipsPerUnity.value() * 10);
+static_assert(tenthBipsPerUnity == TenthBips32(100'000));
 
 constexpr Bips32
 percentageToBips(std::uint32_t percentage)

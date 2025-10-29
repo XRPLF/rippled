@@ -296,6 +296,12 @@ struct XRP_t
     }
 
     PrettyAmount
+    operator()(Number v) const
+    {
+        return static_cast<int64_t>(v * dropsPerXRP);
+    }
+
+    PrettyAmount
     operator()(double v) const
     {
         auto const c = dropsPerXRP.drops();
