@@ -143,7 +143,6 @@ class Feature_test : public beast::unit_test::suite
             featureToName(fixTrustLinesToSelf) == "fixTrustLinesToSelf");
         BEAST_EXPECT(featureToName(featureFlow) == "Flow");
         BEAST_EXPECT(featureToName(featureNegativeUNL) == "NegativeUNL");
-        BEAST_EXPECT(featureToName(fix1578) == "fix1578");
         BEAST_EXPECT(
             featureToName(fixTakerDryOfferRemoval) ==
             "fixTakerDryOfferRemoval");
