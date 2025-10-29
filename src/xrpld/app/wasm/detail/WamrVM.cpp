@@ -30,6 +30,7 @@
 #endif
 
 // #define SHOW_CALL_TIME 1
+#define DISABLE_WM_LOG 1
 
 namespace ripple {
 
@@ -95,8 +96,11 @@ wamr_log_to_rippled(
     char const* fmt,
     ...)
 {
-    beast::Journal j = WasmEngine::instance().getJournal();
+#ifdef DISABLE_WM_LOG
+    return;
+#endif
 
+    beast::Journal j = WasmEngine::instance().getJournal();
     std::ostringstream oss;
 
     // Format the variadic args
@@ -142,15 +146,17 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
 
     if (error_message.num_elems)
     {
-        error_message.data[error_message.num_elems - 1] = 0;  // just in case
-        j << "WAMR Error: " << msg << ", " << error_message.data;
+        j << "WAMR Error: " << msg << ", "
+          << std::string_view(error_message.data, error_message.num_elems - 1);
     }
     else
         j << "WAMR Error: " << msg;
 
     if (error_message.size)
         wasm_byte_vec_delete(&error_message);
-    wasm_trap_delete(trap);
+
+    if (trap)
+        wasm_trap_delete(trap);
 
 #ifdef DEBUG_OUTPUT
     j << std::endl;
@@ -371,6 +377,7 @@ ModuleWrapper::ModuleWrapper(
     {
         auto wimports = buildImports(s, imports);
         addInstance(s, maxPages, gas, wimports);
+        wasm_extern_vec_delete(&wimports);
     }
 }
 
@@ -409,7 +416,7 @@ ModuleWrapper::makeImpParams(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
 
     if (paramSize)
     {
-        wasm_valtype_vec_new(&v, paramSize, nullptr);
+        wasm_valtype_vec_new_uninitialized(&v, paramSize);
         v.num_elems = paramSize;
     }
     else
@@ -436,7 +443,7 @@ ModuleWrapper::makeImpReturn(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
 {
     if (imp.result)
     {
-        wasm_valtype_vec_new(&v, 1, nullptr);
+        wasm_valtype_vec_new_uninitialized(&v, 1);
         v.num_elems = 1;
         switch (*imp.result)
         {
@@ -469,7 +476,7 @@ ModuleWrapper::buildImports(
     if (!importTypes.num_elems)
         return wimports;
 
-    wasm_extern_vec_new(&wimports, importTypes.size, nullptr);
+    wasm_extern_vec_new_uninitialized(&wimports, importTypes.size);
     wimports.num_elems = importTypes.num_elems;
 
     unsigned impCnt = 0;
@@ -500,7 +507,8 @@ ModuleWrapper::buildImports(
             if (imp.name != fieldName)
                 continue;
 
-            wasm_valtype_vec_t params, results;
+            wasm_valtype_vec_t params = WASM_EMPTY_VEC,
+                               results = WASM_EMPTY_VEC;
             makeImpReturn(results, imp);
             makeImpParams(params, imp);
 
