@@ -131,6 +131,15 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
         ter != tesSUCCESS)
         return ter;
 
+    // Check auth
+    if (auto const ter = requireAuth(ctx.view, mptIssue, account);
+        !isTesSuccess(ter))
+        return ter;
+
+    if (auto const ter = requireAuth(ctx.view, mptIssue, destination);
+        !isTesSuccess(ter))
+        return ter;
+
     // todo: check zkproof. equality proof and range proof, combined or separate
     // TBD. TER const terProof = verifyConfidentialSendProof(
     //     ctx.tx[sfZKProof],

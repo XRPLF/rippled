@@ -991,11 +991,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         MPTTester mptAlice(env, alice, {.holders = {bob, carol, dave, eve}});
 
         // authorize bob, carol, dave (not eve)
-        mptAlice.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+        mptAlice.create(
+            {.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth});
         mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = alice, .holder = bob});
         mptAlice.authorize({.account = carol});
+        mptAlice.authorize({.account = alice, .holder = carol});
         mptAlice.authorize({.account = dave});
-        env.close();
+        mptAlice.authorize({.account = alice, .holder = dave});
 
         // fund bob, carol (not dave or eve)
         mptAlice.pay(alice, bob, 100);
@@ -1022,6 +1025,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
              .proof = "123",
              .holderPubKey = mptAlice.getPubKey(carol),
              .err = tesSUCCESS});
+
+        // bob and carol merge inbox
+        mptAlice.mergeInbox({
+            .account = bob,
+        });
+        mptAlice.mergeInbox({
+            .account = carol,
+        });
 
         // // sender does not exist
         // {
@@ -1086,6 +1097,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // issuance is locked globally
         {
+            // lock issuance
             mptAlice.set({.account = alice, .flags = tfMPTLock});
             mptAlice.send(
                 {.account = bob,
@@ -1093,12 +1105,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = "123",
                  .err = tecLOCKED});
-            mptAlice.set(
-                {.account = alice, .flags = tfMPTUnlock});  // unlock issuance
+            // unlock issuance
+            mptAlice.set({.account = alice, .flags = tfMPTUnlock});
+            // now can send
+            mptAlice.send(
+                {.account = bob, .dest = carol, .amt = 1, .proof = "123"});
         }
 
         // sender is locked
         {
+            // lock bob
             mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
             mptAlice.send(
                 {.account = bob,
@@ -1106,14 +1122,17 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = "123",
                  .err = tecLOCKED});
+            // unlock bob
             mptAlice.set(
-                {.account = alice,
-                 .holder = bob,
-                 .flags = tfMPTUnlock});  // unlock bob
+                {.account = alice, .holder = bob, .flags = tfMPTUnlock});
+            // now can send
+            mptAlice.send(
+                {.account = bob, .dest = carol, .amt = 2, .proof = "123"});
         }
 
         // destination is locked
         {
+            // lock carol
             mptAlice.set(
                 {.account = alice, .holder = carol, .flags = tfMPTLock});
             mptAlice.send(
@@ -1122,10 +1141,54 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .amt = 10,
                  .proof = "123",
                  .err = tecLOCKED});
+            // unlock carol
             mptAlice.set(
-                {.account = alice,
-                 .holder = carol,
-                 .flags = tfMPTUnlock});  // unlock carol
+                {.account = alice, .holder = carol, .flags = tfMPTUnlock});
+            // now can send
+            mptAlice.send(
+                {.account = bob, .dest = carol, .amt = 3, .proof = "123"});
+        }
+
+        // sender not authorized
+        {
+            // unauthorize bob
+            mptAlice.authorize(
+                {.account = alice, .holder = bob, .flags = tfMPTUnauthorize});
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = "123",
+                 .err = tecNO_AUTH});
+            // authorize bob again
+            mptAlice.authorize({
+                .account = alice,
+                .holder = bob,
+            });
+            // now can send
+            mptAlice.send(
+                {.account = bob, .dest = carol, .amt = 4, .proof = "123"});
+        }
+
+        // destination not authorized
+        {
+            // unauthorize carol
+            mptAlice.authorize(
+                {.account = alice, .holder = carol, .flags = tfMPTUnauthorize});
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = "123",
+                 .err = tecNO_AUTH});
+            // authorize carol again
+            mptAlice.authorize({
+                .account = alice,
+                .holder = carol,
+            });
+            // now can send
+            mptAlice.send(
+                {.account = bob, .dest = carol, .amt = 5, .proof = "123"});
         }
     }
 
