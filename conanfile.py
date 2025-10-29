@@ -30,8 +30,8 @@ class Xrpl(ConanFile):
         'nudb/2.0.9',
         'openssl/3.5.4',
         'soci/4.0.3',
-        'zlib/1.3.1',
         'wasm-xrplf/2.4.1-xrplf',
+        'zlib/1.3.1',
     ]
 
     test_requires = [
