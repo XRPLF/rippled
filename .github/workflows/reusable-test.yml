@@ -26,6 +26,11 @@ on:
         required: true
         type: string
 
+      nproc_subtract:
+        description: "The number of processors to subtract when calculating parallelism."
+        required: true
+        type: number
+
 jobs:
   test:
     name: Test ${{ inputs.config_name }}
@@ -36,6 +41,12 @@ jobs:
       - name: Cleanup workspace
         if: ${{ runner.os == 'macOS' }}
         uses: XRPLF/actions/.github/actions/cleanup-workspace@3f044c7478548e3c32ff68980eeb36ece02b364e
+
+      - name: Get number of processors
+        uses: XRPLF/actions/.github/actions/get-nproc@046b1620f6bfd6cd0985dc82c3df02786801fe0a
+        id: nproc
+        with:
+          subtract: ${{ inputs.nproc_subtract }}
 
       - name: Download rippled artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -69,8 +80,10 @@ jobs:
       - name: Run the embedded tests
         if: ${{ inputs.run_tests }}
         shell: bash
+        env:
+          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
-          ./rippled --unittest --unittest-jobs $(nproc)
+          ./rippled --unittest --unittest-jobs ${BUILD_NPROC}
 
       - name: Run the separate tests
         if: ${{ inputs.run_tests }}

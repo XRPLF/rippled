@@ -2809,15 +2809,9 @@ private:
         testcase("Circular XRP");
 
         using namespace jtx;
-
-        for (auto const withFix : {true, false})
         {
-            auto const feats = withFix
-                ? testable_amendments()
-                : testable_amendments() - FeatureBitset{fix1781};
-
             // Payment path starting with XRP
-            Env env(*this, feats);
+            Env env(*this, testable_amendments());
             // Note, if alice doesn't have default ripple, then pay
             // fails with tecPATH_DRY.
             fund(
@@ -2832,8 +2826,7 @@ private:
             AMM ammAliceXRP_EUR(env, alice, XRP(100), EUR(101));
             env.close();
 
-            TER const expectedTer =
-                withFix ? TER{temBAD_PATH_LOOP} : TER{tesSUCCESS};
+            TER const expectedTer = TER{temBAD_PATH_LOOP};
             env(pay(alice, bob, EUR(1)),
                 path(~USD, ~XRP, ~EUR),
                 sendmax(XRP(1)),
