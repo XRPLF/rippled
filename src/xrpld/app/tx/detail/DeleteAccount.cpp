@@ -265,24 +265,20 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if (!sleAccount)
         return terNO_ACCOUNT;
 
-    if (ctx.view.rules().enabled(featureNonFungibleTokensV1))
-    {
-        // If an issuer has any issued NFTs resident in the ledger then it
-        // cannot be deleted.
-        if ((*sleAccount)[~sfMintedNFTokens] !=
-            (*sleAccount)[~sfBurnedNFTokens])
-            return tecHAS_OBLIGATIONS;
+    // If an issuer has any issued NFTs resident in the ledger then it
+    // cannot be deleted.
+    if ((*sleAccount)[~sfMintedNFTokens] != (*sleAccount)[~sfBurnedNFTokens])
+        return tecHAS_OBLIGATIONS;
 
-        // If the account owns any NFTs it cannot be deleted.
-        Keylet const first = keylet::nftpage_min(account);
-        Keylet const last = keylet::nftpage_max(account);
+    // If the account owns any NFTs it cannot be deleted.
+    Keylet const first = keylet::nftpage_min(account);
+    Keylet const last = keylet::nftpage_max(account);
 
-        auto const cp = ctx.view.read(Keylet(
-            ltNFTOKEN_PAGE,
-            ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
-        if (cp)
-            return tecHAS_OBLIGATIONS;
-    }
+    auto const cp = ctx.view.read(Keylet(
+        ltNFTOKEN_PAGE,
+        ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
+    if (cp)
+        return tecHAS_OBLIGATIONS;
 
     // We don't allow an account to be deleted if its sequence number
     // is within 256 of the current ledger.  This prevents replay of old

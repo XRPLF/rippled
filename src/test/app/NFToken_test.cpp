@@ -88,52 +88,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         {
-            // If the NFT amendment is not enabled, you should not be able
-            // to create or burn NFTs.
-            Env env{
-                *this,
-                features - featureNonFungibleTokensV1 -
-                    featureNonFungibleTokensV1_1};
-            Account const& master = env.master;
-
-            BEAST_EXPECT(ownerCount(env, master) == 0);
-            BEAST_EXPECT(mintedCount(env, master) == 0);
-            BEAST_EXPECT(burnedCount(env, master) == 0);
-
-            uint256 const nftId{token::getNextID(env, master, 0u)};
-            env(token::mint(master, 0u), ter(temDISABLED));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, master) == 0);
-            BEAST_EXPECT(mintedCount(env, master) == 0);
-            BEAST_EXPECT(burnedCount(env, master) == 0);
-
-            env(token::burn(master, nftId), ter(temDISABLED));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, master) == 0);
-            BEAST_EXPECT(mintedCount(env, master) == 0);
-            BEAST_EXPECT(burnedCount(env, master) == 0);
-
-            uint256 const offerIndex =
-                keylet::nftoffer(master, env.seq(master)).key;
-            env(token::createOffer(master, nftId, XRP(10)), ter(temDISABLED));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, master) == 0);
-            BEAST_EXPECT(mintedCount(env, master) == 0);
-            BEAST_EXPECT(burnedCount(env, master) == 0);
-
-            env(token::cancelOffer(master, {offerIndex}), ter(temDISABLED));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, master) == 0);
-            BEAST_EXPECT(mintedCount(env, master) == 0);
-            BEAST_EXPECT(burnedCount(env, master) == 0);
-
-            env(token::acceptBuyOffer(master, offerIndex), ter(temDISABLED));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, master) == 0);
-            BEAST_EXPECT(mintedCount(env, master) == 0);
-            BEAST_EXPECT(burnedCount(env, master) == 0);
-        }
-        {
             // If the NFT amendment is enabled all NFT-related
             // facilities should be available.
             Env env{*this, features};
@@ -2908,9 +2862,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             {
                 // issuer cannot broker the offers, because they are not the
                 // Destination.
-                TER const expectTer = features[fixNonFungibleTokensV1_2]
-                    ? tecNO_PERMISSION
-                    : tecNFTOKEN_BUY_SELL_MISMATCH;
+                TER const expectTer = tecNO_PERMISSION;
                 env(token::brokerOffers(
                         issuer, offerBuyerToMinter, offerMinterToBroker),
                     ter(expectTer));
@@ -2958,9 +2910,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             {
                 // Cannot broker offers when the sell destination is not the
                 // buyer.
-                TER const expectTer = features[fixNonFungibleTokensV1_2]
-                    ? tecNO_PERMISSION
-                    : tecNFTOKEN_BUY_SELL_MISMATCH;
+                TER const expectTer = tecNO_PERMISSION;
                 env(token::brokerOffers(
                         broker, offerIssuerToBuyer, offerBuyerToMinter),
                     ter(expectTer));
@@ -2972,17 +2922,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
                 // amendment switch: When enabled the broker fails, when
                 // disabled the broker succeeds if the destination is the buyer.
-                TER const eexpectTer = features[fixNonFungibleTokensV1_2]
-                    ? tecNO_PERMISSION
-                    : TER(tesSUCCESS);
+                TER const eexpectTer = tecNO_PERMISSION;
                 env(token::brokerOffers(
                         broker, offerMinterToBuyer, offerBuyerToMinter),
                     ter(eexpectTer));
                 env.close();
 
-                if (features[fixNonFungibleTokensV1_2])
-                    // Buyer is successful with acceptOffer.
-                    env(token::acceptBuyOffer(buyer, offerMinterToBuyer));
+                // Buyer is successful with acceptOffer.
+                env(token::acceptBuyOffer(buyer, offerMinterToBuyer));
                 env.close();
 
                 // Clean out the unconsumed offer.
@@ -3021,9 +2968,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             {
                 // Cannot broker offers when the sell destination is not the
                 // buyer or the broker.
-                TER const expectTer = features[fixNonFungibleTokensV1_2]
-                    ? tecNO_PERMISSION
-                    : tecNFTOKEN_BUY_SELL_MISMATCH;
+                TER const expectTer = tecNO_PERMISSION;
                 env(token::brokerOffers(
                         issuer, offerBuyerToBroker, offerMinterToBroker),
                     ter(expectTer));
@@ -3907,11 +3852,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        for (auto const& tweakedFeatures :
-             {features - fixNonFungibleTokensV1_2,
-              features | fixNonFungibleTokensV1_2})
         {
-            Env env{*this, tweakedFeatures};
+            Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
 
             // The most important thing to explore here is the way funds are
@@ -4447,45 +4389,22 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     token::owner(minter));
                 env.close();
 
-                if (tweakedFeatures[fixNonFungibleTokensV1_2])
-                {
-                    env(token::brokerOffers(
-                            broker, buyOfferIndex, minterOfferIndex),
-                        token::brokerFee(gwXAU(50)));
-                    env.close();
-                    BEAST_EXPECT(ownerCount(env, issuer) == 1);
-                    BEAST_EXPECT(ownerCount(env, minter) == 1);
-                    BEAST_EXPECT(ownerCount(env, buyer) == 2);
-                    BEAST_EXPECT(ownerCount(env, broker) == 1);
-                    BEAST_EXPECT(env.balance(issuer, gwXAU) == gwXAU(1237.5));
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1712.5));
-                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(0));
-                    BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(550));
+                env(token::brokerOffers(
+                        broker, buyOfferIndex, minterOfferIndex),
+                    token::brokerFee(gwXAU(50)));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 1);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 2);
+                BEAST_EXPECT(ownerCount(env, broker) == 1);
+                BEAST_EXPECT(env.balance(issuer, gwXAU) == gwXAU(1237.5));
+                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1712.5));
+                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(0));
+                BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(550));
 
-                    // Burn the NFT so the next test starts with a clean state.
-                    env(token::burn(buyer, nftID));
-                    env.close();
-                }
-                else
-                {
-                    env(token::brokerOffers(
-                            broker, buyOfferIndex, minterOfferIndex),
-                        token::brokerFee(gwXAU(50)),
-                        ter(tecINSUFFICIENT_FUNDS));
-                    env.close();
-                    BEAST_EXPECT(ownerCount(env, issuer) == 1);
-                    BEAST_EXPECT(ownerCount(env, minter) == 3);
-                    BEAST_EXPECT(ownerCount(env, buyer) == 2);
-                    BEAST_EXPECT(ownerCount(env, broker) == 1);
-                    BEAST_EXPECT(env.balance(issuer, gwXAU) == gwXAU(1000));
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
-                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(1000));
-                    BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(500));
-
-                    // Burn the NFT so the next test starts with a clean state.
-                    env(token::burn(minter, nftID));
-                    env.close();
-                }
+                // Burn the NFT so the next test starts with a clean state.
+                env(token::burn(buyer, nftID));
+                env.close();
             }
         }
     }
@@ -4980,32 +4899,19 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     }
 
     void
-    testFixNFTokenNegOffer(FeatureBitset features)
+    testNFTokenNegOffer(FeatureBitset features)
     {
-        // Exercise changes introduced by fixNFTokenNegOffer.
         using namespace test::jtx;
 
-        testcase("fixNFTokenNegOffer");
+        testcase("NFTokenNegOffer");
 
         Account const issuer{"issuer"};
         Account const buyer{"buyer"};
         Account const gw{"gw"};
         IOU const gwXAU(gw["XAU"]);
 
-        // Test both with and without fixNFTokenNegOffer and
-        // fixNonFungibleTokensV1_2. Need to turn off fixNonFungibleTokensV1_2
-        // as well because that amendment came later and addressed the
-        // acceptance side of this issue.
-        for (auto const& tweakedFeatures :
-             {features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1 -
-                  fixNonFungibleTokensV1_2,
-              features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1,
-              features | fixNFTokenNegOffer})
         {
-            // There was a bug in the initial NFT implementation that
-            // allowed offers to be placed with negative amounts.  Verify
-            // that fixNFTokenNegOffer addresses the problem.
-            Env env{*this, tweakedFeatures};
+            Env env{*this, features};
 
             env.fund(XRP(1000000), issuer, buyer, gw);
             env.close();
@@ -5030,9 +4936,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(issuer, 1), txflags(tfTransferable));
             env.close();
 
-            TER const offerCreateTER = tweakedFeatures[fixNFTokenNegOffer]
-                ? static_cast<TER>(temBAD_AMOUNT)
-                : static_cast<TER>(tesSUCCESS);
+            TER const offerCreateTER = temBAD_AMOUNT;
 
             // Make offers with negative amounts for the NFTs
             uint256 const sellNegXrpOfferIndex =
@@ -5065,11 +4969,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             {
                 // Now try to accept the offers.
-                //  1. If fixNFTokenNegOffer is NOT enabled get tecINTERNAL.
-                //  2. If fixNFTokenNegOffer IS enabled get tecOBJECT_NOT_FOUND.
-                TER const offerAcceptTER = tweakedFeatures[fixNFTokenNegOffer]
-                    ? static_cast<TER>(tecOBJECT_NOT_FOUND)
-                    : static_cast<TER>(tecINTERNAL);
+                TER const offerAcceptTER = tecOBJECT_NOT_FOUND;
 
                 // Sell offers.
                 env(token::acceptSellOffer(buyer, sellNegXrpOfferIndex),
@@ -5088,13 +4988,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
             }
             {
-                //  1. If fixNFTokenNegOffer is enabled get tecOBJECT_NOT_FOUND
-                //  2. If it is not enabled, but fixNonFungibleTokensV1_2 is
-                //  enabled, get tecOBJECT_NOT_FOUND.
-                //  3. If neither are enabled, get tesSUCCESS.
-                TER const offerAcceptTER = tweakedFeatures[fixNFTokenNegOffer]
-                    ? static_cast<TER>(tecOBJECT_NOT_FOUND)
-                    : static_cast<TER>(tesSUCCESS);
+                TER const offerAcceptTER = tecOBJECT_NOT_FOUND;
 
                 // Brokered offers.
                 env(token::brokerOffers(
@@ -5108,100 +5002,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             }
         }
 
-        // Test what happens if NFTokenOffers are created with negative amounts
-        // and then fixNFTokenNegOffer goes live.  What does an acceptOffer do?
         {
-            Env env{
-                *this,
-                features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1};
-
-            env.fund(XRP(1000000), issuer, buyer, gw);
-            env.close();
-
-            env(trust(issuer, gwXAU(2000)));
-            env(trust(buyer, gwXAU(2000)));
-            env.close();
-
-            env(pay(gw, issuer, gwXAU(1000)));
-            env(pay(gw, buyer, gwXAU(1000)));
-            env.close();
-
-            // Create an NFT that we'll make XRP offers for.
-            uint256 const nftID0{
-                token::getNextID(env, issuer, 0u, tfTransferable)};
-            env(token::mint(issuer, 0), txflags(tfTransferable));
-            env.close();
-
-            // Create an NFT that we'll make IOU offers for.
-            uint256 const nftID1{
-                token::getNextID(env, issuer, 1u, tfTransferable)};
-            env(token::mint(issuer, 1), txflags(tfTransferable));
-            env.close();
-
-            // Make offers with negative amounts for the NFTs
-            uint256 const sellNegXrpOfferIndex =
-                keylet::nftoffer(issuer, env.seq(issuer)).key;
-            env(token::createOffer(issuer, nftID0, XRP(-2)),
-                txflags(tfSellNFToken));
-            env.close();
-
-            uint256 const sellNegIouOfferIndex =
-                keylet::nftoffer(issuer, env.seq(issuer)).key;
-            env(token::createOffer(issuer, nftID1, gwXAU(-2)),
-                txflags(tfSellNFToken));
-            env.close();
-
-            uint256 const buyNegXrpOfferIndex =
-                keylet::nftoffer(buyer, env.seq(buyer)).key;
-            env(token::createOffer(buyer, nftID0, XRP(-1)),
-                token::owner(issuer));
-            env.close();
-
-            uint256 const buyNegIouOfferIndex =
-                keylet::nftoffer(buyer, env.seq(buyer)).key;
-            env(token::createOffer(buyer, nftID1, gwXAU(-1)),
-                token::owner(issuer));
-            env.close();
-
-            // Now the amendment passes.
-            env.enableFeature(fixNFTokenNegOffer);
-            env.close();
-
-            // All attempts to accept the offers with negative amounts
-            // should fail with temBAD_OFFER.
-            env(token::acceptSellOffer(buyer, sellNegXrpOfferIndex),
-                ter(temBAD_OFFER));
-            env.close();
-            env(token::acceptSellOffer(buyer, sellNegIouOfferIndex),
-                ter(temBAD_OFFER));
-            env.close();
-
-            // Buy offers.
-            env(token::acceptBuyOffer(issuer, buyNegXrpOfferIndex),
-                ter(temBAD_OFFER));
-            env.close();
-            env(token::acceptBuyOffer(issuer, buyNegIouOfferIndex),
-                ter(temBAD_OFFER));
-            env.close();
-
-            // Brokered offers.
-            env(token::brokerOffers(
-                    gw, buyNegXrpOfferIndex, sellNegXrpOfferIndex),
-                ter(temBAD_OFFER));
-            env.close();
-            env(token::brokerOffers(
-                    gw, buyNegIouOfferIndex, sellNegIouOfferIndex),
-                ter(temBAD_OFFER));
-            env.close();
-        }
-
-        // Test buy offers with a destination with and without
-        // fixNFTokenNegOffer.
-        for (auto const& tweakedFeatures :
-             {features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1,
-              features | fixNFTokenNegOffer})
-        {
-            Env env{*this, tweakedFeatures};
+            // Test buy offers with a destination.
+            Env env{*this, features};
 
             env.fund(XRP(1000000), issuer, buyer);
 
@@ -5211,9 +5014,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(issuer, 0), txflags(tfTransferable));
             env.close();
 
-            TER const offerCreateTER = tweakedFeatures[fixNFTokenNegOffer]
-                ? static_cast<TER>(tesSUCCESS)
-                : static_cast<TER>(temMALFORMED);
+            TER const offerCreateTER = tesSUCCESS;
 
             env(token::createOffer(buyer, nftID, drops(1)),
                 token::owner(issuer),
@@ -5230,11 +5031,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         testcase("Payments with IOU transfer fees");
 
-        for (auto const& tweakedFeatures :
-             {features - fixNonFungibleTokensV1_2,
-              features | fixNonFungibleTokensV1_2})
         {
-            Env env{*this, tweakedFeatures};
+            Env env{*this, features};
 
             Account const minter{"minter"};
             Account const secondarySeller{"seller"};
@@ -5384,22 +5182,11 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createSellOffer(minter, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
-                    ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
-                    : static_cast<TER>(tesSUCCESS);
+                TER const sellTER = tecINSUFFICIENT_FUNDS;
                 env(token::acceptSellOffer(buyer, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixNonFungibleTokensV1_2])
-                    expectInitialState();
-                else
-                {
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
-                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(-20));
-                    BEAST_EXPECT(
-                        env.balance(gw, minter["XAU"]) == gwXAU(-1000));
-                    BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(20));
-                }
+                expectInitialState();
             }
             {
                 // Buyer attempts to send 100% of their balance of an IOU
@@ -5408,22 +5195,11 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createBuyOffer(buyer, minter, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
-                    ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
-                    : static_cast<TER>(tesSUCCESS);
+                TER const sellTER = tecINSUFFICIENT_FUNDS;
                 env(token::acceptBuyOffer(minter, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixNonFungibleTokensV1_2])
-                    expectInitialState();
-                else
-                {
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
-                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(-20));
-                    BEAST_EXPECT(
-                        env.balance(gw, minter["XAU"]) == gwXAU(-1000));
-                    BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(20));
-                }
+                expectInitialState();
             }
             {
                 // Buyer attempts to send an amount less than 100% of their
@@ -5432,21 +5208,11 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 reinitializeTrustLineBalances();
                 auto const nftID = mintNFT(minter);
                 auto const offerID = createSellOffer(minter, nftID, gwXAU(995));
-                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
-                    ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
-                    : static_cast<TER>(tesSUCCESS);
+                TER const sellTER = tecINSUFFICIENT_FUNDS;
                 env(token::acceptSellOffer(buyer, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixNonFungibleTokensV1_2])
-                    expectInitialState();
-                else
-                {
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(995));
-                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(-14.9));
-                    BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-995));
-                    BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(14.9));
-                }
+                expectInitialState();
             }
             {
                 // Buyer attempts to send an amount less than 100% of their
@@ -5456,21 +5222,11 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createBuyOffer(buyer, minter, nftID, gwXAU(995));
-                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
-                    ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
-                    : static_cast<TER>(tesSUCCESS);
+                TER const sellTER = tecINSUFFICIENT_FUNDS;
                 env(token::acceptBuyOffer(minter, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixNonFungibleTokensV1_2])
-                    expectInitialState();
-                else
-                {
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(995));
-                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(-14.9));
-                    BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-995));
-                    BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(14.9));
-                }
+                expectInitialState();
             }
             {
                 // Buyer attempts to send an amount less than 100% of their
@@ -5557,20 +5313,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createSellOffer(minter, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
-                    ? static_cast<TER>(tesSUCCESS)
-                    : static_cast<TER>(tecINSUFFICIENT_FUNDS);
+                TER const sellTER = tesSUCCESS;
                 env(token::acceptSellOffer(gw, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixNonFungibleTokensV1_2])
-                {
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
-                    BEAST_EXPECT(
-                        env.balance(gw, minter["XAU"]) == gwXAU(-1000));
-                }
-                else
-                    expectInitialState();
+                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
+                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-1000));
             }
             {
                 // Gateway attempts to buy NFT with their own IOU - no
@@ -5578,25 +5326,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 reinitializeTrustLineBalances();
 
                 auto const nftID = mintNFT(minter);
-                auto const offerTER = tweakedFeatures[fixNonFungibleTokensV1_2]
-                    ? static_cast<TER>(tesSUCCESS)
-                    : static_cast<TER>(tecUNFUNDED_OFFER);
+                TER const offerTER = tesSUCCESS;
                 auto const offerID =
                     createBuyOffer(gw, minter, nftID, gwXAU(1000), {offerTER});
-                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
-                    ? static_cast<TER>(tesSUCCESS)
-                    : static_cast<TER>(tecOBJECT_NOT_FOUND);
+                TER const sellTER = tesSUCCESS;
                 env(token::acceptBuyOffer(minter, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixNonFungibleTokensV1_2])
-                {
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
-                    BEAST_EXPECT(
-                        env.balance(gw, minter["XAU"]) == gwXAU(-1000));
-                }
-                else
-                    expectInitialState();
+                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
+                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-1000));
             }
             {
                 // Gateway attempts to buy NFT with their own IOU for more
@@ -5605,20 +5343,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 auto const nftID = mintNFT(minter);
                 auto const offerID =
                     createSellOffer(minter, nftID, gwXAU(5000));
-                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
-                    ? static_cast<TER>(tesSUCCESS)
-                    : static_cast<TER>(tecINSUFFICIENT_FUNDS);
+                TER const sellTER = tesSUCCESS;
                 env(token::acceptSellOffer(gw, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixNonFungibleTokensV1_2])
-                {
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(5000));
-                    BEAST_EXPECT(
-                        env.balance(gw, minter["XAU"]) == gwXAU(-5000));
-                }
-                else
-                    expectInitialState();
+                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(5000));
+                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-5000));
             }
             {
                 // Gateway attempts to buy NFT with their own IOU for more
@@ -5626,25 +5356,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 reinitializeTrustLineBalances();
 
                 auto const nftID = mintNFT(minter);
-                auto const offerTER = tweakedFeatures[fixNonFungibleTokensV1_2]
-                    ? static_cast<TER>(tesSUCCESS)
-                    : static_cast<TER>(tecUNFUNDED_OFFER);
+                TER const offerTER = tesSUCCESS;
                 auto const offerID =
                     createBuyOffer(gw, minter, nftID, gwXAU(5000), {offerTER});
-                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
-                    ? static_cast<TER>(tesSUCCESS)
-                    : static_cast<TER>(tecOBJECT_NOT_FOUND);
+                TER const sellTER = tesSUCCESS;
                 env(token::acceptBuyOffer(minter, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixNonFungibleTokensV1_2])
-                {
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(5000));
-                    BEAST_EXPECT(
-                        env.balance(gw, minter["XAU"]) == gwXAU(-5000));
-                }
-                else
-                    expectInitialState();
+                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(5000));
+                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-5000));
             }
             {
                 // Gateway is the NFT minter and attempts to sell NFT for an
@@ -5779,25 +5499,11 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 // now we can do a secondary sale
                 auto const offerID =
                     createSellOffer(secondarySeller, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
-                    ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
-                    : static_cast<TER>(tesSUCCESS);
+                TER const sellTER = tecINSUFFICIENT_FUNDS;
                 env(token::acceptSellOffer(buyer, offerID), ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixNonFungibleTokensV1_2])
-                    expectInitialState();
-                else
-                {
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(30));
-                    BEAST_EXPECT(
-                        env.balance(secondarySeller, gwXAU) == gwXAU(970));
-                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(-20));
-                    BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-30));
-                    BEAST_EXPECT(
-                        env.balance(gw, secondarySeller["XAU"]) == gwXAU(-970));
-                    BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(20));
-                }
+                expectInitialState();
             }
             {
                 // There is a transfer fee on the NFT and buyer has exact
@@ -5815,26 +5521,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 // now we can do a secondary sale
                 auto const offerID =
                     createBuyOffer(buyer, secondarySeller, nftID, gwXAU(1000));
-                auto const sellTER = tweakedFeatures[fixNonFungibleTokensV1_2]
-                    ? static_cast<TER>(tecINSUFFICIENT_FUNDS)
-                    : static_cast<TER>(tesSUCCESS);
+                TER const sellTER = tecINSUFFICIENT_FUNDS;
                 env(token::acceptBuyOffer(secondarySeller, offerID),
                     ter(sellTER));
                 env.close();
 
-                if (tweakedFeatures[fixNonFungibleTokensV1_2])
-                    expectInitialState();
-                else
-                {
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(30));
-                    BEAST_EXPECT(
-                        env.balance(secondarySeller, gwXAU) == gwXAU(970));
-                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(-20));
-                    BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-30));
-                    BEAST_EXPECT(
-                        env.balance(gw, secondarySeller["XAU"]) == gwXAU(-970));
-                    BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(20));
-                }
+                expectInitialState();
             }
             {
                 // There is a transfer fee on the NFT and buyer has enough
@@ -5988,8 +5680,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // the NFToken being bought and returned to the original owner and
         // the broker pocketing the profit.
         //
-        // This unit test verifies that the fixNonFungibleTokensV1_2 amendment
-        // fixes that bug.
         testcase("Brokered sale to self");
 
         using namespace test::jtx;
@@ -6055,9 +5745,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         BEAST_EXPECT(nftCount(env, bob) == 1);
         auto const bobsPriorBalance = env.balance(bob);
         auto const brokersPriorBalance = env.balance(broker);
-        TER expectTer = features[fixNonFungibleTokensV1_2]
-            ? TER(tecCANT_ACCEPT_OWN_NFTOKEN_OFFER)
-            : TER(tesSUCCESS);
+        TER expectTer = tecCANT_ACCEPT_OWN_NFTOKEN_OFFER;
         env(token::brokerOffers(broker, bobBuyOfferIndex, bobSellOfferIndex),
             token::brokerFee(XRP(1)),
             ter(expectTer));
@@ -6835,27 +6523,16 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
         }
 
-        // Test sell offers with a destination with and without
-        // fixNFTokenNegOffer.
-        for (auto const& tweakedFeatures :
-             {features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1,
-              features | fixNFTokenNegOffer})
-        {
-            Env env{*this, tweakedFeatures};
-            Account const alice("alice");
+        Env env{*this, features};
+        Account const alice("alice");
 
-            env.fund(XRP(1000000), alice);
+        env.fund(XRP(1000000), alice);
 
-            TER const offerCreateTER = tweakedFeatures[fixNFTokenNegOffer]
-                ? static_cast<TER>(temBAD_AMOUNT)
-                : static_cast<TER>(tesSUCCESS);
+        TER const offerCreateTER = temBAD_AMOUNT;
 
-            // Make offers with negative amounts for the NFTs
-            env(token::mint(alice),
-                token::amount(XRP(-2)),
-                ter(offerCreateTER));
-            env.close();
-        }
+        // Make offers with negative amounts for the NFTs
+        env(token::mint(alice), token::amount(XRP(-2)), ter(offerCreateTER));
+        env.close();
     }
 
     void
@@ -8029,6 +7706,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         }
     }
 
+protected:
+    FeatureBitset const allFeatures{test::jtx::testable_amendments()};
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -8057,7 +7737,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         testNFTokenWithTickets(features);
         testNFTokenDeleteAccount(features);
         testNftXxxOffers(features);
-        testFixNFTokenNegOffer(features);
+        testNFTokenNegOffer(features);
         testIOUWithTransferFee(features);
         testBrokeredSaleToSelf(features);
         testFixNFTokenRemint(features);
@@ -8071,39 +7751,11 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
 public:
     void
-    run(std::uint32_t instance, bool last = false)
-    {
-        using namespace test::jtx;
-        static FeatureBitset const all{testable_amendments()};
-        static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
-
-        static std::array<FeatureBitset, 8> const feats{
-            all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
-                fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT,
-            all - disallowIncoming - fixNonFungibleTokensV1_2 -
-                fixNFTokenRemint - fixNFTokenReserve - featureNFTokenMintOffer -
-                featureDynamicNFT,
-            all - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
-                fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT,
-            all - fixNFTokenRemint - fixNFTokenReserve -
-                featureNFTokenMintOffer - featureDynamicNFT,
-            all - fixNFTokenReserve - featureNFTokenMintOffer -
-                featureDynamicNFT,
-            all - featureNFTokenMintOffer - featureDynamicNFT,
-            all - featureDynamicNFT,
-            all};
-
-        if (BEAST_EXPECT(instance < feats.size()))
-        {
-            testWithFeats(feats[instance]);
-        }
-        BEAST_EXPECT(!last || instance == feats.size() - 1);
-    }
-
-    void
     run() override
     {
-        run(0);
+        testWithFeats(
+            allFeatures - fixNFTokenRemint - fixNFTokenReserve -
+            featureNFTokenMintOffer - featureDynamicNFT);
     }
 };
 
@@ -8112,25 +7764,9 @@ class NFTokenDisallowIncoming_test : public NFTokenBaseUtil_test
     void
     run() override
     {
-        NFTokenBaseUtil_test::run(1);
-    }
-};
-
-class NFTokenWOfixV1_test : public NFTokenBaseUtil_test
-{
-    void
-    run() override
-    {
-        NFTokenBaseUtil_test::run(2);
-    }
-};
-
-class NFTokenWOTokenRemint_test : public NFTokenBaseUtil_test
-{
-    void
-    run() override
-    {
-        NFTokenBaseUtil_test::run(3);
+        testWithFeats(
+            allFeatures - featureDisallowIncoming - fixNFTokenRemint -
+            fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT);
     }
 };
 
@@ -8139,7 +7775,9 @@ class NFTokenWOTokenReserve_test : public NFTokenBaseUtil_test
     void
     run() override
     {
-        NFTokenBaseUtil_test::run(4);
+        testWithFeats(
+            allFeatures - fixNFTokenReserve - featureNFTokenMintOffer -
+            featureDynamicNFT);
     }
 };
 
@@ -8148,7 +7786,8 @@ class NFTokenWOMintOffer_test : public NFTokenBaseUtil_test
     void
     run() override
     {
-        NFTokenBaseUtil_test::run(5);
+        testWithFeats(
+            allFeatures - featureNFTokenMintOffer - featureDynamicNFT);
     }
 };
 
@@ -8157,7 +7796,7 @@ class NFTokenWOModify_test : public NFTokenBaseUtil_test
     void
     run() override
     {
-        NFTokenBaseUtil_test::run(6);
+        testWithFeats(allFeatures - featureDynamicNFT);
     }
 };
 
@@ -8166,14 +7805,12 @@ class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
     void
     run() override
     {
-        NFTokenBaseUtil_test::run(7, true);
+        testWithFeats(allFeatures);
     }
 };
 
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBaseUtil, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDisallowIncoming, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOfixV1, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenReserve, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, app, ripple, 2);
