@@ -17,37 +17,43 @@
 */
 //==============================================================================
 
-#include <test/jtx/sig.h>
-#include <test/jtx/utility.h>
+#include <xrpl/json/Output.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_writer.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+#include <doctest/doctest.h>
 
-void
-sig::operator()(Env&, JTx& jt) const
+#include <string>
+
+using namespace ripple;
+using namespace Json;
+
+TEST_SUITE_BEGIN("JsonOutput");
+
+static void
+checkOutput(std::string const& valueDesc)
 {
-    if (!manual_)
-        return;
-    if (!subField_)
-        jt.fill_sig = false;
-    if (account_)
-    {
-        // VFALCO Inefficient pre-C++14
-        auto const account = *account_;
-        auto callback = [subField = subField_, account](Env&, JTx& jtx) {
-            // Where to put the signature. Supports sfCounterPartySignature.
-            auto& sigObject = subField ? jtx[*subField] : jtx.jv;
+    std::string output;
+    Json::Value value;
+    REQUIRE(Json::Reader().parse(valueDesc, value));
+    auto out = stringOutput(output);
+    outputJson(value, out);
 
-            jtx::sign(jtx.jv, account, sigObject);
-        };
-        if (!subField_)
-            jt.mainSigners.emplace_back(callback);
-        else
-            jt.postSigners.emplace_back(callback);
-    }
+    auto expected = Json::FastWriter().write(value);
+    CHECK(output == expected);
+    CHECK(output == valueDesc);
+    CHECK(output == jsonAsString(value));
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+TEST_CASE("output cases")
+{
+    checkOutput("{}");
+    checkOutput("[]");
+    checkOutput(R"([23,4.25,true,null,"string"])");
+    checkOutput(R"({"hello":"world"})");
+    checkOutput("[{}]");
+    checkOutput("[[]]");
+    checkOutput(R"({"array":[{"12":23},{},null,false,0.5]})");
+}
+
+TEST_SUITE_END();
