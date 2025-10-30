@@ -348,11 +348,6 @@ public:
         if (it == votes_.end())
             return false;
 
-        // Before this fix, it was possible for an amendment to activate with a
-        // percentage slightly less than 80% because we compared for "greater
-        // than or equal to" instead of strictly "greater than".
-        // One validator is an exception, otherwise it is not possible
-        // to gain majority.
         if (trustedValidations_ == 1)
             return it->second >= threshold_;
 
