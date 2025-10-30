@@ -62,9 +62,9 @@ if (target)
   message (FATAL_ERROR "The target option has been removed - use native cmake options to control build")
 endif ()
 
-include(RippledSanity)
-include(RippledVersion)
-include(RippledSettings)
+include(XrplSanity)
+include(XrplVersion)
+include(XrplSettings)
 # this check has to remain in the top-level cmake
 # because of the early return statement
 if (packages_only)
@@ -73,11 +73,11 @@ if (packages_only)
   endif()
   return ()
 endif ()
-include(RippledCompiler)
-include(RippledInterface)
+include(XrplCompiler)
+include(XrplInterface)
 
 option(only_docs "Include only the docs target?" FALSE)
-include(RippledDocs)
+include(XrplDocs)
 if(only_docs)
   return()
 endif()
@@ -114,14 +114,14 @@ if(rocksdb)
   set_target_properties(RocksDB::rocksdb PROPERTIES
     INTERFACE_COMPILE_DEFINITIONS XRPL_ROCKSDB_AVAILABLE=1
   )
-  target_link_libraries(ripple_libs INTERFACE RocksDB::rocksdb)
+  target_link_libraries(xrpl_libs INTERFACE RocksDB::rocksdb)
 endif()
 
 find_package(nudb REQUIRED)
 find_package(date REQUIRED)
 find_package(xxHash REQUIRED)
 
-target_link_libraries(ripple_libs INTERFACE
+target_link_libraries(xrpl_libs INTERFACE
   ed25519::ed25519
   lz4::lz4
   OpenSSL::Crypto
@@ -139,16 +139,16 @@ elseif(TARGET NuDB::nudb)
 else()
   message(FATAL_ERROR "unknown nudb target")
 endif()
-target_link_libraries(ripple_libs INTERFACE ${nudb})
+target_link_libraries(xrpl_libs INTERFACE ${nudb})
 
 if(coverage)
-  include(RippledCov)
+  include(XrplCov)
 endif()
 
-set(PROJECT_EXPORT_SET RippleExports)
-include(RippledCore)
-include(RippledInstall)
-include(RippledValidatorKeys)
+set(PROJECT_EXPORT_SET XrplExports)
+include(XrplCore)
+include(XrplInstall)
+include(XrplValidatorKeys)
 
 if(tests)
   include(CTest)

@@ -12,6 +12,6 @@
 #undef TYPE_BOOL
 #endif
 
-#include <xrpl/proto/ripple.pb.h>
+#include <xrpl/proto/xrpl.pb.h>
 
 #endif

@@ -1,4 +1,4 @@
-include(xrpl_add_test)
+include(XrplAddTest)
 
 # Test requirements.
 find_package(doctest REQUIRED)

@@ -8,8 +8,8 @@ install (
   TARGETS
     common
     opts
-    ripple_syslibs
-    ripple_boost
+    xrpl_syslibs
+    xrpl_boost
     xrpl.imports.main
     xrpl.libpb
     xrpl.libxrpl.basics
@@ -23,7 +23,7 @@ install (
     xrpl.libxrpl.net
     xrpl.libxrpl
     antithesis-sdk-cpp
-  EXPORT RippleExports
+  EXPORT XrplExports
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
@@ -38,22 +38,22 @@ install(CODE "
   set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
   include(create_symbolic_link)
   create_symbolic_link(xrpl \
-    \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/ripple)
+    \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/xrpl)
 ")
 
-install (EXPORT RippleExports
-  FILE RippleTargets.cmake
-  NAMESPACE Ripple::
-  DESTINATION lib/cmake/ripple)
+install (EXPORT XrplExports
+  FILE XrplTargets.cmake
+  NAMESPACE Xrpl::
+  DESTINATION lib/cmake/xrpl)
 include (CMakePackageConfigHelpers)
 write_basic_package_version_file (
-  RippleConfigVersion.cmake
-  VERSION ${rippled_version}
+  XrplConfigVersion.cmake
+  VERSION ${xrpld_version}
   COMPATIBILITY SameMajorVersion)
 
-if (is_root_project AND TARGET rippled)
-  install (TARGETS rippled RUNTIME DESTINATION bin)
-  set_target_properties(rippled PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
+if (is_root_project AND TARGET xrpld)
+  install (TARGETS xrpld RUNTIME DESTINATION bin)
+  set_target_properties(xrpld PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
   # sample configs should not overwrite existing files
   # install if-not-exists workaround as suggested by
   # https://cmake.org/Bug/view.php?id=12646
@@ -65,19 +65,19 @@ if (is_root_project AND TARGET rippled)
         message (\"-- Skipping : \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/\${DEST}/\${NEWNAME}\")
       endif ()
     endmacro()
-    copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/rippled-example.cfg\" etc rippled.cfg)
+    copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/xrpld-example.cfg\" etc xrpld.cfg)
     copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/validators-example.txt\" etc validators.txt)
   ")
   install(CODE "
     set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
     include(create_symbolic_link)
-    create_symbolic_link(rippled${suffix} \
+    create_symbolic_link(xrpld${suffix} \
        \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix})
   ")
 endif ()
 
 install (
   FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/RippleConfig.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/RippleConfigVersion.cmake
-  DESTINATION lib/cmake/ripple)
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/XrplConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/XrplConfigVersion.cmake
+  DESTINATION lib/cmake/xrpl)

@@ -21,10 +21,16 @@ run from the repository root.
    `XRPL_XXX`.
 2. `.github/scripts/rename/copyright.sh`: This script will remove superflous
    copyright notices.
+3. `.github/scripts/rename/copyright.sh`: This script will rename all CMake
+   files from `RippleXXX.cmake` or `RippledXXX.cmake` to `XrplXXX.cmake`, and
+   any references to `ripple` and `rippled` (with or without capital letters) to
+   `xrpl` and `xrpld`, respectively. The name of the binary will remain as-is,
+   and will only be renamed to `xrpld` by a later script.
 
 You can run all these scripts from the repository root as follows:
 
 ```shell
 ./.github/scripts/rename/definitions.sh .
 ./.github/scripts/rename/copyright.sh .
+./.github/scripts/rename/cmake.sh .
 ```
