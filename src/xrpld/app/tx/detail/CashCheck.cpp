@@ -178,14 +178,6 @@ CashCheck::preclaim(PreclaimContext const& ctx)
             auto const sleTrustLine =
                 ctx.view.read(keylet::line(dstId, issuerId, currency));
 
-            if (!sleTrustLine &&
-                !ctx.view.rules().enabled(featureCheckCashMakesTrustLine))
-            {
-                JLOG(ctx.j.warn())
-                    << "Cannot cash check for IOU without trustline.";
-                return tecNO_LINE;
-            }
-
             auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
             if (!sleIssuer)
             {
@@ -344,10 +336,7 @@ CashCheck::doApply()
             Keylet const trustLineKey = keylet::line(truster, trustLineIssue);
             bool const destLow = issuer > account_;
 
-            bool const checkCashMakesTrustLine =
-                psb.rules().enabled(featureCheckCashMakesTrustLine);
-
-            if (checkCashMakesTrustLine && !psb.exists(trustLineKey))
+            if (!psb.exists(trustLineKey))
             {
                 // 1. Can the check casher meet the reserve for the trust line?
                 // 2. Create trust line between destination (this) account
@@ -420,14 +409,11 @@ CashCheck::doApply()
                         sleTrustLine->at(tweakedLimit) = savedLimit;
                 });
 
-            if (checkCashMakesTrustLine)
-            {
-                // Set the trust line limit to the highest possible value
-                // while flow runs.
-                STAmount const bigAmount(
-                    trustLineIssue, STAmount::cMaxValue, STAmount::cMaxOffset);
-                sleTrustLine->at(tweakedLimit) = bigAmount;
-            }
+            // Set the trust line limit to the highest possible value
+            // while flow runs.
+            STAmount const bigAmount(
+                trustLineIssue, STAmount::cMaxValue, STAmount::cMaxOffset);
+            sleTrustLine->at(tweakedLimit) = bigAmount;
 
             // Let flow() do the heavy lifting on a check for an IOU.
             auto const result = flow(
@@ -460,15 +446,11 @@ CashCheck::doApply()
                         << "flow did not produce DeliverMin.";
                     return tecPATH_PARTIAL;
                 }
-                if (!checkCashMakesTrustLine)
-                    // Set the delivered_amount metadata.
-                    ctx_.deliver(result.actualAmountOut);
             }
 
             // Set the delivered amount metadata in all cases, not just
             // for DeliverMin.
-            if (checkCashMakesTrustLine)
-                ctx_.deliver(result.actualAmountOut);
+            ctx_.deliver(result.actualAmountOut);
 
             sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
         }
