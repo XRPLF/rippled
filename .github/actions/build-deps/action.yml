@@ -4,20 +4,23 @@ description: "Install Conan dependencies, optionally forcing a rebuild of all de
 # Note that actions do not support 'type' and all inputs are strings, see
 # https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#inputs.
 inputs:
-  verbosity:
-    description: "The build verbosity."
-    required: false
-    default: "verbose"
   build_dir:
     description: "The directory where to build."
     required: true
   build_type:
     description: 'The build type to use ("Debug", "Release").'
     required: true
+  build_nproc:
+    description: "The number of processors to use for building."
+    required: true
   force_build:
     description: 'Force building of all dependencies ("true", "false").'
     required: false
     default: "false"
+  log_verbosity:
+    description: "The logging verbosity."
+    required: false
+    default: "verbose"
 
 runs:
   using: composite
@@ -26,9 +29,10 @@ runs:
       shell: bash
       env:
         BUILD_DIR: ${{ inputs.build_dir }}
+        BUILD_NPROC: ${{ inputs.build_nproc }}
         BUILD_OPTION: ${{ inputs.force_build == 'true' && '*' || 'missing' }}
         BUILD_TYPE: ${{ inputs.build_type }}
-        VERBOSITY: ${{ inputs.verbosity }}
+        LOG_VERBOSITY: ${{ inputs.log_verbosity }}
       run: |
         echo 'Installing dependencies.'
         mkdir -p "${BUILD_DIR}"
@@ -39,6 +43,7 @@ runs:
           --options:host='&:tests=True' \
           --options:host='&:xrpld=True' \
           --settings:all build_type="${BUILD_TYPE}" \
-          --conf:all tools.build:verbosity="${VERBOSITY}" \
-          --conf:all tools.compilation:verbosity="${VERBOSITY}" \
+          --conf:all tools.build:jobs=${BUILD_NPROC} \
+          --conf:all tools.build:verbosity="${LOG_VERBOSITY}" \
+          --conf:all tools.compilation:verbosity="${LOG_VERBOSITY}" \
           ..
