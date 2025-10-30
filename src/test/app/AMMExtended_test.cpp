@@ -198,109 +198,100 @@ private:
         // Fill or Kill - unless we fully cross, just charge a fee and don't
         // place the offer on the books.  But also clean up expired offers
         // that are discovered along the way.
-        //
-        // fix1578 changes the return code.  Verify expected behavior
-        // without and with fix1578.
-        for (auto const& tweakedFeatures :
-             {features - fix1578, features | fix1578})
-        {
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    // Order that can't be filled
-                    TER const killedCode{
-                        tweakedFeatures[fix1578] ? TER{tecKILLED}
-                                                 : TER{tesSUCCESS}};
-                    env(offer(carol, USD(100), XRP(100)),
-                        txflags(tfFillOrKill),
-                        ter(killedCode));
-                    env.close();
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'100), USD(10'000), ammAlice.tokens()));
-                    // fee = AMM
-                    BEAST_EXPECT(expectLedgerEntryRoot(
-                        env, carol, XRP(30'000) - (txfee(env, 1))));
-                    BEAST_EXPECT(expectOffers(env, carol, 0));
-                    BEAST_EXPECT(expectHolding(env, carol, USD(30'000)));
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Order that can't be filled
+                TER const killedCode{TER{tecKILLED}};
+                env(offer(carol, USD(100), XRP(100)),
+                    txflags(tfFillOrKill),
+                    ter(killedCode));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'100), USD(10'000), ammAlice.tokens()));
+                // fee = AMM
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env, carol, XRP(30'000) - (txfee(env, 1))));
+                BEAST_EXPECT(expectOffers(env, carol, 0));
+                BEAST_EXPECT(expectHolding(env, carol, USD(30'000)));
 
-                    // Order that can be filled
-                    env(offer(carol, XRP(100), USD(100)),
-                        txflags(tfFillOrKill),
-                        ter(tesSUCCESS));
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'000), USD(10'100), ammAlice.tokens()));
-                    BEAST_EXPECT(expectLedgerEntryRoot(
-                        env, carol, XRP(30'000) + XRP(100) - txfee(env, 2)));
-                    BEAST_EXPECT(expectHolding(env, carol, USD(29'900)));
-                    BEAST_EXPECT(expectOffers(env, carol, 0));
-                },
-                {{XRP(10'100), USD(10'000)}},
-                0,
-                std::nullopt,
-                {tweakedFeatures});
+                // Order that can be filled
+                env(offer(carol, XRP(100), USD(100)),
+                    txflags(tfFillOrKill),
+                    ter(tesSUCCESS));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), USD(10'100), ammAlice.tokens()));
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env, carol, XRP(30'000) + XRP(100) - txfee(env, 2)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(29'900)));
+                BEAST_EXPECT(expectOffers(env, carol, 0));
+            },
+            {{XRP(10'100), USD(10'000)}},
+            0,
+            std::nullopt,
+            {features});
 
-            // Immediate or Cancel - cross as much as possible
-            // and add nothing on the books.
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    env(offer(carol, XRP(200), USD(200)),
-                        txflags(tfImmediateOrCancel),
-                        ter(tesSUCCESS));
+        // Immediate or Cancel - cross as much as possible
+        // and add nothing on the books.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env(offer(carol, XRP(200), USD(200)),
+                    txflags(tfImmediateOrCancel),
+                    ter(tesSUCCESS));
 
-                    // AMM generates a synthetic offer of 100USD/100XRP
-                    // to match the CLOB offer quality.
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'000), USD(10'100), ammAlice.tokens()));
-                    // +AMM - offer * fee
-                    BEAST_EXPECT(expectLedgerEntryRoot(
-                        env, carol, XRP(30'000) + XRP(100) - txfee(env, 1)));
-                    // AMM
-                    BEAST_EXPECT(expectHolding(env, carol, USD(29'900)));
-                    BEAST_EXPECT(expectOffers(env, carol, 0));
-                },
-                {{XRP(10'100), USD(10'000)}},
-                0,
-                std::nullopt,
-                {tweakedFeatures});
+                // AMM generates a synthetic offer of 100USD/100XRP
+                // to match the CLOB offer quality.
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), USD(10'100), ammAlice.tokens()));
+                // +AMM - offer * fee
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env, carol, XRP(30'000) + XRP(100) - txfee(env, 1)));
+                // AMM
+                BEAST_EXPECT(expectHolding(env, carol, USD(29'900)));
+                BEAST_EXPECT(expectOffers(env, carol, 0));
+            },
+            {{XRP(10'100), USD(10'000)}},
+            0,
+            std::nullopt,
+            {features});
 
-            // tfPassive -- place the offer without crossing it.
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    // Carol creates a passive offer that could cross AMM.
-                    // Carol's offer should stay in the ledger.
-                    env(offer(carol, XRP(100), USD(100), tfPassive));
-                    env.close();
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
-                    BEAST_EXPECT(expectOffers(
-                        env, carol, 1, {{{XRP(100), STAmount{USD, 100}}}}));
-                },
-                {{XRP(10'100), USD(10'000)}},
-                0,
-                std::nullopt,
-                {tweakedFeatures});
+        // tfPassive -- place the offer without crossing it.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Carol creates a passive offer that could cross AMM.
+                // Carol's offer should stay in the ledger.
+                env(offer(carol, XRP(100), USD(100), tfPassive));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env, carol, 1, {{{XRP(100), STAmount{USD, 100}}}}));
+            },
+            {{XRP(10'100), USD(10'000)}},
+            0,
+            std::nullopt,
+            {features});
 
-            // tfPassive -- cross only offers of better quality.
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    env(offer(alice, USD(110), XRP(100)));
-                    env.close();
+        // tfPassive -- cross only offers of better quality.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env(offer(alice, USD(110), XRP(100)));
+                env.close();
 
-                    // Carol creates a passive offer.  That offer should cross
-                    // AMM and leave Alice's offer untouched.
-                    env(offer(carol, XRP(100), USD(100), tfPassive));
-                    env.close();
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'900),
-                        STAmount{USD, UINT64_C(9'082'56880733945), -11},
-                        ammAlice.tokens()));
-                    BEAST_EXPECT(expectOffers(env, carol, 0));
-                    BEAST_EXPECT(expectOffers(env, alice, 1));
-                },
-                {{XRP(11'000), USD(9'000)}},
-                0,
-                std::nullopt,
-                {tweakedFeatures});
-        }
+                // Carol creates a passive offer.  That offer should cross
+                // AMM and leave Alice's offer untouched.
+                env(offer(carol, XRP(100), USD(100), tfPassive));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'900),
+                    STAmount{USD, UINT64_C(9'082'56880733945), -11},
+                    ammAlice.tokens()));
+                BEAST_EXPECT(expectOffers(env, carol, 0));
+                BEAST_EXPECT(expectOffers(env, alice, 1));
+            },
+            {{XRP(11'000), USD(9'000)}},
+            0,
+            std::nullopt,
+            {features});
     }
 
     void
@@ -867,8 +858,7 @@ private:
         using namespace jtx;
 
         // Code returned if an offer is killed.
-        TER const killedCode{
-            features[fix1578] ? TER{tecKILLED} : TER{tesSUCCESS}};
+        TER const killedCode{TER{tecKILLED}};
 
         {
             Env env{*this, features};
