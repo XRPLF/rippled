@@ -2145,27 +2145,27 @@ struct PayChan_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        // testSimple(features);
-        // testDisallowIncoming(features);
-        // testCancelAfter(features);
-        // testSettleDelay(features);
-        // testExpiration(features);
-        // testCloseDry(features);
-        // testDefaultAmount(features);
-        // testDisallowXRP(features);
-        // testDstTag(features);
-        // testDepositAuth(features);
-        // testMultiple(features);
-        // testAccountChannelsRPC(features);
-        // testAccountChannelsRPCMarkers(features);
-        // testAccountChannelsRPCSenderOnly(features);
-        // testAccountChannelAuthorize(features);
-        // testAuthVerifyRPC(features);
-        // testOptionalFields(features);
-        // testMalformedPK(features);
-        // testMetaAndOwnership(features);
+        testSimple(features);
+        testDisallowIncoming(features);
+        testCancelAfter(features);
+        testSettleDelay(features);
+        testExpiration(features);
+        testCloseDry(features);
+        testDefaultAmount(features);
+        testDisallowXRP(features);
+        testDstTag(features);
+        testDepositAuth(features);
+        testMultiple(features);
+        testAccountChannelsRPC(features);
+        testAccountChannelsRPCMarkers(features);
+        testAccountChannelsRPCSenderOnly(features);
+        testAccountChannelAuthorize(features);
+        testAuthVerifyRPC(features);
+        testOptionalFields(features);
+        testMalformedPK(features);
+        testMetaAndOwnership(features);
         testAccountDelete(features);
-        // testUsingTickets(features);
+        testUsingTickets(features);
     }
 
 public:

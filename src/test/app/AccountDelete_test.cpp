@@ -1164,17 +1164,17 @@ public:
     void
     run() override
     {
-        // testBasics();
-        // testDirectories();
+        testBasics();
+        testDirectories();
         testOwnedTypes();
-        // testAmendmentEnable();
-        // testTooManyOffers();
-        // testImplicitlyCreatedTrustline();
-        // testBalanceTooSmallForFee();
-        // testWithTickets();
-        // testDest();
-        // testDestinationDepositAuthCredentials();
-        // testDeleteCredentialsOwner();
+        testAmendmentEnable();
+        testTooManyOffers();
+        testImplicitlyCreatedTrustline();
+        testBalanceTooSmallForFee();
+        testWithTickets();
+        testDest();
+        testDestinationDepositAuthCredentials();
+        testDeleteCredentialsOwner();
     }
 };
 
