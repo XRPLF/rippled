@@ -262,6 +262,8 @@ OverlayImpl::onHandoff(
             remote_endpoint.address(),
             app_);
 
+        consumer.setPublicKey(publicKey);
+
         {
             // The node gets a reserved slot if it is in our cluster
             // or if it has a reservation.
@@ -434,6 +436,9 @@ OverlayImpl::connect(beast::IP::Endpoint const& remote_endpoint)
 void
 OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
 {
+    beast::WrappedSink sink{journal_.sink(), peer->prefix()};
+    beast::Journal journal{sink};
+
     std::lock_guard lock(mutex_);
 
     {
@@ -457,11 +462,7 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
 
     list_.emplace(peer.get(), peer);
 
-    JLOG(journal_.debug()) << "activated " << peer->getRemoteAddress() << " ("
-                           << peer->id() << ":"
-                           << toBase58(
-                                  TokenType::NodePublic, peer->getNodePublic())
-                           << ")";
+    JLOG(journal.debug()) << "activated";
 
     // As we are not on the strand, run() must be called
     // while holding the lock, otherwise new I/O can be
@@ -605,6 +606,9 @@ OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 void
 OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 {
+    beast::WrappedSink sink{journal_.sink(), peer->prefix()};
+    beast::Journal journal{sink};
+
     // Now track this peer
     {
         std::lock_guard lock(mutex_);
@@ -618,11 +622,7 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
         (void)result.second;
     }
 
-    JLOG(journal_.debug()) << "activated " << peer->getRemoteAddress() << " ("
-                           << peer->id() << ":"
-                           << toBase58(
-                                  TokenType::NodePublic, peer->getNodePublic())
-                           << ")";
+    JLOG(journal.debug()) << "activated";
 
     // We just accepted this peer so we have non-zero active peers
     XRPL_ASSERT(size(), "ripple::OverlayImpl::activate : nonzero peers");
