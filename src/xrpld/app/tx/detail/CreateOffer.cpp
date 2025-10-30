@@ -803,7 +803,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (bImmediateOrCancel)
     {
         JLOG(j_.trace()) << "Immediate or cancel: offer canceled";
-        if (!crossed && sb.rules().enabled(featureImmediateOfferKilled))
+        if (!crossed)
             // If the ImmediateOfferKilled amendment is enabled, any
             // ImmediateOrCancel offer that transfers absolutely no funds
             // returns tecKILLED rather than tesSUCCESS.  Motivation for the
