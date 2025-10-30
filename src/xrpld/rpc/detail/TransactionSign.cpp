@@ -33,6 +33,7 @@
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Sign.h>
@@ -54,6 +55,7 @@ private:
     AccountID const* const multiSigningAcctID_;
     std::optional<PublicKey> multiSignPublicKey_;
     Buffer multiSignature_;
+    std::optional<std::reference_wrapper<SField const>> signatureTarget_;
 
 public:
     explicit SigningForParams() : multiSigningAcctID_(nullptr)
@@ -116,10 +118,23 @@ public:
         return multiSignature_;
     }
 
+    std::optional<std::reference_wrapper<SField const>> const&
+    getSignatureTarget() const
+    {
+        return signatureTarget_;
+    }
+
     void
     setPublicKey(PublicKey const& multiSignPublicKey)
     {
         multiSignPublicKey_ = multiSignPublicKey;
+    }
+
+    void
+    setSignatureTarget(
+        std::optional<std::reference_wrapper<SField const>> const& field)
+    {
+        signatureTarget_ = field;
     }
 
     void
@@ -427,6 +442,29 @@ transactionPreProcessImpl(
     bool const verify =
         !(params.isMember(jss::offline) && params[jss::offline].asBool());
 
+    auto const signatureTarget =
+        [&params]() -> std::optional<std::reference_wrapper<SField const>> {
+        if (params.isMember(jss::signature_target))
+            return SField::getField(params[jss::signature_target].asString());
+        return std::nullopt;
+    }();
+
+    // Make sure the signature target field is valid, if specified, and save the
+    // template for use later
+    auto const signatureTemplate = signatureTarget
+        ? InnerObjectFormats::getInstance().findSOTemplateBySField(
+              *signatureTarget)
+        : nullptr;
+    if (signatureTarget)
+    {
+        if (!signatureTemplate)
+        {  // Invalid target field
+            return RPC::make_error(
+                rpcINVALID_PARAMS, signatureTarget->get().getName());
+        }
+        signingArgs.setSignatureTarget(signatureTarget);
+    }
+
     if (!params.isMember(jss::tx_json))
         return RPC::missing_field_error(jss::tx_json);
 
@@ -541,9 +579,10 @@ transactionPreProcessImpl(
         JLOG(j.trace()) << "verify: " << toBase58(calcAccountID(pk)) << " : "
                         << toBase58(srcAddressID);
 
-        // Don't do this test if multisigning since the account and secret
-        // probably don't belong together in that case.
-        if (!signingArgs.isMultiSigning())
+        // Don't do this test if multisigning or if the signature is going into
+        // an alternate field since the account and secret probably don't belong
+        // together in that case.
+        if (!signingArgs.isMultiSigning() && !signatureTarget)
         {
             // Make sure the account and secret belong together.
             if (tx_json.isMember(sfDelegate.jsonName))
@@ -598,7 +637,17 @@ transactionPreProcessImpl(
     {
         // If we're generating a multi-signature the SigningPubKey must be
         // empty, otherwise it must be the master account's public key.
-        parsed.object->setFieldVL(
+        STObject* sigObject = &*parsed.object;
+        if (signatureTarget)
+        {
+            // If the target object doesn't exist, make one.
+            if (!parsed.object->isFieldPresent(*signatureTarget))
+                parsed.object->setFieldObject(
+                    *signatureTarget,
+                    STObject{*signatureTemplate, *signatureTarget});
+            sigObject = &parsed.object->peekFieldObject(*signatureTarget);
+        }
+        sigObject->setFieldVL(
             sfSigningPubKey,
             signingArgs.isMultiSigning() ? Slice(nullptr, 0) : pk.slice());
 
@@ -630,7 +679,7 @@ transactionPreProcessImpl(
     }
     else if (signingArgs.isSingleSigning())
     {
-        stTx->sign(pk, sk);
+        stTx->sign(pk, sk, signatureTarget);
     }
 
     return transactionPreProcessResult{std::move(stTx)};
@@ -1195,11 +1244,17 @@ transactionSignFor(
         signer.setFieldVL(
             sfSigningPubKey, signForParams.getPublicKey().slice());
 
+        STObject& sigTarget = [&]() -> STObject& {
+            auto const target = signForParams.getSignatureTarget();
+            if (target)
+                return sttx->peekFieldObject(*target);
+            return *sttx;
+        }();
         // If there is not yet a Signers array, make one.
-        if (!sttx->isFieldPresent(sfSigners))
-            sttx->setFieldArray(sfSigners, {});
+        if (!sigTarget.isFieldPresent(sfSigners))
+            sigTarget.setFieldArray(sfSigners, {});
 
-        auto& signers = sttx->peekFieldArray(sfSigners);
+        auto& signers = sigTarget.peekFieldArray(sfSigners);
         signers.emplace_back(std::move(signer));
 
         // The array must be sorted and validated.

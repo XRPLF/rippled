@@ -91,6 +91,12 @@ public:
         return m_public_key;
     }
 
+    std::string
+    prefix() const
+    {
+        return "[" + getFingerprint(remote_endpoint(), public_key()) + "] ";
+    }
+
     std::optional<std::uint16_t>
     listening_port() const override
     {
