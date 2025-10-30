@@ -1256,7 +1256,7 @@ computePaymentComponents(
             {interest, errors.interestDueDelta},
             {fee, errors.managementFeeDueDelta}};
         std::sort(order.begin(), order.end(), [](auto const& a, auto const& b) {
-            return abs(a.second) < abs(b.second);
+            return a.second < b.second;
         });
 
         for (auto const& item : order)
@@ -1522,7 +1522,7 @@ calculateRawLoanState(
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t const paymentRemaining,
-    TenthBips16 const managementFeeRate)
+    TenthBips32 const managementFeeRate)
 {
     if (paymentRemaining == 0)
     {
@@ -1554,7 +1554,7 @@ calculateRawLoanState(
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
     std::uint32_t const paymentRemaining,
-    TenthBips16 const managementFeeRate)
+    TenthBips32 const managementFeeRate)
 {
     return calculateRawLoanState(
         periodicPayment,
@@ -1592,7 +1592,7 @@ Number
 computeFee(
     Asset const& asset,
     Number const& value,
-    TenthBips16 managementFeeRate,
+    TenthBips32 managementFeeRate,
     std::int32_t scale)
 {
     return roundToAsset(
@@ -1619,7 +1619,7 @@ computeLoanProperties(
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining,
-    TenthBips16 managementFeeRate)
+    TenthBips32 managementFeeRate)
 {
     auto const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
     XRPL_ASSERT(

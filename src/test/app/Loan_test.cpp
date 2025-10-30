@@ -1923,7 +1923,7 @@ protected:
                         broker.asset, state.periodicPayment, state.loanScale)};
 
                 testcase
-                    << currencyLabel << "Payment components: "
+                    << currencyLabel << " Payment components: "
                     << "Payments remaining, rawInterest, rawPrincipal, "
                        "rawMFee, trackedValueDelta, trackedPrincipalDelta, "
                        "trackedInterestDelta, trackedMgmtFeeDelta, special";
@@ -1965,7 +1965,7 @@ protected:
                         state.managementFeeOutstanding);
                     testcase
                         << currencyLabel
-                        << "Loan starting state: " << state.paymentRemaining
+                        << " Loan starting state: " << state.paymentRemaining
                         << ", " << raw.interestDue << ", "
                         << raw.principalOutstanding << ", "
                         << raw.managementFeeDue << ", "
@@ -2035,23 +2035,23 @@ protected:
                     detail::LoanDeltas const deltas =
                         currentTrueState - nextTrueState;
 
-                    testcase << currencyLabel
-                             << "Payment components: " << state.paymentRemaining
-                             << ", " << deltas.interestDueDelta << ", "
-                             << deltas.principalDelta << ", "
-                             << deltas.managementFeeDueDelta << ", "
-                             << paymentComponents.trackedValueDelta << ", "
-                             << paymentComponents.trackedPrincipalDelta << ", "
-                             << paymentComponents.trackedInterestPart() << ", "
-                             << paymentComponents.trackedManagementFeeDelta
-                             << ", "
-                             << (paymentComponents.specialCase ==
-                                         detail::PaymentSpecialCase::final
-                                     ? "final"
-                                     : paymentComponents.specialCase ==
-                                         detail::PaymentSpecialCase::extra
-                                     ? "extra"
-                                     : "none");
+                    testcase
+                        << currencyLabel
+                        << " Payment components: " << state.paymentRemaining
+                        << ", " << deltas.interestDueDelta << ", "
+                        << deltas.principalDelta << ", "
+                        << deltas.managementFeeDueDelta << ", "
+                        << paymentComponents.trackedValueDelta << ", "
+                        << paymentComponents.trackedPrincipalDelta << ", "
+                        << paymentComponents.trackedInterestPart() << ", "
+                        << paymentComponents.trackedManagementFeeDelta << ", "
+                        << (paymentComponents.specialCase ==
+                                    detail::PaymentSpecialCase::final
+                                ? "final"
+                                : paymentComponents.specialCase ==
+                                    detail::PaymentSpecialCase::extra
+                                ? "extra"
+                                : "none");
 
                     auto const totalDueAmount = STAmount{
                         broker.asset,
@@ -2988,7 +2988,6 @@ protected:
         using namespace jtx::loan;
         using namespace std::chrono_literals;
         using d = NetClock::duration;
-        using tp = NetClock::time_point;
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -3048,7 +3047,7 @@ protected:
             roundPeriodicPayment(
                 broker.asset, state.periodicPayment, state.loanScale)};
 
-        log << currencyLabel << "Payment components: "
+        log << currencyLabel << " Payment components: "
             << "Payments remaining, rawInterest, rawPrincipal, "
                "rawMFee, trackedValueDelta, trackedPrincipalDelta, "
                "trackedInterestDelta, trackedMgmtFeeDelta, special"
@@ -3071,7 +3070,7 @@ protected:
                 state.principalOutstanding,
                 state.managementFeeOutstanding);
             log << currencyLabel
-                << "Loan starting state: " << state.paymentRemaining << ", "
+                << " Loan starting state: " << state.paymentRemaining << ", "
                 << raw.interestDue << ", " << raw.principalOutstanding << ", "
                 << raw.managementFeeDue << ", " << rounded.valueOutstanding
                 << ", " << rounded.principalOutstanding << ", "
@@ -3156,7 +3155,7 @@ protected:
                     14);
 
             log << currencyLabel
-                << "Payment components: " << state.paymentRemaining << ", "
+                << " Payment components: " << state.paymentRemaining << ", "
                 << deltas.interestDueDelta << ", " << deltas.principalDelta
                 << ", " << deltas.managementFeeDueDelta << ", "
                 << paymentComponents.trackedValueDelta << ", "
@@ -5322,6 +5321,34 @@ class LoanArbitrary_test : public LoanBatch_test
     run() override
     {
         using namespace jtx;
+
+        {
+            Env env(*this, nullptr, beast::severities::kDebug);
+
+            auto const asset = PrettyAsset{xrpIssue(), 1'000'000};
+            auto const principal = 291618;
+            TenthBips32 interest{4871};
+            auto const payments = 6026;
+            auto const props = computeLoanProperties(
+                asset,
+                principal,
+                interest,
+                1058440,
+                payments,
+                TenthBips32{65525});
+            log << "Loan properties:\n"
+                << "\tPeriodic Payment: " << props.periodicPayment << std::endl
+                << "\tTotal Value: " << props.totalValueOutstanding << std::endl
+                << "\tManagement Fee: " << props.managementFeeOwedToBroker
+                << std::endl
+                << "\tLoan Scale: " << props.loanScale << std::endl
+                << "\tFirst payment principal: " << props.firstPaymentPrincipal
+                << std::endl;
+
+            BEAST_EXPECT(!LoanSet::checkGuards(
+                asset, principal, interest, payments, props, env.journal));
+        }
+
         runLoan(
             AssetType::XRP,
             BrokerParameters{

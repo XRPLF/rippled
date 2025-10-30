@@ -123,7 +123,7 @@ calculateRawLoanState(
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t const paymentRemaining,
-    TenthBips16 const managementFeeRate);
+    TenthBips32 const managementFeeRate);
 
 LoanState
 calculateRawLoanState(
@@ -131,7 +131,7 @@ calculateRawLoanState(
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
     std::uint32_t const paymentRemaining,
-    TenthBips16 const managementFeeRate);
+    TenthBips32 const managementFeeRate);
 
 LoanState
 calculateRoundedLoanState(
@@ -146,7 +146,7 @@ Number
 computeFee(
     Asset const& asset,
     Number const& value,
-    TenthBips16 managementFeeRate,
+    TenthBips32 managementFeeRate,
     std::int32_t scale);
 
 Number
@@ -261,7 +261,7 @@ computeLoanProperties(
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining,
-    TenthBips16 managementFeeRate);
+    TenthBips32 managementFeeRate);
 
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale);

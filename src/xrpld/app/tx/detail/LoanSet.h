@@ -60,8 +60,8 @@ public:
         Asset const& vaultAsset,
         Number const& principalRequested,
         TenthBips32 interestRate,
-        LoanProperties const& properties,
         std::uint32_t paymentTotal,
+        LoanProperties const& properties,
         beast::Journal j);
 
     TER

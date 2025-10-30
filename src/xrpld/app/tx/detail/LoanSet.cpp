@@ -323,8 +323,8 @@ LoanSet::checkGuards(
     Asset const& vaultAsset,
     Number const& principalRequested,
     TenthBips32 interestRate,
-    LoanProperties const& properties,
     std::uint32_t paymentTotal,
+    LoanProperties const& properties,
     beast::Journal j)
 {
     auto const totalInterestOutstanding =
@@ -480,8 +480,8 @@ LoanSet::doApply()
             vaultAsset,
             principalRequested,
             interestRate,
-            properties,
             paymentTotal,
+            properties,
             j_))
         return ret;
 
