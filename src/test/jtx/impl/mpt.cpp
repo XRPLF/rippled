@@ -980,6 +980,91 @@ MPTTester::getIssuanceOutstandingBalance() const
     return (*sle)[sfOutstandingAmount];
 }
 
+void
+MPTTester::convertBack(MPTConvertBack const& arg)
+{
+    Json::Value jv;
+    if (arg.account)
+        jv[sfAccount] = arg.account->human();
+    else
+        Throw<std::runtime_error>("Account not specified");
+
+    jv[jss::TransactionType] = jss::ConfidentialConvertBack;
+    if (arg.id)
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    if (arg.amt)
+        jv[sfMPTAmount.jsonName] = std::to_string(*arg.amt);
+    if (arg.holderEncryptedAmt)
+        jv[sfHolderEncryptedAmount.jsonName] = strHex(*arg.holderEncryptedAmt);
+    else
+        jv[sfHolderEncryptedAmount.jsonName] =
+            strHex(encryptAmount(*arg.account, *arg.amt));
+
+    if (arg.issuerEncryptedAmt)
+        jv[sfIssuerEncryptedAmount.jsonName] = strHex(*arg.issuerEncryptedAmt);
+    else
+        jv[sfIssuerEncryptedAmount.jsonName] =
+            strHex(encryptAmount(issuer_, *arg.amt));
+
+    if (arg.proof)
+        jv[sfZKProof.jsonName] = *arg.proof;
+
+    auto const holderAmt = getBalance(*arg.account);
+    auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
+
+    uint64_t prevInboxBalance =
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+    uint64_t prevSpendingBalance =
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+    uint64_t prevIssuerBalance =
+        getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+
+    if (submit(arg, jv) == tesSUCCESS)
+    {
+        auto const postConfidentialOutstanding =
+            getIssuanceConfidentialBalance();
+        env_.require(mptbalance(*this, *arg.account, holderAmt + *arg.amt));
+        env_.require(requireAny([&]() -> bool {
+            return prevConfidentialOutstanding - *arg.amt ==
+                postConfidentialOutstanding;
+        }));
+
+        uint64_t postInboxBalance =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+        uint64_t postIssuerBalance =
+            getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+        uint64_t postSpendingBalance =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+        // spending balance should not change
+        env_.require(requireAny(
+            [&]() -> bool { return postInboxBalance == prevInboxBalance; }));
+
+        // issuer's encrypted balance is updated correctly
+        env_.require(requireAny([&]() -> bool {
+            return prevIssuerBalance - *arg.amt == postIssuerBalance;
+        }));
+
+        // holder's inbox balance is updated correctly
+        env_.require(requireAny([&]() -> bool {
+            return prevSpendingBalance - *arg.amt == postSpendingBalance;
+        }));
+
+        // sum of holder's inbox and spending balance should equal to issuer's
+        // encrypted balance
+        env_.require(requireAny([&]() -> bool {
+            return postInboxBalance + postSpendingBalance == postIssuerBalance;
+        }));
+    }
+}
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

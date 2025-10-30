@@ -1361,6 +1361,56 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testConvertBack(FeatureBitset features)
+    {
+        testcase("Convert back");
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create(
+            {.ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+        mptAlice.authorize({.account = bob});
+        env.close();
+        mptAlice.pay(alice, bob, 100);
+        env.close();
+
+        mptAlice.generateKeyPair(alice);
+
+        mptAlice.set({.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.generateKeyPair(bob);
+
+        mptAlice.convert({
+            .account = bob,
+            .amt = 40,
+            .proof = "123",
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+
+        mptAlice.mergeInbox({
+            .account = bob,
+        });
+
+        mptAlice.convertBack({
+            .account = bob,
+            .amt = 30,
+            .proof = "123",
+        });
+
+        // mptAlice.convertBack({
+        //     .account = bob,
+        //     .amt = 10,
+        //     .proof = "123",
+        // });
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testConvert(features);
@@ -1379,6 +1429,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testSendPreclaim(features);
 
         testDelete(features);
+
+        testConvertBack(features);
     }
 
 public:
