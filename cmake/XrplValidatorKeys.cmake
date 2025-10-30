@@ -10,7 +10,7 @@ if (validator_keys)
 
   FetchContent_Declare (
     validator_keys
-    GIT_REPOSITORY https://github.com/xrpl/validator-keys-tool.git
+    GIT_REPOSITORY https://github.com/ripple/validator-keys-tool.git
     GIT_TAG        "${current_branch}"
   )
   FetchContent_MakeAvailable(validator_keys)

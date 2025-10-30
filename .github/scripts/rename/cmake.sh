@@ -4,7 +4,7 @@
 set -e
 
 # On MacOS, ensure that GNU sed and head are installed and available as `gsed`
-# and `ghead`, respectively.
+# and `ghead`, respectively, and that rename is available.
 SED_COMMAND=sed
 HEAD_COMMAND=head
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -18,6 +18,10 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
       exit 1
   fi
   HEAD_COMMAND=ghead
+  if ! command -v rename &> /dev/null; then
+      echo "Error: rename is not installed. Please install it using 'brew install rename'."
+      exit 1
+  fi
 fi
 
 # This script renames CMake files from `RippleXXX.cmake` or `RippledXXX.cmake`
@@ -40,12 +44,14 @@ if [ ! -d "${DIRECTORY}" ]; then
 fi
 
 # Rename the files.
-for FILE in ${DIRECTORY}/cmake/Ripple*.cmake; do
-  echo "${FILE}"
-  mv "${FILE}" "$(echo "${FILE}" | ${SED_COMMAND} -E 's/Rippled?/Xrpl/')"
-done
-mv ${DIRECTORY}/cmake/xrpl_add_test.cmake ${DIRECTORY}/cmake/XrplAddTest.cmake
-mv ${DIRECTORY}/include/xrpl/proto/ripple.proto ${DIRECTORY}/include/xrpl/proto/xrpl.proto
+rename 's/Rippled/Xrpl/g' ${DIRECTORY}/cmake/*.cmake
+rename 's/Ripple/Xrpl/g' ${DIRECTORY}/cmake/*.cmake
+if [ -e "${DIRECTORY}/cmake/xrpl_add_test.cmake" ]; then
+  mv "${DIRECTORY}/cmake/xrpl_add_test.cmake" "${DIRECTORY}/cmake/XrplAddTest.cmake"
+fi
+if [ -e "${DIRECTORY}/include/xrpl/proto/ripple.proto" ]; then
+  mv "${DIRECTORY}/include/xrpl/proto/ripple.proto" "${DIRECTORY}/include/xrpl/proto/xrpl.proto"
+fi
 
 # Rename inside the files.
 find "${DIRECTORY}/cmake" -type f -name "*.cmake" | while read -r FILE; do
@@ -57,15 +63,24 @@ find "${DIRECTORY}/cmake" -type f -name "*.cmake" | while read -r FILE; do
 done
 ${SED_COMMAND} -i -E 's/Rippled?/Xrpl/g' "${DIRECTORY}/CMakeLists.txt"
 ${SED_COMMAND} -i 's/ripple/xrpl/g' "${DIRECTORY}/CMakeLists.txt"
-${SED_COMMAND} -i 's/include(xrpl_add_test)/include(XrplAddTest)/g' "${DIRECTORY}/src/tests/libxrpl/CMakeLists.txt"
-${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/g' "${DIRECTORY}/include/xrpl/protocol/messages.h"
-${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/g' "${DIRECTORY}/BUILD.md"
+${SED_COMMAND} -i 's/include(xrpl_add_test)/include(XrplAddTest)/' "${DIRECTORY}/src/tests/libxrpl/CMakeLists.txt"
+${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' "${DIRECTORY}/include/xrpl/protocol/messages.h"
+${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' "${DIRECTORY}/BUILD.md"
+
+# Restore the name of the validator keys repository.
+${SED_COMMAND} -i 's@xrpl/validator-keys-tool@ripple/validator-keys-tool@' "${DIRECTORY}/cmake/XrplValidatorKeys.cmake"
 
 # Ensure the name of the binary remains 'rippled' for now.
-ghead -n -2 "${DIRECTORY}/cmake/XrplCore.cmake" > cmake.tmp
-echo '  # For the time being, we will keep the name of the binary as it was.' >> cmake.tmp
-echo '  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")' >> cmake.tmp
-tail -2 "${DIRECTORY}/cmake/XrplCore.cmake" >> cmake.tmp
-mv cmake.tmp "${DIRECTORY}/cmake/XrplCore.cmake"
+if grep -q '"xrpld"' "${DIRECTORY}/cmake/XrplCore.cmake"; then
+  # The script has been rerun, so just restore the name of the binary.
+  ${SED_COMMAND} -i 's/"xrpld"/"rippled"/' "${DIRECTORY}/cmake/XrplCore.cmake"
+elif ! grep -q '"rippled"' "${DIRECTORY}/cmake/XrplCore.cmake"; then
+  ghead -n -2 "${DIRECTORY}/cmake/XrplCore.cmake" > cmake.tmp
+  echo ''
+  echo '  # For the time being, we will keep the name of the binary as it was.' >> cmake.tmp
+  echo '  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")' >> cmake.tmp
+  tail -2 "${DIRECTORY}/cmake/XrplCore.cmake" >> cmake.tmp
+  mv cmake.tmp "${DIRECTORY}/cmake/XrplCore.cmake"
+fi
 
 echo "Renaming complete."
