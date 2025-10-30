@@ -26,6 +26,8 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
@@ -429,7 +431,10 @@ doAccountTxJson(RPC::JsonContext& context)
         return RPC::invalid_field_error(jss::forward);
     }
 
-    args.limit = params.isMember(jss::limit) ? params[jss::limit].asUInt() : 0;
+    if (auto const err =
+            RPC::readLimitField(args.limit, RPC::Tuning::accountTx, context))
+        return *err;
+
     args.binary = params.isMember(jss::binary) && params[jss::binary].asBool();
     args.forward =
         params.isMember(jss::forward) && params[jss::forward].asBool();

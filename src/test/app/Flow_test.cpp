@@ -1190,38 +1190,30 @@ struct Flow_test : public beast::unit_test::suite
         auto const USD = gw["USD"];
         auto const EUR = gw["EUR"];
 
-        for (auto const withFix : {true, false})
         {
-            auto const feats = [&withFix]() -> FeatureBitset {
-                if (withFix)
-                    return testable_amendments();
-                return testable_amendments() - FeatureBitset{fix1781};
-            }();
-            {
-                // Payment path starting with XRP
-                Env env(*this, feats);
-                env.fund(XRP(10000), alice, bob, gw);
-                env.close();
-                env.trust(USD(1000), alice, bob);
-                env.trust(EUR(1000), alice, bob);
-                env.close();
-                env(pay(gw, alice, USD(100)));
-                env(pay(gw, alice, EUR(100)));
-                env.close();
+            // Payment path starting with XRP
+            Env env(*this, testable_amendments());
+            env.fund(XRP(10000), alice, bob, gw);
+            env.close();
+            env.trust(USD(1000), alice, bob);
+            env.trust(EUR(1000), alice, bob);
+            env.close();
+            env(pay(gw, alice, USD(100)));
+            env(pay(gw, alice, EUR(100)));
+            env.close();
 
-                env(offer(alice, XRP(100), USD(100)), txflags(tfPassive));
-                env(offer(alice, USD(100), XRP(100)), txflags(tfPassive));
-                env(offer(alice, XRP(100), EUR(100)), txflags(tfPassive));
-                env.close();
+            env(offer(alice, XRP(100), USD(100)), txflags(tfPassive));
+            env(offer(alice, USD(100), XRP(100)), txflags(tfPassive));
+            env(offer(alice, XRP(100), EUR(100)), txflags(tfPassive));
+            env.close();
 
-                TER const expectedTer =
-                    withFix ? TER{temBAD_PATH_LOOP} : TER{tesSUCCESS};
-                env(pay(alice, bob, EUR(1)),
-                    path(~USD, ~XRP, ~EUR),
-                    sendmax(XRP(1)),
-                    txflags(tfNoRippleDirect),
-                    ter(expectedTer));
-            }
+            TER const expectedTer = TER{temBAD_PATH_LOOP};
+            env(pay(alice, bob, EUR(1)),
+                path(~USD, ~XRP, ~EUR),
+                sendmax(XRP(1)),
+                txflags(tfNoRippleDirect),
+                ter(expectedTer));
+
             pass();
         }
         {
