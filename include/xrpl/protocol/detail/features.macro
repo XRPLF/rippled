@@ -124,8 +124,10 @@ XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
-// All known amendments and amendments that may appear in a validated
-// ledger must be registered either here or above with the "active" amendments
+// All known amendments and amendments that may appear in a validated ledger
+// must be registered either here or above with the "active" amendments
+//
+// Please keep this list sorted alphabetically for convenience.
 XRPL_RETIRE(fix1201)
 XRPL_RETIRE(fix1368)
 XRPL_RETIRE(fix1373)
