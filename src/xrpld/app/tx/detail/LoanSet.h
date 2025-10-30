@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TX_LOANSET_H_INCLUDED
 #define RIPPLE_TX_LOANSET_H_INCLUDED
 
+#include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
@@ -53,6 +54,15 @@ public:
 
     static TER
     preclaim(PreclaimContext const& ctx);
+
+    static TER
+    checkGuards(
+        Asset const& vaultAsset,
+        Number const& principalRequested,
+        TenthBips32 interestRate,
+        LoanProperties const& properties,
+        std::uint32_t paymentTotal,
+        beast::Journal j);
 
     TER
     doApply() override;
