@@ -69,12 +69,10 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
                 return 0u;
             }();
 
-            // If fixNFTokenRemint amendment is on, we must
-            // add FirstNFTokenSequence.
-            if (env.current()->rules().enabled(fixNFTokenRemint))
-                tokenSeq += env.le(acct)
-                                ->at(~sfFirstNFTokenSequence)
-                                .value_or(env.seq(acct));
+            // We must add FirstNFTokenSequence.
+            tokenSeq += env.le(acct)
+                            ->at(~sfFirstNFTokenSequence)
+                            .value_or(env.seq(acct));
 
             return toUInt32(nft::cipheredTaxon(tokenSeq, nft::toTaxon(taxon)));
         };

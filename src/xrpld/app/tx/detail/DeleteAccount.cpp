@@ -290,8 +290,8 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
-    // When fixNFTokenRemint is enabled, we don't allow an account to be
-    // deleted if <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
+    // We don't allow an account to be deleted if
+    // <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
     // current ledger. This is to prevent having duplicate NFTokenIDs after
     // account re-creation.
     //
@@ -301,10 +301,9 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     // their account and mints a NFToken, it is possible that the
     // NFTokenSequence of this NFToken is the same as the one that the
     // authorized minter minted in a previous ledger.
-    if (ctx.view.rules().enabled(fixNFTokenRemint) &&
-        ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-             (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
-         ctx.view.seq()))
+    if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
+            (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+        ctx.view.seq())
         return tecTOO_SOON;
 
     // Verify that the account does not own any objects that would prevent

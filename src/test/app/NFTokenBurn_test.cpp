@@ -375,12 +375,10 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
                 std::uint32_t tokenSeq =
                     env.le(acct)->at(~sfMintedNFTokens).value_or(0);
 
-                // If fixNFTokenRemint amendment is on, we must
-                // add FirstNFTokenSequence.
-                if (env.current()->rules().enabled(fixNFTokenRemint))
-                    tokenSeq += env.le(acct)
-                                    ->at(~sfFirstNFTokenSequence)
-                                    .value_or(env.seq(acct));
+                // We must add FirstNFTokenSequence.
+                tokenSeq += env.le(acct)
+                                ->at(~sfFirstNFTokenSequence)
+                                .value_or(env.seq(acct));
 
                 return toUInt32(
                     nft::cipheredTaxon(tokenSeq, nft::toTaxon(taxon)));
@@ -1079,12 +1077,10 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
                 std::uint32_t tokenSeq =
                     env.le(acct)->at(~sfMintedNFTokens).value_or(0);
 
-                // If fixNFTokenRemint amendment is on, we must
-                // add FirstNFTokenSequence.
-                if (env.current()->rules().enabled(fixNFTokenRemint))
-                    tokenSeq += env.le(acct)
-                                    ->at(~sfFirstNFTokenSequence)
-                                    .value_or(env.seq(acct));
+                // We must add FirstNFTokenSequence.
+                tokenSeq += env.le(acct)
+                                ->at(~sfFirstNFTokenSequence)
+                                .value_or(env.seq(acct));
 
                 return toUInt32(
                     nft::cipheredTaxon(tokenSeq, nft::toTaxon(taxon)));
@@ -1277,16 +1273,6 @@ public:
     void
     run() override
     {
-        testWithFeats(allFeatures - fixNFTokenRemint - fixNFTokenPageLinks);
-    }
-};
-
-class NFTokenBurnWOFixNFTPageLinks_test : public NFTokenBurnBaseUtil_test
-{
-public:
-    void
-    run() override
-    {
         testWithFeats(allFeatures - fixNFTokenPageLinks);
     }
 };
@@ -1302,7 +1288,6 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnBaseUtil, app, ripple, 3);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOFixNFTPageLinks, app, ripple, 3);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnAllFeatures, app, ripple, 3);
 
 }  // namespace ripple
