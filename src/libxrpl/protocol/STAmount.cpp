@@ -68,29 +68,6 @@
 
 namespace ripple {
 
-namespace {
-
-// Use a static inside a function to help prevent order-of-initialzation issues
-LocalValue<bool>&
-getStaticSTAmountCanonicalizeSwitchover()
-{
-    static LocalValue<bool> r{true};
-    return r;
-}
-}  // namespace
-
-bool
-getSTAmountCanonicalizeSwitchover()
-{
-    return *getStaticSTAmountCanonicalizeSwitchover();
-}
-
-void
-setSTAmountCanonicalizeSwitchover(bool v)
-{
-    *getStaticSTAmountCanonicalizeSwitchover() = v;
-}
-
 static std::uint64_t const tenTo14 = 100000000000000ull;
 static std::uint64_t const tenTo14m1 = tenTo14 - 1;
 static std::uint64_t const tenTo17 = tenTo14 * 1000;
@@ -884,18 +861,14 @@ STAmount::canonicalize()
             return;
         }
 
-        if (getSTAmountCanonicalizeSwitchover())
-        {
-            // log(cMaxNativeN, 10) == 17
-            if (native() && mOffset > 17)
-                Throw<std::runtime_error>(
-                    "Native currency amount out of range");
-            // log(maxMPTokenAmount, 10) ~ 18.96
-            if (mAsset.holds<MPTIssue>() && mOffset > 18)
-                Throw<std::runtime_error>("MPT amount out of range");
-        }
+        // log(cMaxNativeN, 10) == 17
+        if (native() && mOffset > 17)
+            Throw<std::runtime_error>("Native currency amount out of range");
+        // log(maxMPTokenAmount, 10) ~ 18.96
+        if (mAsset.holds<MPTIssue>() && mOffset > 18)
+            Throw<std::runtime_error>("MPT amount out of range");
 
-        if (getSTNumberSwitchover() && getSTAmountCanonicalizeSwitchover())
+        if (getSTNumberSwitchover())
         {
             Number num(
                 mIsNegative ? -mValue : mValue, mOffset, Number::unchecked{});
@@ -919,16 +892,14 @@ STAmount::canonicalize()
 
             while (mOffset > 0)
             {
-                if (getSTAmountCanonicalizeSwitchover())
-                {
-                    // N.B. do not move the overflow check to after the
-                    // multiplication
-                    if (native() && mValue > cMaxNativeN)
-                        Throw<std::runtime_error>(
-                            "Native currency amount out of range");
-                    else if (!native() && mValue > maxMPTokenAmount)
-                        Throw<std::runtime_error>("MPT amount out of range");
-                }
+                // N.B. do not move the overflow check to after the
+                // multiplication
+                if (native() && mValue > cMaxNativeN)
+                    Throw<std::runtime_error>(
+                        "Native currency amount out of range");
+                else if (!native() && mValue > maxMPTokenAmount)
+                    Throw<std::runtime_error>("MPT amount out of range");
+
                 mValue *= 10;
                 --mOffset;
             }

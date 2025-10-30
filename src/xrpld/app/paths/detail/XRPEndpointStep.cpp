@@ -362,16 +362,12 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
     if (ter != tesSUCCESS)
         return ter;
 
-    if (ctx.view.rules().enabled(fix1781))
+    auto const issuesIndex = isLast_ ? 0 : 1;
+    if (!ctx.seenDirectIssues[issuesIndex].insert(xrpIssue()).second)
     {
-        auto const issuesIndex = isLast_ ? 0 : 1;
-        if (!ctx.seenDirectIssues[issuesIndex].insert(xrpIssue()).second)
-        {
-            JLOG(j_.debug())
-                << "XRPEndpointStep: loop detected: Index: " << ctx.strandSize
-                << ' ' << *this;
-            return temBAD_PATH_LOOP;
-        }
+        JLOG(j_.debug()) << "XRPEndpointStep: loop detected: Index: "
+                         << ctx.strandSize << ' ' << *this;
+        return temBAD_PATH_LOOP;
     }
 
     return tesSUCCESS;

@@ -39,6 +39,12 @@ on:
         required: true
         type: string
 
+      nproc_subtract:
+        description: "The number of processors to subtract when calculating parallelism."
+        required: false
+        type: number
+        default: 2
+
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
@@ -55,6 +61,7 @@ jobs:
       runs_on: ${{ inputs.runs_on }}
       image: ${{ inputs.image }}
       config_name: ${{ inputs.config_name }}
+      nproc_subtract: ${{ inputs.nproc_subtract }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -67,3 +74,4 @@ jobs:
       runs_on: ${{ inputs.runs_on }}
       image: ${{ inputs.image }}
       config_name: ${{ inputs.config_name }}
+      nproc_subtract: ${{ inputs.nproc_subtract }}
