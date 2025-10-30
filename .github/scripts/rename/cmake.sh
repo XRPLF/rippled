@@ -66,11 +66,13 @@ ${SED_COMMAND} -i 's/ripple/xrpl/g' "${DIRECTORY}/CMakeLists.txt"
 ${SED_COMMAND} -i 's/include(xrpl_add_test)/include(XrplAddTest)/' "${DIRECTORY}/src/tests/libxrpl/CMakeLists.txt"
 ${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' "${DIRECTORY}/include/xrpl/protocol/messages.h"
 ${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' "${DIRECTORY}/BUILD.md"
+${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' "${DIRECTORY}/BUILD.md"
 
 # Restore the name of the validator keys repository.
 ${SED_COMMAND} -i 's@xrpl/validator-keys-tool@ripple/validator-keys-tool@' "${DIRECTORY}/cmake/XrplValidatorKeys.cmake"
 
-# Ensure the name of the binary remains 'rippled' for now.
+# Ensure the name of the binary and config remain 'rippled' for now.
+${SED_COMMAND} -i -E 's/xrpld(-example)?\.cfg/rippled\1.cfg/g' "${DIRECTORY}/cmake/XrplInstall.cmake"
 if grep -q '"xrpld"' "${DIRECTORY}/cmake/XrplCore.cmake"; then
   # The script has been rerun, so just restore the name of the binary.
   ${SED_COMMAND} -i 's/"xrpld"/"rippled"/' "${DIRECTORY}/cmake/XrplCore.cmake"
