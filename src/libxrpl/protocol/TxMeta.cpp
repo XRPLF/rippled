@@ -52,7 +52,7 @@ TxMeta::TxMeta(
     STObject obj(sit, sfMetadata);
     result_ = obj.getFieldU8(sfTransactionResult);
     index_ = obj.getFieldU32(sfTransactionIndex);
-    nodes_ = *dynamic_cast<STArray*>(&obj.getField(sfAffectedNodes));
+    nodes_ = obj.getFieldArray(sfAffectedNodes);
 
     setAdditionalFields(obj);
 }
@@ -84,7 +84,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
 TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
     : transactionID_(transactionID)
     , ledgerSeq_(ledger)
-    , index_(static_cast<std::uint32_t>(-1))
+    , index_(std::numeric_limits<std::uint32_t>::max())
     , result_(255)
     , nodes_(sfAffectedNodes)
 {
@@ -126,14 +126,15 @@ TxMeta::getAffectedAccounts() const
 
     // This code should match the behavior of the JS method:
     // Meta#getAffectedAccounts
-    for (auto const& it : nodes_)
+    for (auto const& node : nodes_)
     {
-        int index = it.getFieldIndex(
-            (it.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
+        int index = node.getFieldIndex(
+            (node.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
 
         if (index != -1)
         {
-            auto inner = dynamic_cast<STObject const*>(&it.peekAtIndex(index));
+            auto inner =
+                dynamic_cast<STObject const*>(&node.peekAtIndex(index));
             XRPL_ASSERT(
                 inner,
                 "ripple::getAffectedAccounts : STObject type cast succeeded");

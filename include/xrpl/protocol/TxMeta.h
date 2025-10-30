@@ -118,7 +118,7 @@ public:
             parentBatchID_ = obj.getFieldH256(sfParentBatchID);
     }
 
-    std::optional<STAmount>
+    std::optional<STAmount> const&
     getDeliveredAmount() const
     {
         return deliveredAmount_;
