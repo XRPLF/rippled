@@ -257,7 +257,6 @@ CashCheck::doApply()
     // work to do...
     auto viewJ = ctx_.app.journal("View");
     auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
-    bool const doFix1623{psb.rules().enabled(fix1623)};
 
     if (srcId != account_)
     {
@@ -292,7 +291,7 @@ CashCheck::doApply()
                 return tecUNFUNDED_PAYMENT;
             }
 
-            if (optDeliverMin && doFix1623)
+            if (optDeliverMin)
                 // Set the DeliveredAmount metadata.
                 ctx_.deliver(xrpDeliver);
 
@@ -442,7 +441,7 @@ CashCheck::doApply()
                         << "flow did not produce DeliverMin.";
                     return tecPATH_PARTIAL;
                 }
-                if (doFix1623 && !checkCashMakesTrustLine)
+                if (!checkCashMakesTrustLine)
                     // Set the delivered_amount metadata.
                     ctx_.deliver(result.actualAmountOut);
             }

@@ -2,6 +2,7 @@
 #define XRPL_RESOURCE_CONSUMER_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Disposition.h>
 
@@ -67,6 +68,9 @@ public:
     // Private: Retrieve the entry associated with the consumer
     Entry&
     entry();
+
+    void
+    setPublicKey(PublicKey const& publicKey);
 
 private:
     Logic* m_logic;

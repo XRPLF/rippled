@@ -599,7 +599,7 @@ create(
 
 }  // namespace check
 
-static constexpr FeeLevel64 baseFeeLevel{256};
+static constexpr FeeLevel64 baseFeeLevel{TxQ::baseLevel};
 static constexpr FeeLevel64 minEscalationFeeLevel = baseFeeLevel * 500;
 
 template <class Suite>
