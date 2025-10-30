@@ -1023,7 +1023,8 @@ class LoanBroker_test : public beast::unit_test::suite
             }
             // preflight: temINVALID (zero broker id)
             {
-                // needs a flag to distinguish the parsed STTx from the prior test
+                // needs a flag to distinguish the parsed STTx from the prior
+                // test
                 auto jv = del(alice, uint256{}, tfFullyCanonicalSig);
                 BEAST_EXPECT(
                     jv[sfLoanBrokerID] ==
