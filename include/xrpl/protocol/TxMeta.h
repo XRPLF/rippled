@@ -34,16 +34,8 @@ namespace ripple {
 class TxMeta
 {
 private:
-    struct CtorHelper
-    {
-        explicit CtorHelper() = default;
-    };
     template <class T>
-    TxMeta(
-        uint256 const& txID,
-        std::uint32_t ledger,
-        T const& data,
-        CtorHelper);
+    TxMeta(uint256 const& txID, std::uint32_t ledger, T const& data);
 
 public:
     TxMeta(uint256 const& transactionID, std::uint32_t ledger);

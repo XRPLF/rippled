@@ -40,11 +40,7 @@
 namespace ripple {
 
 template <class T>
-TxMeta::TxMeta(
-    uint256 const& txid,
-    std::uint32_t ledger,
-    T const& data,
-    CtorHelper)
+TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, T const& data)
     : transactionID_(txid), ledgerSeq_(ledger), nodes_(sfAffectedNodes, 32)
 {
     SerialIter sit(makeSlice(data));
@@ -77,7 +73,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
-    : TxMeta(txid, ledger, vec, CtorHelper())
+    : TxMeta(txid, ledger, vec)
 {
 }
 
