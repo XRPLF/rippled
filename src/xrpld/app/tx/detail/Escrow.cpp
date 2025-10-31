@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/rdb/WasmDebug.h>
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/wasm/HostFuncImpl.h>
@@ -37,6 +38,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
+
 namespace ripple {
 
 // During an EscrowFinish, the transaction must specify both
@@ -1335,6 +1337,12 @@ EscrowFinish::doApply()
         auto re = runEscrowWasm(
             wasm, ESCROW_FUNCTION_NAME, {}, &ledgerDataProvider, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
+        auto const& logs = ledgerDataProvider.getLogs();
+        if (!logs.empty())
+        {
+            auto db = ctx_.app.getWasmDebugDB().checkoutDb();
+            addWasmDebugLogs(*db, ctx_.tx.getTransactionID(), k, logs);
+        }
 
         if (auto const& data = ledgerDataProvider.getData(); data.has_value())
         {

@@ -268,6 +268,10 @@ public:
     virtual DatabaseCon&
     getWalletDB() = 0;
 
+    /** Retrieve the "WASM debug database" */
+    virtual DatabaseCon&
+    getWasmDebugDB() = 0;
+
     /** Ensure that a newly-started validator does not sign proposals older
      * than the last ledger it persisted. */
     virtual LedgerIndex

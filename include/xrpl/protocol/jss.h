@@ -259,6 +259,7 @@ JSS(engine_result);           // out: NetworkOPs, TransactionSign, Submit
 JSS(engine_result_code);      // out: NetworkOPs, TransactionSign, Submit
 JSS(engine_result_message);   // out: NetworkOPs, TransactionSign, Submit
 JSS(entire_set);              // out: get_aggregate_price
+JSS(entry_id);                // out: tx
 JSS(ephemeral_key);           // out: ValidatorInfo
                               // in/out: Manifest
 JSS(error);                   // out: error
@@ -399,6 +400,7 @@ JSS(local);                   // out: resource/Logic.h
 JSS(local_txs);               // out: GetCounts
 JSS(local_static_keys);       // out: ValidatorList
 JSS(locked);                  // out: GatewayBalances
+JSS(logs);                    // out: tx
 JSS(low);                     // out: BookChanges
 JSS(lowest_sequence);         // out: AccountInfo
 JSS(lowest_ticket);           // out: AccountInfo
@@ -706,6 +708,7 @@ JSS(vote_slots);                // out: amm_info
 JSS(vote_weight);               // out: amm_info
 JSS(warning);                   // rpc:
 JSS(warnings);                  // out: server_info, server_state
+JSS(wasm_debug_logs);           // out: tx
 JSS(workers);
 JSS(write_load);              // out: GetCounts
 // clang-format on

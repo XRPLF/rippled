@@ -29,6 +29,7 @@ class WasmHostFunctionsImpl : public HostFunctions
     Keylet leKey;
     std::shared_ptr<SLE const> currentLedgerObj = nullptr;
     bool isLedgerObjCached = false;
+    std::vector<std::string> logs_;
 
     static int constexpr MAX_CACHE = 256;
     std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache;
@@ -88,6 +89,12 @@ public:
     getData() const
     {
         return data_;
+    }
+
+    std::vector<std::string> const&
+    getLogs() const
+    {
+        return logs_;
     }
 
     Expected<std::int32_t, HostFunctionError>

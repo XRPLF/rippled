@@ -135,6 +135,20 @@ inline constexpr std::array<char const*, 6> WalletDBInit{
 
      "END TRANSACTION;"}};
 
+inline constexpr auto WasmDebugDBName{"wasm_debug.db"};
+
+inline constexpr std::array<char const*, 3> WasmDebugDBInit{
+    {"BEGIN TRANSACTION;",
+
+     "CREATE TABLE IF NOT EXISTS WasmDebugLogs ("
+     "  TransID                CHARACTER(64) NOT NULL,"
+     "  ObjID                  CHARACTER(64) NOT NULL,"
+     "  Data                   TEXT NOT NULL,"
+     "  PRIMARY KEY(TransID, ObjID)"
+     ");",
+
+     "END TRANSACTION;"}};
+
 }  // namespace ripple
 
 #endif
