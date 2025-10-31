@@ -75,6 +75,7 @@ enum JobType {
     jtNETOP_CLUSTER,      // NetworkOPs cluster peer report
     jtNETOP_TIMER,        // NetworkOPs net timer processing
     jtADMIN,              // An administrative operation
+    jtWRITE_WASM_DEBUG,   // Write WASM debug logs
 
     // Special job types which are not dispatched by the job pool
     jtPEER,

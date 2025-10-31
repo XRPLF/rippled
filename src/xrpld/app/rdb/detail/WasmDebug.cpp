@@ -19,7 +19,7 @@
 
 #include <xrpld/app/rdb/WasmDebug.h>
 
-#include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
 
 namespace ripple {
 

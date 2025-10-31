@@ -1337,11 +1337,34 @@ EscrowFinish::doApply()
         auto re = runEscrowWasm(
             wasm, ESCROW_FUNCTION_NAME, {}, &ledgerDataProvider, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
-        if (ctx_.app.config().useTxTables() &&
-            (auto const& logs = ledgerDataProvider.getLogs(); !logs.empty()))
+        auto const& logs = ledgerDataProvider.getLogs();
+        if (ctx_.app.config().useTxTables() && !logs.empty())
         {
-            auto db = ctx_.app.getWasmDebugDB().checkoutDb();
-            addWasmDebugLogs(*db, ctx_.tx.getTransactionID(), k, logs);
+            // Capture by value to avoid lifetime issues
+            auto txId = ctx_.tx.getTransactionID();
+            auto keylet = k;
+            auto logsCopy = logs;
+
+            ctx_.app.getJobQueue().addJob(
+                jtWRITE_WASM_DEBUG,
+                "writeWasmDebug",
+                [&app = ctx_.app,
+                 txId,
+                 keylet,
+                 logsCopy = std::move(logsCopy)]() {
+                    try
+                    {
+                        auto db = app.getWasmDebugDB().checkoutDb();
+                        addWasmDebugLogs(*db, txId, keylet, logsCopy);
+                    }
+                    catch (std::exception const& e)
+                    {
+                        // Log error but don't crash - debug logs are
+                        // non-critical
+                        JLOG(app.journal("WasmDebug").warn())
+                            << "Failed to write WASM debug logs: " << e.what();
+                    }
+                });
         }
 
         if (auto const& data = ledgerDataProvider.getData(); data.has_value())
