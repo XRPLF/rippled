@@ -348,6 +348,8 @@ public:
         if (it == votes_.end())
             return false;
 
+        // One validator is an exception, otherwise it is not possible
+        // to gain majority.
         if (trustedValidations_ == 1)
             return it->second >= threshold_;
 
