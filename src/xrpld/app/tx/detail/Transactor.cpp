@@ -788,55 +788,26 @@ Transactor::checkSingleSign(
 {
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
-    if (view.rules().enabled(fixMasterKeyAsRegularKey))
+    // Signed with regular key.
+    if ((*sleAccount)[~sfRegularKey] == idSigner)
     {
-        // Signed with regular key.
-        if ((*sleAccount)[~sfRegularKey] == idSigner)
-        {
-            return tesSUCCESS;
-        }
-
-        // Signed with enabled mater key.
-        if (!isMasterDisabled && idAccount == idSigner)
-        {
-            return tesSUCCESS;
-        }
-
-        // Signed with disabled master key.
-        if (isMasterDisabled && idAccount == idSigner)
-        {
-            return tefMASTER_DISABLED;
-        }
-
-        // Signed with any other key.
-        return tefBAD_AUTH;
+        return tesSUCCESS;
     }
 
-    if (idSigner == idAccount)
+    // Signed with enabled master key.
+    if (!isMasterDisabled && idAccount == idSigner)
     {
-        // Signing with the master key. Continue if it is not disabled.
-        if (isMasterDisabled)
-            return tefMASTER_DISABLED;
-    }
-    else if ((*sleAccount)[~sfRegularKey] == idSigner)
-    {
-        // Signing with the regular key. Continue.
-    }
-    else if (sleAccount->isFieldPresent(sfRegularKey))
-    {
-        // Signing key does not match master or regular key.
-        JLOG(j.trace()) << "checkSingleSign: Not authorized to use account.";
-        return tefBAD_AUTH;
-    }
-    else
-    {
-        // No regular key on account and signing key does not match master key.
-        // FIXME: Why differentiate this case from tefBAD_AUTH?
-        JLOG(j.trace()) << "checkSingleSign: Not authorized to use account.";
-        return tefBAD_AUTH_MASTER;
+        return tesSUCCESS;
     }
 
-    return tesSUCCESS;
+    // Signed with disabled master key.
+    if (isMasterDisabled && idAccount == idSigner)
+    {
+        return tefMASTER_DISABLED;
+    }
+
+    // Signed with any other key.
+    return tefBAD_AUTH;
 }
 
 NotTEC
