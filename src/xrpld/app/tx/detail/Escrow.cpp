@@ -1337,8 +1337,8 @@ EscrowFinish::doApply()
         auto re = runEscrowWasm(
             wasm, ESCROW_FUNCTION_NAME, {}, &ledgerDataProvider, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
-        auto const& logs = ledgerDataProvider.getLogs();
-        if (!logs.empty())
+        if (ctx_.app.config().useTxTables() &&
+            (auto const& logs = ledgerDataProvider.getLogs(); !logs.empty()))
         {
             auto db = ctx_.app.getWasmDebugDB().checkoutDb();
             addWasmDebugLogs(*db, ctx_.tx.getTransactionID(), k, logs);

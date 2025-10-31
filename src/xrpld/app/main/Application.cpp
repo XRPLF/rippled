@@ -870,7 +870,11 @@ public:
 
             // wallet database
             mWalletDB = makeWalletDB(setup, m_journal);
-            mWasmDebugDB = makeWasmDebugDB(setup, m_journal);
+            if (config->useTxTables())
+            {
+                // wasm debug database
+                mWasmDebugDB = makeWasmDebugDB(setup, m_journal);
+            }
         }
         catch (std::exception const& e)
         {
