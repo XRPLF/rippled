@@ -1239,48 +1239,14 @@ computePaymentComponents(
         takeFrom(deltas.managementFeeDueDelta, excess);
         takeFrom(deltas.principalDelta, excess);
     };
-    auto addressShortage = [&giveTo, &trueTarget](
+    auto addressShortage = [&giveTo](
                                LoanDeltas& deltas,
                                Number& shortage,
                                LoanState const& current) {
-        // Determine the approximate errors that will result after the
-        // payment if we don't make any changes. (We could figure out the
-        // current error, but this is faster, and good enough.)
-        LoanDeltas errors = trueTarget - (current - deltas);
-
-        // Since we'll be adding to an item's error, order the items smallest
-        // error first
-        enum type { principal, interest, fee };
-        std::vector<std::pair<type, Number>> order{
-            {principal, errors.principalDelta},
-            {interest, errors.interestDueDelta},
-            {fee, errors.managementFeeDueDelta}};
-        std::sort(order.begin(), order.end(), [](auto const& a, auto const& b) {
-            return a.second < b.second;
-        });
-
-        for (auto const& item : order)
-        {
-            switch (item.first)
-            {
-                case principal:
-                    giveTo(
-                        deltas.principalDelta,
-                        shortage,
-                        current.principalOutstanding);
-                    break;
-                case interest:
-                    giveTo(
-                        deltas.interestDueDelta, shortage, current.interestDue);
-                    break;
-                case fee:
-                    giveTo(
-                        deltas.managementFeeDueDelta,
-                        shortage,
-                        current.managementFeeDue);
-                    break;
-            }
-        }
+        giveTo(deltas.interestDueDelta, shortage, current.interestDue);
+        giveTo(deltas.principalDelta, shortage, current.principalOutstanding);
+        giveTo(
+            deltas.managementFeeDueDelta, shortage, current.managementFeeDue);
     };
     Number totalOverpayment =
         deltas.valueDelta() - currentLedgerState.valueOutstanding;
