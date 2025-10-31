@@ -2093,6 +2093,9 @@ class Vault_test : public beast::unit_test::suite
                     auto const sleMPT = env.le(mptoken);
                     BEAST_EXPECT(sleMPT == nullptr);
 
+                    env(ticket::create(owner, 1));
+                    env.close();
+
                     // No reserve to create MPToken for asset in VaultWithdraw
                     tx = vault.withdraw(
                         {.depositor = owner,
@@ -2110,7 +2113,7 @@ class Vault_test : public beast::unit_test::suite
                 }
             },
             {.requireAuth = false,
-             .initialXRP = acctReserve + incReserve * 5 - 1});
+             .initialXRP = acctReserve + incReserve * 4 + 1});
 
         testCase([this](
                      Env& env,
@@ -2918,6 +2921,9 @@ class Vault_test : public beast::unit_test::suite
                     env.le(keylet::line(owner, asset.raw().get<Issue>()));
                 BEAST_EXPECT(trustline == nullptr);
 
+                env(ticket::create(owner, 1));
+                env.close();
+
                 // Fail because not enough reserve to create trust line
                 tx = vault.withdraw(
                     {.depositor = owner,
@@ -2933,7 +2939,7 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             },
-            CaseArgs{.initialXRP = acctReserve + incReserve * 5 - 1});
+            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
 
         testCase(
             [&, this](
@@ -2972,7 +2978,7 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             },
-            CaseArgs{.initialXRP = acctReserve + incReserve * 5 - 1});
+            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
 
         testCase([&, this](
                      Env& env,
