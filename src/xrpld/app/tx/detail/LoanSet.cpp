@@ -386,12 +386,13 @@ LoanSet::checkGuards(
                 properties.totalValueOutstanding / roundedPayment};
             computedPayments != paymentTotal)
         {
-            JLOG(j.warn())
-                << "Loan Periodic payment (" << properties.periodicPayment
-                << ") rounding (" << roundedPayment
-                << ") will complete the "
-                   "loan in less than the specified number of payments ("
-                << computedPayments << " < " << paymentTotal << ")";
+            JLOG(j.warn()) << "Loan Periodic payment ("
+                           << properties.periodicPayment << ") rounding ("
+                           << roundedPayment << ") on a total value of "
+                           << properties.totalValueOutstanding
+                           << " can not complete the loan in the specified "
+                              "number of payments ("
+                           << computedPayments << " != " << paymentTotal << ")";
             return tecPRECISION_LOSS;
         }
     }
