@@ -237,6 +237,39 @@ Batch::preflight(PreflightContext const& ctx)
     std::unordered_set<uint256> uniqueHashes;
     std::unordered_map<AccountID, std::unordered_set<std::uint32_t>>
         accountSeqTicket;
+    auto checkSignatureFields = [&parentBatchId, &j = ctx.j](
+                                    STObject const& sig,
+                                    uint256 const& hash,
+                                    char const* label = "") -> NotTEC {
+        if (sig.isFieldPresent(sfTxnSignature))
+        {
+            JLOG(j.debug())
+                << "BatchTrace[" << parentBatchId << "]: "
+                << "inner txn " << label << "cannot include TxnSignature. "
+                << "txID: " << hash;
+            return temBAD_SIGNATURE;
+        }
+
+        if (sig.isFieldPresent(sfSigners))
+        {
+            JLOG(j.debug())
+                << "BatchTrace[" << parentBatchId << "]: "
+                << "inner txn " << label << " cannot include Signers. "
+                << "txID: " << hash;
+            return temBAD_SIGNER;
+        }
+
+        if (!sig.getFieldVL(sfSigningPubKey).empty())
+        {
+            JLOG(j.debug())
+                << "BatchTrace[" << parentBatchId << "]: "
+                << "inner txn " << label << " SigningPubKey must be empty. "
+                << "txID: " << hash;
+            return temBAD_REGKEY;
+        }
+
+        return tesSUCCESS;
+    };
     for (STObject rb : rawTxns)
     {
         STTx const stx = STTx{std::move(rb)};
@@ -266,29 +299,23 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID_FLAG;
         }
 
-        if (stx.isFieldPresent(sfTxnSignature))
-        {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn cannot include TxnSignature. "
-                                << "txID: " << hash;
-            return temBAD_SIGNATURE;
-        }
+        if (auto const ret = checkSignatureFields(stx, hash))
+            return ret;
 
-        if (stx.isFieldPresent(sfSigners))
+        /* Placeholder for field that will be added by Lending Protocol
+        // Note that the CounterpartySignature is optional, and should not be
+        // included, but if it is, ensure it doesn't contain a signature.
+        if (stx.isFieldPresent(sfCounterpartySignature))
         {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn cannot include Signers. "
-                                << "txID: " << hash;
-            return temBAD_SIGNER;
+            auto const counterpartySignature =
+                stx.getFieldObject(sfCounterpartySignature);
+            if (auto const ret = checkSignatureFields(
+                    counterpartySignature, hash, "counterparty signature "))
+            {
+                return ret;
+            }
         }
-
-        if (!stx.getSigningPubKey().empty())
-        {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn SigningPubKey must be empty. "
-                                << "txID: " << hash;
-            return temBAD_REGKEY;
-        }
+        */
 
         auto const innerAccount = stx.getAccountID(sfAccount);
         if (auto const preflightResult = ripple::preflight(
@@ -385,6 +412,13 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         // inner account to the required signers set.
         if (innerAccount != outerAccount)
             requiredSigners.insert(innerAccount);
+        /* Placeholder for field that will be added by Lending Protocol
+        // Some transactions have a Counterparty, who must also sign the
+        // transaction if they are not the outer account
+        if (auto const counterparty = rb.at(~sfCounterparty);
+            counterparty && counterparty != outerAccount)
+            requiredSigners.insert(*counterparty);
+        */
     }
 
     // Validation Batch Signers

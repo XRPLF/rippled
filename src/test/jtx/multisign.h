@@ -67,18 +67,63 @@ class msig
 {
 public:
     std::vector<Reg> signers;
+    /** Alternative transaction object field in which to place the signer list.
+     *
+     * subField is only supported if an account_ is provided as well.
+     */
+    SField const* const subField = nullptr;
+    /// Used solely as a convenience placeholder for ctors that do _not_ specify
+    /// a subfield.
+    static constexpr SField* const topLevel = nullptr;
 
-    msig(std::vector<Reg> signers_) : signers(std::move(signers_))
+    msig(SField const* subField_, std::vector<Reg> signers_)
+        : signers(std::move(signers_)), subField(subField_)
     {
         sortSigners(signers);
     }
 
+    msig(SField const& subField_, std::vector<Reg> signers_)
+        : msig{&subField_, signers_}
+    {
+    }
+
+    msig(std::vector<Reg> signers_) : msig(topLevel, signers_)
+    {
+    }
+
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
-    explicit msig(AccountType&& a0, Accounts&&... aN)
-        : signers{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}
+    explicit msig(SField const* subField_, AccountType&& a0, Accounts&&... aN)
+        : msig{
+              subField_,
+              std::vector<Reg>{
+                  std::forward<AccountType>(a0),
+                  std::forward<Accounts>(aN)...}}
     {
-        sortSigners(signers);
+    }
+
+    template <class AccountType, class... Accounts>
+        requires std::convertible_to<AccountType, Reg>
+    explicit msig(SField const& subField_, AccountType&& a0, Accounts&&... aN)
+        : msig{
+              &subField_,
+              std::vector<Reg>{
+                  std::forward<AccountType>(a0),
+                  std::forward<Accounts>(aN)...}}
+    {
+    }
+
+    template <class AccountType, class... Accounts>
+        requires(
+            std::convertible_to<AccountType, Reg> &&
+            !std::is_same_v<AccountType, SField*>)
+    explicit msig(AccountType&& a0, Accounts&&... aN)
+        : msig{
+              topLevel,
+              std::vector<Reg>{
+                  std::forward<AccountType>(a0),
+                  std::forward<Accounts>(aN)...}}
+    {
     }
 
     void
