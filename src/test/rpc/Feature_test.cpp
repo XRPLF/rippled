@@ -144,8 +144,8 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECT(featureToName(featureFlow) == "Flow");
         BEAST_EXPECT(featureToName(featureNegativeUNL) == "NegativeUNL");
         BEAST_EXPECT(
-            featureToName(fixTakerDryOfferRemoval) ==
-            "fixTakerDryOfferRemoval");
+            featureToName(fixIncludeKeyletFields) == "fixIncludeKeyletFields");
+        BEAST_EXPECT(featureToName(featureTokenEscrow) == "TokenEscrow");
     }
 
     void
