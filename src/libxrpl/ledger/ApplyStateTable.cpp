@@ -126,10 +126,10 @@ ApplyStateTable::apply(
     std::optional<TxMeta> metadata;
     if (!to.open() || isDryRun)
     {
-        TxMeta meta(tx.getTransactionID(), to.seq(), parentBatchId);
+        TxMeta meta(tx.getTransactionID(), to.seq());
 
-        if (deliver)
-            meta.setDeliveredAmount(*deliver);
+        meta.setDeliveredAmount(deliver);
+        meta.setParentBatchID(parentBatchId);
 
         Mods newMod;
         for (auto& item : items_)
