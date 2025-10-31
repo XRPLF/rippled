@@ -29,9 +29,8 @@
 
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
-// If you add an amendment here, then do not forget to increment `numFeatures`
-// in include/xrpl/protocol/Feature.h.
 
+XRPL_FIX    (DirectoryLimit,             Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (IncludeKeyletFields,        Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(DynamicMPT,                 Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (TokenEscrowV1,              Supported::yes, VoteBehavior::DefaultNo)
