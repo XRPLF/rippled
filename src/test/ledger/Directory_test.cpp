@@ -22,9 +22,11 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
+#include <limits>
 
 namespace ripple {
 namespace test {
@@ -490,6 +492,91 @@ struct Directory_test : public beast::unit_test::suite
     }
 
     void
+    testDirectoryFull()
+    {
+        using namespace test::jtx;
+        Account alice("alice");
+
+        auto const testCase = [&, this](FeatureBitset features, auto setup) {
+            using namespace test::jtx;
+
+            Env env(*this, features);
+            env.fund(XRP(20000), alice);
+            env.close();
+
+            auto const [lastPage, full] = setup(env);
+
+            // Populate root page and last page
+            for (int i = 0; i < 63; ++i)
+                env(credentials::create(alice, alice, std::to_string(i)));
+            env.close();
+
+            // NOTE, everything below can only be tested on open ledger because
+            // there is no transaction type to express what bumpLastPage does.
+
+            // Bump position of last page from 1 to highest possible
+            auto const res = directory::bumpLastPage(
+                env,
+                lastPage,
+                keylet::ownerDir(alice.id()),
+                [lastPage, this](
+                    ApplyView& view, uint256 key, std::uint64_t page) {
+                    auto sle = view.peek({ltCREDENTIAL, key});
+                    if (!BEAST_EXPECT(sle))
+                        return false;
+
+                    BEAST_EXPECT(page == lastPage);
+                    sle->setFieldU64(sfIssuerNode, page);
+                    // sfSubjectNode is not set in self-issued credentials
+                    view.update(sle);
+                    return true;
+                });
+            BEAST_EXPECT(res);
+
+            // Create one more credential
+            env(credentials::create(alice, alice, std::to_string(63)));
+
+            // Not enough space for another object if full
+            auto const expected = full ? ter{tecDIR_FULL} : ter{tesSUCCESS};
+            env(credentials::create(alice, alice, "foo"), expected);
+
+            // Destroy all objects in directory
+            for (int i = 0; i < 64; ++i)
+                env(credentials::deleteCred(
+                    alice, alice, alice, std::to_string(i)));
+
+            if (!full)
+                env(credentials::deleteCred(alice, alice, alice, "foo"));
+
+            // Verify directory is empty.
+            auto const sle = env.le(keylet::ownerDir(alice.id()));
+            BEAST_EXPECT(sle == nullptr);
+
+            // Test completed
+            env.close();
+        };
+
+        testCase(
+            testable_amendments() - fixDirectoryLimit,
+            [this](Env&) -> std::tuple<std::uint64_t, bool> {
+                testcase("directory full without fixDirectoryLimit");
+                return {dirNodeMaxPages - 1, true};
+            });
+        testCase(
+            testable_amendments(),  //
+            [this](Env&) -> std::tuple<std::uint64_t, bool> {
+                testcase("directory not full with fixDirectoryLimit");
+                return {dirNodeMaxPages - 1, false};
+            });
+        testCase(
+            testable_amendments(),  //
+            [this](Env&) -> std::tuple<std::uint64_t, bool> {
+                testcase("directory full with fixDirectoryLimit");
+                return {std::numeric_limits<std::uint64_t>::max(), true};
+            });
+    }
+
+    void
     run() override
     {
         testDirectoryOrdering();
@@ -497,6 +584,7 @@ struct Directory_test : public beast::unit_test::suite
         testRipd1353();
         testEmptyChain();
         testPreviousTxnID();
+        testDirectoryFull();
     }
 };
 
