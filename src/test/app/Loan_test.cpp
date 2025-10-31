@@ -146,20 +146,20 @@ protected:
         // only signs.
         bool counterpartyExplicit = true;
         Number principalRequest;
-        std::optional<STAmount> setFee;
-        std::optional<Number> originationFee;
-        std::optional<Number> serviceFee;
-        std::optional<Number> lateFee;
-        std::optional<Number> closeFee;
-        std::optional<TenthBips32> overFee;
-        std::optional<TenthBips32> interest;
-        std::optional<TenthBips32> lateInterest;
-        std::optional<TenthBips32> closeInterest;
-        std::optional<TenthBips32> overpaymentInterest;
-        std::optional<std::uint32_t> payTotal;
-        std::optional<std::uint32_t> payInterval;
-        std::optional<std::uint32_t> gracePd;
-        std::optional<std::uint32_t> flags;
+        std::optional<STAmount> setFee{};
+        std::optional<Number> originationFee{};
+        std::optional<Number> serviceFee{};
+        std::optional<Number> lateFee{};
+        std::optional<Number> closeFee{};
+        std::optional<TenthBips32> overFee{};
+        std::optional<TenthBips32> interest{};
+        std::optional<TenthBips32> lateInterest{};
+        std::optional<TenthBips32> closeInterest{};
+        std::optional<TenthBips32> overpaymentInterest{};
+        std::optional<std::uint32_t> payTotal{};
+        std::optional<std::uint32_t> payInterval{};
+        std::optional<std::uint32_t> gracePd{};
+        std::optional<std::uint32_t> flags{};
 
         template <class... FN>
         jtx::JTx
@@ -2205,8 +2205,16 @@ protected:
                     ter(tecNO_PERMISSION));
             });
 
-#if LOANCOMPLETE
+#if LOANTODO
         // TODO
+
+        /*
+        LoanPay fails with tecINVARIANT_FAILED  error when loan_broker(also
+        borrower) tries to do the payment. Here's the sceanrio: Create a XRP
+        loan with loan broker as borrower, loan origination fee and loan service
+        fee. Loan broker makes the first payment with periodic payment and loan
+        service fee.
+        */
 
         auto time = [&](std::string label, std::function<void()> timed) {
             if (!BEAST_EXPECT(timed))
