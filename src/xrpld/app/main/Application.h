@@ -270,7 +270,7 @@ public:
 
     /** Retrieve the "WASM debug database" */
     virtual DatabaseCon&
-    getWasmDebugDB() = 0;
+    getWasmTraceDB() = 0;
 
     /** Ensure that a newly-started validator does not sign proposals older
      * than the last ledger it persisted. */

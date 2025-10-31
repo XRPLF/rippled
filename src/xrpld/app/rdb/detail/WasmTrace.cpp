@@ -17,26 +17,26 @@
 */
 //==============================================================================
 
-#include <xrpld/app/rdb/WasmDebug.h>
+#include <xrpld/app/rdb/WasmTrace.h>
 
 #include <boost/algorithm/string.hpp>
 
 namespace ripple {
 
 std::unique_ptr<DatabaseCon>
-makeWasmDebugDB(DatabaseCon::Setup const& setup, beast::Journal j)
+makeWasmTraceDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
     // WASM debug log database
     return std::make_unique<DatabaseCon>(
         setup,
-        WasmDebugDBName,
+        WasmTraceDBName,
         std::array<std::string, 0>(),
-        WasmDebugDBInit,
+        WasmTraceDBInit,
         j);
 }
 
 void
-addWasmDebugLogs(
+addWasmTraceLogs(
     soci::session& session,
     TxID const& txId,
     Keylet const& keylet,
@@ -50,7 +50,7 @@ addWasmDebugLogs(
     std::string const logString = boost::algorithm::join(data, "\x1F");
 
     // replace = because you run transactions twice: open _and_ closed ledger
-    session << "INSERT OR REPLACE INTO WasmDebugLogs "
+    session << "INSERT OR REPLACE INTO WasmTraceLogs "
                "(TransID, ObjID, Data) VALUES "
                "(:transID, :objId, :data)",
         soci::use(txHex), soci::use(keyletHex), soci::use(logString);
@@ -59,7 +59,7 @@ addWasmDebugLogs(
 }
 
 std::map<uint256, std::vector<std::string>>
-getWasmDebugByTxID(soci::session& session, TxID const& txId)
+getWasmTraceByTxID(soci::session& session, TxID const& txId)
 {
     std::map<uint256, std::vector<std::string>> ret;
 
@@ -69,7 +69,7 @@ getWasmDebugByTxID(soci::session& session, TxID const& txId)
     std::string logString;
 
     soci::statement st =
-        (session.prepare << "SELECT ObjID, Data FROM WasmDebugLogs "
+        (session.prepare << "SELECT ObjID, Data FROM WasmTraceLogs "
                             "WHERE TransID = :txId",
          soci::use(txHex),
          soci::into(objHex),

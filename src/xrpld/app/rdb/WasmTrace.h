@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_RDB_WASMDEBUG_H_INCLUDED
-#define RIPPLE_APP_RDB_WASMDEBUG_H_INCLUDED
+#ifndef RIPPLE_APP_RDB_WasmTrace_H_INCLUDED
+#define RIPPLE_APP_RDB_WasmTrace_H_INCLUDED
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
@@ -30,17 +30,17 @@
 namespace ripple {
 
 std::unique_ptr<DatabaseCon>
-makeWasmDebugDB(DatabaseCon::Setup const& setup, beast::Journal j);
+makeWasmTraceDB(DatabaseCon::Setup const& setup, beast::Journal j);
 
 void
-addWasmDebugLogs(
+addWasmTraceLogs(
     soci::session& session,
     TxID const& txId,
     Keylet const& keylet,
     std::vector<std::string> const& data);
 
 std::map<uint256, std::vector<std::string>>
-getWasmDebugByTxID(soci::session& session, TxID const& txId);
+getWasmTraceByTxID(soci::session& session, TxID const& txId);
 
 }  // namespace ripple
 

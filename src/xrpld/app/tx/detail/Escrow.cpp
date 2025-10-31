@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/HashRouter.h>
-#include <xrpld/app/rdb/WasmDebug.h>
+#include <xrpld/app/rdb/WasmTrace.h>
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/wasm/HostFuncImpl.h>
@@ -1346,22 +1346,22 @@ EscrowFinish::doApply()
             auto logsCopy = logs;
 
             ctx_.app.getJobQueue().addJob(
-                jtWRITE_WASM_DEBUG,
-                "writeWasmDebug",
+                jtWRITE_RPC_DEBUG,
+                "writeWasmTrace",
                 [&app = ctx_.app,
                  txId,
                  keylet,
                  logsCopy = std::move(logsCopy)]() {
                     try
                     {
-                        auto db = app.getWasmDebugDB().checkoutDb();
-                        addWasmDebugLogs(*db, txId, keylet, logsCopy);
+                        auto db = app.getWasmTraceDB().checkoutDb();
+                        addWasmTraceLogs(*db, txId, keylet, logsCopy);
                     }
                     catch (std::exception const& e)
                     {
                         // Log error but don't crash - debug logs are
                         // non-critical
-                        JLOG(app.journal("WasmDebug").warn())
+                        JLOG(app.journal("WasmTrace").warn())
                             << "Failed to write WASM debug logs: " << e.what();
                     }
                 });

@@ -46,7 +46,7 @@
 #include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/rdb/Wallet.h>
-#include <xrpld/app/rdb/WasmDebug.h>
+#include <xrpld/app/rdb/WasmTrace.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/nodestore/DummyScheduler.h>
@@ -218,7 +218,7 @@ public:
 
     std::unique_ptr<RelationalDatabase> mRelationalDatabase;
     std::unique_ptr<DatabaseCon> mWalletDB;
-    std::unique_ptr<DatabaseCon> mWasmDebugDB;
+    std::unique_ptr<DatabaseCon> mWasmTraceDB;
     std::unique_ptr<Overlay> overlay_;
     std::optional<uint256> trapTxID_;
 
@@ -831,13 +831,13 @@ public:
     }
 
     DatabaseCon&
-    getWasmDebugDB() override
+    getWasmTraceDB() override
     {
         XRPL_ASSERT(
-            mWasmDebugDB,
-            "ripple::ApplicationImp::getWasmDebugDB : null wasm debug "
+            mWasmTraceDB,
+            "ripple::ApplicationImp::getWasmTraceDB : null wasm debug "
             "database");
-        return *mWasmDebugDB;
+        return *mWasmTraceDB;
     }
 
     bool
@@ -856,7 +856,7 @@ public:
             "ripple::ApplicationImp::initRelationalDatabase : null wallet "
             "database");
         XRPL_ASSERT(
-            mWasmDebugDB.get() == nullptr,
+            mWasmTraceDB.get() == nullptr,
             "ripple::ApplicationImp::initRelationalDatabase : null wasm debug "
             "database");
 
@@ -873,7 +873,7 @@ public:
             if (config().useTxTables())
             {
                 // wasm debug database
-                mWasmDebugDB = makeWasmDebugDB(setup, m_journal);
+                mWasmTraceDB = makeWasmTraceDB(setup, m_journal);
             }
         }
         catch (std::exception const& e)

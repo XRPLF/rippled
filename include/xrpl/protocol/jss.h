@@ -400,7 +400,6 @@ JSS(local);                   // out: resource/Logic.h
 JSS(local_txs);               // out: GetCounts
 JSS(local_static_keys);       // out: ValidatorList
 JSS(locked);                  // out: GatewayBalances
-JSS(logs);                    // out: tx
 JSS(low);                     // out: BookChanges
 JSS(lowest_sequence);         // out: AccountInfo
 JSS(lowest_ticket);           // out: AccountInfo
@@ -624,6 +623,7 @@ JSS(total);                   // out: counters
 JSS(total_bytes_recv);        // out: Peers
 JSS(total_bytes_sent);        // out: Peers
 JSS(total_coins);             // out: LedgerToJson
+JSS(traces);                  // out: tx
 JSS(trading_fee);             // out: amm_info
 JSS(transTreeHash);           // out: ledger/Ledger.cpp
 JSS(transaction);             // in: Tx
@@ -708,7 +708,7 @@ JSS(vote_slots);                // out: amm_info
 JSS(vote_weight);               // out: amm_info
 JSS(warning);                   // rpc:
 JSS(warnings);                  // out: server_info, server_state
-JSS(wasm_debug_logs);           // out: tx
+JSS(wasm_traces);           // out: tx
 JSS(workers);
 JSS(write_load);              // out: GetCounts
 // clang-format on
