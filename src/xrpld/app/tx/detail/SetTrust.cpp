@@ -127,7 +127,7 @@ SetTrust::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+NotTEC
 SetTrust::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -138,7 +138,7 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
@@ -149,10 +149,10 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     // TrustlineUnfreeze granular permission. Setting other flags returns
     // error.
     if (txFlags & tfTrustSetPermissionMask)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
     auto const sleRippleState = view.read(keylet::line(
@@ -161,19 +161,19 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     // if the trustline does not exist, granular permissions are
     // not allowed to create trustline
     if (!sleRippleState)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
 
     if (txFlags & tfSetfAuth &&
         !granularPermissions.contains(TrustlineAuthorize))
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
     if (txFlags & tfSetFreeze && !granularPermissions.contains(TrustlineFreeze))
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
     if (txFlags & tfClearFreeze &&
         !granularPermissions.contains(TrustlineUnfreeze))
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     // updating LimitAmount is not allowed only with granular permissions,
     // unless there's a new granular permission for this in the future.
@@ -185,7 +185,7 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     saLimitAllow.setIssuer(tx[sfAccount]);
 
     if (curLimit != saLimitAllow)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
 }

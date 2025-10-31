@@ -92,14 +92,9 @@ AMMOffer<TIn, TOut>::limitOut(
     // poolPays * poolGets < (poolPays - assetOut) * (poolGets + assetIn)
     if (ammLiquidity_.multiPath())
     {
-        if (auto const& rules = getCurrentTransactionRules();
-            rules && rules->enabled(fixReducedOffersV1))
-            // It turns out that the ceil_out implementation has some slop in
-            // it.  ceil_out_strict removes that slop.  But removing that slop
-            // affects transaction outcomes, so the change must be made using
-            // an amendment.
-            return quality().ceil_out_strict(offrAmt, limit, roundUp);
-        return quality().ceil_out(offrAmt, limit);
+        // It turns out that the ceil_out implementation has some slop in
+        // it, which ceil_out_strict removes.
+        return quality().ceil_out_strict(offrAmt, limit, roundUp);
     }
     // Change the offer size according to the conservation function. The offer
     // quality is increased in this case, but it doesn't matter since there is

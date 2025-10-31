@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/shamap/SHAMap.h>
+#include <xrpld/shamap/SHAMapLeafNode.h>
 #include <xrpld/shamap/SHAMapSyncFilter.h>
 
 #include <xrpl/basics/random.h>
@@ -591,16 +592,16 @@ SHAMap::addKnownNode(
     }
 
     auto const generation = f_.getFullBelowCache()->getGeneration();
-    SHAMapNodeID iNodeID;
-    auto iNode = root_.get();
+    SHAMapNodeID currNodeID;
+    auto currNode = root_.get();
 
-    while (iNode->isInner() &&
-           !static_cast<SHAMapInnerNode*>(iNode)->isFullBelow(generation) &&
-           (iNodeID.getDepth() < node.getDepth()))
+    while (currNode->isInner() &&
+           !static_cast<SHAMapInnerNode*>(currNode)->isFullBelow(generation) &&
+           (currNodeID.getDepth() < node.getDepth()))
     {
-        int branch = selectBranch(iNodeID, node.getNodeID());
+        int const branch = selectBranch(currNodeID, node.getNodeID());
         XRPL_ASSERT(branch >= 0, "ripple::SHAMap::addKnownNode : valid branch");
-        auto inner = static_cast<SHAMapInnerNode*>(iNode);
+        auto inner = static_cast<SHAMapInnerNode*>(currNode);
         if (inner->isEmptyBranch(branch))
         {
             JLOG(journal_.warn()) << "Add known node for empty branch" << node;
@@ -614,58 +615,84 @@ SHAMap::addKnownNode(
         }
 
         auto prevNode = inner;
-        std::tie(iNode, iNodeID) = descend(inner, iNodeID, branch, filter);
+        std::tie(currNode, currNodeID) =
+            descend(inner, currNodeID, branch, filter);
 
-        if (iNode == nullptr)
+        if (currNode != nullptr)
+            continue;
+
+        auto newNode = SHAMapTreeNode::makeFromWire(rawNode);
+
+        if (!newNode || childHash != newNode->getHash())
         {
-            auto newNode = SHAMapTreeNode::makeFromWire(rawNode);
+            JLOG(journal_.warn()) << "Corrupt node received";
+            return SHAMapAddNode::invalid();
+        }
 
-            if (!newNode || childHash != newNode->getHash())
+        // In rare cases, a node can still be corrupt even after hash
+        // validation. For leaf nodes, we perform an additional check to
+        // ensure the node's position in the tree is consistent with its
+        // content to prevent inconsistencies that could
+        // propagate further down the line.
+        if (newNode->isLeaf())
+        {
+            auto const& actualKey =
+                static_cast<SHAMapLeafNode const*>(newNode.get())
+                    ->peekItem()
+                    ->key();
+
+            // Validate that this leaf belongs at the target position
+            auto const expectedNodeID =
+                SHAMapNodeID::createID(node.getDepth(), actualKey);
+            if (expectedNodeID.getNodeID() != node.getNodeID())
             {
-                JLOG(journal_.warn()) << "Corrupt node received";
+                JLOG(journal_.debug())
+                    << "Leaf node position mismatch: "
+                    << "expected=" << expectedNodeID.getNodeID()
+                    << ", actual=" << node.getNodeID();
                 return SHAMapAddNode::invalid();
             }
+        }
 
-            // Inner nodes must be at a level strictly less than 64
-            // but leaf nodes (while notionally at level 64) can be
-            // at any depth up to and including 64:
-            if ((iNodeID.getDepth() > leafDepth) ||
-                (newNode->isInner() && iNodeID.getDepth() == leafDepth))
-            {
-                // Map is provably invalid
-                state_ = SHAMapState::Invalid;
-                return SHAMapAddNode::useful();
-            }
-
-            if (iNodeID != node)
-            {
-                // Either this node is broken or we didn't request it (yet)
-                JLOG(journal_.warn()) << "unable to hook node " << node;
-                JLOG(journal_.info()) << " stuck at " << iNodeID;
-                JLOG(journal_.info()) << "got depth=" << node.getDepth()
-                                      << ", walked to= " << iNodeID.getDepth();
-                return SHAMapAddNode::useful();
-            }
-
-            if (backed_)
-                canonicalize(childHash, newNode);
-
-            newNode = prevNode->canonicalizeChild(branch, std::move(newNode));
-
-            if (filter)
-            {
-                Serializer s;
-                newNode->serializeWithPrefix(s);
-                filter->gotNode(
-                    false,
-                    childHash,
-                    ledgerSeq_,
-                    std::move(s.modData()),
-                    newNode->getType());
-            }
-
+        // Inner nodes must be at a level strictly less than 64
+        // but leaf nodes (while notionally at level 64) can be
+        // at any depth up to and including 64:
+        if ((currNodeID.getDepth() > leafDepth) ||
+            (newNode->isInner() && currNodeID.getDepth() == leafDepth))
+        {
+            // Map is provably invalid
+            state_ = SHAMapState::Invalid;
             return SHAMapAddNode::useful();
         }
+
+        if (currNodeID != node)
+        {
+            // Either this node is broken or we didn't request it (yet)
+            JLOG(journal_.warn()) << "unable to hook node " << node;
+            JLOG(journal_.info()) << " stuck at " << currNodeID;
+            JLOG(journal_.info()) << "got depth=" << node.getDepth()
+                                  << ", walked to= " << currNodeID.getDepth();
+            return SHAMapAddNode::useful();
+        }
+
+        if (backed_)
+            canonicalize(childHash, newNode);
+
+        newNode = prevNode->canonicalizeChild(branch, std::move(newNode));
+
+        if (filter)
+        {
+            Serializer s;
+            newNode->serializeWithPrefix(s);
+            filter->gotNode(
+                false,
+                childHash,
+                ledgerSeq_,
+                std::move(s.modData()),
+                newNode->getType());
+        }
+
+        return SHAMapAddNode::useful();
     }
 
     JLOG(journal_.trace()) << "got node, already had it (late)";
