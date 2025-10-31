@@ -29,9 +29,8 @@
 
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
-// If you add an amendment here, then do not forget to increment `numFeatures`
-// in include/xrpl/protocol/Feature.h.
 
+XRPL_FIX    (DirectoryLimit,             Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (IncludeKeyletFields,        Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(DynamicMPT,                 Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (TokenEscrowV1,              Supported::yes, VoteBehavior::DefaultNo)
@@ -97,14 +96,11 @@ XRPL_FEATURE(NegativeUNL,                Supported::yes, VoteBehavior::DefaultYe
 XRPL_FIX    (AmendmentMajorityCalc,      Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(HardenedValidations,        Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(RequireFullyCanonicalSig,   Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FIX    (QualityUpperBound,          Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DeletableAccounts,          Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (PayChanRecipientOwnerDir,   Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (MasterKeyAsRegularKey,      Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FIX    (TakerDryOfferRemoval,       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(MultiSignReserve,           Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DepositPreauth,             Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FIX    (1623,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Checks,                     Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DepositAuth,                Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
@@ -127,8 +123,10 @@ XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
-// All known amendments and amendments that may appear in a validated
-// ledger must be registered either here or above with the "active" amendments
+// All known amendments and amendments that may appear in a validated ledger
+// must be registered either here or above with the "active" amendments
+//
+// Please keep this list sorted alphabetically for convenience.
 XRPL_RETIRE(fix1201)
 XRPL_RETIRE(fix1368)
 XRPL_RETIRE(fix1373)
@@ -140,10 +138,13 @@ XRPL_RETIRE(fix1528)
 XRPL_RETIRE(fix1543)
 XRPL_RETIRE(fix1571)
 XRPL_RETIRE(fix1578)
+XRPL_RETIRE(fix1623)
 XRPL_RETIRE(fix1781)
 XRPL_RETIRE(fixCheckThreading)
+XRPL_RETIRE(fixQualityUpperBound)
 XRPL_RETIRE(fixRmSmallIncreasedQOffers)
 XRPL_RETIRE(fixSTAmountCanonicalize)
+XRPL_RETIRE(fixTakerDryOfferRemoval)
 XRPL_RETIRE(CryptoConditions)
 XRPL_RETIRE(Escrow)
 XRPL_RETIRE(EnforceInvariants)
