@@ -70,9 +70,7 @@ XRPL_FEATURE(RequireFullyCanonicalSig,   Supported::yes, VoteBehavior::DefaultYe
 XRPL_FEATURE(DeletableAccounts,          Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (PayChanRecipientOwnerDir,   Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(MultiSignReserve,           Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(DepositPreauth,             Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Checks,                     Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(DepositAuth,                Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
 
 // The following amendments are obsolete, but must remain supported
@@ -120,6 +118,8 @@ XRPL_RETIRE(fixTakerDryOfferRemoval)
 XRPL_RETIRE(fixTrustLinesToSelf)
 XRPL_RETIRE(CheckCashMakesTrustLine)
 XRPL_RETIRE(CryptoConditions)
+XRPL_RETIRE(DepositAuth)
+XRPL_RETIRE(DepositPreauth)
 XRPL_RETIRE(Escrow)
 XRPL_RETIRE(EnforceInvariants)
 XRPL_RETIRE(FeeEscalation)

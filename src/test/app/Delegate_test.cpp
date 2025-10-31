@@ -1707,7 +1707,6 @@ class Delegate_test : public beast::unit_test::suite
             {"CheckCreate", featureChecks},
             {"CheckCash", featureChecks},
             {"CheckCancel", featureChecks},
-            {"DepositPreauth", featureDepositPreauth},
             {"Clawback", featureClawback},
             {"AMMClawback", featureAMMClawback},
             {"AMMCreate", featureAMM},

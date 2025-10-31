@@ -35,8 +35,7 @@ public:
         using namespace test::jtx;
         Account const alice("alice");
 
-        // Test without DepositAuth enabled initially.
-        Env env(*this, testable_amendments() - featureDepositAuth);
+        Env env(*this, testable_amendments());
         env.fund(XRP(10000), noripple(alice));
 
         // Give alice a regular key so she can legally set and clear
@@ -117,17 +116,6 @@ public:
             }
         };
 
-        // Test with featureDepositAuth disabled.
-        testFlags(
-            {asfRequireDest,
-             asfRequireAuth,
-             asfDisallowXRP,
-             asfGlobalFreeze,
-             asfDisableMaster,
-             asfDefaultRipple});
-
-        // Enable featureDepositAuth and retest.
-        env.enableFeature(featureDepositAuth);
         env.close();
         testFlags(
             {asfRequireDest,
