@@ -1229,6 +1229,112 @@ class LoanBroker_test : public beast::unit_test::suite
         (void)LoanBrokerCoverDeposit::preclaim(pctx);
     }
 
+    void
+    testRequireAuth()
+    {
+        testcase("Require Auth - Implicit Pseudo-account authorization");
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Env env(*this);
+        Vault vault{env};
+
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        auto asset = MPTTester({
+            .env = env,
+            .issuer = issuer,
+            .holders = {alice},
+            .flags = MPTDEXFlags | tfMPTRequireAuth | tfMPTCanClawback |
+                tfMPTCanLock,
+            .authHolder = true,
+        });
+
+        env(pay(issuer, alice, asset(100'000)));
+        env.close();
+
+        // Alice is not authorized, can still create the vault
+        asset.authorize(
+            {.account = issuer, .holder = alice, .flags = tfMPTUnauthorize});
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx);
+        env.close();
+
+        auto const le = env.le(vaultKeylet);
+        VaultInfo vaultInfo = [&]() {
+            if (BEAST_EXPECT(le))
+                return VaultInfo{asset, vaultKeylet.key, le->at(sfAccount)};
+            return VaultInfo{asset, {}, {}};
+        }();
+        if (vaultInfo.vaultID == uint256{})
+            return;
+
+        auto forUnauthAuth = [&](auto&& doTx) {
+            for (auto const flag : {tfMPTUnauthorize, 0u})
+            {
+                asset.authorize(
+                    {.account = issuer, .holder = alice, .flags = flag});
+                env.close();
+                doTx(flag == 0);
+                env.close();
+            }
+        };
+
+        // Can't deposit into Vault if the vault owner is not authorized
+        forUnauthAuth([&](bool authorized) {
+            auto const err = !authorized ? ter(tecNO_AUTH) : ter(tesSUCCESS);
+            env(vault.deposit(
+                    {.depositor = alice,
+                     .id = vaultKeylet.key,
+                     .amount = asset(51)}),
+                err);
+        });
+
+        // Can't withdraw from Vault if the vault owner is not authorized
+        forUnauthAuth([&](bool authorized) {
+            auto const err = !authorized ? ter(tecNO_AUTH) : ter(tesSUCCESS);
+            env(vault.withdraw(
+                    {.depositor = alice,
+                     .id = vaultKeylet.key,
+                     .amount = asset(1)}),
+                err);
+        });
+
+        auto const brokerKeylet =
+            keylet::loanbroker(alice.id(), env.seq(alice));
+        // Can create LoanBroker if the vault owner is not authorized
+        forUnauthAuth([&](auto) { env(set(alice, vaultInfo.vaultID)); });
+
+        auto broker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(broker))
+            return;
+
+        // Can't cover deposit into Vault if the vault owner is not authorized
+        forUnauthAuth([&](bool authorized) {
+            auto const err =
+                !authorized ? ter(tecINSUFFICIENT_FUNDS) : ter(tesSUCCESS);
+            env(coverDeposit(alice, brokerKeylet.key, vaultInfo.asset(10)),
+                err);
+        });
+
+        // Can't cover withdraw from Vault if the vault owner is not authorized
+        forUnauthAuth([&](bool authorized) {
+            auto const err = !authorized ? ter(tecNO_AUTH) : ter(tesSUCCESS);
+            env(coverWithdraw(alice, brokerKeylet.key, vaultInfo.asset(5)),
+                err);
+        });
+
+        // Issuer can always cover clawback. The holder authorization is n/a.
+        forUnauthAuth([&](bool) {
+            env(coverClawback(issuer),
+                loanBrokerID(brokerKeylet.key),
+                amount(vaultInfo.asset(1)));
+        });
+    }
+
 public:
     void
     run() override
@@ -1242,6 +1348,7 @@ public:
         testInvalidLoanBrokerCoverWithdraw();
         testInvalidLoanBrokerDelete();
         testInvalidLoanBrokerSet();
+        testRequireAuth();
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.

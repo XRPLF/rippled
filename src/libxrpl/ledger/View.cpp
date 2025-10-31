@@ -1223,7 +1223,8 @@ getPseudoAccountFields()
         {
             // LCOV_EXCL_START
             LogicError(
-                "ripple::isPseudoAccount : unable to find account root ledger "
+                "ripple::getPseudoAccountFields : unable to find account root "
+                "ledger "
                 "format");
             // LCOV_EXCL_STOP
         }
@@ -1241,7 +1242,9 @@ getPseudoAccountFields()
 }
 
 [[nodiscard]] bool
-isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
+isPseudoAccount(
+    std::shared_ptr<SLE const> sleAcct,
+    std::set<SField const*> const& pseudoAccountFields)
 {
     auto const& fields = getPseudoAccountFields();
 
@@ -1249,8 +1252,12 @@ isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
     // semantics of true return value clean.
     return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
         std::count_if(
-            fields.begin(), fields.end(), [&sleAcct](SField const* sf) -> bool {
-                return sleAcct->isFieldPresent(*sf);
+            fields.begin(),
+            fields.end(),
+            [&sleAcct, &pseudoAccountFields](SField const* sf) -> bool {
+                return sleAcct->isFieldPresent(*sf) &&
+                    (pseudoAccountFields.empty() ||
+                     pseudoAccountFields.contains(sf));
             }) > 0;
 }
 
@@ -3118,7 +3125,10 @@ requireAuth(
     if (mptIssuer == account)  // Issuer won't have MPToken
         return tesSUCCESS;
 
-    if (view.rules().enabled(featureSingleAssetVault))
+    bool const featureSAVEnabled =
+        view.rules().enabled(featureSingleAssetVault);
+
+    if (featureSAVEnabled)
     {
         if (depth >= maxAssetCheckDepth)
             return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -3175,6 +3185,13 @@ requireAuth(
             return ter;
         // We ignore error from validDomain if we found sleToken, as it could
         // belong to someone who is explicitly authorized e.g. a vault owner.
+    }
+
+    if (featureSAVEnabled)
+    {
+        // Implicitly authorize Vault and LoanBroker pseudo-accounts
+        if (isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID}))
+            return tesSUCCESS;
     }
 
     // mptoken must be authorized if issuance enabled requireAuth
