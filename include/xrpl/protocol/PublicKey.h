@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_PUBLICKEY_H_INCLUDED
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/STExchange.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -264,6 +265,24 @@ calcNodeID(PublicKey const&);
 AccountID
 calcAccountID(PublicKey const& pk);
 
+inline std::string
+getFingerprint(
+    beast::IP::Endpoint const& address,
+    std::optional<PublicKey> const& publicKey = std::nullopt,
+    std::optional<std::string> const& id = std::nullopt)
+{
+    std::stringstream ss;
+    ss << "IP Address: " << address;
+    if (publicKey.has_value())
+    {
+        ss << ", Public Key: " << toBase58(TokenType::NodePublic, *publicKey);
+    }
+    if (id.has_value())
+    {
+        ss << ", Id: " << id.value();
+    }
+    return ss.str();
+}
 }  // namespace ripple
 
 //------------------------------------------------------------------------------

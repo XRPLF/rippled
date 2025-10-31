@@ -3787,14 +3787,20 @@ public:
                     sponsoringOwnerCount(env, sponsor) == 1);  // MPToken(share)
 
                 // create Trustline with vault withdraw
-                // https://github.com/XRPLF/rippled/pull/5857
-                env(vault.withdraw(
-                        {.depositor = bob,
-                         .id = keylet.key,
-                         .amount = asset(50)}),
-                    sponsor::as(sponsor, tfSponsorReserve),
-                    sig(sfSponsorSignature, sponsor));
-                env.close();
+                testEachSponsorship(
+                    env,
+                    cosigning,
+                    sponsor,
+                    bob,
+                    1,
+                    1,
+                    tecNO_LINE_INSUF_RESERVE,
+                    [&](Env& env, auto const& submit) {
+                        submit(vault.withdraw(
+                            {.depositor = bob,
+                             .id = keylet.key,
+                             .amount = asset(50)}));
+                    });
 
                 BEAST_EXPECT(
                     ownerCount(env, bob) == 2);  // RippleState, MPToken(share)
@@ -3804,21 +3810,6 @@ public:
                 BEAST_EXPECT(
                     sponsoringOwnerCount(env, sponsor) ==
                     2);  // RippleState, MPToken(share)
-
-                // testEachSponsorship(
-                //     env,
-                //     cosigning,
-                //     sponsor,
-                //     bob,
-                //     1,
-                //     1,
-                //     tecINSUFFICIENT_RESERVE,
-                //     [&](Env& env, auto const& submit) {
-                //         submit(vault.withdraw(
-                //             {.depositor = bob,
-                //              .id = keylet.key,
-                //              .amount = asset(50)}));
-                //     });
 
                 // remove sponsored MPToken(share)
                 env(vault.withdraw(

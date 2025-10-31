@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,28 +17,43 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/NetworkOPs.h>
-#include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Role.h>
-
-#include <xrpl/json/json_value.h>
+#include <xrpl/json/Output.h>
+#include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_writer.h>
-#include <xrpl/protocol/jss.h>
 
-namespace ripple {
+#include <doctest/doctest.h>
 
-Json::Value
-doServerInfo(RPC::JsonContext& context)
+#include <string>
+
+using namespace ripple;
+using namespace Json;
+
+TEST_SUITE_BEGIN("JsonOutput");
+
+static void
+checkOutput(std::string const& valueDesc)
 {
-    Json::Value ret(Json::objectValue);
+    std::string output;
+    Json::Value value;
+    REQUIRE(Json::Reader().parse(valueDesc, value));
+    auto out = stringOutput(output);
+    outputJson(value, out);
 
-    ret[jss::info] = context.netOps.getServerInfo(
-        true,
-        context.role == Role::ADMIN,
-        context.params.isMember(jss::counters) &&
-            context.params[jss::counters].asBool());
-
-    return ret;
+    auto expected = Json::FastWriter().write(value);
+    CHECK(output == expected);
+    CHECK(output == valueDesc);
+    CHECK(output == jsonAsString(value));
 }
 
-}  // namespace ripple
+TEST_CASE("output cases")
+{
+    checkOutput("{}");
+    checkOutput("[]");
+    checkOutput(R"([23,4.25,true,null,"string"])");
+    checkOutput(R"({"hello":"world"})");
+    checkOutput("[{}]");
+    checkOutput("[[]]");
+    checkOutput(R"({"array":[{"12":23},{},null,false,0.5]})");
+}
+
+TEST_SUITE_END();

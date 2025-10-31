@@ -1766,7 +1766,7 @@ class Invariants_test : public beast::unit_test::suite
             AccountID account;
             int amount;
         };
-        struct Adjustements
+        struct Adjustments
         {
             std::optional<int> assetsTotal = {};
             std::optional<int> assetsAvailable = {};
@@ -1779,7 +1779,7 @@ class Invariants_test : public beast::unit_test::suite
         };
         auto constexpr adjust = [&](ApplyView& ac,
                                     ripple::Keylet keylet,
-                                    Adjustements args) {
+                                    Adjustments args) {
             auto sleVault = ac.peek(keylet);
             if (!sleVault)
                 return false;
@@ -1805,9 +1805,11 @@ class Invariants_test : public beast::unit_test::suite
             ac.update(sleVault);
 
             if (args.sharesTotal)
+            {
                 (*sleShares)[sfOutstandingAmount] =
                     *(*sleShares)[sfOutstandingAmount] + *args.sharesTotal;
-            ac.update(sleShares);
+                ac.update(sleShares);
+            }
 
             auto const assets = *(*sleVault)[sfAsset];
             auto const pseudoId = *(*sleVault)[sfAccount];
@@ -1878,17 +1880,17 @@ class Invariants_test : public beast::unit_test::suite
         };
 
         constexpr auto args =
-            [](AccountID id, int adjustement, auto fn) -> Adjustements {
-            Adjustements sample = {
-                .assetsTotal = adjustement,
-                .assetsAvailable = adjustement,
+            [](AccountID id, int adjustment, auto fn) -> Adjustments {
+            Adjustments sample = {
+                .assetsTotal = adjustment,
+                .assetsAvailable = adjustment,
                 .lossUnrealized = 0,
-                .sharesTotal = adjustement,
-                .vaultAssets = adjustement,
+                .sharesTotal = adjustment,
+                .vaultAssets = adjustment,
                 .accountAssets =  //
-                AccountAmount{id, -adjustement},
+                AccountAmount{id, -adjustment},
                 .accountShares =  //
-                AccountAmount{id, adjustement}};
+                AccountAmount{id, adjustment}};
             fn(sample);
             return sample;
         };
@@ -2300,7 +2302,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 0, [&](Adjustements& sample) {
+                    args(A2.id(), 0, [&](Adjustments& sample) {
                         sample.assetsAvailable = (DROPS_PER_XRP * -100).value();
                         sample.assetsTotal = (DROPS_PER_XRP * -200).value();
                         sample.sharesTotal = -1;
@@ -2369,7 +2371,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 0, [&](Adjustements& sample) {
+                    args(A2.id(), 0, [&](Adjustments& sample) {
                         sample.lossUnrealized = 13;
                         sample.assetsTotal = 20;
                     }));
@@ -2389,7 +2391,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 100, [&](Adjustements& sample) {
+                    args(A2.id(), 100, [&](Adjustments& sample) {
                         sample.lossUnrealized = 13;
                     }));
             },
@@ -2410,7 +2412,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 0, [&](Adjustements& sample) {
+                    args(A2.id(), 0, [&](Adjustments& sample) {
                         sample.assetsMaximum = 1;
                     }));
             },
@@ -2427,7 +2429,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 0, [&](Adjustements& sample) {
+                    args(A2.id(), 0, [&](Adjustments& sample) {
                         sample.assetsMaximum = -1;
                     }));
             },
@@ -2476,7 +2478,7 @@ class Invariants_test : public beast::unit_test::suite
                 ac.view().update(sleShares);
 
                 return adjust(
-                    ac.view(), keylet, args(A2.id(), 10, [](Adjustements&) {}));
+                    ac.view(), keylet, args(A2.id(), 10, [](Adjustments&) {}));
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
@@ -2489,7 +2491,7 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
                 adjust(
-                    ac.view(), keylet, args(A2.id(), 10, [](Adjustements&) {}));
+                    ac.view(), keylet, args(A2.id(), 10, [](Adjustments&) {}));
 
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
@@ -2865,7 +2867,9 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 0, [&](Adjustements& sample) {}));
+                    args(A2.id(), 0, [](Adjustments& sample) {
+                        sample.vaultAssets.reset();
+                    }));
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
@@ -2879,7 +2883,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 200, [&](Adjustements& sample) {
+                    args(A2.id(), 200, [&](Adjustments& sample) {
                         sample.assetsMaximum = 1;
                     }));
             },
@@ -2913,7 +2917,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A3.id(), -10, [&](Adjustements& sample) {
+                    args(A3.id(), -10, [&](Adjustments& sample) {
                         sample.accountAssets->amount = -100;
                     }));
             },
@@ -2946,7 +2950,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 10, [&](Adjustements& sample) {
+                    args(A2.id(), 10, [&](Adjustments& sample) {
                         sample.vaultAssets = -20;
                         sample.accountAssets->amount = 10;
                     }));
@@ -2974,7 +2978,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 10, [&](Adjustements& sample) {
+                    args(A2.id(), 10, [&](Adjustments& sample) {
                         sample.accountAssets->amount = 0;
                     }));
             },
@@ -2993,8 +2997,8 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 10, [&](Adjustements& sample) {
-                        sample.accountShares->amount = 0;
+                    args(A2.id(), 10, [&](Adjustments& sample) {
+                        sample.accountShares.reset();
                     }));
             },
             XRPAmount{},
@@ -3009,10 +3013,11 @@ class Invariants_test : public beast::unit_test::suite
             {"deposit must change vault shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 10, [&](Adjustements& sample) {
+                    args(A2.id(), 10, [](Adjustments& sample) {
                         sample.sharesTotal = 0;
                     }));
             },
@@ -3034,7 +3039,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 10, [&](Adjustements& sample) {
+                    args(A2.id(), 10, [&](Adjustments& sample) {
                         sample.accountShares->amount = -5;
                         sample.sharesTotal = -10;
                     }));
@@ -3048,6 +3053,33 @@ class Invariants_test : public beast::unit_test::suite
             TxAccount::A2);
 
         doInvariantCheck(
+            {"deposit and assets outstanding must add up"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto sleA3 = ac.view().peek(keylet::account(A3.id()));
+                (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 2000;
+                ac.view().update(sleA3);
+
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                return adjust(
+                    ac.view(),
+                    keylet,
+                    args(A2.id(), 10, [&](Adjustments& sample) {
+                        sample.assetsTotal = 11;
+                    }));
+            },
+            XRPAmount{2000},
+            STTx{
+                ttVAULT_DEPOSIT,
+                [&](STObject& tx) {
+                    tx[sfAmount] = XRPAmount(10);
+                    tx[sfDelegate] = A3.id();
+                    tx[sfFee] = XRPAmount(2000);
+                }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
             {"deposit and assets outstanding must add up",
              "deposit and assets available must add up"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
@@ -3055,7 +3087,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 10, [&](Adjustements& sample) {
+                    args(A2.id(), 10, [&](Adjustments& sample) {
                         sample.assetsTotal = 7;
                         sample.assetsAvailable = 7;
                     }));
@@ -3076,7 +3108,9 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 0, [&](Adjustements& sample) {}));
+                    args(A2.id(), 0, [](Adjustments& sample) {
+                        sample.vaultAssets.reset();
+                    }));
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
@@ -3102,7 +3136,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A3.id(), -10, [&](Adjustements& sample) {
+                    args(A3.id(), -10, [&](Adjustments& sample) {
                         sample.accountAssets->amount = -100;
                     }));
             },
@@ -3138,7 +3172,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), -10, [&](Adjustements& sample) {
+                    args(A2.id(), -10, [&](Adjustments& sample) {
                         sample.vaultAssets = 10;
                         sample.accountAssets->amount = -20;
                     }));
@@ -3156,7 +3190,7 @@ class Invariants_test : public beast::unit_test::suite
                 if (!adjust(
                         ac.view(),
                         keylet,
-                        args(A2.id(), -10, [&](Adjustements& sample) {
+                        args(A2.id(), -10, [&](Adjustments& sample) {
                             *sample.vaultAssets -= 5;
                         })))
                     return false;
@@ -3182,8 +3216,8 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), -10, [&](Adjustements& sample) {
-                        sample.accountShares->amount = 0;
+                    args(A2.id(), -10, [&](Adjustments& sample) {
+                        sample.accountShares.reset();
                     }));
             },
             XRPAmount{},
@@ -3199,7 +3233,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), -10, [&](Adjustements& sample) {
+                    args(A2.id(), -10, [](Adjustments& sample) {
                         sample.sharesTotal = 0;
                     }));
             },
@@ -3218,7 +3252,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), -10, [&](Adjustements& sample) {
+                    args(A2.id(), -10, [&](Adjustments& sample) {
                         sample.accountShares->amount = 5;
                         sample.sharesTotal = 10;
                     }));
@@ -3237,13 +3271,40 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), -10, [&](Adjustements& sample) {
+                    args(A2.id(), -10, [&](Adjustments& sample) {
                         sample.assetsTotal = -15;
                         sample.assetsAvailable = -15;
                     }));
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
+            {"withdrawal and assets outstanding must add up"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto sleA3 = ac.view().peek(keylet::account(A3.id()));
+                (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 2000;
+                ac.view().update(sleA3);
+
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                return adjust(
+                    ac.view(),
+                    keylet,
+                    args(A2.id(), -10, [&](Adjustments& sample) {
+                        sample.assetsTotal = -7;
+                    }));
+            },
+            XRPAmount{2000},
+            STTx{
+                ttVAULT_WITHDRAW,
+                [&](STObject& tx) {
+                    tx[sfAmount] = XRPAmount(10);
+                    tx[sfDelegate] = A3.id();
+                    tx[sfFee] = XRPAmount(2000);
+                }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
@@ -3307,7 +3368,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), -10, [&](Adjustements& sample) {
+                    args(A2.id(), -10, [&](Adjustments& sample) {
                         sample.accountShares->amount = 5;
                     }));
             },
@@ -3327,8 +3388,8 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), -1, [&](Adjustements& sample) {
-                        sample.vaultAssets = 0;
+                    args(A2.id(), -1, [&](Adjustments& sample) {
+                        sample.vaultAssets.reset();
                     }));
             },
             XRPAmount{},
@@ -3346,7 +3407,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 0, [&](Adjustements& sample) {}));
+                    args(A2.id(), 0, [&](Adjustments& sample) {}));
             },
             XRPAmount{},
             STTx{ttVAULT_CLAWBACK, [](STObject&) {}},
@@ -3361,7 +3422,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), 0, [&](Adjustements& sample) {}));
+                    args(A2.id(), 0, [&](Adjustments& sample) {}));
             },
             XRPAmount{},
             STTx{
@@ -3379,7 +3440,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A4.id(), 10, [&](Adjustements& sample) {
+                    args(A4.id(), 10, [&](Adjustments& sample) {
                         sample.sharesTotal = 0;
                     }));
             },
@@ -3400,8 +3461,8 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A4.id(), -10, [&](Adjustements& sample) {
-                        sample.accountShares->amount = 0;
+                    args(A4.id(), -10, [&](Adjustments& sample) {
+                        sample.accountShares.reset();
                     }));
             },
             XRPAmount{},
@@ -3423,7 +3484,7 @@ class Invariants_test : public beast::unit_test::suite
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A4.id(), -10, [&](Adjustements& sample) {
+                    args(A4.id(), -10, [&](Adjustments& sample) {
                         sample.accountShares->amount = -8;
                         sample.assetsTotal = -7;
                         sample.assetsAvailable = -7;

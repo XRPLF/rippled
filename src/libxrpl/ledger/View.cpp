@@ -1501,6 +1501,20 @@ addEmptyHolding(
         ? getTxReserveSponsorAccountID(tx)
         : std::nullopt;
     auto const isSponsorCoSigning = tx.isFieldPresent(sfSponsorSignature);
+
+    // Can the account cover the trust line reserve ?
+    if (auto const ret = checkInsufficientReserve(
+            view,
+            tx,
+            sleDst,
+            priorBalance,
+            sponsorAccountID
+                ? view.peek(keylet::account(*sponsorAccountID))
+                : std::optional<std::shared_ptr<SLE>>(std::nullopt),
+            1);
+        !isTesSuccess(ret))
+        return tecNO_LINE_INSUF_RESERVE;
+
     return trustCreate(
         view,
         high,

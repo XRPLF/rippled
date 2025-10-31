@@ -83,24 +83,6 @@ checkValidity(
             ? STTx::RequireFullyCanonicalSig::yes
             : STTx::RequireFullyCanonicalSig::no;
 
-        if (tx.isFieldPresent(sfSponsor) && rules.enabled(featureSponsor))
-        {
-            auto const sponsorObj = tx.getFieldObject(sfSponsor);
-            auto const isCoSigned = isSponsorReserveCoSigning(tx);
-            if (isCoSigned)
-            {
-                auto const sponsorSignatureObj =
-                    tx.getFieldObject(sfSponsorSignature);
-                auto const sigVerify = tx.checkSign(
-                    requireCanonicalSig, rules, &sponsorSignatureObj);
-                if (!sigVerify)
-                {
-                    router.setFlags(id, SF_SIGBAD);
-                    return {Validity::SigBad, sigVerify.error()};
-                }
-            }
-        }
-
         auto const sigVerify = tx.checkSign(requireCanonicalSig, rules);
         if (!sigVerify)
         {
@@ -156,9 +138,7 @@ template <typename PreflightChecks>
 ApplyResult
 apply(Application& app, OpenView& view, PreflightChecks&& preflightChecks)
 {
-    STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
     NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
-
     return doApply(preclaim(preflightChecks(), app, view), app, view);
 }
 
