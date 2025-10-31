@@ -477,22 +477,8 @@ CreateOffer::flowCross(
                         // what is a good threshold to check?
                         afterCross.in.clear();
 
-                    afterCross.out = [&]() {
-                        // Careful analysis showed that rounding up this
-                        // divRound result could lead to placing a reduced
-                        // offer in the ledger that blocks order books.  So
-                        // the fixReducedOffersV1 amendment changes the
-                        // behavior to round down instead.
-                        if (psb.rules().enabled(fixReducedOffersV1))
-                            return divRoundStrict(
-                                afterCross.in,
-                                rate,
-                                takerAmount.out.issue(),
-                                false);
-
-                        return divRound(
-                            afterCross.in, rate, takerAmount.out.issue(), true);
-                    }();
+                    afterCross.out = divRoundStrict(
+                        afterCross.in, rate, takerAmount.out.issue(), false);
                 }
                 else
                 {
@@ -795,9 +781,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (bFillOrKill)
     {
         JLOG(j_.trace()) << "Fill or Kill: offer killed";
-        if (sb.rules().enabled(fix1578))
-            return {tecKILLED, false};
-        return {tesSUCCESS, false};
+        return {tecKILLED, false};
     }
 
     // For 'immediate or cancel' offers, the amount remaining doesn't get
