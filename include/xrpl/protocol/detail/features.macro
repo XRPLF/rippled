@@ -30,11 +30,11 @@
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
 
+XRPL_FEATURE(PermissionDelegationV1_1,   Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (DirectoryLimit,             Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (IncludeKeyletFields,        Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(DynamicMPT,                 Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (TokenEscrowV1,              Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (DelegateV1_1,               Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (PriceOracleOrder,           Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (MPTDeliveredAmount,         Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMClawbackRounding,        Supported::yes, VoteBehavior::DefaultNo)
@@ -44,7 +44,6 @@ XRPL_FIX    (AMMv1_3,                    Supported::yes, VoteBehavior::DefaultNo
 XRPL_FEATURE(PermissionedDEX,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Batch,                      Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(SingleAssetVault,           Supported::no,  VoteBehavior::DefaultNo)
-XRPL_FEATURE(PermissionDelegation,       Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (PayChanCancelAfter,         Supported::yes, VoteBehavior::DefaultNo)
 // Check flags in Credential transactions
 XRPL_FIX    (InvalidTxFlags,             Supported::yes, VoteBehavior::DefaultNo)
