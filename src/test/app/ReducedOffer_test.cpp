@@ -361,8 +361,6 @@ public:
         testcase("exercise underfunded XRP/IOU offer Q change");
 
         // Bob places an offer that is not fully funded.
-        //
-        // This unit test compares the behavior of this situation.
 
         using namespace jtx;
         auto const alice = Account{"alice"};
@@ -449,8 +447,6 @@ public:
         testcase("exercise underfunded IOU/IOU offer Q change");
 
         // Bob places an IOU/IOU offer that is not fully funded.
-        //
-        // This unit test compares the behavior of this situation.
 
         using namespace jtx;
         using namespace std::chrono_literals;

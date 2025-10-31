@@ -241,6 +241,8 @@ TOffer<TIn, TOut>::limitOut(
     TOut const& limit,
     bool roundUp) const
 {
+    // It turns out that the ceil_out implementation has some slop in
+    // it, which ceil_out_strict removes.
     return quality().ceil_out_strict(offrAmt, limit, roundUp);
 }
 
