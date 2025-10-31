@@ -1355,11 +1355,8 @@ class Check_test : public beast::unit_test::suite
 
         // Before bob gets a trustline, have him try to cash a check.
         // Should fail.
-        {
-            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
-            env(check::create(alice, bob, USD(20)));
-            env.close();
-        }
+        env(check::create(alice, bob, USD(20)));
+        env.close();
 
         // Now set up bob's trustline.
         env(trust(bob, USD(20)));
