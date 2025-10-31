@@ -794,7 +794,7 @@ Transactor::checkSingleSign(
         return tesSUCCESS;
     }
 
-    // Signed with enabled mater key.
+    // Signed with enabled master key.
     if (!isMasterDisabled && idAccount == idSigner)
     {
         return tesSUCCESS;
