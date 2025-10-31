@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/ConfidentialConvertBack.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -70,6 +71,11 @@ ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
     if (sleIssuance->isFlag(lsfMPTNoConfidentialTransfer))
         return tecNO_PERMISSION;
 
+    // already checked in preflight, but should also check that issuer on the
+    // issuance isn't the account either
+    if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
     auto const sleMptoken = ctx.view.read(
         keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
     if (!sleMptoken)
@@ -89,6 +95,20 @@ ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
     {
         return tecINSUFFICIENT_FUNDS;
     }
+
+    auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
+    auto const account = ctx.tx[sfAccount];
+
+    // Check lock
+    MPTIssue const mptIssue(mptIssuanceID);
+    if (auto const ter = checkFrozen(ctx.view, account, mptIssue);
+        ter != tesSUCCESS)
+        return ter;
+
+    // Check auth
+    if (auto const ter = requireAuth(ctx.view, mptIssue, account);
+        !isTesSuccess(ter))
+        return ter;
 
     // todo: need addtional parsing, the proof should contain multiple proofs
     // auto checkEqualityProof = [&](auto const& encryptedAmount,

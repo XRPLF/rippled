@@ -97,6 +97,11 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
         return tecNO_PERMISSION;
 
+    // already checked in preflight, but should also check that issuer on the
+    // issuance isn't the account either
+    if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
     // Check sender's MPToken
     auto const sleSenderMPToken =
         ctx.view.read(keylet::mptoken(mptIssuanceID, account));
@@ -178,7 +183,7 @@ ConfidentialSend::doApply()
     Slice const destEc = ctx_.tx[sfDestinationEncryptedAmount];
     Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
 
-    // Substract from sender's spending balance
+    // Subtract from sender's spending balance
     {
         Slice const curSpending = (*sleSender)[sfConfidentialBalanceSpending];
         Buffer newSpending(ecGamalEncryptedTotalLength);
@@ -191,7 +196,7 @@ ConfidentialSend::doApply()
         (*sleSender)[sfConfidentialBalanceSpending] = newSpending;
     }
 
-    // Substract from issuer's balance
+    // Subtract from issuer's balance
     {
         Slice const curIssuerEnc = (*sleSender)[sfIssuerEncryptedBalance];
         Buffer newIssuerEnc(ecGamalEncryptedTotalLength);
@@ -206,7 +211,7 @@ ConfidentialSend::doApply()
 
     // Increment version
     (*sleSender)[sfConfidentialBalanceVersion] =
-        (*sleSender)[sfConfidentialBalanceVersion] + 1;
+        (*sleSender)[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
 
     // Add to destination's inbox balance
     {

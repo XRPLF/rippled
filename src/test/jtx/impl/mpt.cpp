@@ -1043,7 +1043,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         uint64_t postSpendingBalance =
             getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
 
-        // spending balance should not change
+        // inbox balance should not change
         env_.require(requireAny(
             [&]() -> bool { return postInboxBalance == prevInboxBalance; }));
 
@@ -1052,7 +1052,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
             return prevIssuerBalance - *arg.amt == postIssuerBalance;
         }));
 
-        // holder's inbox balance is updated correctly
+        // holder's spending balance is updated correctly
         env_.require(requireAny([&]() -> bool {
             return prevSpendingBalance - *arg.amt == postSpendingBalance;
         }));

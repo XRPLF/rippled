@@ -70,6 +70,11 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     if (sleIssuance->isFlag(lsfMPTNoConfidentialTransfer))
         return tecNO_PERMISSION;
 
+    // already checked in preflight, but should also check that issuer on the
+    // issuance isn't the account either
+    if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
     // issuer has not uploaded their pub key yet
     if (!sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
         return tecNO_PERMISSION;
