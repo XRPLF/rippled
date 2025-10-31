@@ -42,7 +42,6 @@ addWasmDebugLogs(
     Keylet const& keylet,
     std::vector<std::string> const& data)
 {
-    XRPL_ASSERT(session.is_open(), "ripple::addWasmDebugLogs : open session");
     soci::transaction tr(session);
 
     // Convert all the info to appropriate formats
@@ -62,7 +61,6 @@ addWasmDebugLogs(
 std::map<uint256, std::vector<std::string>>
 getWasmDebugByTxID(soci::session& session, TxID const& txId)
 {
-    XRPL_ASSERT(session.is_open(), "ripple::addWasmDebugLogs : open session");
     std::map<uint256, std::vector<std::string>> ret;
 
     std::string const txHex = to_string(txId);
