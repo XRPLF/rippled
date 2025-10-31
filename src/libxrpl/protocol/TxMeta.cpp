@@ -133,7 +133,7 @@ TxMeta::getAffectedAccounts() const
 
         if (index != -1)
         {
-            auto inner =
+            auto const* inner =
                 dynamic_cast<STObject const*>(&node.peekAtIndex(index));
             XRPL_ASSERT(
                 inner,
