@@ -42,12 +42,13 @@ addWasmDebugLogs(
     Keylet const& keylet,
     std::vector<std::string> const& data)
 {
+    XRPL_ASSERT(session.is_open(), "ripple::addWasmDebugLogs : open session");
     soci::transaction tr(session);
 
     // Convert all the info to appropriate formats
     std::string const txHex = to_string(txId);
     std::string const keyletHex = to_string(keylet.key);
-    std::string const logString = boost::algorithm::join(data, ",");
+    std::string const logString = boost::algorithm::join(data, "\x1F");
 
     // replace = because you run transactions twice: open _and_ closed ledger
     session << "INSERT OR REPLACE INTO WasmDebugLogs "
@@ -61,6 +62,7 @@ addWasmDebugLogs(
 std::map<uint256, std::vector<std::string>>
 getWasmDebugByTxID(soci::session& session, TxID const& txId)
 {
+    XRPL_ASSERT(session.is_open(), "ripple::addWasmDebugLogs : open session");
     std::map<uint256, std::vector<std::string>> ret;
 
     std::string const txHex = to_string(txId);
@@ -83,7 +85,7 @@ getWasmDebugByTxID(soci::session& session, TxID const& txId)
         if (objId.parseHex(objHex))
         {
             std::vector<std::string> logs;
-            boost::algorithm::split(logs, logString, boost::is_any_of(","));
+            boost::algorithm::split(logs, logString, boost::is_any_of("\x1F"));
             ret.emplace(objId, logs);
         }
     }
