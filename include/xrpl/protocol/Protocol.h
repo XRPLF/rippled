@@ -55,7 +55,10 @@ std::size_t constexpr oversizeMetaDataCap = 5200;
 /** The maximum number of entries per directory page */
 std::size_t constexpr dirNodeMaxEntries = 32;
 
-/** The maximum number of pages allowed in a directory */
+/** The maximum number of pages allowed in a directory
+
+    Made obsolete by fixDirectoryLimit amendment.
+*/
 std::uint64_t constexpr dirNodeMaxPages = 262144;
 
 /** The maximum number of items in an NFT page */

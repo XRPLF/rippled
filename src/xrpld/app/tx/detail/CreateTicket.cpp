@@ -76,7 +76,7 @@ CreateTicket::doApply()
 {
     SLE::pointer const sleAccountRoot = view().peek(keylet::account(account_));
     if (!sleAccountRoot)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Each ticket counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
@@ -102,7 +102,7 @@ CreateTicket::doApply()
     // increment the account root Sequence.
     if (std::uint32_t const txSeq = ctx_.tx[sfSequence];
         txSeq != 0 && txSeq != (firstTicketSeq - 1))
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
@@ -123,7 +123,7 @@ CreateTicket::doApply()
                          << ": " << (page ? "success" : "failure");
 
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         sleTicket->setFieldU64(sfOwnerNode, *page);
     }

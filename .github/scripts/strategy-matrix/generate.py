@@ -74,14 +74,14 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     continue
 
             # RHEL:
-            # - 9.4 using GCC 12: Debug and Unity on linux/amd64.
-            # - 9.6 using Clang: Release and no Unity on linux/amd64.
+            # - 9 using GCC 12: Debug and Unity on linux/amd64.
+            # - 10 using Clang: Release and no Unity on linux/amd64.
             if os['distro_name'] == 'rhel':
                 skip = True
-                if os['distro_version'] == '9.4':
+                if os['distro_version'] == '9':
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-12' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
                         skip = False
-                elif os['distro_version'] == '9.6':
+                elif os['distro_version'] == '10':
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-any' and build_type == 'Release' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
                         skip = False
                 if skip:

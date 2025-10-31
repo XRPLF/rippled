@@ -571,15 +571,19 @@ Transactor::ticketDelete(
     SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
     if (!sleTicket)
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Ticket disappeared from ledger.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     std::uint64_t const page{(*sleTicket)[sfOwnerNode]};
     if (!view.dirRemove(keylet::ownerDir(account), page, ticketIndex, true))
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Ticket from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     // Update the account root's TicketCount.  If the ticket count drops to
@@ -587,8 +591,10 @@ Transactor::ticketDelete(
     auto sleAccount = view.peek(keylet::account(account));
     if (!sleAccount)
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Could not find Ticket owner account root.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     if (auto ticketCount = (*sleAccount)[~sfTicketCount])
@@ -600,8 +606,10 @@ Transactor::ticketDelete(
     }
     else
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "TicketCount field missing from account root.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     // Update the Ticket owner's reserve.
@@ -1155,9 +1163,8 @@ Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
-    // raii classes for the current ledger rules. fixSTAmountCanonicalize and
-    // fixSTAmountCanonicalize predate the rulesGuard and should be replaced.
-    STAmountSO stAmountSO{view().rules().enabled(fixSTAmountCanonicalize)};
+    // raii classes for the current ledger rules.
+    // fixUniversalNumber predate the rulesGuard and should be replaced.
     NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
     CurrentTransactionRulesGuard currentTransctionRulesGuard(view().rules());
 
@@ -1170,11 +1177,13 @@ Transactor::operator()()
 
         if (!s2.isEquivalent(ctx_.tx))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
             JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
             UNREACHABLE(
                 "ripple::Transactor::operator() : transaction serdes mismatch");
+            // LCOV_EXCL_STOP
         }
     }
 #endif

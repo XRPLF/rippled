@@ -259,9 +259,11 @@ ApplyStateTable::apply(
             }
             else
             {
+                // LCOV_EXCL_START
                 UNREACHABLE(
                     "ripple::detail::ApplyStateTable::apply : unsupported "
                     "operation type");
+                // LCOV_EXCL_STOP
             }
         }
 
@@ -679,12 +681,6 @@ ApplyStateTable::threadOwners(
             // If sfAccount is present, thread to that account
             if (auto const optSleAcct{(*sle)[~sfAccount]})
                 threadTx(base, meta, *optSleAcct, mods, j);
-
-            // Don't thread a check's sfDestination unless the amendment is
-            // enabled
-            if (ledgerType == ltCHECK &&
-                !base.rules().enabled(fixCheckThreading))
-                break;
 
             // If sfDestination is present, thread to that account
             if (auto const optSleDest{(*sle)[~sfDestination]})

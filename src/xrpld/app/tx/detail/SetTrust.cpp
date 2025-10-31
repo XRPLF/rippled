@@ -377,7 +377,7 @@ SetTrust::doApply()
 
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     std::uint32_t const uOwnerCount = sle->getFieldU32(sfOwnerCount);
 
@@ -576,7 +576,7 @@ SetTrust::doApply()
             if ((bHigh ? saHighBalance : saLowBalance) >= beast::zero)
                 uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
 
-            else if (view().rules().enabled(fix1578))
+            else
                 // Cannot set noRipple on a negative balance.
                 return tecNO_PERMISSION;
         }

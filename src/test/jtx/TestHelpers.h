@@ -502,6 +502,7 @@ expectLedgerEntryRoot(
 
 /* Payment Channel */
 /******************************************************************************/
+namespace paychan {
 
 Json::Value
 create(
@@ -561,6 +562,8 @@ channelBalance(ReadView const& view, uint256 const& chan);
 bool
 channelExists(ReadView const& view, uint256 const& chan);
 
+}  // namespace paychan
+
 /* Crossing Limits */
 /******************************************************************************/
 
@@ -615,7 +618,7 @@ create(
 
 }  // namespace check
 
-static constexpr FeeLevel64 baseFeeLevel{256};
+static constexpr FeeLevel64 baseFeeLevel{TxQ::baseLevel};
 static constexpr FeeLevel64 minEscalationFeeLevel = baseFeeLevel * 500;
 
 template <class Suite>

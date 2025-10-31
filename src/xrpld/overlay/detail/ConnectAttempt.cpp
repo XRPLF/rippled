@@ -589,6 +589,8 @@ ConnectAttempt::processResponse()
             remote_endpoint_.address(),
             app_);
 
+        usage_.setPublicKey(publicKey);
+
         JLOG(journal_.debug())
             << "Protocol: " << to_string(*negotiatedProtocol);
         JLOG(journal_.info())
@@ -600,8 +602,8 @@ ConnectAttempt::processResponse()
             JLOG(journal_.info()) << "Cluster name: " << *member;
         }
 
-        auto const result =
-            overlay_.peerFinder().activate(slot_, publicKey, !member->empty());
+        auto const result = overlay_.peerFinder().activate(
+            slot_, publicKey, member.has_value());
         if (result != PeerFinder::Result::success)
         {
             std::stringstream ss;
