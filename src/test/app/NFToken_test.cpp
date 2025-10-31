@@ -2852,10 +2852,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             {
                 // issuer cannot broker the offers, because they are not the
                 // Destination.
-                TER const expectTer = tecNO_PERMISSION;
                 env(token::brokerOffers(
                         issuer, offerBuyerToMinter, offerMinterToBroker),
-                    ter(expectTer));
+                    ter(tecNO_PERMISSION));
                 env.close();
                 BEAST_EXPECT(ownerCount(env, issuer) == 0);
                 BEAST_EXPECT(ownerCount(env, minter) == 2);
@@ -2900,22 +2899,18 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             {
                 // Cannot broker offers when the sell destination is not the
                 // buyer.
-                TER const expectTer = tecNO_PERMISSION;
                 env(token::brokerOffers(
                         broker, offerIssuerToBuyer, offerBuyerToMinter),
-                    ter(expectTer));
+                    ter(tecNO_PERMISSION));
                 env.close();
 
                 BEAST_EXPECT(ownerCount(env, issuer) == 1);
                 BEAST_EXPECT(ownerCount(env, minter) == 1);
                 BEAST_EXPECT(ownerCount(env, buyer) == 2);
 
-                // amendment switch: When enabled the broker fails, when
-                // disabled the broker succeeds if the destination is the buyer.
-                TER const eexpectTer = tecNO_PERMISSION;
                 env(token::brokerOffers(
                         broker, offerMinterToBuyer, offerBuyerToMinter),
-                    ter(eexpectTer));
+                    ter(tecNO_PERMISSION));
                 env.close();
 
                 // Buyer is successful with acceptOffer.
@@ -2958,10 +2953,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             {
                 // Cannot broker offers when the sell destination is not the
                 // buyer or the broker.
-                TER const expectTer = tecNO_PERMISSION;
                 env(token::brokerOffers(
                         issuer, offerBuyerToBroker, offerMinterToBroker),
-                    ter(expectTer));
+                    ter(tecNO_PERMISSION));
                 env.close();
                 BEAST_EXPECT(ownerCount(env, issuer) == 0);
                 BEAST_EXPECT(ownerCount(env, minter) == 2);
@@ -5735,30 +5729,16 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         BEAST_EXPECT(nftCount(env, bob) == 1);
         auto const bobsPriorBalance = env.balance(bob);
         auto const brokersPriorBalance = env.balance(broker);
-        TER expectTer = tecCANT_ACCEPT_OWN_NFTOKEN_OFFER;
         env(token::brokerOffers(broker, bobBuyOfferIndex, bobSellOfferIndex),
             token::brokerFee(XRP(1)),
-            ter(expectTer));
+            ter(tecCANT_ACCEPT_OWN_NFTOKEN_OFFER));
         env.close();
 
-        if (expectTer == tesSUCCESS)
-        {
-            // bob should still have the NFT from alice, but be XRP(1) poorer.
-            // broker should be almost XRP(1) richer because they also paid a
-            // transaction fee.
-            BEAST_EXPECT(nftCount(env, bob) == 1);
-            BEAST_EXPECT(env.balance(bob) == bobsPriorBalance - XRP(1));
-            BEAST_EXPECT(
-                env.balance(broker) == brokersPriorBalance + XRP(1) - baseFee);
-        }
-        else
-        {
-            // A tec result was returned, so no state should change other
-            // than the broker burning their transaction fee.
-            BEAST_EXPECT(nftCount(env, bob) == 1);
-            BEAST_EXPECT(env.balance(bob) == bobsPriorBalance);
-            BEAST_EXPECT(env.balance(broker) == brokersPriorBalance - baseFee);
-        }
+        // A tec result was returned, so no state should change other
+        // than the broker burning their transaction fee.
+        BEAST_EXPECT(nftCount(env, bob) == 1);
+        BEAST_EXPECT(env.balance(bob) == bobsPriorBalance);
+        BEAST_EXPECT(env.balance(broker) == brokersPriorBalance - baseFee);
     }
 
     void
