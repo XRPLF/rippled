@@ -39,20 +39,6 @@
 
 namespace ripple {
 
-template <class T>
-TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, T const& data)
-    : transactionID_(txid), ledgerSeq_(ledger), nodes_(sfAffectedNodes, 32)
-{
-    SerialIter sit(makeSlice(data));
-
-    STObject obj(sit, sfMetadata);
-    result_ = obj.getFieldU8(sfTransactionResult);
-    index_ = obj.getFieldU32(sfTransactionIndex);
-    nodes_ = obj.getFieldArray(sfAffectedNodes);
-
-    setAdditionalFields(obj);
-}
-
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
     : transactionID_(txid)
     , ledgerSeq_(ledger)
@@ -73,8 +59,16 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
-    : TxMeta(txid, ledger, vec)
+    : transactionID_(txid), ledgerSeq_(ledger), nodes_(sfAffectedNodes, 32)
 {
+    SerialIter sit(makeSlice(vec));
+
+    STObject obj(sit, sfMetadata);
+    result_ = obj.getFieldU8(sfTransactionResult);
+    index_ = obj.getFieldU32(sfTransactionIndex);
+    nodes_ = obj.getFieldArray(sfAffectedNodes);
+
+    setAdditionalFields(obj);
 }
 
 TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)

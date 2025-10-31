@@ -33,10 +33,6 @@ namespace ripple {
 
 class TxMeta
 {
-private:
-    template <class T>
-    TxMeta(uint256 const& txID, std::uint32_t ledger, T const& data);
-
 public:
     TxMeta(uint256 const& transactionID, std::uint32_t ledger);
     TxMeta(uint256 const& txID, std::uint32_t ledger, Blob const&);
