@@ -1209,7 +1209,16 @@ OverlayImpl::relay(
     {
         auto& txn = tx->get();
         SerialIter sit(makeSlice(txn.rawtransaction()));
-        relay = !isPseudoTx(STTx{sit});
+        try
+        {
+            relay = !isPseudoTx(STTx{sit});
+        }
+        catch (std::exception const&)
+        {
+            // Could not construct STTx, not relaying
+            JLOG(journal_.debug()) << "Could not construct STTx: " << hash;
+            return;
+        }
     }
 
     Overlay::PeerSequence peers = {};

@@ -61,12 +61,8 @@ public:
         auto const bob = Account{"bob"};
         auto const USD = gw["USD"];
 
-        // Make one test run without fixReducedOffersV1 and one with.
-        for (FeatureBitset features :
-             {testable_amendments() - fixReducedOffersV1,
-              testable_amendments() | fixReducedOffersV1})
         {
-            Env env{*this, features};
+            Env env{*this, testable_amendments()};
 
             // Make sure none of the offers we generate are under funded.
             env.fund(XRP(10'000'000), gw, alice, bob);
@@ -189,19 +185,9 @@ public:
                 blockedCount += exerciseOfferPair(alicesOffer, bobsOffer);
             }
 
-            // If fixReducedOffersV1 is enabled, then none of the test cases
-            // should produce a potentially blocking rate.
-            //
-            // Also verify that if fixReducedOffersV1 is not enabled then
-            // some of the test cases produced a potentially blocking rate.
-            if (features[fixReducedOffersV1])
-            {
-                BEAST_EXPECT(blockedCount == 0);
-            }
-            else
-            {
-                BEAST_EXPECT(blockedCount >= 170);
-            }
+            // None of the test cases should produce a potentially blocking
+            // rate.
+            BEAST_EXPECT(blockedCount == 0);
         }
     }
 
@@ -217,13 +203,9 @@ public:
         auto const bob = Account{"bob"};
         auto const USD = gw["USD"];
 
-        // Make one test run without fixReducedOffersV1 and one with.
-        for (FeatureBitset features :
-             {testable_amendments() - fixReducedOffersV1,
-              testable_amendments() | fixReducedOffersV1})
         {
             // Make sure none of the offers we generate are under funded.
-            Env env{*this, features};
+            Env env{*this, testable_amendments()};
             env.fund(XRP(10'000'000), gw, alice, bob);
             env.close();
 
@@ -348,19 +330,9 @@ public:
                 blockedCount += exerciseOfferPair(aliceOffer, bobsOffer);
             }
 
-            // If fixReducedOffersV1 is enabled, then none of the test cases
-            // should produce a potentially blocking rate.
-            //
-            // Also verify that if fixReducedOffersV1 is not enabled then
-            // some of the test cases produced a potentially blocking rate.
-            if (features[fixReducedOffersV1])
-            {
-                BEAST_EXPECT(blockedCount == 0);
-            }
-            else
-            {
-                BEAST_EXPECT(blockedCount > 10);
-            }
+            // None of the test cases should produce a potentially blocking
+            // rate.
+            BEAST_EXPECT(blockedCount == 0);
         }
     }
 
@@ -370,9 +342,6 @@ public:
         testcase("exercise underfunded XRP/IOU offer Q change");
 
         // Bob places an offer that is not fully funded.
-        //
-        // This unit test compares the behavior of this situation before and
-        // after applying the fixReducedOffersV1 amendment.
 
         using namespace jtx;
         auto const alice = Account{"alice"};
@@ -380,12 +349,8 @@ public:
         auto const gw = Account{"gw"};
         auto const USD = gw["USD"];
 
-        // Make one test run without fixReducedOffersV1 and one with.
-        for (FeatureBitset features :
-             {testable_amendments() - fixReducedOffersV1,
-              testable_amendments() | fixReducedOffersV1})
         {
-            Env env{*this, features};
+            Env env{*this, testable_amendments()};
 
             env.fund(XRP(10000), alice, bob, gw);
             env.close();
@@ -451,19 +416,9 @@ public:
                 }
             }
 
-            // If fixReducedOffersV1 is enabled, then none of the test cases
-            // should produce a potentially blocking rate.
-            //
-            // Also verify that if fixReducedOffersV1 is not enabled then
-            // some of the test cases produced a potentially blocking rate.
-            if (features[fixReducedOffersV1])
-            {
-                BEAST_EXPECT(blockedOrderBookCount == 0);
-            }
-            else
-            {
-                BEAST_EXPECT(blockedOrderBookCount > 15);
-            }
+            // None of the test cases should produce a potentially blocking
+            // rate.
+            BEAST_EXPECT(blockedOrderBookCount == 0);
         }
     }
 
@@ -473,9 +428,6 @@ public:
         testcase("exercise underfunded IOU/IOU offer Q change");
 
         // Bob places an IOU/IOU offer that is not fully funded.
-        //
-        // This unit test compares the behavior of this situation before and
-        // after applying the fixReducedOffersV1 amendment.
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -488,12 +440,8 @@ public:
 
         STAmount const tinyUSD(USD.issue(), /*mantissa*/ 1, /*exponent*/ -81);
 
-        // Make one test run without fixReducedOffersV1 and one with.
-        for (FeatureBitset features :
-             {testable_amendments() - fixReducedOffersV1,
-              testable_amendments() | fixReducedOffersV1})
         {
-            Env env{*this, features};
+            Env env{*this, testable_amendments()};
 
             env.fund(XRP(10000), alice, bob, gw);
             env.close();
@@ -575,19 +523,9 @@ public:
                 env.close();
             }
 
-            // If fixReducedOffersV1 is enabled, then none of the test cases
-            // should produce a potentially blocking rate.
-            //
-            // Also verify that if fixReducedOffersV1 is not enabled then
-            // some of the test cases produced a potentially blocking rate.
-            if (features[fixReducedOffersV1])
-            {
-                BEAST_EXPECT(blockedOrderBookCount == 0);
-            }
-            else
-            {
-                BEAST_EXPECT(blockedOrderBookCount > 20);
-            }
+            // None of the test cases should produce a potentially blocking
+            // rate.
+            BEAST_EXPECT(blockedOrderBookCount == 0);
         }
     }
 

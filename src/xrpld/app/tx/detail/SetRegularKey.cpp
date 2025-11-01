@@ -32,8 +32,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 SetRegularKey::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fixMasterKeyAsRegularKey) &&
-        ctx.tx.isFieldPresent(sfRegularKey) &&
+    if (ctx.tx.isFieldPresent(sfRegularKey) &&
         (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
     {
         return temBAD_REGKEY;

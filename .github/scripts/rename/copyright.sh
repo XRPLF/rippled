@@ -18,10 +18,10 @@ fi
 # XRPLF, and certain individual contributors upon mutual agreement, so the one
 # in the LICENSE.md file applies throughout. Copyright notices referencing
 # external contributions, e.g. from Bitcoin, remain as-is.
-# Usage: .github/scripts/rename/copyright.sh <directory>
+# Usage: .github/scripts/rename/copyright.sh <repository directory>
 
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <directory>"
+    echo "Usage: $0 <repository directory>"
     exit 1
 fi
 

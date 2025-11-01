@@ -1,7 +1,7 @@
 #include <test/nodestore/TestBase.h>
 
-#include <xrpld/nodestore/detail/DecodedBlob.h>
-#include <xrpld/nodestore/detail/EncodedBlob.h>
+#include <xrpl/nodestore/detail/DecodedBlob.h>
+#include <xrpl/nodestore/detail/EncodedBlob.h>
 
 namespace ripple {
 namespace NodeStore {
