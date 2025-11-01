@@ -2,7 +2,8 @@
 #define XRPL_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
 
 #include <xrpld/overlay/PeerSet.h>
-#include <xrpld/shamap/SHAMap.h>
+
+#include <xrpl/shamap/SHAMap.h>
 
 namespace ripple {
 

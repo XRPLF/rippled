@@ -8,20 +8,23 @@ install (
   TARGETS
     common
     opts
-    xrpl_syslibs
     xrpl_boost
+    xrpl_libs
+    xrpl_syslibs
     xrpl.imports.main
     xrpl.libpb
+    xrpl.libxrpl
     xrpl.libxrpl.basics
     xrpl.libxrpl.beast
     xrpl.libxrpl.crypto
     xrpl.libxrpl.json
+    xrpl.libxrpl.ledger
+    xrpl.libxrpl.net
+    xrpl.libxrpl.nodestore
     xrpl.libxrpl.protocol
     xrpl.libxrpl.resource
-    xrpl.libxrpl.ledger
     xrpl.libxrpl.server
-    xrpl.libxrpl.net
-    xrpl.libxrpl
+    xrpl.libxrpl.shamap
     antithesis-sdk-cpp
   EXPORT XrplExports
   LIBRARY DESTINATION lib

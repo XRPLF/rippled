@@ -218,7 +218,7 @@ public:
         return tesSUCCESS;
     }
 
-    static TER
+    static NotTEC
     checkPermission(ReadView const& view, STTx const& tx);
     /////////////////////////////////////////////////////
 
