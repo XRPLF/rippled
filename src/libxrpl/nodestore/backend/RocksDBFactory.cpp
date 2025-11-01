@@ -459,17 +459,15 @@ public:
 
 class RocksDBFactory : public Factory
 {
+private:
+    Manager& manager_;
+
 public:
     RocksDBEnv m_env;
 
-    RocksDBFactory()
+    RocksDBFactory(Manager& manager) : manager_(manager)
     {
-        Manager::instance().insert(*this);
-    }
-
-    ~RocksDBFactory() override
-    {
-        Manager::instance().erase(*this);
+        manager_.insert(*this);
     }
 
     std::string
