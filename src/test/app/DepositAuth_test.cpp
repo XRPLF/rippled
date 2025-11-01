@@ -593,23 +593,17 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
                 bool const supportsCredentials = features[featureCredentials];
 
-                TER const expectCredentials(
-                    supportsCredentials ? TER(tesSUCCESS) : TER(temDISABLED));
-                TER const expectPayment(
-                    !supportsCredentials ? TER(temDISABLED) : TER(tesSUCCESS));
-                TER const expectDP(
+                TER const expectTer(
                     !supportsCredentials ? TER(temDISABLED) : TER(tesSUCCESS));
 
                 env(deposit::authCredentials(becky, {{carol, credType}}),
-                    ter(expectDP));
+                    ter(expectTer));
                 env.close();
 
                 // gw accept credentials
-                env(credentials::create(gw, carol, credType),
-                    ter(expectCredentials));
+                env(credentials::create(gw, carol, credType), ter(expectTer));
                 env.close();
-                env(credentials::accept(gw, carol, credType),
-                    ter(expectCredentials));
+                env(credentials::accept(gw, carol, credType), ter(expectTer));
                 env.close();
 
                 auto jv = credentials::ledgerEntry(env, gw, carol, credType);
@@ -620,7 +614,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
                 env(pay(gw, becky, USD(100)),
                     credentials::ids({credIdx}),
-                    ter(expectPayment));
+                    ter(expectTer));
                 env.close();
             }
         }
