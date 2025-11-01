@@ -23,6 +23,8 @@ jobs:
         run: .github/scripts/rename/definitions.sh .
       - name: Check copyright notices
         run: .github/scripts/rename/copyright.sh .
+      - name: Check CMake configs
+        run: .github/scripts/rename/cmake.sh .
       - name: Check for differences
         env:
           MESSAGE: |
