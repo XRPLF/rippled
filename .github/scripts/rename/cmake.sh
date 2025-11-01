@@ -4,7 +4,7 @@
 set -e
 
 # On MacOS, ensure that GNU sed and head are installed and available as `gsed`
-# and `ghead`, respectively, and that rename is available.
+# and `ghead`, respectively.
 SED_COMMAND=sed
 HEAD_COMMAND=head
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -18,10 +18,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
       exit 1
   fi
   HEAD_COMMAND=ghead
-  if ! command -v rename &> /dev/null; then
-      echo "Error: rename is not installed. Please install it using 'brew install rename'."
-      exit 1
-  fi
 fi
 
 # This script renames CMake files from `RippleXXX.cmake` or `RippledXXX.cmake`
@@ -44,8 +40,8 @@ if [ ! -d "${DIRECTORY}" ]; then
 fi
 
 # Rename the files.
-rename 's/Rippled/Xrpl/g' ${DIRECTORY}/cmake/*.cmake
-rename 's/Ripple/Xrpl/g' ${DIRECTORY}/cmake/*.cmake
+find ${DIRECTORY}/cmake -type f -name "Rippled*.cmake" -exec bash -c 'mv "${1}" "${1/Rippled/Xrpl}"' - {} \;
+find ${DIRECTORY}/cmake -type f -name "Ripple*.cmake" -exec bash -c 'mv "${1}" "${1/Ripple/Xrpl}"' - {} \;
 if [ -e "${DIRECTORY}/cmake/xrpl_add_test.cmake" ]; then
   mv "${DIRECTORY}/cmake/xrpl_add_test.cmake" "${DIRECTORY}/cmake/XrplAddTest.cmake"
 fi
