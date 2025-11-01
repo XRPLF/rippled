@@ -265,7 +265,7 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, testable_amendments() | fixMasterKeyAsRegularKey};
+        Env env{*this, testable_amendments()};
         Account const alice("alice", KeyType::ed25519);
         Account const bob("bob", KeyType::secp256k1);
         Account const carol("carol");

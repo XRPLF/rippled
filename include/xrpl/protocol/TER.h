@@ -225,8 +225,9 @@ enum TERcodes : TERUnderlyingType {
     terQUEUED,       // Transaction is being held in TxQ until fee drops
     terPRE_TICKET,   // Ticket is not yet in ledger but might be on its way
     terNO_AMM,       // AMM doesn't exist for the asset pair
-    terADDRESS_COLLISION,  // Failed to allocate AccountID when trying to
-                           // create a pseudo-account
+    terADDRESS_COLLISION,       // Failed to allocate AccountID when trying to
+                                // create a pseudo-account
+    terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
 };
 
 //------------------------------------------------------------------------------
@@ -361,6 +362,9 @@ enum TECcodes : TERUnderlyingType {
     tecLIMIT_EXCEEDED = 195,
     tecPSEUDO_ACCOUNT = 196,
     tecPRECISION_LOSS = 197,
+    // DEPRECATED: This error code tecNO_DELEGATE_PERMISSION is reserved for
+    // backward compatibility with historical data on non-prod networks, can be
+    // reclaimed after those networks reset.
     tecNO_DELEGATE_PERMISSION = 198,
 };
 

@@ -174,21 +174,22 @@ Permission::isDelegatable(
     auto const txType = permissionToTxType(permissionValue);
     auto const it = delegatableTx_.find(txType);
 
-    if (rules.enabled(fixDelegateV1_1))
-    {
-        if (it == delegatableTx_.end())
-            return false;
+    if (it == delegatableTx_.end())
+        return false;
 
-        auto const feature = getTxFeature(txType);
+    auto const txFeaturesIt = txFeatureMap_.find(txType);
+    XRPL_ASSERT(
+        txFeaturesIt != txFeatureMap_.end(),
+        "ripple::Permissions::isDelegatable : tx exists in txFeatureMap_");
 
-        // fixDelegateV1_1: Delegation is only allowed if the required amendment
-        // for the transaction is enabled. For transactions that do not require
-        // an amendment, delegation is always allowed.
-        if (feature && !rules.enabled(*feature))
-            return false;
-    }
+    // Delegation is only allowed if the required amendment for the transaction
+    // is enabled. For transactions that do not require an amendment, delegation
+    // is always allowed.
+    if (txFeaturesIt->second != uint256{} &&
+        !rules.enabled(txFeaturesIt->second))
+        return false;
 
-    if (it != delegatableTx_.end() && it->second == Delegation::notDelegatable)
+    if (it->second == Delegation::notDelegatable)
         return false;
 
     return true;
