@@ -5,7 +5,7 @@ set -e
 
 # On MacOS, ensure that GNU sed is installed and available as `gsed`.
 SED_COMMAND=sed
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if [[ "${OSTYPE}" == 'darwin'* ]]; then
   if ! command -v gsed &> /dev/null; then
       echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
       exit 1
