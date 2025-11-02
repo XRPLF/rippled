@@ -41,7 +41,7 @@ public:
     using microseconds = std::chrono::microseconds;
 
     /**
-     * Configuration from [perf] section of rippled.cfg.
+     * Configuration from [perf] section of xrpld.cfg.
      */
     struct Setup
     {

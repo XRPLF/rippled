@@ -861,7 +861,7 @@ trustthesevalidators.gov
         }
         {
             // load should throw if [validator_list_threshold] is present both
-            // in rippled cfg and validators file
+            // in xrpld.cfg and validators file
             boost::format cc(R"rippleConfig(
 [validators_file]
 %1%
@@ -890,7 +890,7 @@ trustthesevalidators.gov
         }
         {
             // load should throw if [validators], [validator_keys] and
-            // [validator_list_keys] are missing from rippled cfg and
+            // [validator_list_keys] are missing from xrpld.cfg and
             // validators file
             Config c;
             boost::format cc("[validators_file]\n%1%\n");

@@ -29,6 +29,9 @@ run from the repository root.
 4. `.github/scripts/rename/binary.sh`: This script will rename the binary from
    `rippled` to `xrpld`, and create a symlink named `rippled` that points to the
    `xrpld` binary.
+5. `.github/scripts/rename/config.sh`: This script will rename the config from
+   `rippled.cfg` to `xrpld.cfg`, and updating the code accordingly. The old
+   filename will still be accepted.
 
 You can run all these scripts from the repository root as follows:
 
@@ -37,4 +40,5 @@ You can run all these scripts from the repository root as follows:
 ./.github/scripts/rename/copyright.sh .
 ./.github/scripts/rename/cmake.sh .
 ./.github/scripts/rename/binary.sh .
+./.github/scripts/rename/config.sh .
 ```

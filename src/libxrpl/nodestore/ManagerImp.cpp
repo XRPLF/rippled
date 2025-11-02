@@ -18,8 +18,8 @@ void
 ManagerImp::missing_backend()
 {
     Throw<std::runtime_error>(
-        "Your rippled.cfg is missing a [node_db] entry, "
-        "please see the rippled-example.cfg file!");
+        "Your xrpld.cfg is missing a [node_db] entry, "
+        "please see the xrpld-example.cfg file!");
 }
 
 // We shouldn't rely on global variables for lifetime management because their
