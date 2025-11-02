@@ -74,7 +74,6 @@ if grep -q '"xrpld"' "${DIRECTORY}/cmake/XrplCore.cmake"; then
   ${SED_COMMAND} -i 's/"xrpld"/"rippled"/' "${DIRECTORY}/cmake/XrplCore.cmake"
 elif ! grep -q '"rippled"' "${DIRECTORY}/cmake/XrplCore.cmake"; then
   ghead -n -2 "${DIRECTORY}/cmake/XrplCore.cmake" > cmake.tmp
-  echo ''
   echo '  # For the time being, we will keep the name of the binary as it was.' >> cmake.tmp
   echo '  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")' >> cmake.tmp
   tail -2 "${DIRECTORY}/cmake/XrplCore.cmake" >> cmake.tmp
