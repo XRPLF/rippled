@@ -7,7 +7,7 @@ set -e
 # and `ghead`, respectively.
 SED_COMMAND=sed
 HEAD_COMMAND=head
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if [[ "${OSTYPE}" == 'darwin'* ]]; then
   if ! command -v gsed &> /dev/null; then
       echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
       exit 1
