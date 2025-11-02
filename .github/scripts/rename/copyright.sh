@@ -5,7 +5,7 @@ set -e
 
 # On MacOS, ensure that GNU sed is installed and available as `gsed`.
 SED_COMMAND=sed
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if [[ "${OSTYPE}" == 'darwin'* ]]; then
   if ! command -v gsed &> /dev/null; then
       echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
       exit 1
@@ -25,6 +25,14 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
+DIRECTORY=$1
+echo "Processing directory: ${DIRECTORY}"
+if [ ! -d "${DIRECTORY}" ]; then
+    echo "Error: Directory '${DIRECTORY}' does not exist."
+    exit 1
+fi
+pushd ${DIRECTORY}
+
 # Prevent sed and echo from removing newlines and tabs in string literals by
 # temporarily replacing them with placeholders. This only affects one file.
 PLACEHOLDER_NEWLINE="__NEWLINE__"
@@ -35,12 +43,7 @@ ${SED_COMMAND} -i -E "s@\\\t@${PLACEHOLDER_TAB}@g" src/test/rpc/ValidatorInfo_te
 # Process the include/ and src/ directories.
 DIRECTORIES=("include" "src")
 for DIRECTORY in "${DIRECTORIES[@]}"; do
-  DIRECTORY=$1/${DIRECTORY}
   echo "Processing directory: ${DIRECTORY}"
-  if [ ! -d "${DIRECTORY}" ]; then
-      echo "Error: Directory '${DIRECTORY}' does not exist."
-      exit 1
-  fi
 
   find "${DIRECTORY}" -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp" -o -name "*.macro" \) | while read -r FILE; do
       echo "Processing file: ${FILE}"
@@ -99,4 +102,5 @@ fi
 ${SED_COMMAND} -i -E "s@${PLACEHOLDER_NEWLINE}@\\\n@g" src/test/rpc/ValidatorInfo_test.cpp
 ${SED_COMMAND} -i -E "s@${PLACEHOLDER_TAB}@\\\t@g" src/test/rpc/ValidatorInfo_test.cpp
 
+popd
 echo "Removal complete."
