@@ -38,46 +38,48 @@ if [ ! -d "${DIRECTORY}" ]; then
     echo "Error: Directory '${DIRECTORY}' does not exist."
     exit 1
 fi
+pushd ${DIRECTORY}
 
 # Rename the files.
-find ${DIRECTORY}/cmake -type f -name "Rippled*.cmake" -exec bash -c 'mv "${1}" "${1/Rippled/Xrpl}"' - {} \;
-find ${DIRECTORY}/cmake -type f -name "Ripple*.cmake" -exec bash -c 'mv "${1}" "${1/Ripple/Xrpl}"' - {} \;
-if [ -e "${DIRECTORY}/cmake/xrpl_add_test.cmake" ]; then
-  mv "${DIRECTORY}/cmake/xrpl_add_test.cmake" "${DIRECTORY}/cmake/XrplAddTest.cmake"
+find cmake -type f -name 'Rippled*.cmake' -exec bash -c 'mv "${1}" "${1/Rippled/Xrpl}"' - {} \;
+find cmake -type f -name 'Ripple*.cmake' -exec bash -c 'mv "${1}" "${1/Ripple/Xrpl}"' - {} \;
+if [ -e cmake/xrpl_add_test.cmake ]; then
+  mv cmake/xrpl_add_test.cmake cmake/XrplAddTest.cmake
 fi
-if [ -e "${DIRECTORY}/include/xrpl/proto/ripple.proto" ]; then
-  mv "${DIRECTORY}/include/xrpl/proto/ripple.proto" "${DIRECTORY}/include/xrpl/proto/xrpl.proto"
+if [ -e include/xrpl/proto/ripple.proto ]; then
+  mv include/xrpl/proto/ripple.proto include/xrpl/proto/xrpl.proto
 fi
 
 # Rename inside the files.
-find "${DIRECTORY}/cmake" -type f -name "*.cmake" | while read -r FILE; do
+find cmake -type f -name '*.cmake' | while read -r FILE; do
     echo "Processing file: ${FILE}"
     ${SED_COMMAND} -i 's/Rippled/Xrpld/g' "${FILE}"
     ${SED_COMMAND} -i 's/Ripple/Xrpl/g' "${FILE}"
     ${SED_COMMAND} -i 's/rippled/xrpld/g' "${FILE}"
     ${SED_COMMAND} -i 's/ripple/xrpl/g' "${FILE}"
 done
-${SED_COMMAND} -i -E 's/Rippled?/Xrpl/g' "${DIRECTORY}/CMakeLists.txt"
-${SED_COMMAND} -i 's/ripple/xrpl/g' "${DIRECTORY}/CMakeLists.txt"
-${SED_COMMAND} -i 's/include(xrpl_add_test)/include(XrplAddTest)/' "${DIRECTORY}/src/tests/libxrpl/CMakeLists.txt"
-${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' "${DIRECTORY}/include/xrpl/protocol/messages.h"
-${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' "${DIRECTORY}/BUILD.md"
-${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' "${DIRECTORY}/BUILD.md"
+${SED_COMMAND} -i -E 's/Rippled?/Xrpl/g' CMakeLists.txt
+${SED_COMMAND} -i 's/ripple/xrpl/g' CMakeLists.txt
+${SED_COMMAND} -i 's/include(xrpl_add_test)/include(XrplAddTest)/' src/tests/libxrpl/CMakeLists.txt
+${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' include/xrpl/protocol/messages.h
+${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' BUILD.md
+${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' BUILD.md
 
 # Restore the name of the validator keys repository.
-${SED_COMMAND} -i 's@xrpl/validator-keys-tool@ripple/validator-keys-tool@' "${DIRECTORY}/cmake/XrplValidatorKeys.cmake"
+${SED_COMMAND} -i 's@xrpl/validator-keys-tool@ripple/validator-keys-tool@' cmake/XrplValidatorKeys.cmake
 
 # Ensure the name of the binary and config remain 'rippled' for now.
-${SED_COMMAND} -i -E 's/xrpld(-example)?\.cfg/rippled\1.cfg/g' "${DIRECTORY}/cmake/XrplInstall.cmake"
-if grep -q '"xrpld"' "${DIRECTORY}/cmake/XrplCore.cmake"; then
+${SED_COMMAND} -i -E 's/xrpld(-example)?\.cfg/rippled\1.cfg/g' cmake/XrplInstall.cmake
+if grep -q '"xrpld"' cmake/XrplCore.cmake; then
   # The script has been rerun, so just restore the name of the binary.
-  ${SED_COMMAND} -i 's/"xrpld"/"rippled"/' "${DIRECTORY}/cmake/XrplCore.cmake"
-elif ! grep -q '"rippled"' "${DIRECTORY}/cmake/XrplCore.cmake"; then
-  ghead -n -1 "${DIRECTORY}/cmake/XrplCore.cmake" > cmake.tmp
+  ${SED_COMMAND} -i 's/"xrpld"/"rippled"/' cmake/XrplCore.cmake
+elif ! grep -q '"rippled"' cmake/XrplCore.cmake; then
+  ghead -n -1 cmake/XrplCore.cmake > cmake.tmp
   echo '  # For the time being, we will keep the name of the binary as it was.' >> cmake.tmp
   echo '  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")' >> cmake.tmp
-  tail -1 "${DIRECTORY}/cmake/XrplCore.cmake" >> cmake.tmp
-  mv cmake.tmp "${DIRECTORY}/cmake/XrplCore.cmake"
+  tail -1 cmake/XrplCore.cmake >> cmake.tmp
+  mv cmake.tmp cmake/XrplCore.cmake
 fi
 
+popd
 echo "Renaming complete."
