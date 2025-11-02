@@ -5,7 +5,7 @@ set -e
 
 # On MacOS, ensure that GNU sed is installed and available as `gsed`.
 SED_COMMAND=sed
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if [[ "${OSTYPE}" == 'darwin'* ]]; then
   if ! command -v gsed &> /dev/null; then
       echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
       exit 1
@@ -28,25 +28,25 @@ if [ ! -d "${DIRECTORY}" ]; then
     echo "Error: Directory '${DIRECTORY}' does not exist."
     exit 1
 fi
+pushd ${DIRECTORY}
 
 # Add the xrpld.cfg to the .gitignore.
-if ! grep -q 'xrpld.cfg' ${DIRECTORY}/.gitignore; then
+if ! grep -q 'xrpld.cfg' .gitignore; then
   ${SED_COMMAND} -i '/rippled.cfg/a\
-xrpld.cfg' ${DIRECTORY}/.gitignore
+xrpld.cfg' .gitignore
 fi
 
 # Rename the files.
-if [ -e "${DIRECTORY}/rippled.cfg" ]; then
-  mv "${DIRECTORY}/rippled.cfg" "${DIRECTORY}/xrpld.cfg"
+if [ -e rippled.cfg ]; then
+  mv rippled.cfg xrpld.cfg
 fi
-if [ -e "${DIRECTORY}/cfg/rippled-example.cfg" ]; then
-  mv "${DIRECTORY}/cfg/rippled-example.cfg" "${DIRECTORY}/cfg/xrpld-example.cfg"
+if [ -e cfg/rippled-example.cfg ]; then
+  mv cfg/rippled-example.cfg cfg/xrpld-example.cfg
 fi
 
 # Rename inside the files.
 DIRECTORIES=("cfg" "cmake" "include" "src")
 for DIRECTORY in "${DIRECTORIES[@]}"; do
-  DIRECTORY=$1/${DIRECTORY}
   echo "Processing directory: ${DIRECTORY}"
   if [ ! -d "${DIRECTORY}" ]; then
       echo "Error: Directory '${DIRECTORY}' does not exist."
@@ -59,4 +59,5 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
   done
 done
 
+popd
 echo "Renaming complete."
