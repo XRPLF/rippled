@@ -141,7 +141,7 @@ removeNFTokenOfferFromLedger(
     beast::Journal)
 {
     if (!nft::deleteTokenOffer(view, sleDel))
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     return tesSUCCESS;
 }
@@ -265,24 +265,20 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if (!sleAccount)
         return terNO_ACCOUNT;
 
-    if (ctx.view.rules().enabled(featureNonFungibleTokensV1))
-    {
-        // If an issuer has any issued NFTs resident in the ledger then it
-        // cannot be deleted.
-        if ((*sleAccount)[~sfMintedNFTokens] !=
-            (*sleAccount)[~sfBurnedNFTokens])
-            return tecHAS_OBLIGATIONS;
+    // If an issuer has any issued NFTs resident in the ledger then it
+    // cannot be deleted.
+    if ((*sleAccount)[~sfMintedNFTokens] != (*sleAccount)[~sfBurnedNFTokens])
+        return tecHAS_OBLIGATIONS;
 
-        // If the account owns any NFTs it cannot be deleted.
-        Keylet const first = keylet::nftpage_min(account);
-        Keylet const last = keylet::nftpage_max(account);
+    // If the account owns any NFTs it cannot be deleted.
+    Keylet const first = keylet::nftpage_min(account);
+    Keylet const last = keylet::nftpage_max(account);
 
-        auto const cp = ctx.view.read(Keylet(
-            ltNFTOKEN_PAGE,
-            ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
-        if (cp)
-            return tecHAS_OBLIGATIONS;
-    }
+    auto const cp = ctx.view.read(Keylet(
+        ltNFTOKEN_PAGE,
+        ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
+    if (cp)
+        return tecHAS_OBLIGATIONS;
 
     // We don't allow an account to be deleted if its sequence number
     // is within 256 of the current ledger.  This prevents replay of old
@@ -294,8 +290,8 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
-    // When fixNFTokenRemint is enabled, we don't allow an account to be
-    // deleted if <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
+    // We don't allow an account to be deleted if
+    // <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
     // current ledger. This is to prevent having duplicate NFTokenIDs after
     // account re-creation.
     //
@@ -305,10 +301,9 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     // their account and mints a NFToken, it is possible that the
     // NFTokenSequence of this NFToken is the same as the one that the
     // authorized minter minted in a previous ledger.
-    if (ctx.view.rules().enabled(fixNFTokenRemint) &&
-        ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-             (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
-         ctx.view.seq()))
+    if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
+            (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+        ctx.view.seq())
         return tecTOO_SOON;
 
     // Verify that the account does not own any objects that would prevent
@@ -336,11 +331,13 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
         if (!sleItem)
         {
             // Directory node has an invalid index.  Bail out.
+            // LCOV_EXCL_START
             JLOG(ctx.j.fatal())
                 << "DeleteAccount: directory node in ledger " << ctx.view.seq()
                 << " has index to object that is missing: "
                 << to_string(dirEntry);
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
 
         LedgerEntryType const nodeType{
@@ -373,7 +370,7 @@ DeleteAccount::doApply()
         dst, "ripple::DeleteAccount::doApply : non-null destination account");
 
     if (!src || !dst)
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     if (ctx_.view().rules().enabled(featureDepositAuth) &&
         ctx_.tx.isFieldPresent(sfCredentialIDs))
@@ -399,12 +396,14 @@ DeleteAccount::doApply()
                 return {result, SkipEntry::No};
             }
 
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::DeleteAccount::doApply : undeletable item not found "
                 "in preclaim");
             JLOG(j_.error()) << "DeleteAccount undeletable item not "
                                 "found in preclaim.";
             return {tecHAS_OBLIGATIONS, SkipEntry::No};
+            // LCOV_EXCL_STOP
         },
         ctx_.journal);
     if (ter != tesSUCCESS)

@@ -129,10 +129,12 @@ invoke_preflight(PreflightContext const& ctx)
     catch (UnknownTxnType const& e)
     {
         // Should never happen
+        // LCOV_EXCL_START
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preflight: " << e.txnType;
         UNREACHABLE("ripple::invoke_preflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
+        // LCOV_EXCL_STOP
     }
 }
 
@@ -143,37 +145,45 @@ invoke_preclaim(PreclaimContext const& ctx)
     {
         // use name hiding to accomplish compile-time polymorphism of static
         // class functions for Transactor and derived classes.
-        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
-            // If the transactor requires a valid account and the transaction
-            // doesn't list one, preflight will have already a flagged a
-            // failure.
+        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() -> TER {
+            // preclaim functionality is divided into two sections:
+            // 1. Up to and including the signature check: returns NotTEC.
+            //    All transaction checks before and including checkSign
+            //    MUST return NotTEC, or something more restrictive.
+            //    Allowing tec results in these steps risks theft or
+            //    destruction of funds, as a fee will be charged before the
+            //    signature is checked.
+            // 2. After the signature check: returns TER.
+
+            // If the transactor requires a valid account and the
+            // transaction doesn't list one, preflight will have already
+            // a flagged a failure.
             auto const id = ctx.tx.getAccountID(sfAccount);
 
             if (id != beast::zero)
             {
-                TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+                if (NotTEC const preSigResult = [&]() -> NotTEC {
+                        if (NotTEC const result =
+                                T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
+                            return result;
 
-                if (result != tesSUCCESS)
-                    return result;
+                        if (NotTEC const result =
+                                T::checkPriorTxAndLastLedger(ctx))
+                            return result;
 
-                result = T::checkPriorTxAndLastLedger(ctx);
+                        if (NotTEC const result =
+                                T::checkPermission(ctx.view, ctx.tx))
+                            return result;
 
-                if (result != tesSUCCESS)
-                    return result;
+                        if (NotTEC const result = T::checkSign(ctx))
+                            return result;
 
-                result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+                        return tesSUCCESS;
+                    }())
+                    return preSigResult;
 
-                if (result != tesSUCCESS)
-                    return result;
-
-                result = T::checkPermission(ctx.view, ctx.tx);
-
-                if (result != tesSUCCESS)
-                    return result;
-
-                result = T::checkSign(ctx);
-
-                if (result != tesSUCCESS)
+                if (TER const result =
+                        T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx)))
                     return result;
             }
 
@@ -183,10 +193,12 @@ invoke_preclaim(PreclaimContext const& ctx)
     catch (UnknownTxnType const& e)
     {
         // Should never happen
+        // LCOV_EXCL_START
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preclaim: " << e.txnType;
         UNREACHABLE("ripple::invoke_preclaim : unknown transaction type");
         return temUNKNOWN;
+        // LCOV_EXCL_STOP
     }
 }
 
@@ -217,9 +229,11 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
     }
     catch (UnknownTxnType const& e)
     {
+        // LCOV_EXCL_START
         UNREACHABLE(
             "ripple::invoke_calculateBaseFee : unknown transaction type");
         return XRPAmount{0};
+        // LCOV_EXCL_STOP
     }
 }
 
@@ -277,10 +291,12 @@ invoke_apply(ApplyContext& ctx)
     catch (UnknownTxnType const& e)
     {
         // Should never happen
+        // LCOV_EXCL_START
         JLOG(ctx.journal.fatal())
             << "Unknown transaction type in apply: " << e.txnType;
         UNREACHABLE("ripple::invoke_apply : unknown transaction type");
         return {temUNKNOWN, false};
+        // LCOV_EXCL_STOP
     }
 }
 

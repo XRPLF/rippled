@@ -25,12 +25,6 @@
 
 namespace ripple {
 
-bool
-NFTokenModify::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureNonFungibleTokensV1_1);
-}
-
 NotTEC
 NFTokenModify::preflight(PreflightContext const& ctx)
 {

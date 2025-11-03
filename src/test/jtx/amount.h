@@ -213,14 +213,16 @@ public:
 
     template <std::integral T>
     PrettyAmount
-    operator()(T v) const
+    operator()(T v, Number::rounding_mode rounding = Number::getround()) const
     {
-        return operator()(Number(v));
+        return operator()(Number(v), rounding);
     }
 
     PrettyAmount
-    operator()(Number v) const
+    operator()(Number v, Number::rounding_mode rounding = Number::getround())
+        const
     {
+        NumberRoundModeGuard mg(rounding);
         STAmount amount{asset_, v * scale_};
         return {amount, ""};
     }

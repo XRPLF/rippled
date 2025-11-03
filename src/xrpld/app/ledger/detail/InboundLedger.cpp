@@ -25,12 +25,12 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/Overlay.h>
-#include <xrpld/shamap/SHAMapNodeID.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
 
@@ -963,8 +963,10 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
 
     if (!mHaveHeader)
     {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::InboundLedger::takeAsRootNode : no ledger header");
         return false;
+        // LCOV_EXCL_STOP
     }
 
     AccountStateSF filter(
@@ -988,8 +990,10 @@ InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
 
     if (!mHaveHeader)
     {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::InboundLedger::takeTxRootNode : no ledger header");
         return false;
+        // LCOV_EXCL_STOP
     }
 
     TransactionStateSF filter(

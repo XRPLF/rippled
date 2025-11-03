@@ -704,15 +704,21 @@ readLimitField(
     JsonContext const& context)
 {
     limit = range.rdefault;
-    if (auto const& jvLimit = context.params[jss::limit])
-    {
-        if (!(jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
-            return RPC::expected_field_error(jss::limit, "unsigned integer");
+    if (!context.params.isMember(jss::limit) ||
+        context.params[jss::limit].isNull())
+        return std::nullopt;
 
-        limit = jvLimit.asUInt();
-        if (!isUnlimited(context.role))
-            limit = std::max(range.rmin, std::min(range.rmax, limit));
-    }
+    auto const& jvLimit = context.params[jss::limit];
+    if (!(jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
+        return RPC::expected_field_error(jss::limit, "unsigned integer");
+
+    limit = jvLimit.asUInt();
+    if (limit == 0)
+        return RPC::invalid_field_error(jss::limit);
+
+    if (!isUnlimited(context.role))
+        limit = std::max(range.rmin, std::min(range.rmax, limit));
+
     return std::nullopt;
 }
 
@@ -999,31 +1005,6 @@ isAccountObjectsValidType(LedgerEntryType const& type)
         default:
             return true;
     }
-}
-
-beast::SemanticVersion const firstVersion("1.0.0");
-beast::SemanticVersion const goodVersion("1.0.0");
-beast::SemanticVersion const lastVersion("1.0.0");
-
-unsigned int
-getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
-{
-    static Json::Value const minVersion(RPC::apiMinimumSupportedVersion);
-    static Json::Value const invalidVersion(RPC::apiInvalidVersion);
-
-    Json::Value const maxVersion(
-        betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion);
-    Json::Value requestedVersion(RPC::apiVersionIfUnspecified);
-    if (jv.isObject())
-    {
-        requestedVersion = jv.get(jss::api_version, requestedVersion);
-    }
-    if (!(requestedVersion.isInt() || requestedVersion.isUInt()) ||
-        requestedVersion < minVersion || requestedVersion > maxVersion)
-    {
-        requestedVersion = invalidVersion;
-    }
-    return requestedVersion.asUInt();
 }
 
 std::variant<std::shared_ptr<Ledger const>, Json::Value>

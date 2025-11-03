@@ -103,9 +103,6 @@ doAccountChannels(RPC::JsonContext& context)
     if (auto err = readLimitField(limit, RPC::Tuning::accountChannels, context))
         return *err;
 
-    if (limit == 0u)
-        return rpcError(rpcINVALID_PARAMS);
-
     Json::Value jsonChannels{Json::arrayValue};
     struct VisitData
     {
@@ -169,8 +166,10 @@ doAccountChannels(RPC::JsonContext& context)
                 std::shared_ptr<SLE const> const& sleCur) {
                 if (!sleCur)
                 {
+                    // LCOV_EXCL_START
                     UNREACHABLE("ripple::doAccountChannels : null SLE");
                     return false;
+                    // LCOV_EXCL_STOP
                 }
 
                 if (++count == limit)

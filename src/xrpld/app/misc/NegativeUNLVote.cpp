@@ -20,7 +20,8 @@
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
-#include <xrpld/shamap/SHAMapItem.h>
+
+#include <xrpl/shamap/SHAMapItem.h>
 
 namespace ripple {
 

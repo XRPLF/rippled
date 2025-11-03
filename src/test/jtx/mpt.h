@@ -328,7 +328,7 @@ public:
         EncryptedBalanceType option = HOLDER_ENCRYPTED_INBOX) const;
 
     MPT
-    operator[](std::string const& name);
+    operator[](std::string const& name) const;
 
     bool
     printMPT(Account const& holder_) const;

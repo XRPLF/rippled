@@ -844,24 +844,6 @@ DirectStepI<TDerived>::qualityUpperBound(
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    if (!v.rules().enabled(fixQualityUpperBound))
-    {
-        std::uint32_t const srcQOut = [&]() -> std::uint32_t {
-            if (redeems(prevStepDir) && issues(dir))
-                return transferRate(v, src_).value;
-            return QUALITY_ONE;
-        }();
-        auto dstQIn = static_cast<TDerived const*>(this)->quality(
-            v, QualityDirection::in);
-
-        if (isLast_ && dstQIn > QUALITY_ONE)
-            dstQIn = QUALITY_ONE;
-        Issue const iss{currency_, src_};
-        return {
-            Quality(getRate(STAmount(iss, srcQOut), STAmount(iss, dstQIn))),
-            dir};
-    }
-
     auto const [srcQOut, dstQIn] = redeems(dir)
         ? qualitiesSrcRedeems(v)
         : qualitiesSrcIssues(v, prevStepDir);
@@ -931,10 +913,12 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         {
             if (!ctx.prevStep)
             {
+                // LCOV_EXCL_START
                 UNREACHABLE(
                     "ripple::DirectStepI::check : prev seen book without a "
                     "prev step");
                 return temBAD_PATH_LOOP;
+                // LCOV_EXCL_STOP
             }
 
             // This is OK if the previous step is a book step that outputs this
