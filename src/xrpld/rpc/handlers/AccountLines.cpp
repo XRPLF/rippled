@@ -120,9 +120,6 @@ doAccountLines(RPC::JsonContext& context)
     if (auto err = readLimitField(limit, RPC::Tuning::accountLines, context))
         return *err;
 
-    if (limit == 0)
-        return rpcError(rpcINVALID_PARAMS);
-
     // this flag allows the requester to ask incoming trustlines in default
     // state be omitted
     bool ignoreDefault = params.isMember(jss::ignore_default) &&

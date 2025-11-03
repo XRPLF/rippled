@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-#include <xrpld/nodestore/detail/varint.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/nodestore/detail/varint.h>
 
 #include <array>
 #include <vector>

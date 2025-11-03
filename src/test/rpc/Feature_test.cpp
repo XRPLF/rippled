@@ -143,10 +143,9 @@ class Feature_test : public beast::unit_test::suite
             featureToName(fixTrustLinesToSelf) == "fixTrustLinesToSelf");
         BEAST_EXPECT(featureToName(featureFlow) == "Flow");
         BEAST_EXPECT(featureToName(featureNegativeUNL) == "NegativeUNL");
-        BEAST_EXPECT(featureToName(fix1578) == "fix1578");
         BEAST_EXPECT(
-            featureToName(fixTakerDryOfferRemoval) ==
-            "fixTakerDryOfferRemoval");
+            featureToName(fixIncludeKeyletFields) == "fixIncludeKeyletFields");
+        BEAST_EXPECT(featureToName(featureTokenEscrow) == "TokenEscrow");
     }
 
     void
@@ -332,23 +331,6 @@ class Feature_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 result[jss::error_message] ==
                 "You don't have permission for this command.");
-        }
-
-        {
-            std::string const feature =
-                "C4483A1896170C66C098DEA5B0E024309C60DC960DE5F01CD7AF986AA3D9AD"
-                "37";
-            Json::Value params;
-            params[jss::feature] = feature;
-            auto const result =
-                env.rpc("json", "feature", to_string(params))[jss::result];
-            BEAST_EXPECT(result.isMember(feature));
-            auto const amendmentResult = result[feature];
-            BEAST_EXPECT(amendmentResult[jss::enabled].asBool() == false);
-            BEAST_EXPECT(amendmentResult[jss::supported].asBool() == true);
-            BEAST_EXPECT(
-                amendmentResult[jss::name].asString() ==
-                "fixMasterKeyAsRegularKey");
         }
     }
 
@@ -565,7 +547,7 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        constexpr char const* featureName = "NonFungibleTokensV1";
+        constexpr char const* featureName = "CryptoConditionsSuite";
 
         auto jrr = env.rpc("feature", featureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))

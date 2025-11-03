@@ -8,20 +8,23 @@ install (
   TARGETS
     common
     opts
-    ripple_syslibs
     ripple_boost
+    ripple_libs
+    ripple_syslibs
     xrpl.imports.main
     xrpl.libpb
+    xrpl.libxrpl
     xrpl.libxrpl.basics
     xrpl.libxrpl.beast
     xrpl.libxrpl.crypto
     xrpl.libxrpl.json
+    xrpl.libxrpl.ledger
+    xrpl.libxrpl.net
+    xrpl.libxrpl.nodestore
     xrpl.libxrpl.protocol
     xrpl.libxrpl.resource
-    xrpl.libxrpl.ledger
     xrpl.libxrpl.server
-    xrpl.libxrpl.net
-    xrpl.libxrpl
+    xrpl.libxrpl.shamap
     antithesis-sdk-cpp
   EXPORT RippleExports
   LIBRARY DESTINATION lib

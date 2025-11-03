@@ -294,74 +294,51 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    test1571(FeatureBitset features)
+    testRequiresConditionOrFinishAfter(FeatureBitset features)
     {
         using namespace jtx;
         using namespace std::chrono;
 
-        {
-            testcase("Implied Finish Time (without fix1571)");
+        testcase("RequiresConditionOrFinishAfter");
 
-            Env env(*this, testable_amendments() - fix1571);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob", "carol");
-            env.close();
+        Env env(*this, features);
+        auto const baseFee = env.current()->fees().base;
+        env.fund(XRP(5000), "alice", "bob", "carol");
+        env.close();
 
-            // Creating an escrow without a finish time and finishing it
-            // is allowed without fix1571:
-            auto const seq1 = env.seq("alice");
-            env(escrow::create("alice", "bob", XRP(100)),
-                escrow::cancel_time(env.now() + 1s),
-                fee(baseFee * 150));
-            env.close();
-            env(escrow::finish("carol", "alice", seq1), fee(baseFee * 150));
-            BEAST_EXPECT(env.balance("bob") == XRP(5100));
+        // Creating an escrow with only a cancel time is not allowed:
+        env(escrow::create("alice", "bob", XRP(100)),
+            escrow::cancel_time(env.now() + 90s),
+            fee(baseFee * 150),
+            ter(temMALFORMED));
 
-            env.close();
+        // Creating an escrow with only a cancel time and a condition is
+        // allowed:
+        auto const seq = env.seq("alice");
+        env(escrow::create("alice", "bob", XRP(100)),
+            escrow::cancel_time(env.now() + 90s),
+            escrow::condition(escrow::cb1),
+            fee(baseFee * 150));
+        env.close();
+        env(escrow::finish("carol", "alice", seq),
+            escrow::condition(escrow::cb1),
+            escrow::fulfillment(escrow::fb1),
+            fee(baseFee * 150));
+        BEAST_EXPECT(env.balance("bob") == XRP(5100));
 
-            // Creating an escrow without a finish time and a condition is
-            // also allowed without fix1571:
-            auto const seq2 = env.seq("alice");
-            env(escrow::create("alice", "bob", XRP(100)),
-                escrow::cancel_time(env.now() + 1s),
-                escrow::condition(escrow::cb1),
-                fee(baseFee * 150));
-            env.close();
-            env(escrow::finish("carol", "alice", seq2),
-                escrow::condition(escrow::cb1),
-                escrow::fulfillment(escrow::fb1),
-                fee(baseFee * 150));
-            BEAST_EXPECT(env.balance("bob") == XRP(5200));
-        }
-
-        {
-            testcase("Implied Finish Time (with fix1571)");
-
-            Env env(*this, features);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob", "carol");
-            env.close();
-
-            // Creating an escrow with only a cancel time is not allowed:
-            env(escrow::create("alice", "bob", XRP(100)),
-                escrow::cancel_time(env.now() + 90s),
-                fee(baseFee * 150),
-                ter(temMALFORMED));
-
-            // Creating an escrow with only a cancel time and a condition is
-            // allowed:
-            auto const seq = env.seq("alice");
-            env(escrow::create("alice", "bob", XRP(100)),
-                escrow::cancel_time(env.now() + 90s),
-                escrow::condition(escrow::cb1),
-                fee(baseFee * 150));
-            env.close();
-            env(escrow::finish("carol", "alice", seq),
-                escrow::condition(escrow::cb1),
-                escrow::fulfillment(escrow::fb1),
-                fee(baseFee * 150));
-            BEAST_EXPECT(env.balance("bob") == XRP(5100));
-        }
+        // Creating an escrow with only a cancel time and a finish time is
+        // allowed:
+        auto const seqFt = env.seq("alice");
+        env(escrow::create("alice", "bob", XRP(100)),
+            escrow::finish_time(env.now()),  // Set finish time to now so that
+                                             // we can call finish immediately.
+            escrow::cancel_time(env.now() + 50s),
+            fee(baseFee * 150));
+        env.close();
+        env(escrow::finish("carol", "alice", seqFt), fee(150 * baseFee));
+        BEAST_EXPECT(
+            env.balance("bob") ==
+            XRP(5200));  // 5100 (from last transaction) + 100
     }
 
     void
@@ -1708,7 +1685,7 @@ struct Escrow_test : public beast::unit_test::suite
         testTiming(features);
         testTags(features);
         testDisallowXRP(features);
-        test1571(features);
+        testRequiresConditionOrFinishAfter(features);
         testFails(features);
         testLockup(features);
         testEscrowConditions(features);

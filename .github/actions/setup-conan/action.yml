@@ -39,8 +39,8 @@ runs:
         CONAN_REMOTE_NAME: ${{ inputs.conan_remote_name }}
         CONAN_REMOTE_URL: ${{ inputs.conan_remote_url }}
       run: |
-        echo "Adding Conan remote '${{ env.CONAN_REMOTE_NAME }}' at '${{ env.CONAN_REMOTE_URL }}'."
-        conan remote add --index 0 --force '${{ env.CONAN_REMOTE_NAME }}' '${{ env.CONAN_REMOTE_URL }}'
+        echo "Adding Conan remote '${CONAN_REMOTE_NAME}' at '${CONAN_REMOTE_URL}'."
+        conan remote add --index 0 --force "${CONAN_REMOTE_NAME}" "${CONAN_REMOTE_URL}"
 
         echo 'Listing Conan remotes.'
         conan remote list

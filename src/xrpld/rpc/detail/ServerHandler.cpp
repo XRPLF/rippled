@@ -18,13 +18,13 @@
 //==============================================================================
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/ServerHandler.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/json_body.h>
 
@@ -36,6 +36,7 @@
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/resource/Fees.h>

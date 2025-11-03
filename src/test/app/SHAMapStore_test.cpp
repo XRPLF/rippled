@@ -25,8 +25,8 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
 
+#include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
