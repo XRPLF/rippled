@@ -21,6 +21,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 
@@ -144,6 +145,14 @@ struct STNumber_test : public beast::unit_test::suite
                 numberFromJson(sfNumber, "-0.0e6") == STNumber(sfNumber, 0));
             BEAST_EXPECT(
                 numberFromJson(sfNumber, "-0.000e6") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, std::numeric_limits<int>::min()) ==
+                STNumber(sfNumber, Number(std::numeric_limits<int>::min(), 0)));
+            BEAST_EXPECT(
+                numberFromJson(
+                    sfNumber,
+                    std::to_string(std::numeric_limits<int>::min())) ==
+                STNumber(sfNumber, Number(std::numeric_limits<int>::min(), 0)));
 
             // Obvious non-numbers tested here
             try

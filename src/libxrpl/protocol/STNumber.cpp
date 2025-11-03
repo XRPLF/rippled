@@ -29,8 +29,10 @@
 #include <boost/regex.hpp>
 
 #include <cstddef>
+#include <limits>
 #include <ostream>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace ripple {
@@ -188,7 +190,8 @@ numberFromJson(SField const& field, Json::Value const& value)
         }
         else
         {
-            parts.mantissa = -value.asInt();
+            std::int64_t const temp = value.asInt();
+            parts.mantissa = -temp;
             parts.negative = true;
         }
     }

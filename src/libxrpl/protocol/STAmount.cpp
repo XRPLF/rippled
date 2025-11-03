@@ -63,6 +63,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -1106,7 +1107,8 @@ amountFromJson(SField const& name, Json::Value const& v)
         }
         else
         {
-            parts.mantissa = -value.asInt();
+            std::int64_t const temp = value.asInt();
+            parts.mantissa = -temp;
             parts.negative = true;
         }
     }
