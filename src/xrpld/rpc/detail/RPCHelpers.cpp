@@ -1007,31 +1007,6 @@ isAccountObjectsValidType(LedgerEntryType const& type)
     }
 }
 
-beast::SemanticVersion const firstVersion("1.0.0");
-beast::SemanticVersion const goodVersion("1.0.0");
-beast::SemanticVersion const lastVersion("1.0.0");
-
-unsigned int
-getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
-{
-    static Json::Value const minVersion(RPC::apiMinimumSupportedVersion);
-    static Json::Value const invalidVersion(RPC::apiInvalidVersion);
-
-    Json::Value const maxVersion(
-        betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion);
-    Json::Value requestedVersion(RPC::apiVersionIfUnspecified);
-    if (jv.isObject())
-    {
-        requestedVersion = jv.get(jss::api_version, requestedVersion);
-    }
-    if (!(requestedVersion.isInt() || requestedVersion.isUInt()) ||
-        requestedVersion < minVersion || requestedVersion > maxVersion)
-    {
-        requestedVersion = invalidVersion;
-    }
-    return requestedVersion.asUInt();
-}
-
 std::variant<std::shared_ptr<Ledger const>, Json::Value>
 getLedgerByContext(RPC::JsonContext& context)
 {

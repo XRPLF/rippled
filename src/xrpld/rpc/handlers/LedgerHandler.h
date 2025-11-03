@@ -27,10 +27,10 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/json/Object.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
 namespace Json {

@@ -547,7 +547,7 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        constexpr char const* featureName = "NonFungibleTokensV1";
+        constexpr char const* featureName = "CryptoConditionsSuite";
 
         auto jrr = env.rpc("feature", featureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))

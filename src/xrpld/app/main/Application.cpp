@@ -53,7 +53,6 @@
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/make_Overlay.h>
 #include <xrpld/perflog/PerfLog.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/shamap/NodeFamily.h>
 
 #include <xrpl/basics/ByteUtilities.h>
@@ -64,6 +63,7 @@
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/nodestore/DummyScheduler.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
