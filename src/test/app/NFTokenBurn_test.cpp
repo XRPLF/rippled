@@ -28,7 +28,7 @@
 
 namespace ripple {
 
-class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
+class NFTokenBurn_test : public beast::unit_test::suite
 {
     // Helper function that returns the number of nfts owned by an account.
     static std::uint32_t
@@ -1274,20 +1274,10 @@ public:
     run() override
     {
         testWithFeats(allFeatures - fixNFTokenPageLinks);
-    }
-};
-
-class NFTokenBurnAllFeatures_test : public NFTokenBurnBaseUtil_test
-{
-public:
-    void
-    run() override
-    {
         testWithFeats(allFeatures);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnBaseUtil, app, ripple, 3);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnAllFeatures, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn, app, ripple, 3);
 
 }  // namespace ripple
