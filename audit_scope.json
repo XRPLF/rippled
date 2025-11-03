@@ -1,0 +1,558 @@
+{
+  "total_functions": 49,
+  "categories": {
+    "test": 36,
+    "helpers": 1,
+    "validation": 9,
+    "other": 3
+  },
+  "functions": {
+    "test": [
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, features",
+        "specifiers": "",
+        "line": 47,
+        "is_critical": false,
+        "signature": "Env env(*this, features)",
+        "file": "src/test/app/LoanBroker_test.cpp",
+        "file_name": "LoanBroker_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 557,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/LoanBroker_test.cpp",
+        "file_name": "LoanBroker_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this",
+        "specifiers": "",
+        "line": 869,
+        "is_critical": false,
+        "signature": "Env env(*this)",
+        "file": "src/test/app/LoanBroker_test.cpp",
+        "file_name": "LoanBroker_test.cpp"
+      },
+      {
+        "name": "getAsset",
+        "return_type": "return",
+        "params": "env, issuer, alice",
+        "specifiers": "",
+        "line": 877,
+        "is_critical": true,
+        "signature": "return getAsset(env, issuer, alice)",
+        "file": "src/test/app/LoanBroker_test.cpp",
+        "file_name": "LoanBroker_test.cpp"
+      },
+      {
+        "name": "PrettyAsset",
+        "return_type": "return",
+        "params": "issuer[\"IOU\"]",
+        "specifiers": "",
+        "line": 880,
+        "is_critical": true,
+        "signature": "return PrettyAsset(issuer[\"IOU\"])",
+        "file": "src/test/app/LoanBroker_test.cpp",
+        "file_name": "LoanBroker_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this",
+        "specifiers": "",
+        "line": 1076,
+        "is_critical": false,
+        "signature": "Env env(*this)",
+        "file": "src/test/app/LoanBroker_test.cpp",
+        "file_name": "LoanBroker_test.cpp"
+      },
+      {
+        "name": "bad",
+        "return_type": "STAmount",
+        "params": "Issue{USD.currency, beast::zero}, 100",
+        "specifiers": "",
+        "line": 1086,
+        "is_critical": false,
+        "signature": "STAmount bad(Issue{USD.currency, beast::zero}, 100)",
+        "file": "src/test/app/LoanBroker_test.cpp",
+        "file_name": "LoanBroker_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this",
+        "specifiers": "",
+        "line": 1191,
+        "is_critical": false,
+        "signature": "Env env(*this)",
+        "file": "src/test/app/LoanBroker_test.cpp",
+        "file_name": "LoanBroker_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, features",
+        "specifiers": "",
+        "line": 62,
+        "is_critical": false,
+        "signature": "Env env(*this, features)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "Account",
+        "return_type": "return",
+        "params": "\"Broker pseudo-account\", brokerPseudo",
+        "specifiers": "",
+        "line": 968,
+        "is_critical": false,
+        "signature": "return Account(\"Broker pseudo-account\", brokerPseudo)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "Number",
+        "return_type": "interval *",
+        "params": "12, -2",
+        "specifiers": "/ (365 * 24 * 60 * 60)",
+        "line": 1638,
+        "is_critical": false,
+        "signature": "interval * Number(12, -2) / (365 * 24 * 60 * 60)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "Number",
+        "return_type": "interval *",
+        "params": "12, -2",
+        "specifiers": "/ (365 * 24 * 60 * 60)",
+        "line": 1867,
+        "is_critical": false,
+        "signature": "interval * Number(12, -2) / (365 * 24 * 60 * 60)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 2309,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 2821,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 2924,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "params",
+        "return_type": "Json::Value",
+        "params": "Json::objectValue",
+        "specifiers": "",
+        "line": 3011,
+        "is_critical": false,
+        "signature": "Json::Value params(Json::objectValue)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 3068,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "params",
+        "return_type": "Json::Value",
+        "params": "Json::objectValue",
+        "specifiers": "",
+        "line": 3114,
+        "is_critical": false,
+        "signature": "Json::Value params(Json::objectValue)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "createVaultAndBroker",
+        "return_type": "return",
+        "params": "env, asset, lender, Number(0",
+        "specifiers": ")",
+        "line": 3130,
+        "is_critical": true,
+        "signature": "return createVaultAndBroker(env, asset, lender, Number(0) )",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 3141,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 3189,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 3258,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this",
+        "specifiers": "",
+        "line": 3595,
+        "is_critical": false,
+        "signature": "Env env(*this)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this",
+        "specifiers": "",
+        "line": 3696,
+        "is_critical": false,
+        "signature": "Env env(*this)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this",
+        "specifiers": "",
+        "line": 3736,
+        "is_critical": false,
+        "signature": "Env env(*this)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this",
+        "specifiers": "",
+        "line": 3753,
+        "is_critical": false,
+        "signature": "Env env(*this)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this",
+        "specifiers": "",
+        "line": 3772,
+        "is_critical": false,
+        "signature": "Env env(*this)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this",
+        "specifiers": "",
+        "line": 3858,
+        "is_critical": false,
+        "signature": "Env env(*this)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 3953,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 4015,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "Account",
+        "return_type": "return",
+        "params": "\"Broker pseudo-account\", brokerPseudo",
+        "specifiers": "",
+        "line": 4074,
+        "is_critical": false,
+        "signature": "return Account(\"Broker pseudo-account\", brokerPseudo)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 4119,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 4189,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 4272,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 4384,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      },
+      {
+        "name": "env",
+        "return_type": "Env",
+        "params": "*this, all",
+        "specifiers": "",
+        "line": 4480,
+        "is_critical": false,
+        "signature": "Env env(*this, all)",
+        "file": "src/test/app/Loan_test.cpp",
+        "file_name": "Loan_test.cpp"
+      }
+    ],
+    "helpers": [
+      {
+        "name": "roundToAsset",
+        "return_type": "return",
+        "params": "asset, periodicPayment, scale, Number::upward",
+        "specifiers": "",
+        "line": 44,
+        "is_critical": true,
+        "signature": "return roundToAsset(asset, periodicPayment, scale, Number::upward)",
+        "file": "src/xrpld/app/misc/LendingHelpers.h",
+        "file_name": "LendingHelpers.h"
+      }
+    ],
+    "validation": [
+      {
+        "name": "checkLendingProtocolDependencies",
+        "return_type": "return",
+        "params": "ctx",
+        "specifiers": "",
+        "line": 29,
+        "is_critical": true,
+        "signature": "return checkLendingProtocolDependencies(ctx)",
+        "file": "src/xrpld/app/tx/detail/LoanBrokerCoverClawback.cpp",
+        "file_name": "LoanBrokerCoverClawback.cpp"
+      },
+      {
+        "name": "checkLendingProtocolDependencies",
+        "return_type": "return",
+        "params": "ctx",
+        "specifiers": "",
+        "line": 29,
+        "is_critical": true,
+        "signature": "return checkLendingProtocolDependencies(ctx)",
+        "file": "src/xrpld/app/tx/detail/LoanBrokerCoverDeposit.cpp",
+        "file_name": "LoanBrokerCoverDeposit.cpp"
+      },
+      {
+        "name": "checkLendingProtocolDependencies",
+        "return_type": "return",
+        "params": "ctx",
+        "specifiers": "",
+        "line": 30,
+        "is_critical": true,
+        "signature": "return checkLendingProtocolDependencies(ctx)",
+        "file": "src/xrpld/app/tx/detail/LoanBrokerCoverWithdraw.cpp",
+        "file_name": "LoanBrokerCoverWithdraw.cpp"
+      },
+      {
+        "name": "checkLendingProtocolDependencies",
+        "return_type": "return",
+        "params": "ctx",
+        "specifiers": "",
+        "line": 29,
+        "is_critical": true,
+        "signature": "return checkLendingProtocolDependencies(ctx)",
+        "file": "src/xrpld/app/tx/detail/LoanBrokerDelete.cpp",
+        "file_name": "LoanBrokerDelete.cpp"
+      },
+      {
+        "name": "checkLendingProtocolDependencies",
+        "return_type": "return",
+        "params": "ctx",
+        "specifiers": "",
+        "line": 29,
+        "is_critical": true,
+        "signature": "return checkLendingProtocolDependencies(ctx)",
+        "file": "src/xrpld/app/tx/detail/LoanBrokerSet.cpp",
+        "file_name": "LoanBrokerSet.cpp"
+      },
+      {
+        "name": "checkLendingProtocolDependencies",
+        "return_type": "return",
+        "params": "ctx",
+        "specifiers": "",
+        "line": 29,
+        "is_critical": true,
+        "signature": "return checkLendingProtocolDependencies(ctx)",
+        "file": "src/xrpld/app/tx/detail/LoanDelete.cpp",
+        "file_name": "LoanDelete.cpp"
+      },
+      {
+        "name": "checkLendingProtocolDependencies",
+        "return_type": "return",
+        "params": "ctx",
+        "specifiers": "",
+        "line": 31,
+        "is_critical": true,
+        "signature": "return checkLendingProtocolDependencies(ctx)",
+        "file": "src/xrpld/app/tx/detail/LoanManage.cpp",
+        "file_name": "LoanManage.cpp"
+      },
+      {
+        "name": "checkLendingProtocolDependencies",
+        "return_type": "return",
+        "params": "ctx",
+        "specifiers": "",
+        "line": 34,
+        "is_critical": true,
+        "signature": "return checkLendingProtocolDependencies(ctx)",
+        "file": "src/xrpld/app/tx/detail/LoanPay.cpp",
+        "file_name": "LoanPay.cpp"
+      },
+      {
+        "name": "checkLendingProtocolDependencies",
+        "return_type": "return",
+        "params": "ctx",
+        "specifiers": "",
+        "line": 31,
+        "is_critical": true,
+        "signature": "return checkLendingProtocolDependencies(ctx)",
+        "file": "src/xrpld/app/tx/detail/LoanSet.cpp",
+        "file_name": "LoanSet.cpp"
+      }
+    ],
+    "other": [
+      {
+        "name": "Unexpected",
+        "return_type": "return",
+        "params": "tecWRONG_ASSET",
+        "specifiers": "",
+        "line": 128,
+        "is_critical": false,
+        "signature": "return Unexpected(tecWRONG_ASSET)",
+        "file": "src/xrpld/app/tx/detail/LoanBrokerCoverClawback.cpp",
+        "file_name": "LoanBrokerCoverClawback.cpp"
+      },
+      {
+        "name": "Unexpected",
+        "return_type": "return",
+        "params": "tecINSUFFICIENT_FUNDS",
+        "specifiers": "",
+        "line": 141,
+        "is_critical": false,
+        "signature": "return Unexpected(tecINSUFFICIENT_FUNDS)",
+        "file": "src/xrpld/app/tx/detail/LoanBrokerCoverClawback.cpp",
+        "file_name": "LoanBrokerCoverClawback.cpp"
+      },
+      {
+        "name": "mg",
+        "return_type": "NumberRoundModeGuard",
+        "params": "Number::upward",
+        "specifiers": "",
+        "line": 450,
+        "is_critical": false,
+        "signature": "NumberRoundModeGuard mg(Number::upward)",
+        "file": "src/xrpld/app/tx/detail/LoanSet.cpp",
+        "file_name": "LoanSet.cpp"
+      }
+    ]
+  }
+}
