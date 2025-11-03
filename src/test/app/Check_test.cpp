@@ -1353,11 +1353,6 @@ class Check_test : public beast::unit_test::suite
         env(pay(gw, alice, USD(20)));
         env.close();
 
-        // Before bob gets a trustline, have him try to cash a check.
-        // Should fail.
-        env(check::create(alice, bob, USD(20)));
-        env.close();
-
         // Now set up bob's trustline.
         env(trust(bob, USD(20)));
         env.close();
