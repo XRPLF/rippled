@@ -87,14 +87,10 @@ getID(
     std::uint16_t flags,
     std::uint16_t xferFee)
 {
-    if (env.current()->rules().enabled(fixNFTokenRemint))
-    {
-        // If fixNFTokenRemint is enabled, we must add issuer's
-        // FirstNFTokenSequence to offset the starting NFT sequence number.
-        nftSeq += env.le(issuer)
-                      ->at(~sfFirstNFTokenSequence)
-                      .value_or(env.seq(issuer));
-    }
+    // We must add issuer's FirstNFTokenSequence to offset the starting NFT
+    // sequence number.
+    nftSeq +=
+        env.le(issuer)->at(~sfFirstNFTokenSequence).value_or(env.seq(issuer));
     return ripple::NFTokenMint::createNFTokenID(
         flags, xferFee, issuer, nft::toTaxon(nfTokenTaxon), nftSeq);
 }
