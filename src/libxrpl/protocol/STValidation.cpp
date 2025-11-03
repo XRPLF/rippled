@@ -70,7 +70,6 @@ STValidation::validationFormat()
         {sfSigningPubKey,       soeREQUIRED},
         {sfSignature,           soeREQUIRED},
         {sfConsensusHash,       soeOPTIONAL},
-        // featureHardenedValidations
         {sfCookie,              soeDEFAULT},
         {sfValidatedHash,       soeOPTIONAL},
         {sfServerVersion,       soeOPTIONAL},
