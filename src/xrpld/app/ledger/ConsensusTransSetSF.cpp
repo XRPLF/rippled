@@ -22,9 +22,9 @@
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/core/JobQueue.h>
-#include <xrpld/nodestore/Database.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
 

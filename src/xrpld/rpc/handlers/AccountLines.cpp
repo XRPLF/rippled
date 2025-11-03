@@ -120,9 +120,6 @@ doAccountLines(RPC::JsonContext& context)
     if (auto err = readLimitField(limit, RPC::Tuning::accountLines, context))
         return *err;
 
-    if (limit == 0)
-        return rpcError(rpcINVALID_PARAMS);
-
     // this flag allows the requester to ask incoming trustlines in default
     // state be omitted
     bool ignoreDefault = params.isMember(jss::ignore_default) &&
@@ -193,8 +190,10 @@ doAccountLines(RPC::JsonContext& context)
                     std::shared_ptr<SLE const> const& sleCur) {
                     if (!sleCur)
                     {
+                        // LCOV_EXCL_START
                         UNREACHABLE("ripple::doAccountLines : null SLE");
                         return false;
+                        // LCOV_EXCL_STOP
                     }
 
                     if (++count == limit)

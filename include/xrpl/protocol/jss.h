@@ -569,6 +569,7 @@ JSS(settle_delay);            // out: AccountChannels
 JSS(severity);                // in: LogLevel
 JSS(shares);                  // out: VaultInfo
 JSS(signature);               // out: NetworkOPs, ChannelAuthorize
+JSS(signature_target);        // in: TransactionSign
 JSS(signature_verified);      // out: ChannelVerify
 JSS(signing_key);             // out: NetworkOPs
 JSS(signing_keys);            // out: ValidatorList

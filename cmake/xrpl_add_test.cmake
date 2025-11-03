@@ -7,7 +7,7 @@ function(xrpl_add_test name)
   "${CMAKE_CURRENT_SOURCE_DIR}/${name}/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/${name}.cpp"
   )
-  add_executable(${target} EXCLUDE_FROM_ALL ${ARGN} ${sources})
+  add_executable(${target} ${ARGN} ${sources})
 
   isolate_headers(
     ${target}

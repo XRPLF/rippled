@@ -172,7 +172,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 
     if (ctx.tx.isFieldPresent(sfDelegate))
     {
-        if (!ctx.rules.enabled(featurePermissionDelegation))
+        if (!ctx.rules.enabled(featurePermissionDelegationV1_1))
             return temDISABLED;
 
         if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
@@ -273,7 +273,7 @@ Transactor::preflightSigValidated(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+NotTEC
 Transactor::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -284,7 +284,7 @@ Transactor::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     return checkTxPermission(sle, tx);
 }
@@ -571,15 +571,19 @@ Transactor::ticketDelete(
     SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
     if (!sleTicket)
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Ticket disappeared from ledger.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     std::uint64_t const page{(*sleTicket)[sfOwnerNode]};
     if (!view.dirRemove(keylet::ownerDir(account), page, ticketIndex, true))
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Ticket from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     // Update the account root's TicketCount.  If the ticket count drops to
@@ -587,8 +591,10 @@ Transactor::ticketDelete(
     auto sleAccount = view.peek(keylet::account(account));
     if (!sleAccount)
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Could not find Ticket owner account root.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     if (auto ticketCount = (*sleAccount)[~sfTicketCount])
@@ -600,8 +606,10 @@ Transactor::ticketDelete(
     }
     else
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "TicketCount field missing from account root.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     // Update the Ticket owner's reserve.
@@ -780,55 +788,26 @@ Transactor::checkSingleSign(
 {
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
-    if (view.rules().enabled(fixMasterKeyAsRegularKey))
+    // Signed with regular key.
+    if ((*sleAccount)[~sfRegularKey] == idSigner)
     {
-        // Signed with regular key.
-        if ((*sleAccount)[~sfRegularKey] == idSigner)
-        {
-            return tesSUCCESS;
-        }
-
-        // Signed with enabled mater key.
-        if (!isMasterDisabled && idAccount == idSigner)
-        {
-            return tesSUCCESS;
-        }
-
-        // Signed with disabled master key.
-        if (isMasterDisabled && idAccount == idSigner)
-        {
-            return tefMASTER_DISABLED;
-        }
-
-        // Signed with any other key.
-        return tefBAD_AUTH;
+        return tesSUCCESS;
     }
 
-    if (idSigner == idAccount)
+    // Signed with enabled master key.
+    if (!isMasterDisabled && idAccount == idSigner)
     {
-        // Signing with the master key. Continue if it is not disabled.
-        if (isMasterDisabled)
-            return tefMASTER_DISABLED;
-    }
-    else if ((*sleAccount)[~sfRegularKey] == idSigner)
-    {
-        // Signing with the regular key. Continue.
-    }
-    else if (sleAccount->isFieldPresent(sfRegularKey))
-    {
-        // Signing key does not match master or regular key.
-        JLOG(j.trace()) << "checkSingleSign: Not authorized to use account.";
-        return tefBAD_AUTH;
-    }
-    else
-    {
-        // No regular key on account and signing key does not match master key.
-        // FIXME: Why differentiate this case from tefBAD_AUTH?
-        JLOG(j.trace()) << "checkSingleSign: Not authorized to use account.";
-        return tefBAD_AUTH_MASTER;
+        return tesSUCCESS;
     }
 
-    return tesSUCCESS;
+    // Signed with disabled master key.
+    if (isMasterDisabled && idAccount == idSigner)
+    {
+        return tefMASTER_DISABLED;
+    }
+
+    // Signed with any other key.
+    return tefBAD_AUTH;
 }
 
 NotTEC
@@ -1155,9 +1134,8 @@ Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
-    // raii classes for the current ledger rules. fixSTAmountCanonicalize and
-    // fixSTAmountCanonicalize predate the rulesGuard and should be replaced.
-    STAmountSO stAmountSO{view().rules().enabled(fixSTAmountCanonicalize)};
+    // raii classes for the current ledger rules.
+    // fixUniversalNumber predate the rulesGuard and should be replaced.
     NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
     CurrentTransactionRulesGuard currentTransctionRulesGuard(view().rules());
 
@@ -1170,11 +1148,13 @@ Transactor::operator()()
 
         if (!s2.isEquivalent(ctx_.tx))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
             JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
             UNREACHABLE(
                 "ripple::Transactor::operator() : transaction serdes mismatch");
+            // LCOV_EXCL_STOP
         }
     }
 #endif

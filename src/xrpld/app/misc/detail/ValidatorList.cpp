@@ -795,9 +795,7 @@ ValidatorList::sendValidatorList(
                     << " validator list collection(s) containing " << numVLs
                     << " validator list(s) for " << strHex(publisherKey)
                     << " with sequence range " << peerSequence << ", "
-                    << newPeerSequence << " to "
-                    << peer.getRemoteAddress().to_string() << " [" << peer.id()
-                    << "]";
+                    << newPeerSequence << " to " << peer.fingerprint();
             else
             {
                 XRPL_ASSERT(
@@ -807,8 +805,7 @@ ValidatorList::sendValidatorList(
                 JLOG(j.debug())
                     << "Sent validator list for " << strHex(publisherKey)
                     << " with sequence " << newPeerSequence << " to "
-                    << peer.getRemoteAddress().to_string() << " [" << peer.id()
-                    << "]";
+                    << peer.fingerprint();
             }
         }
     }
@@ -1167,15 +1164,17 @@ ValidatorList::applyList(
     }
 
     if (!publicKeyType(*pubKeyOpt))
-    {  // LCOV_EXCL_START
-       // This is an impossible situation because we will never load an
-       // invalid public key type (see checks in `ValidatorList::load`) however
-       // we can only arrive here if the key used by the manifest matched one of
-       // the loaded keys
+    {
+        // This is an impossible situation because we will never load an
+        // invalid public key type (see checks in `ValidatorList::load`) however
+        // we can only arrive here if the key used by the manifest matched one
+        // of the loaded keys
+        // LCOV_EXCL_START
         UNREACHABLE(
             "ripple::ValidatorList::applyList : invalid public key type");
         return PublisherListStats{result};
-    }  // LCOV_EXCL_STOP
+        // LCOV_EXCL_STOP
+    }
 
     PublicKey pubKey = *pubKeyOpt;
     if (result > ListDisposition::pending)

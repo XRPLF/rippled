@@ -206,8 +206,7 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
             return false;
         }
 
-        if (!convert_all_ &&
-            saDstAmount < STAmount(lrLedger->fees().accountReserve(0)))
+        if (!convert_all_ && saDstAmount < STAmount(lrLedger->fees().reserve))
         {
             // Payment must meet reserve.
             jvStatus = rpcError(rpcDST_AMT_MALFORMED);

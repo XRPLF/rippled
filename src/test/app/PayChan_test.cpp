@@ -19,8 +19,6 @@
 
 #include <test/jtx.h>
 
-#include <xrpld/rpc/detail/RPCHelpers.h>
-
 #include <xrpl/basics/chrono.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>
@@ -31,6 +29,8 @@
 
 namespace ripple {
 namespace test {
+using namespace jtx::paychan;
+
 struct PayChan_test : public beast::unit_test::suite
 {
     FeatureBitset const disallowIncoming{featureDisallowIncoming};

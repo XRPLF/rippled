@@ -250,7 +250,7 @@ Payment::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+NotTEC
 Payment::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -261,7 +261,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
@@ -270,42 +270,23 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     loadGranularPermission(sle, ttPAYMENT, granularPermissions);
 
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
-    // post-amendment: disallow cross currency payments for PaymentMint and
-    // PaymentBurn
-    if (view.rules().enabled(fixDelegateV1_1))
-    {
-        auto const& amountAsset = dstAmount.asset();
-        if (tx.isFieldPresent(sfSendMax) &&
-            tx[sfSendMax].asset() != amountAsset)
-            return tecNO_DELEGATE_PERMISSION;
+    auto const& amountAsset = dstAmount.asset();
 
-        if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
-            amountAsset.getIssuer() == tx[sfAccount])
-            return tesSUCCESS;
+    // Granular permissions are only valid for direct payments.
+    if ((tx.isFieldPresent(sfSendMax) &&
+         tx[sfSendMax].asset() != amountAsset) ||
+        tx.isFieldPresent(sfPaths))
+        return terNO_DELEGATE_PERMISSION;
 
-        if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
-            amountAsset.getIssuer() == tx[sfDestination])
-            return tesSUCCESS;
-
-        return tecNO_DELEGATE_PERMISSION;
-    }
-
-    // Calling dstAmount.issue() in the next line would throw if it holds MPT.
-    // That exception would be caught in preclaim and returned as tefEXCEPTION.
-    // This check is just a cleaner, more explicit way to get the same result.
-    if (dstAmount.holds<MPTIssue>())
-        return tefEXCEPTION;
-
-    auto const& amountIssue = dstAmount.issue();
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountIssue) &&
-        amountIssue.account == tx[sfAccount])
+    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
+        amountAsset.getIssuer() == tx[sfAccount])
         return tesSUCCESS;
 
-    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountIssue) &&
-        amountIssue.account == tx[sfDestination])
+    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
+        amountAsset.getIssuer() == tx[sfDestination])
         return tesSUCCESS;
 
-    return tecNO_DELEGATE_PERMISSION;
+    return terNO_DELEGATE_PERMISSION;
 }
 
 TER
@@ -346,7 +327,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
-        else if (dstAmount < STAmount(ctx.view.fees().accountReserve(0)))
+        else if (dstAmount < STAmount(ctx.view.fees().reserve))
         {
             // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.
@@ -632,7 +613,7 @@ Payment::doApply()
 
     auto const sleSrc = view().peek(keylet::account(account_));
     if (!sleSrc)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // ownerCount is the number of entries in this ledger for this
     // account that require a reserve.
@@ -690,7 +671,7 @@ Payment::doApply()
         // to get the account un-wedged.
 
         // Get the base reserve.
-        XRPAmount const dstReserve{view().fees().accountReserve(0)};
+        XRPAmount const dstReserve{view().fees().reserve};
 
         if (dstAmount > dstReserve ||
             sleDst->getFieldAmount(sfBalance) > dstReserve)

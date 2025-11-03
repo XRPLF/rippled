@@ -75,10 +75,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]))
                 return {nullptr, tecEXPIRED};
 
-            // The initial implementation had a bug that allowed a negative
-            // amount.  The fixNFTokenNegOffer amendment fixes that.
-            if ((*offerSLE)[sfAmount].negative() &&
-                ctx.view.rules().enabled(fixNFTokenNegOffer))
+            if ((*offerSLE)[sfAmount].negative())
                 return {nullptr, temBAD_OFFER};
 
             return {std::move(offerSLE), tesSUCCESS};
@@ -106,8 +103,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
         // The two offers may not form a loop.  A broker may not sell the
         // token to the current owner of the token.
-        if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2) &&
-            ((*bo)[sfOwner] == (*so)[sfOwner]))
+        if (((*bo)[sfOwner] == (*so)[sfOwner]))
             return tecCANT_ACCEPT_OWN_NFTOKEN_OFFER;
 
         // Ensure that the buyer is willing to pay at least as much as the
@@ -115,32 +111,20 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         if ((*so)[sfAmount] > (*bo)[sfAmount])
             return tecINSUFFICIENT_PAYMENT;
 
-        // If the buyer specified a destination
-        if (auto const dest = bo->at(~sfDestination))
+        // The destination must be whoever is submitting the tx if the buyer
+        // specified it
+        if (auto const dest = bo->at(~sfDestination);
+            dest && *dest != ctx.tx[sfAccount])
         {
-            // Before this fix the destination could be either the seller or
-            // a broker. After, it must be whoever is submitting the tx.
-            if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
-            {
-                if (*dest != ctx.tx[sfAccount])
-                    return tecNO_PERMISSION;
-            }
-            else if (*dest != so->at(sfOwner) && *dest != ctx.tx[sfAccount])
-                return tecNFTOKEN_BUY_SELL_MISMATCH;
+            return tecNO_PERMISSION;
         }
 
-        // If the seller specified a destination
-        if (auto const dest = so->at(~sfDestination))
+        // The destination must be whoever is submitting the tx if the seller
+        // specified it
+        if (auto const dest = so->at(~sfDestination);
+            dest && *dest != ctx.tx[sfAccount])
         {
-            // Before this fix the destination could be either the seller or
-            // a broker. After, it must be whoever is submitting the tx.
-            if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
-            {
-                if (*dest != ctx.tx[sfAccount])
-                    return tecNO_PERMISSION;
-            }
-            else if (*dest != bo->at(sfOwner) && *dest != ctx.tx[sfAccount])
-                return tecNFTOKEN_BUY_SELL_MISMATCH;
+            return tecNO_PERMISSION;
         }
 
         // The broker can specify an amount that represents their cut; if they
@@ -210,21 +194,10 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // After this amendment, we allow an IOU issuer to buy an NFT with their
         // own currency
         auto const needed = bo->at(sfAmount);
-        if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
-        {
-            if (accountFunds(
-                    ctx.view, (*bo)[sfOwner], needed, fhZERO_IF_FROZEN, ctx.j) <
-                needed)
-                return tecINSUFFICIENT_FUNDS;
-        }
-        else if (
-            accountHolds(
-                ctx.view,
-                (*bo)[sfOwner],
-                needed.getCurrency(),
-                needed.getIssuer(),
-                fhZERO_IF_FROZEN,
-                ctx.j) < needed)
+
+        if (accountFunds(
+                ctx.view, (*bo)[sfOwner], needed, fhZERO_IF_FROZEN, ctx.j) <
+            needed)
             return tecINSUFFICIENT_FUNDS;
 
         // Check that the account accepting the buy offer (he's selling the NFT)
@@ -285,18 +258,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
         // The account offering to buy must have funds:
         auto const needed = so->at(sfAmount);
-        if (!ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
-        {
-            if (accountHolds(
-                    ctx.view,
-                    ctx.tx[sfAccount],
-                    needed.getCurrency(),
-                    needed.getIssuer(),
-                    fhZERO_IF_FROZEN,
-                    ctx.j) < needed)
-                return tecINSUFFICIENT_FUNDS;
-        }
-        else if (!bo)
+        if (!bo)
         {
             // After this amendment, we allow buyers to buy with their own
             // issued currency.
@@ -356,7 +318,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
     auto const& offer = bo ? bo : so;
     if (!offer)
         // Purely defensive, should be caught in preflight.
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& tokenID = offer->at(sfNFTokenID);
     auto const& amount = offer->at(sfAmount);
@@ -403,13 +365,11 @@ NFTokenAcceptOffer::pay(
 
     auto const result = accountSend(view(), from, to, amount, j_);
 
-    // After this amendment, if any payment would cause a non-IOU-issuer to
-    // have a negative balance, or an IOU-issuer to have a positive balance in
-    // their own currency, we know that something went wrong. This was
-    // originally found in the context of IOU transfer fees. Since there are
-    // several payouts in this tx, just confirm that the end state is OK.
-    if (!view().rules().enabled(fixNonFungibleTokensV1_2))
-        return result;
+    // If any payment causes a non-IOU-issuer to have a negative balance,
+    // or an IOU-issuer to have a positive balance in their own currency,
+    // we know that something went wrong. This was originally found in the
+    // context of IOU transfer fees. Since there are several payouts in this tx,
+    // just confirm that the end state is OK.
     if (result != tesSUCCESS)
         return result;
     if (accountFunds(view(), from, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
@@ -428,7 +388,7 @@ NFTokenAcceptOffer::transferNFToken(
     auto tokenAndPage = nft::findTokenAndPage(view(), seller, nftokenID);
 
     if (!tokenAndPage)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (auto const ret = nft::removeToken(
             view(), seller, nftokenID, std::move(tokenAndPage->page));
@@ -437,7 +397,7 @@ NFTokenAcceptOffer::transferNFToken(
 
     auto const sleBuyer = view().read(keylet::account(buyer));
     if (!sleBuyer)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     std::uint32_t const buyerOwnerCountBefore =
         sleBuyer->getFieldU32(sfOwnerCount);
@@ -523,16 +483,20 @@ NFTokenAcceptOffer::doApply()
 
     if (bo && !nft::deleteTokenOffer(view(), bo))
     {
+        // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete buy offer '"
                          << to_string(bo->key()) << "': ignoring";
         return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     if (so && !nft::deleteTokenOffer(view(), so))
     {
+        // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete sell offer '"
                          << to_string(so->key()) << "': ignoring";
         return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     // Bridging two different offers
@@ -603,7 +567,7 @@ NFTokenAcceptOffer::doApply()
     if (so)
         return acceptOffer(so);
 
-    return tecINTERNAL;
+    return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
 }  // namespace ripple

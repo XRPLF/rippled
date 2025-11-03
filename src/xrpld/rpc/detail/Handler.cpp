@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/rpc/detail/Handler.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 #include <xrpld/rpc/handlers/Version.h>
 
@@ -39,8 +38,10 @@ byRef(Function const& f)
         result = f(context);
         if (result.type() != Json::objectValue)
         {
+            // LCOV_EXCL_START
             UNREACHABLE("ripple::RPC::byRef : result is object");
             result = RPC::makeObjectValue(result);
+            // LCOV_EXCL_STOP
         }
 
         return Status();
