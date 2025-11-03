@@ -3808,6 +3808,28 @@ class Loan_test : public beast::unit_test::suite
                         Number const& debtMaximumRequest) {
             // first temBAD_SIGNER: TODO
 
+            // empty/zero broker ID
+            {
+                auto jv = set(borrower, uint256{}, debtMaximumRequest);
+
+                auto testZeroBrokerID = [&](std::string const& id,
+                                            std::uint32_t flags = 0) {
+                    // empty broker ID
+                    jv[sfLoanBrokerID] = id;
+                    env(jv,
+                        sig(sfCounterpartySignature, lender),
+                        loanSetFee,
+                        txflags(flags),
+                        ter(temINVALID));
+                };
+                // empty broker ID
+                testZeroBrokerID(std::string(""));
+                // zero broker ID
+                // needs a flag to distinguish the parsed STTx from the prior
+                // test
+                testZeroBrokerID(to_string(uint256{}), tfFullyCanonicalSig);
+            }
+
             // preflightCheckSigningKey() failure:
             // can it happen? the signature is checked before transactor
             // executes

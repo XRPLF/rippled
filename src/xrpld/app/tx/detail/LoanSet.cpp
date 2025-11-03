@@ -119,6 +119,10 @@ LoanSet::preflight(PreflightContext const& ctx)
             return *ret;
     }
 
+    if (auto const brokerID = ctx.tx[~sfLoanBrokerID];
+        brokerID && *brokerID == beast::zero)
+        return temINVALID;
+
     return tesSUCCESS;
 }
 
