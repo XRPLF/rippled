@@ -66,16 +66,18 @@ public:
     static int const cMaxOffset = 80;
 
     // Maximum native value supported by the code
-    static std::uint64_t const cMinValue = 1'000'000'000'000'000ull;
-    static std::uint64_t const cMaxValue = 9'999'999'999'999'999ull;
-    static std::uint64_t const cMaxNative = 9'000'000'000'000'000'000ull;
+    constexpr static std::uint64_t cMinValue = 1'000'000'000'000'000ull;
+    static_assert(isPowerOfTen(cMinValue));
+    constexpr static std::uint64_t cMaxValue = cMinValue * 10 - 1;
+    static_assert(cMaxValue == 9'999'999'999'999'999ull);
+    constexpr static std::uint64_t cMaxNative = 9'000'000'000'000'000'000ull;
 
     // Max native value on network.
-    static std::uint64_t const cMaxNativeN = 100'000'000'000'000'000ull;
-    static std::uint64_t const cIssuedCurrency = 0x8'000'000'000'000'000ull;
-    static std::uint64_t const cPositive = 0x4'000'000'000'000'000ull;
-    static std::uint64_t const cMPToken = 0x2'000'000'000'000'000ull;
-    static std::uint64_t const cValueMask = ~(cPositive | cMPToken);
+    constexpr static std::uint64_t cMaxNativeN = 100'000'000'000'000'000ull;
+    constexpr static std::uint64_t cIssuedCurrency = 0x8'000'000'000'000'000ull;
+    constexpr static std::uint64_t cPositive = 0x4'000'000'000'000'000ull;
+    constexpr static std::uint64_t cMPToken = 0x2'000'000'000'000'000ull;
+    constexpr static std::uint64_t cValueMask = ~(cPositive | cMPToken);
 
     static std::uint64_t const uRateOne;
 

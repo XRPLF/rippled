@@ -243,7 +243,7 @@ Number::Guard::doRound(rep& drops)
 
 constexpr Number one{1000000000000000, -15, Number::unchecked{}};
 
-void
+constexpr void
 Number::normalize()
 {
     if (mantissa_ == 0)

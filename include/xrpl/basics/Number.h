@@ -32,6 +32,15 @@ class Number;
 std::string
 to_string(Number const& amount);
 
+template <typename T>
+constexpr bool
+isPowerOfTen(T value)
+{
+    while (value >= 10 && value % 10 == 0)
+        value /= 10;
+    return value == 1;
+}
+
 class Number
 {
     using rep = std::int64_t;
@@ -41,7 +50,9 @@ class Number
 public:
     // The range for the mantissa when normalized
     constexpr static std::int64_t minMantissa = 1'000'000'000'000'000LL;
-    constexpr static std::int64_t maxMantissa = 9'999'999'999'999'999LL;
+    static_assert(isPowerOfTen(minMantissa));
+    constexpr static std::int64_t maxMantissa = minMantissa * 10 - 1;
+    static_assert(maxMantissa == 9'999'999'999'999'999LL);
 
     // The range for the exponent when normalized
     constexpr static int minExponent = -32768;
@@ -54,8 +65,8 @@ public:
 
     explicit constexpr Number() = default;
 
-    Number(rep mantissa);
-    explicit Number(rep mantissa, int exponent);
+    constexpr Number(rep mantissa);
+    explicit constexpr Number(rep mantissa, int exponent);
     explicit constexpr Number(rep mantissa, int exponent, unchecked) noexcept;
 
     static Number const zero;
@@ -205,7 +216,7 @@ public:
 private:
     static thread_local rounding_mode mode_;
 
-    void
+    constexpr void
     normalize();
     constexpr bool
     isnormal() const noexcept;
@@ -218,13 +229,13 @@ inline constexpr Number::Number(rep mantissa, int exponent, unchecked) noexcept
 {
 }
 
-inline Number::Number(rep mantissa, int exponent)
+inline constexpr Number::Number(rep mantissa, int exponent)
     : mantissa_{mantissa}, exponent_{exponent}
 {
     normalize();
 }
 
-inline Number::Number(rep mantissa) : Number{mantissa, 0}
+inline constexpr Number::Number(rep mantissa) : Number{mantissa, 0}
 {
 }
 
