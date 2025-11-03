@@ -28,10 +28,10 @@
 #include <xrpld/app/misc/NegativeUNLVote.h>
 #include <xrpld/consensus/Consensus.h>
 #include <xrpld/core/JobQueue.h>
-#include <xrpld/shamap/SHAMap.h>
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/shamap/SHAMap.h>
 
 #include <atomic>
 #include <memory>

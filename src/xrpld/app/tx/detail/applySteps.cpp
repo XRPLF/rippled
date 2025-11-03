@@ -145,37 +145,45 @@ invoke_preclaim(PreclaimContext const& ctx)
     {
         // use name hiding to accomplish compile-time polymorphism of static
         // class functions for Transactor and derived classes.
-        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
-            // If the transactor requires a valid account and the transaction
-            // doesn't list one, preflight will have already a flagged a
-            // failure.
+        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() -> TER {
+            // preclaim functionality is divided into two sections:
+            // 1. Up to and including the signature check: returns NotTEC.
+            //    All transaction checks before and including checkSign
+            //    MUST return NotTEC, or something more restrictive.
+            //    Allowing tec results in these steps risks theft or
+            //    destruction of funds, as a fee will be charged before the
+            //    signature is checked.
+            // 2. After the signature check: returns TER.
+
+            // If the transactor requires a valid account and the
+            // transaction doesn't list one, preflight will have already
+            // a flagged a failure.
             auto const id = ctx.tx.getAccountID(sfAccount);
 
             if (id != beast::zero)
             {
-                TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+                if (NotTEC const preSigResult = [&]() -> NotTEC {
+                        if (NotTEC const result =
+                                T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
+                            return result;
 
-                if (result != tesSUCCESS)
-                    return result;
+                        if (NotTEC const result =
+                                T::checkPriorTxAndLastLedger(ctx))
+                            return result;
 
-                result = T::checkPriorTxAndLastLedger(ctx);
+                        if (NotTEC const result =
+                                T::checkPermission(ctx.view, ctx.tx))
+                            return result;
 
-                if (result != tesSUCCESS)
-                    return result;
+                        if (NotTEC const result = T::checkSign(ctx))
+                            return result;
 
-                result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+                        return tesSUCCESS;
+                    }())
+                    return preSigResult;
 
-                if (result != tesSUCCESS)
-                    return result;
-
-                result = T::checkPermission(ctx.view, ctx.tx);
-
-                if (result != tesSUCCESS)
-                    return result;
-
-                result = T::checkSign(ctx);
-
-                if (result != tesSUCCESS)
+                if (TER const result =
+                        T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx)))
                     return result;
             }
 

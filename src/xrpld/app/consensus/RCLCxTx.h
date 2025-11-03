@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_CONSENSUS_RCLCXTX_H_INCLUDED
 #define RIPPLE_APP_CONSENSUS_RCLCXTX_H_INCLUDED
 
-#include <xrpld/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMap.h>
 
 namespace ripple {
 

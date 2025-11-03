@@ -27,52 +27,12 @@ class SetRegularKey_test : public beast::unit_test::suite
 {
 public:
     void
-    testDisableMasterKey()
+    testDisabledMasterKey()
     {
         using namespace test::jtx;
 
         testcase("Set regular key");
-        Env env{*this, testable_amendments() - fixMasterKeyAsRegularKey};
-        Account const alice("alice");
-        Account const bob("bob");
-        env.fund(XRP(10000), alice, bob);
-
-        env(regkey(alice, bob));
-        auto const ar = env.le(alice);
-        BEAST_EXPECT(
-            ar->isFieldPresent(sfRegularKey) &&
-            (ar->getAccountID(sfRegularKey) == bob.id()));
-
-        env(noop(alice), sig(bob));
-        env(noop(alice), sig(alice));
-
-        testcase("Disable master key");
-        env(fset(alice, asfDisableMaster), sig(alice));
-        env(noop(alice), sig(bob));
-        env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
-
-        testcase("Re-enable master key");
-        env(fclear(alice, asfDisableMaster),
-            sig(alice),
-            ter(tefMASTER_DISABLED));
-
-        env(fclear(alice, asfDisableMaster), sig(bob));
-        env(noop(alice), sig(bob));
-        env(noop(alice), sig(alice));
-
-        testcase("Revoke regular key");
-        env(regkey(alice, disabled));
-        env(noop(alice), sig(bob), ter(tefBAD_AUTH_MASTER));
-        env(noop(alice), sig(alice));
-    }
-
-    void
-    testDisableMasterKeyAfterFix()
-    {
-        using namespace test::jtx;
-
-        testcase("Set regular key");
-        Env env{*this, testable_amendments() | fixMasterKeyAsRegularKey};
+        Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const bob("bob");
         env.fund(XRP(10000), alice, bob);
@@ -106,44 +66,11 @@ public:
     {
         using namespace test::jtx;
 
-        // See https://ripplelabs.atlassian.net/browse/RIPD-1721.
-        testcase(
-            "Set regular key to master key (before fixMasterKeyAsRegularKey)");
-        Env env{*this, testable_amendments() - fixMasterKeyAsRegularKey};
+        testcase("Set regular key to master key");
+        Env env{*this, testable_amendments()};
         Account const alice("alice");
         env.fund(XRP(10000), alice);
 
-        // Must be possible unless amendment `fixMasterKeyAsRegularKey` enabled.
-        env(regkey(alice, alice), sig(alice));
-        env(fset(alice, asfDisableMaster), sig(alice));
-
-        // No way to sign...
-        env(noop(alice), ter(tefMASTER_DISABLED));
-        env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
-
-        // ... until now.
-        env.enableFeature(fixMasterKeyAsRegularKey);
-        env(noop(alice));
-        env(noop(alice), sig(alice));
-
-        env(regkey(alice, disabled), ter(tecNO_ALTERNATIVE_KEY));
-        env(fclear(alice, asfDisableMaster));
-        env(regkey(alice, disabled));
-        env(fset(alice, asfDisableMaster), ter(tecNO_ALTERNATIVE_KEY));
-    }
-
-    void
-    testDisableRegularKeyAfterFix()
-    {
-        using namespace test::jtx;
-
-        testcase(
-            "Set regular key to master key (after fixMasterKeyAsRegularKey)");
-        Env env{*this, testable_amendments() | fixMasterKeyAsRegularKey};
-        Account const alice("alice");
-        env.fund(XRP(10000), alice);
-
-        // Must be possible unless amendment `fixMasterKeyAsRegularKey` enabled.
         env(regkey(alice, alice), ter(temBAD_REGKEY));
     }
 
@@ -253,10 +180,8 @@ public:
     void
     run() override
     {
-        testDisableMasterKey();
-        testDisableMasterKeyAfterFix();
+        testDisabledMasterKey();
         testDisabledRegularKey();
-        testDisableRegularKeyAfterFix();
         testPasswordSpent();
         testUniversalMask();
         testTicketRegularKey();
