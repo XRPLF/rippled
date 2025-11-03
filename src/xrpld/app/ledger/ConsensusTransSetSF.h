@@ -21,9 +21,9 @@
 #define RIPPLE_APP_LEDGER_CONSENSUSTRANSSETSF_H_INCLUDED
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/shamap/SHAMapSyncFilter.h>
 
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/shamap/SHAMapSyncFilter.h>
 
 namespace ripple {
 

@@ -300,7 +300,6 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
     // If the rules or flags change, preflight again
     XRPL_ASSERT(
         pfresult, "ripple::TxQ::MaybeTx::apply : preflight result is set");
-    STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
     NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
     if (pfresult->rules != view.rules() || pfresult->flags != flags)
@@ -734,7 +733,6 @@ TxQ::apply(
     ApplyFlags flags,
     beast::Journal j)
 {
-    STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
     NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
     // See if the transaction is valid, properly formed,
