@@ -910,7 +910,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                      Buffer(ripple::ecGamalEncryptedTotalLength),
                  .issuerEncryptedAmt =
                      Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .err = temMALFORMED});
+                 .err = temBAD_CIPHERTEXT});
             // dest encrypted amount wrong length
             mptAlice.send(
                 {.account = bob,
@@ -922,7 +922,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .destEncryptedAmt = Buffer(10),  // Incorrect length
                  .issuerEncryptedAmt =
                      Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .err = temMALFORMED});
+                 .err = temBAD_CIPHERTEXT});
             // issuer encrypted amount wrong length
             mptAlice.send(
                 {.account = bob,
@@ -934,7 +934,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .destEncryptedAmt =
                      Buffer(ripple::ecGamalEncryptedTotalLength),
                  .issuerEncryptedAmt = Buffer(10),
-                 .err = temMALFORMED});
+                 .err = temBAD_CIPHERTEXT});
 
             auto const ciphertextHex = generatePlaceholderCiphertext();
 
