@@ -4643,9 +4643,33 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"sign: too many arguments.",
+    {"sign: offline flag with signature_target.",
      __LINE__,
      {"sign", "my_secret", R"({"json_argument":true})", "offline", "extra"},
+     RPCCallTestData::no_exception,
+     R"({
+        "method" : "sign",
+        "params" : [
+            {
+                "api_version" : %API_VER%,
+                "offline" : true,
+                "secret" : "my_secret",
+                "signature_target" : "extra",
+                "tx_json" :
+                {
+                        "json_argument" : true
+                }
+            }
+        ]
+     })"},
+    {"sign: too many arguments.",
+     __LINE__,
+     {"sign",
+      "my_secret",
+      R"({"json_argument":true})",
+      "offline",
+      "CounterpartySignature",
+      "extra"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "sign",
@@ -4675,20 +4699,24 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"sign: invalid final argument.",
+    {"sign: misspelled offline flag interpreted as signature_target.",
      __LINE__,
      {"sign", "my_secret", R"({"json_argument":true})", "offlin"},
      RPCCallTestData::no_exception,
      R"({
-    "method" : "sign",
-    "params" : [
-      {
-         "error" : "invalidParams",
-         "error_code" : 31,
-         "error_message" : "Invalid parameters."
-      }
-    ]
-    })"},
+        "method" : "sign",
+        "params" : [
+            {
+                "api_version" : %API_VER%,
+                "secret" : "my_secret",
+                "signature_target" : "offlin",
+                "tx_json" :
+                {
+                        "json_argument" : true
+                }
+            }
+        ]
+     })"},
 
     // sign_for
     // --------------------------------------------------------------------
@@ -4880,9 +4908,33 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"submit: too many arguments.",
+    {"submit: offline flag with signature_target.",
      __LINE__,
      {"submit", "my_secret", R"({"json_argument":true})", "offline", "extra"},
+     RPCCallTestData::no_exception,
+     R"({
+        "method" : "submit",
+        "params" : [
+            {
+                "api_version" : %API_VER%,
+                "offline" : true,
+                "secret" : "my_secret",
+                "signature_target" : "extra",
+                "tx_json" :
+                {
+                        "json_argument" : true
+                }
+            }
+        ]
+     })"},
+    {"submit: too many arguments.",
+     __LINE__,
+     {"submit",
+      "my_secret",
+      R"({"json_argument":true})",
+      "offline",
+      "CounterpartySignature",
+      "extra"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "submit",
@@ -4912,19 +4964,23 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"submit: last argument not \"offline\".",
+    {"submit: misspelled offline flag interpreted as signature_target.",
      __LINE__,
      {"submit", "my_secret", R"({"json_argument":true})", "offlne"},
      RPCCallTestData::no_exception,
      R"({
-    "method" : "submit",
-    "params" : [
-      {
-         "error" : "invalidParams",
-         "error_code" : 31,
-         "error_message" : "Invalid parameters."
-      }
-    ]
+        "method" : "submit",
+        "params" : [
+            {
+                "api_version" : %API_VER%,
+                "secret" : "my_secret",
+                "signature_target" : "offlne",
+                "tx_json" :
+                {
+                        "json_argument" : true
+                }
+            }
+        ]
     })"},
 
     // submit_multisigned

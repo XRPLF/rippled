@@ -24,10 +24,10 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/core/DatabaseCon.h>
-#include <xrpld/nodestore/DummyScheduler.h>
-#include <xrpld/nodestore/Manager.h>
 
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/nodestore/DummyScheduler.h>
+#include <xrpl/nodestore/Manager.h>
 
 namespace ripple {
 

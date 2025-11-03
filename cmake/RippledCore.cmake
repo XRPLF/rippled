@@ -53,14 +53,15 @@ add_library(xrpl.imports.main INTERFACE)
 
 target_link_libraries(xrpl.imports.main
   INTERFACE
-    LibArchive::LibArchive
-    OpenSSL::Crypto
-    Ripple::boost
-    Ripple::opts
-    Ripple::syslibs
     absl::random_random
     date::date
     ed25519::ed25519
+    LibArchive::LibArchive
+    OpenSSL::Crypto
+    Ripple::boost
+    Ripple::libs
+    Ripple::opts
+    Ripple::syslibs
     secp256k1::secp256k1
     xrpl.libpb
     xxHash::xxhash
@@ -111,6 +112,21 @@ target_link_libraries(xrpl.libxrpl.net PUBLIC
 add_module(xrpl server)
 target_link_libraries(xrpl.libxrpl.server PUBLIC xrpl.libxrpl.protocol)
 
+add_module(xrpl nodestore)
+target_link_libraries(xrpl.libxrpl.nodestore PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
+)
+
+add_module(xrpl shamap)
+target_link_libraries(xrpl.libxrpl.shamap PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.crypto
+        xrpl.libxrpl.protocol
+        xrpl.libxrpl.nodestore
+)
+
 add_module(xrpl ledger)
 target_link_libraries(xrpl.libxrpl.ledger PUBLIC
   xrpl.libxrpl.basics
@@ -136,6 +152,8 @@ target_link_modules(xrpl PUBLIC
   protocol
   resource
   server
+  nodestore
+  shamap
   net
   ledger
 )

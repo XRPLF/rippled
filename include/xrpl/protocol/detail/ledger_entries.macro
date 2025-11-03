@@ -457,7 +457,7 @@ LEDGER_ENTRY(ltCREDENTIAL, 0x0081, Credential, credential, ({
     {sfExpiration,           soeOPTIONAL},
     {sfURI,                  soeOPTIONAL},
     {sfIssuerNode,           soeREQUIRED},
-    {sfSubjectNode,          soeREQUIRED},
+    {sfSubjectNode,          soeOPTIONAL},
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))

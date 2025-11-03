@@ -1867,49 +1867,35 @@ class Check_test : public beast::unit_test::suite
     }
 
     void
-    testFix1623Enable(FeatureBitset features)
+    testDeliveredAmountForCheckCashTxn(FeatureBitset features)
     {
-        testcase("Fix1623 enable");
+        testcase("DeliveredAmount For CheckCash Txn");
 
         using namespace test::jtx;
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
-        auto testEnable = [this](
-                              FeatureBitset const& features, bool hasFields) {
-            // Unless fix1623 is enabled a "tx" RPC command should return
-            // neither "DeliveredAmount" nor "delivered_amount" on a CheckCash
-            // transaction.
-            Account const alice{"alice"};
-            Account const bob{"bob"};
+        Env env{*this, features};
 
-            Env env{*this, features};
+        env.fund(XRP(1000), alice, bob);
+        env.close();
 
-            env.fund(XRP(1000), alice, bob);
-            env.close();
+        uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+        env(check::create(alice, bob, XRP(200)));
+        env.close();
 
-            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
-            env(check::create(alice, bob, XRP(200)));
-            env.close();
+        env(check::cash(bob, chkId, check::DeliverMin(XRP(100))));
 
-            env(check::cash(bob, chkId, check::DeliverMin(XRP(100))));
+        // Get the hash for the most recent transaction.
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
 
-            // Get the hash for the most recent transaction.
-            std::string const txHash{
-                env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+        env.close();
+        Json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
-            // DeliveredAmount and delivered_amount are either present or
-            // not present in the metadata returned by "tx" based on fix1623.
-            env.close();
-            Json::Value const meta =
-                env.rpc("tx", txHash)[jss::result][jss::meta];
-
-            BEAST_EXPECT(
-                meta.isMember(sfDeliveredAmount.jsonName) == hasFields);
-            BEAST_EXPECT(meta.isMember(jss::delivered_amount) == hasFields);
-        };
-
-        // Run both the disabled and enabled cases.
-        testEnable(features - fix1623, false);
-        testEnable(features, true);
+        // DeliveredAmount and delivered_amount are present.
+        BEAST_EXPECT(meta.isMember(sfDeliveredAmount.jsonName));
+        BEAST_EXPECT(meta.isMember(jss::delivered_amount));
     }
 
     void
@@ -2711,7 +2697,7 @@ class Check_test : public beast::unit_test::suite
         testCashInvalid(features);
         testCancelValid(features);
         testCancelInvalid(features);
-        testFix1623Enable(features);
+        testDeliveredAmountForCheckCashTxn(features);
         testWithTickets(features);
     }
 
