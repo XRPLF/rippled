@@ -804,8 +804,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         JLOG(j_.trace()) << "Immediate or cancel: offer canceled";
         if (!crossed)
-            // If the ImmediateOfferKilled amendment is enabled, any
-            // ImmediateOrCancel offer that transfers absolutely no funds
+            // Any ImmediateOrCancel offer that transfers absolutely no funds
             // returns tecKILLED rather than tesSUCCESS.  Motivation for the
             // change is here: https://github.com/ripple/rippled/issues/4115
             return {tecKILLED, false};
