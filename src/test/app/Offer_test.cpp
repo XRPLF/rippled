@@ -855,9 +855,7 @@ public:
 
             // No cross:
             {
-                TER const expectedCode = features[featureImmediateOfferKilled]
-                    ? static_cast<TER>(tecKILLED)
-                    : static_cast<TER>(tesSUCCESS);
+                TER const expectedCode = tecKILLED;
                 env(offer(alice, XRP(1000), USD(1000)),
                     txflags(tfImmediateOrCancel),
                     ter(expectedCode));
@@ -5289,34 +5287,12 @@ public:
         testFillOrKill(features);
     }
 
-    void
-    run(std::uint32_t instance, bool last = false)
-    {
-        using namespace jtx;
-        static FeatureBitset const all{testable_amendments()};
-        static FeatureBitset const immediateOfferKilled{
-            featureImmediateOfferKilled};
-        FeatureBitset const fillOrKill{fixFillOrKill};
-        FeatureBitset const permDEX{featurePermissionedDEX};
-
-        static std::array<FeatureBitset, 5> const feats{
-            all - immediateOfferKilled - permDEX,
-            all - immediateOfferKilled - fillOrKill - permDEX,
-            all - fillOrKill - permDEX,
-            all - permDEX,
-            all};
-
-        if (BEAST_EXPECT(instance < feats.size()))
-        {
-            testAll(feats[instance]);
-        }
-        BEAST_EXPECT(!last || instance == feats.size() - 1);
-    }
+    FeatureBitset const allFeatures{jtx::testable_amendments()};
 
     void
     run() override
     {
-        run(0);
+        testAll(allFeatures - featurePermissionedDEX);
         testFalseAssert();
     }
 };
@@ -5326,25 +5302,7 @@ class OfferWOSmallQOffers_test : public OfferBaseUtil_test
     void
     run() override
     {
-        OfferBaseUtil_test::run(1);
-    }
-};
-
-class OfferWOFillOrKill_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        OfferBaseUtil_test::run(2);
-    }
-};
-
-class OfferWOPermDEX_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        OfferBaseUtil_test::run(3);
+        testAll(allFeatures - fixFillOrKill - featurePermissionedDEX);
     }
 };
 
@@ -5353,7 +5311,7 @@ class OfferAllFeatures_test : public OfferBaseUtil_test
     void
     run() override
     {
-        OfferBaseUtil_test::run(4, true);
+        testAll(allFeatures);
     }
 };
 
@@ -5364,12 +5322,9 @@ class Offer_manual_test : public OfferBaseUtil_test
     {
         using namespace jtx;
         FeatureBitset const all{testable_amendments()};
-        FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
         FeatureBitset const fillOrKill{fixFillOrKill};
         FeatureBitset const permDEX{featurePermissionedDEX};
 
-        testAll(all - immediateOfferKilled - permDEX);
-        testAll(all - immediateOfferKilled - fillOrKill - permDEX);
         testAll(all - fillOrKill - permDEX);
         testAll(all - permDEX);
         testAll(all);
@@ -5378,8 +5333,6 @@ class Offer_manual_test : public OfferBaseUtil_test
 
 BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFillOrKill, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOPermDEX, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, app, ripple, 20);
 

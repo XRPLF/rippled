@@ -230,24 +230,6 @@ NFTokenMint::doApply()
             // Should not happen.  Checked in preclaim.
             return Unexpected(tecNO_ISSUER);
 
-        if (!ctx_.view().rules().enabled(fixNFTokenRemint))
-        {
-            // Get the unique sequence number for this token:
-            std::uint32_t const tokenSeq =
-                (*root)[~sfMintedNFTokens].value_or(0);
-            {
-                std::uint32_t const nextTokenSeq = tokenSeq + 1;
-                if (nextTokenSeq < tokenSeq)
-                    return Unexpected(tecMAX_SEQUENCE_REACHED);
-
-                (*root)[sfMintedNFTokens] = nextTokenSeq;
-            }
-            ctx_.view().update(root);
-            return tokenSeq;
-        }
-
-        // With fixNFTokenRemint amendment enabled:
-        //
         // If the issuer hasn't minted an NFToken before we must add a
         // FirstNFTokenSequence field to the issuer's AccountRoot.  The
         // value of the FirstNFTokenSequence must equal the issuer's

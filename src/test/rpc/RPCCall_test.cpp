@@ -19,10 +19,10 @@
 #include <test/jtx/utility.h>
 
 #include <xrpld/rpc/RPCCall.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 
 #include <boost/algorithm/string.hpp>

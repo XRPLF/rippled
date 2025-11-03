@@ -20,7 +20,7 @@
 #ifndef XRPL_XRPL_RPC_HANDLERS_VERSION_H
 #define XRPL_XRPL_RPC_HANDLERS_VERSION_H
 
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/protocol/ApiVersion.h>
 
 namespace ripple {
 namespace RPC {
