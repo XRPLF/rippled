@@ -8,20 +8,23 @@ install (
   TARGETS
     common
     opts
-    ripple_syslibs
     ripple_boost
+    ripple_libs
+    ripple_syslibs
     xrpl.imports.main
     xrpl.libpb
+    xrpl.libxrpl
     xrpl.libxrpl.basics
     xrpl.libxrpl.beast
     xrpl.libxrpl.crypto
     xrpl.libxrpl.json
+    xrpl.libxrpl.ledger
+    xrpl.libxrpl.net
+    xrpl.libxrpl.nodestore
     xrpl.libxrpl.protocol
     xrpl.libxrpl.resource
-    xrpl.libxrpl.ledger
     xrpl.libxrpl.server
-    xrpl.libxrpl.net
-    xrpl.libxrpl
+    xrpl.libxrpl.shamap
     antithesis-sdk-cpp
   EXPORT RippleExports
   LIBRARY DESTINATION lib
@@ -38,7 +41,7 @@ install(CODE "
   set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
   include(create_symbolic_link)
   create_symbolic_link(xrpl \
-    \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/ripple)
+    \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/ripple)
 ")
 
 install (EXPORT RippleExports
@@ -72,7 +75,7 @@ if (is_root_project AND TARGET rippled)
     set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
     include(create_symbolic_link)
     create_symbolic_link(rippled${suffix} \
-      \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix})
+       \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix})
   ")
 endif ()
 

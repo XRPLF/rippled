@@ -278,7 +278,7 @@ Pathfinder::findPaths(
             return false;
         }
 
-        auto const reserve = STAmount(mLedger->fees().accountReserve(0));
+        auto const reserve = STAmount(mLedger->fees().reserve);
         if (mDstAmount < reserve)
         {
             JLOG(j_.debug())
@@ -648,8 +648,10 @@ Pathfinder::getBestPaths(
 
         if (path.empty())
         {
+            // LCOV_EXCL_START
             UNREACHABLE("ripple::Pathfinder::getBestPaths : path not found");
             continue;
+            // LCOV_EXCL_STOP
         }
 
         bool startsWithIssuer = false;

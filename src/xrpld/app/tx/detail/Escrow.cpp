@@ -118,13 +118,6 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-std::uint32_t
-EscrowCreate::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
-}
-
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
@@ -158,15 +151,12 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         ctx.tx[sfCancelAfter] <= ctx.tx[sfFinishAfter])
         return temBAD_EXPIRATION;
 
-    if (ctx.rules.enabled(fix1571))
-    {
-        // In the absence of a FinishAfter, the escrow can be finished
-        // immediately, which can be confusing. When creating an escrow,
-        // we want to ensure that either a FinishAfter time is explicitly
-        // specified or a completion condition is attached.
-        if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition])
-            return temMALFORMED;
-    }
+    // In the absence of a FinishAfter, the escrow can be finished
+    // immediately, which can be confusing. When creating an escrow,
+    // we want to ensure that either a FinishAfter time is explicitly
+    // specified or a completion condition is attached.
+    if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition])
+        return temMALFORMED;
 
     if (auto const cb = ctx.tx[~sfCondition])
     {
@@ -414,10 +404,8 @@ escrowLockApplyHelper<Issue>(
     beast::Journal journal)
 {
     // Defensive: Issuer cannot create an escrow
-    // LCOV_EXCL_START
     if (issuer == sender)
-        return tecINTERNAL;
-    // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const ter = rippleCredit(
         view,
@@ -441,10 +429,8 @@ escrowLockApplyHelper<MPTIssue>(
     beast::Journal journal)
 {
     // Defensive: Issuer cannot create an escrow
-    // LCOV_EXCL_START
     if (issuer == sender)
-        return tecINTERNAL;
-    // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const ter = rippleLockEscrowMPT(view, sender, amount, journal);
     if (ter != tesSUCCESS)
@@ -457,37 +443,11 @@ EscrowCreate::doApply()
 {
     auto const closeTime = ctx_.view().info().parentCloseTime;
 
-    // Prior to fix1571, the cancel and finish times could be greater
-    // than or equal to the parent ledgers' close time.
-    //
-    // With fix1571, we require that they both be strictly greater
-    // than the parent ledgers' close time.
-    if (ctx_.view().rules().enabled(fix1571))
-    {
-        if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
-            return tecNO_PERMISSION;
+    if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
+        return tecNO_PERMISSION;
 
-        if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
-            return tecNO_PERMISSION;
-    }
-    else
-    {
-        if (ctx_.tx[~sfCancelAfter])
-        {
-            auto const cancelAfter = ctx_.tx[sfCancelAfter];
-
-            if (closeTime.time_since_epoch().count() >= cancelAfter)
-                return tecNO_PERMISSION;
-        }
-
-        if (ctx_.tx[~sfFinishAfter])
-        {
-            auto const finishAfter = ctx_.tx[sfFinishAfter];
-
-            if (closeTime.time_since_epoch().count() >= finishAfter)
-                return tecNO_PERMISSION;
-        }
-    }
+    if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
+        return tecNO_PERMISSION;
 
     auto const sle = ctx_.view().peek(keylet::account(account_));
     if (!sle)
@@ -514,12 +474,12 @@ EscrowCreate::doApply()
         auto const sled =
             ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
         if (!sled)
-            return tecNO_DST;
+            return tecNO_DST;  // LCOV_EXCL_LINE
         if (((*sled)[sfFlags] & lsfRequireDestTag) &&
             !ctx_.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
-        // Obeying the lsfDissalowXRP flag was a bug.  Piggyback on
+        // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
         // featureDepositAuth to remove the bug.
         if (!ctx_.view().rules().enabled(featureDepositAuth) &&
             ((*sled)[sfFlags] & lsfDisallowXRP))
@@ -601,7 +561,9 @@ EscrowCreate::doApply()
                 },
                 amount.asset().value());
             !isTesSuccess(ret))
+        {
             return ret;  // LCOV_EXCL_LINE
+        }
     }
 
     // increment owner count
@@ -635,13 +597,6 @@ EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
 {
     return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
         ctx.rules.enabled(featureCredentials);
-}
-
-std::uint32_t
-EscrowFinish::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
 }
 
 NotTEC
@@ -837,10 +792,8 @@ escrowUnlockApplyHelper<Issue>(
     bool const receiverIssuer = issuer == receiver;
     bool const issuerHigh = issuer > receiver;
 
-    // LCOV_EXCL_START
     if (senderIssuer)
-        return tecINTERNAL;
-    // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (receiverIssuer)
         return tesSUCCESS;
@@ -1041,34 +994,16 @@ EscrowFinish::doApply()
     }
 
     // If a cancel time is present, a finish operation should only succeed prior
-    // to that time. fix1571 corrects a logic error in the check that would make
-    // a finish only succeed strictly after the cancel time.
-    if (ctx_.view().rules().enabled(fix1571))
-    {
-        auto const now = ctx_.view().info().parentCloseTime;
+    // to that time.
+    auto const now = ctx_.view().info().parentCloseTime;
 
-        // Too soon: can't execute before the finish time
-        if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
-            return tecNO_PERMISSION;
+    // Too soon: can't execute before the finish time
+    if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
+        return tecNO_PERMISSION;
 
-        // Too late: can't execute after the cancel time
-        if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
-            return tecNO_PERMISSION;
-    }
-    else
-    {
-        // Too soon?
-        if ((*slep)[~sfFinishAfter] &&
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-                (*slep)[sfFinishAfter])
-            return tecNO_PERMISSION;
-
-        // Too late?
-        if ((*slep)[~sfCancelAfter] &&
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-                (*slep)[sfCancelAfter])
-            return tecNO_PERMISSION;
-    }
+    // Too late: can't execute after the cancel time
+    if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
+        return tecNO_PERMISSION;
 
     // Check cryptocondition fulfillment
     {
@@ -1082,6 +1017,7 @@ EscrowFinish::doApply()
         // simply re-run the check.
         if (cb && !any(flags & (SF_CF_INVALID | SF_CF_VALID)))
         {
+            // LCOV_EXCL_START
             auto const fb = ctx_.tx[~sfFulfillment];
 
             if (!fb)
@@ -1093,6 +1029,7 @@ EscrowFinish::doApply()
                 flags = SF_CF_INVALID;
 
             ctx_.app.getHashRouter().setFlags(id, flags);
+            // LCOV_EXCL_STOP
         }
 
         // If the check failed, then simply return an error
@@ -1139,8 +1076,10 @@ EscrowFinish::doApply()
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(account), page, k.key, true))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete Escrow from owner.";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 
@@ -1150,8 +1089,10 @@ EscrowFinish::doApply()
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(destID), *optPage, k.key, true))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 
@@ -1193,8 +1134,10 @@ EscrowFinish::doApply()
             if (!ctx_.view().dirRemove(
                     keylet::ownerDir(issuer), *optPage, k.key, true))
             {
+                // LCOV_EXCL_START
                 JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
-                return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+                return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
             }
         }
     }
@@ -1212,13 +1155,6 @@ EscrowFinish::doApply()
 }
 
 //------------------------------------------------------------------------------
-
-std::uint32_t
-EscrowCancel::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
-}
 
 NotTEC
 EscrowCancel::preflight(PreflightContext const& ctx)
@@ -1324,26 +1260,15 @@ EscrowCancel::doApply()
         return tecNO_TARGET;
     }
 
-    if (ctx_.view().rules().enabled(fix1571))
-    {
-        auto const now = ctx_.view().info().parentCloseTime;
+    auto const now = ctx_.view().info().parentCloseTime;
 
-        // No cancel time specified: can't execute at all.
-        if (!(*slep)[~sfCancelAfter])
-            return tecNO_PERMISSION;
+    // No cancel time specified: can't execute at all.
+    if (!(*slep)[~sfCancelAfter])
+        return tecNO_PERMISSION;
 
-        // Too soon: can't execute before the cancel time.
-        if (!after(now, (*slep)[sfCancelAfter]))
-            return tecNO_PERMISSION;
-    }
-    else
-    {
-        // Too soon?
-        if (!(*slep)[~sfCancelAfter] ||
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-                (*slep)[sfCancelAfter])
-            return tecNO_PERMISSION;
-    }
+    // Too soon: can't execute before the cancel time.
+    if (!after(now, (*slep)[sfCancelAfter]))
+        return tecNO_PERMISSION;
 
     AccountID const account = (*slep)[sfAccount];
 
@@ -1353,8 +1278,10 @@ EscrowCancel::doApply()
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(account), page, k.key, true))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete Escrow from owner.";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 
@@ -1367,8 +1294,10 @@ EscrowCancel::doApply()
                 k.key,
                 true))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 
@@ -1409,8 +1338,10 @@ EscrowCancel::doApply()
             if (!ctx_.view().dirRemove(
                     keylet::ownerDir(issuer), *optPage, k.key, true))
             {
+                // LCOV_EXCL_START
                 JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
-                return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+                return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
             }
         }
     }

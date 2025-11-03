@@ -94,9 +94,11 @@ doChannelAuthorize(RPC::JsonContext& context)
     }
     catch (std::exception const& ex)
     {
+        // LCOV_EXCL_START
         result = RPC::make_error(
             rpcINTERNAL,
             "Exception occurred during signing: " + std::string(ex.what()));
+        // LCOV_EXCL_STOP
     }
     return result;
 }

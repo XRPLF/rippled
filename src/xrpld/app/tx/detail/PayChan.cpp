@@ -126,9 +126,11 @@ closeChannel(
         auto const page = (*slep)[sfOwnerNode];
         if (!view.dirRemove(keylet::ownerDir(src), page, key, true))
         {
+            // LCOV_EXCL_START
             JLOG(j.fatal())
                 << "Could not remove paychan from src owner directory";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 
@@ -139,16 +141,18 @@ closeChannel(
         auto const dst = (*slep)[sfDestination];
         if (!view.dirRemove(keylet::ownerDir(dst), *page, key, true))
         {
+            // LCOV_EXCL_START
             JLOG(j.fatal())
                 << "Could not remove paychan from dst owner directory";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 
     // Transfer amount back to owner, decrement owner count
     auto const sle = view.peek(keylet::account(src));
     if (!sle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance],
@@ -169,13 +173,6 @@ TxConsequences
 PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
 {
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
-}
-
-std::uint32_t
-PayChanCreate::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
 }
 
 NotTEC
@@ -257,7 +254,7 @@ PayChanCreate::doApply()
     auto const account = ctx_.tx[sfAccount];
     auto const sle = ctx_.view().peek(keylet::account(account));
     if (!sle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (ctx_.view().rules().enabled(fixPayChanCancelAfter))
     {
@@ -301,7 +298,7 @@ PayChanCreate::doApply()
             payChanKeylet,
             describeOwnerDir(account));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfOwnerNode] = *page;
     }
 
@@ -311,7 +308,7 @@ PayChanCreate::doApply()
         auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfDestinationNode] = *page;
     }
 
@@ -329,13 +326,6 @@ TxConsequences
 PayChanFund::makeTxConsequences(PreflightContext const& ctx)
 {
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
-}
-
-std::uint32_t
-PayChanFund::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
 }
 
 NotTEC
@@ -389,7 +379,7 @@ PayChanFund::doApply()
 
     auto const sle = ctx_.view().peek(keylet::account(txAccount));
     if (!sle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
         // Check reserve and funds availability
@@ -430,10 +420,9 @@ PayChanClaim::checkExtraFeatures(PreflightContext const& ctx)
 }
 
 std::uint32_t
-PayChanClaim::getFlagsMask(PreflightContext const& ctx)
+PayChanClaim::getFlagsMask(PreflightContext const&)
 {
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfPayChanClaimMask : 0;
+    return tfPayChanClaimMask;
 }
 
 NotTEC

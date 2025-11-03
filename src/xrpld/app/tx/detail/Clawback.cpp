@@ -235,7 +235,7 @@ applyHelper<Issue>(ApplyContext& ctx)
     // Replace the `issuer` field with issuer's account
     clawAmount.setIssuer(issuer);
     if (holder == issuer)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Get the spendable balance. Must use `accountHolds`.
     STAmount const spendableAmount = accountHolds(

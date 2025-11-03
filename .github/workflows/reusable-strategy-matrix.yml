@@ -38,4 +38,4 @@ jobs:
         env:
           GENERATE_CONFIG: ${{ inputs.os != '' && format('--config={0}.json', inputs.os) || '' }}
           GENERATE_OPTION: ${{ inputs.strategy_matrix == 'all' && '--all' || '' }}
-        run: ./generate.py ${{ env.GENERATE_OPTION }} ${{ env.GENERATE_CONFIG }} >> "${GITHUB_OUTPUT}"
+        run: ./generate.py ${GENERATE_OPTION} ${GENERATE_CONFIG} >> "${GITHUB_OUTPUT}"

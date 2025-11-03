@@ -73,14 +73,8 @@ static constexpr std::uint32_t XRP_LEDGER_EARLIEST_SEQ{32570u};
  * used in asserts and tests. */
 static constexpr std::uint32_t XRP_LEDGER_EARLIEST_FEES{562177u};
 
-/** The minimum amount of support an amendment should have.
-
-    @note This value is used by legacy code and will become obsolete
-          once the fixAmendmentMajorityCalc amendment activates.
-*/
-constexpr std::ratio<204, 256> preFixAmendmentMajorityCalcThreshold;
-
-constexpr std::ratio<80, 100> postFixAmendmentMajorityCalcThreshold;
+/** The minimum amount of support an amendment should have. */
+constexpr std::ratio<80, 100> amendmentMajorityCalcThreshold;
 
 /** The minimum amount of time an amendment must hold a majority */
 constexpr std::chrono::seconds const defaultAmendmentMajorityTime = weeks{2};

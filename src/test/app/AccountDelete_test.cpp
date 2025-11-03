@@ -747,7 +747,7 @@ public:
         // Note that the fee structure for unit tests does not match the fees
         // on the production network (October 2019).  Unit tests have a base
         // reserve of 200 XRP.
-        env.fund(env.current()->fees().accountReserve(0), noripple(alice));
+        env.fund(env.current()->fees().reserve, noripple(alice));
         env.close();
 
         // Burn a chunk of alice's funds so she only has 1 XRP remaining in
