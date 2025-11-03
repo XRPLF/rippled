@@ -131,17 +131,6 @@ Rules::enabled(uint256 const& feature) const
 {
     XRPL_ASSERT(impl_, "ripple::Rules::enabled : initialized");
 
-    // The functionality of the "NonFungibleTokensV1_1" amendment is
-    // precisely the functionality of the following three amendments
-    // so if their status is ever queried individually, we inject an
-    // extra check here to simplify the checking elsewhere.
-    if (feature == featureNonFungibleTokensV1 ||
-        feature == fixNFTokenNegOffer || feature == fixNFTokenDirV1)
-    {
-        if (impl_->enabled(featureNonFungibleTokensV1_1))
-            return true;
-    }
-
     return impl_->enabled(feature);
 }
 
