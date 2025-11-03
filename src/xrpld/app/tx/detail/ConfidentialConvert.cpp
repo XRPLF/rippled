@@ -43,10 +43,10 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfHolderEncryptedAmount].length() !=
             ecGamalEncryptedTotalLength ||
         ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
-        return temMALFORMED;
+        return temBAD_CIPHERTEXT;
 
     if (ctx.tx[sfMPTAmount] > maxMPTokenAmount)
-        return temMALFORMED;
+        return temBAD_AMOUNT;
 
     if (!isValidCiphertext(ctx.tx[sfHolderEncryptedAmount]) ||
         !isValidCiphertext(ctx.tx[sfIssuerEncryptedAmount]))

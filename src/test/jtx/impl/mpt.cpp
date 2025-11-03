@@ -945,22 +945,32 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
         jv[sfMPTokenIssuanceID] = to_string(*id_);
     }
     jv[sfTransactionType] = jss::ConfidentialMergeInbox;
-    uint64_t preInboxBalance =
+    uint64_t prevInboxBalance =
         getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
     uint64_t prevSpendingBalance =
         getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
-
+    uint64_t prevIssuerBalance =
+        getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
     if (submit(arg, jv) == tesSUCCESS)
     {
         uint64_t postInboxBalance =
             getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
         uint64_t postSpendingBalance =
             getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+        uint64_t postIssuerBalance =
+            getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
 
         env_.require(requireAny([&]() -> bool {
             return postSpendingBalance ==
-                preInboxBalance + prevSpendingBalance &&
+                prevInboxBalance + prevSpendingBalance &&
                 postInboxBalance == 0;
+        }));
+
+        env_.require(requireAny(
+            [&]() -> bool { return prevIssuerBalance == postIssuerBalance; }));
+
+        env_.require(requireAny([&]() -> bool {
+            return postSpendingBalance + postInboxBalance == postIssuerBalance;
         }));
     }
 }

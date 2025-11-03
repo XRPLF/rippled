@@ -28,6 +28,15 @@ namespace ripple {
 
 class ConfidentialTransfer_test : public beast::unit_test::suite
 {
+    // A 66-byte array of random unsigned char values
+    constexpr static unsigned char badCiphertext[ecGamalEncryptedTotalLength] =
+        {0x3E, 0x9A, 0x0F, 0x7C, 0x51, 0xD8, 0x22, 0x8B, 0x6E, 0x14, 0xC9,
+         0xF5, 0x4D, 0x6A, 0x03, 0x81, 0x77, 0x2B, 0xEE, 0x9F, 0x10, 0xC2,
+         0x57, 0x3D, 0x88, 0x65, 0x0C, 0xAB, 0xF1, 0x4E, 0x19, 0x96, 0x2A,
+         0x73, 0xDC, 0x44, 0xB8, 0x5F, 0x01, 0xEA, 0x87, 0x36, 0x60, 0xCE,
+         0x92, 0x25, 0x7D, 0x5B, 0xC0, 0x1E, 0x48, 0xF9, 0x84, 0x33, 0x67,
+         0xAD, 0x0B, 0xE3, 0x91, 0x50, 0xDA, 0x2F, 0x75, 0xC6, 0xBD, 0x42};
+
     void
     testConvert(FeatureBitset features)
     {
@@ -134,7 +143,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
              .proof = "123",
              .holderPubKey = mptAlice.getPubKey(bob),
              .holderEncryptedAmt = Buffer{},
-             .err = temMALFORMED});
+             .err = temBAD_CIPHERTEXT});
 
         mptAlice.convert(
             {.account = bob,
@@ -142,23 +151,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
              .proof = "123",
              .holderPubKey = mptAlice.getPubKey(bob),
              .issuerEncryptedAmt = Buffer{},
-             .err = temMALFORMED});
+             .err = temBAD_CIPHERTEXT});
 
         mptAlice.convert(
             {.account = bob,
              .amt = maxMPTokenAmount + 1,
              .proof = "123",
              .holderPubKey = mptAlice.getPubKey(bob),
-             .err = temMALFORMED});
-
-        // A 66-byte array of random unsigned char values
-        unsigned char badCiphertext[ecGamalEncryptedTotalLength] = {
-            0x3E, 0x9A, 0x0F, 0x7C, 0x51, 0xD8, 0x22, 0x8B, 0x6E, 0x14, 0xC9,
-            0xF5, 0x4D, 0x6A, 0x03, 0x81, 0x77, 0x2B, 0xEE, 0x9F, 0x10, 0xC2,
-            0x57, 0x3D, 0x88, 0x65, 0x0C, 0xAB, 0xF1, 0x4E, 0x19, 0x96, 0x2A,
-            0x73, 0xDC, 0x44, 0xB8, 0x5F, 0x01, 0xEA, 0x87, 0x36, 0x60, 0xCE,
-            0x92, 0x25, 0x7D, 0x5B, 0xC0, 0x1E, 0x48, 0xF9, 0x84, 0x33, 0x67,
-            0xAD, 0x0B, 0xE3, 0x91, 0x50, 0xDA, 0x2F, 0x75, 0xC6, 0xBD, 0x42};
+             .err = temBAD_AMOUNT});
 
         mptAlice.convert(
             {.account = bob,
@@ -1411,6 +1411,122 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testConvertBackPreflight(FeatureBitset features)
+    {
+        testcase("Convert back preflight");
+        using namespace test::jtx;
+
+        {
+            Env env{*this, features - featureConfidentialTransfer};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = 30,
+                 .proof = "123",
+                 .err = temDISABLED});
+        }
+
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 40,
+                .proof = "123",
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+
+            mptAlice.convertBack(
+                {.account = alice,
+                 .amt = 30,
+                 .proof = "123",
+                 .err = temMALFORMED});
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = 0,
+                 .proof = "123",
+                 .err = temBAD_AMOUNT});
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = maxMPTokenAmount + 1,
+                 .proof = "123",
+                 .err = temBAD_AMOUNT});
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = 30,
+                 .proof = "123",
+                 .holderEncryptedAmt = Buffer{},
+                 .err = temBAD_CIPHERTEXT});
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = 30,
+                 .proof = "123",
+                 .issuerEncryptedAmt = Buffer{},
+                 .err = temBAD_CIPHERTEXT});
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = 30,
+                 .proof = "123",
+                 .holderEncryptedAmt =
+                     Buffer{badCiphertext, ecGamalEncryptedTotalLength},
+                 .err = temBAD_CIPHERTEXT});
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = 30,
+                 .proof = "123",
+                 .issuerEncryptedAmt =
+                     Buffer{badCiphertext, ecGamalEncryptedTotalLength},
+                 .err = temBAD_CIPHERTEXT});
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testConvert(features);
@@ -1431,6 +1547,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testDelete(features);
 
         testConvertBack(features);
+        testConvertBackPreflight(features);
     }
 
 public:
