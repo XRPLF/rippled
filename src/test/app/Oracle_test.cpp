@@ -754,8 +754,7 @@ private:
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}, {ed, 2}}), sig(alie));
         env.close();
 
-        int const signerListOwners = 1;
-        env.require(owners(alice, signerListOwners));
+        env.require(owners(alice, 1));
 
         // Create
         // Force close (true) and time advancement because the close time

@@ -999,7 +999,6 @@ class Check_test : public beast::unit_test::suite
         // Use a regular key and also multisign to cash a check.
         {
             Env env{*this};
-
             env.fund(XRP(1000), gw, alice, bob);
             env.close();
 
@@ -1028,7 +1027,7 @@ class Check_test : public beast::unit_test::suite
             env(signers(bob, 2, {{bogie, 1}, {demon, 1}}), sig(bobby));
             env.close();
 
-            // Bob's signer list has an owner count of 1, otherwise it's 4.
+            // Bob's signer list has an owner count of 1.
             int const signersCount = 1;
             BEAST_EXPECT(ownerCount(env, bob) == signersCount + 1);
 

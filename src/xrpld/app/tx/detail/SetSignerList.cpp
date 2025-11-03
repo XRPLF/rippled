@@ -333,11 +333,11 @@ SetSignerList::replaceSignerList()
     // Compute new reserve.  Verify the account has funds to meet the reserve.
     std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
 
-    int addedOwnerCount{1};
+    constexpr int AddedOwnerCount = 1;
     std::uint32_t flags{lsfOneOwnerCount};
 
     XRPAmount const newReserve{
-        view().fees().accountReserve(oldOwnerCount + addedOwnerCount)};
+        view().fees().accountReserve(oldOwnerCount + AddedOwnerCount)};
 
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
@@ -365,7 +365,7 @@ SetSignerList::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle, addedOwnerCount, viewJ);
+    adjustOwnerCount(view(), sle, AddedOwnerCount, viewJ);
     return tesSUCCESS;
 }
 

@@ -64,44 +64,15 @@ public:
 
         {
             // Attach a signer list to alice.  Should fail.
-            Json::Value smallSigners = signers(alice, 1, {{bogie, 1}});
-            env(smallSigners, ter(tecINSUFFICIENT_RESERVE));
+            Json::Value signersList = signers(alice, 1, {{bogie, 1}});
+            env(signersList, ter(tecINSUFFICIENT_RESERVE));
             env.close();
             env.require(owners(alice, 0));
 
             // Fund alice enough to set the signer list, then attach signers.
             env(pay(env.master, alice, fee + drops(1)));
             env.close();
-            env(smallSigners);
-            env.close();
-            env.require(owners(alice, 1));
-        }
-        {
-            // Pay alice enough to almost make the reserve for the biggest
-            // possible list.
-            auto const addReserveBigSigners = XRP(0);
-            env(pay(env.master, alice, addReserveBigSigners + fee - drops(1)));
-
-            // Replace with the biggest possible signer list.  Should fail.
-            Json::Value bigSigners = signers(
-                alice,
-                1,
-                {{bogie, 1},
-                 {demon, 1},
-                 {ghost, 1},
-                 {haunt, 1},
-                 {jinni, 1},
-                 {phase, 1},
-                 {shade, 1},
-                 {spook, 1}});
-            env(bigSigners, ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            env.require(owners(alice, 1));
-
-            // Fund alice one more drop (plus the fee) and succeed.
-            env(pay(env.master, alice, fee + drops(1)));
-            env.close();
-            env(bigSigners);
+            env(signersList);
             env.close();
             env.require(owners(alice, 1));
         }
@@ -1001,8 +972,7 @@ public:
         // Attach signers to alice.
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}}), sig(alie));
         env.close();
-        int const signerListOwners{1};
-        env.require(owners(alice, signerListOwners + 0));
+        env.require(owners(alice, 1));
 
         // Multisign a ttPAYMENT.
         auto const baseFee = env.current()->fees().base;
@@ -1032,7 +1002,7 @@ public:
             fee(3 * baseFee),
             require(lines("alice", 1)));
         env.close();
-        env.require(owners(alice, signerListOwners + 1));
+        env.require(owners(alice, 2));
 
         // Multisign a ttOFFER_CREATE transaction.
         env(pay(gw, alice, USD(50)));
@@ -1045,7 +1015,7 @@ public:
             msig(becky, bogie),
             fee(3 * baseFee));
         env.close();
-        env.require(owners(alice, signerListOwners + 2));
+        env.require(owners(alice, 3));
 
         // Now multisign a ttOFFER_CANCEL canceling the offer we just created.
         {
@@ -1056,7 +1026,7 @@ public:
                 fee(3 * baseFee));
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
-            env.require(owners(alice, signerListOwners + 1));
+            env.require(owners(alice, 2));
         }
 
         // Multisign a ttSIGNER_LIST_SET.
