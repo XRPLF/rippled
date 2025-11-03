@@ -115,8 +115,6 @@ public:
                 }
             }
         };
-
-        env.close();
         testFlags(
             {asfRequireDest,
              asfRequireAuth,
