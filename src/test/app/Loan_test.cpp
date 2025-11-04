@@ -4874,7 +4874,8 @@ protected:
         env(payIssuerTx);
         env.close();
 
-        BrokerParameters const brokerParams{.debtMax{0}, .coverRateMin{1}};
+        BrokerParameters const brokerParams{
+            .debtMax = Number{0}, .coverRateMin = TenthBips32{1}};
         BrokerInfo broker{
             createVaultAndBroker(env, iouAsset, lender, brokerParams)};
 
@@ -5945,7 +5946,7 @@ failed with assertion error: Both principal and interest rounded are zero 0 + 0
         LoanParameters const loanParams{
             .account = Account("lender"),
             .counter = Account("borrower"),
-            .principalRequest{1255438, -6},
+            .principalRequest = Number{1255438, -6},
             .interest = TenthBips32{1922},
             .payTotal = 5816,
             .payInterval = 29193};
