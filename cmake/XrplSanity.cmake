@@ -61,8 +61,8 @@ if (MSVC AND CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
 endif ()
 
 if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
-  message (FATAL_ERROR "Rippled requires a 64 bit target architecture.\n"
-    "The most likely cause of this warning is trying to build rippled with a 32-bit OS.")
+  message (FATAL_ERROR "Xrpld requires a 64 bit target architecture.\n"
+    "The most likely cause of this warning is trying to build xrpld with a 32-bit OS.")
 endif ()
 
 if (APPLE AND NOT HOMEBREW)
