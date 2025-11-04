@@ -43,8 +43,6 @@ namespace ripple {
 
 thread_local Number::rounding_mode Number::mode_ = Number::to_nearest;
 
-Number const Number::zero{};
-
 Number::rounding_mode
 Number::getround()
 {

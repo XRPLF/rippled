@@ -467,7 +467,7 @@ struct PaymentComponentsPlus : public PaymentComponents
     PaymentComponentsPlus(
         PaymentComponents const& p,
         Number f,
-        Number v = Number{})
+        Number v = numZero)
         : PaymentComponents(p)
         , untrackedManagementFee(f)
         , untrackedInterest(v)
@@ -999,6 +999,17 @@ PaymentComponents::trackedInterestPart() const
         (trackedPrincipalDelta + trackedManagementFeeDelta);
 }
 
+void
+LoanDeltas::nonNegative()
+{
+    if (principalDelta < beast::zero)
+        principalDelta = numZero;
+    if (interestDueDelta < beast::zero)
+        interestDueDelta = numZero;
+    if (managementFeeDueDelta < beast::zero)
+        managementFeeDueDelta = numZero;
+}
+
 PaymentComponents
 computePaymentComponents(
     Asset const& asset,
@@ -1060,7 +1071,7 @@ computePaymentComponents(
 
     deltas.interestDueDelta = std::min(
         {deltas.interestDueDelta,
-         std::max(Number::zero, roundedPeriodicPayment - deltas.principalDelta),
+         std::max(numZero, roundedPeriodicPayment - deltas.principalDelta),
          currentLedgerState.interestDue});
 
     XRPL_ASSERT_PARTS(
@@ -1336,16 +1347,14 @@ computePaymentComponents(
         // As a final safety check, ensure the value is non-negative, and won't
         // make the corresponding item negative
         .trackedValueDelta = std::clamp(
-            deltas.valueDelta(),
-            Number::zero,
-            currentLedgerState.valueOutstanding),
+            deltas.valueDelta(), numZero, currentLedgerState.valueOutstanding),
         .trackedPrincipalDelta = std::clamp(
             deltas.principalDelta,
-            Number::zero,
+            numZero,
             currentLedgerState.principalOutstanding),
         .trackedManagementFeeDelta = std::clamp(
             deltas.managementFeeDueDelta,
-            Number::zero,
+            numZero,
             currentLedgerState.managementFeeDue),
     };
 }

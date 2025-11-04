@@ -69,8 +69,6 @@ public:
     explicit constexpr Number(rep mantissa, int exponent);
     explicit constexpr Number(rep mantissa, int exponent, unchecked) noexcept;
 
-    static Number const zero;
-
     constexpr rep
     mantissa() const noexcept;
     constexpr int
@@ -223,6 +221,8 @@ private:
 
     class Guard;
 };
+
+constexpr static Number numZero{};
 
 inline constexpr Number::Number(rep mantissa, int exponent, unchecked) noexcept
     : mantissa_{mantissa}, exponent_{exponent}

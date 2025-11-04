@@ -3113,7 +3113,7 @@ protected:
             auto const totalSpent =
                 (totalPaid.trackedValueDelta + totalFeesPaid +
                  (broker.asset.native() ? Number(baseFee) * totalPaymentsMade
-                                        : Number::zero));
+                                        : numZero));
             BEAST_EXPECT(
                 env.balance(borrower, broker.asset).number() ==
                 borrowerInitialBalance - totalSpent);

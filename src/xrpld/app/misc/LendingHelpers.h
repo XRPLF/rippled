@@ -216,15 +216,7 @@ struct LoanDeltas
     }
 
     void
-    nonNegative()
-    {
-        if (principalDelta < beast::zero)
-            principalDelta = Number::zero;
-        if (interestDueDelta < beast::zero)
-            interestDueDelta = Number::zero;
-        if (managementFeeDueDelta < beast::zero)
-            managementFeeDueDelta = Number::zero;
-    }
+    nonNegative();
 };
 
 PaymentComponents
