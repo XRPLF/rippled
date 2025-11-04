@@ -88,10 +88,17 @@ ConfidentialMergeInbox::doApply()
 
     (*sleMptoken)[sfConfidentialBalanceSpending] = sum;
 
-    Buffer zeroEncyption;
-    zeroEncyption = encryptCanonicalZeroAmount(
-        (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
-    (*sleMptoken)[sfConfidentialBalanceInbox] = zeroEncyption;
+    try
+    {
+        Buffer zeroEncyption;
+        zeroEncyption = encryptCanonicalZeroAmount(
+            (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
+        (*sleMptoken)[sfConfidentialBalanceInbox] = zeroEncyption;
+    }
+    catch (std::exception const& e)
+    {
+        return tecINTERNAL;
+    }
 
     // it's fine if it reaches max uint32, it just resets to 0
     (*sleMptoken)[sfConfidentialBalanceVersion] =

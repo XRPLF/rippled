@@ -84,14 +84,14 @@ ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
     if (!sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
         !sleMptoken->isFieldPresent(sfHolderElGamalPublicKey))
     {
-        return tecINSUFFICIENT_FUNDS;
+        return tecNO_PERMISSION;
     }
 
     // if the total circulating confidential balance is smaller than what the
     // holder is trying to convert back, we know for sure this txn should
     // fail
-    if (!sleIssuance->isFieldPresent(sfConfidentialOutstandingAmount) ||
-        (*sleIssuance)[sfConfidentialOutstandingAmount] < ctx.tx[sfMPTAmount])
+    if ((*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) <
+        ctx.tx[sfMPTAmount])
     {
         return tecINSUFFICIENT_FUNDS;
     }
