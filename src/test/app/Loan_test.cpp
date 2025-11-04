@@ -2991,7 +2991,7 @@ protected:
         Keylet const& loanKeylet,
         VerifyLoanStatus const& verifyLoanStatus)
     {
-        // Draw and make multiple payments
+        // Make all the individual payments
         using namespace jtx;
         using namespace jtx::loan;
         using namespace std::chrono_literals;
@@ -5802,19 +5802,21 @@ protected:
         BrokerInfo const broker =
             createVaultAndBroker(env, asset, lender, brokerParams);
 
-        auto const pseudoAcct = [&]() {
+        auto const pseudoAcctOpt = [&]() -> std::optional<Account> {
             auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
-                return lender;
+                return std::nullopt;
             auto const brokerPseudo = brokerSle->at(sfAccount);
             return Account("Broker pseudo-account", brokerPseudo);
         }();
+        if (!pseudoAcctOpt)
+            return;
+        Account const& pseudoAcct = *pseudoAcctOpt;
 
-        auto const loanKeylet = [&]() {
+        auto const loanKeyletOpt = [&]() -> std::optional<Keylet> {
             auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
-                // will be invalid
-                return keylet::loan(broker.brokerID);
+                return std::nullopt;
 
             // Broker has no loans
             BEAST_EXPECT(brokerSle->at(sfOwnerCount) == 0);
@@ -5824,6 +5826,9 @@ protected:
             auto const loanSequence = brokerSle->at(sfLoanSequence);
             return keylet::loan(broker.brokerID, loanSequence);
         }();
+        if (!loanKeyletOpt)
+            return;
+        Keylet const& loanKeylet = *loanKeyletOpt;
 
         env(loanParams(env, broker));
 
@@ -5921,18 +5926,41 @@ class LoanArbitrary_test : public LoanBatch_test
         Number initalXrp{INITIAL_XRP};
         BEAST_EXPECT(initalXrp.exponent() <= 0);
 #endif
+        /*
+        Progress: 27 completed, 50 total attempts | Rejected: periodic=0,
+interest=23,
+duration=0LoanParameters(principal=Decimal('1255438.00000000000000000000000'),
+interest_rate=Decimal('0.01922'), payment_total=5816,
+payment_interval=Decimal('29193'), interest_fee=Decimal('0.59195')) Single test
+failed with assertion error: Both principal and interest rounded are zero 0 + 0
++ 0
+        */
+
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 1'000'000'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .managementFeeRate = TenthBips16{59195},
+            .coverRateLiquidation = TenthBips32{0}};
+        LoanParameters const loanParams{
+            .account = Account("lender"),
+            .counter = Account("borrower"),
+            .principalRequest = 1255438,
+            .interest = TenthBips32{1922},
+            .payTotal = 5816,
+            .payInterval = 29193};
 
         {
             Env env(*this, beast::severities::kWarning);
 
             auto const asset = PrettyAsset{xrpIssue()};
-            Number const principal{291618};
-            TenthBips32 interest{4871};
-            auto const payments = 6026;
-            auto const interval = 1059440;
-            TenthBips32 feeRate{65525};
             auto const props = computeLoanProperties(
-                asset, principal, interest, interval, payments, feeRate);
+                asset,
+                loanParams.principalRequest,
+                *loanParams.interest,
+                *loanParams.payInterval,
+                *loanParams.payTotal,
+                brokerParams.managementFeeRate);
             log << "Loan properties:\n"
                 << "\tPeriodic Payment: " << props.periodicPayment << std::endl
                 << "\tTotal Value: " << props.totalValueOutstanding << std::endl
@@ -5943,23 +5971,15 @@ class LoanArbitrary_test : public LoanBatch_test
                 << std::endl;
 
             BEAST_EXPECT(LoanSet::checkGuards(
-                asset, principal, interest, payments, props, env.journal));
+                asset,
+                loanParams.principalRequest,
+                *loanParams.interest,
+                *loanParams.payTotal,
+                props,
+                env.journal));
         }
 
-        runLoan(
-            AssetType::XRP,
-            BrokerParameters{
-                .vaultDeposit = 1'000'000'000,
-                .debtMax = 0,
-                .coverRateMin = TenthBips32{0},
-                .managementFeeRate = TenthBips16{6552}},
-            LoanParameters{
-                .account = Account("lender"),
-                .counter = Account("borrower"),
-                .principalRequest = 291618,
-                .interest = TenthBips32{4871},
-                .payTotal = 6026,
-                .payInterval = 105944});
+        runLoan(AssetType::XRP, brokerParams, loanParams);
     }
 };
 

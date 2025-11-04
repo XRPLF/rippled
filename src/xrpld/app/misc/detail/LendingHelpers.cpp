@@ -1338,6 +1338,13 @@ computePaymentComponents(
         "ripple::detail::computePaymentComponents",
         "valid fee result");
 
+    XRPL_ASSERT_PARTS(
+        deltas.principalDelta + deltas.interestDueDelta +
+                deltas.managementFeeDueDelta >
+            beast::zero,
+        "ripple::detail::computePaymentComponents",
+        "payment parts add to payment");
+
     return PaymentComponents{
 #if LOANCOMPLETE
         .rawInterest = rawInterest - rawFee,
