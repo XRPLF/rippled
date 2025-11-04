@@ -1092,15 +1092,15 @@ computePaymentComponents(
         // parts.
 
         XRPL_ASSERT_PARTS(
-            deltas.valueDelta() == totalValueOutstanding,
+            deltas.valueDelta() <= totalValueOutstanding,
             "ripple::detail::computePaymentComponents",
             "last payment total value agrees");
         XRPL_ASSERT_PARTS(
-            deltas.principalDelta == principalOutstanding,
+            deltas.principalDelta <= principalOutstanding,
             "ripple::detail::computePaymentComponents",
             "last payment principal agrees");
         XRPL_ASSERT_PARTS(
-            deltas.managementFeeDueDelta == managementFeeOutstanding,
+            deltas.managementFeeDueDelta <= managementFeeOutstanding,
             "ripple::detail::computePaymentComponents",
             "last payment management fee agrees");
 

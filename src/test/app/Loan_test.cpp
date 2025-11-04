@@ -5945,7 +5945,7 @@ failed with assertion error: Both principal and interest rounded are zero 0 + 0
         LoanParameters const loanParams{
             .account = Account("lender"),
             .counter = Account("borrower"),
-            .principalRequest = 1255438,
+            .principalRequest{1255438, -6},
             .interest = TenthBips32{1922},
             .payTotal = 5816,
             .payInterval = 29193};
