@@ -2859,6 +2859,44 @@ class Vault_test : public beast::unit_test::suite
             env(tx1);
         });
 
+        testCase([&, this](
+                     Env& env,
+                     Account const& owner,
+                     Account const& issuer,
+                     Account const& charlie,
+                     auto,
+                     Vault& vault,
+                     PrettyAsset const& asset,
+                     auto&&...) {
+            testcase("IOU calculation rounding");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            tx[sfScale] = 1;
+            env(tx);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            auto const tx1 = vault.deposit(
+                {.depositor = owner,
+                 .id = keylet.key,
+                 .amount = asset(Number(375, -2))});
+            for (auto i = 0; i < 5; ++i)
+            {
+                env(tx1);
+            }
+            env.close();
+
+            env(vault.withdraw(
+                {.depositor = owner,
+                 .id = keylet.key,
+                 .amount = asset(Number(1000 + 37 * 5, -1))}));
+            env(vault.del({.owner = owner, .id = keylet.key}));
+            env.close();
+        });
+
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env env{*this, testable_amendments()};
             return {
