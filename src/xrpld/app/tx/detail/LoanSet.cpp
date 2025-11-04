@@ -376,6 +376,7 @@ LoanSet::checkGuards(
         return tecPRECISION_LOSS;
     }
 
+#if LOANTEMP
     // Guard 4: if the rounded periodic payment is large enough that the
     // loan can't be amortized in the specified number of payments, raise an
     // error
@@ -396,6 +397,7 @@ LoanSet::checkGuards(
             return tecPRECISION_LOSS;
         }
     }
+#endif
     return tesSUCCESS;
 }
 
