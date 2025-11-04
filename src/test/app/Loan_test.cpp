@@ -5953,10 +5953,10 @@ failed with assertion error: Both principal and interest rounded are zero 0 + 0
         {
             Env env(*this, beast::severities::kWarning);
 
-            auto const asset = PrettyAsset{xrpIssue()};
+            auto const asset = PrettyAsset{xrpIssue(), 1'000'000};
             auto const props = computeLoanProperties(
                 asset,
-                loanParams.principalRequest,
+                asset(loanParams.principalRequest).number(),
                 *loanParams.interest,
                 *loanParams.payInterval,
                 *loanParams.payTotal,
