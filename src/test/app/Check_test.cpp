@@ -1027,9 +1027,7 @@ class Check_test : public beast::unit_test::suite
             env(signers(bob, 2, {{bogie, 1}, {demon, 1}}), sig(bobby));
             env.close();
 
-            // Bob's signer list has an owner count of 1.
-            int const signersCount = 1;
-            BEAST_EXPECT(ownerCount(env, bob) == signersCount + 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 2);
 
             // bob uses his regular key to cash a check.
             env(check::cash(bob, chkId1, (USD(1))), sig(bobby));
@@ -1039,7 +1037,7 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 1);
             BEAST_EXPECT(ownerCount(env, alice) == 2);
-            BEAST_EXPECT(ownerCount(env, bob) == signersCount + 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 2);
 
             // bob uses multisigning to cash a check.
             XRPAmount const baseFeeDrops{env.current()->fees().base};
@@ -1052,7 +1050,7 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
             BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(ownerCount(env, bob) == signersCount + 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 2);
         }
     }
 
@@ -1767,13 +1765,11 @@ class Check_test : public beast::unit_test::suite
             env(signers(alice, 2, {{bogie, 1}, {demon, 1}}), sig(alie));
             env.close();
 
-            int const signersCount = 1;
-
             // alice uses her regular key to cancel a check.
             env(check::cancel(alice, chkIdReg), sig(alie));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 3);
-            BEAST_EXPECT(ownerCount(env, alice) == signersCount + 3);
+            BEAST_EXPECT(ownerCount(env, alice) == 4);
 
             // alice uses multisigning to cancel a check.
             XRPAmount const baseFeeDrops{env.current()->fees().base};
@@ -1782,18 +1778,18 @@ class Check_test : public beast::unit_test::suite
                 fee(3 * baseFeeDrops));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 2);
-            BEAST_EXPECT(ownerCount(env, alice) == signersCount + 2);
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
 
             // Creator and destination cancel the remaining unexpired checks.
             env(check::cancel(alice, chkId3), sig(alice));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
-            BEAST_EXPECT(ownerCount(env, alice) == signersCount + 1);
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
 
             env(check::cancel(bob, chkIdNotExp3));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(ownerCount(env, alice) == signersCount + 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
         }
     }
 
