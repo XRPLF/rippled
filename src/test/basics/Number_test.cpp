@@ -466,6 +466,11 @@ public:
         BEAST_EXPECT(n0 == Number{0});
         XRPAmount xrp1{n0};
         BEAST_EXPECT(xrp1 == xrp0);
+
+        XRPAmount bigXrp{INITIAL_XRP - 1};
+        // Will overflow in current implementation
+        Number bigNum{bigXrp};
+        BEAST_EXPECT(XRPAmount{bigNum} == bigXrp);
     }
 
     void

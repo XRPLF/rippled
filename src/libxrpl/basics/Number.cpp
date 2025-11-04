@@ -521,6 +521,24 @@ Number::operator rep() const
     return drops;
 }
 
+Number
+Number::truncate() const noexcept
+{
+    if (exponent_ >= 0 || mantissa_ == 0)
+        return *this;
+
+    Number ret = *this;
+    while (ret.exponent_ < 0 && ret.mantissa_ != 0)
+    {
+        ret.exponent_ += 1;
+        ret.mantissa_ /= rep(10);
+    }
+    // We are guaranteed that normalize() will never throw an exception
+    // because exponent is either negative or zero at this point.
+    ret.normalize();
+    return ret;
+}
+
 std::string
 to_string(Number const& amount)
 {
