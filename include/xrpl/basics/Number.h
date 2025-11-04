@@ -65,8 +65,8 @@ public:
 
     explicit constexpr Number() = default;
 
-    constexpr Number(rep mantissa);
-    explicit constexpr Number(rep mantissa, int exponent);
+    Number(rep mantissa);
+    explicit Number(rep mantissa, int exponent);
     explicit constexpr Number(rep mantissa, int exponent, unchecked) noexcept;
 
     constexpr rep
@@ -199,7 +199,7 @@ public:
 private:
     static thread_local rounding_mode mode_;
 
-    constexpr void
+    void
     normalize();
     constexpr bool
     isnormal() const noexcept;
@@ -214,13 +214,13 @@ inline constexpr Number::Number(rep mantissa, int exponent, unchecked) noexcept
 {
 }
 
-inline constexpr Number::Number(rep mantissa, int exponent)
+inline Number::Number(rep mantissa, int exponent)
     : mantissa_{mantissa}, exponent_{exponent}
 {
     normalize();
 }
 
-inline constexpr Number::Number(rep mantissa) : Number{mantissa, 0}
+inline Number::Number(rep mantissa) : Number{mantissa, 0}
 {
 }
 
