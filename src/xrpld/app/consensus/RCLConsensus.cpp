@@ -831,21 +831,17 @@ RCLConsensus::Adaptor::validate(
             if (proposing)
                 v.setFlag(vfFullValidation);
 
-            if (ledger.ledger_->rules().enabled(featureHardenedValidations))
-            {
-                // Attest to the hash of what we consider to be the last fully
-                // validated ledger. This may be the hash of the ledger we are
-                // validating here, and that's fine.
-                if (auto const vl = ledgerMaster_.getValidatedLedger())
-                    v.setFieldH256(sfValidatedHash, vl->info().hash);
+            // Attest to the hash of what we consider to be the last fully
+            // validated ledger. This may be the hash of the ledger we are
+            // validating here, and that's fine.
+            if (auto const vl = ledgerMaster_.getValidatedLedger())
+                v.setFieldH256(sfValidatedHash, vl->info().hash);
 
-                v.setFieldU64(sfCookie, valCookie_);
+            v.setFieldU64(sfCookie, valCookie_);
 
-                // Report our server version every flag ledger:
-                if (ledger.ledger_->isVotingLedger())
-                    v.setFieldU64(
-                        sfServerVersion, BuildInfo::getEncodedVersion());
-            }
+            // Report our server version every flag ledger:
+            if (ledger.ledger_->isVotingLedger())
+                v.setFieldU64(sfServerVersion, BuildInfo::getEncodedVersion());
 
             // Report our load
             {

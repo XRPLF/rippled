@@ -993,10 +993,10 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         // Check if the majority of validators run a higher version rippled
         // software. If so print a warning.
         //
-        // Once the HardenedValidations amendment is enabled, validators include
-        // their rippled software version in the validation messages of every
-        // (flag - 1) ledger. We wait for one ledger time before checking the
-        // version information to accumulate more validation messages.
+        // Validators include their rippled software version in the validation
+        // messages of every (flag - 1) ledger. We wait for one ledger time
+        // before checking the version information to accumulate more validation
+        // messages.
 
         auto currentTime = app_.timeKeeper().now();
         bool needPrint = false;
