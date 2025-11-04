@@ -5940,7 +5940,7 @@ failed with assertion error: Both principal and interest rounded are zero 0 + 0
             .vaultDeposit = 1'000'000'000,
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
-            .managementFeeRate = TenthBips16{59195},
+            .managementFeeRate = TenthBips16{5919},
             .coverRateLiquidation = TenthBips32{0}};
         LoanParameters const loanParams{
             .account = Account("lender"),
@@ -5970,7 +5970,8 @@ failed with assertion error: Both principal and interest rounded are zero 0 + 0
                 << "\tFirst payment principal: " << props.firstPaymentPrincipal
                 << std::endl;
 
-            BEAST_EXPECT(LoanSet::checkGuards(
+            // checkGuards returns a TER, so success is 0
+            BEAST_EXPECT(!LoanSet::checkGuards(
                 asset,
                 loanParams.principalRequest,
                 *loanParams.interest,
