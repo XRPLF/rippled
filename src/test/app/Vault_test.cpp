@@ -2875,9 +2875,12 @@ class Vault_test : public beast::unit_test::suite
             env(tx);
             env.close();
 
+            // This operation (first deposit 100, then 3.75 x 5) is known to
+            // have triggered calculation rounding errors in Number addition
+            // and division), causing the last deposit to be blocked by Vault
+            // invariants.
             env(vault.deposit(
                 {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
-            env.close();
 
             auto const tx1 = vault.deposit(
                 {.depositor = owner,
@@ -2889,6 +2892,9 @@ class Vault_test : public beast::unit_test::suite
             }
             env.close();
 
+            // Total vault balance should be 118.5 IOU. Withdraw and delete the
+            // vault to verify this exact amount was deposited and the owner has
+            // matching shares
             env(vault.withdraw(
                 {.depositor = owner,
                  .id = keylet.key,
