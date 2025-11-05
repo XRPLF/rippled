@@ -1087,8 +1087,7 @@ amountFromJson(SField const& name, Json::Value const& v)
         }
         else
         {
-            std::int64_t const temp = value.asInt();
-            parts.mantissa = -temp;
+            parts.mantissa = value.asAbsUInt();
             parts.negative = true;
         }
     }

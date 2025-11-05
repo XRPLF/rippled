@@ -620,14 +620,23 @@ public:
             BEAST_EXPECT(amountFromJson(sfNumber, "0") == XRPAmount(0));
             BEAST_EXPECT(amountFromJson(sfNumber, "-0") == XRPAmount(0));
 
+            constexpr auto imin = std::numeric_limits<int>::min();
+            BEAST_EXPECT(amountFromJson(sfNumber, imin) == XRPAmount(imin));
             BEAST_EXPECT(
-                amountFromJson(sfNumber, std::numeric_limits<int>::min()) ==
-                XRPAmount(std::numeric_limits<int>::min()));
+                amountFromJson(sfNumber, std::to_string(imin)) ==
+                XRPAmount(imin));
+
+            constexpr auto imax = std::numeric_limits<int>::max();
+            BEAST_EXPECT(amountFromJson(sfNumber, imax) == XRPAmount(imax));
             BEAST_EXPECT(
-                amountFromJson(
-                    sfNumber,
-                    std::to_string(std::numeric_limits<int>::min())) ==
-                XRPAmount(std::numeric_limits<int>::min()));
+                amountFromJson(sfNumber, std::to_string(imax)) ==
+                XRPAmount(imax));
+
+            constexpr auto umax = std::numeric_limits<unsigned int>::max();
+            BEAST_EXPECT(amountFromJson(sfNumber, umax) == XRPAmount(umax));
+            BEAST_EXPECT(
+                amountFromJson(sfNumber, std::to_string(umax)) ==
+                XRPAmount(umax));
 
             // XRP does not handle fractional part
             try

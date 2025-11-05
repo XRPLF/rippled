@@ -126,14 +126,30 @@ struct STNumber_test : public beast::unit_test::suite
                 numberFromJson(sfNumber, "-0.0e6") == STNumber(sfNumber, 0));
             BEAST_EXPECT(
                 numberFromJson(sfNumber, "-0.000e6") == STNumber(sfNumber, 0));
+
+            constexpr auto imin = std::numeric_limits<int>::min();
             BEAST_EXPECT(
-                numberFromJson(sfNumber, std::numeric_limits<int>::min()) ==
-                STNumber(sfNumber, Number(std::numeric_limits<int>::min(), 0)));
+                numberFromJson(sfNumber, imin) ==
+                STNumber(sfNumber, Number(imin, 0)));
             BEAST_EXPECT(
-                numberFromJson(
-                    sfNumber,
-                    std::to_string(std::numeric_limits<int>::min())) ==
-                STNumber(sfNumber, Number(std::numeric_limits<int>::min(), 0)));
+                numberFromJson(sfNumber, std::to_string(imin)) ==
+                STNumber(sfNumber, Number(imin, 0)));
+
+            constexpr auto imax = std::numeric_limits<int>::max();
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, imax) ==
+                STNumber(sfNumber, Number(imax, 0)));
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, std::to_string(imax)) ==
+                STNumber(sfNumber, Number(imax, 0)));
+
+            constexpr auto umax = std::numeric_limits<unsigned int>::max();
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, umax) ==
+                STNumber(sfNumber, Number(umax, 0)));
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, std::to_string(umax)) ==
+                STNumber(sfNumber, Number(umax, 0)));
 
             // Obvious non-numbers tested here
             try

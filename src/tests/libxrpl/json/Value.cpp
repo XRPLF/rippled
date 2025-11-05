@@ -605,8 +605,11 @@ TEST_CASE("edge cases")
 
     CHECK(r1.parse(json, j1));
     CHECK(j1["max_uint"].asUInt() == max_uint);
+    CHECK(j1["max_uint"].asAbsUInt() == max_uint);
     CHECK(j1["max_int"].asInt() == max_int);
+    CHECK(j1["max_int"].asAbsUInt() == max_int);
     CHECK(j1["min_int"].asInt() == min_int);
+    CHECK(j1["min_int"].asAbsUInt() == static_cast<std::int64_t>(min_int) * -1);
     CHECK(j1["a_uint"].asUInt() == a_uint);
     CHECK(j1["a_uint"] > a_large_int);
     CHECK(j1["a_uint"] > a_small_int);
@@ -792,6 +795,7 @@ TEST_CASE("conversions")
         // val.asCString() should trigger an assertion failure
         CHECK(val.asString() == "");
         CHECK(val.asInt() == 0);
+        CHECK(val.asAbsUInt() == 0);
         CHECK(val.asUInt() == 0);
         CHECK(val.asDouble() == 0.0);
         CHECK(val.asBool() == false);
@@ -812,6 +816,7 @@ TEST_CASE("conversions")
         // val.asCString() should trigger an assertion failure
         CHECK(val.asString() == "-1234");
         CHECK(val.asInt() == -1234);
+        CHECK(val.asAbsUInt() == 1234u);
         CHECK_THROWS_AS(val.asUInt(), Json::error);
         CHECK(val.asDouble() == -1234.0);
         CHECK(val.asBool() == true);
@@ -832,6 +837,7 @@ TEST_CASE("conversions")
         // val.asCString() should trigger an assertion failure
         CHECK(val.asString() == "1234");
         CHECK(val.asInt() == 1234);
+        CHECK(val.asAbsUInt() == 1234u);
         CHECK(val.asUInt() == 1234u);
         CHECK(val.asDouble() == 1234.0);
         CHECK(val.asBool() == true);
@@ -852,6 +858,7 @@ TEST_CASE("conversions")
         // val.asCString() should trigger an assertion failure
         CHECK(std::regex_match(val.asString(), std::regex("^2\\.0*$")));
         CHECK(val.asInt() == 2);
+        CHECK(val.asAbsUInt() == 2u);
         CHECK(val.asUInt() == 2u);
         CHECK(val.asDouble() == 2.0);
         CHECK(val.asBool() == true);
@@ -872,6 +879,7 @@ TEST_CASE("conversions")
         CHECK(strcmp(val.asCString(), "54321") == 0);
         CHECK(val.asString() == "54321");
         CHECK(val.asInt() == 54321);
+        CHECK(val.asAbsUInt() == 54321);
         CHECK(val.asUInt() == 54321u);
         CHECK_THROWS_AS(val.asDouble(), Json::error);
         CHECK(val.asBool() == true);
@@ -912,6 +920,7 @@ TEST_CASE("conversions")
         // val.asCString() should trigger an assertion failure
         CHECK(val.asString() == "false");
         CHECK(val.asInt() == 0);
+        CHECK(val.asAbsUInt() == 0);
         CHECK(val.asUInt() == 0);
         CHECK(val.asDouble() == 0.0);
         CHECK(val.asBool() == false);

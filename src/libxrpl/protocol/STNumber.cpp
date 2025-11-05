@@ -169,8 +169,7 @@ numberFromJson(SField const& field, Json::Value const& value)
         }
         else
         {
-            std::int64_t const temp = value.asInt();
-            parts.mantissa = -temp;
+            parts.mantissa = value.asAbsUInt();
             parts.negative = true;
         }
     }

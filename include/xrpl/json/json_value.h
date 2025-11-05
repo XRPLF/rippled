@@ -244,6 +244,10 @@ public:
     bool
     asBool() const;
 
+    /** Correct absolute value from int or unsigned int */
+    UInt
+    asAbsUInt() const;
+
     // TODO: What is the "empty()" method this docstring mentions?
     /** isNull() tests to see if this field is null.  Don't use this method to
         test for emptiness: use empty(). */
@@ -455,6 +459,21 @@ inline bool
 operator>=(Value const& x, Value const& y)
 {
     return !(x < y);
+}
+
+inline UInt
+Value::asAbsUInt() const
+{
+    if (isUInt())
+        return asUInt();
+
+    // Doing this conversion through int64 avoids overflow error for
+    // -1 * 2^31 i.e. numeric_limits<int>::min(), when returning -value.
+    std::int64_t const value = asInt();
+    if (value >= 0)
+        return value;
+
+    return -value;
 }
 
 /** \brief Experimental do not use: Allocator to customize member name and
