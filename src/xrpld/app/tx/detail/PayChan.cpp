@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/PayChan.h>
 
 #include <xrpl/basics/Log.h>
@@ -175,13 +156,6 @@ PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
-std::uint32_t
-PayChanCreate::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
-}
-
 NotTEC
 PayChanCreate::preflight(PreflightContext const& ctx)
 {
@@ -335,13 +309,6 @@ PayChanFund::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
-std::uint32_t
-PayChanFund::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
-}
-
 NotTEC
 PayChanFund::preflight(PreflightContext const& ctx)
 {
@@ -434,10 +401,9 @@ PayChanClaim::checkExtraFeatures(PreflightContext const& ctx)
 }
 
 std::uint32_t
-PayChanClaim::getFlagsMask(PreflightContext const& ctx)
+PayChanClaim::getFlagsMask(PreflightContext const&)
 {
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfPayChanClaimMask : 0;
+    return tfPayChanClaimMask;
 }
 
 NotTEC

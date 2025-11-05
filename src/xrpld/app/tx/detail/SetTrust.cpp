@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
 
@@ -127,7 +108,7 @@ SetTrust::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+NotTEC
 SetTrust::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -138,7 +119,7 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
@@ -149,10 +130,10 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     // TrustlineUnfreeze granular permission. Setting other flags returns
     // error.
     if (txFlags & tfTrustSetPermissionMask)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
     auto const sleRippleState = view.read(keylet::line(
@@ -161,19 +142,19 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     // if the trustline does not exist, granular permissions are
     // not allowed to create trustline
     if (!sleRippleState)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
 
     if (txFlags & tfSetfAuth &&
         !granularPermissions.contains(TrustlineAuthorize))
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
     if (txFlags & tfSetFreeze && !granularPermissions.contains(TrustlineFreeze))
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
     if (txFlags & tfClearFreeze &&
         !granularPermissions.contains(TrustlineUnfreeze))
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     // updating LimitAmount is not allowed only with granular permissions,
     // unless there's a new granular permission for this in the future.
@@ -185,7 +166,7 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     saLimitAllow.setIssuer(tx[sfAccount]);
 
     if (curLimit != saLimitAllow)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
 }
@@ -576,7 +557,7 @@ SetTrust::doApply()
             if ((bHigh ? saHighBalance : saLowBalance) >= beast::zero)
                 uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
 
-            else if (view().rules().enabled(fix1578))
+            else
                 // Cannot set noRipple on a negative balance.
                 return tecNO_PERMISSION;
         }
