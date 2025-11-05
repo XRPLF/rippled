@@ -50,7 +50,9 @@ jobs:
           files: |
             # These paths are unique to `on-pr.yml`.
             .github/scripts/levelization/**
+            .github/scripts/rename/**
             .github/workflows/reusable-check-levelization.yml
+            .github/workflows/reusable-check-rename.yml
             .github/workflows/reusable-notify-clio.yml
             .github/workflows/on-pr.yml
 
@@ -97,6 +99,11 @@ jobs:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-check-levelization.yml
+
+  check-rename:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-rename.yml
 
   build-test:
     needs: should-run
