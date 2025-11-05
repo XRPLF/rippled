@@ -2,8 +2,6 @@
    install stuff
 #]===================================================================]
 
-include(create_symbolic_link)
-
 install (
   TARGETS
     common
