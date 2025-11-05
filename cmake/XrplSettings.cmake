@@ -49,7 +49,7 @@ else()
   set(wextra OFF CACHE BOOL "gcc/clang only" FORCE)
 endif()
 if(is_linux)
-  option(BUILD_SHARED_LIBS "build shared ripple libraries" OFF)
+  option(BUILD_SHARED_LIBS "build shared xrpl libraries" OFF)
   option(static "link protobuf, openssl, libc++, and boost statically" ON)
   option(perf "Enables flags that assist with perf recording" OFF)
   option(use_gold "enables detection of gold (binutils) linker" ON)
@@ -58,7 +58,7 @@ else()
   # we are not ready to allow shared-libs on windows because it would require
   # export declarations. On macos it's more feasible, but static openssl
   # produces odd linker errors, thus we disable shared lib builds for now.
-  set(BUILD_SHARED_LIBS OFF CACHE BOOL "build shared ripple libraries - OFF for win/macos" FORCE)
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "build shared xrpl libraries - OFF for win/macos" FORCE)
   set(static ON CACHE BOOL "static link, linux only. ON for WIN/macos" FORCE)
   set(perf OFF CACHE BOOL "perf flags, linux only" FORCE)
   set(use_gold OFF CACHE BOOL "gold linker, linux only" FORCE)
