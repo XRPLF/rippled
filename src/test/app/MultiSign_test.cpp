@@ -54,14 +54,10 @@ public:
         Env env{*this, features};
         Account const alice{"alice", KeyType::secp256k1};
 
-        // The reserve required for a signer list changes with the passage
-        // of featureMultiSignReserve.  Make the required adjustments.
-        bool const reserve1{features[featureMultiSignReserve]};
-
         // Pay alice enough to meet the initial reserve, but not enough to
         // meet the reserve for a SignerListSet.
         auto const fee = env.current()->fees().base;
-        auto const smallSignersReserve = reserve1 ? XRP(250) : XRP(350);
+        auto const smallSignersReserve = XRP(250);
         env.fund(smallSignersReserve - drops(1), alice);
         env.close();
         env.require(owners(alice, 0));
@@ -78,12 +74,12 @@ public:
             env.close();
             env(smallSigners);
             env.close();
-            env.require(owners(alice, reserve1 ? 1 : 3));
+            env.require(owners(alice, 1));
         }
         {
             // Pay alice enough to almost make the reserve for the biggest
             // possible list.
-            auto const addReserveBigSigners = reserve1 ? XRP(0) : XRP(350);
+            auto const addReserveBigSigners = XRP(0);
             env(pay(env.master, alice, addReserveBigSigners + fee - drops(1)));
 
             // Replace with the biggest possible signer list.  Should fail.
@@ -100,14 +96,14 @@ public:
                  {spook, 1}});
             env(bigSigners, ter(tecINSUFFICIENT_RESERVE));
             env.close();
-            env.require(owners(alice, reserve1 ? 1 : 3));
+            env.require(owners(alice, 1));
 
             // Fund alice one more drop (plus the fee) and succeed.
             env(pay(env.master, alice, fee + drops(1)));
             env.close();
             env(bigSigners);
             env.close();
-            env.require(owners(alice, reserve1 ? 1 : 10));
+            env.require(owners(alice, 1));
         }
         // Remove alice's signer list and get the owner count back.
         env(signers(alice, jtx::none));
@@ -211,7 +207,7 @@ public:
         // Attach phantom signers to alice and use them for a transaction.
         env(signers(alice, 1, {{bogie, 1}, {demon, 1}}));
         env.close();
-        env.require(owners(alice, features[featureMultiSignReserve] ? 1 : 4));
+        env.require(owners(alice, 1));
 
         // This should work.
         auto const baseFee = env.current()->fees().base;
@@ -288,7 +284,7 @@ public:
              {shade, 1},
              {spook, 1}}));
         env.close();
-        env.require(owners(alice, features[featureMultiSignReserve] ? 1 : 10));
+        env.require(owners(alice, 1));
 
         // This should work.
         auto const baseFee = env.current()->fees().base;
@@ -343,7 +339,7 @@ public:
         // Make sure the transaction fails if they are not.
         env(signers(alice, 1, {{bogie, 1}, {demon, 1}}));
         env.close();
-        env.require(owners(alice, features[featureMultiSignReserve] ? 1 : 4));
+        env.require(owners(alice, 1));
 
         msig phantoms{bogie, demon};
         std::reverse(phantoms.signers.begin(), phantoms.signers.end());
@@ -382,7 +378,7 @@ public:
         // Attach signers to alice
         env(signers(alice, 4, {{becky, 3}, {cheri, 4}}), sig(alice));
         env.close();
-        env.require(owners(alice, features[featureMultiSignReserve] ? 1 : 4));
+        env.require(owners(alice, 1));
 
         // Attempt a multisigned transaction that meets the quorum.
         auto const baseFee = env.current()->fees().base;
@@ -751,7 +747,7 @@ public:
         env(signers(alice, 1, {{becky, 1}, {cheri, 1}, {daria, 1}, {jinni, 1}}),
             sig(alie));
         env.close();
-        env.require(owners(alice, features[featureMultiSignReserve] ? 1 : 6));
+        env.require(owners(alice, 1));
 
         // Each type of signer should succeed individually.
         auto const baseFee = env.current()->fees().base;
@@ -798,7 +794,7 @@ public:
                  {jinni, 0xFFFF}}),
             sig(alie));
         env.close();
-        env.require(owners(alice, features[featureMultiSignReserve] ? 1 : 6));
+        env.require(owners(alice, 1));
 
         aliceSeq = env.seq(alice);
         env(noop(alice),
@@ -829,7 +825,7 @@ public:
                  {spook, 0xFFFF}}),
             sig(alie));
         env.close();
-        env.require(owners(alice, features[featureMultiSignReserve] ? 1 : 10));
+        env.require(owners(alice, 1));
 
         aliceSeq = env.seq(alice);
         env(noop(alice),
@@ -1005,7 +1001,7 @@ public:
         // Attach signers to alice.
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}}), sig(alie));
         env.close();
-        int const signerListOwners{features[featureMultiSignReserve] ? 1 : 4};
+        int const signerListOwners{1};
         env.require(owners(alice, signerListOwners + 0));
 
         // Multisign a ttPAYMENT.
@@ -1068,7 +1064,7 @@ public:
             msig(becky, bogie),
             fee(3 * baseFee));
         env.close();
-        env.require(owners(alice, features[featureMultiSignReserve] ? 2 : 6));
+        env.require(owners(alice, 2));
     }
 
     void
@@ -1447,101 +1443,6 @@ public:
     }
 
     void
-    testAmendmentTransition()
-    {
-        testcase("Amendment Transition");
-
-        // The OwnerCount associated with a SignerList changes once the
-        // featureMultiSignReserve amendment goes live.  Create a couple
-        // of signer lists before and after the amendment goes live and
-        // verify that the OwnerCount is managed properly for all of them.
-        using namespace jtx;
-        Account const alice{"alice", KeyType::secp256k1};
-        Account const becky{"becky", KeyType::ed25519};
-        Account const cheri{"cheri", KeyType::secp256k1};
-        Account const daria{"daria", KeyType::ed25519};
-
-        Env env{*this, testable_amendments() - featureMultiSignReserve};
-        env.fund(XRP(1000), alice, becky, cheri, daria);
-        env.close();
-
-        // Give alice and becky signer lists before the amendment goes live.
-        env(signers(alice, 1, {{bogie, 1}}));
-        env(signers(
-            becky,
-            1,
-            {{bogie, 1},
-             {demon, 1},
-             {ghost, 1},
-             {haunt, 1},
-             {jinni, 1},
-             {phase, 1},
-             {shade, 1},
-             {spook, 1}}));
-        env.close();
-
-        env.require(owners(alice, 3));
-        env.require(owners(becky, 10));
-
-        // Enable the amendment.
-        env.enableFeature(featureMultiSignReserve);
-        env.close();
-
-        // Give cheri and daria signer lists after the amendment goes live.
-        env(signers(cheri, 1, {{bogie, 1}}));
-        env(signers(
-            daria,
-            1,
-            {{bogie, 1},
-             {demon, 1},
-             {ghost, 1},
-             {haunt, 1},
-             {jinni, 1},
-             {phase, 1},
-             {shade, 1},
-             {spook, 1}}));
-        env.close();
-
-        env.require(owners(alice, 3));
-        env.require(owners(becky, 10));
-        env.require(owners(cheri, 1));
-        env.require(owners(daria, 1));
-
-        // Delete becky's signer list; her OwnerCount should drop to zero.
-        // Replace alice's signer list; her OwnerCount should drop to one.
-        env(signers(becky, jtx::none));
-        env(signers(
-            alice,
-            1,
-            {{bogie, 1},
-             {demon, 1},
-             {ghost, 1},
-             {haunt, 1},
-             {jinni, 1},
-             {phase, 1},
-             {shade, 1},
-             {spook, 1}}));
-        env.close();
-
-        env.require(owners(alice, 1));
-        env.require(owners(becky, 0));
-        env.require(owners(cheri, 1));
-        env.require(owners(daria, 1));
-
-        // Delete the three remaining signer lists.  Everybody's OwnerCount
-        // should now be zero.
-        env(signers(alice, jtx::none));
-        env(signers(cheri, jtx::none));
-        env(signers(daria, jtx::none));
-        env.close();
-
-        env.require(owners(alice, 0));
-        env.require(owners(becky, 0));
-        env.require(owners(cheri, 0));
-        env.require(owners(daria, 0));
-    }
-
-    void
     testSignersWithTickets(FeatureBitset features)
     {
         testcase("Signers With Tickets");
@@ -1609,7 +1510,7 @@ public:
         // Attach phantom signers to alice and use them for a transaction.
         env(signers(alice, 1, {{bogie, 1, bogie_tag}, {demon, 1, demon_tag}}));
         env.close();
-        env.require(owners(alice, features[featureMultiSignReserve] ? 1 : 4));
+        env.require(owners(alice, 1));
 
         // This should work.
         auto const baseFee = env.current()->fees().base;
@@ -1744,11 +1645,8 @@ public:
         using namespace jtx;
         auto const all = testable_amendments();
 
-        // The reserve required on a signer list changes based on
-        // featureMultiSignReserve.  Limits on the number of signers
-        // changes based on featureExpandedSignerList.  Test both with and
-        // without.
-        testAll(all - featureMultiSignReserve - featureExpandedSignerList);
+        // Limits on the number of signers changes based on
+        // featureExpandedSignerList.  Test both with and without.
         testAll(all - featureExpandedSignerList);
         testAll(all);
 
@@ -1757,8 +1655,6 @@ public:
 
         testSignerListObject(all - fixIncludeKeyletFields);
         testSignerListObject(all);
-
-        testAmendmentTransition();
     }
 };
 

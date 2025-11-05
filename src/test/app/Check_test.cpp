@@ -997,13 +997,8 @@ class Check_test : public beast::unit_test::suite
         }
 
         // Use a regular key and also multisign to cash a check.
-        // featureMultiSignReserve changes the reserve on a SignerList, so
-        // check both before and after.
-        for (auto const& testFeatures :
-             {features - featureMultiSignReserve,
-              features | featureMultiSignReserve})
         {
-            Env env{*this, testFeatures};
+            Env env{*this};
 
             env.fund(XRP(1000), gw, alice, bob);
             env.close();
@@ -1033,10 +1028,8 @@ class Check_test : public beast::unit_test::suite
             env(signers(bob, 2, {{bogie, 1}, {demon, 1}}), sig(bobby));
             env.close();
 
-            // If featureMultiSignReserve is enabled then bob's signer list
-            // has an owner count of 1, otherwise it's 4.
-            int const signersCount = {
-                testFeatures[featureMultiSignReserve] ? 1 : 4};
+            // Bob's signer list has an owner count of 1, otherwise it's 4.
+            int const signersCount = 1;
             BEAST_EXPECT(ownerCount(env, bob) == signersCount + 1);
 
             // bob uses his regular key to cash a check.
@@ -1656,13 +1649,8 @@ class Check_test : public beast::unit_test::suite
         Account const zoe{"zoe"};
         IOU const USD{gw["USD"]};
 
-        // featureMultiSignReserve changes the reserve on a SignerList, so
-        // check both before and after.
-        for (auto const& testFeatures :
-             {features - featureMultiSignReserve,
-              features | featureMultiSignReserve})
         {
-            Env env{*this, testFeatures};
+            Env env{*this};
 
             env.fund(XRP(1000), gw, alice, bob, zoe);
             env.close();
@@ -1780,10 +1768,7 @@ class Check_test : public beast::unit_test::suite
             env(signers(alice, 2, {{bogie, 1}, {demon, 1}}), sig(alie));
             env.close();
 
-            // If featureMultiSignReserve is enabled then alices's signer list
-            // has an owner count of 1, otherwise it's 4.
-            int const signersCount{
-                testFeatures[featureMultiSignReserve] ? 1 : 4};
+            int const signersCount = 1;
 
             // alice uses her regular key to cancel a check.
             env(check::cancel(alice, chkIdReg), sig(alie));

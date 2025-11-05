@@ -3540,8 +3540,7 @@ private:
         // Attach signers to alice.
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}}), sig(alie));
         env.close();
-        int const signerListOwners{features[featureMultiSignReserve] ? 2 : 5};
-        env.require(owners(alice, signerListOwners + 0));
+        env.require(owners(alice, 2));
 
         msig const ms{becky, bogie};
 
@@ -3806,8 +3805,6 @@ private:
         using namespace jtx;
         auto const all = testable_amendments();
 
-        testTxMultisign(
-            all - featureMultiSignReserve - featureExpandedSignerList);
         testTxMultisign(all - featureExpandedSignerList);
         testTxMultisign(all);
     }

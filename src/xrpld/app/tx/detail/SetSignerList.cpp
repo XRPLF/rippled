@@ -142,10 +142,6 @@ SetSignerList::preCompute()
 
 // The return type is signed so it is compatible with the 3rd argument
 // of adjustOwnerCount() (which must be signed).
-//
-// NOTE: This way of computing the OwnerCount associated with a SignerList
-// is valid until the featureMultiSignReserve amendment passes.  Once it
-// passes then just 1 OwnerCount is associated with a SignerList.
 static int
 signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
 {
@@ -337,15 +333,8 @@ SetSignerList::replaceSignerList()
     // Compute new reserve.  Verify the account has funds to meet the reserve.
     std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
 
-    // The required reserve changes based on featureMultiSignReserve...
     int addedOwnerCount{1};
     std::uint32_t flags{lsfOneOwnerCount};
-    if (!ctx_.view().rules().enabled(featureMultiSignReserve))
-    {
-        addedOwnerCount = signerCountBasedOwnerCountDelta(
-            signers_.size(), ctx_.view().rules());
-        flags = 0;
-    }
 
     XRPAmount const newReserve{
         view().fees().accountReserve(oldOwnerCount + addedOwnerCount)};
