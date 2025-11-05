@@ -3802,18 +3802,13 @@ private:
     void
     testMultisign()
     {
-        using namespace jtx;
-        auto const all = testable_amendments();
-
-        testTxMultisign(all - featureExpandedSignerList);
-        testTxMultisign(all);
+        testTxMultisign(jtx::testable_amendments());
     }
 
     void
     testPayStrand()
     {
-        using namespace jtx;
-        auto const all = testable_amendments();
+        auto const all = jtx::testable_amendments();
 
         testToStrand(all);
         testRIPD1373(all);

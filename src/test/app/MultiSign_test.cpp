@@ -137,14 +137,12 @@ public:
             ter(temBAD_QUORUM));
 
         // clang-format off
-        // Make a signer list that's too big.  Should fail. (Even with
-        // ExpandedSignerList)
+        // Make a signer list that's too big.  Should fail.
         Account const spare("spare", KeyType::secp256k1);
         env(signers(
                 alice,
                 1,
-                features[featureExpandedSignerList]
-                    ? std::vector<signer>{{bogie, 1}, {demon, 1}, {ghost, 1},
+                std::vector<signer>{{bogie, 1}, {demon, 1}, {ghost, 1},
                                           {haunt, 1}, {jinni, 1}, {phase, 1},
                                           {shade, 1}, {spook, 1}, {spare, 1},
                                           {acc10, 1}, {acc11, 1}, {acc12, 1},
@@ -154,10 +152,7 @@ public:
                                           {acc22, 1}, {acc23, 1}, {acc24, 1},
                                           {acc25, 1}, {acc26, 1}, {acc27, 1},
                                           {acc28, 1}, {acc29, 1}, {acc30, 1},
-                                          {acc31, 1}, {acc32, 1}, {acc33, 1}}
-                    : std::vector<signer>{{bogie, 1}, {demon, 1}, {ghost, 1},
-                                          {haunt, 1}, {jinni, 1}, {phase, 1},
-                                          {shade, 1}, {spook, 1}, {spare, 1}}),
+                                          {acc31, 1}, {acc32, 1}, {acc33, 1}}),
             ter(temMALFORMED));
         // clang-format on
         env.close();
@@ -1144,56 +1139,44 @@ public:
                 "fails local checks: Invalid Signers array size.");
         }
         {
-            // Multisign 9 (!ExpandedSignerList) | 33 (ExpandedSignerList) times
-            // should fail.
             JTx tx = env.jt(
                 noop(alice),
                 fee(2 * baseFee),
 
-                features[featureExpandedSignerList] ? msig(
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie)
-                                                    : msig(
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie,
-                                                          bogie));
+                msig(
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie,
+                    bogie));
             STTx local = *(tx.stx);
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
@@ -1456,9 +1439,6 @@ public:
     void
     testSignersWithTags(FeatureBitset features)
     {
-        if (!features[featureExpandedSignerList])
-            return;
-
         testcase("Signers With Tags");
 
         using namespace jtx;
@@ -1615,9 +1595,6 @@ public:
         using namespace jtx;
         auto const all = testable_amendments();
 
-        // Limits on the number of signers changes based on
-        // featureExpandedSignerList.  Test both with and without.
-        testAll(all - featureExpandedSignerList);
         testAll(all);
 
         testSignerListSetFlags(all - fixInvalidTxFlags);

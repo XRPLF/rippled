@@ -859,8 +859,7 @@ public:
         testDelete();
         testUpdate();
         testAmendment();
-        for (auto const& features : {all, all - featureExpandedSignerList})
-            testMultisig(features);
+        testMultisig(all);
     }
 };
 
