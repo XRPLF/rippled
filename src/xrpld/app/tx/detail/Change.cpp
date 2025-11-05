@@ -147,88 +147,6 @@ Change::preCompute()
         account_ == beast::zero, "ripple::Change::preCompute : zero account");
 }
 
-void
-Change::activateTrustLinesToSelfFix()
-{
-    JLOG(j_.warn()) << "fixTrustLinesToSelf amendment activation code starting";
-
-    auto removeTrustLineToSelf = [this](Sandbox& sb, uint256 id) {
-        auto tl = sb.peek(keylet::child(id));
-
-        if (tl == nullptr)
-        {
-            JLOG(j_.warn()) << id << ": Unable to locate trustline";
-            return true;
-        }
-
-        if (tl->getType() != ltRIPPLE_STATE)
-        {
-            JLOG(j_.warn()) << id << ": Unexpected type "
-                            << static_cast<std::uint16_t>(tl->getType());
-            return true;
-        }
-
-        auto const& lo = tl->getFieldAmount(sfLowLimit);
-        auto const& hi = tl->getFieldAmount(sfHighLimit);
-
-        if (lo != hi)
-        {
-            JLOG(j_.warn()) << id << ": Trustline doesn't meet requirements";
-            return true;
-        }
-
-        if (auto const page = tl->getFieldU64(sfLowNode); !sb.dirRemove(
-                keylet::ownerDir(lo.getIssuer()), page, tl->key(), false))
-        {
-            JLOG(j_.error()) << id << ": failed to remove low entry from "
-                             << toBase58(lo.getIssuer()) << ":" << page
-                             << " owner directory";
-            return false;
-        }
-
-        if (auto const page = tl->getFieldU64(sfHighNode); !sb.dirRemove(
-                keylet::ownerDir(hi.getIssuer()), page, tl->key(), false))
-        {
-            JLOG(j_.error()) << id << ": failed to remove high entry from "
-                             << toBase58(hi.getIssuer()) << ":" << page
-                             << " owner directory";
-            return false;
-        }
-
-        if (tl->getFlags() & lsfLowReserve)
-            adjustOwnerCount(
-                sb, sb.peek(keylet::account(lo.getIssuer())), -1, j_);
-
-        if (tl->getFlags() & lsfHighReserve)
-            adjustOwnerCount(
-                sb, sb.peek(keylet::account(hi.getIssuer())), -1, j_);
-
-        sb.erase(tl);
-
-        JLOG(j_.warn()) << "Successfully deleted trustline " << id;
-
-        return true;
-    };
-
-    using namespace std::literals;
-
-    Sandbox sb(&view());
-
-    if (removeTrustLineToSelf(
-            sb,
-            uint256{
-                "2F8F21EFCAFD7ACFB07D5BB04F0D2E18587820C7611305BB674A64EAB0FA71E1"sv}) &&
-        removeTrustLineToSelf(
-            sb,
-            uint256{
-                "326035D5C0560A9DA8636545DD5A1B0DFCFF63E68D491B5522B767BB00564B1A"sv}))
-    {
-        JLOG(j_.warn()) << "fixTrustLinesToSelf amendment activation code "
-                           "executed successfully";
-        sb.apply(ctx_.rawView());
-    }
-}
-
 TER
 Change::applyAmendment()
 {
@@ -304,9 +222,6 @@ Change::applyAmendment()
         // No flags, enable amendment
         amendments.push_back(amendment);
         amendmentObject->setFieldV256(sfAmendments, amendments);
-
-        if (amendment == fixTrustLinesToSelf)
-            activateTrustLinesToSelfFix();
 
         ctx_.app.getAmendmentTable().enable(amendment);
 
