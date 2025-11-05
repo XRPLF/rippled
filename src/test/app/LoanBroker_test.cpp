@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2025 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpld/app/tx/detail/LoanBrokerCoverDeposit.h>
@@ -658,6 +639,8 @@ class LoanBroker_test : public beast::unit_test::suite
 
             using namespace loanBroker;
 
+            TenthBips32 const tenthBipsZero{0};
+
             auto badKeylet = keylet::vault(alice.id(), env.seq(alice));
             // Try some failure cases
             // not the vault owner
@@ -683,21 +666,34 @@ class LoanBroker_test : public beast::unit_test::suite
             env(set(evan, vault.vaultID),
                 managementFeeRate(maxManagementFeeRate + TenthBips16(10)),
                 ter(temINVALID));
-            // sfCoverRateMinimum: good value, bad account
+            // sfCoverRateMinimum and sfCoverRateLiquidation are linked
+            // Cover: good value, bad account
             env(set(evan, vault.vaultID),
                 coverRateMinimum(maxCoverRate),
-                ter(tecNO_PERMISSION));
-            // sfCoverRateMinimum: too big
-            env(set(evan, vault.vaultID),
-                coverRateMinimum(maxCoverRate + 1),
-                ter(temINVALID));
-            // sfCoverRateLiquidation: good value, bad account
-            env(set(evan, vault.vaultID),
                 coverRateLiquidation(maxCoverRate),
                 ter(tecNO_PERMISSION));
-            // sfCoverRateLiquidation: too big
+            // Cover: too big
             env(set(evan, vault.vaultID),
+                coverRateMinimum(maxCoverRate + 1),
                 coverRateLiquidation(maxCoverRate + 1),
+                ter(temINVALID));
+            // Cover: zero min, non-zero liquidation - implicit and
+            // explicit zero values.
+            env(set(evan, vault.vaultID),
+                coverRateLiquidation(maxCoverRate),
+                ter(temINVALID));
+            env(set(evan, vault.vaultID),
+                coverRateMinimum(tenthBipsZero),
+                coverRateLiquidation(maxCoverRate),
+                ter(temINVALID));
+            // Cover: non-zero min, zero liquidation - implicit and
+            // explicit zero values.
+            env(set(evan, vault.vaultID),
+                coverRateMinimum(maxCoverRate),
+                ter(temINVALID));
+            env(set(evan, vault.vaultID),
+                coverRateMinimum(maxCoverRate),
+                coverRateLiquidation(tenthBipsZero),
                 ter(temINVALID));
             // sfDebtMaximum: good value, bad account
             env(set(evan, vault.vaultID),

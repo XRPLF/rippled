@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -42,8 +23,6 @@ using uint128_t = __uint128_t;
 namespace ripple {
 
 thread_local Number::rounding_mode Number::mode_ = Number::to_nearest;
-
-Number const Number::zero{};
 
 Number::rounding_mode
 Number::getround()
@@ -521,6 +500,24 @@ Number::operator rep() const
         g.doRound(drops);
     }
     return drops;
+}
+
+Number
+Number::truncate() const noexcept
+{
+    if (exponent_ >= 0 || mantissa_ == 0)
+        return *this;
+
+    Number ret = *this;
+    while (ret.exponent_ < 0 && ret.mantissa_ != 0)
+    {
+        ret.exponent_ += 1;
+        ret.mantissa_ /= rep(10);
+    }
+    // We are guaranteed that normalize() will never throw an exception
+    // because exponent is either negative or zero at this point.
+    ret.normalize();
+    return ret;
 }
 
 std::string

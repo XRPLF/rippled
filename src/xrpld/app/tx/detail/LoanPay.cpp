@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/LoanPay.h>
 //
 #include <xrpld/app/misc/LendingHelpers.h>
@@ -374,6 +355,10 @@ LoanPay::doApply()
         paymentParts->principalPaid + paymentParts->interestPaid;
     auto const totalPaidToVaultRounded =
         roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::downward);
+    XRPL_ASSERT_PARTS(
+        !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
+        "ripple::LoanPay::doApply",
+        "rounding does nothing for integral asset");
     auto const totalPaidToVaultForDebt =
         totalPaidToVaultRaw - paymentParts->valueChange;
 
@@ -405,7 +390,21 @@ LoanPay::doApply()
     // Vault object state changes
     view.update(vaultSle);
 
+    Number const assetsAvailableBefore = *assetsAvailableProxy;
+    Number const pseudoAccountBalanceBefore = accountHolds(
+        view,
+        vaultPseudoAccount,
+        asset,
+        FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
+        j_);
+
     {
+        XRPL_ASSERT_PARTS(
+            assetsAvailableBefore == pseudoAccountBalanceBefore,
+            "ripple::LoanPay::doApply",
+            "vault pseudo balance agrees before");
+
         auto assetsTotalProxy = vaultSle->at(sfAssetsTotal);
 
         assetsAvailableProxy += totalPaidToVaultRounded;
@@ -415,6 +414,13 @@ LoanPay::doApply()
             *assetsAvailableProxy <= *assetsTotalProxy,
             "ripple::LoanPay::doApply",
             "assets available must not be greater than assets outstanding");
+
+        if (*assetsAvailableProxy > *assetsTotalProxy)
+        {
+            // LCOV_EXCL_START
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
     }
 
     // Move funds
@@ -487,6 +493,19 @@ LoanPay::doApply()
             j_,
             WaiveTransferFee::Yes))
         return ter;
+
+    Number const assetsAvailableAfter = *assetsAvailableProxy;
+    Number const pseudoAccountBalanceAfter = accountHolds(
+        view,
+        vaultPseudoAccount,
+        asset,
+        FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
+        j_);
+    XRPL_ASSERT_PARTS(
+        assetsAvailableAfter == pseudoAccountBalanceAfter,
+        "ripple::LoanPay::doApply",
+        "vault pseudo balance agrees after");
 
 #if !NDEBUG
     auto const accountBalanceAfter = accountCanSend(

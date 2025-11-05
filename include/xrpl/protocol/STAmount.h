@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
-#define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
+#ifndef XRPL_PROTOCOL_STAMOUNT_H_INCLUDED
+#define XRPL_PROTOCOL_STAMOUNT_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/LocalValue.h>
@@ -66,16 +47,18 @@ public:
     static int const cMaxOffset = 80;
 
     // Maximum native value supported by the code
-    static std::uint64_t const cMinValue = 1'000'000'000'000'000ull;
-    static std::uint64_t const cMaxValue = 9'999'999'999'999'999ull;
-    static std::uint64_t const cMaxNative = 9'000'000'000'000'000'000ull;
+    constexpr static std::uint64_t cMinValue = 1'000'000'000'000'000ull;
+    static_assert(isPowerOfTen(cMinValue));
+    constexpr static std::uint64_t cMaxValue = cMinValue * 10 - 1;
+    static_assert(cMaxValue == 9'999'999'999'999'999ull);
+    constexpr static std::uint64_t cMaxNative = 9'000'000'000'000'000'000ull;
 
     // Max native value on network.
-    static std::uint64_t const cMaxNativeN = 100'000'000'000'000'000ull;
-    static std::uint64_t const cIssuedCurrency = 0x8'000'000'000'000'000ull;
-    static std::uint64_t const cPositive = 0x4'000'000'000'000'000ull;
-    static std::uint64_t const cMPToken = 0x2'000'000'000'000'000ull;
-    static std::uint64_t const cValueMask = ~(cPositive | cMPToken);
+    constexpr static std::uint64_t cMaxNativeN = 100'000'000'000'000'000ull;
+    constexpr static std::uint64_t cIssuedCurrency = 0x8'000'000'000'000'000ull;
+    constexpr static std::uint64_t cPositive = 0x4'000'000'000'000'000ull;
+    constexpr static std::uint64_t cMPToken = 0x2'000'000'000'000'000ull;
+    constexpr static std::uint64_t cValueMask = ~(cPositive | cMPToken);
 
     static std::uint64_t const uRateOne;
 
