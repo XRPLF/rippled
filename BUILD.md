@@ -590,7 +590,7 @@ you might have generated CMake files for a different `build_type` than the
 `CMAKE_BUILD_TYPE` you passed to Conan.
 
 ```
-/rippled/.build/pb-xrpl.libpb/xrpl/proto/ripple.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found
+/rippled/.build/pb-xrpl.libpb/xrpl/proto/xrpl.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found
    10 | #include <google/protobuf/port_def.inc>
       |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 1 error generated.
