@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
-#define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
+#ifndef XRPL_PEERFINDER_LOGIC_H_INCLUDED
+#define XRPL_PEERFINDER_LOGIC_H_INCLUDED
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Bootcache.h>
@@ -35,6 +16,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/utility/WrappedSink.h>
 
 #include <algorithm>
 #include <functional>
@@ -240,21 +222,23 @@ public:
         slot.checked = true;
         slot.connectivityCheckInProgress = false;
 
+        beast::WrappedSink sink{m_journal.sink(), slot.prefix()};
+        beast::Journal journal{sink};
+
         if (ec)
         {
             // VFALCO TODO Should we retry depending on the error?
             slot.canAccept = false;
-            JLOG(m_journal.error())
-                << beast::leftw(18) << "Logic testing " << iter->first
-                << " with error, " << ec.message();
+            JLOG(journal.error()) << "Logic testing " << iter->first
+                                  << " with error, " << ec.message();
             bootcache_.on_failure(checkedAddress);
             return;
         }
 
         slot.canAccept = true;
         slot.set_listening_port(checkedAddress.port());
-        JLOG(m_journal.debug()) << beast::leftw(18) << "Logic testing "
-                                << checkedAddress << " succeeded";
+        JLOG(journal.debug())
+            << "Logic testing " << checkedAddress << " succeeded";
     }
 
     //--------------------------------------------------------------------------
@@ -359,9 +343,10 @@ public:
         SlotImp::ptr const& slot,
         beast::IP::Endpoint const& local_endpoint)
     {
-        JLOG(m_journal.trace())
-            << beast::leftw(18) << "Logic connected" << slot->remote_endpoint()
-            << " on local " << local_endpoint;
+        beast::WrappedSink sink{m_journal.sink(), slot->prefix()};
+        beast::Journal journal{sink};
+
+        JLOG(journal.trace()) << "Logic connected on local " << local_endpoint;
 
         std::lock_guard _(lock_);
 
@@ -381,9 +366,7 @@ public:
                     iter->second->local_endpoint() == slot->remote_endpoint(),
                     "ripple::PeerFinder::Logic::onConnected : local and remote "
                     "endpoints do match");
-                JLOG(m_journal.warn())
-                    << beast::leftw(18) << "Logic dropping "
-                    << slot->remote_endpoint() << " as self connect";
+                JLOG(journal.warn()) << "Logic dropping as self connect";
                 return false;
             }
         }
@@ -398,9 +381,12 @@ public:
     Result
     activate(SlotImp::ptr const& slot, PublicKey const& key, bool reserved)
     {
-        JLOG(m_journal.debug())
-            << beast::leftw(18) << "Logic handshake " << slot->remote_endpoint()
-            << " with " << (reserved ? "reserved " : "") << "key " << key;
+        beast::WrappedSink sink{m_journal.sink(), slot->prefix()};
+        beast::Journal journal{sink};
+
+        JLOG(journal.debug())
+            << "Logic handshake " << slot->remote_endpoint() << " with "
+            << (reserved ? "reserved " : "") << "key " << key;
 
         std::lock_guard _(lock_);
 
@@ -462,8 +448,7 @@ public:
                     "missing from fixed_");
 
             iter->second.success(m_clock.now());
-            JLOG(m_journal.trace()) << beast::leftw(18) << "Logic fixed "
-                                    << slot->remote_endpoint() << " success";
+            JLOG(journal.trace()) << "Logic fixed success";
         }
 
         return Result::success;
@@ -681,9 +666,10 @@ public:
             {
                 SlotImp::ptr const& slot = t.slot();
                 auto const& list = t.list();
-                JLOG(m_journal.trace())
-                    << beast::leftw(18) << "Logic sending "
-                    << slot->remote_endpoint() << " with " << list.size()
+                beast::WrappedSink sink{m_journal.sink(), slot->prefix()};
+                beast::Journal journal{sink};
+                JLOG(journal.trace())
+                    << "Logic sending " << list.size()
                     << ((list.size() == 1) ? " endpoint" : " endpoints");
                 result.push_back(std::make_pair(slot, list));
             }
@@ -788,6 +774,9 @@ public:
     void
     on_endpoints(SlotImp::ptr const& slot, Endpoints list)
     {
+        beast::WrappedSink sink{m_journal.sink(), slot->prefix()};
+        beast::Journal journal{sink};
+
         // If we're sent too many endpoints, sample them at random:
         if (list.size() > Tuning::numberOfEndpointsMax)
         {
@@ -795,10 +784,8 @@ public:
             list.resize(Tuning::numberOfEndpointsMax);
         }
 
-        JLOG(m_journal.trace())
-            << beast::leftw(18) << "Endpoints from " << slot->remote_endpoint()
-            << " contained " << list.size()
-            << ((list.size() > 1) ? " entries" : " entry");
+        JLOG(journal.trace()) << "Endpoints contained " << list.size()
+                              << ((list.size() > 1) ? " entries" : " entry");
 
         std::lock_guard _(lock_);
 
@@ -835,9 +822,8 @@ public:
             {
                 if (slot->connectivityCheckInProgress)
                 {
-                    JLOG(m_journal.debug())
-                        << beast::leftw(18) << "Logic testing " << ep.address
-                        << " already in progress";
+                    JLOG(journal.debug()) << "Logic testing " << ep.address
+                                          << " already in progress";
                     continue;
                 }
 
@@ -934,6 +920,9 @@ public:
 
         remove(slot);
 
+        beast::WrappedSink sink{m_journal.sink(), slot->prefix()};
+        beast::Journal journal{sink};
+
         // Mark fixed slot failure
         if (slot->fixed() && !slot->inbound() && slot->state() != Slot::active)
         {
@@ -944,16 +933,14 @@ public:
                     "missing from fixed_");
 
             iter->second.failure(m_clock.now());
-            JLOG(m_journal.debug()) << beast::leftw(18) << "Logic fixed "
-                                    << slot->remote_endpoint() << " failed";
+            JLOG(journal.debug()) << "Logic fixed failed";
         }
 
         // Do state specific bookkeeping
         switch (slot->state())
         {
             case Slot::accept:
-                JLOG(m_journal.trace()) << beast::leftw(18) << "Logic accept "
-                                        << slot->remote_endpoint() << " failed";
+                JLOG(journal.trace()) << "Logic accept failed";
                 break;
 
             case Slot::connect:
@@ -967,13 +954,11 @@ public:
                 break;
 
             case Slot::active:
-                JLOG(m_journal.trace()) << beast::leftw(18) << "Logic close "
-                                        << slot->remote_endpoint();
+                JLOG(journal.trace()) << "Logic close";
                 break;
 
             case Slot::closing:
-                JLOG(m_journal.trace()) << beast::leftw(18) << "Logic finished "
-                                        << slot->remote_endpoint();
+                JLOG(journal.trace()) << "Logic finished";
                 break;
 
             // LCOV_EXCL_START

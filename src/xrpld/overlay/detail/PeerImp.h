@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
-#define RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
+#ifndef XRPL_OVERLAY_PEERIMP_H_INCLUDED
+#define XRPL_OVERLAY_PEERIMP_H_INCLUDED
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
@@ -134,6 +115,8 @@ private:
 
     Application& app_;
     id_t const id_;
+    std::string fingerprint_;
+    std::string prefix_;
     beast::WrappedSink sink_;
     beast::WrappedSink p_sink_;
     beast::Journal const journal_;
@@ -635,7 +618,7 @@ private:
     cancelTimer() noexcept;
 
     static std::string
-    makePrefix(id_t id);
+    makePrefix(std::string const& fingerprint);
 
     void
     doAccept();
@@ -688,6 +671,18 @@ private:
     void
     handleHaveTransactions(
         std::shared_ptr<protocol::TMHaveTransactions> const& m);
+
+    std::string const&
+    fingerprint() const override
+    {
+        return fingerprint_;
+    }
+
+    std::string const&
+    prefix() const
+    {
+        return prefix_;
+    }
 
 public:
     //--------------------------------------------------------------------------
@@ -832,8 +827,11 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , sink_(app_.journal("Peer"), makePrefix(id))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id))
+    , fingerprint_(
+          getFingerprint(slot->remote_endpoint(), publicKey, to_string(id_)))
+    , prefix_(makePrefix(fingerprint_))
+    , sink_(app_.journal("Peer"), prefix_)
+    , p_sink_(app_.journal("Protocol"), prefix_)
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))

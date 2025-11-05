@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2016 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/tx/detail/InvariantCheck.h>
@@ -2230,13 +2211,12 @@ ValidVault::visitEntry(
         after != nullptr && (before != nullptr || !isDelete),
         "ripple::ValidVault::visitEntry : some object is available");
 
-    // `Number balance` will capture the difference (delta) between "before"
+    // Number balanceDelta will capture the difference (delta) between "before"
     // state (zero if created) and "after" state (zero if destroyed), so the
     // invariants can validate that the change in account balances matches the
     // change in vault balances, stored to deltas_ at the end of this function.
-    Number balance{};
+    Number balanceDelta{};
 
-    // By default do not add anything to deltas
     std::int8_t sign = 0;
     if (before)
     {
@@ -2249,18 +2229,18 @@ ValidVault::visitEntry(
                 // At this moment we have no way of telling if this object holds
                 // vault shares or something else. Save it for finalize.
                 beforeMPTs_.push_back(Shares::make(*before));
-                balance = static_cast<std::int64_t>(
+                balanceDelta = static_cast<std::int64_t>(
                     before->getFieldU64(sfOutstandingAmount));
                 sign = 1;
                 break;
             case ltMPTOKEN:
-                balance =
+                balanceDelta =
                     static_cast<std::int64_t>(before->getFieldU64(sfMPTAmount));
                 sign = -1;
                 break;
             case ltACCOUNT_ROOT:
             case ltRIPPLE_STATE:
-                balance = before->getFieldAmount(sfBalance);
+                balanceDelta = before->getFieldAmount(sfBalance);
                 sign = -1;
                 break;
             default:;
@@ -2278,18 +2258,18 @@ ValidVault::visitEntry(
                 // At this moment we have no way of telling if this object holds
                 // vault shares or something else. Save it for finalize.
                 afterMPTs_.push_back(Shares::make(*after));
-                balance -= Number(static_cast<std::int64_t>(
+                balanceDelta -= Number(static_cast<std::int64_t>(
                     after->getFieldU64(sfOutstandingAmount)));
                 sign = 1;
                 break;
             case ltMPTOKEN:
-                balance -= Number(
+                balanceDelta -= Number(
                     static_cast<std::int64_t>(after->getFieldU64(sfMPTAmount)));
                 sign = -1;
                 break;
             case ltACCOUNT_ROOT:
             case ltRIPPLE_STATE:
-                balance -= Number(after->getFieldAmount(sfBalance));
+                balanceDelta -= Number(after->getFieldAmount(sfBalance));
                 sign = -1;
                 break;
             default:;
@@ -2297,8 +2277,13 @@ ValidVault::visitEntry(
     }
 
     uint256 const key = (before ? before->key() : after->key());
-    if (sign && balance != zero)
-        deltas_[key] = balance * sign;
+    // Append to deltas if sign is non-zero, i.e. an object of an interesting
+    // type has been updated. A transaction may update an object even when
+    // its balance has not changed, e.g. transaction fee equals the amount
+    // transferred to the account. We intentionally do not compare balanceDelta
+    // against zero, to avoid missing such updates.
+    if (sign != 0)
+        deltas_[key] = balanceDelta * sign;
 }
 
 bool
@@ -2604,6 +2589,23 @@ ValidVault::finalize(
             },
             vaultAsset.value());
     };
+    auto const deltaAssetsTxAccount = [&]() -> std::optional<Number> {
+        auto ret = deltaAssets(tx[sfAccount]);
+        // Nothing returned or not XRP transaction
+        if (!ret.has_value() || !vaultAsset.native())
+            return ret;
+
+        // Delegated transaction; no need to compensate for fees
+        if (auto const delegate = tx[~sfDelegate];
+            delegate.has_value() && *delegate != tx[sfAccount])
+            return ret;
+
+        *ret += fee.drops();
+        if (*ret == zero)
+            return std::nullopt;
+
+        return ret;
+    };
     auto const deltaShares = [&](AccountID const& id) -> std::optional<Number> {
         auto const it = [&]() {
             if (id == afterVault.pseudoId)
@@ -2774,20 +2776,7 @@ ValidVault::finalize(
 
                 if (!issuerDeposit)
                 {
-                    auto const accountDeltaAssets =
-                        [&]() -> std::optional<Number> {
-                        if (auto ret = deltaAssets(tx[sfAccount]); ret)
-                        {
-                            // Compensate for transaction fee deduced from
-                            // sfAccount
-                            if (vaultAsset.native())
-                                *ret += fee.drops();
-                            if (*ret != zero)
-                                return ret;
-                        }
-                        return std::nullopt;
-                    }();
-
+                    auto const accountDeltaAssets = deltaAssetsTxAccount();
                     if (!accountDeltaAssets)
                     {
                         JLOG(j.fatal()) <<  //
@@ -2840,7 +2829,7 @@ ValidVault::finalize(
                 }
 
                 auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
-                if (!vaultDeltaShares)
+                if (!vaultDeltaShares || *vaultDeltaShares == zero)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: deposit must change vault shares";
@@ -2909,20 +2898,7 @@ ValidVault::finalize(
 
                 if (!issuerWithdrawal)
                 {
-                    auto const accountDeltaAssets =
-                        [&]() -> std::optional<Number> {
-                        if (auto ret = deltaAssets(tx[sfAccount]); ret)
-                        {
-                            // Compensate for transaction fee deduced from
-                            // sfAccount
-                            if (vaultAsset.native())
-                                *ret += fee.drops();
-                            if (*ret != zero)
-                                return ret;
-                        }
-                        return std::nullopt;
-                    }();
-
+                    auto const accountDeltaAssets = deltaAssetsTxAccount();
                     auto const otherAccountDelta =
                         [&]() -> std::optional<Number> {
                         if (auto const destination = tx[~sfDestination];
@@ -2979,7 +2955,7 @@ ValidVault::finalize(
                 }
 
                 auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
-                if (!vaultDeltaShares)
+                if (!vaultDeltaShares || *vaultDeltaShares == zero)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: withdrawal must change vault shares";
@@ -3064,7 +3040,7 @@ ValidVault::finalize(
                 }
 
                 auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
-                if (!vaultDeltaShares)
+                if (!vaultDeltaShares || *vaultDeltaShares == zero)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback must change vault shares";

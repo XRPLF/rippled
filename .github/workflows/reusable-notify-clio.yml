@@ -51,7 +51,7 @@ jobs:
         run: |
           echo 'Generating user and channel.'
           echo "user=clio" >> "${GITHUB_OUTPUT}"
-          echo "channel=pr_${{ env.PR_NUMBER }}" >> "${GITHUB_OUTPUT}"
+          echo "channel=pr_${PR_NUMBER}" >> "${GITHUB_OUTPUT}"
           echo 'Extracting version.'
           echo "version=$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')" >> "${GITHUB_OUTPUT}"
       - name: Calculate conan reference
@@ -66,13 +66,13 @@ jobs:
       - name: Log into Conan remote
         env:
           CONAN_REMOTE_NAME: ${{ inputs.conan_remote_name }}
-        run: conan remote login ${{ env.CONAN_REMOTE_NAME }} "${{ secrets.conan_remote_username }}" --password "${{ secrets.conan_remote_password }}"
+        run: conan remote login "${CONAN_REMOTE_NAME}" "${{ secrets.conan_remote_username }}" --password "${{ secrets.conan_remote_password }}"
       - name: Upload package
         env:
           CONAN_REMOTE_NAME: ${{ inputs.conan_remote_name }}
         run: |
           conan export --user=${{ steps.generate.outputs.user }} --channel=${{ steps.generate.outputs.channel }} .
-          conan upload --confirm --check --remote=${{ env.CONAN_REMOTE_NAME }} xrpl/${{ steps.conan_ref.outputs.conan_ref }}
+          conan upload --confirm --check --remote="${CONAN_REMOTE_NAME}" xrpl/${{ steps.conan_ref.outputs.conan_ref }}
     outputs:
       conan_ref: ${{ steps.conan_ref.outputs.conan_ref }}
 
@@ -88,4 +88,4 @@ jobs:
           gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
           /repos/xrplf/clio/dispatches -f "event_type=check_libxrpl" \
           -F "client_payload[conan_ref]=${{ needs.upload.outputs.conan_ref }}" \
-          -F "client_payload[pr_url]=${{ env.PR_URL }}"
+          -F "client_payload[pr_url]=${PR_URL}"

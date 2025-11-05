@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/rdb/Wallet.h>
@@ -316,36 +297,16 @@ class AmendmentSet
 private:
     // How many yes votes each amendment received
     hash_map<uint256, int> votes_;
-    Rules const& rules_;
     // number of trusted validations
     int trustedValidations_ = 0;
     // number of votes needed
     int threshold_ = 0;
-
-    void
-    computeThreshold(int trustedValidations, Rules const& rules)
-    {
-        threshold_ = !rules_.enabled(fixAmendmentMajorityCalc)
-            ? std::max(
-                  1L,
-                  static_cast<long>(
-                      (trustedValidations_ *
-                       preFixAmendmentMajorityCalcThreshold.num) /
-                      preFixAmendmentMajorityCalcThreshold.den))
-            : std::max(
-                  1L,
-                  static_cast<long>(
-                      (trustedValidations_ *
-                       postFixAmendmentMajorityCalcThreshold.num) /
-                      postFixAmendmentMajorityCalcThreshold.den));
-    }
 
 public:
     AmendmentSet(
         Rules const& rules,
         TrustedVotes const& trustedVotes,
         std::lock_guard<std::mutex> const& lock)
-        : rules_(rules)
     {
         // process validations for ledger before flag ledger.
         auto [trustedCount, newVotes] = trustedVotes.getVotes(rules, lock);
@@ -353,7 +314,11 @@ public:
         trustedValidations_ = trustedCount;
         votes_.swap(newVotes);
 
-        computeThreshold(trustedValidations_, rules);
+        threshold_ = std::max(
+            1L,
+            static_cast<long>(
+                (trustedValidations_ * amendmentMajorityCalcThreshold.num) /
+                amendmentMajorityCalcThreshold.den));
     }
 
     bool
@@ -364,13 +329,9 @@ public:
         if (it == votes_.end())
             return false;
 
-        // Before this fix, it was possible for an amendment to activate with a
-        // percentage slightly less than 80% because we compared for "greater
-        // than or equal to" instead of strictly "greater than".
         // One validator is an exception, otherwise it is not possible
         // to gain majority.
-        if (!rules_.enabled(fixAmendmentMajorityCalc) ||
-            trustedValidations_ == 1)
+        if (trustedValidations_ == 1)
             return it->second >= threshold_;
 
         return it->second > threshold_;
