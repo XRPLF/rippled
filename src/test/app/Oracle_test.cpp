@@ -727,13 +727,13 @@ private:
     }
 
     void
-    testMultisig(FeatureBitset features)
+    testMultisig()
     {
         testcase("Multisig");
         using namespace jtx;
         Oracle::setFee(100'000);
 
-        Env env(*this, features);
+        Env env(*this);
         auto const baseFee =
             static_cast<int>(env.current()->fees().base.drops());
 
@@ -859,7 +859,7 @@ public:
         testDelete();
         testUpdate();
         testAmendment();
-        testMultisig(all);
+        testMultisig();
     }
 };
 
