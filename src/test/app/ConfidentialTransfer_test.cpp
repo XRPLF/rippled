@@ -1643,6 +1643,119 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .proof = "123",
                  .err = tecNO_PERMISSION});
         }
+
+        // bob tries to convert back more than COA
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 40,
+                .proof = "123",
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+
+            mptAlice.convert({
+                .account = carol,
+                .amt = 40,
+                .proof = "123",
+                .holderPubKey = mptAlice.getPubKey(carol),
+            });
+
+            mptAlice.convertBack(
+                {.account = bob,
+                 .amt = 300,
+                 .proof = "123",
+                 .err = tecINSUFFICIENT_FUNDS});
+        }
+
+        // cannot convert if locked or unauth
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = alice, .holder = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 40,
+                .proof = "123",
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+            mptAlice.mergeInbox({.account = bob});
+            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+
+            mptAlice.convertBack(
+                {.account = bob, .amt = 10, .proof = "123", .err = tecLOCKED});
+
+            mptAlice.set(
+                {.account = alice, .holder = bob, .flags = tfMPTUnlock});
+
+            mptAlice.convertBack({.account = bob, .amt = 10, .proof = "123"});
+
+            mptAlice.authorize(
+                {.account = alice, .holder = bob, .flags = tfMPTUnauthorize});
+
+            mptAlice.convertBack(
+                {.account = bob, .amt = 10, .proof = "123", .err = tecNO_AUTH});
+
+            mptAlice.authorize({
+                .account = alice,
+                .holder = bob,
+            });
+
+            mptAlice.convertBack({
+                .account = bob,
+                .amt = 10,
+                .proof = "123",
+            });
+        }
     }
 
     void

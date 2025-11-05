@@ -417,7 +417,7 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfDomainID,                 soeOPTIONAL},
     {sfMutableFlags,             soeDEFAULT},
     {sfIssuerElGamalPublicKey,   soeOPTIONAL},
-    {sfConfidentialOutstandingAmount, soeOPTIONAL},
+    {sfConfidentialOutstandingAmount, soeDEFAULT},
 }))
 
 /** A ledger object which tracks MPToken
