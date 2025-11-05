@@ -57,3 +57,6 @@ DerivedData
 # Microsoft Visual Studio IDE.
 .vs/
 .vscode/
+
+# AI tools.
+.augment
