@@ -37,13 +37,6 @@ install(
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
-install(CODE "
-  set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
-  include(create_symbolic_link)
-  create_symbolic_link(xrpl \
-    \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/xrpl)
-")
-
 install (EXPORT XrplExports
   FILE XrplTargets.cmake
   NAMESPACE Xrpl::
@@ -70,12 +63,6 @@ if (is_root_project AND TARGET xrpld)
     endmacro()
     copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/rippled-example.cfg\" etc rippled.cfg)
     copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/validators-example.txt\" etc validators.txt)
-  ")
-  install(CODE "
-    set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
-    include(create_symbolic_link)
-    create_symbolic_link(xrpld${suffix} \
-       \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix})
   ")
 endif ()
 
