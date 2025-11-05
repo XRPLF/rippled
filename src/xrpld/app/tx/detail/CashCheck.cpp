@@ -175,9 +175,6 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         // An issuer can always accept their own currency.
         if (!value.native() && (value.getIssuer() != dstId))
         {
-            auto const sleTrustLine =
-                ctx.view.read(keylet::line(dstId, issuerId, currency));
-
             auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
             if (!sleIssuer)
             {
@@ -189,6 +186,9 @@ CashCheck::preclaim(PreclaimContext const& ctx)
 
             if (sleIssuer->at(sfFlags) & lsfRequireAuth)
             {
+                auto const sleTrustLine =
+                    ctx.view.read(keylet::line(dstId, issuerId, currency));
+
                 if (!sleTrustLine)
                 {
                     // We can only create a trust line if the issuer does not
