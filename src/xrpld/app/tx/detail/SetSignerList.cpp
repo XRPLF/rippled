@@ -246,8 +246,8 @@ SetSignerList::validateQuorumAndSignerEntries(
     // Reject if there are too many or too few entries in the list.
     {
         std::size_t const signerCount = signers.size();
-        if (signerCount < STTx::MinMultiSigners ||
-            signerCount > STTx::MaxMultiSigners)
+        if (signerCount < STTx::minMultiSigners ||
+            signerCount > STTx::maxMultiSigners)
         {
             JLOG(j.trace()) << "Too many or too few signers in signer list.";
             return temMALFORMED;
