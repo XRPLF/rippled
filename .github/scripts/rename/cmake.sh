@@ -81,5 +81,9 @@ elif ! grep -q '"rippled"' cmake/XrplCore.cmake; then
   mv cmake.tmp cmake/XrplCore.cmake
 fi
 
+# Remove the symlink that previously pointed from 'ripple' to 'xrpl' but now is
+# no longer needed.
+${SED_COMMAND} -z -i -E 's@install\(CODE.+CMAKE_INSTALL_INCLUDEDIR}/xrpl\)\n"\)@install(CODE "set(CMAKE_MODULE_PATH \\"${CMAKE_MODULE_PATH}\\")")@' cmake/XrplInstall.cmake
+
 popd
 echo "Renaming complete."
