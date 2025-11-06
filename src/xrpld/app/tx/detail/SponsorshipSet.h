@@ -39,7 +39,7 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    static TER
+    static NotTEC
     checkPermission(ReadView const& view, STTx const& tx);
 
     static TER

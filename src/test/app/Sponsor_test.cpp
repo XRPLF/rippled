@@ -4221,13 +4221,13 @@ public:
             };
 
             // no delegated
-            testFeePermission(tecNO_DELEGATE_PERMISSION);
+            testFeePermission(terNO_DELEGATE_PERMISSION);
 
             // set non-SponsorFee Permission
             env(delegate::set(alice, carol, {"SponsorReserve"}));
             env.close();
 
-            testFeePermission(tecNO_DELEGATE_PERMISSION);
+            testFeePermission(terNO_DELEGATE_PERMISSION);
 
             // set SponsorFee Permission
             env(delegate::set(alice, carol, {"SponsorFee"}));
@@ -4259,13 +4259,13 @@ public:
             };
 
             // no delegated
-            testReservePermission(tecNO_DELEGATE_PERMISSION);
+            testReservePermission(terNO_DELEGATE_PERMISSION);
 
             // set non-SponsorReserve Permission
             env(delegate::set(alice, carol, {"SponsorFee"}));
             env.close();
 
-            testReservePermission(tecNO_DELEGATE_PERMISSION);
+            testReservePermission(terNO_DELEGATE_PERMISSION);
 
             // set SponsorReserve Permission
             env(delegate::set(alice, carol, {"SponsorReserve"}));

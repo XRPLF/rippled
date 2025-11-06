@@ -120,7 +120,7 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+NotTEC
 SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -131,7 +131,7 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
@@ -153,7 +153,7 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
 
     // TODO: needs to check permission to delete sponsorship?
 
-    return tecNO_DELEGATE_PERMISSION;
+    return terNO_DELEGATE_PERMISSION;
 }
 
 TER
