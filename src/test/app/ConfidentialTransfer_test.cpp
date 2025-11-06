@@ -178,6 +178,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  Buffer{badCiphertext, ecGamalEncryptedTotalLength},
              .err = temBAD_CIPHERTEXT});
 
+        // invalid pub key
         mptAlice.convert(
             {.account = bob,
              .amt = 10,
@@ -225,6 +226,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .err = temDISABLED});
         }
 
+        // pub key is invalid
         {
             Env env{*this, features};
             Account const alice("alice");
