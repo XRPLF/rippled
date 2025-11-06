@@ -1286,6 +1286,13 @@ class LoanBroker_test : public beast::unit_test::suite
         if (vaultInfo.vaultID == uint256{})
             return;
 
+        // Can't unauthorize Vault pseudo-account
+        asset.authorize(
+            {.account = issuer,
+             .holder = vaultInfo.pseudoAccount,
+             .flags = tfMPTUnauthorize,
+             .err = tecNO_PERMISSION});
+
         auto forUnauthAuth = [&](auto&& doTx) {
             for (auto const flag : {tfMPTUnauthorize, 0u})
             {
@@ -1322,9 +1329,17 @@ class LoanBroker_test : public beast::unit_test::suite
         // Can create LoanBroker if the vault owner is not authorized
         forUnauthAuth([&](auto) { env(set(alice, vaultInfo.vaultID)); });
 
-        auto broker = env.le(brokerKeylet);
+        auto const broker = env.le(brokerKeylet);
         if (!BEAST_EXPECT(broker))
             return;
+        Account brokerPseudo("pseudo", broker->at(sfAccount));
+
+        // Can't unauthorize LoanBroker pseudo-account
+        asset.authorize(
+            {.account = issuer,
+             .holder = brokerPseudo,
+             .flags = tfMPTUnauthorize,
+             .err = tecNO_PERMISSION});
 
         // Can't cover deposit into Vault if the vault owner is not authorized
         forUnauthAuth([&](bool authorized) {

@@ -187,6 +187,11 @@ LoanPay::preclaim(PreclaimContext const& ctx)
             << "Vault pseudo-account can not receive funds (deep frozen).";
         return ret;
     }
+    if (auto const ret = requireAuth(ctx.view, asset, account))
+    {
+        JLOG(ctx.j.warn()) << "Borrower account is not authorized.";
+        return ret;
+    }
     // Make sure the borrower has enough funds to make the payment!
     // Do not support "partial payments" - if the transaction says to pay X,
     // then the account must have X available, even if the loan payment takes

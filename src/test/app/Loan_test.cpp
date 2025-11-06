@@ -5113,10 +5113,9 @@ protected:
         std::uint32_t constexpr loanSequence = 1;
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, loanSequence);
 
-        // Can't loan pay if the borrower is not authorize
+        // Can't loan pay if the borrower is not authorized
         forUnauthAuth([&](bool authorized) {
-            auto const err =
-                !authorized ? ter(tecINSUFFICIENT_FUNDS) : ter(tesSUCCESS);
+            auto const err = !authorized ? ter(tecNO_AUTH) : ter(tesSUCCESS);
             env(pay(borrower, loanKeylet.key, debtMaximumRequest), err);
         });
     }
