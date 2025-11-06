@@ -96,7 +96,7 @@ enum class LedgerNameSpace : std::uint16_t {
     PERMISSIONED_DOMAIN = 'm',
     DELEGATE = 'E',
     VAULT = 'V',
-    SPONSORSHIP = 'N',
+    SPONSORSHIP = '>',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.

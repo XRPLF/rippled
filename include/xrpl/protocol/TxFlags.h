@@ -65,7 +65,7 @@ constexpr std::uint32_t tfUniversalMask                    = ~tfUniversal;
 // Sponsor flags (Global):
 constexpr std::uint32_t tfSponsorFee                       = 0x00000001;
 constexpr std::uint32_t tfSponsorReserve                   = 0x00000002;
-constexpr std::uint32_t tfSponsorMask                        = tfSponsorFee | tfSponsorReserve;
+constexpr std::uint32_t tfSponsorMask                      = tfSponsorFee | tfSponsorReserve;
 
 // AccountSet flags:
 constexpr std::uint32_t tfRequireDestTag                   = 0x00010000;

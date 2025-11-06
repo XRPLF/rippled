@@ -317,15 +317,14 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     if (!tx.isFieldPresent(sfSponsor))
         return tesSUCCESS;
 
-    auto const txSponsor = tx.getFieldObject(sfSponsor);
-
-    auto const sponsorAcc = txSponsor.getAccountID(sfAccount);
-    auto const sponseeAcc = tx.getAccountID(sfAccount);
-
     auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
 
     if (!hasSponsorSignature)
     {
+        auto const txSponsor = tx.getFieldObject(sfSponsor);
+
+        auto const sponsorAcc = txSponsor.getAccountID(sfAccount);
+        auto const sponseeAcc = tx.getAccountID(sfAccount);
         auto const sponsorSle =
             view.read(keylet::sponsor(sponsorAcc, sponseeAcc));
 
