@@ -31,8 +31,8 @@ class STTx final : public STObject, public CountedObject<STTx>
     TxType tx_type_;
 
 public:
-    static constexpr std::size_t MinMultiSigners = 1;
-    static constexpr std::size_t MaxMultiSigners = 32;
+    static constexpr std::size_t minMultiSigners = 1;
+    static constexpr std::size_t maxMultiSigners = 32;
 
     STTx() = delete;
     STTx(STTx const& other) = default;
