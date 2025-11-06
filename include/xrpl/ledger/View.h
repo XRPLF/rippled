@@ -674,7 +674,7 @@ createPseudoAccount(
     SField const& ownerField);
 
 // Returns true iff sleAcct is a pseudo-account or specific
-// pseudo-accounts in pseudoAccountFields.
+// pseudo-accounts in pseudoFieldFilter.
 //
 // Returns false if sleAcct is
 // * NOT a pseudo-account OR
@@ -683,7 +683,7 @@ createPseudoAccount(
 [[nodiscard]] bool
 isPseudoAccount(
     std::shared_ptr<SLE const> sleAcct,
-    std::set<SField const*> const& pseudoAccountFields = {});
+    std::set<SField const*> const& pseudoFieldFilter = {});
 
 // Returns the list of fields that define an ACCOUNT_ROOT as a pseudo-account if
 // set
@@ -700,10 +700,10 @@ getPseudoAccountFields();
 isPseudoAccount(
     ReadView const& view,
     AccountID const& accountId,
-    std::set<SField const*> const& pseudoAccountFields = {})
+    std::set<SField const*> const& pseudoFieldFilter = {})
 {
     return isPseudoAccount(
-        view.read(keylet::account(accountId)), pseudoAccountFields);
+        view.read(keylet::account(accountId)), pseudoFieldFilter);
 }
 
 [[nodiscard]] TER

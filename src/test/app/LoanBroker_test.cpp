@@ -1314,8 +1314,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
         // Can't cover deposit into Vault if the vault owner is not authorized
         forUnauthAuth([&](bool authorized) {
-            auto const err =
-                !authorized ? ter(tecINSUFFICIENT_FUNDS) : ter(tesSUCCESS);
+            auto const err = !authorized ? ter(tecNO_AUTH) : ter(tesSUCCESS);
             env(coverDeposit(alice, brokerKeylet.key, vaultInfo.asset(10)),
                 err);
         });

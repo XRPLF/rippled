@@ -1244,7 +1244,7 @@ getPseudoAccountFields()
 [[nodiscard]] bool
 isPseudoAccount(
     std::shared_ptr<SLE const> sleAcct,
-    std::set<SField const*> const& pseudoAccountFields)
+    std::set<SField const*> const& pseudoFieldFilter)
 {
     auto const& fields = getPseudoAccountFields();
 
@@ -1254,10 +1254,10 @@ isPseudoAccount(
         std::count_if(
             fields.begin(),
             fields.end(),
-            [&sleAcct, &pseudoAccountFields](SField const* sf) -> bool {
+            [&sleAcct, &pseudoFieldFilter](SField const* sf) -> bool {
                 return sleAcct->isFieldPresent(*sf) &&
-                    (pseudoAccountFields.empty() ||
-                     pseudoAccountFields.contains(sf));
+                    (pseudoFieldFilter.empty() ||
+                     pseudoFieldFilter.contains(sf));
             }) > 0;
 }
 

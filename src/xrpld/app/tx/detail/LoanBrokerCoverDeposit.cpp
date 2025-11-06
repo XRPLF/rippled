@@ -84,6 +84,10 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     // Pseudo-account cannot receive if asset is deep frozen
     if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
         return ret;
+    // Cannot transfer unauthorized asset
+    if (auto const ret =
+            requireAuth(ctx.view, vaultAsset, account, AuthType::StrongAuth))
+        return ret;
 
     if (accountHolds(
             ctx.view,
