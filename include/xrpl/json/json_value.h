@@ -5,6 +5,7 @@
 #include <xrpl/json/json_forwards.h>
 
 #include <cstring>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -139,9 +140,9 @@ public:
     using ArrayIndex = UInt;
 
     static Value const null;
-    static Int const minInt;
-    static Int const maxInt;
-    static UInt const maxUInt;
+    static constexpr Int minInt = std::numeric_limits<Int>::min();
+    static constexpr Int maxInt = std::numeric_limits<Int>::max();
+    static constexpr UInt maxUInt = std::numeric_limits<UInt>::max();
 
 private:
     class CZString
@@ -459,21 +460,6 @@ inline bool
 operator>=(Value const& x, Value const& y)
 {
     return !(x < y);
-}
-
-inline UInt
-Value::asAbsUInt() const
-{
-    if (isUInt())
-        return asUInt();
-
-    // Doing this conversion through int64 avoids overflow error for
-    // -1 * 2^31 i.e. numeric_limits<int>::min(), when returning -value.
-    std::int64_t const value = asInt();
-    if (value >= 0)
-        return value;
-
-    return -value;
 }
 
 /** \brief Experimental do not use: Allocator to customize member name and
