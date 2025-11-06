@@ -272,7 +272,7 @@ SetOracle::doApply()
         }
 
         auto const newCount = calculateOracleReserve(pairs.size());
-        auto const adjust = newCount - oldCount;
+        int32_t const adjust = newCount - oldCount;
 
         if (adjust > 0)
         {
