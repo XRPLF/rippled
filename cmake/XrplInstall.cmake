@@ -41,7 +41,7 @@ install(CODE "
   set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
   include(create_symbolic_link)
   create_symbolic_link(xrpl \
-    \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/xrpl)
+    \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/ripple)
 ")
 
 install (EXPORT XrplExports
