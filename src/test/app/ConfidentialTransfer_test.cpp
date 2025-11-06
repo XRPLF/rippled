@@ -178,6 +178,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  Buffer{badCiphertext, ecGamalEncryptedTotalLength},
              .err = temBAD_CIPHERTEXT});
 
+        mptAlice.convert(
+            {.account = bob,
+             .amt = 10,
+             .proof = "123",
+             .holderPubKey = Buffer{},
+             .err = temMALFORMED});
+
         // todo: change to to check proof size
         // mptAlice.convert(
         //     {.account = bob,
@@ -216,6 +223,29 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = alice,
                  .pubKey = mptAlice.getPubKey(alice),
                  .err = temDISABLED});
+        }
+
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = Buffer{}, .err = temMALFORMED});
         }
 
         // issuance has disabled confidential transfer

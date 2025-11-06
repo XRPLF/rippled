@@ -85,7 +85,10 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
         ctx.tx.isFieldPresent(sfHolder))
         return temMALFORMED;
-    // todo: check pubkey length
+
+    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
+        ctx.tx[sfIssuerElGamalPublicKey].length() != ecPubKeyLength)
+        return temMALFORMED;
 
     auto const txFlags = ctx.tx.getFlags();
 

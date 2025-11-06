@@ -52,6 +52,10 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
         !isValidCiphertext(ctx.tx[sfIssuerEncryptedAmount]))
         return temBAD_CIPHERTEXT;
 
+    if (ctx.tx.isFieldPresent(sfHolderElGamalPublicKey) &&
+        ctx.tx[sfHolderElGamalPublicKey].length() != ecPubKeyLength)
+        return temMALFORMED;
+
     // if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
     //     return temMALFORMED;
 
