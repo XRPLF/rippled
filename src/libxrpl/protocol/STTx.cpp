@@ -475,8 +475,8 @@ multiSignHelper(
     STArray const& signers{sigObject.getFieldArray(sfSigners)};
 
     // There are well known bounds that the number of signers must be within.
-    if (signers.size() < STTx::MinMultiSigners ||
-        signers.size() > STTx::MaxMultiSigners)
+    if (signers.size() < STTx::minMultiSigners ||
+        signers.size() > STTx::maxMultiSigners)
         return Unexpected("Invalid Signers array size.");
 
     // Signers must be in sorted order by AccountID.

@@ -161,10 +161,10 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // be in the range from 1 to 32.
     // We've got a lot of room to grow.
     XRPL_ASSERT(
-        entryCount >= STTx::MinMultiSigners,
+        entryCount >= STTx::minMultiSigners,
         "ripple::signerCountBasedOwnerCountDelta : minimum signers");
     XRPL_ASSERT(
-        entryCount <= STTx::MaxMultiSigners,
+        entryCount <= STTx::maxMultiSigners,
         "ripple::signerCountBasedOwnerCountDelta : maximum signers");
     return 2 + static_cast<int>(entryCount);
 }
