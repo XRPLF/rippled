@@ -195,29 +195,8 @@ SetTrust::preclaim(PreclaimContext const& ctx)
     auto const currency = saLimitAmount.getCurrency();
     auto const uDstAccountID = saLimitAmount.getIssuer();
 
-    if (ctx.view.rules().enabled(fixTrustLinesToSelf))
-    {
-        if (id == uDstAccountID)
-            return temDST_IS_SRC;
-    }
-    else
-    {
-        if (id == uDstAccountID)
-        {
-            // Prevent trustline to self from being created,
-            // unless one has somehow already been created
-            // (in which case doApply will clean it up).
-            auto const sleDelete =
-                ctx.view.read(keylet::line(id, uDstAccountID, currency));
-
-            if (!sleDelete)
-            {
-                JLOG(ctx.j.trace())
-                    << "Malformed transaction: Can not extend credit to self.";
-                return temDST_IS_SRC;
-            }
-        }
-    }
+    if (id == uDstAccountID)
+        return temDST_IS_SRC;
 
     // This might be nullptr
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
@@ -402,21 +381,6 @@ SetTrust::doApply()
     bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
 
     auto viewJ = ctx_.app.journal("View");
-
-    // Trust lines to self are impossible but because of the old bug there
-    // are two on 19-02-2022. This code was here to allow those trust lines
-    // to be deleted. The fixTrustLinesToSelf fix amendment will remove them
-    // when it enables so this code will no longer be needed.
-    if (!view().rules().enabled(fixTrustLinesToSelf) &&
-        account_ == uDstAccountID)
-    {
-        return trustDelete(
-            view(),
-            view().peek(keylet::line(account_, uDstAccountID, currency)),
-            account_,
-            uDstAccountID,
-            viewJ);
-    }
 
     SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
 
