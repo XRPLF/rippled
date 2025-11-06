@@ -31,9 +31,9 @@ We will further set additional CMake arguments as follows:
 def generate_strategy_matrix(all: bool, config: Config) -> list:
     configurations = []
     for architecture, os, build_type, cmake_args in itertools.product(config.architecture, config.os, config.build_type, config.cmake_args):
-        # The default CMake target is 'all', but it can get overridden for
-        # certain configurations.
-        cmake_target = 'all'
+        # The default CMake target is 'all' for Linux and MacOS and 'install'
+        # for Windows, but it can get overridden for certain configurations.
+        cmake_target = 'install' if os["distro_name"] == 'windows' else 'all'
 
         # We build and test all configurations by default, except for Windows in
         # Debug, because it is too slow, as well as when code coverage is
