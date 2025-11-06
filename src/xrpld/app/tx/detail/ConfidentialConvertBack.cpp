@@ -102,7 +102,7 @@ ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
     // Check lock
     MPTIssue const mptIssue(mptIssuanceID);
     if (auto const ter = checkFrozen(ctx.view, account, mptIssue);
-        ter != tesSUCCESS)
+        !isTesSuccess(ter))
         return ter;
 
     // Check auth

@@ -87,7 +87,7 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
 
     // Check if the issuance allows transfer
     if (!sleIssuance->isFlag(lsfMPTCanTransfer))
-        return tecLOCKED;
+        return tecNO_AUTH;
 
     // Check if issuance allows confidential transfer
     if (sleIssuance->isFlag(lsfMPTNoConfidentialTransfer))
@@ -129,11 +129,11 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
     // Check lock
     MPTIssue const mptIssue(mptIssuanceID);
     if (auto const ter = checkFrozen(ctx.view, account, mptIssue);
-        ter != tesSUCCESS)
+        !isTesSuccess(ter))
         return ter;
 
     if (auto const ter = checkFrozen(ctx.view, destination, mptIssue);
-        ter != tesSUCCESS)
+        !isTesSuccess(ter))
         return ter;
 
     // Check auth

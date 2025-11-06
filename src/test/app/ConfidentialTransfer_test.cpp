@@ -1190,6 +1190,64 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.send(
                 {.account = bob, .dest = carol, .amt = 5, .proof = "123"});
         }
+
+        // cannot send when MPTCanTransfer is not set
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 50);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            // Convert 60 out of 100
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 60,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = tesSUCCESS});
+
+            // bob merge inbox
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+
+            mptAlice.convert(
+                {.account = carol,
+                 .amt = 20,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(carol),
+                 .err = tesSUCCESS});
+
+            // carol merge inbox
+            mptAlice.mergeInbox({
+                .account = carol,
+            });
+
+            // bob sends 10 to carol
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,  // will be encrypted internally
+                 .proof = "123",
+                 .err = tecNO_AUTH});
+        }
     }
 
     void
