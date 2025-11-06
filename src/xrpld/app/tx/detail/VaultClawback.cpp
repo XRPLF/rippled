@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/VaultClawback.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
@@ -90,9 +71,13 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     }
 
     Asset const vaultAsset = vault->at(sfAsset);
-    if (auto const amount = ctx.tx[~sfAmount];
-        amount && vaultAsset != amount->asset())
-        return tecWRONG_ASSET;
+    if (auto const amount = ctx.tx[~sfAmount])
+    {
+        if (vaultAsset != amount->asset())
+            return tecWRONG_ASSET;
+        else if (!amount->validNumber())
+            return tecPRECISION_LOSS;
+    }
 
     if (vaultAsset.native())
     {
@@ -176,6 +161,8 @@ VaultClawback::doApply()
     MPTIssue const share{mptIssuanceID};
     STAmount sharesDestroyed = {share};
     STAmount assetsRecovered;
+    assetsRecovered.setIntegerEnforcement(Number::weak);
+    sharesDestroyed.setIntegerEnforcement(Number::weak);
     try
     {
         if (amount == beast::zero)
@@ -187,6 +174,9 @@ VaultClawback::doApply()
                 FreezeHandling::fhIGNORE_FREEZE,
                 AuthHandling::ahIGNORE_AUTH,
                 j_);
+
+            if (!sharesDestroyed.validNumber())
+                return tecPRECISION_LOSS;
 
             auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleIssuance, sharesDestroyed);
@@ -203,6 +193,8 @@ VaultClawback::doApply()
                 if (!maybeShares)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 sharesDestroyed = *maybeShares;
+                if (!sharesDestroyed.validNumber())
+                    return tecPRECISION_LOSS;
             }
 
             auto const maybeAssets =
@@ -211,6 +203,8 @@ VaultClawback::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;
         }
+        if (!assetsRecovered.validNumber())
+            return tecPRECISION_LOSS;
 
         // Clamp to maximum.
         if (assetsRecovered > *assetsAvailable)

@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_NUMBER_H_INCLUDED
-#define RIPPLE_BASICS_NUMBER_H_INCLUDED
+#ifndef XRPL_BASICS_NUMBER_H_INCLUDED
+#define XRPL_BASICS_NUMBER_H_INCLUDED
 
 #include <cstdint>
 #include <limits>
@@ -32,16 +13,48 @@ class Number;
 std::string
 to_string(Number const& amount);
 
+template <typename T>
+constexpr bool
+isPowerOfTen(T value)
+{
+    while (value >= 10 && value % 10 == 0)
+        value /= 10;
+    return value == 1;
+}
+
 class Number
 {
+public:
+    /** Describes whether and how to enforce this number as an integer.
+     *
+     * - none: No enforcement. The value may vary freely. This is the default.
+     * - weak: If the absolute value is greater than maxIntValue, valid() will
+     *   return false.
+     * - strong: Assignment operations will throw if the absolute value is above
+     *   maxIntValue.
+     */
+    enum EnforceInteger { none, weak, strong };
+
+private:
     using rep = std::int64_t;
     rep mantissa_{0};
     int exponent_{std::numeric_limits<int>::lowest()};
 
+    // The enforcement setting is not serialized, and does not affect the
+    // ledger. If not "none", the value is checked to be within the valid
+    // integer range. With "strong", the checks will be made as automatic as
+    // possible.
+    EnforceInteger enforceInteger_ = none;
+
 public:
     // The range for the mantissa when normalized
-    constexpr static std::int64_t minMantissa = 1'000'000'000'000'000LL;
-    constexpr static std::int64_t maxMantissa = 9'999'999'999'999'999LL;
+    constexpr static rep minMantissa = 1'000'000'000'000'000LL;
+    static_assert(isPowerOfTen(minMantissa));
+    constexpr static rep maxMantissa = minMantissa * 10 - 1;
+    static_assert(maxMantissa == 9'999'999'999'999'999LL);
+
+    constexpr static rep maxIntValue = maxMantissa / 10;
+    static_assert(maxIntValue == 999'999'999'999'999LL);
 
     // The range for the exponent when normalized
     constexpr static int minExponent = -32768;
@@ -54,16 +67,32 @@ public:
 
     explicit constexpr Number() = default;
 
-    Number(rep mantissa);
-    explicit Number(rep mantissa, int exponent);
+    Number(rep mantissa, EnforceInteger enforce = none);
+    explicit Number(rep mantissa, int exponent, EnforceInteger enforce = none);
     explicit constexpr Number(rep mantissa, int exponent, unchecked) noexcept;
+    constexpr Number(Number const& other) = default;
+    constexpr Number(Number&& other) = default;
 
-    static Number const zero;
+    ~Number() = default;
+
+    constexpr Number&
+    operator=(Number const& other);
+    constexpr Number&
+    operator=(Number&& other);
 
     constexpr rep
     mantissa() const noexcept;
     constexpr int
     exponent() const noexcept;
+
+    void
+    setIntegerEnforcement(EnforceInteger enforce);
+
+    EnforceInteger
+    integerEnforcement() const noexcept;
+
+    bool
+    valid() const noexcept;
 
     constexpr Number
     operator+() const noexcept;
@@ -153,22 +182,7 @@ public:
     }
 
     Number
-    truncate() const noexcept
-    {
-        if (exponent_ >= 0 || mantissa_ == 0)
-            return *this;
-
-        Number ret = *this;
-        while (ret.exponent_ < 0 && ret.mantissa_ != 0)
-        {
-            ret.exponent_ += 1;
-            ret.mantissa_ /= rep(10);
-        }
-        // We are guaranteed that normalize() will never throw an exception
-        // because exponent is either negative or zero at this point.
-        ret.normalize();
-        return ret;
-    }
+    truncate() const noexcept;
 
     friend constexpr bool
     operator>(Number const& x, Number const& y) noexcept
@@ -206,6 +220,9 @@ private:
     static thread_local rounding_mode mode_;
 
     void
+    checkInteger(char const* what) const;
+
+    void
     normalize();
     constexpr bool
     isnormal() const noexcept;
@@ -213,19 +230,57 @@ private:
     class Guard;
 };
 
+constexpr static Number numZero{};
+
 inline constexpr Number::Number(rep mantissa, int exponent, unchecked) noexcept
     : mantissa_{mantissa}, exponent_{exponent}
 {
 }
 
-inline Number::Number(rep mantissa, int exponent)
-    : mantissa_{mantissa}, exponent_{exponent}
+inline Number::Number(rep mantissa, int exponent, EnforceInteger enforce)
+    : mantissa_{mantissa}, exponent_{exponent}, enforceInteger_(enforce)
 {
     normalize();
+
+    checkInteger("Number::Number integer overflow");
 }
 
-inline Number::Number(rep mantissa) : Number{mantissa, 0}
+inline Number::Number(rep mantissa, EnforceInteger enforce)
+    : Number{mantissa, 0, enforce}
 {
+}
+
+constexpr Number&
+Number::operator=(Number const& other)
+{
+    if (this != &other)
+    {
+        mantissa_ = other.mantissa_;
+        exponent_ = other.exponent_;
+        enforceInteger_ = std::max(enforceInteger_, other.enforceInteger_);
+
+        checkInteger("Number::operator= integer overflow");
+    }
+
+    return *this;
+}
+
+constexpr Number&
+Number::operator=(Number&& other)
+{
+    if (this != &other)
+    {
+        // std::move doesn't really do anything for these types, but
+        // this is future-proof in case the types ever change
+        mantissa_ = std::move(other.mantissa_);
+        exponent_ = std::move(other.exponent_);
+        if (other.enforceInteger_ > enforceInteger_)
+            enforceInteger_ = std::move(other.enforceInteger_);
+
+        checkInteger("Number::operator= integer overflow");
+    }
+
+    return *this;
 }
 
 inline constexpr Number::rep
@@ -238,6 +293,20 @@ inline constexpr int
 Number::exponent() const noexcept
 {
     return exponent_;
+}
+
+inline void
+Number::setIntegerEnforcement(EnforceInteger enforce)
+{
+    enforceInteger_ = enforce;
+
+    checkInteger("Number::setIntegerEnforcement integer overflow");
+}
+
+inline Number::EnforceInteger
+Number::integerEnforcement() const noexcept
+{
+    return enforceInteger_;
 }
 
 inline constexpr Number
@@ -427,4 +496,4 @@ public:
 
 }  // namespace ripple
 
-#endif  // RIPPLE_BASICS_NUMBER_H_INCLUDED
+#endif  // XRPL_BASICS_NUMBER_H_INCLUDED

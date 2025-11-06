@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/basics/strHex.h>
@@ -558,6 +539,39 @@ struct Credentials_test : public beast::unit_test::suite
                     jle[jss::result][jss::node]["CredentialType"] ==
                         strHex(std::string_view(credType)));
             }
+
+            {
+                testcase("Credentials fail, directory full");
+                std::uint32_t const issuerSeq{env.seq(issuer) + 1};
+                env(ticket::create(issuer, 63));
+                env.close();
+
+                // Everything below can only be tested on open ledger.
+                auto const res1 = directory::bumpLastPage(
+                    env,
+                    directory::maximumPageIndex(env),
+                    keylet::ownerDir(issuer.id()),
+                    directory::adjustOwnerNode);
+                BEAST_EXPECT(res1);
+
+                auto const jv = credentials::create(issuer, subject, credType);
+                env(jv, ter(tecDIR_FULL));
+                // Free one directory entry by using a ticket
+                env(noop(issuer), ticket::use(issuerSeq + 40));
+
+                // Fill subject directory
+                env(ticket::create(subject, 63));
+                auto const res2 = directory::bumpLastPage(
+                    env,
+                    directory::maximumPageIndex(env),
+                    keylet::ownerDir(subject.id()),
+                    directory::adjustOwnerNode);
+                BEAST_EXPECT(res2);
+                env(jv, ter(tecDIR_FULL));
+
+                // End test
+                env.close();
+            }
         }
 
         {
@@ -1084,6 +1098,7 @@ struct Credentials_test : public beast::unit_test::suite
         testSuccessful(all);
         testCredentialsDelete(all);
         testCreateFailed(all);
+        testCreateFailed(all - fixDirectoryLimit);
         testAcceptFailed(all);
         testDeleteFailed(all);
         testFeatureFailed(all - featureCredentials);

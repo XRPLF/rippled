@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
@@ -3500,13 +3481,17 @@ assetsToSharesDeposit(
 
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount shares{vault->at(sfShareMPTID)};
+    shares.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return STAmount{
             shares.asset(),
             Number(assets.mantissa(), assets.exponent() + vault->at(sfScale))
-                .truncate()};
+                .truncate(),
+            Number::weak};
 
-    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal{
+        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
+        Number::strong};
     shares = (shareTotal * (assets / assetTotal)).truncate();
     return shares;
 }
@@ -3528,6 +3513,7 @@ sharesToAssetsDeposit(
 
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount assets{vault->at(sfAsset)};
+    assets.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return STAmount{
             assets.asset(),
@@ -3535,7 +3521,9 @@ sharesToAssetsDeposit(
             shares.exponent() - vault->at(sfScale),
             false};
 
-    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal{
+        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
+        Number::strong};
     assets = assetTotal * (shares / shareTotal);
     return assets;
 }
@@ -3559,9 +3547,12 @@ assetsToSharesWithdraw(
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount shares{vault->at(sfShareMPTID)};
+    shares.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return shares;
-    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal{
+        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
+        Number::strong};
     Number result = shareTotal * (assets / assetTotal);
     if (truncate == TruncateShares::yes)
         result = result.truncate();
@@ -3587,9 +3578,12 @@ sharesToAssetsWithdraw(
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount assets{vault->at(sfAsset)};
+    assets.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return assets;
-    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal{
+        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
+        Number::strong};
     assets = assetTotal * (shares / shareTotal);
     return assets;
 }

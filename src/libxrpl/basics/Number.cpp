@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -42,8 +23,6 @@ using uint128_t = __uint128_t;
 namespace ripple {
 
 thread_local Number::rounding_mode Number::mode_ = Number::to_nearest;
-
-Number const Number::zero{};
 
 Number::rounding_mode
 Number::getround()
@@ -244,6 +223,13 @@ Number::Guard::doRound(rep& drops)
 constexpr Number one{1000000000000000, -15, Number::unchecked{}};
 
 void
+Number::checkInteger(char const* what) const
+{
+    if (enforceInteger_ == strong && !valid())
+        throw std::overflow_error(what);
+}
+
+void
 Number::normalize()
 {
     if (mantissa_ == 0)
@@ -284,9 +270,27 @@ Number::normalize()
         mantissa_ = -mantissa_;
 }
 
+bool
+Number::valid() const noexcept
+{
+    if (enforceInteger_ != none)
+    {
+        static Number const max = maxIntValue;
+        static Number const maxNeg = -maxIntValue;
+        // Avoid making a copy
+        if (mantissa_ < 0)
+            return *this >= maxNeg;
+        return *this <= max;
+    }
+    return true;
+}
+
 Number&
 Number::operator+=(Number const& y)
 {
+    // The strictest setting prevails
+    enforceInteger_ = std::max(enforceInteger_, y.enforceInteger_);
+
     if (y == Number{})
         return *this;
     if (*this == Number{})
@@ -374,6 +378,9 @@ Number::operator+=(Number const& y)
     }
     mantissa_ = xm * xn;
     exponent_ = xe;
+
+    checkInteger("Number::addition integer overflow");
+
     return *this;
 }
 
@@ -408,6 +415,9 @@ divu10(uint128_t& u)
 Number&
 Number::operator*=(Number const& y)
 {
+    // The strictest setting prevails
+    enforceInteger_ = std::max(enforceInteger_, y.enforceInteger_);
+
     if (*this == Number{})
         return *this;
     if (y == Number{})
@@ -459,12 +469,18 @@ Number::operator*=(Number const& y)
     XRPL_ASSERT(
         isnormal() || *this == Number{},
         "ripple::Number::operator*=(Number) : result is normal");
+
+    checkInteger("Number::multiplication integer overflow");
+
     return *this;
 }
 
 Number&
 Number::operator/=(Number const& y)
 {
+    // The strictest setting prevails
+    enforceInteger_ = std::max(enforceInteger_, y.enforceInteger_);
+
     if (y == Number{})
         throw std::overflow_error("Number: divide by 0");
     if (*this == Number{})
@@ -492,6 +508,9 @@ Number::operator/=(Number const& y)
     exponent_ = ne - de - 17;
     mantissa_ *= np * dp;
     normalize();
+
+    checkInteger("Number::division integer overflow");
+
     return *this;
 }
 
@@ -521,6 +540,24 @@ Number::operator rep() const
         g.doRound(drops);
     }
     return drops;
+}
+
+Number
+Number::truncate() const noexcept
+{
+    if (exponent_ >= 0 || mantissa_ == 0)
+        return *this;
+
+    Number ret = *this;
+    while (ret.exponent_ < 0 && ret.mantissa_ != 0)
+    {
+        ret.exponent_ += 1;
+        ret.mantissa_ /= rep(10);
+    }
+    // We are guaranteed that normalize() will never throw an exception
+    // because exponent is either negative or zero at this point.
+    ret.normalize();
+    return ret;
 }
 
 std::string

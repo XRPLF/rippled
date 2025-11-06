@@ -1,26 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SystemParameters.h>
 
 #include <sstream>
 #include <tuple>
@@ -854,6 +836,172 @@ public:
     }
 
     void
+    testInteger()
+    {
+        testcase("Integer enforcement");
+
+        using namespace std::string_literals;
+
+        {
+            Number a{100};
+            BEAST_EXPECT(a.integerEnforcement() == Number::none);
+            BEAST_EXPECT(a.valid());
+            a = Number{1, 30};
+            BEAST_EXPECT(a.valid());
+            a = -100;
+            BEAST_EXPECT(a.valid());
+        }
+        {
+            Number a{100, Number::weak};
+            BEAST_EXPECT(a.integerEnforcement() == Number::weak);
+            BEAST_EXPECT(a.valid());
+            a = Number{1, 30, Number::none};
+            BEAST_EXPECT(!a.valid());
+            a = -100;
+            BEAST_EXPECT(a.integerEnforcement() == Number::weak);
+            BEAST_EXPECT(a.valid());
+            a = Number{5, Number::strong};
+            BEAST_EXPECT(a.integerEnforcement() == Number::strong);
+            BEAST_EXPECT(a.valid());
+        }
+        {
+            Number a{100, Number::strong};
+            BEAST_EXPECT(a.integerEnforcement() == Number::strong);
+            BEAST_EXPECT(a.valid());
+            try
+            {
+                a = Number{1, 30};
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(e.what() == "Number::operator= integer overflow"s);
+                // The throw is done _after_ the number is updated.
+                BEAST_EXPECT((a == Number{1, 30}));
+            }
+            BEAST_EXPECT(!a.valid());
+            a = -100;
+            BEAST_EXPECT(a.integerEnforcement() == Number::strong);
+            BEAST_EXPECT(a.valid());
+        }
+        {
+            Number a{INITIAL_XRP.drops(), Number::weak};
+            BEAST_EXPECT(!a.valid());
+            a = -a;
+            BEAST_EXPECT(!a.valid());
+
+            try
+            {
+                a.setIntegerEnforcement(Number::strong);
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(
+                    e.what() ==
+                    "Number::setIntegerEnforcement integer overflow"s);
+                // The throw is internal to the operator before the result is
+                // assigned to the Number
+                BEAST_EXPECT(a == -INITIAL_XRP);
+                BEAST_EXPECT(!a.valid());
+            }
+            try
+            {
+                ++a;
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(e.what() == "Number::addition integer overflow"s);
+                // The throw is internal to the operator before the result is
+                // assigned to the Number
+                BEAST_EXPECT(a == -INITIAL_XRP);
+                BEAST_EXPECT(!a.valid());
+            }
+            a = Number::maxIntValue;
+            try
+            {
+                ++a;
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(e.what() == "Number::addition integer overflow"s);
+                // This time, the throw is done _after_ the number is updated.
+                BEAST_EXPECT(a == Number::maxIntValue + 1);
+                BEAST_EXPECT(!a.valid());
+            }
+            a = -Number::maxIntValue;
+            try
+            {
+                --a;
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(e.what() == "Number::addition integer overflow"s);
+                // This time, the throw is done _after_ the number is updated.
+                BEAST_EXPECT(a == -Number::maxIntValue - 1);
+                BEAST_EXPECT(!a.valid());
+            }
+            a = Number(1, 10);
+            try
+            {
+                a *= Number(1, 10);
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(
+                    e.what() == "Number::multiplication integer overflow"s);
+                // The throw is done _after_ the number is updated.
+                BEAST_EXPECT((a == Number{1, 20}));
+                BEAST_EXPECT(!a.valid());
+            }
+            try
+            {
+                a = Number::maxIntValue * 2;
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(e.what() == "Number::operator= integer overflow"s);
+                // The throw is done _after_ the number is updated.
+                BEAST_EXPECT((a == Number::maxIntValue * 2));
+                BEAST_EXPECT(!a.valid());
+            }
+            try
+            {
+                a = Number(3, 15, Number::strong);
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(e.what() == "Number::Number integer overflow"s);
+                // The Number doesn't get updated because the ctor throws
+                BEAST_EXPECT((a == Number::maxIntValue * 2));
+                BEAST_EXPECT(!a.valid());
+            }
+            a = Number(1, 10);
+            try
+            {
+                a /= Number(1, -10);
+                BEAST_EXPECT(false);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECT(e.what() == "Number::division integer overflow"s);
+                // The throw is done _after_ the number is updated.
+                BEAST_EXPECT((a == Number{1, 20}));
+                BEAST_EXPECT(!a.valid());
+            }
+            a /= Number(1, 15);
+            BEAST_EXPECT((a == Number{1, 5}));
+            BEAST_EXPECT(a.valid());
+        }
+    }
+
+    void
     run() override
     {
         testZero();
@@ -875,6 +1023,7 @@ public:
         test_toSTAmount();
         test_truncate();
         testRounding();
+        testInteger();
     }
 };
 

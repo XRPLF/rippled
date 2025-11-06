@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/LoanSet.h>
 //
 #include <xrpld/app/misc/LendingHelpers.h>
@@ -319,6 +300,87 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 }
 
 TER
+LoanSet::checkGuards(
+    Asset const& vaultAsset,
+    Number const& principalRequested,
+    TenthBips32 interestRate,
+    std::uint32_t paymentTotal,
+    LoanProperties const& properties,
+    beast::Journal j)
+{
+    auto const totalInterestOutstanding =
+        properties.totalValueOutstanding - principalRequested;
+    // Guard 1: if there is no computed total interest over the life of the
+    // loan for a non-zero interest rate, we cannot properly amortize the
+    // loan
+    if (interestRate > TenthBips32{0} && totalInterestOutstanding <= 0)
+    {
+        // Unless this is a zero-interest loan, there must be some interest
+        // due on the loan, even if it's (measurable) dust
+        JLOG(j.warn()) << "Loan for " << principalRequested << " with "
+                       << interestRate << "% interest has no interest due";
+        return tecPRECISION_LOSS;
+    }
+    // Guard 1a: If there is any interest computed over the life of the
+    // loan, for a zero interest rate, something went sideways.
+    if (interestRate == TenthBips32{0} && totalInterestOutstanding > 0)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.warn()) << "Loan for " << principalRequested
+                       << " with 0% interest has interest due";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
+    // Guard 2: if the principal portion of the first periodic payment is
+    // too small to be accurately represented with the given rounding mode,
+    // raise an error
+    if (properties.firstPaymentPrincipal <= 0)
+    {
+        // Check that some true (unrounded) principal is paid each period.
+        // Since the first payment pays the least principal, if it's good,
+        // they'll all be good. Note that the outstanding principal is
+        // rounded, and may not change right away.
+        JLOG(j.warn()) << "Loan is unable to pay principal.";
+        return tecPRECISION_LOSS;
+    }
+
+    // Guard 3: If the periodic payment is so small that it can't even be
+    // rounded to a representable value, then the loan can't be paid. Also,
+    // avoids dividing by 0.
+    auto const roundedPayment = roundPeriodicPayment(
+        vaultAsset, properties.periodicPayment, properties.loanScale);
+    if (roundedPayment == beast::zero)
+    {
+        JLOG(j.warn()) << "Loan Periodic payment ("
+                       << properties.periodicPayment << ") rounds to 0. ";
+        return tecPRECISION_LOSS;
+    }
+
+    // Guard 4: if the rounded periodic payment is large enough that the
+    // loan can't be amortized in the specified number of payments, raise an
+    // error
+    {
+        NumberRoundModeGuard mg(Number::upward);
+
+        if (std::int64_t const computedPayments{
+                properties.totalValueOutstanding / roundedPayment};
+            computedPayments != paymentTotal)
+        {
+            JLOG(j.warn()) << "Loan Periodic payment ("
+                           << properties.periodicPayment << ") rounding ("
+                           << roundedPayment << ") on a total value of "
+                           << properties.totalValueOutstanding
+                           << " can not complete the loan in the specified "
+                              "number of payments ("
+                           << computedPayments << " != " << paymentTotal << ")";
+            return tecPRECISION_LOSS;
+        }
+    }
+    return tesSUCCESS;
+}
+
+TER
 LoanSet::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -396,72 +458,14 @@ LoanSet::doApply()
         }
     }
 
-    auto const totalInterestOutstanding =
-        properties.totalValueOutstanding - principalRequested;
-    // Guard 1: if there is no computed total interest over the life of the loan
-    // for a non-zero interest rate, we cannot properly amortize the loan
-    if (interestRate > TenthBips32{0} && totalInterestOutstanding <= 0)
-    {
-        // Unless this is a zero-interest loan, there must be some interest due
-        // on the loan, even if it's (measurable) dust
-        JLOG(j_.warn()) << "Loan for " << principalRequested << " with "
-                        << interestRate << "% interest has no interest due";
-        return tecPRECISION_LOSS;
-    }
-    // Guard 1a: If there is any interest computed over the life of the loan,
-    // for a zero interest rate, something went sideways.
-    if (interestRate == TenthBips32{0} && totalInterestOutstanding > 0)
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.warn()) << "Loan for " << principalRequested
-                        << " with 0% interest has interest due";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
-
-    // Guard 2: if the principal portion of the first periodic payment is too
-    // small to be accurately represented with the given rounding mode, raise an
-    // error
-    if (properties.firstPaymentPrincipal <= 0)
-    {
-        // Check that some true (unrounded) principal is paid each period. Since
-        // the first payment pays the least principal, if it's good, they'll
-        // all be good. Note that the outstanding principal is rounded, and
-        // may not change right away.
-        JLOG(j_.warn()) << "Loan is unable to pay principal.";
-        return tecPRECISION_LOSS;
-    }
-
-    // Guard 3: If the periodic payment is so small that it can't even be
-    // rounded to a representable value, then the loan can't be paid. Also,
-    // avoids dividing by 0.
-    auto const roundedPayment = roundPeriodicPayment(
-        vaultAsset, properties.periodicPayment, properties.loanScale);
-    if (roundedPayment == beast::zero)
-    {
-        JLOG(j_.warn()) << "Loan Periodic payment ("
-                        << properties.periodicPayment << ") rounds to 0. ";
-        return tecPRECISION_LOSS;
-    }
-
-    // Guard 4: if the rounded periodic payment is large enough that the loan
-    // can't be amortized in the specified number of payments, raise an error
-    {
-        NumberRoundModeGuard mg(Number::upward);
-
-        if (std::int64_t const computedPayments{
-                properties.totalValueOutstanding / roundedPayment};
-            computedPayments != paymentTotal)
-        {
-            JLOG(j_.warn())
-                << "Loan Periodic payment (" << properties.periodicPayment
-                << ") rounding (" << roundedPayment
-                << ") will complete the "
-                   "loan in less than the specified number of payments ("
-                << computedPayments << " < " << paymentTotal << ")";
-            return tecPRECISION_LOSS;
-        }
-    }
+    if (auto const ret = checkGuards(
+            vaultAsset,
+            principalRequested,
+            interestRate,
+            paymentTotal,
+            properties,
+            j_))
+        return ret;
 
     // Check that the other computed values are valid
     if (properties.managementFeeOwedToBroker < 0 ||
@@ -503,8 +507,11 @@ LoanSet::doApply()
 
     adjustOwnerCount(view, borrowerSle, 1, j_);
     {
-        auto ownerCount = borrowerSle->at(sfOwnerCount);
-        if (mPriorBalance < view.fees().accountReserve(ownerCount))
+        auto const ownerCount = borrowerSle->at(sfOwnerCount);
+        auto const balance = account_ == borrower
+            ? mPriorBalance
+            : borrowerSle->at(sfBalance)->xrp();
+        if (balance < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;
     }
 

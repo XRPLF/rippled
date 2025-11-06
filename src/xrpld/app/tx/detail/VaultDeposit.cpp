@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/VaultDeposit.h>
 
@@ -60,6 +41,9 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     auto const vaultAsset = vault->at(sfAsset);
     if (assets.asset() != vaultAsset)
         return tecWRONG_ASSET;
+
+    if (!assets.validNumber())
+        return tecPRECISION_LOSS;
 
     if (vaultAsset.native())
         ;  // No special checks for XRP
@@ -236,6 +220,7 @@ VaultDeposit::doApply()
     }
 
     STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
+    sharesCreated.setIntegerEnforcement(Number::weak);
     try
     {
         // Compute exchange before transferring any amounts.
@@ -246,14 +231,14 @@ VaultDeposit::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
         }
-        if (sharesCreated == beast::zero)
+        if (sharesCreated == beast::zero || !sharesCreated.validNumber())
             return tecPRECISION_LOSS;
 
         auto const maybeAssets =
             sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        else if (*maybeAssets > amount)
+        else if (*maybeAssets > amount || !maybeAssets->validNumber())
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
@@ -279,13 +264,22 @@ VaultDeposit::doApply()
         sharesCreated.asset() != assetsDeposited.asset(),
         "ripple::VaultDeposit::doApply : assets are not shares");
 
-    vault->at(sfAssetsTotal) += assetsDeposited;
-    vault->at(sfAssetsAvailable) += assetsDeposited;
+    auto assetsTotalProxy = vault->at(sfAssetsTotal);
+    auto assetsAvailableProxy = vault->at(sfAssetsAvailable);
+    if (vault->at(sfAsset).value().integral())
+    {
+        assetsTotalProxy.value().setIntegerEnforcement(Number::weak);
+        assetsAvailableProxy.value().setIntegerEnforcement(Number::weak);
+    }
+    assetsTotalProxy += assetsDeposited;
+    assetsAvailableProxy += assetsDeposited;
+    if (!assetsTotalProxy->valid() || !assetsAvailableProxy->valid())
+        return tecLIMIT_EXCEEDED;
     view().update(vault);
 
     // A deposit must not push the vault over its limit.
     auto const maximum = *vault->at(sfAssetsMaximum);
-    if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
+    if (maximum != 0 && *assetsTotalProxy > maximum)
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.
