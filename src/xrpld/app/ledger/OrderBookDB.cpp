@@ -106,7 +106,7 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
                 book.domain = (*sle)[~sfDomainID];
 
                 if (book.domain)
-                    domainBooks_[{book.in, *book.domain}].insert(book.out);
+                    domainBooks[{book.in, *book.domain}].insert(book.out);
                 else
                     allBooks[book.in].insert(book.out);
 
