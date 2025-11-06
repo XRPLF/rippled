@@ -401,7 +401,6 @@ homomorphicAdd(Slice const& a, Slice const& b, Buffer& out)
     secp256k1_pubkey sum_c1;
     secp256k1_pubkey sum_c2;
 
-    // todo:: support addition after it's supported
     if (secp256k1_elgamal_add(
             secp256k1Context(), &sum_c1, &sum_c2, &a_c1, &a_c2, &b_c1, &b_c2) !=
         1)
@@ -496,6 +495,7 @@ encryptAmount(uint64_t amt, Slice const& pubKeySlice)
     // Allocate ciphertext placeholders
     secp256k1_pubkey c1, c2;
 
+    // todo: might need to be updated using another RNG
     // Prepare a random blinding factor
     unsigned char blinding_factor[32];
     if (RAND_bytes(blinding_factor, 32) != 1)

@@ -169,10 +169,9 @@ TER
 ConfidentialSend::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
-    auto const account = ctx_.tx[sfAccount];
     auto const destination = ctx_.tx[sfDestination];
 
-    auto sleSender = view().peek(keylet::mptoken(mptIssuanceID, account));
+    auto sleSender = view().peek(keylet::mptoken(mptIssuanceID, account_));
     auto sleDestination =
         view().peek(keylet::mptoken(mptIssuanceID, destination));
 
