@@ -127,7 +127,8 @@ jobs:
             --parallel ${BUILD_NPROC} \
             --target "${CMAKE_TARGET}"
 
-      - name: Upload rippled artifact
+      - name: Upload rippled artifact (Linux)
+        if: ${{ runner.os == 'Linux' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         env:
           BUILD_DIR: ${{ inputs.build_dir }}
@@ -150,8 +151,8 @@ jobs:
             exit 1
           fi
 
-      - name: Verify presence of instrumentation
-        if: ${{ env.ENABLED_VOIDSTAR == 'true' }}
+      - name: Verify presence of instrumentation (Linux)
+        if: ${{ runner.os == 'Linux' && env.ENABLED_VOIDSTAR == 'true' }}
         working-directory: ${{ inputs.build_dir }}
         shell: bash
         run: |
