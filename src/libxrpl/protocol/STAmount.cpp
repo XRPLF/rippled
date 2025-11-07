@@ -255,6 +255,25 @@ STAmount::move(std::size_t n, void* buf)
     return emplace(n, buf, std::move(*this));
 }
 
+void
+STAmount::setIntegerEnforcement(std::optional<Number::EnforceInteger> enforce)
+{
+    enforceConversion_ = enforce;
+}
+
+std::optional<Number::EnforceInteger>
+STAmount::integerEnforcement() const noexcept
+{
+    return enforceConversion_;
+}
+
+bool
+STAmount::validNumber() const noexcept
+{
+    Number n = toNumber(Number::EnforceInteger::weak);
+    return n.valid();
+}
+
 //------------------------------------------------------------------------------
 //
 // Conversion

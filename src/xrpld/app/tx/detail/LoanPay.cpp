@@ -347,9 +347,11 @@ LoanPay::doApply()
     view.update(brokerSle);
 
     auto assetsAvailableProxy = vaultSle->at(sfAssetsAvailable);
+    auto assetsTotalProxy = vaultSle->at(sfAssetsTotal);
+
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the payment by rounding some of the values to that scale.
-    auto const vaultScale = assetsAvailableProxy->value().exponent();
+    auto const vaultScale = assetsTotalProxy.value().exponent();
 
     auto const totalPaidToVaultRaw =
         paymentParts->principalPaid + paymentParts->interestPaid;
@@ -404,8 +406,6 @@ LoanPay::doApply()
             assetsAvailableBefore == pseudoAccountBalanceBefore,
             "ripple::LoanPay::doApply",
             "vault pseudo balance agrees before");
-
-        auto assetsTotalProxy = vaultSle->at(sfAssetsTotal);
 
         assetsAvailableProxy += totalPaidToVaultRounded;
         assetsTotalProxy += paymentParts->valueChange;

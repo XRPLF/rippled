@@ -234,7 +234,8 @@ computeLoanProperties(
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining,
-    TenthBips32 managementFeeRate);
+    TenthBips32 managementFeeRate,
+    std::int32_t minimumScale);
 
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale);

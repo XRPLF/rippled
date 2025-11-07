@@ -40,6 +40,12 @@ private:
     exponent_type mOffset;
     bool mIsNegative;
 
+    // The Enforce integer setting is not stored or serialized. If set, it is
+    // used during automatic conversions to Number. If not set, the default
+    // behavior is used. It can also be overridden when coverting by using
+    // toNumber().
+    std::optional<Number::EnforceInteger> enforceConversion_;
+
 public:
     using value_type = STAmount;
 
@@ -137,9 +143,28 @@ public:
     STAmount(A const& asset, int mantissa, int exponent = 0);
 
     template <AssetType A>
-    STAmount(A const& asset, Number const& number)
+    STAmount(
+        A const& asset,
+        Number const& number,
+        std::optional<Number::EnforceInteger> enforce = std::nullopt)
         : STAmount(asset, number.mantissa(), number.exponent())
     {
+        enforceConversion_ = enforce;
+        if (!enforce)
+        {
+            // Use the default conversion behavior
+            [[maybe_unused]]
+            Number const n = *this;
+        }
+        else if (enforce == Number::strong)
+        {
+            // Throw if it's not valid
+            if (!validNumber())
+            {
+                Throw<std::overflow_error>(
+                    "STAmount::STAmount integer Number lost precision");
+            }
+        }
     }
 
     // Legacy support for new-style amounts
@@ -147,6 +172,17 @@ public:
     STAmount(XRPAmount const& amount);
     STAmount(MPTAmount const& amount, MPTIssue const& mptIssue);
     operator Number() const;
+    Number
+    toNumber(Number::EnforceInteger enforce) const;
+
+    void
+    setIntegerEnforcement(std::optional<Number::EnforceInteger> enforce);
+
+    std::optional<Number::EnforceInteger>
+    integerEnforcement() const noexcept;
+
+    bool
+    validNumber() const noexcept;
 
     //--------------------------------------------------------------------------
     //
@@ -521,10 +557,23 @@ inline STAmount::operator bool() const noexcept
 
 inline STAmount::operator Number() const
 {
+    if (enforceConversion_)
+        return toNumber(*enforceConversion_);
     if (native())
         return xrp();
     if (mAsset.holds<MPTIssue>())
         return mpt();
+    return iou();
+}
+
+inline Number
+STAmount::toNumber(Number::EnforceInteger enforce) const
+{
+    if (native())
+        return xrp().toNumber(enforce);
+    if (mAsset.holds<MPTIssue>())
+        return mpt().toNumber(enforce);
+    // It doesn't make sense to enforce limits on IOUs
     return iou();
 }
 
@@ -549,6 +598,11 @@ STAmount::operator=(Number const& number)
     mValue = mIsNegative ? -number.mantissa() : number.mantissa();
     mOffset = number.exponent();
     canonicalize();
+
+    // Convert it back to a Number to check that it's valid
+    [[maybe_unused]]
+    Number n = *this;
+
     return *this;
 }
 
@@ -564,7 +618,7 @@ STAmount::clear()
 {
     // The -100 is used to allow 0 to sort less than a small positive values
     // which have a negative exponent.
-    mOffset = native() ? 0 : -100;
+    mOffset = integral() ? 0 : -100;
     mValue = 0;
     mIsNegative = false;
 }

@@ -3464,13 +3464,17 @@ assetsToSharesDeposit(
 
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount shares{vault->at(sfShareMPTID)};
+    shares.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return STAmount{
             shares.asset(),
             Number(assets.mantissa(), assets.exponent() + vault->at(sfScale))
-                .truncate()};
+                .truncate(),
+            Number::weak};
 
-    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal{
+        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
+        Number::strong};
     shares = (shareTotal * (assets / assetTotal)).truncate();
     return shares;
 }
@@ -3492,6 +3496,7 @@ sharesToAssetsDeposit(
 
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount assets{vault->at(sfAsset)};
+    assets.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return STAmount{
             assets.asset(),
@@ -3499,7 +3504,9 @@ sharesToAssetsDeposit(
             shares.exponent() - vault->at(sfScale),
             false};
 
-    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal{
+        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
+        Number::strong};
     assets = assetTotal * (shares / shareTotal);
     return assets;
 }
@@ -3523,9 +3530,12 @@ assetsToSharesWithdraw(
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount shares{vault->at(sfShareMPTID)};
+    shares.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return shares;
-    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal{
+        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
+        Number::strong};
     Number result = shareTotal * (assets / assetTotal);
     if (truncate == TruncateShares::yes)
         result = result.truncate();
@@ -3551,9 +3561,12 @@ sharesToAssetsWithdraw(
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount assets{vault->at(sfAsset)};
+    assets.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return assets;
-    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal{
+        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
+        Number::strong};
     assets = assetTotal * (shares / shareTotal);
     return assets;
 }

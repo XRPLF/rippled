@@ -482,6 +482,8 @@ public:
     value_type
     operator*() const;
 
+    /// Do not use operator->() unless the field is required, or you've checked
+    /// that it's set.
     T const*
     operator->() const;
 
@@ -739,6 +741,8 @@ STObject::Proxy<T>::operator*() const -> value_type
     return this->value();
 }
 
+/// Do not use operator->() unless the field is required, or you've checked that
+/// it's set.
 template <class T>
 T const*
 STObject::Proxy<T>::operator->() const
