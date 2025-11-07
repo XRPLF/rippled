@@ -12,7 +12,7 @@ if (static OR MSVC)
 else ()
   set (Boost_USE_STATIC_RUNTIME OFF)
 endif ()
-find_dependency (Boost 1.70
+find_dependency (Boost
   COMPONENTS
     chrono
     container
