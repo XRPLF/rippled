@@ -191,6 +191,7 @@ struct MPTConfidentialSend
     std::optional<Buffer> senderEncryptedAmt = std::nullopt;
     std::optional<Buffer> destEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
+    std::optional<std::vector<std::string>> credentials;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;

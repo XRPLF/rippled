@@ -20,6 +20,7 @@
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/ConfidentialSend.h>
 
+#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
@@ -175,8 +176,20 @@ ConfidentialSend::doApply()
     auto sleDestination =
         view().peek(keylet::mptoken(mptIssuanceID, destination));
 
-    if (!sleSender || !sleDestination)
+    auto sleDestAcct = view().peek(keylet::account(destination));
+
+    if (!sleSender || !sleDestination || !sleDestAcct)
         return tecINTERNAL;
+
+    if (auto err = verifyDepositPreauth(
+            ctx_.tx,
+            ctx_.view(),
+            account_,
+            destination,
+            sleDestAcct,
+            ctx_.journal);
+        !isTesSuccess(err))
+        return err;
 
     Slice const senderEc = ctx_.tx[sfSenderEncryptedAmount];
     Slice const destEc = ctx_.tx[sfDestinationEncryptedAmount];

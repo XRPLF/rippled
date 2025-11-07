@@ -1849,6 +1849,142 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testSendDepositPreauth(FeatureBitset features)
+    {
+        testcase("Send deposit preauth");
+        using namespace test::jtx;
+        Env env(*this, features);
+
+        using namespace std::chrono;
+
+        Account const alice("alice");  // issuer
+        Account const bob("bob");      // holder
+        Account const carol("carol");
+        Account const dpIssuer("dpIssuer");  // holder
+
+        env.fund(XRP(50000), dpIssuer);
+        env.close();
+        char const credType[] = "abcde";
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create(
+            {.ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer | tfMPTCanLock});
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        mptAlice.pay(alice, bob, 100);
+        mptAlice.pay(alice, carol, 50);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+        // Bob require preauthorization
+        env(fset(bob, asfDepositAuth));
+        env.close();
+
+        mptAlice.convert(
+            {.account = carol,
+             .amt = 50,
+             .proof = "123",
+             .holderPubKey = mptAlice.getPubKey(carol),
+             .err = tesSUCCESS});
+        mptAlice.convert(
+            {.account = bob,
+             .amt = 50,
+             .proof = "123",
+             .holderPubKey = mptAlice.getPubKey(bob),
+             .err = tesSUCCESS});
+
+        // carol merge inbox
+        mptAlice.mergeInbox({
+            .account = carol,
+        });
+
+        // bob merge inbox
+        mptAlice.mergeInbox({
+            .account = bob,
+        });
+
+        // carol sends 10 to bob, but not authorized
+        mptAlice.send(
+            {.account = carol,
+             .dest = bob,
+             .amt = 10,  // will be encrypted internally
+             .proof = "123",
+             .err = tecNO_PERMISSION});
+
+        // Bob authorize alice
+        env(deposit::auth(bob, carol));
+        env.close();
+
+        mptAlice.send({
+            .account = carol,
+            .dest = bob,
+            .amt = 10,  // will be encrypted internally
+            .proof = "123",
+        });
+
+        // Create credentials
+        env(credentials::create(bob, dpIssuer, credType));
+        env.close();
+        env(credentials::accept(bob, dpIssuer, credType));
+        env.close();
+        auto const jv = credentials::ledgerEntry(env, bob, dpIssuer, credType);
+        std::string const credIdx = jv[jss::result][jss::index].asString();
+
+        mptAlice.send(
+            {.account = carol,
+             .dest = bob,
+             .amt = 10,  // will be encrypted internally
+             .proof = "123",
+             .credentials = {{credIdx}}});
+
+        // Bob revoke authorization
+        env(deposit::unauth(bob, carol));
+        env.close();
+
+        mptAlice.send(
+            {.account = carol,
+             .dest = bob,
+             .amt = 10,  // will be encrypted internally
+             .proof = "123",
+             .err = tecNO_PERMISSION});
+
+        mptAlice.send(
+            {.account = carol,
+             .dest = bob,
+             .amt = 10,  // will be encrypted internally
+             .proof = "123",
+             .credentials = {{credIdx}},
+             .err = tecNO_PERMISSION});
+
+        // Bob authorize credentials
+        env(deposit::authCredentials(bob, {{dpIssuer, credType}}));
+        env.close();
+
+        mptAlice.send(
+            {.account = carol,
+             .dest = bob,
+             .amt = 10,  // will be encrypted internally
+             .proof = "123",
+             .err = tecNO_PERMISSION});
+
+        mptAlice.send({
+            .account = carol,
+            .dest = bob,
+            .amt = 10,  // will be encrypted internally
+            .proof = "123",
+            .credentials = {{credIdx}},
+        });
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testConvert(features);
@@ -1865,6 +2001,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testSend(features);
         testSendPreflight(features);
         testSendPreclaim(features);
+        testSendDepositPreauth(features);
 
         testDelete(features);
 

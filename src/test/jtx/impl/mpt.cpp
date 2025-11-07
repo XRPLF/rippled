@@ -767,6 +767,13 @@ MPTTester::send(MPTConfidentialSend const& arg)
     if (arg.proof)
         jv[sfZKProof.jsonName] = *arg.proof;
 
+    if (arg.credentials)
+    {
+        auto& arr(jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        for (auto const& hash : *arg.credentials)
+            arr.append(hash);
+    }
+
     auto const senderPubAmt = getBalance(*arg.account);
     auto const destPubAmt = getBalance(*arg.dest);
     auto const prevCOA = getIssuanceConfidentialBalance();
