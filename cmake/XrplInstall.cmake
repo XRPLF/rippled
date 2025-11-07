@@ -37,8 +37,6 @@ install(
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
-
-
 install (EXPORT XrplExports
   FILE XrplTargets.cmake
   NAMESPACE Xrpl::

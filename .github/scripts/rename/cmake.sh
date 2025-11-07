@@ -82,11 +82,11 @@ elif ! grep -q '"rippled"' cmake/XrplCore.cmake; then
 fi
 
 # Restore the symlink from 'xrpld' to 'rippled'.
-${SED_COMMAND} -z -i -E 's/create_symbolic_link\(xrpld/create_symbolic_link(rippled/' cmake/XrplInstall.cmake
+${SED_COMMAND} -i -E 's@create_symbolic_link\(xrpld@create_symbolic_link(rippled@' cmake/XrplInstall.cmake
 
 # Remove the symlink that previously pointed from 'ripple' to 'xrpl' but now is
 # no longer needed.
-${SED_COMMAND} -z -i -E 's@install\(CODE.+CMAKE_INSTALL_INCLUDEDIR}/xrpl\)\n"\)@@' cmake/XrplInstall.cmake
+${SED_COMMAND} -z -i -E 's@install\(CODE.+CMAKE_INSTALL_INCLUDEDIR}/xrpl\)\n"\)\n+@@' cmake/XrplInstall.cmake
 
 popd
 echo "Renaming complete."
