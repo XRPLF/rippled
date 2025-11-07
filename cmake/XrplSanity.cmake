@@ -1,5 +1,5 @@
 #[===================================================================[
-   convenience variables and sanity checks
+   sanity checks
 #]===================================================================]
 
 get_property(is_multiconfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -16,13 +16,6 @@ if (NOT is_multiconfig)
   endif ()
 endif ()
 
-get_directory_property(has_parent PARENT_DIRECTORY)
-if (has_parent)
-  set (is_root_project OFF)
-else ()
-  set (is_root_project ON)
-endif ()
-
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang") # both Clang and AppleClang
   set (is_clang TRUE)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND
@@ -34,18 +27,6 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
     message (FATAL_ERROR "This project requires GCC 12 or later")
   endif ()
-endif ()
-
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  set (is_linux TRUE)
-else ()
-  set (is_linux FALSE)
-endif ()
-
-if ("$ENV{CI}" STREQUAL "true" OR "$ENV{CONTINUOUS_INTEGRATION}" STREQUAL "true")
-  set (is_ci TRUE)
-else ()
-  set (is_ci FALSE)
 endif ()
 
 # check for in-source build and fail
