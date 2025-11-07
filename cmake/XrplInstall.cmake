@@ -37,8 +37,6 @@ install(
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
-install(CODE "set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")")
-
 install (EXPORT XrplExports
   FILE XrplTargets.cmake
   NAMESPACE Xrpl::
@@ -69,7 +67,7 @@ if (is_root_project AND TARGET xrpld)
   install(CODE "
     set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
     include(create_symbolic_link)
-    create_symbolic_link(xrpld${suffix} \
+    create_symbolic_link(rippled${suffix} \
        \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix})
   ")
 endif ()
