@@ -74,16 +74,19 @@ if grep -q '"xrpld"' cmake/XrplCore.cmake; then
   # The script has been rerun, so just restore the name of the binary.
   ${SED_COMMAND} -i 's/"xrpld"/"rippled"/' cmake/XrplCore.cmake
 elif ! grep -q '"rippled"' cmake/XrplCore.cmake; then
-  ghead -n -1 cmake/XrplCore.cmake > cmake.tmp
+  ${HEAD_COMMAND} -n -1 cmake/XrplCore.cmake > cmake.tmp
   echo '  # For the time being, we will keep the name of the binary as it was.' >> cmake.tmp
   echo '  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")' >> cmake.tmp
   tail -1 cmake/XrplCore.cmake >> cmake.tmp
   mv cmake.tmp cmake/XrplCore.cmake
 fi
 
+# Restore the symlink from 'xrpld' to 'rippled'.
+${SED_COMMAND} -i -E 's@create_symbolic_link\(xrpld@create_symbolic_link(rippled@' cmake/XrplInstall.cmake
+
 # Remove the symlink that previously pointed from 'ripple' to 'xrpl' but now is
 # no longer needed.
-${SED_COMMAND} -z -i -E 's@install\(CODE.+CMAKE_INSTALL_INCLUDEDIR}/xrpl\)\n"\)@install(CODE "set(CMAKE_MODULE_PATH \\"${CMAKE_MODULE_PATH}\\")")@' cmake/XrplInstall.cmake
+${SED_COMMAND} -z -i -E 's@install\(CODE.+CMAKE_INSTALL_INCLUDEDIR}/xrpl\)\n"\)\n+@@' cmake/XrplInstall.cmake
 
 popd
 echo "Renaming complete."
