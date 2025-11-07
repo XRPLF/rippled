@@ -636,10 +636,9 @@ TEST_CASE("edge cases")
     }
 
     std::uint64_t overflow = std::uint64_t(max_uint) + 1;
-    for (std::string input : {std::to_string(overflow)})
     {
         std::string json = "{\"overflow\":";
-        json += input;
+        json += std::to_string(overflow);
         json += "}";
 
         Json::Value j2;
@@ -649,10 +648,9 @@ TEST_CASE("edge cases")
     }
 
     std::int64_t underflow = std::int64_t(min_int) - 1;
-    for (std::string input : {std::to_string(underflow)})
     {
         std::string json = "{\"underflow\":";
-        json += input;
+        json += std::to_string(underflow);
         json += "}";
 
         Json::Value j3;
