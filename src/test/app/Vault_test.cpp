@@ -2866,7 +2866,7 @@ class Vault_test : public beast::unit_test::suite
                 Account const& owner,
                 Account const& issuer,
                 Account const& charlie,
-                auto,
+                auto const& vaultAccount,
                 Vault& vault,
                 PrettyAsset const& asset,
                 auto&&...) {
@@ -2877,6 +2877,11 @@ class Vault_test : public beast::unit_test::suite
                 tx[sfScale] = 1;
                 env(tx);
                 env.close();
+
+                auto const startingOwnerBalance = env.balance(owner, asset);
+                BEAST_EXPECT(
+                    (startingOwnerBalance.value() ==
+                     STAmount{asset, 11875, -2}));
 
                 // This operation (first deposit 100, then 3.75 x 5) is known to
                 // have triggered calculation rounding errors in Number
@@ -2897,6 +2902,19 @@ class Vault_test : public beast::unit_test::suite
                 }
                 env.close();
 
+                {
+                    STAmount const xfer{asset, 1185, -1};
+                    BEAST_EXPECT(
+                        env.balance(owner, asset) ==
+                        startingOwnerBalance.value() - xfer);
+                    BEAST_EXPECT(
+                        env.balance(vaultAccount(keylet), asset) == xfer);
+
+                    auto const vault = env.le(keylet);
+                    BEAST_EXPECT(vault->at(sfAssetsAvailable) == xfer);
+                    BEAST_EXPECT(vault->at(sfAssetsTotal) == xfer);
+                }
+
                 // Total vault balance should be 118.5 IOU. Withdraw and delete
                 // the vault to verify this exact amount was deposited and the
                 // owner has matching shares
@@ -2904,6 +2922,19 @@ class Vault_test : public beast::unit_test::suite
                     {.depositor = owner,
                      .id = keylet.key,
                      .amount = asset(Number(1000 + 37 * 5, -1))}));
+
+                {
+                    BEAST_EXPECT(
+                        env.balance(owner, asset) ==
+                        startingOwnerBalance.value());
+                    BEAST_EXPECT(
+                        env.balance(vaultAccount(keylet), asset) ==
+                        beast::zero);
+                    auto const vault = env.le(keylet);
+                    BEAST_EXPECT(vault->at(sfAssetsAvailable) == beast::zero);
+                    BEAST_EXPECT(vault->at(sfAssetsTotal) == beast::zero);
+                }
+
                 env(vault.del({.owner = owner, .id = keylet.key}));
                 env.close();
             },
