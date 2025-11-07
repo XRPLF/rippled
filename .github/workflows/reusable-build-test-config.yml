@@ -124,7 +124,7 @@ jobs:
           cmake \
             --build . \
             --config "${BUILD_TYPE}" \
-            --parallel ${BUILD_NPROC} \
+            --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
 
       - name: Upload rippled artifact (Linux)
@@ -183,7 +183,7 @@ jobs:
           cmake \
             --build . \
             --config "${BUILD_TYPE}" \
-            --parallel ${BUILD_NPROC} \
+            --parallel "${BUILD_NPROC}" \
             --target coverage
 
       - name: Upload coverage report
@@ -205,7 +205,7 @@ jobs:
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
-          ./rippled --unittest --unittest-jobs ${BUILD_NPROC}
+          ./rippled --unittest --unittest-jobs "${BUILD_NPROC}"
 
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
