@@ -121,7 +121,8 @@ class Feature_test : public beast::unit_test::suite
         // Test a random sampling of the variables. If any of these get retired
         // or removed, swap out for any other feature.
         BEAST_EXPECT(
-            featureToName(fixTrustLinesToSelf) == "fixTrustLinesToSelf");
+            featureToName(fixRemoveNFTokenAutoTrustLine) ==
+            "fixRemoveNFTokenAutoTrustLine");
         BEAST_EXPECT(featureToName(featureFlow) == "Flow");
         BEAST_EXPECT(featureToName(featureNegativeUNL) == "NegativeUNL");
         BEAST_EXPECT(
@@ -528,7 +529,7 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        constexpr char const* featureName = "NonFungibleTokensV1";
+        constexpr char const* featureName = "CryptoConditionsSuite";
 
         auto jrr = env.rpc("feature", featureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))

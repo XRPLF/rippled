@@ -5,8 +5,8 @@
 #include <test/jtx/pay.h>
 
 #include <xrpld/rpc/RPCHandler.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
 

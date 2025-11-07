@@ -13,8 +13,9 @@ if [[ "${OSTYPE}" == 'darwin'* ]]; then
   SED_COMMAND=gsed
 fi
 
-# This script changes the binary name from `rippled` to `xrpld`, and creates a
-# symlink named `rippled` that points to the `xrpld` binary.
+# This script changes the binary name from `rippled` to `xrpld`, and reverses
+# the symlink that currently points from `xrpld` to `rippled` so that it points
+# from `rippled` to `xrpld` instead.
 # Usage: .github/scripts/rename/binary.sh <repository directory>
 
 if [ "$#" -ne 1 ]; then
@@ -28,10 +29,14 @@ if [ ! -d "${DIRECTORY}" ]; then
     echo "Error: Directory '${DIRECTORY}' does not exist."
     exit 1
 fi
+pushd ${DIRECTORY}
 
-FILE="${DIRECTORY}/cmake/XrplCore.cmake"
-echo "Processing file: ${FILE}"
-${SED_COMMAND} -i -E 's/For the time being.+/Create a symlink named "rippled" for backward compatibility./g' "${FILE}"
-${SED_COMMAND} -i -E 's/set_target_properties\(xrpld.+/add_custom_command(TARGET xrpld POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink "xrpld" "rippled")/g' "${FILE}"
+# Remove the binary name override added by the cmake.sh script.
+${SED_COMMAND} -z -i -E 's@\s+# For the time being.+"rippled"\)@@' cmake/XrplCore.cmake
 
+# Reverse the symlink.
+${SED_COMMAND} -i -E 's@create_symbolic_link\(rippled@create_symbolic_link(xrpld@' cmake/XrplInstall.cmake
+${SED_COMMAND} -i -E 's@/xrpld\$\{suffix\}@/rippled${suffix}@' cmake/XrplInstall.cmake
+
+popd
 echo "Processing complete."

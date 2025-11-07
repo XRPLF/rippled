@@ -313,7 +313,7 @@ TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
 #endif
 TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint,
     Delegation::delegatable,
-    featureNonFungibleTokensV1,
+    uint256{},
     changeNFTCounts,
     ({
     {sfNFTokenTaxon, soeREQUIRED},
@@ -331,7 +331,7 @@ TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint,
 #endif
 TRANSACTION(ttNFTOKEN_BURN, 26, NFTokenBurn,
     Delegation::delegatable,
-    featureNonFungibleTokensV1,
+    uint256{},
     changeNFTCounts,
     ({
     {sfNFTokenID, soeREQUIRED},
@@ -344,7 +344,7 @@ TRANSACTION(ttNFTOKEN_BURN, 26, NFTokenBurn,
 #endif
 TRANSACTION(ttNFTOKEN_CREATE_OFFER, 27, NFTokenCreateOffer,
     Delegation::delegatable,
-    featureNonFungibleTokensV1,
+    uint256{},
     noPriv,
     ({
     {sfNFTokenID, soeREQUIRED},
@@ -360,7 +360,7 @@ TRANSACTION(ttNFTOKEN_CREATE_OFFER, 27, NFTokenCreateOffer,
 #endif
 TRANSACTION(ttNFTOKEN_CANCEL_OFFER, 28, NFTokenCancelOffer,
     Delegation::delegatable,
-    featureNonFungibleTokensV1,
+    uint256{},
     noPriv,
     ({
     {sfNFTokenOffers, soeREQUIRED},
@@ -372,7 +372,7 @@ TRANSACTION(ttNFTOKEN_CANCEL_OFFER, 28, NFTokenCancelOffer,
 #endif
 TRANSACTION(ttNFTOKEN_ACCEPT_OFFER, 29, NFTokenAcceptOffer,
     Delegation::delegatable,
-    featureNonFungibleTokensV1,
+    uint256{},
     noPriv,
     ({
     {sfNFTokenBuyOffer, soeOPTIONAL},

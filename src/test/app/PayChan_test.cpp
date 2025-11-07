@@ -1,7 +1,5 @@
 #include <test/jtx.h>
 
-#include <xrpld/rpc/detail/RPCHelpers.h>
-
 #include <xrpl/basics/chrono.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>

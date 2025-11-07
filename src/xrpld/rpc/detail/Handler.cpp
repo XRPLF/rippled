@@ -1,5 +1,4 @@
 #include <xrpld/rpc/detail/Handler.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 #include <xrpld/rpc/handlers/Version.h>
 

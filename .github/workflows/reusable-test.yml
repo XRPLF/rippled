@@ -1,4 +1,4 @@
-name: Test rippled
+name: Test xrpld
 
 on:
   workflow_call:
@@ -48,23 +48,23 @@ jobs:
         with:
           subtract: ${{ inputs.nproc_subtract }}
 
-      - name: Download rippled artifact
+      - name: Download xrpld artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: rippled-${{ inputs.config_name }}
+          name: xrpld-${{ inputs.config_name }}
 
       - name: Make binary executable (Linux and macOS)
         shell: bash
         if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
         run: |
-          chmod +x ./rippled
+          chmod +x ./xrpld
 
       - name: Check linking (Linux)
         if: ${{ runner.os == 'Linux' }}
         shell: bash
         run: |
-          ldd ./rippled
-          if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+          ldd ./xrpld
+          if [ "$(ldd ./xrpld | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
             echo 'The binary is statically linked.'
           else
             echo 'The binary is dynamically linked.'
@@ -75,7 +75,7 @@ jobs:
         if: ${{ inputs.verify_voidstar }}
         shell: bash
         run: |
-          ./rippled --version | grep libvoidstar
+          ./xrpld --version | grep libvoidstar
 
       - name: Run the embedded tests
         if: ${{ inputs.run_tests }}
@@ -83,7 +83,7 @@ jobs:
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
-          ./rippled --unittest --unittest-jobs ${BUILD_NPROC}
+          ./xrpld --unittest --unittest-jobs ${BUILD_NPROC}
 
       - name: Run the separate tests
         if: ${{ inputs.run_tests }}

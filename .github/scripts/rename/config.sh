@@ -48,10 +48,6 @@ fi
 DIRECTORIES=("cfg" "cmake" "include" "src")
 for DIRECTORY in "${DIRECTORIES[@]}"; do
   echo "Processing directory: ${DIRECTORY}"
-  if [ ! -d "${DIRECTORY}" ]; then
-      echo "Error: Directory '${DIRECTORY}' does not exist."
-      exit 1
-  fi
 
   find "${DIRECTORY}" -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp" -o -name "*.cmake" -o -name "*.txt" -o -name "*.cfg" -o -name "*.md" \) | while read -r FILE; do
       echo "Processing file: ${FILE}"
