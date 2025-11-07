@@ -151,7 +151,7 @@ jobs:
           fi
 
       - name: Verify presence of instrumentation
-        if: ${{ env.ENABLED_VOIDSTAR }}
+        if: ${{ env.ENABLED_VOIDSTAR == 'true' }}
         working-directory: ${{ inputs.build_dir }}
         shell: bash
         run: |
@@ -165,7 +165,7 @@ jobs:
           ./ctest --output-on-failure
 
       - name: Prepare coverage report
-        if: ${{ !inputs.build_only && env.ENABLED_COVERAGE }}
+        if: ${{ !inputs.build_only && env.ENABLED_COVERAGE == 'true' }}
         working-directory: ${{ inputs.build_dir }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
@@ -179,7 +179,7 @@ jobs:
             --target coverage
 
       - name: Upload coverage report
-        if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.ENABLED_COVERAGE }}
+        if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.ENABLED_COVERAGE == 'true' }}
         uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
         with:
           disable_search: true
@@ -191,7 +191,7 @@ jobs:
           verbose: true
 
       - name: Run the embedded tests
-        if: ${{ !inputs.build_only && !env.ENABLED_COVERAGE }}
+        if: ${{ !inputs.build_only && env.ENABLED_COVERAGE != 'true' }}
         working-directory: ${{ inputs.build_dir }}
         shell: bash
         env:
