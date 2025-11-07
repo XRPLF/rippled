@@ -7,9 +7,9 @@
    toolchain file, especially the ABI-impacting ones
 #]=========================================================]
 add_library (common INTERFACE)
-add_library (Ripple::common ALIAS common)
+add_library (Xrpl::common ALIAS common)
 # add a single global dependency on this interface lib
-link_libraries (Ripple::common)
+link_libraries (Xrpl::common)
 set_target_properties (common
   PROPERTIES INTERFACE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

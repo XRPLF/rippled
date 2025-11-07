@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #if !defined(XRPL_FEATURE)
 #error "undefined macro: XRPL_FEATURE"
 #endif
@@ -77,21 +58,15 @@ XRPL_FIX    (DisallowIncomingV1,         Supported::yes, VoteBehavior::DefaultNo
 XRPL_FEATURE(XChainBridge,               Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(AMM,                        Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Clawback,                   Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (NFTokenRemint,              Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (NonFungibleTokensV1_2,      Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (UniversalNumber,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(XRPFees,                    Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(DisallowIncoming,           Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(ImmediateOfferKilled,       Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FIX    (TrustLinesToSelf,           Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(NonFungibleTokensV1_1,      Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(ExpandedSignerList,         Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(CheckCashMakesTrustLine,    Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(FlowSortStrands,            Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(TicketBatch,                Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(NegativeUNL,                Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(HardenedValidations,        Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(RequireFullyCanonicalSig,   Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DeletableAccounts,          Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (PayChanRecipientOwnerDir,   Supported::yes, VoteBehavior::DefaultYes)
@@ -112,9 +87,6 @@ XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYe
 //
 // If a feature remains obsolete for long enough that no clients are able
 // to vote for it, the feature can be removed (entirely?) from the code.
-XRPL_FIX    (NFTokenNegOffer,       Supported::yes, VoteBehavior::Obsolete)
-XRPL_FIX    (NFTokenDirV1,          Supported::yes, VoteBehavior::Obsolete)
-XRPL_FEATURE(NonFungibleTokensV1,   Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
 
 // The following amendments have been active for at least two years. Their
@@ -138,18 +110,24 @@ XRPL_RETIRE(fix1623)
 XRPL_RETIRE(fix1781)
 XRPL_RETIRE(fixAmendmentMajorityCalc)
 XRPL_RETIRE(fixCheckThreading)
+XRPL_RETIRE(fixNonFungibleTokensV1_2)
+XRPL_RETIRE(fixNFTokenRemint)
 XRPL_RETIRE(fixMasterKeyAsRegularKey)
 XRPL_RETIRE(fixQualityUpperBound)
 XRPL_RETIRE(fixReducedOffersV1)
 XRPL_RETIRE(fixRmSmallIncreasedQOffers)
 XRPL_RETIRE(fixSTAmountCanonicalize)
 XRPL_RETIRE(fixTakerDryOfferRemoval)
+XRPL_RETIRE(fixTrustLinesToSelf)
 XRPL_RETIRE(CryptoConditions)
 XRPL_RETIRE(Escrow)
 XRPL_RETIRE(EnforceInvariants)
 XRPL_RETIRE(FeeEscalation)
 XRPL_RETIRE(FlowCross)
+XRPL_RETIRE(HardenedValidations)
+XRPL_RETIRE(ImmediateOfferKilled)
 XRPL_RETIRE(MultiSign)
+XRPL_RETIRE(NonFungibleTokensV1_1)
 XRPL_RETIRE(PayChan)
 XRPL_RETIRE(SortedDirectories)
 XRPL_RETIRE(TickSize)
