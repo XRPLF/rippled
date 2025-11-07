@@ -197,7 +197,7 @@ jobs:
 
       - name: Run the embedded tests
         if: ${{ !inputs.build_only && env.ENABLED_COVERAGE != 'true' }}
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', inputs.build_dir, inputs.build_type) || inputs.build_dir }}
         shell: bash
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
