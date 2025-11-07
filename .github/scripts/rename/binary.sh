@@ -13,9 +13,9 @@ if [[ "${OSTYPE}" == 'darwin'* ]]; then
   SED_COMMAND=gsed
 fi
 
-# This script changes the binary name from `rippled` to `xrpld`, and reverse the
-# symlink that currently points from `xrpld` to `rippled` so that it points from
-# `rippled` to `xrpld` instead.
+# This script changes the binary name from `rippled` to `xrpld`, and reverses
+# the symlink that currently points from `xrpld` to `rippled` so that it points
+# from `rippled` to `xrpld` instead.
 # Usage: .github/scripts/rename/binary.sh <repository directory>
 
 if [ "$#" -ne 1 ]; then
