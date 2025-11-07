@@ -1014,8 +1014,7 @@ checkInsufficientReserve(
     ReadView const& view,
     std::shared_ptr<SLE const> const& accSle,
     STAmount const& accBalance,
-    std::int32_t ownerCountDelta,
-    std::int32_t accountCountDelta)
+    std::int32_t ownerCountDelta)
 {
     STAmount const reserve{
         view.fees().accountReserve(ownerCount(accSle) + ownerCountDelta)};
