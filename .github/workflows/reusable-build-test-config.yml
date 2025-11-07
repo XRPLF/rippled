@@ -161,13 +161,16 @@ jobs:
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
         working-directory: ${{ inputs.build_dir }}
+        # Windows locks some of the build files while running tests, and parallel jobs can collide
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
+          PARALLELISM: ${{ runner.os == 'Windows' && '1' || steps.nproc.outputs.nproc }}
         shell: bash
         run: |
           ctest \
             --output-on-failure \
-            -C "${BUILD_TYPE}"
+            -C "${BUILD_TYPE}" \
+            -j "${PARALLELISM}"
 
       - name: Prepare coverage report
         if: ${{ !inputs.build_only && env.ENABLED_COVERAGE == 'true' }}
