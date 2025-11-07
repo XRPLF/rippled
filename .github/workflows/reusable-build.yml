@@ -1,4 +1,4 @@
-name: Build rippled
+name: Build xrpld
 
 on:
   workflow_call:
@@ -126,17 +126,17 @@ jobs:
         run: |
           mkdir -p ./binaries/doctest/
 
-          cp ./${BUILD_TYPE_DIR}/rippled* ./binaries/
+          cp ./${BUILD_TYPE_DIR}/xrpld* ./binaries/
           if [ "${CMAKE_TARGET}" != 'coverage' ]; then
             cp ./src/tests/libxrpl/${BUILD_TYPE_DIR}/xrpl.test.* ./binaries/doctest/
           fi
 
-      - name: Upload rippled artifact
+      - name: Upload xrpld artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         env:
           BUILD_DIR: ${{ inputs.build_dir }}
         with:
-          name: rippled-${{ inputs.config_name }}
+          name: xrpld-${{ inputs.config_name }}
           path: ${{ env.BUILD_DIR }}/binaries/
           retention-days: 3
           if-no-files-found: error
