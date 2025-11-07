@@ -162,7 +162,7 @@ jobs:
         working-directory: ${{ inputs.build_dir }}
         shell: bash
         run: |
-          ./ctest --output-on-failure
+          ctest --output-on-failure
 
       - name: Prepare coverage report
         if: ${{ !inputs.build_only && env.ENABLED_COVERAGE == 'true' }}
