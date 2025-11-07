@@ -1,28 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2018 Ripple Labs Inc.
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/utility.h>
 
 #include <xrpld/rpc/RPCCall.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 
 #include <boost/algorithm/string.hpp>
@@ -4643,9 +4626,33 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"sign: too many arguments.",
+    {"sign: offline flag with signature_target.",
      __LINE__,
      {"sign", "my_secret", R"({"json_argument":true})", "offline", "extra"},
+     RPCCallTestData::no_exception,
+     R"({
+        "method" : "sign",
+        "params" : [
+            {
+                "api_version" : %API_VER%,
+                "offline" : true,
+                "secret" : "my_secret",
+                "signature_target" : "extra",
+                "tx_json" :
+                {
+                        "json_argument" : true
+                }
+            }
+        ]
+     })"},
+    {"sign: too many arguments.",
+     __LINE__,
+     {"sign",
+      "my_secret",
+      R"({"json_argument":true})",
+      "offline",
+      "CounterpartySignature",
+      "extra"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "sign",
@@ -4675,20 +4682,24 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"sign: invalid final argument.",
+    {"sign: misspelled offline flag interpreted as signature_target.",
      __LINE__,
      {"sign", "my_secret", R"({"json_argument":true})", "offlin"},
      RPCCallTestData::no_exception,
      R"({
-    "method" : "sign",
-    "params" : [
-      {
-         "error" : "invalidParams",
-         "error_code" : 31,
-         "error_message" : "Invalid parameters."
-      }
-    ]
-    })"},
+        "method" : "sign",
+        "params" : [
+            {
+                "api_version" : %API_VER%,
+                "secret" : "my_secret",
+                "signature_target" : "offlin",
+                "tx_json" :
+                {
+                        "json_argument" : true
+                }
+            }
+        ]
+     })"},
 
     // sign_for
     // --------------------------------------------------------------------
@@ -4880,9 +4891,33 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"submit: too many arguments.",
+    {"submit: offline flag with signature_target.",
      __LINE__,
      {"submit", "my_secret", R"({"json_argument":true})", "offline", "extra"},
+     RPCCallTestData::no_exception,
+     R"({
+        "method" : "submit",
+        "params" : [
+            {
+                "api_version" : %API_VER%,
+                "offline" : true,
+                "secret" : "my_secret",
+                "signature_target" : "extra",
+                "tx_json" :
+                {
+                        "json_argument" : true
+                }
+            }
+        ]
+     })"},
+    {"submit: too many arguments.",
+     __LINE__,
+     {"submit",
+      "my_secret",
+      R"({"json_argument":true})",
+      "offline",
+      "CounterpartySignature",
+      "extra"},
      RPCCallTestData::no_exception,
      R"({
     "method" : "submit",
@@ -4912,19 +4947,23 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"submit: last argument not \"offline\".",
+    {"submit: misspelled offline flag interpreted as signature_target.",
      __LINE__,
      {"submit", "my_secret", R"({"json_argument":true})", "offlne"},
      RPCCallTestData::no_exception,
      R"({
-    "method" : "submit",
-    "params" : [
-      {
-         "error" : "invalidParams",
-         "error_code" : 31,
-         "error_message" : "Invalid parameters."
-      }
-    ]
+        "method" : "submit",
+        "params" : [
+            {
+                "api_version" : %API_VER%,
+                "secret" : "my_secret",
+                "signature_target" : "offlne",
+                "tx_json" :
+                {
+                        "json_argument" : true
+                }
+            }
+        ]
     })"},
 
     // submit_multisigned
