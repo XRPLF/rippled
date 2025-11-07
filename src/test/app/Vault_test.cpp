@@ -2074,6 +2074,7 @@ class Vault_test : public beast::unit_test::suite
                     auto const sleMPT = env.le(mptoken);
                     BEAST_EXPECT(sleMPT == nullptr);
 
+                    // Use one reserve so the next transaction fails
                     env(ticket::create(owner, 1));
                     env.close();
 
