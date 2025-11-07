@@ -35,6 +35,9 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
             tx.isFieldPresent(sfCoverRateMinimum) ||
             tx.isFieldPresent(sfCoverRateLiquidation))
             return temINVALID;
+
+        if (tx[sfLoanBrokerID] == beast::zero)
+            return temINVALID;
     }
 
     {

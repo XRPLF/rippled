@@ -904,9 +904,26 @@ class LoanBroker_test : public beast::unit_test::suite
         if (!BEAST_EXPECT(broker))
             return;
 
+        auto testZeroBrokerID = [&](auto&& getTxJv) {
+            auto jv = getTxJv();
+            // empty broker ID
+            jv[sfLoanBrokerID] = "";
+            env(jv, ter(temINVALID));
+            // zero broker ID
+            jv[sfLoanBrokerID] = to_string(uint256{});
+            // needs a flag to distinguish the parsed STTx from the prior
+            // test
+            env(jv, txflags(tfFullyCanonicalSig), ter(temINVALID));
+        };
+
         if (brokerTest == CoverDeposit)
         {
-            // preclaim: tecWRONG_ASET
+            // preflight: temINVALID (empty/zero broker id)
+            testZeroBrokerID([&]() {
+                return coverDeposit(alice, brokerKeylet.key, asset(10));
+            });
+
+            // preclaim: tecWRONG_ASSET
             env(coverDeposit(alice, brokerKeylet.key, issuer["BAD"](10)),
                 ter(tecWRONG_ASSET));
 
@@ -929,6 +946,11 @@ class LoanBroker_test : public beast::unit_test::suite
 
         if (brokerTest == CoverWithdraw)
         {
+            // preflight: temINVALID (empty/zero broker id)
+            testZeroBrokerID([&]() {
+                return coverWithdraw(alice, brokerKeylet.key, asset(10));
+            });
+
             // preclaim: tecWRONG_ASSSET
             env(coverWithdraw(alice, brokerKeylet.key, issuer["BAD"](10)),
                 ter(tecWRONG_ASSET));
@@ -976,6 +998,14 @@ class LoanBroker_test : public beast::unit_test::suite
 
         if (brokerTest == CoverClawback)
         {
+            // preflight: temINVALID (empty/zero broker id)
+            testZeroBrokerID([&]() {
+                return env.json(
+                    coverClawback(alice),
+                    loanBrokerID(brokerKeylet.key),
+                    amount(vaultInfo.asset(2)));
+            });
+
             if (asset.holds<Issue>())
             {
                 // preclaim: AllowTrustLineClaback is not set
@@ -1011,23 +1041,8 @@ class LoanBroker_test : public beast::unit_test::suite
                 sig(sfCounterpartySignature, alice),
                 fee(env.current()->fees().base * 2));
 
-            // preflight: temINVALID (empty broker id)
-            {
-                auto jv = del(alice, brokerKeylet.key);
-                jv[sfLoanBrokerID] = "";
-                env(jv, ter(temINVALID));
-            }
-            // preflight: temINVALID (zero broker id)
-            {
-                // needs a flag to distinguish the parsed STTx from the prior
-                // test
-                auto jv = del(alice, uint256{}, tfFullyCanonicalSig);
-                BEAST_EXPECT(
-                    jv[sfLoanBrokerID] ==
-                    "0000000000000000000000000000000000000000000000000000000000"
-                    "000000");
-                env(jv, ter(temINVALID));
-            }
+            // preflight: temINVALID (empty/zero broker id)
+            testZeroBrokerID([&]() { return del(alice, brokerKeylet.key); });
 
             // preclaim: tecHAS_OBLIGATIONS
             env(del(alice, brokerKeylet.key), ter(tecHAS_OBLIGATIONS));
@@ -1037,6 +1052,13 @@ class LoanBroker_test : public beast::unit_test::suite
 
         if (brokerTest == Set)
         {
+            // preflight: temINVALID (empty/zero broker id)
+            testZeroBrokerID([&]() {
+                return env.json(
+                    set(alice, vaultInfo.vaultID),
+                    loanBrokerID(brokerKeylet.key));
+            });
+
             if (asset.holds<Issue>())
             {
                 env(fclear(issuer, asfDefaultRipple));

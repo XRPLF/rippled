@@ -169,9 +169,15 @@ LoanManage::defaultLoan(
 
     {
         // Decrease the Total Value of the Vault:
-        auto vaultAssetsTotalProxy = vaultSle->at(sfAssetsTotal);
-        auto vaultAssetsAvailableProxy = vaultSle->at(sfAssetsAvailable);
-        if (vaultAssetsTotalProxy < vaultDefaultAmount)
+        auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
+        auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
+
+        // The vault may be at a different scale than the loan. Reduce rounding
+        // errors during the accounting by rounding some of the values to that
+        // scale.
+        auto const vaultScale = vaultTotalProxy.value().exponent();
+
+        if (vaultTotalProxy < vaultDefaultAmount)
         {
             // LCOV_EXCL_START
             JLOG(j.warn())
@@ -179,24 +185,24 @@ LoanManage::defaultLoan(
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        vaultAssetsTotalProxy -= vaultDefaultAmount;
+
+        auto const vaultDefaultRounded = roundToAsset(
+            vaultAsset, vaultDefaultAmount, vaultScale, Number::downward);
+        vaultTotalProxy -= vaultDefaultRounded;
         // Increase the Asset Available of the Vault by liquidated First-Loss
         // Capital and any unclaimed funds amount:
-        vaultAssetsAvailableProxy += defaultCovered;
-        if (*vaultAssetsAvailableProxy > *vaultAssetsTotalProxy &&
-            !vaultAsset.integral())
+        vaultAvailableProxy += defaultCovered;
+        if (*vaultAvailableProxy > *vaultTotalProxy && !vaultAsset.integral())
         {
-            auto const difference =
-                vaultAssetsAvailableProxy - vaultAssetsTotalProxy;
+            auto const difference = vaultAvailableProxy - vaultTotalProxy;
             JLOG(j.debug())
-                << "Vault assets available: " << *vaultAssetsAvailableProxy
-                << "(" << vaultAssetsAvailableProxy->value().exponent()
-                << "), Total: " << *vaultAssetsTotalProxy << "("
-                << vaultAssetsTotalProxy->value().exponent()
+                << "Vault assets available: " << *vaultAvailableProxy << "("
+                << vaultAvailableProxy.value().exponent()
+                << "), Total: " << *vaultTotalProxy << "("
+                << vaultTotalProxy.value().exponent()
                 << "), Difference: " << difference << "("
                 << difference.exponent() << ")";
-            if (vaultAssetsAvailableProxy->value().exponent() -
-                    difference.exponent() >
+            if (vaultAvailableProxy.value().exponent() - difference.exponent() >
                 13)
             {
                 // If the difference is dust, bring the total up to match
@@ -204,15 +210,15 @@ LoanManage::defaultLoan(
                 JLOG(j.debug())
                     << "Difference between vault assets available and total is "
                        "dust. Set both to the larger value.";
-                vaultAssetsTotalProxy = vaultAssetsAvailableProxy;
+                vaultTotalProxy = vaultAvailableProxy;
             }
         }
-        if (*vaultAssetsAvailableProxy > *vaultAssetsTotalProxy)
+        if (*vaultAvailableProxy > *vaultTotalProxy)
         {
             JLOG(j.warn()) << "Vault assets available must not be greater "
                               "than assets outstanding. Available: "
-                           << *vaultAssetsAvailableProxy
-                           << ", Total: " << *vaultAssetsTotalProxy;
+                           << *vaultAvailableProxy
+                           << ", Total: " << *vaultTotalProxy;
             return tecLIMIT_EXCEEDED;
         }
 

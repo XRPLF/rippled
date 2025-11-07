@@ -273,7 +273,8 @@ VaultDeposit::doApply()
     }
     assetsTotalProxy += assetsDeposited;
     assetsAvailableProxy += assetsDeposited;
-    if (!assetsTotalProxy->valid() || !assetsAvailableProxy->valid())
+    if (!assetsTotalProxy.value().valid() ||
+        !assetsAvailableProxy.value().valid())
         return tecLIMIT_EXCEEDED;
     view().update(vault);
 
