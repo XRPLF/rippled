@@ -74,7 +74,7 @@ if grep -q '"xrpld"' cmake/XrplCore.cmake; then
   # The script has been rerun, so just restore the name of the binary.
   ${SED_COMMAND} -i 's/"xrpld"/"rippled"/' cmake/XrplCore.cmake
 elif ! grep -q '"rippled"' cmake/XrplCore.cmake; then
-  ghead -n -1 cmake/XrplCore.cmake > cmake.tmp
+  ${HEAD_COMMAND} -n -1 cmake/XrplCore.cmake > cmake.tmp
   echo '  # For the time being, we will keep the name of the binary as it was.' >> cmake.tmp
   echo '  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")' >> cmake.tmp
   tail -1 cmake/XrplCore.cmake >> cmake.tmp
