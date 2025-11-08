@@ -6264,6 +6264,131 @@ protected:
         env.close();
     }
 
+    void
+    testBorrowerIsBroker()
+    {
+        testcase("Test Borrower is Broker");
+        using namespace jtx;
+        using namespace loan;
+        Account const broker{"broker"};
+        Account const issuer{"issuer"};
+        Account const borrower_{"borrower"};
+        Account const depositor{"depositor"};
+
+        auto testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
+            Env env(*this);
+            Vault vault(env);
+
+            if (borrower == broker)
+                env.fund(XRP(10'000), broker, issuer, depositor);
+            else
+                env.fund(XRP(10'000), broker, borrower, issuer, depositor);
+            env.close();
+
+            auto const xrpFee = XRP(100);
+            auto const txFee = fee(xrpFee);
+
+            STAmount const debtMaximumRequest = getMaxDebt(env);
+
+            auto const& asset = debtMaximumRequest.asset();
+            auto const initialVault = asset(debtMaximumRequest * 100);
+
+            auto [tx, vaultKeylet] =
+                vault.create({.owner = broker, .asset = asset});
+            env(tx, txFee);
+            env.close();
+
+            env(vault.deposit(
+                    {.depositor = depositor,
+                     .id = vaultKeylet.key,
+                     .amount = initialVault}),
+                txFee);
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanbroker(broker.id(), env.seq(broker));
+
+            env(loanBroker::set(broker, vaultKeylet.key), txFee);
+            env.close();
+
+            auto const serviceFee = 101;
+
+            env(set(broker, brokerKeylet.key, debtMaximumRequest),
+                counterparty(borrower),
+                sig(sfCounterpartySignature, borrower),
+                loanServiceFee(serviceFee),
+                paymentTotal(10),
+                txFee);
+            env.close();
+
+            std::uint32_t const loanSequence = 1;
+            auto const loanKeylet =
+                keylet::loan(brokerKeylet.key, loanSequence);
+
+            auto const brokerBalanceBefore = env.balance(broker, asset);
+
+            if (auto const loanSle = env.le(loanKeylet);
+                env.test.BEAST_EXPECT(loanSle))
+            {
+                auto const payment = loanSle->at(sfPeriodicPayment);
+                auto const totalPayment = payment + serviceFee;
+                env(loan::pay(borrower, loanKeylet.key, asset(totalPayment)),
+                    txFee);
+                env.close();
+                if (auto const vaultSle = env.le(vaultKeylet);
+                    BEAST_EXPECT(vaultSle))
+                {
+                    auto const expected = [&]() {
+                        // The service fee is transferred to the broker if
+                        // a borrower is not the broker
+                        if (borrower != broker)
+                            return brokerBalanceBefore.number() + serviceFee;
+                        // Since a borrower is the broker, the payment is
+                        // transferred to the Vault from the broker but not
+                        // the service fee.
+                        // If the asset is XRP then the broker pays the txfee.
+                        if (asset.native())
+                            return brokerBalanceBefore.number() - payment -
+                                xrpFee.number();
+                        return brokerBalanceBefore.number() - payment;
+                    }();
+                    BEAST_EXPECT(
+                        env.balance(broker, asset).value() ==
+                        asset(expected).value());
+                }
+            }
+        };
+        // Test when a borrower is the broker and is not to verify correct
+        // service fee transfer in both cases.
+        for (auto const& borrowerAcct : {broker, borrower_})
+        {
+            testLoanAsset(
+                [&](Env&) -> STAmount { return STAmount{XRPAmount{200'000}}; },
+                borrowerAcct);
+            testLoanAsset(
+                [&](Env& env) -> STAmount {
+                    auto const IOU = issuer["USD"];
+                    env(trust(broker, IOU(1'000'000'000)));
+                    env(trust(depositor, IOU(1'000'000'000)));
+                    env(pay(issuer, broker, IOU(100'000'000)));
+                    env(pay(issuer, depositor, IOU(100'000'000)));
+                    env.close();
+                    return IOU(200'000);
+                },
+                borrowerAcct);
+            testLoanAsset(
+                [&](Env& env) -> STAmount {
+                    MPTTester mpt(
+                        {.env = env,
+                         .issuer = issuer,
+                         .holders = {broker, depositor},
+                         .pay = 100'000'000});
+                    return mpt(200'000);
+                },
+                borrowerAcct);
+        }
+    }
+
 public:
     void
     run() override
@@ -6305,6 +6430,8 @@ public:
         testLoanNextPaymentDueDateOverflow();
 
         testRequireAuth();
+
+        testBorrowerIsBroker();
     }
 };
 

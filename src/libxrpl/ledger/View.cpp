@@ -2376,8 +2376,6 @@ accountSendMultiIOU(
         auto const& receiverID = r.first;
         STAmount amount{asset, r.second};
 
-        takeFromSender += amount;
-
         if (view.rules().enabled(fixAMMv1_1))
         {
             if (amount < beast::zero)
@@ -2423,6 +2421,9 @@ accountSendMultiIOU(
             view.creditHook(xrpAccount(), receiverID, amount, -rcvBal);
 
             view.update(receiver);
+
+            // Take what is actually sent
+            takeFromSender += amount;
         }
 
         if (auto stream = j.trace())
@@ -2625,10 +2626,6 @@ rippleSendMultiMPT(
     {
         auto const& receiverID = r.first;
         STAmount amount{asset, r.second};
-
-        XRPL_ASSERT(
-            senderID != receiverID,
-            "ripple::rippleSendMultiMPT : sender is not receiver");
 
         XRPL_ASSERT(
             amount >= beast::zero,
