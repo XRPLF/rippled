@@ -51,8 +51,7 @@ getLedgerEntryOwner(
             auto const signerList = view.read(keylet::signers(account));
             if (!signerList)
                 return std::nullopt;
-            if (signerList->getFieldH256(sfLedgerIndex) ==
-                sle->getFieldH256(sfLedgerIndex))
+            if (signerList->key() == sle->key())
                 return account;
             return std::nullopt;
         }
@@ -155,7 +154,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 
     auto const accSle = ctx.view.read(keylet::account(ctx.tx[sfAccount]));
     if (!accSle)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (isObjectSponsor)
     {
@@ -210,7 +209,8 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
                 // check not same account
                 if ((*newSponsor)->getAccountID(sfAccount) ==
                     accSle->getAccountID(sfAccount))
-                    return tecNO_PERMISSION;
+                    // already checked in Transactor::preflight1()
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
             }
         }
         else

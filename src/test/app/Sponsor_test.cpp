@@ -7,8 +7,6 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
 
-#include "test/jtx/txflags.h"
-
 namespace ripple {
 namespace test {
 
@@ -480,9 +478,10 @@ public:
             // sponsor account
             Env env{*this, testable_amendments()};
             Account const alice("alice");
+            Account const bob("bob");
             Account const sponsor1("sponsor1");
             Account const sponsor2("sponsor2");
-            env.fund(XRP(10000), alice);
+            env.fund(XRP(10000), alice, bob);
             env.fund(env.current()->fees().reserve * 2 - 1, sponsor1, sponsor2);
             env.close();
 
@@ -550,6 +549,10 @@ public:
             env.close();
 
             env(pay(sponsor2, alice, XRP(1)));
+            env.close();
+
+            // not sponsored
+            env(sponsor::transfer(bob), ter(tecNO_PERMISSION));
             env.close();
 
             env(sponsor::transfer(alice));
@@ -679,6 +682,42 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
             auto const sle3 = env.le(keylet::unchecked(checkId));
             BEAST_EXPECT(!sle3->isFieldPresent(sfSponsorAccount));
+        }
+
+        {
+            // invalid transfer
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            // create owner dir
+            env(ticket::create(alice, 1));
+            env.close();
+
+            // AccountRoot
+            // Amendments
+            // LedgerHashes
+            // FeeSettings
+            // NegativeUNL
+            // DirNode
+            auto const keylets = {
+                keylet::account(alice),
+                // keylet::amendments(),
+                keylet::skip(),
+                keylet::fees(),
+                // keylet::negativeUNL(),
+                keylet::ownerDir(alice),
+            };
+            for (auto const& keylet : keylets)
+            {
+                env(sponsor::transfer(alice, keylet.key),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sig(sfSponsorSignature, sponsor),
+                    ter(tecNO_PERMISSION));
+            }
         }
     }
 
@@ -1296,6 +1335,27 @@ public:
                     BEAST_EXPECT(!env.le(keylet::amm(USD.issue(), EUR.issue()))
                                       ->isFieldPresent(sfSponsorAccount));
                 });
+
+            auto const ammKeylet = keylet::amm(USD.issue(), EUR.issue());
+            if (cosigning)
+            {
+                env(sponsor::transfer(alice, ammKeylet.key),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sig(sfSponsorSignature, sponsor),
+                    ter(tecNO_PERMISSION));
+                env.close();
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor, 0, 1),
+                    sponsor::sponseeAcc(alice));
+                env(sponsor::set_reserve(sponsor, 0, 1),
+                    sponsor::sponseeAcc(alice));
+                env(sponsor::transfer(alice, ammKeylet.key),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    ter(tecNO_PERMISSION));
+                env.close();
+            }
         }
         {
             // AMMDeposit
@@ -2045,6 +2105,25 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
 
+            // transfer accepted credential
+            if (cosigning)
+            {
+                env(sponsor::transfer(subject, keylet.key),
+                    sponsor::as(sponsor2, tfSponsorReserve),
+                    sig(sfSponsorSignature, sponsor2));
+                env.close();
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor2, 0, 1),
+                    sponsor::sponseeAcc(subject));
+                env.close();
+
+                env(sponsor::transfer(subject, keylet.key),
+                    sponsor::as(sponsor2, tfSponsorReserve));
+                env.close();
+            }
+
             // CredentialsDelete
             env(credentials::deleteCred(subject, subject, issuer, credType));
             env.close();
@@ -2654,7 +2733,7 @@ public:
         {
             Env env{*this, testable_amendments()};
 
-            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
             env.close();
 
             // NFTokenMint
@@ -2672,6 +2751,24 @@ public:
                     submit(token::mint(alice));
                 });
 
+            // transfer sponsor
+            auto const keylet = keylet::nftpage_max(alice);
+            if (cosigning)
+            {
+                env(sponsor::transfer(alice, keylet.key),
+                    sponsor::as(sponsor2, tfSponsorReserve),
+                    sig(sfSponsorSignature, sponsor2));
+                env.close();
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor2, 0, 1),
+                    sponsor::sponseeAcc(alice));
+                env.close();
+
+                env(sponsor::transfer(alice, keylet.key),
+                    sponsor::as(sponsor2, tfSponsorReserve));
+            }
             // NFTokenBurn
             env(token::burn(alice, nftId));
             env.close();
@@ -2679,6 +2776,7 @@ public:
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
 
             // NFTokenMintOffer
             adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
@@ -3466,7 +3564,7 @@ public:
         Account const sponsor2("sponsor2");
 
         Env env{*this, testable_amendments()};
-        env.fund(XRP(1000000), alice, sponsor, sponsor2);
+        env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
         env.close();
 
         // SignerListSet
@@ -3485,6 +3583,20 @@ public:
         // transfer sponsor
         if (cosigning)
         {
+            // invalid signer list owner 1
+            // account doesn't have signer list but specified signer list exists
+            env(sponsor::transfer(bob, keylet::signers(alice).key),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sig(sfSponsorSignature, sponsor2),
+                ter(tecNO_PERMISSION));
+            // invalid signer list owner 2
+            // account has signer list and specified signer list exists
+            env(signers(bob, 1, {{alice, 1}}));
+            env.close();
+            env(sponsor::transfer(alice, keylet::signers(bob).key),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sig(sfSponsorSignature, sponsor2),
+                ter(tecNO_PERMISSION));
             env(sponsor::transfer(alice, keylet::signers(alice).key),
                 sponsor::as(sponsor2, tfSponsorReserve),
                 sig(sfSponsorSignature, sponsor2));
@@ -3522,6 +3634,7 @@ public:
         using namespace test::jtx;
         Account const alice("alice");
         Account const bob("bob");
+        Account const charlie("charlie");
         Account const sponsor("sponsor");
         Account const sponsor2("sponsor2");
 
@@ -3547,7 +3660,7 @@ public:
             for (bool isIssuerHigh : {false, true})
             {
                 Env env{*this, testable_amendments()};
-                env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
+                env.fund(XRP(1000000), alice, bob, charlie, sponsor, sponsor2);
                 env.close();
 
                 auto const& issuer = isIssuerHigh ? highAcc : lowAcc;
@@ -3577,6 +3690,35 @@ public:
                         submit(trust(user, USD(100)));
                     });
 
+                auto const keylet = keylet::line(user, issuer, currency);
+
+                if (cosigning)
+                {
+                    // invalid owner
+                    env(sponsor::transfer(charlie, keylet.key),
+                        sponsor::as(sponsor2, tfSponsorReserve),
+                        sig(sfSponsorSignature, sponsor2),
+                        ter(tecNO_PERMISSION));
+                    // invalid reserve owner
+                    env(sponsor::transfer(issuer, keylet.key),
+                        sponsor::as(sponsor2, tfSponsorReserve),
+                        sig(sfSponsorSignature, sponsor2),
+                        ter(tecNO_PERMISSION));
+                    env(sponsor::transfer(user, keylet.key),
+                        sponsor::as(sponsor2, tfSponsorReserve),
+                        sig(sfSponsorSignature, sponsor2));
+                    env.close();
+                }
+                else
+                {
+                    env(sponsor::set_reserve(sponsor2, 0, 1),
+                        sponsor::sponseeAcc(user));
+                    env.close();
+                    env(sponsor::transfer(user, keylet.key),
+                        sponsor::as(sponsor2, tfSponsorReserve));
+                    env.close();
+                }
+
                 // delete TrustLine
                 env(trust(user, USD(0)));
                 env.close();
@@ -3585,7 +3727,7 @@ public:
                 BEAST_EXPECT(sponsoredOwnerCount(env, user) == 0);
                 BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
-                BEAST_EXPECT(!env.le(keylet::line(user, issuer, currency)));
+                BEAST_EXPECT(!env.le(keylet));
             }
 
             // update
