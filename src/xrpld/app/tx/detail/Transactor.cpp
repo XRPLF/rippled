@@ -211,13 +211,13 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         auto const sponsor = ctx.tx.getFieldObject(sfSponsor);
         if (sponsor[sfAccount] == ctx.tx[sfAccount])
         {
-            JLOG(ctx.j.fatal()) << "preflight1: invalid sponsor account";
+            JLOG(ctx.j.debug()) << "preflight1: invalid sponsor account";
             return temMALFORMED;
         }
         if (!(sponsor.getFlags() & tfSponsorMask))
         {
-            JLOG(ctx.j.fatal()) << "preflight1: invalid sponsor flags";
-            return temMALFORMED;
+            JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
+            return temINVALID_FLAG;
         }
     }
 

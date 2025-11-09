@@ -277,6 +277,41 @@ public:
     }
 
     void
+    testInvalidSponsorField()
+    {
+        testcase("Invalid Sponsor Field");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        Account const noFunded("noFunded");
+        env.fund(XRP(10000), alice, sponsor);
+        env.close();
+
+        // Invalid Sponsor Account (Account = Sponsor.Account)
+        env(noop(alice), sponsor::as(alice), ter(temMALFORMED));
+
+        // Invalid Sponsor Account
+        // (SponsorSignature is specified but Sponsor.Account is not specified)
+        env(noop(alice), sig(sfSponsorSignature, sponsor), ter(temMALFORMED));
+
+        // Invalid Sponsor Account (Sponsor.Account doesn't exist)
+        env(noop(alice),
+            sponsor::as(noFunded, tfSponsorReserve),
+            ter(terNO_SPONSORSHIP));
+        env(noop(alice),
+            sponsor::as(noFunded, tfSponsorReserve),
+            sig(sfSponsorSignature, noFunded),
+            ter(terNO_ACCOUNT));
+
+        // Invalid Flags
+        env(noop(alice), sponsor::as(sponsor, 4), ter(temINVALID_FLAG));
+        env(noop(alice),
+            sponsor::as(sponsor, ~tfSponsorMask),
+            ter(temINVALID_FLAG));
+    }
+
+    void
     testSimpleSponsorshipSet()
     {
         testcase("Simple SponsorshipSet");
@@ -4512,6 +4547,8 @@ public:
 
         testSingleSigning();
         testMultiSigning();
+
+        testInvalidSponsorField();
 
         testSimpleSponsorshipSet();
 
