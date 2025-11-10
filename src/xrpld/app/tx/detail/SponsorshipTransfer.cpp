@@ -139,7 +139,7 @@ getLedgerEntrySponsorField(T const& sle, AccountID const& owner)
                 false,
                 "Should not happen. Owner should be checked before calling "
                 "this function.");
-            // LCOV_EXCL_END
+            // LCOV_EXCL_STOP
         }
         default:
             return sfSponsorAccount;
