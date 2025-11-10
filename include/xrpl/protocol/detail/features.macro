@@ -97,7 +97,7 @@ XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
 // All known amendments and amendments that may appear in a validated ledger
 // must be registered either here or above with the "active" amendments
 //
-// Please keep this list sorted alphabetically for convenience.
+// Please keep both lists sorted alphabetically for convenience.
 XRPL_RETIRE_FIX(1201)
 XRPL_RETIRE_FIX(1368)
 XRPL_RETIRE_FIX(1373)
