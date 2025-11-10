@@ -3304,6 +3304,20 @@ canTransfer(
     return tesSUCCESS;
 }
 
+[[nodiscard]] TER
+canTransfer(
+    ReadView const& view,
+    Issue const& issue,
+    AccountID const&,
+    AccountID const&)
+{
+    if (issue.native())
+        return tesSUCCESS;
+    if (!view.exists(keylet::account(issue.getIssuer())))
+        return tefINTERNAL;
+    return tesSUCCESS;
+}
+
 TER
 cleanupOnAccountDelete(
     ApplyView& view,

@@ -52,12 +52,18 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.fatal()) << "Vault is missing for Broker " << brokerID;
         return tefBAD_LEDGER;
     }
-    auto const vaultAsset = vault->at(sfAsset);
 
+    auto const vaultAsset = vault->at(sfAsset);
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
     auto const pseudoAccountID = sleBroker->at(sfAccount);
+    if (auto ter = canTransfer(ctx.view, vaultAsset, account, pseudoAccountID);
+        !isTesSuccess(ter))
+    {
+        JLOG(ctx.j.warn()) << "Assets are non-transferable.";
+        return ter;
+    }
 
     // Cannot transfer a frozen Asset
     if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))

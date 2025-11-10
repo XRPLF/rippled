@@ -60,10 +60,19 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
     if (!vault)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto const vaultAsset = vault->at(sfAsset);
 
+    auto const vaultAsset = vault->at(sfAsset);
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
+
+    // The broker's pseudo-account is the source of funds.
+    auto const pseudoAccountID = sleBroker->at(sfAccount);
+    if (auto ter = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct);
+        !isTesSuccess(ter))
+    {
+        JLOG(ctx.j.warn()) << "Assets are non-transferable.";
+        return ter;
+    }
 
     // Withdrawal to a 3rd party destination account is essentially a transfer.
     // Enforce all the usual asset transfer checks.
@@ -81,9 +90,6 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // Destination MPToken must exist (if asset is an MPT)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType))
         return ter;
-
-    // The broker's pseudo-account is the source of funds.
-    auto const pseudoAccountID = sleBroker->at(sfAccount);
 
     // Check for freezes, unless sending directly to the issuer
     if (dstAcct != vaultAsset.getIssuer())
