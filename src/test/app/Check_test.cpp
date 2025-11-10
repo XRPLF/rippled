@@ -1633,7 +1633,7 @@ class Check_test : public beast::unit_test::suite
     }
 
     void
-    testCancelValid()
+    testCancelValid(FeatureBitset features)
     {
         // Explore many of the ways to cancel a check.
         testcase("Cancel valid");
@@ -1647,7 +1647,7 @@ class Check_test : public beast::unit_test::suite
         IOU const USD{gw["USD"]};
 
         {
-            Env env{*this};
+            Env env{*this, features};
 
             env.fund(XRP(1000), gw, alice, bob, zoe);
             env.close();
@@ -2656,7 +2656,7 @@ class Check_test : public beast::unit_test::suite
         testCashXferFee(features);
         testCashQuality(features);
         testCashInvalid(features);
-        testCancelValid();
+        testCancelValid(features);
         testCancelInvalid(features);
         testDeliveredAmountForCheckCashTxn(features);
         testWithTickets(features);
