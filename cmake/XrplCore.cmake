@@ -73,10 +73,7 @@ include(target_link_modules)
 
 # Level 01
 add_module(xrpl beast)
-target_link_libraries(xrpl.libxrpl.beast PUBLIC
-  xrpl.imports.main
-  xrpl.libpb
-)
+target_link_libraries(xrpl.libxrpl.beast PUBLIC xrpl.imports.main)
 
 # Level 02
 add_module(xrpl basics)
