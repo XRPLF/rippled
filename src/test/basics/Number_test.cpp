@@ -6,7 +6,7 @@
 #include <sstream>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
 class Number_test : public beast::unit_test::suite
 {
@@ -751,4 +751,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Number, basics, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -14,7 +14,7 @@
 // VFALCO Shouldn't we have to include the OpenSSL
 // headers or something for SSL_get_finished?
 
-namespace ripple {
+namespace xrpl {
 
 std::optional<std::string>
 getFeatureValue(
@@ -158,7 +158,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
 void
 buildHandshake(
     boost::beast::http::fields& h,
-    ripple::uint256 const& sharedValue,
+    xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
@@ -207,7 +207,7 @@ buildHandshake(
 PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
-    ripple::uint256 const& sharedValue,
+    xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote,
@@ -402,4 +402,4 @@ makeResponse(
     return resp;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

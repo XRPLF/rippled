@@ -11,7 +11,7 @@
 
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -578,4 +578,4 @@ public:
 BEAST_DEFINE_TESTSUITE(ValidatorRPC, rpc, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

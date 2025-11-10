@@ -1,6 +1,6 @@
 #include <xrpld/app/rdb/State.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 initStateDB(
@@ -108,4 +108,4 @@ setLastRotated(soci::session& session, LedgerIndex seq)
         soci::use(seq);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

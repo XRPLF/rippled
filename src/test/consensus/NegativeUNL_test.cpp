@@ -9,7 +9,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/ledger/View.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /*
@@ -1988,4 +1988,4 @@ createTx(bool disabling, LedgerIndex seq, PublicKey const& txKey)
 }
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

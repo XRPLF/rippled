@@ -7,7 +7,7 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STParsedJSON_test : public beast::unit_test::suite
 {
@@ -2334,4 +2334,4 @@ class STParsedJSON_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(STParsedJSON, protocol, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

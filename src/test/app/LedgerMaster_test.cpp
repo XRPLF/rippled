@@ -3,7 +3,7 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class LedgerMaster_test : public beast::unit_test::suite
@@ -119,4 +119,4 @@ public:
 BEAST_DEFINE_TESTSUITE(LedgerMaster, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

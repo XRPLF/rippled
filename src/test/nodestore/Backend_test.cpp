@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 namespace NodeStore {
 
@@ -104,4 +104,4 @@ public:
 BEAST_DEFINE_TESTSUITE(Backend, nodestore, ripple);
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

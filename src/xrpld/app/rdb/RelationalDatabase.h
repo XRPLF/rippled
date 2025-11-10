@@ -13,7 +13,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/variant.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 struct LedgerHashPair
 {
@@ -218,7 +218,7 @@ rangeCheckedCast(C c)
     {
         // This should never happen
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::rangeCheckedCast : domain error");
+        UNREACHABLE("xrpl::rangeCheckedCast : domain error");
         JLOG(debugLog().error())
             << "rangeCheckedCast domain error:"
             << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
@@ -229,6 +229,6 @@ rangeCheckedCast(C c)
     return static_cast<T>(c);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

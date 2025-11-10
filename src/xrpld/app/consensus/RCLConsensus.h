@@ -21,7 +21,7 @@
 #include <sstream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class InboundTransactions;
 class LocalTxs;
@@ -548,6 +548,6 @@ public:
         return ss_;
     }
 };
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -35,7 +35,7 @@
 #include <optional>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 class PeerImp;
 class BasicConfig;
@@ -595,7 +595,7 @@ private:
         std::lock_guard lock(m_statsMutex);
         XRPL_ASSERT(
             counts.size() == m_stats.trafficGauges.size(),
-            "ripple::OverlayImpl::collect_metrics : counts size do match");
+            "xrpl::OverlayImpl::collect_metrics : counts size do match");
 
         for (auto const& [key, value] : counts)
         {
@@ -607,7 +607,7 @@ private:
 
             XRPL_ASSERT(
                 gauge.name == value.name,
-                "ripple::OverlayImpl::collect_metrics : gauge and counter "
+                "xrpl::OverlayImpl::collect_metrics : gauge and counter "
                 "match");
 
             gauge.bytesIn = value.bytesIn;
@@ -620,6 +620,6 @@ private:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

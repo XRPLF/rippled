@@ -7,7 +7,7 @@
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/PeerSet.h>
 
-namespace ripple {
+namespace xrpl {
 
 LedgerDeltaAcquire::LedgerDeltaAcquire(
     Application& app,
@@ -182,10 +182,10 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
 
     XRPL_ASSERT(
         parent->seq() + 1 == replayTemp_->seq(),
-        "ripple::LedgerDeltaAcquire::tryBuild : parent sequence match");
+        "xrpl::LedgerDeltaAcquire::tryBuild : parent sequence match");
     XRPL_ASSERT(
         parent->info().hash == replayTemp_->info().parentHash,
-        "ripple::LedgerDeltaAcquire::tryBuild : parent hash match");
+        "xrpl::LedgerDeltaAcquire::tryBuild : parent hash match");
     // build ledger
     LedgerReplay replayData(parent, replayTemp_, std::move(orderedTxns_));
     fullLedger_ = buildLedger(replayData, tapNONE, app_, journal_);
@@ -247,7 +247,7 @@ LedgerDeltaAcquire::onLedgerBuilt(
 void
 LedgerDeltaAcquire::notify(ScopedLockType& sl)
 {
-    XRPL_ASSERT(isDone(), "ripple::LedgerDeltaAcquire::notify : is done");
+    XRPL_ASSERT(isDone(), "xrpl::LedgerDeltaAcquire::notify : is done");
     std::vector<OnDeltaDataCB> toCall;
     std::swap(toCall, dataReadyCallbacks_);
     auto const good = !failed_;
@@ -261,4 +261,4 @@ LedgerDeltaAcquire::notify(ScopedLockType& sl)
     sl.lock();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

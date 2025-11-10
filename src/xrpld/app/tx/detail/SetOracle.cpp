@@ -7,7 +7,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 static inline std::pair<Currency, Currency>
 tokenPairKey(STObject const& pair)
@@ -310,4 +310,4 @@ SetOracle::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

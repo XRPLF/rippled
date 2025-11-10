@@ -5,7 +5,7 @@
 #include <functional>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class Hooks_test : public beast::unit_test::suite
 {
@@ -176,4 +176,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Hooks, protocol, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

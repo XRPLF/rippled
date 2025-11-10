@@ -4,7 +4,7 @@
 
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -358,4 +358,4 @@ allpe(AccountID const& a, Issue const& iss)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

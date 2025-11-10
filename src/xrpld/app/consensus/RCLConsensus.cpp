@@ -30,7 +30,7 @@
 #include <iomanip>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 RCLConsensus::RCLConsensus(
     Application& app,
@@ -77,7 +77,7 @@ RCLConsensus::Adaptor::Adaptor(
     , nUnlVote_(validatorKeys_.nodeID, j_)
 {
     XRPL_ASSERT(
-        valCookie_, "ripple::RCLConsensus::Adaptor::Adaptor : nonzero cookie");
+        valCookie_, "xrpl::RCLConsensus::Adaptor::Adaptor : nonzero cookie");
 
     JLOG(j_.info()) << "Consensus engine started (cookie: " +
             std::to_string(valCookie_) + ")";
@@ -133,10 +133,10 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
 
     XRPL_ASSERT(
         !built->open() && built->isImmutable(),
-        "ripple::RCLConsensus::Adaptor::acquireLedger : valid ledger state");
+        "xrpl::RCLConsensus::Adaptor::acquireLedger : valid ledger state");
     XRPL_ASSERT(
         built->info().hash == hash,
-        "ripple::RCLConsensus::Adaptor::acquireLedger : ledger hash match");
+        "xrpl::RCLConsensus::Adaptor::acquireLedger : ledger hash match");
 
     // Notify inbound transactions of the new ledger sequence number
     inboundTransactions_.newRound(built->info().seq);
@@ -193,8 +193,8 @@ void
 RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 {
     JLOG(j_.trace()) << (proposal.isBowOut() ? "We bow out: " : "We propose: ")
-                     << ripple::to_string(proposal.prevLedger()) << " -> "
-                     << ripple::to_string(proposal.position());
+                     << xrpl::to_string(proposal.prevLedger()) << " -> "
+                     << xrpl::to_string(proposal.position());
 
     protocol::TMProposeSet prop;
 
@@ -666,10 +666,10 @@ RCLConsensus::Adaptor::doAccept(
         // Do these need to exist?
         XRPL_ASSERT(
             ledgerMaster_.getClosedLedger()->info().hash == built.id(),
-            "ripple::RCLConsensus::Adaptor::doAccept : ledger hash match");
+            "xrpl::RCLConsensus::Adaptor::doAccept : ledger hash match");
         XRPL_ASSERT(
             app_.openLedger().current()->info().parentHash == built.id(),
-            "ripple::RCLConsensus::Adaptor::doAccept : parent hash match");
+            "xrpl::RCLConsensus::Adaptor::doAccept : parent hash match");
     }
 
     //-------------------------------------------------------------------------
@@ -767,7 +767,7 @@ RCLConsensus::Adaptor::buildLCL(
         {
             XRPL_ASSERT(
                 replayData->parent()->info().hash == previousLedger.id(),
-                "ripple::RCLConsensus::Adaptor::buildLCL : parent hash match");
+                "xrpl::RCLConsensus::Adaptor::buildLCL : parent hash match");
             return buildLedger(*replayData, tapNONE, app_, j_);
         }
         return buildLedger(
@@ -1109,4 +1109,4 @@ RclConsensusLogger::~RclConsensusLogger()
     j_.sink().writeAlways(beast::severities::kInfo, outSs.str());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

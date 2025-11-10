@@ -3,7 +3,7 @@
 #include <xrpl/basics/ToString.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 
 class StringUtilities_test : public beast::unit_test::suite
 {
@@ -305,4 +305,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(StringUtilities, basics, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

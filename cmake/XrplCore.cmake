@@ -73,10 +73,7 @@ include(target_link_modules)
 
 # Level 01
 add_module(xrpl beast)
-target_link_libraries(xrpl.libxrpl.beast PUBLIC
-  xrpl.imports.main
-  xrpl.libpb
-)
+target_link_libraries(xrpl.libxrpl.beast PUBLIC xrpl.imports.main)
 
 # Level 02
 add_module(xrpl basics)
@@ -226,6 +223,4 @@ if(xrpld)
       src/test/ledger/Invariants_test.cpp
       PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
   endif()
-  # Create a symlink named "rippled" for backward compatibility.
-  add_custom_command(TARGET xrpld POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink "xrpld" "rippled")
 endif()

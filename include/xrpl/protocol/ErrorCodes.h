@@ -4,7 +4,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // VFALCO NOTE These are outside the RPC namespace
 
@@ -360,6 +360,6 @@ error_code_http_status(error_code_i code);
 std::string
 rpcErrorString(Json::Value const& jv);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 Section::Section(std::string const& name) : name_(name)
 {
@@ -183,4 +183,4 @@ operator<<(std::ostream& ss, BasicConfig const& c)
     return ss;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

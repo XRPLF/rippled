@@ -6,7 +6,7 @@
 #include <xrpl/ledger/detail/ApplyStateTable.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 class ApplyViewBase : public ApplyView, public RawView
@@ -106,6 +106,6 @@ protected:
 };
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

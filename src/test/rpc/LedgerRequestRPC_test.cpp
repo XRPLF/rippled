@@ -8,7 +8,7 @@
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -359,4 +359,4 @@ public:
 BEAST_DEFINE_TESTSUITE(LedgerRequestRPC, rpc, ripple);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

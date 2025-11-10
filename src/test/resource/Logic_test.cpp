@@ -11,7 +11,7 @@
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 class ResourceManager_test : public beast::unit_test::suite
@@ -275,4 +275,4 @@ public:
 BEAST_DEFINE_TESTSUITE(ResourceManager, resource, ripple);
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl

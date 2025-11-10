@@ -21,7 +21,7 @@ class TMValidatorList;
 class TMValidatorListCollection;
 }  // namespace protocol
 
-namespace ripple {
+namespace xrpl {
 
 class Overlay;
 class HashRouter;
@@ -927,7 +927,7 @@ hash_append(Hasher& h, std::map<std::size_t, ValidatorBlobInfo> const& blobs)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 namespace protocol {
 
@@ -945,10 +945,7 @@ hash_append(Hasher& h, TMValidatorListCollection const& msg)
 {
     using beast::hash_append;
     hash_append(
-        h,
-        msg.manifest(),
-        ripple::ValidatorList::parseBlobs(msg),
-        msg.version());
+        h, msg.manifest(), xrpl::ValidatorList::parseBlobs(msg), msg.version());
 }
 
 }  // namespace protocol

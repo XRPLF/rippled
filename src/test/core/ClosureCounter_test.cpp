@@ -8,7 +8,7 @@
 #include <chrono>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 //------------------------------------------------------------------------------
@@ -322,4 +322,4 @@ public:
 BEAST_DEFINE_TESTSUITE(ClosureCounter, core, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

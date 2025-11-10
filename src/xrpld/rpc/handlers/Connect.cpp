@@ -9,7 +9,7 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   ip: <string>,
@@ -51,4 +51,4 @@ doConnect(RPC::JsonContext& context)
         " port: " + std::to_string(iPort));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

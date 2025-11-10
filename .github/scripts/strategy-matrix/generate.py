@@ -138,8 +138,6 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Unity on linux/amd64
         if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-15' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
             cmake_args = f'-Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0 {cmake_args}'
-            cmake_target = 'coverage'
-            build_only = True
 
         # Generate a unique name for the configuration, e.g. macos-arm64-debug
         # or debian-bookworm-gcc-12-amd64-release-unity.

@@ -5,7 +5,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class GetCounts_test : public beast::unit_test::suite
 {
@@ -103,4 +103,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(GetCounts, rpc, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

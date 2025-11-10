@@ -2,7 +2,7 @@
 
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
-namespace ripple {
+namespace xrpl {
 
 class NFTokenAuth_test : public beast::unit_test::suite
 {
@@ -602,4 +602,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAuth, app, ripple, 2);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -18,7 +18,7 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 std::optional<AccountID>
@@ -528,7 +528,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
         }
 
         XRPL_ASSERT(
-            !ledger->open(), "ripple::RPC::getLedger : validated is not open");
+            !ledger->open(), "xrpl::RPC::getLedger : validated is not open");
     }
     else
     {
@@ -536,13 +536,13 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
         {
             ledger = context.ledgerMaster.getCurrentLedger();
             XRPL_ASSERT(
-                ledger->open(), "ripple::RPC::getLedger : current is open");
+                ledger->open(), "xrpl::RPC::getLedger : current is open");
         }
         else if (shortcut == LedgerShortcut::CLOSED)
         {
             ledger = context.ledgerMaster.getClosedLedger();
             XRPL_ASSERT(
-                !ledger->open(), "ripple::RPC::getLedger : closed is not open");
+                !ledger->open(), "xrpl::RPC::getLedger : closed is not open");
         }
         else
         {
@@ -944,7 +944,7 @@ chooseLedgerEntryType(Json::Value const& params)
                 rpcINVALID_PARAMS, "Invalid field 'type', not string."};
             XRPL_ASSERT(
                 result.first.type() == RPC::Status::Type::error_code_i,
-                "ripple::RPC::chooseLedgerEntryType : first valid result type");
+                "xrpl::RPC::chooseLedgerEntryType : first valid result type");
             return result;
         }
 
@@ -963,7 +963,7 @@ chooseLedgerEntryType(Json::Value const& params)
                 RPC::Status{rpcINVALID_PARAMS, "Invalid field 'type'."};
             XRPL_ASSERT(
                 result.first.type() == RPC::Status::Type::error_code_i,
-                "ripple::RPC::chooseLedgerEntryType : second valid result "
+                "xrpl::RPC::chooseLedgerEntryType : second valid result "
                 "type");
             return result;
         }
@@ -1046,8 +1046,7 @@ getLedgerByContext(RPC::JsonContext& context)
             auto const refIndex = getCandidateLedger(ledgerIndex);
             auto refHash = hashOfSeq(*ledger, refIndex, j);
             XRPL_ASSERT(
-                refHash,
-                "ripple::RPC::getLedgerByContext : nonzero ledger hash");
+                refHash, "xrpl::RPC::getLedgerByContext : nonzero ledger hash");
 
             ledger = ledgerMaster.getLedgerByHash(*refHash);
             if (!ledger)
@@ -1082,8 +1081,7 @@ getLedgerByContext(RPC::JsonContext& context)
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         }
         XRPL_ASSERT(
-            neededHash,
-            "ripple::RPC::getLedgerByContext : nonzero needed hash");
+            neededHash, "xrpl::RPC::getLedgerByContext : nonzero needed hash");
         ledgerHash = neededHash ? *neededHash : beast::zero;  // kludge
     }
 
@@ -1107,4 +1105,4 @@ getLedgerByContext(RPC::JsonContext& context)
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

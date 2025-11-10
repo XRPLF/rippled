@@ -6,7 +6,7 @@
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class PaymentSandbox_test : public beast::unit_test::suite
@@ -409,4 +409,4 @@ public:
 BEAST_DEFINE_TESTSUITE(PaymentSandbox, ledger, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

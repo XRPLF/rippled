@@ -4,7 +4,7 @@
 
 #include <xrpl/basics/Log.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doLogRotate(RPC::JsonContext& context)
@@ -13,4 +13,4 @@ doLogRotate(RPC::JsonContext& context)
     return RPC::makeObjectValue(context.app.logs().rotate());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

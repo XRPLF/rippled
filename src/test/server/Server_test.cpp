@@ -22,7 +22,7 @@
 #include <stdexcept>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 using socket_type = boost::beast::tcp_stream;
@@ -520,4 +520,4 @@ public:
 BEAST_DEFINE_TESTSUITE(Server, server, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

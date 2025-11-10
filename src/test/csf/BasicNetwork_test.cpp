@@ -6,7 +6,7 @@
 #include <set>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class BasicNetwork_test : public beast::unit_test::suite
@@ -130,4 +130,4 @@ public:
 BEAST_DEFINE_TESTSUITE(BasicNetwork, csf, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

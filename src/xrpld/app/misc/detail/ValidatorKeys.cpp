@@ -6,7 +6,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
 
-namespace ripple {
+namespace xrpl {
 ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
 {
     if (config.exists(SECTION_VALIDATOR_TOKEN) &&
@@ -70,4 +70,4 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         }
     }
 }
-}  // namespace ripple
+}  // namespace xrpl

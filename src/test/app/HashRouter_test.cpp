@@ -4,7 +4,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class HashRouter_test : public beast::unit_test::suite
@@ -407,4 +407,4 @@ public:
 BEAST_DEFINE_TESTSUITE(HashRouter, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

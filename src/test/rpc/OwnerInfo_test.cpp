@@ -5,7 +5,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class OwnerInfo_test : public beast::unit_test::suite
 {
@@ -202,4 +202,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(OwnerInfo, rpc, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

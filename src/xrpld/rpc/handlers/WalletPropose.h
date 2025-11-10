@@ -3,11 +3,11 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 walletPropose(Json::Value const& params);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -9,7 +9,7 @@
 #include <ostream>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 struct STNumber_test : public beast::unit_test::suite
 {
@@ -265,4 +265,4 @@ testCompile(std::ostream& out)
     out << number;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

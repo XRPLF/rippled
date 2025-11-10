@@ -10,7 +10,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 static void
 appendNftOfferJson(
@@ -156,4 +156,4 @@ doNFTBuyOffers(RPC::JsonContext& context)
     return enumerateNFTOffers(context, nftId, keylet::nft_buys(nftId));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

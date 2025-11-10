@@ -20,7 +20,7 @@
 #include <mutex>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 inline bool
 operator<(Port const& lhs, Port const& rhs)
@@ -210,6 +210,6 @@ make_ServerHandler(
     Resource::Manager&,
     CollectorManager& cm);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

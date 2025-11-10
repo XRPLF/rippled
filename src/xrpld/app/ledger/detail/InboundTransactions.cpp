@@ -12,7 +12,7 @@
 #include <memory>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 enum {
     // Ideal number of peers to start with
@@ -258,4 +258,4 @@ make_InboundTransactions(
         app, collector, std::move(gotSet), make_PeerSetBuilder(app));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

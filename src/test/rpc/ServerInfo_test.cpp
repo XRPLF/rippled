@@ -8,7 +8,7 @@
 
 #include <boost/format.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -165,4 +165,4 @@ admin = 127.0.0.1
 BEAST_DEFINE_TESTSUITE(ServerInfo, rpc, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -14,7 +14,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STNumber::STNumber(SField const& field, Number const& value)
     : STBase(field), value_(value)
@@ -45,11 +45,10 @@ STNumber::getText() const
 void
 STNumber::add(Serializer& s) const
 {
-    XRPL_ASSERT(
-        getFName().isBinary(), "ripple::STNumber::add : field is binary");
+    XRPL_ASSERT(getFName().isBinary(), "xrpl::STNumber::add : field is binary");
     XRPL_ASSERT(
         getFName().fieldType == getSType(),
-        "ripple::STNumber::add : field type match");
+        "xrpl::STNumber::add : field type match");
     s.add64(value_.mantissa());
     s.add32(value_.exponent());
 }
@@ -83,7 +82,7 @@ STNumber::isEquivalent(STBase const& t) const
 {
     XRPL_ASSERT(
         t.getSType() == this->getSType(),
-        "ripple::STNumber::isEquivalent : field type match");
+        "xrpl::STNumber::isEquivalent : field type match");
     STNumber const& v = dynamic_cast<STNumber const&>(t);
     return value_ == v;
 }
@@ -196,4 +195,4 @@ numberFromJson(SField const& field, Json::Value const& value)
     return STNumber{field, Number{mantissa, parts.exponent}};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

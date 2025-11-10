@@ -10,7 +10,7 @@
 
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 class InboundLedgers;
 class PeerSet;
 namespace test {
@@ -142,6 +142,6 @@ private:
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

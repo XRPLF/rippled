@@ -8,7 +8,7 @@
 
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 class Peers_test : public beast::unit_test::suite
 {
@@ -75,4 +75,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Peers, rpc, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

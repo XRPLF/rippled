@@ -24,7 +24,7 @@
 #include <random>
 #include <regex>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ServerStatus_test : public beast::unit_test::suite,
@@ -1229,4 +1229,4 @@ public:
 BEAST_DEFINE_TESTSUITE(ServerStatus, server, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

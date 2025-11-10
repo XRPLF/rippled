@@ -14,7 +14,7 @@
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 enum TxnSql : char {
     txnSqlNew = 'N',
@@ -232,6 +232,6 @@ STTx::getTransactionID() const
     return tid_;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

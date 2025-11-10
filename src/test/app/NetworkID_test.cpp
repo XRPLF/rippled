@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class NetworkID_test : public beast::unit_test::suite
@@ -145,4 +145,4 @@ public:
 BEAST_DEFINE_TESTSUITE(NetworkID, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

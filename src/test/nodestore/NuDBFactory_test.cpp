@@ -10,7 +10,7 @@
 #include <memory>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 class NuDBFactory_test : public TestBase
@@ -455,4 +455,4 @@ public:
 BEAST_DEFINE_TESTSUITE(NuDBFactory, ripple_core, ripple);
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

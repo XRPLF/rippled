@@ -27,7 +27,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 create_genesis_t const create_genesis{};
 
@@ -341,7 +341,7 @@ Ledger::setAccepted(
     bool correctCloseTime)
 {
     // Used when we witnessed the consensus.
-    XRPL_ASSERT(!open(), "ripple::Ledger::setAccepted : valid ledger state");
+    XRPL_ASSERT(!open(), "xrpl::Ledger::setAccepted : valid ledger state");
 
     info_.closeTime = closeTime;
     info_.closeTimeResolution = closeResolution;
@@ -415,7 +415,7 @@ Ledger::read(Keylet const& k) const
     if (k.key == beast::zero)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::Ledger::read : zero key");
+        UNREACHABLE("xrpl::Ledger::read : zero key");
         return nullptr;
         // LCOV_EXCL_STOP
     }
@@ -537,7 +537,7 @@ Ledger::rawTxInsert(
     std::shared_ptr<Serializer const> const& metaData)
 {
     XRPL_ASSERT(
-        metaData, "ripple::Ledger::rawTxInsert : non-null metadata input");
+        metaData, "xrpl::Ledger::rawTxInsert : non-null metadata input");
 
     // low-level - just add to table
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
@@ -556,7 +556,7 @@ Ledger::rawTxInsertWithHash(
 {
     XRPL_ASSERT(
         metaData,
-        "ripple::Ledger::rawTxInsertWithHash : non-null metadata input");
+        "xrpl::Ledger::rawTxInsertWithHash : non-null metadata input");
 
     // low-level - just add to table
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
@@ -654,7 +654,7 @@ Ledger::defaultFees(Config const& config)
 {
     XRPL_ASSERT(
         fees_.base == 0 && fees_.reserve == 0 && fees_.increment == 0,
-        "ripple::Ledger::defaultFees : zero fees");
+        "xrpl::Ledger::defaultFees : zero fees");
     if (fees_.base == 0)
         fees_.base = config.FEES.reference_fee;
     if (fees_.reserve == 0)
@@ -851,7 +851,7 @@ Ledger::assertSensible(beast::Journal ledgerJ) const
 
     JLOG(ledgerJ.fatal()) << "ledger is not sensible" << j;
 
-    UNREACHABLE("ripple::Ledger::assertSensible : ledger is not sensible");
+    UNREACHABLE("xrpl::Ledger::assertSensible : ledger is not sensible");
 
     return false;
     // LCOV_EXCL_STOP
@@ -888,7 +888,7 @@ Ledger::updateSkipList()
 
         XRPL_ASSERT(
             hashes.size() <= 256,
-            "ripple::Ledger::updateSkipList : first maximum hashes size");
+            "xrpl::Ledger::updateSkipList : first maximum hashes size");
         hashes.push_back(info_.parentHash);
         sle->setFieldV256(sfHashes, STVector256(hashes));
         sle->setFieldU32(sfLastLedgerSequence, prevIndex);
@@ -915,7 +915,7 @@ Ledger::updateSkipList()
     }
     XRPL_ASSERT(
         hashes.size() <= 256,
-        "ripple::Ledger::updateSkipList : second maximum hashes size");
+        "xrpl::Ledger::updateSkipList : second maximum hashes size");
     if (hashes.size() == 256)
         hashes.erase(hashes.begin());
     hashes.push_back(info_.parentHash);
@@ -997,7 +997,7 @@ pendSaveValidated(
     }
 
     XRPL_ASSERT(
-        ledger->isImmutable(), "ripple::pendSaveValidated : immutable ledger");
+        ledger->isImmutable(), "xrpl::pendSaveValidated : immutable ledger");
 
     if (!app.pendingSaves().shouldWork(ledger->info().seq, isSynchronous))
     {
@@ -1077,7 +1077,7 @@ finishLoadByIndexOrHash(
     XRPL_ASSERT(
         ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
             ledger->read(keylet::fees()),
-        "ripple::finishLoadByIndexOrHash : valid ledger fees");
+        "xrpl::finishLoadByIndexOrHash : valid ledger fees");
     ledger->setImmutable();
 
     JLOG(j.trace()) << "Loaded ledger: " << to_string(ledger->info().hash);
@@ -1118,10 +1118,10 @@ loadByHash(uint256 const& ledgerHash, Application& app, bool acquire)
         finishLoadByIndexOrHash(ledger, app.config(), app.journal("Ledger"));
         XRPL_ASSERT(
             !ledger || ledger->info().hash == ledgerHash,
-            "ripple::loadByHash : ledger hash match if loaded");
+            "xrpl::loadByHash : ledger hash match if loaded");
         return ledger;
     }
     return {};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

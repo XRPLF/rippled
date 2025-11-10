@@ -12,7 +12,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 TxConsequences
 CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 {
@@ -222,7 +222,7 @@ CreateOffer::checkAcceptAsset(
     // Only valid for custom currencies
     XRPL_ASSERT(
         !isXRP(issue.currency),
-        "ripple::CreateOffer::checkAcceptAsset : input is not XRP");
+        "xrpl::CreateOffer::checkAcceptAsset : input is not XRP");
 
     auto const issuerAccount = view.read(keylet::account(issue.account));
 
@@ -469,7 +469,7 @@ CreateOffer::flowCross(
                     afterCross.out -= result.actualAmountOut;
                     XRPL_ASSERT(
                         afterCross.out >= beast::zero,
-                        "ripple::CreateOffer::flowCross : minimum offer");
+                        "xrpl::CreateOffer::flowCross : minimum offer");
                     if (afterCross.out < beast::zero)
                         afterCross.out.clear();
                     afterCross.in = mulRound(
@@ -688,7 +688,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // or give a tec.
         XRPL_ASSERT(
             result == tesSUCCESS || isTecClaim(result),
-            "ripple::CreateOffer::applyGuts : result is tesSUCCESS or "
+            "xrpl::CreateOffer::applyGuts : result is tesSUCCESS or "
             "tecCLAIM");
 
         if (auto stream = j_.trace())
@@ -709,10 +709,10 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
         XRPL_ASSERT(
             saTakerGets.issue() == place_offer.in.issue(),
-            "ripple::CreateOffer::applyGuts : taker gets issue match");
+            "xrpl::CreateOffer::applyGuts : taker gets issue match");
         XRPL_ASSERT(
             saTakerPays.issue() == place_offer.out.issue(),
-            "ripple::CreateOffer::applyGuts : taker pays issue match");
+            "xrpl::CreateOffer::applyGuts : taker pays issue match");
 
         if (takerAmount != place_offer)
             crossed = true;
@@ -742,7 +742,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     XRPL_ASSERT(
         saTakerPays > zero && saTakerGets > zero,
-        "ripple::CreateOffer::applyGuts : taker pays and gets positive");
+        "xrpl::CreateOffer::applyGuts : taker pays and gets positive");
 
     if (result != tesSUCCESS)
     {
@@ -922,4 +922,4 @@ CreateOffer::doApply()
     return result.first;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

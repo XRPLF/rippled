@@ -11,7 +11,7 @@
 #include <sstream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 TEST_SUITE_BEGIN("json_value");
 
@@ -1272,4 +1272,4 @@ TEST_CASE("memory leak")
 
 TEST_SUITE_END();
 
-}  // namespace ripple
+}  // namespace xrpl

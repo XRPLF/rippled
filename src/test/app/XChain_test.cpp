@@ -23,7 +23,7 @@
 #include <variant>
 #include <vector>
 
-namespace ripple::test {
+namespace xrpl::test {
 
 // SEnv class - encapsulate jtx::Env to make it more user-friendly,
 // for example having APIs that return a *this reference so that calls can be
@@ -5174,4 +5174,4 @@ public:
 BEAST_DEFINE_TESTSUITE(XChain, app, ripple);
 BEAST_DEFINE_TESTSUITE(XChainSim, app, ripple);
 
-}  // namespace ripple::test
+}  // namespace xrpl::test

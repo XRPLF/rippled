@@ -6,7 +6,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/insight/Collector.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct JobTypeData
 {
@@ -84,6 +84,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -3,7 +3,7 @@
 
 #include <limits>
 
-namespace ripple {
+namespace xrpl {
 
 struct Serializer_test : public beast::unit_test::suite
 {
@@ -47,4 +47,4 @@ struct Serializer_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(Serializer, protocol, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -8,7 +8,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 Json::Value
 doManifest(RPC::JsonContext& context)
 {
@@ -56,4 +56,4 @@ doManifest(RPC::JsonContext& context)
     ret[jss::details] = details;
     return ret;
 }
-}  // namespace ripple
+}  // namespace xrpl

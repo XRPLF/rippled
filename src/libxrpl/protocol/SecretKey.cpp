@@ -27,7 +27,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 SecretKey::~SecretKey()
 {
@@ -382,4 +382,4 @@ parseBase58(TokenType type, std::string const& s)
     return SecretKey(makeSlice(result));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -16,7 +16,7 @@
 #include <optional>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -230,8 +230,8 @@ private:
 class LedgerOracle
 {
     using InstanceMap = boost::bimaps::bimap<
-        boost::bimaps::set_of<Ledger::Instance, ripple::less<Ledger::Instance>>,
-        boost::bimaps::set_of<Ledger::ID, ripple::less<Ledger::ID>>>;
+        boost::bimaps::set_of<Ledger::Instance, xrpl::less<Ledger::Instance>>,
+        boost::bimaps::set_of<Ledger::ID, xrpl::less<Ledger::ID>>>;
     using InstanceEntry = InstanceMap::value_type;
 
     // Set of all known ledgers; note this is never pruned
@@ -341,6 +341,6 @@ struct LedgerHistoryHelper
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

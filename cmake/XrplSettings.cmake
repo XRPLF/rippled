@@ -1,10 +1,25 @@
 #[===================================================================[
-   declare user options/settings
+   declare options and variables
 #]===================================================================]
 
-include(ProcessorCount)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set (is_linux TRUE)
+else()
+  set(is_linux FALSE)
+endif()
 
-ProcessorCount(PROCESSOR_COUNT)
+if("$ENV{CI}" STREQUAL "true" OR "$ENV{CONTINUOUS_INTEGRATION}" STREQUAL "true")
+  set(is_ci TRUE)
+else()
+  set(is_ci FALSE)
+endif()
+
+get_directory_property(has_parent PARENT_DIRECTORY)
+if(has_parent)
+  set(is_root_project OFF)
+else()
+  set(is_root_project ON)
+endif()
 
 option(assert "Enables asserts, even in release builds" OFF)
 
@@ -25,10 +40,15 @@ if(unity)
   endif()
   set(CMAKE_UNITY_BUILD ON CACHE BOOL "Do a unity build")
 endif()
+
 if(is_clang AND is_linux)
   option(voidstar "Enable Antithesis instrumentation." OFF)
 endif()
+
 if(is_gcc OR is_clang)
+  include(ProcessorCount)
+  ProcessorCount(PROCESSOR_COUNT)
+
   option(coverage "Generates coverage info." OFF)
   option(profile "Add profiling flags" OFF)
   set(coverage_test_parallelism "${PROCESSOR_COUNT}" CACHE STRING
@@ -48,6 +68,7 @@ else()
   set(coverage OFF CACHE BOOL "gcc/clang only" FORCE)
   set(wextra OFF CACHE BOOL "gcc/clang only" FORCE)
 endif()
+
 if(is_linux)
   option(BUILD_SHARED_LIBS "build shared xrpl libraries" OFF)
   option(static "link protobuf, openssl, libc++, and boost statically" ON)
@@ -64,11 +85,13 @@ else()
   set(use_gold OFF CACHE BOOL "gold linker, linux only" FORCE)
   set(use_mold OFF CACHE BOOL "mold linker, linux only" FORCE)
 endif()
+
 if(is_clang)
   option(use_lld "enables detection of lld linker" ON)
 else()
   set(use_lld OFF CACHE BOOL "try lld linker, clang only" FORCE)
 endif()
+
 option(jemalloc "Enables jemalloc for heap profiling" OFF)
 option(werr "treat warnings as errors" OFF)
 option(local_protobuf
@@ -102,16 +125,6 @@ if(san)
     message(FATAL_ERROR "${san} sanitizer does not seem to be supported by your compiler")
   endif()
 endif()
-set(container_label "" CACHE STRING "tag to use for package building containers")
-option(packages_only
-  "ONLY generate package building targets. This is special use-case and almost \
-   certainly not what you want. Use with caution as you won't be able to build \
-   any compiled targets locally." OFF)
-option(have_package_container
-  "Sometimes you already have the tagged container you want to use for package \
-   building and you don't want docker to rebuild it. This flag will detach the \
-   dependency of the package build from the container build. It's an advanced \
-   use case and most likely you should not be touching this flag." OFF)
 
 # the remaining options are obscure and rarely used
 option(beast_no_unit_test_inline
@@ -125,15 +138,13 @@ option(boost_show_deprecated
   "Allow boost to fail on deprecated usage. Only useful if you're trying\
   to find deprecated calls."
   OFF)
-option(beast_hashers
-  "Use local implementations for sha/ripemd hashes (experimental, not recommended)"
-  OFF)
 
 if(WIN32)
   option(beast_disable_autolink "Disables autolinking of system libraries on WIN32" OFF)
 else()
   set(beast_disable_autolink OFF CACHE BOOL "WIN32 only" FORCE)
 endif()
+
 if(coverage)
   message(STATUS "coverage build requested - forcing Debug build")
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "build type" FORCE)

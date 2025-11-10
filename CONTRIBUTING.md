@@ -299,7 +299,7 @@ For this reason:
 - Example **bad** name
   `"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"`
   (missing namespace, unnecessary full function signature, description too verbose).
-  Good name: `"ripple::RFC1751::insert : minimum length"`.
+  Good name: `"xrpl::RFC1751::insert : minimum length"`.
 - In **few** well-justified cases a non-standard name can be used, in which case a
   comment should be placed to explain the rationale (example in `contract.cpp`)
 - Do **not** rename a contract without a good reason (e.g. the name no longer

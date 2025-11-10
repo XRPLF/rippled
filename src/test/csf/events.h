@@ -8,7 +8,7 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -129,6 +129,6 @@ struct FullyValidateLedger
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

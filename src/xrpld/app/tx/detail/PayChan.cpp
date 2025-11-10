@@ -13,7 +13,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 /*
     PaymentChannel
@@ -137,7 +137,7 @@ closeChannel(
 
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance],
-        "ripple::closeChannel : minimum channel amount");
+        "xrpl::closeChannel : minimum channel amount");
     (*sle)[sfBalance] =
         (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     adjustOwnerCount(view, sle, -1, j);
@@ -546,7 +546,7 @@ PayChanClaim::doApply()
         XRPAmount const reqDelta = reqBalance - chanBalance;
         XRPL_ASSERT(
             reqDelta >= beast::zero,
-            "ripple::PayChanClaim::doApply : minimum balance delta");
+            "xrpl::PayChanClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
         ctx_.view().update(slep);
@@ -581,4 +581,4 @@ PayChanClaim::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

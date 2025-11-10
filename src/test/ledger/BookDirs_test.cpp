@@ -3,7 +3,7 @@
 #include <xrpl/ledger/BookDirs.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct BookDirs_test : public beast::unit_test::suite
@@ -94,4 +94,4 @@ struct BookDirs_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(BookDirs, ledger, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

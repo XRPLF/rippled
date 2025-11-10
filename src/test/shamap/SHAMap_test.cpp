@@ -7,7 +7,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/shamap/SHAMap.h>
 
-namespace ripple {
+namespace xrpl {
 namespace tests {
 
 #ifndef __INTELLISENSE__
@@ -385,4 +385,4 @@ class SHAMapPathProof_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(SHAMap, shamap, ripple);
 BEAST_DEFINE_TESTSUITE(SHAMapPathProof, shamap, ripple);
 }  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl

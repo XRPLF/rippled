@@ -18,7 +18,7 @@
 #include <optional>
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 //------------------------------------------------------------------------------
 
@@ -258,7 +258,7 @@ makeRulesGivenLedger(
     DigestAwareReadView const& ledger,
     std::unordered_set<uint256, beast::uhash<>> const& presets);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #include <xrpl/ledger/detail/ReadViewFwdRange.ipp>
 

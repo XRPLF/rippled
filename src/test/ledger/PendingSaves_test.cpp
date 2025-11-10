@@ -2,7 +2,7 @@
 
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct PendingSaves_test : public beast::unit_test::suite
@@ -43,4 +43,4 @@ struct PendingSaves_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(PendingSaves, ledger, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

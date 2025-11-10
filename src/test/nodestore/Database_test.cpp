@@ -10,7 +10,7 @@
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace NodeStore {
 
@@ -28,8 +28,8 @@ public:
     {
         testcase("Config");
 
-        using namespace ripple::test;
-        using namespace ripple::test::jtx;
+        using namespace xrpl::test;
+        using namespace xrpl::test::jtx;
 
         auto const integrityWarning =
             "reducing the data integrity guarantees from the "
@@ -749,4 +749,4 @@ public:
 BEAST_DEFINE_TESTSUITE(Database, nodestore, ripple);
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

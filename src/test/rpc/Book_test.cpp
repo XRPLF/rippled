@@ -9,7 +9,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Book_test : public beast::unit_test::suite
@@ -2014,4 +2014,4 @@ public:
 BEAST_DEFINE_TESTSUITE_PRIO(Book, rpc, ripple, 1);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

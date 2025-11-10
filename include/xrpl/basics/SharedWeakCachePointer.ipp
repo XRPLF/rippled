@@ -3,7 +3,7 @@
 
 #include <xrpl/basics/SharedWeakCachePointer.h>
 
-namespace ripple {
+namespace xrpl {
 template <class T>
 SharedWeakCachePointer<T>::SharedWeakCachePointer(
     SharedWeakCachePointer const& rhs) = default;
@@ -169,5 +169,5 @@ SharedWeakCachePointer<T>::convertToWeak()
 
     return false;
 }
-}  // namespace ripple
+}  // namespace xrpl
 #endif

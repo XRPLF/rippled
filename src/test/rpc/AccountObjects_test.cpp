@@ -14,7 +14,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 static char const* bobs_account_objects[] = {
@@ -1430,4 +1430,4 @@ public:
 BEAST_DEFINE_TESTSUITE(AccountObjects, rpc, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

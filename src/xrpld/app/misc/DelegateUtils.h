@@ -6,7 +6,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * Check if the delegate account has permission to execute the transaction.
@@ -33,6 +33,6 @@ loadGranularPermission(
     TxType const& type,
     std::unordered_set<GranularPermissionType>& granularPermissions);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_APP_MISC_DELEGATEUTILS_H_INCLUDED

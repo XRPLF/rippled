@@ -7,7 +7,7 @@
 
 #include <variant>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   ledger_hash : <ledger>
@@ -29,4 +29,4 @@ doLedgerRequest(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

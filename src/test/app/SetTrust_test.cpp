@@ -3,7 +3,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -636,4 +636,4 @@ public:
 };
 BEAST_DEFINE_TESTSUITE(SetTrust, app, ripple);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

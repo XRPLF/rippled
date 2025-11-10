@@ -7,7 +7,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/RPCErr.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 /*
@@ -186,4 +186,4 @@ insertDeliveredAmount(
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

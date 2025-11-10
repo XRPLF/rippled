@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // Helper function that returns the reserve on an account based on
@@ -1560,4 +1560,4 @@ BEAST_DEFINE_TESTSUITE(DepositAuth, app, ripple);
 BEAST_DEFINE_TESTSUITE(DepositPreauth, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

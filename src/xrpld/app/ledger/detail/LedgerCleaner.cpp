@@ -6,7 +6,7 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 /*
 
@@ -215,7 +215,7 @@ private:
                     break;
                 XRPL_ASSERT(
                     state_ == State::cleaning,
-                    "ripple::LedgerCleanerImp::run : is cleaning");
+                    "xrpl::LedgerCleanerImp::run : is cleaning");
             }
             doLedgerCleaner();
         }
@@ -338,8 +338,7 @@ private:
 
                 bool const nonzero(refHash.isNonZero());
                 XRPL_ASSERT(
-                    nonzero,
-                    "ripple::LedgerCleanerImp::getHash : nonzero hash");
+                    nonzero, "xrpl::LedgerCleanerImp::getHash : nonzero hash");
                 if (nonzero)
                 {
                     // We found the hash and sequence of a better reference
@@ -443,4 +442,4 @@ make_LedgerCleaner(Application& app, beast::Journal journal)
     return std::make_unique<LedgerCleanerImp>(app, journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

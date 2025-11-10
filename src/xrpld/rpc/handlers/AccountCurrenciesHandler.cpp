@@ -7,7 +7,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doAccountCurrencies(RPC::JsonContext& context)
@@ -76,4 +76,4 @@ doAccountCurrencies(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
