@@ -58,13 +58,10 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
 
     auto const pseudoAccountID = sleBroker->at(sfAccount);
-    if (auto ter = canTransfer(ctx.view, vaultAsset, account, pseudoAccountID);
-        !isTesSuccess(ter))
-    {
-        JLOG(ctx.j.warn()) << "Assets are non-transferable.";
-        return ter;
-    }
-
+    // Cannot transfer a non-transferable Asset
+    if (auto const ret =
+            canTransfer(ctx.view, vaultAsset, account, pseudoAccountID))
+        return ret;
     // Cannot transfer a frozen Asset
     if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
         return ret;

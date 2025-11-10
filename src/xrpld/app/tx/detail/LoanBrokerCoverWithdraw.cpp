@@ -67,12 +67,10 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 
     // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
-    if (auto ter = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct);
-        !isTesSuccess(ter))
-    {
-        JLOG(ctx.j.warn()) << "Assets are non-transferable.";
-        return ter;
-    }
+    // Cannot transfer a non-transferable Asset
+    if (auto const ret =
+            canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct))
+        return ret;
 
     // Withdrawal to a 3rd party destination account is essentially a transfer.
     // Enforce all the usual asset transfer checks.
