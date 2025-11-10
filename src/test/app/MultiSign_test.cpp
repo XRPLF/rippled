@@ -57,8 +57,7 @@ public:
         // Pay alice enough to meet the initial reserve, but not enough to
         // meet the reserve for a SignerListSet.
         auto const fee = env.current()->fees().base;
-        auto const smallSignersReserve = XRP(250);
-        env.fund(smallSignersReserve - drops(1), alice);
+        env.fund(XRP(250) - drops(1), alice);
         env.close();
         env.require(owners(alice, 0));
 

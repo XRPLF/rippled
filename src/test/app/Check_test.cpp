@@ -1633,7 +1633,7 @@ class Check_test : public beast::unit_test::suite
     }
 
     void
-    testCancelValid(FeatureBitset features)
+    testCancelValid()
     {
         // Explore many of the ways to cancel a check.
         testcase("Cancel valid");
@@ -2656,7 +2656,7 @@ class Check_test : public beast::unit_test::suite
         testCashXferFee(features);
         testCashQuality(features);
         testCashInvalid(features);
-        testCancelValid(features);
+        testCancelValid();
         testCancelInvalid(features);
         testDeliveredAmountForCheckCashTxn(features);
         testWithTickets(features);
