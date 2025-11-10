@@ -1765,7 +1765,8 @@ class Vault_test : public beast::unit_test::suite
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock |
                      (args.enableClawback ? tfMPTCanClawback : none) |
-                     (args.requireAuth ? tfMPTRequireAuth : none)});
+                     (args.requireAuth ? tfMPTRequireAuth : none),
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
             PrettyAsset asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
@@ -2479,6 +2480,53 @@ class Vault_test : public beast::unit_test::suite
             env(tx2, ter{tecWRONG_ASSET});
             env.close();
         }
+
+        testCase([this](
+                     Env& env,
+                     Account const&,
+                     Account const& owner,
+                     Account const& depositor,
+                     PrettyAsset const& asset,
+                     Vault& vault,
+                     MPTTester& mptt) {
+            testcase("MPT non-transferable");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx);
+            env.close();
+
+            // Remove CanTransfer
+            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
+            env.close();
+
+            env(tx, ter{tecNO_AUTH});
+            env.close();
+
+            tx = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+
+            env(tx, ter{tecNO_AUTH});
+            env.close();
+
+            // Restore CanTransfer
+            mptt.set({.mutableFlags = tmfMPTSetCanTransfer});
+            env.close();
+
+            env(tx);
+            env.close();
+
+            // Delete vault with zero balance
+            env(vault.del({.owner = owner, .id = keylet.key}));
+        });
     }
 
     void
