@@ -172,6 +172,24 @@ jobs:
             -C "${BUILD_TYPE}" \
             -j "${PARALLELISM}"
 
+      - name: Run the embedded tests
+        if: ${{ !inputs.build_only }}
+        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', inputs.build_dir, inputs.build_type) || inputs.build_dir }}
+        shell: bash
+        env:
+          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
+        run: |
+          ./rippled --unittest --unittest-jobs "${BUILD_NPROC}"
+
+      - name: Debug failure (Linux)
+        if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
+        shell: bash
+        run: |
+          echo "IPv4 local port range:"
+          cat /proc/sys/net/ipv4/ip_local_port_range
+          echo "Netstat:"
+          netstat -an
+
       - name: Prepare coverage report
         if: ${{ !inputs.build_only && env.ENABLED_COVERAGE == 'true' }}
         working-directory: ${{ inputs.build_dir }}
@@ -197,21 +215,3 @@ jobs:
           plugins: noop
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
-
-      - name: Run the embedded tests
-        if: ${{ !inputs.build_only && env.ENABLED_COVERAGE != 'true' }}
-        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', inputs.build_dir, inputs.build_type) || inputs.build_dir }}
-        shell: bash
-        env:
-          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
-        run: |
-          ./rippled --unittest --unittest-jobs "${BUILD_NPROC}"
-
-      - name: Debug failure (Linux)
-        if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
-        shell: bash
-        run: |
-          echo "IPv4 local port range:"
-          cat /proc/sys/net/ipv4/ip_local_port_range
-          echo "Netstat:"
-          netstat -an
