@@ -4,7 +4,7 @@
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/TxFormats.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct STInteger_test : public beast::unit_test::suite
 {
@@ -141,4 +141,4 @@ struct STInteger_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(STInteger, protocol, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

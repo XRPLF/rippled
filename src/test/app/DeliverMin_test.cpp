@@ -3,7 +3,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class DeliverMin_test : public beast::unit_test::suite
@@ -132,4 +132,4 @@ public:
 BEAST_DEFINE_TESTSUITE(DeliverMin, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

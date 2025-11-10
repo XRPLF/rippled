@@ -6,7 +6,7 @@
 
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class AMMInfo_test : public jtx::AMMTestBase
@@ -353,4 +353,4 @@ public:
 BEAST_DEFINE_TESTSUITE(AMMInfo, rpc, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

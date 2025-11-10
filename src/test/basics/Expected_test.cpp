@@ -8,7 +8,7 @@
 #include <array>
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct Expected_test : beast::unit_test::suite
@@ -227,4 +227,4 @@ struct Expected_test : beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(Expected, basics, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

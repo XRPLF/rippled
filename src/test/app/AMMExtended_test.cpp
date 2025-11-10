@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /**
@@ -3841,4 +3841,4 @@ private:
 BEAST_DEFINE_TESTSUITE_PRIO(AMMExtended, app, ripple, 1);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

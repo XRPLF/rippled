@@ -14,7 +14,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -275,6 +275,6 @@ make_NetworkOPs(
     beast::Journal journal,
     beast::insight::Collector::ptr const& collector);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

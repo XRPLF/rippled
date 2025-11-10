@@ -4,7 +4,7 @@
 #include <array>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 namespace tests {
 
@@ -56,4 +56,4 @@ BEAST_DEFINE_TESTSUITE(varint, nodestore, ripple);
 
 }  // namespace tests
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

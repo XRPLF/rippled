@@ -8,7 +8,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
-namespace ripple {
+namespace xrpl {
 class SociDB_test final : public TestSuite
 {
 private:
@@ -353,4 +353,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(SociDB, core, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

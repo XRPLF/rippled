@@ -5,7 +5,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/ledger/View.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class SkipList_test : public beast::unit_test::suite
@@ -87,4 +87,4 @@ class SkipList_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(SkipList, ledger, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

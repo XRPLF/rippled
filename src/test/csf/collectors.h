@@ -12,7 +12,7 @@
 #include <ostream>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -699,6 +699,6 @@ struct JumpCollector
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

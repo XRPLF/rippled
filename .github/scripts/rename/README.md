@@ -29,6 +29,8 @@ run from the repository root.
 4. `.github/scripts/rename/binary.sh`: This script will rename the binary from
    `rippled` to `xrpld`, and reverses the symlink so that `rippled` points to
    the `xrpld` binary.
+5. `.github/scripts/rename/namespace.sh`: This script will rename the C++
+   namespaces from `ripple` to `xrpl`.
 
 You can run all these scripts from the repository root as follows:
 
@@ -37,4 +39,5 @@ You can run all these scripts from the repository root as follows:
 ./.github/scripts/rename/copyright.sh .
 ./.github/scripts/rename/cmake.sh .
 ./.github/scripts/rename/binary.sh .
+./.github/scripts/rename/namespace.sh .
 ```

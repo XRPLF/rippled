@@ -4,10 +4,10 @@
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
 
-namespace ripple {
+namespace xrpl {
 
 using KeyCache = TaggedCache<uint256, int, true>;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_BASICS_KEYCACHE_H

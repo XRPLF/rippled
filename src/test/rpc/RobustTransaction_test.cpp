@@ -6,7 +6,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class RobustTransaction_test : public beast::unit_test::suite
@@ -494,4 +494,4 @@ public:
 BEAST_DEFINE_TESTSUITE(RobustTransaction, rpc, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

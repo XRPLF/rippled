@@ -2,7 +2,7 @@
 
 #include <xrpl/ledger/CredentialHelpers.h>
 
-namespace ripple {
+namespace xrpl {
 namespace permissioned_dex {
 
 bool
@@ -67,4 +67,4 @@ offerInDomain(
 
 }  // namespace permissioned_dex
 
-}  // namespace ripple
+}  // namespace xrpl

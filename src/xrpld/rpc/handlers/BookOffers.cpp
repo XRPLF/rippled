@@ -12,7 +12,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doBookOffers(RPC::JsonContext& context)
@@ -211,4 +211,4 @@ doBookChanges(RPC::JsonContext& context)
     return RPC::computeBookChanges(ledger);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

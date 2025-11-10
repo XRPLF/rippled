@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Asset;
 class STAmount;
@@ -213,6 +213,6 @@ validJSONAsset(Json::Value const& jv);
 Asset
 assetFromJson(Json::Value const& jv);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_PROTOCOL_ASSET_H_INCLUDED

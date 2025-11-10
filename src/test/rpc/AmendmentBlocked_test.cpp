@@ -6,7 +6,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class AmendmentBlocked_test : public beast::unit_test::suite
 {
@@ -238,4 +238,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AmendmentBlocked, rpc, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

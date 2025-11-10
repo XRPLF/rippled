@@ -5,7 +5,7 @@
 
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 namespace credentials {
 
 bool
@@ -374,4 +374,4 @@ verifyDepositPreauth(
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

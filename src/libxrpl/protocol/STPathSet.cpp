@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 std::size_t
 STPathElement::get_hash(STPathElement const& element)
@@ -201,10 +201,10 @@ void
 STPathSet::add(Serializer& s) const
 {
     XRPL_ASSERT(
-        getFName().isBinary(), "ripple::STPathSet::add : field is binary");
+        getFName().isBinary(), "xrpl::STPathSet::add : field is binary");
     XRPL_ASSERT(
         getFName().fieldType == STI_PATHSET,
-        "ripple::STPathSet::add : valid field type");
+        "xrpl::STPathSet::add : valid field type");
     bool first = true;
 
     for (auto const& spPath : value)
@@ -234,4 +234,4 @@ STPathSet::add(Serializer& s) const
     s.add8(STPathElement::typeNone);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -198,7 +198,7 @@ public:
     Value(UInt value);
     Value(double value);
     Value(char const* value);
-    Value(ripple::Number const& value);
+    Value(xrpl::Number const& value);
     /** \brief Constructs a value from a static string.
 
      * Like other value string constructor but do not duplicate the string for
@@ -422,7 +422,7 @@ private:
 };
 
 inline Value
-to_json(ripple::Number const& number)
+to_json(xrpl::Number const& number)
 {
     return to_string(number);
 }

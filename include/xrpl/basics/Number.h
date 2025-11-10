@@ -6,7 +6,7 @@
 #include <ostream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class Number;
 
@@ -404,6 +404,6 @@ public:
     operator=(NumberRoundModeGuard const&) = delete;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_BASICS_NUMBER_H_INCLUDED

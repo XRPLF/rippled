@@ -4,7 +4,7 @@
 #include <tuple>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 struct TER_test : public beast::unit_test::suite
 {
@@ -276,4 +276,4 @@ struct TER_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(TER, protocol, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

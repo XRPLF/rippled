@@ -23,7 +23,7 @@
 #include <cstring>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -275,7 +275,7 @@ public:
     {
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
-            "ripple::base_uint::base_uint(Container auto) : input size match");
+            "xrpl::base_uint::base_uint(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
     }
 
@@ -288,7 +288,7 @@ public:
     {
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
-            "ripple::base_uint::operator=(Container auto) : input size match");
+            "xrpl::base_uint::operator=(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
         return *this;
     }
@@ -648,12 +648,12 @@ static_assert(sizeof(uint192) == 192 / 8, "There should be no padding bytes");
 static_assert(sizeof(uint256) == 256 / 8, "There should be no padding bytes");
 #endif
 
-}  // namespace ripple
+}  // namespace xrpl
 
 namespace beast {
 
 template <std::size_t Bits, class Tag>
-struct is_uniquely_represented<ripple::base_uint<Bits, Tag>>
+struct is_uniquely_represented<xrpl::base_uint<Bits, Tag>>
     : public std::true_type
 {
     explicit is_uniquely_represented() = default;

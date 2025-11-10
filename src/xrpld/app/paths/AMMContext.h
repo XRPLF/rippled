@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 /** Maintains AMM info per overall payment engine execution and
  * individual iteration.
@@ -95,6 +95,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_APP_PATHS_AMMCONTEXT_H_INCLUDED

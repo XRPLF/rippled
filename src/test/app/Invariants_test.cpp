@@ -20,7 +20,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Invariants_test : public beast::unit_test::suite
@@ -1744,7 +1744,7 @@ class Invariants_test : public beast::unit_test::suite
             std::optional<AccountAmount> accountShares = {};
         };
         auto constexpr adjust = [&](ApplyView& ac,
-                                    ripple::Keylet keylet,
+                                    xrpl::Keylet keylet,
                                     Adjustments args) {
             auto sleVault = ac.peek(keylet);
             if (!sleVault)
@@ -3494,4 +3494,4 @@ public:
 BEAST_DEFINE_TESTSUITE(Invariants, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

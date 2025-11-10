@@ -12,7 +12,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
@@ -201,7 +201,7 @@ VaultDeposit::doApply()
             // This follows from the reverse of the outer enclosing if condition
             XRPL_ASSERT(
                 account_ == vault->at(sfOwner),
-                "ripple::VaultDeposit::doApply : account is owner");
+                "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
                     mPriorBalance,              // priorBalance
@@ -258,7 +258,7 @@ VaultDeposit::doApply()
 
     XRPL_ASSERT(
         sharesCreated.asset() != assetsDeposited.asset(),
-        "ripple::VaultDeposit::doApply : assets are not shares");
+        "xrpl::VaultDeposit::doApply : assets are not shares");
 
     vault->at(sfAssetsTotal) += assetsDeposited;
     vault->at(sfAssetsAvailable) += assetsDeposited;
@@ -309,4 +309,4 @@ VaultDeposit::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

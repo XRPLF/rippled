@@ -3,7 +3,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 class NullBackend : public Backend
@@ -126,4 +126,4 @@ registerNullFactory(Manager& manager)
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

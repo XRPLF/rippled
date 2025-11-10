@@ -8,7 +8,7 @@
 
 #include <initializer_list>
 
-namespace ripple {
+namespace xrpl {
 
 class NFTokenBaseUtil_test : public beast::unit_test::suite
 {
@@ -7663,4 +7663,4 @@ BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, app, ripple, 2);
 
-}  // namespace ripple
+}  // namespace xrpl

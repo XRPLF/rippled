@@ -10,7 +10,7 @@
 
 #include <grpcpp/support/status.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::optional<AccountID>
 getAccount(Json::Value const& v, Json::Value& result)
@@ -133,12 +133,12 @@ doAMMInfo(RPC::JsonContext& context)
         XRPL_ASSERT(
             (issue1.has_value() == issue2.has_value()) &&
                 (issue1.has_value() != ammID.has_value()),
-            "ripple::doAMMInfo : issue1 and issue2 do match");
+            "xrpl::doAMMInfo : issue1 and issue2 do match");
 
         auto const ammKeylet = [&]() {
             if (issue1 && issue2)
                 return keylet::amm(*issue1, *issue2);
-            XRPL_ASSERT(ammID, "ripple::doAMMInfo::ammKeylet : ammID is set");
+            XRPL_ASSERT(ammID, "xrpl::doAMMInfo::ammKeylet : ammID is set");
             return keylet::amm(*ammID);
         }();
         auto const amm = ledger->read(ammKeylet);
@@ -200,7 +200,7 @@ doAMMInfo(RPC::JsonContext& context)
     XRPL_ASSERT(
         !ledger->rules().enabled(fixInnerObjTemplate) ||
             amm->isFieldPresent(sfAuctionSlot),
-        "ripple::doAMMInfo : auction slot is set");
+        "xrpl::doAMMInfo : auction slot is set");
     if (amm->isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
@@ -251,4 +251,4 @@ doAMMInfo(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

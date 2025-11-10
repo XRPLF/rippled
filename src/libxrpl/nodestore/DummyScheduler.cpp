@@ -1,6 +1,6 @@
 #include <xrpl/nodestore/DummyScheduler.h>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 void
@@ -21,4 +21,4 @@ DummyScheduler::onBatchWrite(BatchWriteReport const& report)
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <class F>
 JobQueue::Coro::Coro(
@@ -34,7 +34,7 @@ JobQueue::Coro::Coro(
 inline JobQueue::Coro::~Coro()
 {
 #ifndef NDEBUG
-    XRPL_ASSERT(finished_, "ripple::JobQueue::Coro::~Coro : is finished");
+    XRPL_ASSERT(finished_, "xrpl::JobQueue::Coro::~Coro : is finished");
 #endif
 }
 
@@ -85,8 +85,7 @@ JobQueue::Coro::resume()
     detail::getLocalValues().reset(&lvs_);
     std::lock_guard lock(mutex_);
     XRPL_ASSERT(
-        static_cast<bool>(coro_),
-        "ripple::JobQueue::Coro::resume : is runnable");
+        static_cast<bool>(coro_), "xrpl::JobQueue::Coro::resume : is runnable");
     coro_();
     detail::getLocalValues().release();
     detail::getLocalValues().reset(saved);
@@ -129,6 +128,6 @@ JobQueue::Coro::join()
     cv_.wait(lk, [this]() { return running_ == false; });
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

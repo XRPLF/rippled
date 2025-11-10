@@ -2,7 +2,7 @@
 
 #include <xrpl/beast/core/CurrentThreadName.h>
 
-namespace ripple {
+namespace xrpl {
 
 Job::Job() : mType(jtINVALID), mJobIndex(0)
 {
@@ -101,4 +101,4 @@ Job::operator<=(Job const& j) const
     return mJobIndex <= j.mJobIndex;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

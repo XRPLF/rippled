@@ -4,7 +4,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ByzantineFailureSim_test : public beast::unit_test::suite
@@ -82,4 +82,4 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE_MANUAL(ByzantineFailureSim, consensus, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

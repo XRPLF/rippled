@@ -10,7 +10,7 @@
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 /**
     This class is an "active" object. It maintains its own timer
@@ -102,7 +102,7 @@ protected:
     }
 
     // Used in this class for access to boost::asio::io_context and
-    // ripple::Overlay. Used in subtypes for the kitchen sink.
+    // xrpl::Overlay. Used in subtypes for the kitchen sink.
     Application& app_;
     beast::Journal journal_;
     mutable std::recursive_mutex mtx_;
@@ -130,6 +130,6 @@ private:
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

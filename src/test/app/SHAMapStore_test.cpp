@@ -10,7 +10,7 @@
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class SHAMapStore_test : public beast::unit_test::suite
@@ -640,4 +640,4 @@ public:
 BEAST_DEFINE_TESTSUITE(SHAMapStore, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

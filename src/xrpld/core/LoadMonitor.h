@@ -9,7 +9,7 @@
 #include <chrono>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 // Monitors load levels and response times
 
@@ -68,6 +68,6 @@ private:
     beast::Journal const j_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

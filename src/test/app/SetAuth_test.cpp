@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct SetAuth_test : public beast::unit_test::suite
@@ -64,4 +64,4 @@ struct SetAuth_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(SetAuth, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

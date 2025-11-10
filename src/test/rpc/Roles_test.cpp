@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -374,4 +374,4 @@ BEAST_DEFINE_TESTSUITE(Roles, rpc, ripple);
 
 }  // namespace test
 
-}  // namespace ripple
+}  // namespace xrpl

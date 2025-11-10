@@ -3,7 +3,7 @@
 
 #include <xrpld/core/Job.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Holds all the 'static' information about a job, which does not change */
 class JobTypeInfo
@@ -78,6 +78,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

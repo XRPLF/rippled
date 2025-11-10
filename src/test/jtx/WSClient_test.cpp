@@ -3,7 +3,7 @@
 
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class WSClient_test : public beast::unit_test::suite
@@ -30,4 +30,4 @@ public:
 BEAST_DEFINE_TESTSUITE(WSClient, jtx, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

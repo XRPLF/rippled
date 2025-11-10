@@ -3,7 +3,7 @@
 #include <xrpl/basics/join.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct join_test : beast::unit_test::suite
@@ -83,4 +83,4 @@ struct join_test : beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(join, basics, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

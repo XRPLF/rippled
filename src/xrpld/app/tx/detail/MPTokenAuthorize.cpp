@@ -5,7 +5,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 MPTokenAuthorize::getFlagsMask(PreflightContext const& ctx)
@@ -167,4 +167,4 @@ MPTokenAuthorize::doApply()
         tx[~sfHolder]);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 
 #include <xrpld/core/DatabaseCon.h>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * @brief doVacuumDB Creates, initialises, and performs cleanup on a database.
@@ -14,6 +14,6 @@ namespace ripple {
 bool
 doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

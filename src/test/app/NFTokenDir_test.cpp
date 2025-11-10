@@ -8,7 +8,7 @@
 
 #include <initializer_list>
 
-namespace ripple {
+namespace xrpl {
 
 class NFTokenDir_test : public beast::unit_test::suite
 {
@@ -1062,7 +1062,7 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDir, app, ripple, 1);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 // Seed that produces an account with the low-32 bits == 0xFFFFFFFF in
 // case it is needed for future testing:

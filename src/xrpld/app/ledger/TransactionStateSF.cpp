@@ -1,6 +1,6 @@
 #include <xrpld/app/ledger/TransactionStateSF.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 TransactionStateSF::gotNode(
@@ -13,7 +13,7 @@ TransactionStateSF::gotNode(
 {
     XRPL_ASSERT(
         type != SHAMapNodeType::tnTRANSACTION_NM,
-        "ripple::TransactionStateSF::gotNode : valid input");
+        "xrpl::TransactionStateSF::gotNode : valid input");
     db_.store(
         hotTRANSACTION_NODE,
         std::move(nodeData),
@@ -27,4 +27,4 @@ TransactionStateSF::getNode(SHAMapHash const& nodeHash) const
     return fp_.getFetchPack(nodeHash.as_uint256());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

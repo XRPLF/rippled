@@ -19,7 +19,7 @@ using source_location = std::experimental::source_location;
 #include <source_location>
 using std::source_location;
 #endif
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -1774,8 +1774,8 @@ class LedgerEntry_test : public beast::unit_test::suite
     testInvalidOracleLedgerEntry()
     {
         testcase("Invalid Oracle Ledger Entry");
-        using namespace ripple::test::jtx;
-        using namespace ripple::test::jtx::oracle;
+        using namespace xrpl::test::jtx;
+        using namespace xrpl::test::jtx::oracle;
 
         Env env(*this);
         Account const owner("owner");
@@ -1801,8 +1801,8 @@ class LedgerEntry_test : public beast::unit_test::suite
     testOracleLedgerEntry()
     {
         testcase("Oracle Ledger Entry");
-        using namespace ripple::test::jtx;
-        using namespace ripple::test::jtx::oracle;
+        using namespace xrpl::test::jtx;
+        using namespace xrpl::test::jtx::oracle;
 
         Env env(*this);
         auto const baseFee =
@@ -2371,4 +2371,4 @@ BEAST_DEFINE_TESTSUITE(LedgerEntry, rpc, ripple);
 BEAST_DEFINE_TESTSUITE(LedgerEntry_XChain, rpc, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -19,7 +19,7 @@ namespace Json {
 class Value;
 }
 
-namespace ripple {
+namespace xrpl {
 
 class ReadView;
 class Transaction;
@@ -207,6 +207,6 @@ keypairForSignature(
 
 }  // namespace RPC
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

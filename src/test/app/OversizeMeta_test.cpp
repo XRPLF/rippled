@@ -2,7 +2,7 @@
 
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // Make sure "plump" order books don't have problems
@@ -169,4 +169,4 @@ public:
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, app, ripple, 50);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

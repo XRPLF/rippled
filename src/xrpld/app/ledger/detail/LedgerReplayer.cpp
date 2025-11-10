@@ -2,7 +2,7 @@
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
 
-namespace ripple {
+namespace xrpl {
 
 LedgerReplayer::LedgerReplayer(
     Application& app,
@@ -30,7 +30,7 @@ LedgerReplayer::replay(
     XRPL_ASSERT(
         finishLedgerHash.isNonZero() && totalNumLedgers > 0 &&
             totalNumLedgers <= LedgerReplayParameters::MAX_TASK_SIZE,
-        "ripple::LedgerReplayer::replay : valid inputs");
+        "xrpl::LedgerReplayer::replay : valid inputs");
 
     LedgerReplayTask::TaskParameter parameter(
         r, finishLedgerHash, totalNumLedgers);
@@ -266,4 +266,4 @@ LedgerReplayer::stop()
     JLOG(j_.info()) << "Stopped";
 }
 
-}  // namespace ripple
+}  // namespace xrpl

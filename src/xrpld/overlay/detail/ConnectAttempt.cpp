@@ -7,7 +7,7 @@
 
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 ConnectAttempt::ConnectAttempt(
     Application& app,
@@ -92,7 +92,7 @@ ConnectAttempt::shutdown()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::ConnectAttempt::shutdown: strand in this thread");
+        "xrpl::ConnectAttempt::shutdown: strand in this thread");
 
     if (!socket_.is_open())
         return;
@@ -108,7 +108,7 @@ ConnectAttempt::tryAsyncShutdown()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::ConnectAttempt::tryAsyncShutdown : strand in this thread");
+        "xrpl::ConnectAttempt::tryAsyncShutdown : strand in this thread");
 
     if (!shutdown_ || currentStep_ == ConnectionStep::ShutdownStarted)
         return;
@@ -165,7 +165,7 @@ ConnectAttempt::close()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::ConnectAttempt::close : strand in this thread");
+        "xrpl::ConnectAttempt::close : strand in this thread");
     if (!socket_.is_open())
         return;
 
@@ -619,4 +619,4 @@ ConnectAttempt::processResponse()
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

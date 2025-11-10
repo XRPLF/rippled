@@ -14,7 +14,7 @@
 #include <optional>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
 class Transaction_test : public beast::unit_test::suite
 {
@@ -940,4 +940,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Transaction, rpc, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

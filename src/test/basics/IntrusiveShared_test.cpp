@@ -17,7 +17,7 @@
 #include <thread>
 #include <variant>
 
-namespace ripple {
+namespace xrpl {
 namespace tests {
 
 /**
@@ -889,4 +889,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(IntrusiveShared, basics, ripple);
 }  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl

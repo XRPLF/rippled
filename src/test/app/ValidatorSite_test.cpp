@@ -17,7 +17,7 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 constexpr char const*
 realValidatorContents()
@@ -691,4 +691,4 @@ public:
 BEAST_DEFINE_TESTSUITE_PRIO(ValidatorSite, app, ripple, 2);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

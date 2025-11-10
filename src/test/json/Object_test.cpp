@@ -5,7 +5,7 @@
 
 namespace Json {
 
-class JsonObject_test : public ripple::test::TestOutputSuite
+class JsonObject_test : public xrpl::test::TestOutputSuite
 {
     void
     setup(std::string const& testName)

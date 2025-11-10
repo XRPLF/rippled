@@ -11,7 +11,7 @@
 #include <memory>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Tests remote listening sockets to make sure they are connectible. */
@@ -210,6 +210,6 @@ Checker<Protocol>::remove(basic_async_op& op)
 }
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

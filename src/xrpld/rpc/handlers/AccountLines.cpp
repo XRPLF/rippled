@@ -9,7 +9,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 addLine(Json::Value& jsonLines, RPCTrustLine const& line)
@@ -172,7 +172,7 @@ doAccountLines(RPC::JsonContext& context)
                     if (!sleCur)
                     {
                         // LCOV_EXCL_START
-                        UNREACHABLE("ripple::doAccountLines : null SLE");
+                        UNREACHABLE("xrpl::doAccountLines : null SLE");
                         return false;
                         // LCOV_EXCL_STOP
                     }
@@ -239,4 +239,4 @@ doAccountLines(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

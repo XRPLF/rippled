@@ -14,7 +14,7 @@
 #include <optional>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -1320,4 +1320,4 @@ BEAST_DEFINE_TESTSUITE(Simulate, rpc, ripple);
 
 }  // namespace test
 
-}  // namespace ripple
+}  // namespace xrpl

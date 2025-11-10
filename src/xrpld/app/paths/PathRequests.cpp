@@ -10,7 +10,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 /** Get the current RippleLineCache, updating it if necessary.
     Get the correct ledger to use.
@@ -300,4 +300,4 @@ PathRequests::doLegacyPathRequest(
     return std::move(jvRes);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

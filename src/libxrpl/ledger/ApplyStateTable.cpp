@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 void
@@ -143,7 +143,7 @@ ApplyStateTable::apply(
             {
                 XRPL_ASSERT(
                     origNode && curNode,
-                    "ripple::detail::ApplyStateTable::apply : valid nodes for "
+                    "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "deletion");
                 threadOwners(to, meta, origNode, newMod, j);
 
@@ -178,7 +178,7 @@ ApplyStateTable::apply(
             {
                 XRPL_ASSERT(
                     curNode && origNode,
-                    "ripple::detail::ApplyStateTable::apply : valid nodes for "
+                    "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "modification");
 
                 if (curNode->isThreadedType(
@@ -216,7 +216,7 @@ ApplyStateTable::apply(
             {
                 XRPL_ASSERT(
                     curNode && !origNode,
-                    "ripple::detail::ApplyStateTable::apply : valid nodes for "
+                    "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "creation");
                 threadOwners(to, meta, curNode, newMod, j);
 
@@ -242,7 +242,7 @@ ApplyStateTable::apply(
             {
                 // LCOV_EXCL_START
                 UNREACHABLE(
-                    "ripple::detail::ApplyStateTable::apply : unsupported "
+                    "xrpl::detail::ApplyStateTable::apply : unsupported "
                     "operation type");
                 // LCOV_EXCL_STOP
             }
@@ -547,7 +547,7 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
         {
             XRPL_ASSERT(
                 node.getFieldIndex(sfPreviousTxnLgrSeq) == -1,
-                "ripple::ApplyStateTable::threadItem : previous ledger is not "
+                "xrpl::ApplyStateTable::threadItem : previous ledger is not "
                 "set");
             node.setFieldH256(sfPreviousTxnID, prevTxID);
             node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
@@ -555,11 +555,11 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 
         XRPL_ASSERT(
             node.getFieldH256(sfPreviousTxnID) == prevTxID,
-            "ripple::ApplyStateTable::threadItem : previous transaction is a "
+            "xrpl::ApplyStateTable::threadItem : previous transaction is a "
             "match");
         XRPL_ASSERT(
             node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID,
-            "ripple::ApplyStateTable::threadItem : previous ledger is a match");
+            "xrpl::ApplyStateTable::threadItem : previous ledger is a match");
     }
 }
 
@@ -576,7 +576,7 @@ ApplyStateTable::getForMod(
         {
             XRPL_ASSERT(
                 miter->second,
-                "ripple::ApplyStateTable::getForMod : non-null result");
+                "xrpl::ApplyStateTable::getForMod : non-null result");
             return miter->second;
         }
     }
@@ -634,7 +634,7 @@ ApplyStateTable::threadTx(
     // threadItem only applied to AccountRoot
     XRPL_ASSERT(
         sle->isThreadedType(base.rules()),
-        "ripple::ApplyStateTable::threadTx : SLE is threaded");
+        "xrpl::ApplyStateTable::threadTx : SLE is threaded");
     threadItem(meta, sle);
 }
 
@@ -671,4 +671,4 @@ ApplyStateTable::threadOwners(
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl

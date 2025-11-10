@@ -9,7 +9,7 @@
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** State information when preflighting a tx. */
 struct PreflightContext
@@ -247,7 +247,7 @@ protected:
 
         @param app The application hosting the server
         @param baseFee The base fee of a candidate transaction
-            @see ripple::calculateBaseFee
+            @see xrpl::calculateBaseFee
         @param fees Fee settings from the current ledger
         @param flags Transaction processing fees
      */
@@ -421,6 +421,6 @@ Transactor::validNumericRange(
     return validNumericRange(value, max.value(), min.value());
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

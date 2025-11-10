@@ -3,7 +3,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/STIssue.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class STIssue_test : public beast::unit_test::suite
@@ -143,4 +143,4 @@ public:
 BEAST_DEFINE_TESTSUITE(STIssue, protocol, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

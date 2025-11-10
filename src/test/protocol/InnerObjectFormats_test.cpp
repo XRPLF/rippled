@@ -6,7 +6,7 @@
 #include <xrpl/protocol/ErrorCodes.h>    // RPC::containsError
 #include <xrpl/protocol/STParsedJSON.h>  // STParsedJSONObject
 
-namespace ripple {
+namespace xrpl {
 
 namespace InnerObjectFormatsUnitTestDetail {
 
@@ -184,4 +184,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(InnerObjectFormatsParsedJSON, protocol, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -6,7 +6,7 @@
 
 #include <random>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class LedgerTrie_test : public beast::unit_test::suite
@@ -661,4 +661,4 @@ class LedgerTrie_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(LedgerTrie, consensus, ripple);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

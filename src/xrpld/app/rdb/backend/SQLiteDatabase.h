@@ -3,7 +3,7 @@
 
 #include <xrpld/app/rdb/RelationalDatabase.h>
 
-namespace ripple {
+namespace xrpl {
 
 class SQLiteDatabase : public RelationalDatabase
 {
@@ -289,6 +289,6 @@ public:
     closeTransactionDB() = 0;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

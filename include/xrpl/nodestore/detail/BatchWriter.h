@@ -8,7 +8,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 /** Batch-writing assist logic.
@@ -78,6 +78,6 @@ private:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

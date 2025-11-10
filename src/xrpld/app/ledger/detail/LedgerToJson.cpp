@@ -10,7 +10,7 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -342,4 +342,4 @@ getJson(LedgerFill const& fill)
     return json;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

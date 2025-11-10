@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 namespace oracle {
@@ -332,4 +332,4 @@ BEAST_DEFINE_TESTSUITE(GetAggregatePrice, rpc, ripple);
 }  // namespace oracle
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
