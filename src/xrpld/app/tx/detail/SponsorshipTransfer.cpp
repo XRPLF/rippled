@@ -294,18 +294,18 @@ SponsorshipTransfer::doApply()
             else
             {
                 // update owner's sponsored count
-                ownerSle->setFieldU32(
-                    sfSponsoredOwnerCount,
+                auto const newCount =
                     ownerSle->getFieldU32(sfSponsoredOwnerCount) +
-                        ownerCountDelta);
+                    ownerCountDelta;
+                ownerSle->setFieldU32(sfSponsoredOwnerCount, newCount);
                 view().update(ownerSle);
             }
             // increment new sponsoring count
             auto const newSponsorSle = view().peek(keylet::account(newSponsor));
-            newSponsorSle->setFieldU32(
-                sfSponsoringOwnerCount,
+            auto const newCount =
                 newSponsorSle->getFieldU32(sfSponsoringOwnerCount) +
-                    ownerCountDelta);
+                ownerCountDelta;
+            newSponsorSle->setFieldU32(sfSponsoringOwnerCount, newCount);
             view().update(newSponsorSle);
 
             objSle->setAccountID(sponsorField, newSponsor);
@@ -328,10 +328,14 @@ SponsorshipTransfer::doApply()
             if (auto const oldSponsorSle =
                     view().peek(keylet::account(oldSponsor)))
             {
-                oldSponsorSle->setFieldU32(
-                    sfSponsoringOwnerCount,
+                auto const newCount =
                     oldSponsorSle->getFieldU32(sfSponsoringOwnerCount) -
-                        ownerCountDelta);
+                    ownerCountDelta;
+                if (newCount == 0)
+                    oldSponsorSle->makeFieldAbsent(sfSponsoringOwnerCount);
+                else
+                    oldSponsorSle->setFieldU32(
+                        sfSponsoringOwnerCount, newCount);
                 view().update(oldSponsorSle);
             }
 
@@ -360,9 +364,13 @@ SponsorshipTransfer::doApply()
                 auto const oldSponsor = accSle->getAccountID(sfSponsorAccount);
                 auto const oldSponsorSle =
                     view().peek(keylet::account(oldSponsor));
-                oldSponsorSle->setFieldU32(
-                    sfSponsoringAccountCount,
-                    oldSponsorSle->getFieldU32(sfSponsoringAccountCount) - 1);
+                auto const newCount =
+                    oldSponsorSle->getFieldU32(sfSponsoringAccountCount) - 1;
+                if (newCount == 0)
+                    oldSponsorSle->makeFieldAbsent(sfSponsoringAccountCount);
+                else
+                    oldSponsorSle->setFieldU32(
+                        sfSponsoringAccountCount, newCount);
                 view().update(oldSponsorSle);
             }
             accSle->setAccountID(sfSponsorAccount, newSponsor);
@@ -375,9 +383,12 @@ SponsorshipTransfer::doApply()
             accSle->makeFieldAbsent(sfSponsorAccount);
             // decrement account sponsoring count
             auto const oldSponsorSle = view().peek(keylet::account(oldSponsor));
-            oldSponsorSle->setFieldU32(
-                sfSponsoringAccountCount,
-                oldSponsorSle->getFieldU32(sfSponsoringAccountCount) - 1);
+            auto const newCount =
+                oldSponsorSle->getFieldU32(sfSponsoringAccountCount) - 1;
+            if (newCount == 0)
+                oldSponsorSle->makeFieldAbsent(sfSponsoringAccountCount);
+            else
+                oldSponsorSle->setFieldU32(sfSponsoringAccountCount, newCount);
             view().update(oldSponsorSle);
         }
     }

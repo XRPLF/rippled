@@ -11,6 +11,12 @@ namespace ripple {
 namespace test {
 
 static STAmount
+accountReserve(jtx::Env& env, std::uint32_t count = 1)
+{
+    return env.current()->fees().reserve * count;
+}
+
+static STAmount
 reserve(jtx::Env& env, std::uint32_t count)
 {
     return env.current()->fees().accountReserve(count);
@@ -538,17 +544,18 @@ public:
             Account const bob("bob");
             Account const sponsor1("sponsor1");
             Account const sponsor2("sponsor2");
-            env.fund(XRP(10000), alice, bob);
-            env.fund(env.current()->fees().reserve * 2 - 1, sponsor1, sponsor2);
-            env.close();
+            env.fund(XRP(10000), alice, bob, sponsor1, sponsor2);
+
+            adjustAccountXRPBalance(
+                env, sponsor1, accountReserve(env, 2) - drops(1));
 
             env(sponsor::transfer(alice),
                 sponsor::as(sponsor1, tfSponsorReserve),
                 sig(sfSponsorSignature, sponsor1),
                 ter(tecINSUFFICIENT_RESERVE));
-
-            env(pay(alice, sponsor1, drops(1)));
             env.close();
+
+            adjustAccountXRPBalance(env, sponsor1, accountReserve(env, 2));
 
             env(sponsor::transfer(alice),
                 sponsor::as(sponsor1, tfSponsorReserve),
@@ -566,13 +573,16 @@ public:
             BEAST_EXPECT(sle1->getAccountID(sfSponsorAccount) == sponsor1.id());
 
             // transfer sponsor
+            adjustAccountXRPBalance(
+                env, sponsor2, accountReserve(env, 2) - drops(1));
+
             env(sponsor::transfer(alice),
                 sponsor::as(sponsor2, tfSponsorReserve),
                 sig(sfSponsorSignature, sponsor2),
                 ter(tecINSUFFICIENT_RESERVE));
-
-            env(pay(alice, sponsor2, drops(1)));
             env.close();
+
+            adjustAccountXRPBalance(env, sponsor2, accountReserve(env, 2));
 
             env(sponsor::transfer(alice),
                 sponsor::as(sponsor2, tfSponsorReserve),
@@ -588,29 +598,27 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 1);
+            BEAST_EXPECT(!env.le(keylet::account(sponsor1))
+                              ->isFieldPresent(sfSponsoringAccountCount));
             auto const sle2 = env.le(keylet::account(alice));
             BEAST_EXPECT(sle2->isFieldPresent(sfSponsorAccount));
             BEAST_EXPECT(sle2->getAccountID(sfSponsorAccount) == sponsor2.id());
 
-            // dissolve sponsor
-            env(pay(alice,
-                    sponsor2,
-                    (env.balance(alice).value() -
-                     env.current()->fees().reserve - XRP(1) + drops(1))),
-                fee(XRP(1)));
+            // sponsor 2 accounts
+            adjustAccountXRPBalance(env, sponsor2, accountReserve(env, 3));
+            env(sponsor::transfer(bob),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sig(sfSponsorSignature, sponsor2));
             env.close();
 
-            BEAST_EXPECT(
-                env.balance(alice) == env.current()->fees().reserve - drops(1));
+            // dissolve sponsors
+            adjustAccountXRPBalance(
+                env, alice, accountReserve(env, 1) - drops(1));
+
             env(sponsor::transfer(alice), ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
-            env(pay(sponsor2, alice, XRP(1)));
-            env.close();
-
-            // not sponsored
-            env(sponsor::transfer(bob), ter(tecNO_PERMISSION));
-            env.close();
+            adjustAccountXRPBalance(env, alice, accountReserve(env, 1));
 
             env(sponsor::transfer(alice));
             env.close();
@@ -623,9 +631,30 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
-            BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 1);
             auto const sle3 = env.le(keylet::account(alice));
             BEAST_EXPECT(!sle3->isFieldPresent(sfSponsorAccount));
+
+            env(sponsor::transfer(bob));
+            env.close();
+
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
+            BEAST_EXPECT(!env.le(keylet::account(sponsor2))
+                              ->isFieldPresent(sfSponsoringAccountCount));
+            auto const sle4 = env.le(keylet::account(bob));
+            BEAST_EXPECT(!sle4->isFieldPresent(sfSponsorAccount));
+
+            // not sponsored
+            env(sponsor::transfer(bob), ter(tecNO_PERMISSION));
+            env.close();
         }
         {
             // sponsor object
@@ -748,6 +777,8 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
+            BEAST_EXPECT(!env.le(keylet::account(sponsor2))
+                              ->isFieldPresent(sfSponsoringOwnerCount));
             auto const sle3 = env.le(keylet::unchecked(checkId));
             BEAST_EXPECT(!sle3->isFieldPresent(sfSponsorAccount));
         }
