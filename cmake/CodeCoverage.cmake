@@ -410,12 +410,16 @@ function(setup_target_for_coverage_gcovr)
         set(GCOVR_EXEC_TESTS_CMD
             ${Coverage_EXECUTABLE} ${Coverage_EXECUTABLE_ARGS}
         )
+    else()
+        set(GCOVR_EXEC_TESTS_CMD echo) # dummy
     endif()
 
     # Create folder
     if(DEFINED GCOVR_CREATE_FOLDER)
         set(GCOVR_FOLDER_CMD
             ${CMAKE_COMMAND} -E make_directory ${GCOVR_CREATE_FOLDER})
+    else()
+        set(GCOVR_FOLDER_CMD echo) # dummy
     endif()
 
     # Running gcovr
@@ -432,13 +436,13 @@ function(setup_target_for_coverage_gcovr)
     if(CODE_COVERAGE_VERBOSE)
         message(STATUS "Executed command report")
 
-        if(DEFINED GCOVR_EXEC_TESTS_CMD)
+        if(NOT GCOVR_EXEC_TESTS_CMD STREQUAL "echo")
             message(STATUS "Command to run tests: ")
             string(REPLACE ";" " " GCOVR_EXEC_TESTS_CMD_SPACED "${GCOVR_EXEC_TESTS_CMD}")
             message(STATUS "${GCOVR_EXEC_TESTS_CMD_SPACED}")
         endif()
 
-        if(DEFINED GCOVR_FOLDER_CMD)
+        if(NOT GCOVR_FOLDER_CMD STREQUAL "echo")
             message(STATUS "Command to create a folder: ")
             string(REPLACE ";" " " GCOVR_FOLDER_CMD_SPACED "${GCOVR_FOLDER_CMD}")
             message(STATUS "${GCOVR_FOLDER_CMD_SPACED}")
@@ -450,12 +454,8 @@ function(setup_target_for_coverage_gcovr)
     endif()
 
     add_custom_target(${Coverage_NAME}
-        if(DEFINED GCOVR_EXEC_TESTS_CMD)
-            COMMAND ${GCOVR_EXEC_TESTS_CMD}
-        endif()
-        if(DEFINED GCOVR_FOLDER_CMD)
-            COMMAND ${GCOVR_FOLDER_CMD}
-        endif()
+        COMMAND ${GCOVR_EXEC_TESTS_CMD}
+        COMMAND ${GCOVR_FOLDER_CMD}
         COMMAND ${GCOVR_CMD}
 
         BYPRODUCTS ${GCOVR_OUTPUT_FILE}
