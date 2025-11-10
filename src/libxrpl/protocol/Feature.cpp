@@ -428,7 +428,7 @@ featureToName(uint256 const& f)
     uint256 const retiredFeature##name = retireFeature(#name);
 
 #define XRPL_RETIRE_FIX(name)                                           \
-[[deprecated("The referenced amendment has been retired")]]             \
+[[deprecated("The referenced fix amendment has been retired")]]             \
 [[maybe_unused]]                                                        \
 uint256 const retiredFix##name = retireFeature("fix" #name);
 // clang-format on
