@@ -138,6 +138,13 @@ public:
                 sponsor::sponseeAcc(alice),
                 ter(temBAD_AMOUNT));
         }
+        // Invalid MaxFee
+        for (auto amt : {XRP(-1), XRP(0), USD(1)})
+        {
+            env(sponsor::set_fee(sponsor, 0, XRP(1), amt),
+                sponsor::sponseeAcc(alice),
+                ter(temBAD_AMOUNT));
+        }
 
         // Invalid reserveCount
         env(sponsor::set_reserve(sponsor, 0, 0),
@@ -153,6 +160,14 @@ public:
             ter(temMALFORMED));
         // TODO: test MaxFee with tfDeleteObject
 
+        // Invalid SponsorAccount with non-Delete operation
+        env(sponsor::set_reserve(sponsor, 0, 100),
+            sponsor::sponsorAcc(alice),
+            ter(temMALFORMED));
+        env(sponsor::set_fee(sponsor, 0, XRP(1), XRP(1)),
+            sponsor::sponsorAcc(alice),
+            ter(temMALFORMED));
+
         //
         // preclaim
         //
@@ -162,14 +177,21 @@ public:
             sponsor::sponseeAcc(noFunded),
             ter(tecNO_DST));
 
-        // Invalid Delete operation (not found)
+        // Invalid Delete operation (sponsorship not found)
         env(sponsor::set(sponsor, tfDeleteObject),
             sponsor::sponseeAcc(alice),
             ter(tecNO_ENTRY));
 
         // DisallowIncomingSponsor: tested in other testcase
 
+        // insufficent reserve to create sponsorship
+        adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
+        env(sponsor::set(sponsor, 0, 100, XRP(100)),
+            sponsor::sponseeAcc(alice),
+            ter(tecUNFUNDED));
+
         // create sponsor to use above tests
+        adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
         env(sponsor::set(sponsor, 0, 100, XRP(100)),
             sponsor::sponseeAcc(alice),
             ter(tesSUCCESS));
@@ -612,13 +634,11 @@ public:
             Account const bob("bob");
             Account const sponsor1("sponsor1");
             Account const sponsor2("sponsor2");
-            env.fund(XRP(10000), alice, bob);
-            env.fund(
-                env.current()->fees().reserve +
-                    env.current()->fees().increment - drops(1),
-                sponsor1,
-                sponsor2);
+            env.fund(XRP(10000), alice, bob, sponsor1, sponsor2);
             env.close();
+
+            adjustAccountXRPBalance(env, sponsor1, reserve(env, 1) - drops(1));
+            adjustAccountXRPBalance(env, sponsor2, reserve(env, 1) - drops(1));
 
             auto const seq = env.seq(alice);
             env(check::create(alice, bob, XRP(1)));
@@ -634,6 +654,13 @@ public:
             env.close();
 
             env(pay(alice, sponsor1, drops(1)));
+            env.close();
+
+            // Invalid ObjectID (not found)
+            env(sponsor::transfer(alice, keylet::check(alice, 0).key),
+                sponsor::as(sponsor1, tfSponsorReserve),
+                sig(sfSponsorSignature, sponsor1),
+                ter(tecNO_ENTRY));
             env.close();
 
             // Invalid Owner
@@ -688,20 +715,26 @@ public:
             BEAST_EXPECT(sle2->getAccountID(sfSponsorAccount) == sponsor2.id());
 
             // dissolve sponsor
-            env(pay(alice,
-                    sponsor2,
-                    (env.balance(alice).value() -
-                     env.current()->fees().reserve -
-                     env.current()->fees().increment - XRP(1) + drops(1))),
-                fee(XRP(1)));
-            env.close();
+            adjustAccountXRPBalance(env, alice, reserve(env, 1) - drops(1));
 
             env(sponsor::transfer(alice, checkId),
                 ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
-            env(pay(sponsor2, alice, XRP(1)));
+            adjustAccountXRPBalance(env, alice, reserve(env, 1));
+
+            // object doesn't sponsored
+            auto const ticketSeq = env.seq(alice);
+            env(ticket::create(alice, 1));
             env.close();
+            auto ticketId = keylet::ticket(alice, ticketSeq + 1).key;
+            BEAST_EXPECT(env.le(keylet::unchecked(ticketId)));
+            env(sponsor::transfer(alice, ticketId), ter(tecNO_PERMISSION));
+            env.close();
+            env(noop(alice), ticket::use(ticketSeq + 1));
+            env.close();
+
+            adjustAccountXRPBalance(env, alice, reserve(env, 1));
 
             env(sponsor::transfer(alice, checkId));
             env.close();
@@ -4350,6 +4383,59 @@ public:
         Account const alice("alice");
         Account const bob("bob");
         Account const carol("carol");
+
+        //
+        // SponsorshipTransfer
+        //
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, carol);
+            env.close();
+
+            auto const seq = env.seq(alice);
+            env(check::create(alice, bob, XRP(1)));
+            env.close();
+
+            auto const keylet = keylet::check(alice, seq);
+
+            env(sponsor::transfer(alice, keylet.key),
+                sponsor::as(bob, tfSponsorReserve),
+                sig(sfSponsorSignature, bob),
+                delegate::as(carol),
+                ter(terNO_DELEGATE_PERMISSION));
+
+            env(delegate::set(alice, carol, {"SponsorshipTransfer"}));
+            env.close();
+
+            env(sponsor::transfer(alice, keylet.key),
+                sponsor::as(bob, tfSponsorReserve),
+                sig(sfSponsorSignature, bob),
+                delegate::as(carol),
+                ter(tesSUCCESS));
+            env.close();
+        }
+        //
+        // SponsorshipSet
+        //
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, carol);
+            env.close();
+
+            env(sponsor::set(alice, 0, 100, XRP(100)),
+                sponsor::sponseeAcc(bob),
+                delegate::as(carol),
+                ter(terNO_DELEGATE_PERMISSION));
+
+            env(delegate::set(alice, carol, {"SponsorshipSet"}));
+            env.close();
+
+            env(sponsor::set(alice, 0, 100, XRP(100)),
+                sponsor::sponseeAcc(bob),
+                delegate::as(carol),
+                ter(tesSUCCESS));
+            env.close();
+        }
 
         //
         // Permission SponsorFee

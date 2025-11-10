@@ -43,10 +43,6 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
          !ctx.tx.isFieldPresent(sfSponsee)))
         return temMALFORMED;
 
-    // if (ctx.tx.isFieldPresent(sfSponsorAccount) &&
-    //     !ctx.tx.isFlag(tfDeleteObject))
-    //     return temMALFORMED;
-
     auto const sponsor = ctx.tx.isFieldPresent(sfSponsorAccount)
         ? ctx.tx.getAccountID(sfSponsorAccount)
         : ctx.tx.getAccountID(sfAccount);
@@ -186,7 +182,7 @@ SponsorshipSet::doApply()
 
     auto const sponsorAccSle = ctx_.view().peek(keylet::account(sponsorAcc));
     if (!sponsorAccSle)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sponsorObjSle = ctx_.view().peek(keylet);
 
@@ -345,7 +341,7 @@ SponsorshipSet::deleteSponsorship(
     // adjust balance
     auto const sponsorAccSle = view.peek(keylet::account(sponsor));
     if (!sponsorAccSle)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const feeAmount = sle->getFieldAmount(sfFeeAmount);
     (*sponsorAccSle)[sfBalance] += feeAmount;

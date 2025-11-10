@@ -134,10 +134,12 @@ getLedgerEntrySponsorField(T const& sle, AccountID const& owner)
                 if (lowAccount == owner)
                     return sfLowSponsorAccount;
             }
+            // LCOV_EXCL_START
             XRPL_ASSERT(
                 false,
                 "Should not happen. Owner should be checked before calling "
                 "this function.");
+            // LCOV_EXCL_END
         }
         default:
             return sfSponsorAccount;
@@ -178,7 +180,8 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
                 // transfer sponsor
                 // check if the object owner isn't the same as the new sponsor
                 if ((*newSponsor)->getAccountID(sfAccount) == owner)
-                    return tecNO_PERMISSION;
+                    // checked in above
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
             }
         }
         else
