@@ -7,6 +7,7 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <cmath>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -14,6 +15,14 @@
 namespace ripple {
 
 TEST_SUITE_BEGIN("json_value");
+
+TEST_CASE("limits")
+{
+    using namespace Json;
+    static_assert(Value::minInt == Int(~(UInt(-1) / 2)));
+    static_assert(Value::maxInt == Int(UInt(-1) / 2));
+    static_assert(Value::maxUInt == UInt(-1));
+}
 
 TEST_CASE("construct and compare Json::StaticString")
 {
@@ -582,8 +591,6 @@ TEST_CASE("bad json")
 
 TEST_CASE("edge cases")
 {
-    std::string json;
-
     std::uint32_t max_uint = std::numeric_limits<std::uint32_t>::max();
     std::int32_t max_int = std::numeric_limits<std::int32_t>::max();
     std::int32_t min_int = std::numeric_limits<std::int32_t>::min();
@@ -592,71 +599,145 @@ TEST_CASE("edge cases")
     std::int32_t a_large_int = max_int - 1978;
     std::int32_t a_small_int = min_int + 1978;
 
-    json = "{\"max_uint\":" + std::to_string(max_uint);
-    json += ",\"max_int\":" + std::to_string(max_int);
-    json += ",\"min_int\":" + std::to_string(min_int);
-    json += ",\"a_uint\":" + std::to_string(a_uint);
-    json += ",\"a_large_int\":" + std::to_string(a_large_int);
-    json += ",\"a_small_int\":" + std::to_string(a_small_int);
-    json += "}";
+    {
+        std::string json = "{\"max_uint\":" + std::to_string(max_uint);
+        json += ",\"max_int\":" + std::to_string(max_int);
+        json += ",\"min_int\":" + std::to_string(min_int);
+        json += ",\"a_uint\":" + std::to_string(a_uint);
+        json += ",\"a_large_int\":" + std::to_string(a_large_int);
+        json += ",\"a_small_int\":" + std::to_string(a_small_int);
+        json += "}";
 
-    Json::Value j1;
-    Json::Reader r1;
+        Json::Value j1;
+        Json::Reader r1;
 
-    CHECK(r1.parse(json, j1));
-    CHECK(j1["max_uint"].asUInt() == max_uint);
-    CHECK(j1["max_int"].asInt() == max_int);
-    CHECK(j1["min_int"].asInt() == min_int);
-    CHECK(j1["a_uint"].asUInt() == a_uint);
-    CHECK(j1["a_uint"] > a_large_int);
-    CHECK(j1["a_uint"] > a_small_int);
-    CHECK(j1["a_large_int"].asInt() == a_large_int);
-    CHECK(j1["a_large_int"].asUInt() == a_large_int);
-    CHECK(j1["a_large_int"] < a_uint);
-    CHECK(j1["a_small_int"].asInt() == a_small_int);
-    CHECK(j1["a_small_int"] < a_uint);
+        CHECK(r1.parse(json, j1));
+        CHECK(j1["max_uint"].asUInt() == max_uint);
+        CHECK(j1["max_uint"].asAbsUInt() == max_uint);
+        CHECK(j1["max_int"].asInt() == max_int);
+        CHECK(j1["max_int"].asAbsUInt() == max_int);
+        CHECK(j1["min_int"].asInt() == min_int);
+        CHECK(
+            j1["min_int"].asAbsUInt() ==
+            static_cast<std::int64_t>(min_int) * -1);
+        CHECK(j1["a_uint"].asUInt() == a_uint);
+        CHECK(j1["a_uint"].asAbsUInt() == a_uint);
+        CHECK(j1["a_uint"] > a_large_int);
+        CHECK(j1["a_uint"] > a_small_int);
+        CHECK(j1["a_large_int"].asInt() == a_large_int);
+        CHECK(j1["a_large_int"].asAbsUInt() == a_large_int);
+        CHECK(j1["a_large_int"].asUInt() == a_large_int);
+        CHECK(j1["a_large_int"] < a_uint);
+        CHECK(j1["a_small_int"].asInt() == a_small_int);
+        CHECK(
+            j1["a_small_int"].asAbsUInt() ==
+            static_cast<std::int64_t>(a_small_int) * -1);
+        CHECK(j1["a_small_int"] < a_uint);
+    }
 
-    json = "{\"overflow\":";
-    json += std::to_string(std::uint64_t(max_uint) + 1);
-    json += "}";
+    std::uint64_t overflow = std::uint64_t(max_uint) + 1;
+    {
+        std::string json = "{\"overflow\":";
+        json += std::to_string(overflow);
+        json += "}";
 
-    Json::Value j2;
-    Json::Reader r2;
+        Json::Value j2;
+        Json::Reader r2;
 
-    CHECK(!r2.parse(json, j2));
+        CHECK(!r2.parse(json, j2));
+    }
 
-    json = "{\"underflow\":";
-    json += std::to_string(std::int64_t(min_int) - 1);
-    json += "}";
+    std::int64_t underflow = std::int64_t(min_int) - 1;
+    {
+        std::string json = "{\"underflow\":";
+        json += std::to_string(underflow);
+        json += "}";
 
-    Json::Value j3;
-    Json::Reader r3;
+        Json::Value j3;
+        Json::Reader r3;
 
-    CHECK(!r3.parse(json, j3));
+        CHECK(!r3.parse(json, j3));
+    }
 
-    Json::Value intString{"4294967296"};
-    CHECK_THROWS_AS(intString.asUInt(), beast::BadLexicalCast);
+    {
+        Json::Value intString{std::to_string(overflow)};
+        CHECK_THROWS_AS(intString.asUInt(), beast::BadLexicalCast);
+        CHECK_THROWS_AS(intString.asAbsUInt(), Json::error);
 
-    intString = "4294967295";
-    CHECK(intString.asUInt() == 4294967295u);
+        intString = "4294967295";
+        CHECK(intString.asUInt() == 4294967295u);
+        CHECK(intString.asAbsUInt() == 4294967295u);
 
-    intString = "0";
-    CHECK(intString.asUInt() == 0);
+        intString = "0";
+        CHECK(intString.asUInt() == 0);
+        CHECK(intString.asAbsUInt() == 0);
 
-    intString = "-1";
-    CHECK_THROWS_AS(intString.asUInt(), beast::BadLexicalCast);
+        intString = "-1";
+        CHECK_THROWS_AS(intString.asUInt(), beast::BadLexicalCast);
+        CHECK(intString.asAbsUInt() == 1);
 
-    intString = "2147483648";
-    CHECK_THROWS_AS(intString.asInt(), beast::BadLexicalCast);
+        intString = "-4294967295";
+        CHECK(intString.asAbsUInt() == 4294967295);
 
-    intString = "2147483647";
-    CHECK(intString.asInt() == 2147483647);
+        intString = "-4294967296";
+        CHECK_THROWS_AS(intString.asAbsUInt(), Json::error);
 
-    intString = "-2147483648";
-    CHECK(intString.asInt() == -2147483648LL);  // MSVC wants the LL
+        intString = "2147483648";
+        CHECK_THROWS_AS(intString.asInt(), beast::BadLexicalCast);
+        CHECK(intString.asAbsUInt() == 2147483648);
 
-    intString = "-2147483649";
-    CHECK_THROWS_AS(intString.asInt(), beast::BadLexicalCast);
+        intString = "2147483647";
+        CHECK(intString.asInt() == 2147483647);
+        CHECK(intString.asAbsUInt() == 2147483647);
+
+        intString = "-2147483648";
+        CHECK(intString.asInt() == -2147483648LL);  // MSVC wants the LL
+        CHECK(intString.asAbsUInt() == 2147483648LL);
+
+        intString = "-2147483649";
+        CHECK_THROWS_AS(intString.asInt(), beast::BadLexicalCast);
+        CHECK(intString.asAbsUInt() == 2147483649);
+    }
+
+    {
+        Json::Value intReal{4294967297.0};
+        CHECK_THROWS_AS(intReal.asUInt(), Json::error);
+        CHECK_THROWS_AS(intReal.asAbsUInt(), Json::error);
+
+        intReal = 4294967295.0;
+        CHECK(intReal.asUInt() == 4294967295u);
+        CHECK(intReal.asAbsUInt() == 4294967295u);
+
+        intReal = 0.0;
+        CHECK(intReal.asUInt() == 0);
+        CHECK(intReal.asAbsUInt() == 0);
+
+        intReal = -1.0;
+        CHECK_THROWS_AS(intReal.asUInt(), Json::error);
+        CHECK(intReal.asAbsUInt() == 1);
+
+        intReal = -4294967295.0;
+        CHECK(intReal.asAbsUInt() == 4294967295);
+
+        intReal = -4294967296.0;
+        CHECK_THROWS_AS(intReal.asAbsUInt(), Json::error);
+
+        intReal = 2147483648.0;
+        CHECK_THROWS_AS(intReal.asInt(), Json::error);
+        CHECK(intReal.asAbsUInt() == 2147483648);
+
+        intReal = 2147483647.0;
+        CHECK(intReal.asInt() == 2147483647);
+        CHECK(intReal.asAbsUInt() == 2147483647);
+
+        intReal = -2147483648.0;
+        CHECK(intReal.asInt() == -2147483648LL);  // MSVC wants the LL
+        CHECK(intReal.asAbsUInt() == 2147483648LL);
+
+        intReal = -2147483649.0;
+        CHECK_THROWS_AS(intReal.asInt(), Json::error);
+        CHECK(intReal.asAbsUInt() == 2147483649);
+    }
 }
 
 TEST_CASE("copy")
@@ -793,6 +874,7 @@ TEST_CASE("conversions")
         CHECK(val.asString() == "");
         CHECK(val.asInt() == 0);
         CHECK(val.asUInt() == 0);
+        CHECK(val.asAbsUInt() == 0);
         CHECK(val.asDouble() == 0.0);
         CHECK(val.asBool() == false);
 
@@ -813,6 +895,7 @@ TEST_CASE("conversions")
         CHECK(val.asString() == "-1234");
         CHECK(val.asInt() == -1234);
         CHECK_THROWS_AS(val.asUInt(), Json::error);
+        CHECK(val.asAbsUInt() == 1234u);
         CHECK(val.asDouble() == -1234.0);
         CHECK(val.asBool() == true);
 
@@ -833,6 +916,7 @@ TEST_CASE("conversions")
         CHECK(val.asString() == "1234");
         CHECK(val.asInt() == 1234);
         CHECK(val.asUInt() == 1234u);
+        CHECK(val.asAbsUInt() == 1234u);
         CHECK(val.asDouble() == 1234.0);
         CHECK(val.asBool() == true);
 
@@ -853,6 +937,7 @@ TEST_CASE("conversions")
         CHECK(std::regex_match(val.asString(), std::regex("^2\\.0*$")));
         CHECK(val.asInt() == 2);
         CHECK(val.asUInt() == 2u);
+        CHECK(val.asAbsUInt() == 2u);
         CHECK(val.asDouble() == 2.0);
         CHECK(val.asBool() == true);
 
@@ -873,6 +958,7 @@ TEST_CASE("conversions")
         CHECK(val.asString() == "54321");
         CHECK(val.asInt() == 54321);
         CHECK(val.asUInt() == 54321u);
+        CHECK(val.asAbsUInt() == 54321);
         CHECK_THROWS_AS(val.asDouble(), Json::error);
         CHECK(val.asBool() == true);
 
@@ -893,6 +979,7 @@ TEST_CASE("conversions")
         CHECK(val.asString() == "");
         CHECK_THROWS_AS(val.asInt(), std::exception);
         CHECK_THROWS_AS(val.asUInt(), std::exception);
+        CHECK_THROWS_AS(val.asAbsUInt(), std::exception);
         CHECK_THROWS_AS(val.asDouble(), std::exception);
         CHECK(val.asBool() == false);
 
@@ -913,6 +1000,7 @@ TEST_CASE("conversions")
         CHECK(val.asString() == "false");
         CHECK(val.asInt() == 0);
         CHECK(val.asUInt() == 0);
+        CHECK(val.asAbsUInt() == 0);
         CHECK(val.asDouble() == 0.0);
         CHECK(val.asBool() == false);
 
@@ -933,6 +1021,7 @@ TEST_CASE("conversions")
         CHECK(val.asString() == "true");
         CHECK(val.asInt() == 1);
         CHECK(val.asUInt() == 1);
+        CHECK(val.asAbsUInt() == 1);
         CHECK(val.asDouble() == 1.0);
         CHECK(val.asBool() == true);
 
@@ -953,6 +1042,7 @@ TEST_CASE("conversions")
         CHECK_THROWS_AS(val.asString(), Json::error);
         CHECK_THROWS_AS(val.asInt(), Json::error);
         CHECK_THROWS_AS(val.asUInt(), Json::error);
+        CHECK_THROWS_AS(val.asAbsUInt(), Json::error);
         CHECK_THROWS_AS(val.asDouble(), Json::error);
         CHECK(val.asBool() == false);  // empty or not
 
@@ -973,6 +1063,7 @@ TEST_CASE("conversions")
         CHECK_THROWS_AS(val.asString(), Json::error);
         CHECK_THROWS_AS(val.asInt(), Json::error);
         CHECK_THROWS_AS(val.asUInt(), Json::error);
+        CHECK_THROWS_AS(val.asAbsUInt(), Json::error);
         CHECK_THROWS_AS(val.asDouble(), Json::error);
         CHECK(val.asBool() == false);  // empty or not
 
