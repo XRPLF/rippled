@@ -998,7 +998,7 @@ class Check_test : public beast::unit_test::suite
 
         // Use a regular key and also multisign to cash a check.
         {
-            Env env{*this};
+            Env env{*this, features};
             env.fund(XRP(1000), gw, alice, bob);
             env.close();
 
