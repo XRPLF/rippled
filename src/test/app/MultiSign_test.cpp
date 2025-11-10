@@ -75,6 +75,34 @@ public:
             env.close();
             env.require(owners(alice, 1));
         }
+        {
+            // Pay alice enough to almost make the reserve for the biggest
+            // possible list.
+            env(pay(env.master, alice, fee - drops(1)));
+
+            // Replace with the biggest possible signer list.  Should fail.
+            Json::Value bigSigners = signers(
+                alice,
+                1,
+                {{bogie, 1},
+                 {demon, 1},
+                 {ghost, 1},
+                 {haunt, 1},
+                 {jinni, 1},
+                 {phase, 1},
+                 {shade, 1},
+                 {spook, 1}});
+            env(bigSigners, ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+            env.require(owners(alice, 1));
+
+            // Fund alice one more drop (plus the fee) and succeed.
+            env(pay(env.master, alice, fee + drops(1)));
+            env.close();
+            env(bigSigners);
+            env.close();
+            env.require(owners(alice, 1));
+        }
         // Remove alice's signer list and get the owner count back.
         env(signers(alice, jtx::none));
         env.close();
