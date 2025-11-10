@@ -74,7 +74,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 
     // Withdrawal to a 3rd party destination account is essentially a transfer.
     // Enforce all the usual asset transfer checks.
-    AuthType authType = AuthType::Legacy;
+    AuthType authType = AuthType::WeakAuth;
     if (account != dstAcct)
     {
         if (auto const ret = canWithdraw(ctx.view, tx))
@@ -144,8 +144,16 @@ LoanBrokerCoverWithdraw::doApply()
     broker->at(sfCoverAvailable) -= amount;
     view().update(broker);
 
-    // Move the funds from the broker's pseudo-account to the dstAcct
+    // Create trust line or MPToken for the receiving account
+    if (dstAcct == account_)
+    {
+        if (auto const ter = addEmptyHolding(
+                view(), account_, mPriorBalance, amount.asset(), j_);
+            !isTesSuccess(ter) && ter != tecDUPLICATE)
+            return ter;
+    }
 
+    // Move the funds from the broker's pseudo-account to the dstAcct
     if (dstAcct == account_ || amount.native())
     {
         // Transfer assets directly from pseudo-account to depositor.

@@ -247,9 +247,9 @@ VaultWithdraw::doApply()
     }
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
-    if (!vaultAsset.native() &&               //
-        dstAcct != vaultAsset.getIssuer() &&  //
-        dstAcct == account_)
+
+    // Create trust line or MPToken for the receiving account
+    if (dstAcct == account_)
     {
         if (auto const ter = addEmptyHolding(
                 view(), account_, mPriorBalance, vaultAsset, j_);
