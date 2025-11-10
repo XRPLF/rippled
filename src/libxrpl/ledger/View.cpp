@@ -3314,7 +3314,7 @@ canTransfer(
     if (issue.native())
         return tesSUCCESS;
     if (!view.exists(keylet::account(issue.getIssuer())))
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
     return tesSUCCESS;
 }
 
