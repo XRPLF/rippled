@@ -436,7 +436,7 @@ function(setup_target_for_coverage_gcovr)
             message(STATUS "Command to run tests: ")
             string(REPLACE ";" " " GCOVR_EXEC_TESTS_CMD_SPACED "${GCOVR_EXEC_TESTS_CMD}")
             message(STATUS "${GCOVR_EXEC_TESTS_CMD_SPACED}")
-        endif
+        endif()
 
         if(DEFINED GCOVR_FOLDER_CMD)
             message(STATUS "Command to create a folder: ")
