@@ -36,7 +36,7 @@ public:
      *   than maxMantissa), assignment and other operations will throw.
      * - strong: Like weak, plus, if the absolute value is invalid (larger than
      *   maxIntValue), assignment and other operations will throw. This is the
-     *   defalut for automatic conversions from MPTAmount to Number.
+     *   default for automatic conversions from MPTAmount to Number.
      */
     enum EnforceInteger { none, compatible, weak, strong };
 
