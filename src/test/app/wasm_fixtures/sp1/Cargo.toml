@@ -1,0 +1,16 @@
+[package]
+edition = "2021"
+name = "sp1"
+version = "0.0.1"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+sp1-verifier = "4.1.3"
+
+[profile.release]
+opt-level = 3         # "z" for size or "3" for speed
+lto = true             # Link Time Optimization
+codegen-units = 1      # Single unit = better optimization
+panic = "abort"        # Smaller binary, faster execution
