@@ -39,6 +39,13 @@ private:
     normalize();
 
 public:
+    /* The range for the mantissa when normalized */
+    static std::int64_t constexpr minMantissa = 1000000000000000ull;
+    static std::int64_t constexpr maxMantissa = 9999999999999999ull;
+    /* The range for the exponent when normalized */
+    static int constexpr minExponent = -96;
+    static int constexpr maxExponent = 80;
+
     IOUAmount() = default;
     explicit IOUAmount(Number const& other);
     IOUAmount(beast::Zero);
