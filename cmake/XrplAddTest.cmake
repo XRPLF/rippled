@@ -22,20 +22,4 @@ function(xrpl_add_test name)
     UNITY_BUILD_BATCH_SIZE 0)  # Adjust as needed
 
   add_test(NAME ${target} COMMAND ${target})
-  set_tests_properties(
-    ${target} PROPERTIES
-    FIXTURES_REQUIRED ${target}_fixture
-  )
-
-  add_test(
-    NAME ${target}.build
-    COMMAND
-      ${CMAKE_COMMAND}
-      --build ${CMAKE_BINARY_DIR}
-      --config $<CONFIG>
-      --target ${target}
-  )
-  set_tests_properties(${target}.build PROPERTIES
-    FIXTURES_SETUP ${target}_fixture
-  )
 endfunction()

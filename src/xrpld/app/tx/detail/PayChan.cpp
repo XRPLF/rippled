@@ -116,8 +116,7 @@ closeChannel(
     }
 
     // Remove PayChan from recipient's owner directory, if present.
-    if (auto const page = (*slep)[~sfDestinationNode];
-        page && view.rules().enabled(fixPayChanRecipientOwnerDir))
+    if (auto const page = (*slep)[~sfDestinationNode])
     {
         auto const dst = (*slep)[sfDestination];
         if (!view.dirRemove(keylet::ownerDir(dst), *page, key, true))
@@ -284,7 +283,6 @@ PayChanCreate::doApply()
     }
 
     // Add PayChan to the recipient's owner directory
-    if (ctx_.view().rules().enabled(fixPayChanRecipientOwnerDir))
     {
         auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));

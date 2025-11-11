@@ -169,7 +169,7 @@ numberFromJson(SField const& field, Json::Value const& value)
         }
         else
         {
-            parts.mantissa = -value.asInt();
+            parts.mantissa = value.asAbsUInt();
             parts.negative = true;
         }
     }
