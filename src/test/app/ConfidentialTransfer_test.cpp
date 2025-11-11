@@ -1109,8 +1109,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .dest = unknown,
                  .amt = 10,
                  .proof = "123",
-                 .issuerEncryptedAmt = ciphertextHex,
                  .destEncryptedAmt = ciphertextHex,
+                 .issuerEncryptedAmt = ciphertextHex,
                  .err = tecNO_TARGET});
         }
 
