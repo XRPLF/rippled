@@ -1,0 +1,5 @@
+patches:
+  0.42.1:
+  - patch_description: install only static lib (to prevent conflict with shared)
+    patch_file: patches/wasmi.patch
+    patch_type: conan
