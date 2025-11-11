@@ -15,168 +15,168 @@
       "distro_version": "bookworm",
       "compiler_name": "gcc",
       "compiler_version": "12",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "debian",
       "distro_version": "bookworm",
       "compiler_name": "gcc",
       "compiler_version": "13",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "debian",
       "distro_version": "bookworm",
       "compiler_name": "gcc",
       "compiler_version": "14",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "debian",
       "distro_version": "bookworm",
       "compiler_name": "gcc",
       "compiler_version": "15",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "debian",
       "distro_version": "bookworm",
       "compiler_name": "clang",
       "compiler_version": "16",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "debian",
       "distro_version": "bookworm",
       "compiler_name": "clang",
       "compiler_version": "17",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "debian",
       "distro_version": "bookworm",
       "compiler_name": "clang",
       "compiler_version": "18",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "debian",
       "distro_version": "bookworm",
       "compiler_name": "clang",
       "compiler_version": "19",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "debian",
       "distro_version": "bookworm",
       "compiler_name": "clang",
       "compiler_version": "20",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "rhel",
       "distro_version": "8",
       "compiler_name": "gcc",
       "compiler_version": "14",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "rhel",
       "distro_version": "8",
       "compiler_name": "clang",
       "compiler_version": "any",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "rhel",
       "distro_version": "9",
       "compiler_name": "gcc",
       "compiler_version": "12",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "rhel",
       "distro_version": "9",
       "compiler_name": "gcc",
       "compiler_version": "13",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "rhel",
       "distro_version": "9",
       "compiler_name": "gcc",
       "compiler_version": "14",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "rhel",
       "distro_version": "9",
       "compiler_name": "clang",
       "compiler_version": "any",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "rhel",
       "distro_version": "10",
       "compiler_name": "gcc",
       "compiler_version": "14",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "rhel",
       "distro_version": "10",
       "compiler_name": "clang",
       "compiler_version": "any",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "ubuntu",
       "distro_version": "jammy",
       "compiler_name": "gcc",
       "compiler_version": "12",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "ubuntu",
       "distro_version": "noble",
       "compiler_name": "gcc",
       "compiler_version": "13",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "ubuntu",
       "distro_version": "noble",
       "compiler_name": "gcc",
       "compiler_version": "14",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "ubuntu",
       "distro_version": "noble",
       "compiler_name": "clang",
       "compiler_version": "16",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "ubuntu",
       "distro_version": "noble",
       "compiler_name": "clang",
       "compiler_version": "17",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "ubuntu",
       "distro_version": "noble",
       "compiler_name": "clang",
       "compiler_version": "18",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     },
     {
       "distro_name": "ubuntu",
       "distro_version": "noble",
       "compiler_name": "clang",
       "compiler_version": "19",
-      "image_sha": "97ba375"
+      "image_sha": "e1782cd"
     }
   ],
   "build_type": ["Debug", "Release"],
