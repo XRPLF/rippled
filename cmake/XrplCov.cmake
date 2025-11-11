@@ -11,6 +11,9 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   return()
 endif()
 
+include(ProcessorCount)
+ProcessorCount(PROCESSOR_COUNT)
+
 include(CodeCoverage)
 
 # The instructions for these commands come from the `CodeCoverage` module,

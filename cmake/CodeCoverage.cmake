@@ -109,7 +109,7 @@
 #     - add a new function add_code_coverage_to_target
 #     - remove some unused code
 #
-# 2025-11-10, Bronek Kozicki
+# 2025-11-11, Bronek Kozicki
 #     - make EXECUTABLE and EXECUTABLE_ARGS optional
 #
 # USAGE:
@@ -405,21 +405,18 @@ function(setup_target_for_coverage_gcovr)
     endforeach()
 
     # Set up commands which will be run to generate coverage data
-    # Run tests
+    # If EXECUTABLE is not set, the user is expected to run the tests manually
+    # before running the coverage target NAME
     if(DEFINED Coverage_EXECUTABLE)
         set(GCOVR_EXEC_TESTS_CMD
             ${Coverage_EXECUTABLE} ${Coverage_EXECUTABLE_ARGS}
         )
-    else()
-        set(GCOVR_EXEC_TESTS_CMD echo) # dummy
     endif()
 
     # Create folder
     if(DEFINED GCOVR_CREATE_FOLDER)
         set(GCOVR_FOLDER_CMD
             ${CMAKE_COMMAND} -E make_directory ${GCOVR_CREATE_FOLDER})
-    else()
-        set(GCOVR_FOLDER_CMD echo) # dummy
     endif()
 
     # Running gcovr
