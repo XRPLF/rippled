@@ -1,8 +1,2 @@
 # Allow anyone to review any change by default.
 *
-
-# Require the rpc-reviewers team to review changes to the rpc code.
-include/xrpl/protocol/ @xrplf/rpc-reviewers
-src/libxrpl/protocol/ @xrplf/rpc-reviewers
-src/xrpld/rpc/ @xrplf/rpc-reviewers
-src/xrpld/app/misc/ @xrplf/rpc-reviewers
