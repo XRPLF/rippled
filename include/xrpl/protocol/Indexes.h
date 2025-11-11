@@ -212,6 +212,12 @@ page(Keylet const& root, std::uint64_t index = 0) noexcept
 Keylet
 escrow(AccountID const& src, std::uint32_t seq) noexcept;
 
+inline Keylet
+escrow(uint256 const& key) noexcept
+{
+    return {ltESCROW, key};
+}
+
 /** A PaymentChannel */
 Keylet
 payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;

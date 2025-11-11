@@ -1122,6 +1122,12 @@ setup_FeeVote(Section const& section)
             setup.account_reserve = temp;
         if (set(temp, "owner_reserve", section))
             setup.owner_reserve = temp;
+        if (set(temp, "extension_compute_limit", section))
+            setup.extension_compute_limit = temp;
+        if (set(temp, "extension_size_limit", section))
+            setup.extension_size_limit = temp;
+        if (set(temp, "gas_price", section))
+            setup.gas_price = temp;
     }
     return setup;
 }

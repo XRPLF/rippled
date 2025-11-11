@@ -202,6 +202,15 @@ Ledger::Ledger(
                 sle->at(sfReserveIncrement) = *f;
             sle->at(sfReferenceFeeUnits) = Config::FEE_UNITS_DEPRECATED;
         }
+        if (std::find(
+                amendments.begin(), amendments.end(), featureSmartEscrow) !=
+            amendments.end())
+        {
+            sle->at(sfExtensionComputeLimit) =
+                config.FEES.extension_compute_limit;
+            sle->at(sfExtensionSizeLimit) = config.FEES.extension_size_limit;
+            sle->at(sfGasPrice) = config.FEES.gas_price;
+        }
         rawInsert(sle);
     }
 
@@ -595,6 +604,7 @@ Ledger::setup()
         {
             bool oldFees = false;
             bool newFees = false;
+            bool extensionFees = false;
             {
                 auto const baseFee = sle->at(~sfBaseFee);
                 auto const reserveBase = sle->at(~sfReserveBase);
@@ -612,6 +622,7 @@ Ledger::setup()
                 auto const reserveBaseXRP = sle->at(~sfReserveBaseDrops);
                 auto const reserveIncrementXRP =
                     sle->at(~sfReserveIncrementDrops);
+
                 auto assign = [&ret](
                                   XRPAmount& dest,
                                   std::optional<STAmount> const& src) {
@@ -628,11 +639,34 @@ Ledger::setup()
                 assign(fees_.increment, reserveIncrementXRP);
                 newFees = baseFeeXRP || reserveBaseXRP || reserveIncrementXRP;
             }
+            {
+                auto const extensionComputeLimit =
+                    sle->at(~sfExtensionComputeLimit);
+                auto const extensionSizeLimit = sle->at(~sfExtensionSizeLimit);
+                auto const gasPrice = sle->at(~sfGasPrice);
+
+                auto assign = [](std::uint32_t& dest,
+                                 std::optional<std::uint32_t> const& src) {
+                    if (src)
+                    {
+                        dest = src.value();
+                    }
+                };
+                assign(fees_.extensionComputeLimit, extensionComputeLimit);
+                assign(fees_.extensionSizeLimit, extensionSizeLimit);
+                assign(fees_.gasPrice, gasPrice);
+                extensionFees =
+                    extensionComputeLimit || extensionSizeLimit || gasPrice;
+            }
             if (oldFees && newFees)
                 // Should be all of one or the other, but not both
                 ret = false;
             if (!rules_.enabled(featureXRPFees) && newFees)
                 // Can't populate the new fees before the amendment is enabled
+                ret = false;
+            if (!rules_.enabled(featureSmartEscrow) && extensionFees)
+                // Can't populate the extension fees before the amendment is
+                // enabled
                 ret = false;
         }
     }
@@ -652,15 +686,23 @@ Ledger::setup()
 void
 Ledger::defaultFees(Config const& config)
 {
-    XRPL_ASSERT(
-        fees_.base == 0 && fees_.reserve == 0 && fees_.increment == 0,
-        "ripple::Ledger::defaultFees : zero fees");
+    assert(
+        fees_.base == 0 && fees_.reserve == 0 && fees_.increment == 0 &&
+        fees_.extensionComputeLimit == 0 && fees_.extensionSizeLimit == 0 &&
+        fees_.gasPrice == 0);
     if (fees_.base == 0)
         fees_.base = config.FEES.reference_fee;
     if (fees_.reserve == 0)
         fees_.reserve = config.FEES.account_reserve;
     if (fees_.increment == 0)
         fees_.increment = config.FEES.owner_reserve;
+
+    if (fees_.extensionComputeLimit == 0)
+        fees_.extensionComputeLimit = config.FEES.extension_compute_limit;
+    if (fees_.extensionSizeLimit == 0)
+        fees_.extensionSizeLimit = config.FEES.extension_size_limit;
+    if (fees_.gasPrice == 0)
+        fees_.gasPrice = config.FEES.gas_price;
 }
 
 std::shared_ptr<SLE>

@@ -14,9 +14,14 @@ setupConfigForUnitTests(Config& cfg)
     using namespace jtx;
     // Default fees to old values, so tests don't have to worry about changes in
     // Config.h
+    // NOTE: For new `FEES` fields, you need to wait for the first flag ledger
+    // to close for the values to be activated.
     cfg.FEES.reference_fee = UNIT_TEST_REFERENCE_FEE;
     cfg.FEES.account_reserve = XRP(200).value().xrp().drops();
     cfg.FEES.owner_reserve = XRP(50).value().xrp().drops();
+    cfg.FEES.extension_compute_limit = 1'000'000;
+    cfg.FEES.extension_size_limit = 100'000;
+    cfg.FEES.gas_price = 1'000'000;  // 1 drop = 1,000,000 micro-drops
 
     // The Beta API (currently v2) is always available to tests
     cfg.BETA_RPC_API = true;
