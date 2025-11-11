@@ -125,8 +125,22 @@ ConfidentialClawback::doApply()
     Slice const issuerPubKey = (*sleIssuance)[sfIssuerElGamalPublicKey];
 
     // Encrypt zero amount
-    Buffer const encZeroForHolder = encryptAmount(0, holderPubKey);
-    Buffer const encZeroForIssuer = encryptAmount(0, issuerPubKey);
+    Buffer encZeroForHolder;
+    Buffer encZeroForIssuer;
+    try
+    {
+        encZeroForHolder =
+            encryptCanonicalZeroAmount(holderPubKey, holder, mptIssuanceID);
+
+        encZeroForIssuer =
+            encryptCanonicalZeroAmount(issuerPubKey, holder, mptIssuanceID);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(ctx_.journal.error())
+            << "Clawback: Failed to generate canonical zero: " << e.what();
+        return tecINTERNAL;
+    }
 
     // Set holder's confidential balances to encrypted zero
     (*sleHolderMPToken)[sfConfidentialBalanceInbox] = encZeroForHolder;
