@@ -373,8 +373,10 @@ MPTTester::checkDomainID(std::optional<uint256> expected) const
 MPTTester::printMPT(Account const& holder_) const
 {
     return forObject(
-        [&](SLEP const& sle) -> bool { std::cout << "\n"
-                                                 << sle->getJson(); },
+        [&](SLEP const& sle) -> bool {
+            std::cout << "\n" << sle->getJson();
+            return true;
+        },
         holder_);
 }
 
