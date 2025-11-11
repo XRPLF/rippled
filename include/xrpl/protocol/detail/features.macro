@@ -72,9 +72,7 @@ XRPL_FEATURE(NegativeUNL,                Supported::yes, VoteBehavior::DefaultYe
 XRPL_FEATURE(RequireFullyCanonicalSig,   Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DeletableAccounts,          Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(MultiSignReserve,           Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(DepositPreauth,             Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Checks,                     Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(DepositAuth,                Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
 
 // The following amendments are obsolete, but must remain supported
@@ -124,6 +122,8 @@ XRPL_RETIRE_FIX(TrustLinesToSelf)
 
 XRPL_RETIRE_FEATURE(CheckCashMakesTrustLine)
 XRPL_RETIRE_FEATURE(CryptoConditions)
+XRPL_RETIRE_FEATURE(DepositAuth)
+XRPL_RETIRE_FEATURE(DepositPreauth)
 XRPL_RETIRE_FEATURE(Escrow)
 XRPL_RETIRE_FEATURE(EnforceInvariants)
 XRPL_RETIRE_FEATURE(FeeEscalation)

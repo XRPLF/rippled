@@ -209,12 +209,6 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
-        // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
-        // featureDepositAuth to remove the bug.
-        if (!ctx.view.rules().enabled(featureDepositAuth) &&
-            (flags & lsfDisallowXRP))
-            return tecNO_TARGET;
-
         // Pseudo-accounts cannot receive payment channels, other than native
         // to their underlying ledger object - implemented in their respective
         // transaction types. Note, this is not amendment-gated because all
@@ -525,20 +519,10 @@ PayChanClaim::doApply()
         if (!sled)
             return tecNO_DST;
 
-        // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
-        // featureDepositAuth to remove the bug.
-        bool const depositAuth{ctx_.view().rules().enabled(featureDepositAuth)};
-        if (!depositAuth &&
-            (txAccount == src && (sled->getFlags() & lsfDisallowXRP)))
-            return tecNO_TARGET;
-
-        if (depositAuth)
-        {
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
