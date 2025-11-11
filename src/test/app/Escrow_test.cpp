@@ -253,16 +253,6 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         {
-            // Respect the "asfDisallowXRP" account flag:
-            Env env(*this, features - featureDepositAuth);
-
-            env.fund(XRP(5000), "bob", "george");
-            env(fset("george", asfDisallowXRP));
-            env(escrow::create("bob", "george", XRP(10)),
-                escrow::finish_time(env.now() + 1s),
-                ter(tecNO_TARGET));
-        }
-        {
             // Ignore the "asfDisallowXRP" account flag, which we should
             // have been doing before.
             Env env(*this, features);

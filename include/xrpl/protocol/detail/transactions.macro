@@ -268,7 +268,7 @@ TRANSACTION(ttCHECK_CANCEL, 18, CheckCancel,
 #endif
 TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth,
     Delegation::delegatable,
-    featureDepositPreauth,
+    uint256{},
     noPriv,
     ({
     {sfAuthorize, soeOPTIONAL},
