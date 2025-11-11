@@ -1821,36 +1821,6 @@ struct PayChan_test : public beast::unit_test::suite
         };
 
         {
-            // Test without adding the paychan to the recipient's owner
-            // directory
-            Env env(*this, features - fixPayChanRecipientOwnerDir);
-            env.fund(XRP(10000), alice, bob);
-            env(create(alice, bob, XRP(1000), settleDelay, pk));
-            env.close();
-            auto const [chan, chanSle] =
-                channelKeyAndSle(*env.current(), alice, bob);
-            BEAST_EXPECT(inOwnerDir(*env.current(), alice, chanSle));
-            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 1);
-            BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
-            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
-            if (features[fixIncludeKeyletFields])
-            {
-                BEAST_EXPECT((*chanSle)[sfSequence] == env.seq(alice) - 1);
-            }
-            else
-            {
-                BEAST_EXPECT(!chanSle->isFieldPresent(sfSequence));
-            }
-            // close the channel
-            env(claim(bob, chan), txflags(tfClose));
-            BEAST_EXPECT(!channelExists(*env.current(), chan));
-            BEAST_EXPECT(!inOwnerDir(*env.current(), alice, chanSle));
-            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 0);
-            BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
-            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
-        }
-
-        {
             // Test with adding the paychan to the recipient's owner directory
             Env env{*this, features};
             env.fund(XRP(10000), alice, bob);
@@ -1874,7 +1844,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // Test removing paychans created before adding to the recipient's
             // owner directory
-            Env env(*this, features - fixPayChanRecipientOwnerDir);
+            Env env(*this, features);
             env.fund(XRP(10000), alice, bob);
             // create the channel before the amendment activates
             env(create(alice, bob, XRP(1000), settleDelay, pk));
@@ -1883,21 +1853,9 @@ struct PayChan_test : public beast::unit_test::suite
                 channelKeyAndSle(*env.current(), alice, bob);
             BEAST_EXPECT(inOwnerDir(*env.current(), alice, chanSle));
             BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 1);
-            BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
-            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
-            env.enableFeature(fixPayChanRecipientOwnerDir);
-            env.close();
-            BEAST_EXPECT(
-                env.current()->rules().enabled(fixPayChanRecipientOwnerDir));
-            // These checks look redundant, but if you don't `close` after the
-            // `create` these checks will fail. I believe this is due to the
-            // create running with one set of amendments initially, then with a
-            // different set with the ledger closes (tho I haven't dug into it)
-            BEAST_EXPECT(inOwnerDir(*env.current(), alice, chanSle));
-            BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
-            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
+            BEAST_EXPECT(inOwnerDir(*env.current(), bob, chanSle));
+            BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 1);
 
-            // close the channel after the amendment activates
             env(claim(bob, chan), txflags(tfClose));
             BEAST_EXPECT(!channelExists(*env.current(), chan));
             BEAST_EXPECT(!inOwnerDir(*env.current(), alice, chanSle));
@@ -1939,12 +1897,8 @@ struct PayChan_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         auto const carol = Account("carol");
 
-        for (bool const withOwnerDirFix : {false, true})
         {
-            auto const amd = withOwnerDirFix
-                ? features
-                : features - fixPayChanRecipientOwnerDir;
-            Env env{*this, amd};
+            Env env{*this, features};
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
 
@@ -1959,11 +1913,7 @@ struct PayChan_test : public beast::unit_test::suite
 
             rmAccount(env, alice, carol, tecHAS_OBLIGATIONS);
             // can only remove bob if the channel isn't in their owner direcotry
-            rmAccount(
-                env,
-                bob,
-                carol,
-                withOwnerDirFix ? TER(tecHAS_OBLIGATIONS) : TER(tesSUCCESS));
+            rmAccount(env, bob, carol, TER(tecHAS_OBLIGATIONS));
 
             auto const feeDrops = env.current()->fees().base;
             auto chanBal = channelBalance(*env.current(), chan);
@@ -1978,152 +1928,21 @@ struct PayChan_test : public beast::unit_test::suite
             assert(reqBal <= chanAmt);
 
             // claim should fail if the dst was removed
-            if (withOwnerDirFix)
-            {
-                env(claim(alice, chan, reqBal, authAmt));
-                env.close();
-                BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
-                BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
-                BEAST_EXPECT(env.balance(bob) == preBob + delta);
-                chanBal = reqBal;
-            }
-            else
-            {
-                auto const preAlice = env.balance(alice);
-                env(claim(alice, chan, reqBal, authAmt), ter(tecNO_DST));
-                env.close();
-                BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
-                BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
-                BEAST_EXPECT(env.balance(bob) == preBob);
-                BEAST_EXPECT(env.balance(alice) == preAlice - feeDrops);
-            }
+            env(claim(alice, chan, reqBal, authAmt));
+            env.close();
+            BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
+            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            BEAST_EXPECT(env.balance(bob) == preBob + delta);
+            chanBal = reqBal;
 
             // fund should fail if the dst was removed
-            if (withOwnerDirFix)
-            {
-                auto const preAlice = env.balance(alice);
-                env(fund(alice, chan, XRP(1000)));
-                env.close();
-                BEAST_EXPECT(
-                    env.balance(alice) == preAlice - XRP(1000) - feeDrops);
-                BEAST_EXPECT(
-                    channelAmount(*env.current(), chan) == chanAmt + XRP(1000));
-                chanAmt = chanAmt + XRP(1000);
-            }
-            else
-            {
-                auto const preAlice = env.balance(alice);
-                env(fund(alice, chan, XRP(1000)), ter(tecNO_DST));
-                env.close();
-                BEAST_EXPECT(env.balance(alice) == preAlice - feeDrops);
-                BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
-            }
-
-            {
-                // Owner closes, will close after settleDelay
-                env(claim(alice, chan), txflags(tfClose));
-                env.close();
-                // settle delay hasn't ellapsed. Channels should exist.
-                BEAST_EXPECT(channelExists(*env.current(), chan));
-                auto const closeTime = env.current()->info().parentCloseTime;
-                auto const minExpiration = closeTime + settleDelay;
-                env.close(minExpiration);
-                env(claim(alice, chan), txflags(tfClose));
-                BEAST_EXPECT(!channelExists(*env.current(), chan));
-            }
-        }
-
-        {
-            // test resurrected account
-            Env env{*this, features - fixPayChanRecipientOwnerDir};
-            env.fund(XRP(10000), alice, bob, carol);
+            auto const preAlice = env.balance(alice);
+            env(fund(alice, chan, XRP(1000)));
             env.close();
-
-            // Create a channel from alice to bob
-            auto const pk = alice.pk();
-            auto const settleDelay = 100s;
-            auto const chan = channel(alice, bob, env.seq(alice));
-            env(create(alice, bob, XRP(1000), settleDelay, pk));
-            env.close();
-            BEAST_EXPECT(channelBalance(*env.current(), chan) == XRP(0));
-            BEAST_EXPECT(channelAmount(*env.current(), chan) == XRP(1000));
-
-            // Since `fixPayChanRecipientOwnerDir` is not active, can remove bob
-            rmAccount(env, bob, carol);
-            BEAST_EXPECT(!env.closed()->exists(keylet::account(bob.id())));
-
-            auto const feeDrops = env.current()->fees().base;
-            auto chanBal = channelBalance(*env.current(), chan);
-            auto chanAmt = channelAmount(*env.current(), chan);
-            BEAST_EXPECT(chanBal == XRP(0));
-            BEAST_EXPECT(chanAmt == XRP(1000));
-            auto preBob = env.balance(bob);
-            auto const delta = XRP(50);
-            auto reqBal = chanBal + delta;
-            auto authAmt = reqBal + XRP(100);
-            assert(reqBal <= chanAmt);
-
-            {
-                // claim should fail, since bob doesn't exist
-                auto const preAlice = env.balance(alice);
-                env(claim(alice, chan, reqBal, authAmt), ter(tecNO_DST));
-                env.close();
-                BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
-                BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
-                BEAST_EXPECT(env.balance(bob) == preBob);
-                BEAST_EXPECT(env.balance(alice) == preAlice - feeDrops);
-            }
-
-            {
-                // fund should fail, sincebob doesn't exist
-                auto const preAlice = env.balance(alice);
-                env(fund(alice, chan, XRP(1000)), ter(tecNO_DST));
-                env.close();
-                BEAST_EXPECT(env.balance(alice) == preAlice - feeDrops);
-                BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
-            }
-
-            // resurrect bob
-            env(pay(alice, bob, XRP(20)));
-            env.close();
-            BEAST_EXPECT(env.closed()->exists(keylet::account(bob.id())));
-
-            {
-                // alice should be able to claim
-                preBob = env.balance(bob);
-                reqBal = chanBal + delta;
-                authAmt = reqBal + XRP(100);
-                env(claim(alice, chan, reqBal, authAmt));
-                BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
-                BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
-                BEAST_EXPECT(env.balance(bob) == preBob + delta);
-                chanBal = reqBal;
-            }
-
-            {
-                // bob should be able to claim
-                preBob = env.balance(bob);
-                reqBal = chanBal + delta;
-                authAmt = reqBal + XRP(100);
-                auto const sig =
-                    signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
-                env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
-                BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
-                BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
-                BEAST_EXPECT(env.balance(bob) == preBob + delta - feeDrops);
-                chanBal = reqBal;
-            }
-
-            {
-                // alice should be able to fund
-                auto const preAlice = env.balance(alice);
-                env(fund(alice, chan, XRP(1000)));
-                BEAST_EXPECT(
-                    env.balance(alice) == preAlice - XRP(1000) - feeDrops);
-                BEAST_EXPECT(
-                    channelAmount(*env.current(), chan) == chanAmt + XRP(1000));
-                chanAmt = chanAmt + XRP(1000);
-            }
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1000) - feeDrops);
+            BEAST_EXPECT(
+                channelAmount(*env.current(), chan) == chanAmt + XRP(1000));
+            chanAmt = chanAmt + XRP(1000);
 
             {
                 // Owner closes, will close after settleDelay
