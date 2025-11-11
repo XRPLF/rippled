@@ -87,6 +87,20 @@ public:
         view_->deliver(amount);
     }
 
+    /** Sets the gas used in the metadata */
+    void
+    setGasUsed(std::uint32_t const gasUsed)
+    {
+        gasUsed_ = gasUsed;
+    }
+
+    /** Sets the gas used in the metadata */
+    void
+    setWasmReturnCode(std::int32_t const wasmReturnCode)
+    {
+        wasmReturnCode_ = wasmReturnCode;
+    }
+
     /** Discard changes and start fresh. */
     void
     discard();
@@ -138,6 +152,8 @@ private:
 
     // The ID of the batch transaction we are executing under, if seated.
     std::optional<uint256 const> parentBatchId_;
+    std::optional<std::uint32_t> gasUsed_;
+    std::optional<std::int32_t> wasmReturnCode_;
 };
 
 }  // namespace ripple
