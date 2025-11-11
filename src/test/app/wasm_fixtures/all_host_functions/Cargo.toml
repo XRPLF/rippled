@@ -1,0 +1,21 @@
+[package]
+name = "all_host_functions"
+version = "0.1.0"
+edition = "2024"
+
+# This empty workspace definition keeps this project independent of the parent workspace
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+xrpl-std = { git = "https://github.com/ripple/xrpl-wasm-stdlib.git", package = "xrpl-wasm-stdlib" }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+opt-level = "z"
+lto = true

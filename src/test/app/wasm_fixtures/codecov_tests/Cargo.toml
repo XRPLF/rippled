@@ -1,0 +1,18 @@
+[package]
+edition = "2024"
+name = "codecov_tests"
+version = "0.0.1"
+
+# This empty workspace definition keeps this project independent of the parent workspace
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+lto = true
+opt-level = 's'
+panic = "abort"
+
+[dependencies]
+xrpl-std = { git = "https://github.com/ripple/xrpl-wasm-stdlib.git", package = "xrpl-wasm-stdlib" }
