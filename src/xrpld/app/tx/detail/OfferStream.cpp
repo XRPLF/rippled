@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/tx/detail/OfferStream.h>
 
@@ -184,7 +165,6 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     }
 
     TTakerGets const ownerFunds = toAmount<TTakerGets>(*ownerFunds_);
-    bool const fixReduced = view_.rules().enabled(fixReducedOffersV1);
 
     auto const effectiveAmounts = [&] {
         if (offer_.owner() != offer_.issueOut().account &&
@@ -193,22 +173,15 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
             // adjust the amounts by owner funds.
             //
             // It turns out we can prevent order book blocking by rounding down
-            // the ceil_out() result.  This adjustment changes transaction
-            // results, so it must be made under an amendment.
-            if (fixReduced)
-                return offer_.quality().ceil_out_strict(
-                    ofrAmts, ownerFunds, /* roundUp */ false);
-
-            return offer_.quality().ceil_out(ofrAmts, ownerFunds);
+            // the ceil_out() result.
+            return offer_.quality().ceil_out_strict(
+                ofrAmts, ownerFunds, /* roundUp */ false);
         }
         return ofrAmts;
     }();
 
     // If either the effective in or out are zero then remove the offer.
-    // This can happen with fixReducedOffersV1 since it rounds down.
-    if (fixReduced &&
-        (effectiveAmounts.in.signum() <= 0 ||
-         effectiveAmounts.out.signum() <= 0))
+    if (effectiveAmounts.in.signum() <= 0 || effectiveAmounts.out.signum() <= 0)
         return true;
 
     if (effectiveAmounts.in > TTakerPays::minPositiveAmount())

@@ -1,4 +1,4 @@
-include(xrpl_add_test)
+include(XrplAddTest)
 
 # Test requirements.
 find_package(doctest REQUIRED)
@@ -14,5 +14,9 @@ xrpl_add_test(crypto)
 target_link_libraries(xrpl.test.crypto PRIVATE xrpl.imports.test)
 xrpl_add_test(json)
 target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
-xrpl_add_test(net)
-target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
+
+# Network unit tests are currently not supported on Windows
+if(NOT WIN32)
+  xrpl_add_test(net)
+  target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
+endif()

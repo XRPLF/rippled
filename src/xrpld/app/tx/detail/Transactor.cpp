@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
@@ -172,7 +153,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 
     if (ctx.tx.isFieldPresent(sfDelegate))
     {
-        if (!ctx.rules.enabled(featurePermissionDelegation))
+        if (!ctx.rules.enabled(featurePermissionDelegationV1_1))
             return temDISABLED;
 
         if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
@@ -273,7 +254,7 @@ Transactor::preflightSigValidated(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+NotTEC
 Transactor::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -284,7 +265,7 @@ Transactor::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     return checkTxPermission(sle, tx);
 }
@@ -788,55 +769,26 @@ Transactor::checkSingleSign(
 {
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
-    if (view.rules().enabled(fixMasterKeyAsRegularKey))
+    // Signed with regular key.
+    if ((*sleAccount)[~sfRegularKey] == idSigner)
     {
-        // Signed with regular key.
-        if ((*sleAccount)[~sfRegularKey] == idSigner)
-        {
-            return tesSUCCESS;
-        }
-
-        // Signed with enabled mater key.
-        if (!isMasterDisabled && idAccount == idSigner)
-        {
-            return tesSUCCESS;
-        }
-
-        // Signed with disabled master key.
-        if (isMasterDisabled && idAccount == idSigner)
-        {
-            return tefMASTER_DISABLED;
-        }
-
-        // Signed with any other key.
-        return tefBAD_AUTH;
+        return tesSUCCESS;
     }
 
-    if (idSigner == idAccount)
+    // Signed with enabled master key.
+    if (!isMasterDisabled && idAccount == idSigner)
     {
-        // Signing with the master key. Continue if it is not disabled.
-        if (isMasterDisabled)
-            return tefMASTER_DISABLED;
-    }
-    else if ((*sleAccount)[~sfRegularKey] == idSigner)
-    {
-        // Signing with the regular key. Continue.
-    }
-    else if (sleAccount->isFieldPresent(sfRegularKey))
-    {
-        // Signing key does not match master or regular key.
-        JLOG(j.trace()) << "checkSingleSign: Not authorized to use account.";
-        return tefBAD_AUTH;
-    }
-    else
-    {
-        // No regular key on account and signing key does not match master key.
-        // FIXME: Why differentiate this case from tefBAD_AUTH?
-        JLOG(j.trace()) << "checkSingleSign: Not authorized to use account.";
-        return tefBAD_AUTH_MASTER;
+        return tesSUCCESS;
     }
 
-    return tesSUCCESS;
+    // Signed with disabled master key.
+    if (isMasterDisabled && idAccount == idSigner)
+    {
+        return tefMASTER_DISABLED;
+    }
+
+    // Signed with any other key.
+    return tefBAD_AUTH;
 }
 
 NotTEC
