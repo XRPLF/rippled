@@ -55,6 +55,10 @@ on:
         description: "The Codecov token to use for uploading coverage reports."
         required: true
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build-and-test:
     name: ${{ inputs.config_name }}
@@ -100,7 +104,6 @@ jobs:
           log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
 
       - name: Configure CMake
-        shell: bash
         working-directory: ${{ inputs.build_dir }}
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
@@ -114,7 +117,6 @@ jobs:
             ..
 
       - name: Build the binary
-        shell: bash
         working-directory: ${{ inputs.build_dir }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
@@ -141,7 +143,6 @@ jobs:
       - name: Check linking (Linux)
         if: ${{ runner.os == 'Linux' }}
         working-directory: ${{ inputs.build_dir }}
-        shell: bash
         run: |
           ldd ./rippled
           if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
@@ -154,7 +155,6 @@ jobs:
       - name: Verify presence of instrumentation (Linux)
         if: ${{ runner.os == 'Linux' && env.ENABLED_VOIDSTAR == 'true' }}
         working-directory: ${{ inputs.build_dir }}
-        shell: bash
         run: |
           ./rippled --version | grep libvoidstar
 
@@ -165,7 +165,6 @@ jobs:
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
           PARALLELISM: ${{ runner.os == 'Windows' && '1' || steps.nproc.outputs.nproc }}
-        shell: bash
         run: |
           ctest \
             --output-on-failure \
@@ -175,7 +174,6 @@ jobs:
       - name: Run the embedded tests
         if: ${{ !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', inputs.build_dir, inputs.build_type) || inputs.build_dir }}
-        shell: bash
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
@@ -183,7 +181,6 @@ jobs:
 
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
-        shell: bash
         run: |
           echo "IPv4 local port range:"
           cat /proc/sys/net/ipv4/ip_local_port_range
@@ -196,7 +193,6 @@ jobs:
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
           BUILD_TYPE: ${{ inputs.build_type }}
-        shell: bash
         run: |
           cmake \
             --build . \
