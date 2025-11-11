@@ -468,7 +468,7 @@ proveEquality(
     Serializer s;
     s.addRaw(txHash.data(), txHash.bytes);
     s.add32(spendVersion);
-    auto const txContextId = s.getSHA512Half();
+    // auto const txContextId = s.getSHA512Half();
 
     // todo: support equality
     // if (secp256k1_equality_verify(
@@ -585,7 +585,7 @@ verifyConfidentialSendProof(
     Serializer s;
     s.addRaw(txHash.data(), txHash.bytes);
     s.add32(version);
-    auto const txContextId = s.getSHA512Half();
+    // auto const txContextId = s.getSHA512Half();
 
     // todo: equality and range proof verification
     // if (secp256k1_equal_range_verify(

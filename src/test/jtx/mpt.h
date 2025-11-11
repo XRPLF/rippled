@@ -197,6 +197,7 @@ struct MPTConfidentialSend
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
+
 struct MPTConvertBack
 {
     std::optional<Account> account = std::nullopt;
@@ -205,6 +206,19 @@ struct MPTConvertBack
     std::optional<std::string> proof = std::nullopt;
     std::optional<Buffer> holderEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+struct MPTConfidentialClawback
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<Account> holder = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<std::uint64_t> amt = std::nullopt;
+    std::optional<std::string> proof = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -253,6 +267,10 @@ public:
 
     void
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
+
+    void
+    confidentialClaw(
+        MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
