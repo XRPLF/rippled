@@ -35,7 +35,7 @@ namespace csf {
 
     Ledgers are immutable value types. All ledgers with the same sequence
     number, transactions, close time, etc. will have the same ledger ID. The
-    LedgerOracle class below manges ID assignments for a simulation and is the
+    LedgerOracle class below manages ID assignments for a simulation and is the
     only way to close and create a new ledger. Since the parent ledger ID is
     part of type, this also means ledgers with distinct histories will have
     distinct ids, even if they have the same set of transactions, sequence

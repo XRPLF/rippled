@@ -1889,7 +1889,7 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(channelAmount(*env.current(), chan) == XRP(1000));
 
             rmAccount(env, alice, carol, tecHAS_OBLIGATIONS);
-            // can only remove bob if the channel isn't in their owner direcotry
+            // can only remove bob if the channel isn't in their owner directory
             rmAccount(env, bob, carol, TER(tecHAS_OBLIGATIONS));
 
             auto const feeDrops = env.current()->fees().base;
@@ -1925,7 +1925,7 @@ struct PayChan_test : public beast::unit_test::suite
                 // Owner closes, will close after settleDelay
                 env(claim(alice, chan), txflags(tfClose));
                 env.close();
-                // settle delay hasn't ellapsed. Channels should exist.
+                // settle delay hasn't elapsed. Channels should exist.
                 BEAST_EXPECT(channelExists(*env.current(), chan));
                 auto const closeTime = env.current()->info().parentCloseTime;
                 auto const minExpiration = closeTime + settleDelay;
