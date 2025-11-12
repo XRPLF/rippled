@@ -390,23 +390,22 @@ homomorphicAdd(Slice const& a, Slice const& b, Buffer& out)
         b.length() != ecGamalEncryptedTotalLength)
         return tecINTERNAL;
 
-    secp256k1_pubkey a_c1;
-    secp256k1_pubkey a_c2;
-    secp256k1_pubkey b_c1;
-    secp256k1_pubkey b_c2;
+    secp256k1_pubkey aC1;
+    secp256k1_pubkey aC2;
+    secp256k1_pubkey bC1;
+    secp256k1_pubkey bC2;
 
-    if (!makeEcPair(a, a_c1, a_c2) || !makeEcPair(b, b_c1, b_c2))
+    if (!makeEcPair(a, aC1, aC2) || !makeEcPair(b, bC1, bC2))
         return tecINTERNAL;
 
-    secp256k1_pubkey sum_c1;
-    secp256k1_pubkey sum_c2;
+    secp256k1_pubkey sumC1;
+    secp256k1_pubkey sumC2;
 
     if (secp256k1_elgamal_add(
-            secp256k1Context(), &sum_c1, &sum_c2, &a_c1, &a_c2, &b_c1, &b_c2) !=
-        1)
+            secp256k1Context(), &sumC1, &sumC2, &aC1, &aC2, &bC1, &bC2) != 1)
         return tecINTERNAL;
 
-    if (!serializeEcPair(sum_c1, sum_c2, out))
+    if (!serializeEcPair(sumC1, sumC2, out))
         return tecINTERNAL;
 
     return tesSUCCESS;
@@ -419,28 +418,22 @@ homomorphicSubtract(Slice const& a, Slice const& b, Buffer& out)
         b.length() != ecGamalEncryptedTotalLength)
         return tecINTERNAL;
 
-    secp256k1_pubkey a_c1;
-    secp256k1_pubkey a_c2;
-    secp256k1_pubkey b_c1;
-    secp256k1_pubkey b_c2;
+    secp256k1_pubkey aC1;
+    secp256k1_pubkey aC2;
+    secp256k1_pubkey bC1;
+    secp256k1_pubkey bC2;
 
-    if (!makeEcPair(a, a_c1, a_c2) || !makeEcPair(b, b_c1, b_c2))
+    if (!makeEcPair(a, aC1, aC2) || !makeEcPair(b, bC1, bC2))
         return tecINTERNAL;
 
-    secp256k1_pubkey diff_c1;
-    secp256k1_pubkey diff_c2;
+    secp256k1_pubkey diffC1;
+    secp256k1_pubkey diffC2;
 
     if (secp256k1_elgamal_subtract(
-            secp256k1Context(),
-            &diff_c1,
-            &diff_c2,
-            &a_c1,
-            &a_c2,
-            &b_c1,
-            &b_c2) != 1)
+            secp256k1Context(), &diffC1, &diffC2, &aC1, &aC2, &bC1, &bC2) != 1)
         return tecINTERNAL;
 
-    if (!serializeEcPair(diff_c1, diff_c2, out))
+    if (!serializeEcPair(diffC1, diffC2, out))
         return tecINTERNAL;
 
     return tesSUCCESS;
@@ -497,8 +490,8 @@ encryptAmount(uint64_t amt, Slice const& pubKeySlice)
 
     // todo: might need to be updated using another RNG
     // Prepare a random blinding factor
-    unsigned char blinding_factor[32];
-    if (RAND_bytes(blinding_factor, 32) != 1)
+    unsigned char blindingFactor[32];
+    if (RAND_bytes(blindingFactor, 32) != 1)
         Throw<std::runtime_error>("Failed to generate random number");
 
     secp256k1_pubkey pubKey;
@@ -507,7 +500,7 @@ encryptAmount(uint64_t amt, Slice const& pubKeySlice)
 
     // Encrypt the amount
     if (!secp256k1_elgamal_encrypt(
-            secp256k1Context(), &c1, &c2, &pubKey, amt, blinding_factor))
+            secp256k1Context(), &c1, &c2, &pubKey, amt, blindingFactor))
         Throw<std::runtime_error>("Failed to encrypt amount");
 
     // Serialize the ciphertext pair into the buffer
@@ -566,20 +559,20 @@ verifyConfidentialSendProof(
     // if (proof.length() != ecConfidentialSendProofLength)
     //     return tecINTERNAL;
 
-    secp256k1_pubkey bal_c1, bal_c2;
-    if (!makeEcPair(encSenderBalance, bal_c1, bal_c2))
+    secp256k1_pubkey balC1, balC2;
+    if (!makeEcPair(encSenderBalance, balC1, balC2))
         return tecINTERNAL;
 
-    secp256k1_pubkey sender_c1, sender_c2;
-    if (!makeEcPair(encSenderAmt, sender_c1, sender_c2))
+    secp256k1_pubkey senderC1, senderC2;
+    if (!makeEcPair(encSenderAmt, senderC1, senderC2))
         return tecINTERNAL;
 
-    secp256k1_pubkey dest_c1, dest_c2;
-    if (!makeEcPair(encDestAmt, dest_c1, dest_c2))
+    secp256k1_pubkey destC1, destC2;
+    if (!makeEcPair(encDestAmt, destC1, destC2))
         return tecINTERNAL;
 
-    secp256k1_pubkey issuer_c1, issuer_c2;
-    if (!makeEcPair(encIssuerAmt, issuer_c1, issuer_c2))
+    secp256k1_pubkey issuerC1, issuerC2;
+    if (!makeEcPair(encIssuerAmt, issuerC1, issuerC2))
         return tecINTERNAL;
 
     Serializer s;
@@ -593,16 +586,16 @@ verifyConfidentialSendProof(
     //         reinterpret_cast<unsigned char const*>(proof.data()),
     //         proof.length(),
     //         txContextId.data(),
-    //         &bal_c1,
-    //         &bal_c2,
-    //         &sender_c1,
-    //         &sender_c2,
+    //         &balC1,
+    //         &balC2,
+    //         &senderC1,
+    //         &senderC2,
     //         reinterpret_cast<unsigned char const*>(senderPubKey.data()),
-    //         &dest_c1,
-    //         &dest_c2,
+    //         &destC1,
+    //         &destC2,
     //         reinterpret_cast<unsigned char const*>(destPubKey.data()),
-    //         &issuer_c1,
-    //         &issuer_c2,
+    //         &issuerC1,
+    //         &issuerC2,
     //         reinterpret_cast<unsigned char const*>(issuerPubKey.data()),
     //         txContextId.data(),
     //         txContextId.bytes) != 1)
