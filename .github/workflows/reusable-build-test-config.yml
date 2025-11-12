@@ -70,8 +70,8 @@ jobs:
       ENABLED_COVERAGE: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
     steps:
       - name: Cleanup workspace
-        if: ${{ runner.os == 'macOS' }}
-        uses: XRPLF/actions/.github/actions/cleanup-workspace@3f044c7478548e3c32ff68980eeb36ece02b364e
+        if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
+        uses: XRPLF/actions/.github/actions/cleanup-workspace@173ea68c5aea5bf8aa489df7ed441b1aeea3d088
 
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
