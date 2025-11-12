@@ -71,7 +71,7 @@
       "distro_version": "bookworm",
       "compiler_name": "clang",
       "compiler_version": "20",
-      "image_sha": "e1782cd"
+      "image_sha": "bthomee"
     },
     {
       "distro_name": "rhel",
