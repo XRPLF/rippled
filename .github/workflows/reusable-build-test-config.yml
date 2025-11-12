@@ -69,7 +69,7 @@ jobs:
       ENABLED_VOIDSTAR: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
       ENABLED_COVERAGE: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
     steps:
-      - name: Cleanup workspace
+      - name: Cleanup workspace (macOS and Windows)
         if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
         uses: XRPLF/actions/.github/actions/cleanup-workspace@173ea68c5aea5bf8aa489df7ed441b1aeea3d088
 
