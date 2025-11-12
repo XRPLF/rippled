@@ -322,8 +322,7 @@ class Feature_test : public beast::unit_test::suite
         testcase("No Params, Some Enabled");
 
         using namespace test::jtx;
-        Env env{
-            *this, FeatureBitset(featureDepositAuth, featureDepositPreauth)};
+        Env env{*this, FeatureBitset{}};
 
         std::map<std::string, VoteBehavior> const& votes =
             ripple::detail::supportedAmendments();

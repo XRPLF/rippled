@@ -81,7 +81,7 @@ public:
                     case 3:
                         return hotUNKNOWN;
                 }
-                // will never happen, but make static analysys tool happy.
+                // will never happen, but make static analysis tool happy.
                 return hotUNKNOWN;
             }();
 
