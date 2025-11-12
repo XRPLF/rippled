@@ -76,9 +76,9 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // Issuer must be the same as account
+    // Sanity check: issuer must be the same as account
     if (sleIssuance->getAccountID(sfIssuer) != account)
-        return tecNO_PERMISSION;
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // Check if issuance has issuer ElGamal public key
     if (!sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
@@ -97,6 +97,10 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
     // Check if holder has confidential balances to claw back
     if (!sleHolderMPToken->isFieldPresent(sfIssuerEncryptedBalance))
         return tecNO_PERMISSION;
+
+    // Sanity check: claw amount can not exceed confidential outstanding amount
+    if (ctx.tx[sfMPTAmount] > (*sleIssuance)[sfConfidentialOutstandingAmount])
+        return temBAD_AMOUNT;  // LCOV_EXCL_LINE
 
     // todo: ZKP Verification
     // verify the MPT amount to clawback is the holder's confidential balance
