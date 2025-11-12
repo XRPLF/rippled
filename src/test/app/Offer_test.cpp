@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2017 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
 #include <test/jtx/WSClient.h>
@@ -199,13 +180,10 @@ public:
         // an offer.  Show that the attempt to remove the offer fails.
         env.require(offers(alice, 2));
 
-        // featureDepositPreauths changes the return code on an expired Offer.
-        // Adapt to that.
-        bool const featPreauth{features[featureDepositPreauth]};
         env(offer(alice, XRP(5), USD(2)),
             json(sfExpiration.fieldName, lastClose(env)),
             json(jss::OfferSequence, offer2Seq),
-            ter(featPreauth ? TER{tecEXPIRED} : TER{tesSUCCESS}));
+            ter(tecEXPIRED));
         env.close();
 
         env.require(offers(alice, 2));
@@ -855,9 +833,7 @@ public:
 
             // No cross:
             {
-                TER const expectedCode = features[featureImmediateOfferKilled]
-                    ? static_cast<TER>(tecKILLED)
-                    : static_cast<TER>(tesSUCCESS);
+                TER const expectedCode = tecKILLED;
                 env(offer(alice, XRP(1000), USD(1000)),
                     txflags(tfImmediateOrCancel),
                     ter(expectedCode));
@@ -1103,13 +1079,9 @@ public:
             offers(alice, 0),
             owners(alice, 1));
 
-        // Place an offer that should have already expired.
-        // The DepositPreauth amendment changes the return code; adapt to that.
-        bool const featPreauth{features[featureDepositPreauth]};
-
         env(offer(alice, xrpOffer, usdOffer),
             json(sfExpiration.fieldName, lastClose(env)),
-            ter(featPreauth ? TER{tecEXPIRED} : TER{tesSUCCESS}));
+            ter(tecEXPIRED));
 
         env.require(
             balance(alice, startBalance - f - f),
@@ -4520,21 +4492,13 @@ public:
         env(fset(gw, asfRequireAuth));
         env.close();
 
-        // The test behaves differently with or without DepositPreauth.
-        bool const preauth = features[featureDepositPreauth];
-
         // Before DepositPreauth an account with lsfRequireAuth set could not
         // create an offer to buy their own currency.  After DepositPreauth
         // they can.
-        env(offer(gw, gwUSD(40), XRP(4000)),
-            ter(preauth ? TER{tesSUCCESS} : TER{tecNO_LINE}));
+        env(offer(gw, gwUSD(40), XRP(4000)), ter(tesSUCCESS));
         env.close();
 
-        env.require(offers(gw, preauth ? 1 : 0));
-
-        if (!preauth)
-            // The rest of the test verifies DepositPreauth behavior.
-            return;
+        env.require(offers(gw, 1));
 
         // Set up an authorized trust line and pay alice gwUSD 50.
         env(trust(gw, aliceUSD(100)), txflags(tfSetfAuth));
@@ -5289,34 +5253,12 @@ public:
         testFillOrKill(features);
     }
 
-    void
-    run(std::uint32_t instance, bool last = false)
-    {
-        using namespace jtx;
-        static FeatureBitset const all{testable_amendments()};
-        static FeatureBitset const immediateOfferKilled{
-            featureImmediateOfferKilled};
-        FeatureBitset const fillOrKill{fixFillOrKill};
-        FeatureBitset const permDEX{featurePermissionedDEX};
-
-        static std::array<FeatureBitset, 5> const feats{
-            all - immediateOfferKilled - permDEX,
-            all - immediateOfferKilled - fillOrKill - permDEX,
-            all - fillOrKill - permDEX,
-            all - permDEX,
-            all};
-
-        if (BEAST_EXPECT(instance < feats.size()))
-        {
-            testAll(feats[instance]);
-        }
-        BEAST_EXPECT(!last || instance == feats.size() - 1);
-    }
+    FeatureBitset const allFeatures{jtx::testable_amendments()};
 
     void
     run() override
     {
-        run(0);
+        testAll(allFeatures - featurePermissionedDEX);
         testFalseAssert();
     }
 };
@@ -5326,25 +5268,7 @@ class OfferWOSmallQOffers_test : public OfferBaseUtil_test
     void
     run() override
     {
-        OfferBaseUtil_test::run(1);
-    }
-};
-
-class OfferWOFillOrKill_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        OfferBaseUtil_test::run(2);
-    }
-};
-
-class OfferWOPermDEX_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        OfferBaseUtil_test::run(3);
+        testAll(allFeatures - fixFillOrKill - featurePermissionedDEX);
     }
 };
 
@@ -5353,7 +5277,7 @@ class OfferAllFeatures_test : public OfferBaseUtil_test
     void
     run() override
     {
-        OfferBaseUtil_test::run(4, true);
+        testAll(allFeatures);
     }
 };
 
@@ -5364,12 +5288,9 @@ class Offer_manual_test : public OfferBaseUtil_test
     {
         using namespace jtx;
         FeatureBitset const all{testable_amendments()};
-        FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
         FeatureBitset const fillOrKill{fixFillOrKill};
         FeatureBitset const permDEX{featurePermissionedDEX};
 
-        testAll(all - immediateOfferKilled - permDEX);
-        testAll(all - immediateOfferKilled - fillOrKill - permDEX);
         testAll(all - fillOrKill - permDEX);
         testAll(all - permDEX);
         testAll(all);
@@ -5378,8 +5299,6 @@ class Offer_manual_test : public OfferBaseUtil_test
 
 BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFillOrKill, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOPermDEX, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, app, ripple, 20);
 

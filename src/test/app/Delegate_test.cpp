@@ -1,20 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2025 Ripple Labs Inc.
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/delegate.h>
@@ -1724,7 +1707,6 @@ class Delegate_test : public beast::unit_test::suite
             {"CheckCreate", featureChecks},
             {"CheckCash", featureChecks},
             {"CheckCancel", featureChecks},
-            {"DepositPreauth", featureDepositPreauth},
             {"Clawback", featureClawback},
             {"AMMClawback", featureAMMClawback},
             {"AMMCreate", featureAMM},
@@ -1799,58 +1781,6 @@ class Delegate_test : public beast::unit_test::suite
 
             for (auto const& tx : txRequiredFeatures)
                 txAmendmentEnabled(tx.first);
-        }
-
-        // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer, and
-        // NFTokenAcceptOffer are tested separately. Since
-        // featureNonFungibleTokensV1_1 includes the functionality of
-        // featureNonFungibleTokensV1, fixNFTokenNegOffer, and fixNFTokenDirV1,
-        // both featureNonFungibleTokensV1_1 and featureNonFungibleTokensV1 need
-        // to be disabled to block these transactions from being delegated.
-        {
-            Env env(
-                *this,
-                features - featureNonFungibleTokensV1 -
-                    featureNonFungibleTokensV1_1);
-
-            Account const alice{"alice"};
-            Account const bob{"bob"};
-            env.fund(XRP(100000), alice, bob);
-            env.close();
-
-            for (auto const tx :
-                 {"NFTokenMint",
-                  "NFTokenBurn",
-                  "NFTokenCreateOffer",
-                  "NFTokenCancelOffer",
-                  "NFTokenAcceptOffer"})
-            {
-                env(delegate::set(alice, bob, {tx}), ter(temMALFORMED));
-            }
-        }
-
-        // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer, and
-        // NFTokenAcceptOffer are allowed to be delegated if either
-        // featureNonFungibleTokensV1 or featureNonFungibleTokensV1_1 is
-        // enabled.
-        {
-            for (auto const feature :
-                 {featureNonFungibleTokensV1, featureNonFungibleTokensV1_1})
-            {
-                Env env(*this, features - feature);
-                Account const alice{"alice"};
-                Account const bob{"bob"};
-                env.fund(XRP(100000), alice, bob);
-                env.close();
-
-                for (auto const tx :
-                     {"NFTokenMint",
-                      "NFTokenBurn",
-                      "NFTokenCreateOffer",
-                      "NFTokenCancelOffer",
-                      "NFTokenAcceptOffer"})
-                    env(delegate::set(alice, bob, {tx}));
-            }
         }
     }
 

@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012=2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_RPC_RPCHELPERS_H_INCLUDED
-#define RIPPLE_RPC_RPCHELPERS_H_INCLUDED
+#ifndef XRPL_RPC_RPCHELPERS_H_INCLUDED
+#define XRPL_RPC_RPCHELPERS_H_INCLUDED
 
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/TxQ.h>
@@ -201,35 +182,6 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error);
 std::optional<Seed>
 parseRippleLibSeed(Json::Value const& params);
 
-/**
- * API version numbers used in API version 1
- */
-extern beast::SemanticVersion const firstVersion;
-extern beast::SemanticVersion const goodVersion;
-extern beast::SemanticVersion const lastVersion;
-
-template <class Object>
-void
-setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
-{
-    XRPL_ASSERT(
-        apiVersion != apiInvalidVersion,
-        "ripple::RPC::setVersion : input is valid");
-    auto&& object = addObject(parent, jss::version);
-    if (apiVersion == apiVersionIfUnspecified)
-    {
-        object[jss::first] = firstVersion.print();
-        object[jss::good] = goodVersion.print();
-        object[jss::last] = lastVersion.print();
-    }
-    else
-    {
-        object[jss::first] = apiMinimumSupportedVersion.value;
-        object[jss::last] =
-            betaEnabled ? apiBetaVersion : apiMaximumSupportedVersion;
-    }
-}
-
 std::pair<RPC::Status, LedgerEntryType>
 chooseLedgerEntryType(Json::Value const& params);
 
@@ -241,23 +193,6 @@ chooseLedgerEntryType(Json::Value const& params);
  */
 bool
 isAccountObjectsValidType(LedgerEntryType const& type);
-
-/**
- * Retrieve the api version number from the json value
- *
- * Note that APIInvalidVersion will be returned if
- * 1) the version number field has a wrong format
- * 2) the version number retrieved is out of the supported range
- * 3) the version number is unspecified and
- *    APIVersionIfUnspecified is out of the supported range
- *
- * @param value a Json value that may or may not specifies
- *        the api version number
- * @param betaEnabled if the beta API version is enabled
- * @return the api version number
- */
-unsigned int
-getAPIVersionNumber(Json::Value const& value, bool betaEnabled);
 
 /** Return a ledger based on ledger_hash or ledger_index,
     or an RPC error */

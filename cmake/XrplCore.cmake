@@ -13,7 +13,7 @@ set_target_properties(xrpl.libpb PROPERTIES UNITY_BUILD OFF)
 target_protobuf_sources(xrpl.libpb xrpl/proto
   LANGUAGE cpp
   IMPORT_DIRS include/xrpl/proto
-  PROTOS include/xrpl/proto/ripple.proto
+  PROTOS include/xrpl/proto/xrpl.proto
 )
 
 file(GLOB_RECURSE protos "include/xrpl/proto/org/*.proto")
@@ -58,10 +58,10 @@ target_link_libraries(xrpl.imports.main
     ed25519::ed25519
     LibArchive::LibArchive
     OpenSSL::Crypto
-    Ripple::boost
-    Ripple::libs
-    Ripple::opts
-    Ripple::syslibs
+    Xrpl::boost
+    Xrpl::libs
+    Xrpl::opts
+    Xrpl::syslibs
     secp256k1::secp256k1
     xrpl.libpb
     xxHash::xxhash
@@ -73,10 +73,7 @@ include(target_link_modules)
 
 # Level 01
 add_module(xrpl beast)
-target_link_libraries(xrpl.libxrpl.beast PUBLIC
-  xrpl.imports.main
-  xrpl.libpb
-)
+target_link_libraries(xrpl.libxrpl.beast PUBLIC xrpl.imports.main)
 
 # Level 02
 add_module(xrpl basics)
@@ -168,14 +165,14 @@ target_link_modules(xrpl PUBLIC
 #     $<INSTALL_INTERFACE:include>)
 
 if(xrpld)
-  add_executable(rippled)
+  add_executable(xrpld)
   if(tests)
-    target_compile_definitions(rippled PUBLIC ENABLE_TESTS)
-    target_compile_definitions(rippled PRIVATE
+    target_compile_definitions(xrpld PUBLIC ENABLE_TESTS)
+    target_compile_definitions(xrpld PRIVATE
                                        UNIT_TEST_REFERENCE_FEE=${UNIT_TEST_REFERENCE_FEE}
     )
   endif()
-  target_include_directories(rippled
+  target_include_directories(xrpld
     PRIVATE
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   )
@@ -183,36 +180,36 @@ if(xrpld)
   file(GLOB_RECURSE sources CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/xrpld/*.cpp"
   )
-  target_sources(rippled PRIVATE ${sources})
+  target_sources(xrpld PRIVATE ${sources})
 
   if(tests)
     file(GLOB_RECURSE sources CONFIGURE_DEPENDS
       "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
     )
-    target_sources(rippled PRIVATE ${sources})
+    target_sources(xrpld PRIVATE ${sources})
   endif()
 
-  target_link_libraries(rippled
-    Ripple::boost
-    Ripple::opts
-    Ripple::libs
+  target_link_libraries(xrpld
+    Xrpl::boost
+    Xrpl::opts
+    Xrpl::libs
     xrpl.libxrpl
   )
-  exclude_if_included(rippled)
+  exclude_if_included(xrpld)
   # define a macro for tests that might need to
   # be exluded or run differently in CI environment
   if(is_ci)
-    target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
+    target_compile_definitions(xrpld PRIVATE XRPL_RUNNING_IN_CI)
   endif ()
 
   if(voidstar)
-    target_compile_options(rippled
+    target_compile_options(xrpld
       PRIVATE
         -fsanitize-coverage=trace-pc-guard
     )
-    # rippled requires access to antithesis-sdk-cpp implementation file
+    # xrpld requires access to antithesis-sdk-cpp implementation file
     # antithesis_instrumentation.h, which is not exported as INTERFACE
-    target_include_directories(rippled
+    target_include_directories(xrpld
       PRIVATE
         ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
     )
@@ -226,4 +223,6 @@ if(xrpld)
       src/test/ledger/Invariants_test.cpp
       PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
   endif()
+  # For the time being, we will keep the name of the binary as it was.
+  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")
 endif()

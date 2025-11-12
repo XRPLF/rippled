@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
 
@@ -214,29 +195,8 @@ SetTrust::preclaim(PreclaimContext const& ctx)
     auto const currency = saLimitAmount.getCurrency();
     auto const uDstAccountID = saLimitAmount.getIssuer();
 
-    if (ctx.view.rules().enabled(fixTrustLinesToSelf))
-    {
-        if (id == uDstAccountID)
-            return temDST_IS_SRC;
-    }
-    else
-    {
-        if (id == uDstAccountID)
-        {
-            // Prevent trustline to self from being created,
-            // unless one has somehow already been created
-            // (in which case doApply will clean it up).
-            auto const sleDelete =
-                ctx.view.read(keylet::line(id, uDstAccountID, currency));
-
-            if (!sleDelete)
-            {
-                JLOG(ctx.j.trace())
-                    << "Malformed transaction: Can not extend credit to self.";
-                return temDST_IS_SRC;
-            }
-        }
-    }
+    if (id == uDstAccountID)
+        return temDST_IS_SRC;
 
     // This might be nullptr
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
@@ -421,21 +381,6 @@ SetTrust::doApply()
     bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
 
     auto viewJ = ctx_.app.journal("View");
-
-    // Trust lines to self are impossible but because of the old bug there
-    // are two on 19-02-2022. This code was here to allow those trust lines
-    // to be deleted. The fixTrustLinesToSelf fix amendment will remove them
-    // when it enables so this code will no longer be needed.
-    if (!view().rules().enabled(fixTrustLinesToSelf) &&
-        account_ == uDstAccountID)
-    {
-        return trustDelete(
-            view(),
-            view().peek(keylet::line(account_, uDstAccountID, currency)),
-            account_,
-            uDstAccountID,
-            viewJ);
-    }
 
     SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
 
