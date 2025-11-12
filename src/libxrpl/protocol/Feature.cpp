@@ -411,8 +411,10 @@ featureToName(uint256 const& f)
 #undef XRPL_FEATURE
 #pragma push_macro("XRPL_FIX")
 #undef XRPL_FIX
-#pragma push_macro("XRPL_RETIRE")
-#undef XRPL_RETIRE
+#pragma push_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FEATURE
+#pragma push_macro("XRPL_RETIRE_FIX")
+#undef XRPL_RETIRE_FIX
 
 #define XRPL_FEATURE(name, supported, vote) \
     uint256 const feature##name = registerFeature(#name, supported, vote);
@@ -420,16 +422,23 @@ featureToName(uint256 const& f)
     uint256 const fix##name = registerFeature("fix" #name, supported, vote);
 
 // clang-format off
-#define XRPL_RETIRE(name)                                       \
-    [[deprecated("The referenced amendment has been retired")]] \
-    [[maybe_unused]]                                            \
-    uint256 const retired##name = retireFeature(#name);
+#define XRPL_RETIRE_FEATURE(name)                                       \
+    [[deprecated("The referenced feature amendment has been retired")]] \
+    [[maybe_unused]]                                                    \
+    uint256 const retiredFeature##name = retireFeature(#name);
+
+#define XRPL_RETIRE_FIX(name)                                           \
+    [[deprecated("The referenced fix amendment has been retired")]]     \
+    [[maybe_unused]]                                                    \
+    uint256 const retiredFix##name = retireFeature("fix" #name);
 // clang-format on
 
 #include <xrpl/protocol/detail/features.macro>
 
-#undef XRPL_RETIRE
-#pragma pop_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE_FEATURE
+#pragma pop_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FIX
+#pragma pop_macro("XRPL_RETIRE_FIX")
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE

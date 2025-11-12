@@ -109,6 +109,9 @@
 #     - add a new function add_code_coverage_to_target
 #     - remove some unused code
 #
+# 2025-11-11, Bronek Kozicki
+#     - make EXECUTABLE and EXECUTABLE_ARGS optional
+#
 # USAGE:
 #
 # 1. Copy this file into your cmake modules path.
@@ -317,6 +320,10 @@ function(setup_target_for_coverage_gcovr)
         set(Coverage_FORMAT xml)
     endif()
 
+    if(NOT DEFINED Coverage_EXECUTABLE AND DEFINED Coverage_EXECUTABLE_ARGS)
+        message(FATAL_ERROR "EXECUTABLE_ARGS must not be set if EXECUTABLE is not set")
+    endif()
+
     if("--output" IN_LIST GCOVR_ADDITIONAL_ARGS)
         message(FATAL_ERROR "Unsupported --output option detected in GCOVR_ADDITIONAL_ARGS! Aborting...")
     else()
@@ -398,17 +405,18 @@ function(setup_target_for_coverage_gcovr)
     endforeach()
 
     # Set up commands which will be run to generate coverage data
-    # Run tests
-    set(GCOVR_EXEC_TESTS_CMD
-        ${Coverage_EXECUTABLE} ${Coverage_EXECUTABLE_ARGS}
-    )
+    # If EXECUTABLE is not set, the user is expected to run the tests manually
+    # before running the coverage target NAME
+    if(DEFINED Coverage_EXECUTABLE)
+        set(GCOVR_EXEC_TESTS_CMD
+            ${Coverage_EXECUTABLE} ${Coverage_EXECUTABLE_ARGS}
+        )
+    endif()
 
     # Create folder
     if(DEFINED GCOVR_CREATE_FOLDER)
         set(GCOVR_FOLDER_CMD
             ${CMAKE_COMMAND} -E make_directory ${GCOVR_CREATE_FOLDER})
-    else()
-        set(GCOVR_FOLDER_CMD echo) # dummy
     endif()
 
     # Running gcovr
@@ -425,11 +433,13 @@ function(setup_target_for_coverage_gcovr)
     if(CODE_COVERAGE_VERBOSE)
         message(STATUS "Executed command report")
 
-        message(STATUS "Command to run tests: ")
-        string(REPLACE ";" " " GCOVR_EXEC_TESTS_CMD_SPACED "${GCOVR_EXEC_TESTS_CMD}")
-        message(STATUS "${GCOVR_EXEC_TESTS_CMD_SPACED}")
+        if(NOT "${GCOVR_EXEC_TESTS_CMD}" STREQUAL "")
+            message(STATUS "Command to run tests: ")
+            string(REPLACE ";" " " GCOVR_EXEC_TESTS_CMD_SPACED "${GCOVR_EXEC_TESTS_CMD}")
+            message(STATUS "${GCOVR_EXEC_TESTS_CMD_SPACED}")
+        endif()
 
-        if(NOT GCOVR_FOLDER_CMD STREQUAL "echo")
+        if(NOT "${GCOVR_FOLDER_CMD}" STREQUAL "")
             message(STATUS "Command to create a folder: ")
             string(REPLACE ";" " " GCOVR_FOLDER_CMD_SPACED "${GCOVR_FOLDER_CMD}")
             message(STATUS "${GCOVR_FOLDER_CMD_SPACED}")
