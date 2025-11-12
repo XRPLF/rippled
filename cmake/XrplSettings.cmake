@@ -51,17 +51,10 @@ if(is_gcc OR is_clang)
 
   option(coverage "Generates coverage info." OFF)
   option(profile "Add profiling flags" OFF)
-  set(coverage_test_parallelism "${PROCESSOR_COUNT}" CACHE STRING
-    "Unit tests parallelism for the purpose of coverage report.")
   set(coverage_format "html-details" CACHE STRING
     "Output format of the coverage report.")
   set(coverage_extra_args "" CACHE STRING
     "Additional arguments to pass to gcovr.")
-  set(coverage_test "" CACHE STRING
-    "On gcc & clang, the specific unit test(s) to run for coverage. Default is all tests.")
-  if(coverage_test AND NOT coverage)
-    set(coverage ON CACHE BOOL "gcc/clang only" FORCE)
-  endif()
   option(wextra "compile with extra gcc/clang warnings enabled" ON)
 else()
   set(profile OFF CACHE BOOL "gcc/clang only" FORCE)

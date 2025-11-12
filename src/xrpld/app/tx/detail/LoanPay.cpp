@@ -30,9 +30,21 @@ LoanPay::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
-    // isFlag requires an exact match - all flags to be set - to return true.
-    if (ctx.tx.isFlag(tfLoanOverpayment | tfLoanFullPayment))
+    // The loan payment flags are all mutually exclusive. If more than one is
+    // set, the tx is malformed.
+    int flagsSet = 0;
+    for (auto const flag :
+         {tfLoanLatePayment, tfLoanFullPayment, tfLoanOverpayment})
+    {
+        if (ctx.tx.isFlag(flag))
+            ++flagsSet;
+    }
+    if (flagsSet > 1)
+    {
+        JLOG(ctx.j.warn()) << "Only one LoanPay flag can be set per tx. "
+                           << flagsSet << " is too many.";
         return temINVALID_FLAG;
+    }
 
     return tesSUCCESS;
 }
@@ -42,8 +54,8 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
 
-    if (tx.isFlag(tfLoanFullPayment))
-        // The loan will be making one set of calculations for one (large)
+    if (tx.isFlag(tfLoanFullPayment) || tx.isFlag(tfLoanLatePayment))
+        // The loan will be making one set of calculations for one full or late
         // payment
         return normalCost;
 
@@ -65,7 +77,8 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
 
     if (hasExpired(view, loanSle->at(sfNextPaymentDueDate)))
-        // If the payment is late, it'll only make one payment
+        // If the payment is late, and the late payment flag is not set, it'll
+        // fail
         return normalCost;
 
     auto const brokerSle =
@@ -97,6 +110,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     // Estimate how many payments will be made
     Number const numPaymentEstimate =
         static_cast<std::int64_t>(amount / regularPayment);
+
     // Charge one base fee per paymentsPerFeeIncrement payments, rounding up.
     Number::setround(Number::upward);
     auto const feeIncrements = std::max(
@@ -291,23 +305,19 @@ LoanPay::doApply()
         LoanManage::unimpairLoan(view, loanSle, vaultSle, j_);
     }
 
-    Expected<LoanPaymentParts, TER> const paymentParts =
-        tx.isFlag(tfLoanFullPayment) ? loanMakeFullPayment(
-                                           asset,
-                                           view,
-                                           loanSle,
-                                           brokerSle,
-                                           amount,
-                                           tx.isFlag(tfLoanOverpayment),
-                                           j_)
-                                     : loanMakePayment(
-                                           asset,
-                                           view,
-                                           loanSle,
-                                           brokerSle,
-                                           amount,
-                                           tx.isFlag(tfLoanOverpayment),
-                                           j_);
+    LoanPaymentType const paymentType = [&tx]() {
+        // preflight already checked that at most one flag is set.
+        if (tx.isFlag(tfLoanLatePayment))
+            return LoanPaymentType::late;
+        if (tx.isFlag(tfLoanFullPayment))
+            return LoanPaymentType::full;
+        if (tx.isFlag(tfLoanOverpayment))
+            return LoanPaymentType::overpayment;
+        return LoanPaymentType::regular;
+    }();
+
+    Expected<LoanPaymentParts, TER> const paymentParts = loanMakePayment(
+        asset, view, loanSle, brokerSle, amount, paymentType, j_);
 
     if (!paymentParts)
     {

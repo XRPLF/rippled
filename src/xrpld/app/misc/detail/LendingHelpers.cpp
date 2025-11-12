@@ -35,6 +35,14 @@ LoanPaymentParts::operator+=(LoanPaymentParts const& other)
     return *this;
 }
 
+bool
+LoanPaymentParts::operator==(LoanPaymentParts const& other) const
+{
+    return principalPaid == other.principalPaid &&
+        interestPaid == other.interestPaid &&
+        valueChange == other.valueChange && feePaid == other.feePaid;
+}
+
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 {
@@ -170,6 +178,12 @@ loanLatePaymentInterest(
      *
      * The spec is to be updated to base the duration on the next due date
      */
+
+    // If the payment is not late by any amount of time, then there's no late
+    // interest
+    if (parentCloseTime.time_since_epoch().count() <= nextPaymentDueDate)
+        return 0;
+
     auto const secondsOverdue =
         parentCloseTime.time_since_epoch().count() - nextPaymentDueDate;
 
@@ -192,6 +206,11 @@ loanAccruedInterest(
      * Repayment), specifically "accruedInterest = ...".
      */
     auto const lastPaymentDate = std::max(prevPaymentDate, startDate);
+
+    // If the loan has been paid ahead, then "lastPaymentDate" is in the future,
+    // and no interest has accrued.
+    if (parentCloseTime.time_since_epoch().count() <= lastPaymentDate)
+        return 0;
 
     auto const secondsSinceLastPayment =
         parentCloseTime.time_since_epoch().count() - lastPaymentDate;
@@ -499,9 +518,9 @@ doPayment(
         paymentRemainingProxy = 0;
 
         prevPaymentDateProxy = *nextDueDateProxy;
-        // Remove the field. This is the only condition where nextDueDate is
-        // allowed to be removed.
-        nextDueDateProxy = std::nullopt;
+        // Zero out the next due date. Since it's default, it'll be removed from
+        // the object.
+        nextDueDateProxy = 0;
 
         // Always zero out the the tracked values on a final payment
         principalOutstandingProxy = 0;
@@ -514,10 +533,8 @@ doPayment(
         {
             paymentRemainingProxy -= 1;
 
-            prevPaymentDateProxy = *nextDueDateProxy;
-            // STObject::OptionalField does not define operator+=, so do it the
-            // old-fashioned way.
-            nextDueDateProxy = *nextDueDateProxy + paymentInterval;
+            prevPaymentDateProxy = nextDueDateProxy;
+            nextDueDateProxy += paymentInterval;
         }
         XRPL_ASSERT_PARTS(
             principalOutstandingProxy > payment.trackedPrincipalDelta,
@@ -818,7 +835,7 @@ computeLatePayment(
     beast::Journal j)
 {
     if (!hasExpired(view, nextDueDate))
-        return Unexpected(tesSUCCESS);
+        return Unexpected(tecTOO_SOON);
 
     // the payment is late
     // Late payment interest is only the part of the interest that comes
@@ -972,9 +989,19 @@ computeFullPayment(
         "ripple::detail::computeFullPayment",
         "total due is rounded");
 
+    JLOG(j.trace()) << "computeFullPayment result: periodicPayment: "
+                    << periodicPayment << ", periodicRate: " << periodicRate
+                    << ", paymentRemaining: " << paymentRemaining
+                    << ", rawPrincipalOutstanding: " << rawPrincipalOutstanding
+                    << ", fullPaymentInterest: " << fullPaymentInterest
+                    << ", roundedFullInterest: " << roundedFullInterest
+                    << ", roundedFullManagementFee: "
+                    << roundedFullManagementFee
+                    << ", untrackedInterest: " << full.untrackedInterest;
+
     if (amount < full.totalDue)
         // If the payment is less than the full payment amount, it's not
-        // sufficient to be a full payment, but that's not an error.
+        // sufficient to be a full payment.
         return Unexpected(tecINSUFFICIENT_PAYMENT);
 
     return full;
@@ -1640,118 +1667,13 @@ computeLoanProperties(
 }
 
 Expected<LoanPaymentParts, TER>
-loanMakeFullPayment(
-    Asset const& asset,
-    ApplyView& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
-    STAmount const& amount,
-    bool const overpaymentAllowed,
-    beast::Journal j)
-{
-    auto principalOutstandingProxy = loan->at(sfPrincipalOutstanding);
-    auto paymentRemainingProxy = loan->at(sfPaymentRemaining);
-
-    if (paymentRemainingProxy == 0 || principalOutstandingProxy == 0)
-    {
-        // Loan complete
-        JLOG(j.warn()) << "Loan is already paid off.";
-        return Unexpected(tecKILLED);
-    }
-
-    auto totalValueOutstandingProxy = loan->at(sfTotalValueOutstanding);
-    auto managementFeeOutstandingProxy = loan->at(sfManagementFeeOutstanding);
-
-    // Next payment due date must be set unless the loan is complete
-    auto nextDueDateProxy = loan->at(~sfNextPaymentDueDate);
-    if (!nextDueDateProxy)
-    {
-        JLOG(j.warn()) << "Loan next payment due date is not set.";
-        return Unexpected(tecINTERNAL);
-    }
-
-    std::int32_t const loanScale = loan->at(sfLoanScale);
-
-    TenthBips32 const interestRate{loan->at(sfInterestRate)};
-    TenthBips32 const closeInterestRate{loan->at(sfCloseInterestRate)};
-
-    Number const closePaymentFee =
-        roundToAsset(asset, loan->at(sfClosePaymentFee), loanScale);
-    TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
-
-    auto const periodicPayment = loan->at(sfPeriodicPayment);
-
-    auto prevPaymentDateProxy = loan->at(sfPreviousPaymentDate);
-    std::uint32_t const startDate = loan->at(sfStartDate);
-
-    std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
-    //  Compute the normal periodic rate, payment, etc.
-    //  We'll need it in the remaining calculations
-    Number const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
-    XRPL_ASSERT(
-        interestRate == 0 || periodicRate > 0,
-        "ripple::loanMakeFullPayment : valid rate");
-
-    XRPL_ASSERT(
-        *totalValueOutstandingProxy > 0,
-        "ripple::loanMakeFullPayment : valid total value");
-
-    view.update(loan);
-
-    // -------------------------------------------------------------
-    // full payment handling
-    LoanState const roundedLoanState = calculateRoundedLoanState(
-        totalValueOutstandingProxy,
-        principalOutstandingProxy,
-        managementFeeOutstandingProxy);
-
-    if (auto const fullPaymentComponents = detail::computeFullPayment(
-            asset,
-            view,
-            principalOutstandingProxy,
-            managementFeeOutstandingProxy,
-            periodicPayment,
-            paymentRemainingProxy,
-            prevPaymentDateProxy,
-            startDate,
-            paymentInterval,
-            closeInterestRate,
-            loanScale,
-            roundedLoanState.interestDue,
-            periodicRate,
-            closePaymentFee,
-            amount,
-            managementFeeRate,
-            j))
-        return doPayment(
-            *fullPaymentComponents,
-            totalValueOutstandingProxy,
-            principalOutstandingProxy,
-            managementFeeOutstandingProxy,
-            paymentRemainingProxy,
-            prevPaymentDateProxy,
-            nextDueDateProxy,
-            paymentInterval);
-    else if (fullPaymentComponents.error())
-        // error() will be the TER returned if a payment is not made. It
-        // will only evaluate to true if it's unsuccessful. Otherwise,
-        // tesSUCCESS means nothing was done, so continue.
-        return Unexpected(fullPaymentComponents.error());
-
-    // LCOV_EXCL_START
-    UNREACHABLE("ripple::loanMakeFullPayment : invalid result");
-    return Unexpected(tecINTERNAL);
-    // LCOV_EXCL_STOP
-}
-
-Expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,
     SLE::ref loan,
     SLE::const_ref brokerSle,
     STAmount const& amount,
-    bool const overpaymentAllowed,
+    LoanPaymentType const paymentType,
     beast::Journal j)
 {
     /*
@@ -1775,8 +1697,8 @@ loanMakePayment(
     auto managementFeeOutstandingProxy = loan->at(sfManagementFeeOutstanding);
 
     // Next payment due date must be set unless the loan is complete
-    auto nextDueDateProxy = loan->at(~sfNextPaymentDueDate);
-    if (!nextDueDateProxy)
+    auto nextDueDateProxy = loan->at(sfNextPaymentDueDate);
+    if (*nextDueDateProxy == 0)
     {
         JLOG(j.warn()) << "Loan next payment due date is not set.";
         return Unexpected(tecINTERNAL);
@@ -1785,16 +1707,14 @@ loanMakePayment(
     std::int32_t const loanScale = loan->at(sfLoanScale);
 
     TenthBips32 const interestRate{loan->at(sfInterestRate)};
-    TenthBips32 const lateInterestRate{loan->at(sfLateInterestRate)};
-    TenthBips32 const closeInterestRate{loan->at(sfCloseInterestRate)};
 
     Number const serviceFee = loan->at(sfLoanServiceFee);
-    Number const latePaymentFee = loan->at(sfLatePaymentFee);
     TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
 
     Number const periodicPayment = loan->at(sfPeriodicPayment);
 
     auto prevPaymentDateProxy = loan->at(sfPreviousPaymentDate);
+    std::uint32_t const startDate = loan->at(sfStartDate);
 
     std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
     // Compute the normal periodic rate, payment, etc.
@@ -1810,7 +1730,80 @@ loanMakePayment(
 
     view.update(loan);
 
-    detail::PaymentComponentsPlus const periodic{
+    // -------------------------------------------------------------
+    // A late payment not flagged as late overrides all other options.
+    if (paymentType != LoanPaymentType::late &&
+        hasExpired(view, nextDueDateProxy))
+    {
+        // If the payment is late, and the late flag was not set, it's not valid
+        JLOG(j.warn())
+            << "Loan payment is overdue. Use the tfLoanLatePayment transaction "
+               "flag to make a late payment. Loan was created on "
+            << startDate << ", prev payment due date is "
+            << prevPaymentDateProxy << ", next payment due date is "
+            << nextDueDateProxy << ", ledger time is "
+            << view.parentCloseTime().time_since_epoch().count();
+        return Unexpected(tecEXPIRED);
+    }
+
+    // -------------------------------------------------------------
+    // full payment handling
+    if (paymentType == LoanPaymentType::full)
+    {
+        TenthBips32 const closeInterestRate{loan->at(sfCloseInterestRate)};
+        Number const closePaymentFee =
+            roundToAsset(asset, loan->at(sfClosePaymentFee), loanScale);
+
+        LoanState const roundedLoanState = calculateRoundedLoanState(
+            totalValueOutstandingProxy,
+            principalOutstandingProxy,
+            managementFeeOutstandingProxy);
+
+        if (auto const fullPaymentComponents = detail::computeFullPayment(
+                asset,
+                view,
+                principalOutstandingProxy,
+                managementFeeOutstandingProxy,
+                periodicPayment,
+                paymentRemainingProxy,
+                prevPaymentDateProxy,
+                startDate,
+                paymentInterval,
+                closeInterestRate,
+                loanScale,
+                roundedLoanState.interestDue,
+                periodicRate,
+                closePaymentFee,
+                amount,
+                managementFeeRate,
+                j))
+        {
+            return doPayment(
+                *fullPaymentComponents,
+                totalValueOutstandingProxy,
+                principalOutstandingProxy,
+                managementFeeOutstandingProxy,
+                paymentRemainingProxy,
+                prevPaymentDateProxy,
+                nextDueDateProxy,
+                paymentInterval);
+        }
+        else if (fullPaymentComponents.error())
+            // error() will be the TER returned if a payment is not made. It
+            // will only evaluate to true if it's unsuccessful. Otherwise,
+            // tesSUCCESS means nothing was done, so continue.
+            return Unexpected(fullPaymentComponents.error());
+
+        // LCOV_EXCL_START
+        UNREACHABLE("ripple::loanMakePayment : invalid full payment result");
+        return Unexpected(tecINTERNAL);
+        // LCOV_EXCL_STOP
+    }
+
+    // -------------------------------------------------------------
+    // compute the periodic payment info that will be needed whether the payment
+    // is late or regular
+    detail::PaymentComponentsPlus periodic{
         detail::computePaymentComponents(
             asset,
             loanScale,
@@ -1829,21 +1822,75 @@ loanMakePayment(
 
     // -------------------------------------------------------------
     // late payment handling
-    if (auto const latePaymentComponents = detail::computeLatePayment(
-            asset,
-            view,
-            principalOutstandingProxy,
-            *nextDueDateProxy,
-            periodic,
-            lateInterestRate,
-            loanScale,
-            latePaymentFee,
-            amount,
-            managementFeeRate,
-            j))
+    if (paymentType == LoanPaymentType::late)
     {
-        return doPayment(
-            *latePaymentComponents,
+        TenthBips32 const lateInterestRate{loan->at(sfLateInterestRate)};
+        Number const latePaymentFee = loan->at(sfLatePaymentFee);
+
+        if (auto const latePaymentComponents = detail::computeLatePayment(
+                asset,
+                view,
+                principalOutstandingProxy,
+                nextDueDateProxy,
+                periodic,
+                lateInterestRate,
+                loanScale,
+                latePaymentFee,
+                amount,
+                managementFeeRate,
+                j))
+        {
+            return doPayment(
+                *latePaymentComponents,
+                totalValueOutstandingProxy,
+                principalOutstandingProxy,
+                managementFeeOutstandingProxy,
+                paymentRemainingProxy,
+                prevPaymentDateProxy,
+                nextDueDateProxy,
+                paymentInterval);
+        }
+        else if (latePaymentComponents.error())
+        {
+            // error() will be the TER returned if a payment is not made. It
+            // will only evaluate to true if it's unsuccessful.
+            return Unexpected(latePaymentComponents.error());
+        }
+
+        // LCOV_EXCL_START
+        UNREACHABLE("ripple::loanMakePayment : invalid late payment result");
+        return Unexpected(tecINTERNAL);
+        // LCOV_EXCL_STOP
+    }
+
+    // -------------------------------------------------------------
+    // regular periodic payment handling
+
+    XRPL_ASSERT_PARTS(
+        paymentType == LoanPaymentType::regular ||
+            paymentType == LoanPaymentType::overpayment,
+        "ripple::loanMakePayment",
+        "regular payment type");
+
+    // This will keep a running total of what is actually paid, if the payment
+    // is sufficient for any payment
+    LoanPaymentParts totalParts;
+    Number totalPaid;
+    std::size_t numPayments = 0;
+
+    while (amount >= totalPaid + periodic.totalDue &&
+           paymentRemainingProxy > 0 &&
+           numPayments < loanMaximumPaymentsPerTransaction)
+    {
+        // Try to make more payments
+        XRPL_ASSERT_PARTS(
+            periodic.trackedPrincipalDelta >= 0,
+            "ripple::loanMakePayment",
+            "payment pays non-negative principal");
+
+        totalPaid += periodic.totalDue;
+        totalParts += detail::doPayment(
+            periodic,
             totalValueOutstandingProxy,
             principalOutstandingProxy,
             managementFeeOutstandingProxy,
@@ -1851,47 +1898,19 @@ loanMakePayment(
             prevPaymentDateProxy,
             nextDueDateProxy,
             paymentInterval);
-    }
-    else if (latePaymentComponents.error())
-        // error() will be the TER returned if a payment is not made. It will
-        // only evaluate to true if it's unsuccessful. Otherwise, tesSUCCESS
-        // means nothing was done, so continue.
-        return Unexpected(latePaymentComponents.error());
+        ++numPayments;
 
-    // -------------------------------------------------------------
-    // regular periodic payment handling
+        XRPL_ASSERT_PARTS(
+            (periodic.specialCase == detail::PaymentSpecialCase::final) ==
+                (paymentRemainingProxy == 0),
+            "ripple::loanMakePayment",
+            "final payment is the final payment");
 
-    // if the payment is not late nor if it's a full payment, then it must
-    // be a periodic one, with possible overpayments
+        // Don't compute the next payment if this was the last payment
+        if (periodic.specialCase == detail::PaymentSpecialCase::final)
+            break;
 
-    // This will keep a running total of what is actually paid, if the payment
-    // is sufficient for a single payment
-    Number totalPaid = periodic.totalDue;
-
-    if (amount < totalPaid)
-    {
-        JLOG(j.warn()) << "Periodic loan payment amount is insufficient. Due: "
-                       << totalPaid << ", paid: " << amount;
-        return Unexpected(tecINSUFFICIENT_PAYMENT);
-    }
-
-    LoanPaymentParts totalParts = detail::doPayment(
-        periodic,
-        totalValueOutstandingProxy,
-        principalOutstandingProxy,
-        managementFeeOutstandingProxy,
-        paymentRemainingProxy,
-        prevPaymentDateProxy,
-        nextDueDateProxy,
-        paymentInterval);
-
-    std::size_t numPayments = 1;
-
-    while (totalPaid < amount && paymentRemainingProxy > 0 &&
-           numPayments < loanMaximumPaymentsPerTransaction)
-    {
-        // Try to make more payments
-        detail::PaymentComponentsPlus const nextPayment{
+        periodic = detail::PaymentComponentsPlus{
             detail::computePaymentComponents(
                 asset,
                 loanScale,
@@ -1903,40 +1922,13 @@ loanMakePayment(
                 paymentRemainingProxy,
                 managementFeeRate),
             serviceFee};
-        XRPL_ASSERT_PARTS(
-            nextPayment.trackedPrincipalDelta >= 0,
-            "ripple::loanMakePayment",
-            "additional payment pays non-negative principal");
-#if LOANCOMPLETE
-        XRPL_ASSERT(
-            nextPayment.rawInterest <= periodic.rawInterest,
-            "ripple::loanMakePayment : decreasing interest");
-        XRPL_ASSERT(
-            nextPayment.rawPrinicpal >= periodic.rawPrincipal,
-            "ripple::loanMakePayment : increasing principal");
-#endif
+    }
 
-        if (amount < totalPaid + nextPayment.totalDue)
-            // We're done making payments.
-            break;
-
-        totalPaid += nextPayment.totalDue;
-        totalParts += detail::doPayment(
-            nextPayment,
-            totalValueOutstandingProxy,
-            principalOutstandingProxy,
-            managementFeeOutstandingProxy,
-            paymentRemainingProxy,
-            prevPaymentDateProxy,
-            nextDueDateProxy,
-            paymentInterval);
-        ++numPayments;
-
-        XRPL_ASSERT_PARTS(
-            (nextPayment.specialCase == detail::PaymentSpecialCase::final) ==
-                (paymentRemainingProxy == 0),
-            "ripple::loanMakePayment",
-            "final payment is the final payment");
+    if (numPayments == 0)
+    {
+        JLOG(j.warn()) << "Regular loan payment amount is insufficient. Due: "
+                       << periodic.totalDue << ", paid: " << amount;
+        return Unexpected(tecINSUFFICIENT_PAYMENT);
     }
 
     XRPL_ASSERT_PARTS(
@@ -1952,9 +1944,9 @@ loanMakePayment(
 
     // -------------------------------------------------------------
     // overpayment handling
-    if (overpaymentAllowed && loan->isFlag(lsfLoanOverpayment) &&
-        paymentRemainingProxy > 0 && nextDueDateProxy && totalPaid < amount &&
-        numPayments < loanMaximumPaymentsPerTransaction)
+    if (paymentType == LoanPaymentType::overpayment &&
+        loan->isFlag(lsfLoanOverpayment) && paymentRemainingProxy > 0 &&
+        totalPaid < amount && numPayments < loanMaximumPaymentsPerTransaction)
     {
         TenthBips32 const overpaymentInterestRate{
             loan->at(sfOverpaymentInterestRate)};

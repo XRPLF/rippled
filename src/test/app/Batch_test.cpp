@@ -2543,6 +2543,11 @@ class Batch_test : public beast::unit_test::suite
     {
         testcase("loan");
 
+        bool const lendingBatchEnabled = !std::any_of(
+            Batch::disabledTxTypes.begin(),
+            Batch::disabledTxTypes.end(),
+            [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
+
         using namespace test::jtx;
 
         test::jtx::Env env{
@@ -2609,7 +2614,8 @@ class Batch_test : public beast::unit_test::suite
             {
                 auto const [txIDs, batchID] = submitBatch(
                     env,
-                    temBAD_SIGNATURE,
+                    lendingBatchEnabled ? temBAD_SIGNATURE
+                                        : temINVALID_INNER_BATCH,
                     batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
                     batch::inner(
                         env.json(
@@ -2648,7 +2654,8 @@ class Batch_test : public beast::unit_test::suite
             {
                 auto const [txIDs, batchID] = submitBatch(
                     env,
-                    temBAD_SIGNER,
+                    lendingBatchEnabled ? temBAD_SIGNER
+                                        : temINVALID_INNER_BATCH,
                     batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
                     batch::inner(
                         env.json(
@@ -2672,7 +2679,8 @@ class Batch_test : public beast::unit_test::suite
                 auto const batchFee = batch::calcBatchFee(env, 1, 2);
                 auto const [txIDs, batchID] = submitBatch(
                     env,
-                    tesSUCCESS,
+                    lendingBatchEnabled ? TER(tesSUCCESS)
+                                        : TER(temINVALID_INNER_BATCH),
                     batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
                     batch::inner(
                         env.json(
@@ -2704,7 +2712,8 @@ class Batch_test : public beast::unit_test::suite
                 auto const batchFee = batch::calcBatchFee(env, 1, 2);
                 auto const [txIDs, batchID] = submitBatch(
                     env,
-                    tesSUCCESS,
+                    lendingBatchEnabled ? TER(tesSUCCESS)
+                                        : TER(temINVALID_INNER_BATCH),
                     batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
                     batch::inner(
                         env.json(
@@ -2721,7 +2730,9 @@ class Batch_test : public beast::unit_test::suite
             }
             env.close();
             BEAST_EXPECT(env.le(brokerKeylet));
-            if (auto const sleLoan = env.le(loanKeylet); BEAST_EXPECT(sleLoan))
+            if (auto const sleLoan = env.le(loanKeylet); lendingBatchEnabled
+                    ? BEAST_EXPECT(sleLoan)
+                    : !BEAST_EXPECT(!sleLoan))
             {
                 BEAST_EXPECT(sleLoan->isFlag(lsfLoanImpaired));
             }

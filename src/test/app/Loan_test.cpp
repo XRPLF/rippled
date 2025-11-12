@@ -5,6 +5,7 @@
 
 #include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpld/app/tx/detail/Batch.h>
 #include <xrpld/app/tx/detail/LoanSet.h>
 
 #include <xrpl/beast/xor_shift_engine.h>
@@ -361,11 +362,8 @@ protected:
                     loan->at(sfPreviousPaymentDate) == previousPaymentDate);
                 env.test.BEAST_EXPECT(
                     loan->at(sfPaymentRemaining) == paymentRemaining);
-                if (paymentRemaining == 0)
-                    env.test.BEAST_EXPECT(!loan->at(~sfNextPaymentDueDate));
-                else
-                    env.test.BEAST_EXPECT(
-                        loan->at(sfNextPaymentDueDate) == nextPaymentDate);
+                env.test.BEAST_EXPECT(
+                    loan->at(sfNextPaymentDueDate) == nextPaymentDate);
                 env.test.BEAST_EXPECT(loan->at(sfLoanScale) == loanScale);
                 env.test.BEAST_EXPECT(
                     loan->at(sfTotalValueOutstanding) == totalValue);
@@ -498,7 +496,7 @@ protected:
             return LoanState{
                 .previousPaymentDate = loan->at(sfPreviousPaymentDate),
                 .startDate = tp{d{loan->at(sfStartDate)}},
-                .nextPaymentDate = loan->at(~sfNextPaymentDueDate).value_or(0),
+                .nextPaymentDate = loan->at(sfNextPaymentDueDate),
                 .paymentRemaining = loan->at(sfPaymentRemaining),
                 .loanScale = loan->at(sfLoanScale),
                 .totalValue = loan->at(sfTotalValueOutstanding),
@@ -1089,8 +1087,7 @@ protected:
             // Make the payment
             env(pay(borrower, loanKeylet.key, transactionAmount));
 
-            env.close(
-                d{(state.previousPaymentDate + state.nextPaymentDate) / 2});
+            env.close(d{state.paymentInterval / 2});
 
             // Need to account for fees if the loan is in XRP
             PrettyAmount adjustment = broker.asset(0);
@@ -1141,6 +1138,7 @@ protected:
                 detail::PaymentSpecialCase::final)
             {
                 state.paymentRemaining = 0;
+                state.nextPaymentDate = 0;
             }
             else
             {
@@ -2201,6 +2199,7 @@ protected:
                 state.totalValue = 0;
                 state.principalOutstanding = 0;
                 state.managementFeeOutstanding = 0;
+                state.nextPaymentDate = 0;
                 verifyLoanStatus(state);
 
                 // Once a loan is defaulted, it can't be managed
@@ -2258,13 +2257,28 @@ protected:
                         (Number{15, -1} / loanPaymentsPerFeeIncrement + 1)}),
                     ter(temINVALID_FLAG));
             }
-            // Try to send a payment marked as both full payment and
-            // overpayment. Do not include `txFlags`, so we don't duplicate the
-            // prior test transaction.
+            // Try to send a payment marked as multiple mutually exclusive
+            // payment types. Do not include `txFlags`, so we don't duplicate
+            // the prior test transaction.
+            env(pay(borrower,
+                    loanKeylet.key,
+                    broker.asset(state.periodicPayment * 2),
+                    tfLoanLatePayment | tfLoanFullPayment),
+                ter(temINVALID_FLAG));
+            env(pay(borrower,
+                    loanKeylet.key,
+                    broker.asset(state.periodicPayment * 2),
+                    tfLoanLatePayment | tfLoanOverpayment),
+                ter(temINVALID_FLAG));
             env(pay(borrower,
                     loanKeylet.key,
                     broker.asset(state.periodicPayment * 2),
                     tfLoanOverpayment | tfLoanFullPayment),
+                ter(temINVALID_FLAG));
+            env(pay(borrower,
+                    loanKeylet.key,
+                    broker.asset(state.periodicPayment * 2),
+                    tfLoanLatePayment | tfLoanOverpayment | tfLoanFullPayment),
                 ter(temINVALID_FLAG));
 
             {
@@ -2330,6 +2344,7 @@ protected:
             state.managementFeeOutstanding = 0;
             state.previousPaymentDate = state.nextPaymentDate +
                 state.paymentInterval * (numPayments - 1);
+            state.nextPaymentDate = 0;
             verifyLoanStatus(state);
 
             verifyLoanStatus.checkPayment(
@@ -2864,6 +2879,7 @@ protected:
                         detail::PaymentSpecialCase::final)
                     {
                         state.paymentRemaining = 0;
+                        state.nextPaymentDate = 0;
                     }
                     else
                     {
@@ -3857,6 +3873,11 @@ protected:
         // From FIND-001
         testcase << "Batch Bypass Counterparty";
 
+        bool const lendingBatchEnabled = !std::any_of(
+            Batch::disabledTxTypes.begin(),
+            Batch::disabledTxTypes.end(),
+            [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
+
         using namespace jtx;
         using namespace std::chrono_literals;
         Env env(*this, all);
@@ -3902,7 +3923,8 @@ protected:
         env(batch::outer(borrower, seq, batchFee, tfAllOrNothing),
             batch::inner(forgedLoanSet, seq + 1),
             batch::inner(pay(borrower, lender, XRP(1)), seq + 2),
-            ter(temBAD_SIGNATURE));
+            ter(lendingBatchEnabled ? temBAD_SIGNATURE
+                                    : temINVALID_INNER_BATCH));
         env.close();
 
         // ? Check that the loan was NOT created
@@ -4633,7 +4655,11 @@ protected:
             issuer, lender["IOU"](1'000), tfClearFreeze | tfClearDeepFreeze));
         env.close();
 
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest));
+        // The payment is late by this point
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecEXPIRED));
+        env.close();
+        env(pay(
+            borrower, loanKeylet.key, debtMaximumRequest, tfLoanLatePayment));
         env.close();
 
         // preclaim: tecKILLED
@@ -6594,8 +6620,6 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        auto const asset = xrpIssue();
-
         env.fund(XRP(200'000), lender, borrower);
         env.close();
 
@@ -6715,6 +6739,131 @@ protected:
             env, broker, loanParams, loanKeylet, verifyLoanStatus, true);
     }
 
+    void
+    testBorrowerIsBroker()
+    {
+        testcase("Test Borrower is Broker");
+        using namespace jtx;
+        using namespace loan;
+        Account const broker{"broker"};
+        Account const issuer{"issuer"};
+        Account const borrower_{"borrower"};
+        Account const depositor{"depositor"};
+
+        auto testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
+            Env env(*this);
+            Vault vault(env);
+
+            if (borrower == broker)
+                env.fund(XRP(10'000), broker, issuer, depositor);
+            else
+                env.fund(XRP(10'000), broker, borrower, issuer, depositor);
+            env.close();
+
+            auto const xrpFee = XRP(100);
+            auto const txFee = fee(xrpFee);
+
+            STAmount const debtMaximumRequest = getMaxDebt(env);
+
+            auto const& asset = debtMaximumRequest.asset();
+            auto const initialVault = asset(debtMaximumRequest * 100);
+
+            auto [tx, vaultKeylet] =
+                vault.create({.owner = broker, .asset = asset});
+            env(tx, txFee);
+            env.close();
+
+            env(vault.deposit(
+                    {.depositor = depositor,
+                     .id = vaultKeylet.key,
+                     .amount = initialVault}),
+                txFee);
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanbroker(broker.id(), env.seq(broker));
+
+            env(loanBroker::set(broker, vaultKeylet.key), txFee);
+            env.close();
+
+            auto const serviceFee = 101;
+
+            env(set(broker, brokerKeylet.key, debtMaximumRequest),
+                counterparty(borrower),
+                sig(sfCounterpartySignature, borrower),
+                loanServiceFee(serviceFee),
+                paymentTotal(10),
+                txFee);
+            env.close();
+
+            std::uint32_t const loanSequence = 1;
+            auto const loanKeylet =
+                keylet::loan(brokerKeylet.key, loanSequence);
+
+            auto const brokerBalanceBefore = env.balance(broker, asset);
+
+            if (auto const loanSle = env.le(loanKeylet);
+                env.test.BEAST_EXPECT(loanSle))
+            {
+                auto const payment = loanSle->at(sfPeriodicPayment);
+                auto const totalPayment = payment + serviceFee;
+                env(loan::pay(borrower, loanKeylet.key, asset(totalPayment)),
+                    txFee);
+                env.close();
+                if (auto const vaultSle = env.le(vaultKeylet);
+                    BEAST_EXPECT(vaultSle))
+                {
+                    auto const expected = [&]() {
+                        // The service fee is transferred to the broker if
+                        // a borrower is not the broker
+                        if (borrower != broker)
+                            return brokerBalanceBefore.number() + serviceFee;
+                        // Since a borrower is the broker, the payment is
+                        // transferred to the Vault from the broker but not
+                        // the service fee.
+                        // If the asset is XRP then the broker pays the txfee.
+                        if (asset.native())
+                            return brokerBalanceBefore.number() - payment -
+                                xrpFee.number();
+                        return brokerBalanceBefore.number() - payment;
+                    }();
+                    BEAST_EXPECT(
+                        env.balance(broker, asset).value() ==
+                        asset(expected).value());
+                }
+            }
+        };
+        // Test when a borrower is the broker and is not to verify correct
+        // service fee transfer in both cases.
+        for (auto const& borrowerAcct : {broker, borrower_})
+        {
+            testLoanAsset(
+                [&](Env&) -> STAmount { return STAmount{XRPAmount{200'000}}; },
+                borrowerAcct);
+            testLoanAsset(
+                [&](Env& env) -> STAmount {
+                    auto const IOU = issuer["USD"];
+                    env(trust(broker, IOU(1'000'000'000)));
+                    env(trust(depositor, IOU(1'000'000'000)));
+                    env(pay(issuer, broker, IOU(100'000'000)));
+                    env(pay(issuer, depositor, IOU(100'000'000)));
+                    env.close();
+                    return IOU(200'000);
+                },
+                borrowerAcct);
+            testLoanAsset(
+                [&](Env& env) -> STAmount {
+                    MPTTester mpt(
+                        {.env = env,
+                         .issuer = issuer,
+                         .holders = {broker, depositor},
+                         .pay = 100'000'000});
+                    return mpt(200'000);
+                },
+                borrowerAcct);
+        }
+    }
+
 public:
     void
     run() override
@@ -6725,11 +6874,10 @@ public:
         testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic();
         testLoanCoverMinimumRoundingExploit();
 #endif
-        testDustManipulation();
 
-        testIssuerLoan();
         testDisabled();
         testSelfLoan();
+        testIssuerLoan();
         testLoanSet();
         testLifecycle();
         testServiceFeeOnBrokerDeepFreeze();
@@ -6754,12 +6902,14 @@ public:
         testLoanNextPaymentDueDateOverflow();
 
         testRequireAuth();
+        testDustManipulation();
 
         testRIPD3831();
         testRIPD3459();
         testRIPD3901();
         testRIPD3902();
         testRoundingAllowsUndercoverage();
+        testBorrowerIsBroker();
     }
 };
 
