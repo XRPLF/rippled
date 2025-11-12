@@ -30,21 +30,24 @@ roundPeriodicPayment(
 struct LoanPaymentParts
 {
     /// principal_paid is the amount of principal that the payment covered.
-    Number principalPaid;
+    Number principalPaid = numZero;
     /// interest_paid is the amount of interest that the payment covered.
-    Number interestPaid;
+    Number interestPaid = numZero;
     /**
      * value_change is the amount by which the total value of the Loan changed.
      *  If value_change < 0, Loan value decreased.
      *  If value_change > 0, Loan value increased.
      * This is 0 for regular payments.
      */
-    Number valueChange;
+    Number valueChange = numZero;
     /// feePaid is amount of fee that is paid to the broker
-    Number feePaid;
+    Number feePaid = numZero;
 
     LoanPaymentParts&
     operator+=(LoanPaymentParts const& other);
+
+    bool
+    operator==(LoanPaymentParts const& other) const;
 };
 
 /** This structure describes the initial "computed" properties of a loan.
@@ -240,15 +243,11 @@ computeLoanProperties(
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale);
 
-Expected<LoanPaymentParts, TER>
-loanMakeFullPayment(
-    Asset const& asset,
-    ApplyView& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
-    STAmount const& amount,
-    bool const overpaymentAllowed,
-    beast::Journal j);
+// Indicates what type of payment is being made.
+// regular, late, and full are mutually exclusive.
+// overpayment is an "add on" to a regular payment, and follows that path with
+// potential extra work at the end.
+enum class LoanPaymentType { regular = 0, late, full, overpayment };
 
 Expected<LoanPaymentParts, TER>
 loanMakePayment(
@@ -257,7 +256,7 @@ loanMakePayment(
     SLE::ref loan,
     SLE::const_ref brokerSle,
     STAmount const& amount,
-    bool const overpaymentAllowed,
+    LoanPaymentType const paymentType,
     beast::Journal j);
 
 }  // namespace ripple

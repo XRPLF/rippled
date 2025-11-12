@@ -232,8 +232,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
-        if (ctx.view.rules().enabled(featureDepositAuth) &&
-            (sleDst->getFlags() & lsfDepositAuth))
+        if (sleDst->getFlags() & lsfDepositAuth)
         {
             if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
                 return tecNO_PERMISSION;
@@ -353,8 +352,7 @@ DeleteAccount::doApply()
     if (!src || !dst)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    if (ctx_.view().rules().enabled(featureDepositAuth) &&
-        ctx_.tx.isFieldPresent(sfCredentialIDs))
+    if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
         if (auto err = verifyDepositPreauth(
                 ctx_.tx, ctx_.view(), account_, dstID, dst, ctx_.journal);

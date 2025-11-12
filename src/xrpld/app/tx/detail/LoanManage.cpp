@@ -276,7 +276,9 @@ LoanManage::defaultLoan(
     paymentRemainingProxy = 0;
     principalOutstandingProxy = 0;
     managementFeeOutstandingProxy = 0;
-    loanSle->at(~sfNextPaymentDueDate) = std::nullopt;
+    // Zero out the next due date. Since it's default, it'll be removed from
+    // the object.
+    loanSle->at(sfNextPaymentDueDate) = 0;
     view.update(loanSle);
 
     // Return funds from the LoanBroker pseudo-account to the
