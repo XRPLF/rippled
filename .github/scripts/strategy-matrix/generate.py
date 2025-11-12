@@ -130,10 +130,6 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         if os['distro_name'] == 'rhel' and architecture['platform'] == 'linux/arm64':
             continue
 
-        # We skip all clang-20 on arm64 due to boost 1.86 build error
-        if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-20' and architecture['platform'] == 'linux/arm64':
-            continue
-
         # Enable code coverage for Debian Bookworm using GCC 15 in Debug and no
         # Unity on linux/amd64
         if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-15' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
