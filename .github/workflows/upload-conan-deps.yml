@@ -62,9 +62,9 @@ jobs:
     runs-on: ${{ matrix.architecture.runner }}
     container: ${{ contains(matrix.architecture.platform, 'linux') && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}-sha-{4}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version, matrix.os.image_sha) || null }}
     steps:
-      - name: Cleanup workspace
-        if: ${{ runner.os == 'macOS' }}
-        uses: XRPLF/actions/.github/actions/cleanup-workspace@3f044c7478548e3c32ff68980eeb36ece02b364e
+      - name: Cleanup workspace (macOS and Windows)
+        if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
+        uses: XRPLF/actions/.github/actions/cleanup-workspace@01b244d2718865d427b499822fbd3f15e7197fcc
 
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
