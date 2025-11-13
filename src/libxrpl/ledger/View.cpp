@@ -3472,19 +3472,13 @@ assetsToSharesDeposit(
 
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount shares{vault->at(sfShareMPTID)};
-    // STAmount will ignore enforcement for IOUs, so we can set it regardless of
-    // type.
-    shares.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return STAmount{
             shares.asset(),
             Number(assets.mantissa(), assets.exponent() + vault->at(sfScale))
-                .truncate(),
-            Number::weak};
+                .truncate()};
 
-    Number const shareTotal{
-        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
-        Number::strong};
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
     shares = ((shareTotal * assets) / assetTotal).truncate();
     return shares;
 }
@@ -3506,9 +3500,6 @@ sharesToAssetsDeposit(
 
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount assets{vault->at(sfAsset)};
-    // STAmount will ignore enforcement for IOUs, so we can set it regardless of
-    // type.
-    assets.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return STAmount{
             assets.asset(),
@@ -3516,9 +3507,7 @@ sharesToAssetsDeposit(
             shares.exponent() - vault->at(sfScale),
             false};
 
-    Number const shareTotal{
-        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
-        Number::strong};
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = (assetTotal * shares) / shareTotal;
     return assets;
 }
@@ -3542,14 +3531,9 @@ assetsToSharesWithdraw(
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount shares{vault->at(sfShareMPTID)};
-    // STAmount will ignore enforcement for IOUs, so we can set it regardless of
-    // type.
-    shares.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return shares;
-    Number const shareTotal{
-        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
-        Number::strong};
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
     Number result = (shareTotal * assets) / assetTotal;
     if (truncate == TruncateShares::yes)
         result = result.truncate();
@@ -3575,14 +3559,9 @@ sharesToAssetsWithdraw(
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount assets{vault->at(sfAsset)};
-    // STAmount will ignore enforcement for IOUs, so we can set it regardless of
-    // type.
-    assets.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return assets;
-    Number const shareTotal{
-        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
-        Number::strong};
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = (assetTotal * shares) / shareTotal;
     return assets;
 }

@@ -147,11 +147,6 @@ VaultSet::doApply()
             tx[sfAssetsMaximum] < *vault->at(sfAssetsTotal))
             return tecLIMIT_EXCEEDED;
         vault->at(sfAssetsMaximum) = tx[sfAssetsMaximum];
-        if (vault->at(sfAsset).value().integral())
-        {
-            if (!vault->at(sfAssetsMaximum).value().valid(Number::compatible))
-                return tecLIMIT_EXCEEDED;
-        }
     }
 
     if (auto const domainId = tx[~sfDomainID]; domainId)

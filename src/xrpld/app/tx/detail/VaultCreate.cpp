@@ -213,13 +213,6 @@ VaultCreate::doApply()
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
     if (scale)
         vault->at(sfScale) = scale;
-    if (asset.integral())
-    {
-        // Only the Maximum can be a non-zero value, so only it needs to be
-        // checked.
-        if (!vault->at(sfAssetsMaximum).value().valid(Number::compatible))
-            return tecLIMIT_EXCEEDED;
-    }
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner

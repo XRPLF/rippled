@@ -94,24 +94,6 @@ STNumber::isDefault() const
     return value_ == Number();
 }
 
-void
-STNumber::setIntegerEnforcement(Number::EnforceInteger enforce)
-{
-    value_.setIntegerEnforcement(enforce);
-}
-
-Number::EnforceInteger
-STNumber::integerEnforcement() const noexcept
-{
-    return value_.integerEnforcement();
-}
-
-bool
-STNumber::valid() const noexcept
-{
-    return value_.valid();
-}
-
 std::ostream&
 operator<<(std::ostream& out, STNumber const& rhs)
 {
