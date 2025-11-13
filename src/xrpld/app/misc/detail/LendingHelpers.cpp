@@ -219,244 +219,6 @@ loanAccruedInterest(
         paymentInterval;
 }
 
-#if LOANCOMPLETE
-Number
-computeRoundedPrincipalComponent(
-    Asset const& asset,
-    Number const& principalOutstanding,
-    Number const& rawPrincipalOutstanding,
-    Number const& rawPrincipal,
-    Number const& roundedPeriodicPayment,
-    std::int32_t scale)
-{
-    // Adjust the principal payment by the rounding error between the true
-    // and  rounded principal outstanding
-    auto const diff = roundToAsset(
-        asset,
-        principalOutstanding - rawPrincipalOutstanding,
-        scale,
-        asset.integral() ? Number::downward : Number::towards_zero);
-
-    // If the rounded principal outstanding is greater than the true
-    // principal outstanding, we need to pay more principal to reduce
-    // the rounded principal outstanding
-    //
-    // If the rounded principal outstanding is less than the true
-    // principal outstanding, we need to pay less principal to allow the
-    // rounded principal outstanding to catch up
-
-    auto const p =
-        roundToAsset(asset, rawPrincipal + diff, scale, Number::downward);
-
-    // For particular loans, it's entirely possible for many of the first
-    // rounded payments to be all interest.
-    XRPL_ASSERT_PARTS(
-        p >= 0,
-        "rippled::detail::computeRoundedPrincipalComponent",
-        "principal part not negative");
-    XRPL_ASSERT_PARTS(
-        p <= principalOutstanding,
-        "rippled::detail::computeRoundedPrincipalComponent",
-        "principal part not larger than outstanding principal");
-    XRPL_ASSERT_PARTS(
-        !asset.integral() || abs(p - rawPrincipal) <= 1,
-        "rippled::detail::computeRoundedPrincipalComponent",
-        "principal part not larger than outstanding principal");
-    XRPL_ASSERT_PARTS(
-        p <= roundedPeriodicPayment,
-        "rippled::detail::computeRoundedPrincipalComponent",
-        "principal part not larger than total payment");
-
-    // The asserts will be skipped in release builds, so check here to make
-    // sure nothing goes negative
-    if (p > roundedPeriodicPayment || p > principalOutstanding)
-        return std::min(roundedPeriodicPayment, principalOutstanding);
-    else if (p < 0)
-        return Number{};
-
-    return p;
-}
-
-/** Returns the interest component of a payment WITHOUT accounting for
- ** management fees
- *
- * In other words, it returns the combined value of the interest part that will
- * go to the Vault and the management fee that will go to the Broker.
- */
-
-Number
-computeRoundedInterestComponent(
-    Asset const& asset,
-    Number const& interestOutstanding,
-    Number const& roundedPrincipal,
-    Number const& rawInterestOutstanding,
-    Number const& roundedPeriodicPayment,
-    std::int32_t scale)
-{
-    // Start by just using the non-principal part of the payment for interest
-    Number roundedInterest = roundedPeriodicPayment - roundedPrincipal;
-    XRPL_ASSERT_PARTS(
-        isRounded(asset, roundedInterest, scale),
-        "ripple::detail::computeRoundedInterestComponent",
-        "initial interest computation is rounded");
-
-    {
-        // Adjust the interest payment by the rounding error between the true
-        // and rounded interest outstanding
-        //
-        // If the rounded interest outstanding is greater than the true interest
-        // outstanding, we need to pay more interest to reduce the rounded
-        // interest outstanding
-        //
-        // If the rounded interest outstanding is less than the true interest
-        // outstanding, we need to pay less interest to allow the rounded
-        // interest outstanding to catch up
-        auto const diff = roundToAsset(
-            asset,
-            interestOutstanding - rawInterestOutstanding,
-            scale,
-            asset.integral() ? Number::downward : Number::towards_zero);
-        roundedInterest += diff;
-    }
-
-    // However, we cannot allow negative interest payments, therefore we need to
-    // cap the interest payment at 0.
-    //
-    // Ensure interest payment is non-negative and does not exceed the remaining
-    // payment after principal
-    return std::max(Number{}, roundedInterest);
-}
-
-// The Interest and Fee components need to be calculated together, because they
-// can affect each other during computation in both directions.
-
-std::pair<Number, Number>
-computeRoundedInterestAndFeeComponents(
-    Asset const& asset,
-    Number const& interestOutstanding,
-    Number const& managementFeeOutstanding,
-    Number const& roundedPrincipal,
-    Number const& rawInterestOutstanding,
-    Number const& rawManagementFeeOutstanding,
-    Number const& roundedPeriodicPayment,
-    Number const& periodicRate,
-    TenthBips16 managementFeeRate,
-    std::int32_t scale)
-{
-    // Zero interest means ZERO interest
-    if (periodicRate == 0)
-        return std::make_pair(Number{}, Number{});
-
-    Number roundedInterest = computeRoundedInterestComponent(
-        asset,
-        interestOutstanding,
-        roundedPrincipal,
-        rawInterestOutstanding,
-        roundedPeriodicPayment,
-        scale);
-
-    Number roundedFee =
-        computeFee(asset, roundedInterest, managementFeeRate, scale);
-
-    {
-        // Adjust the interest fee by the rounding error between the true and
-        // rounded interest fee outstanding
-        auto const diff = roundToAsset(
-            asset,
-            managementFeeOutstanding - rawManagementFeeOutstanding,
-            scale,
-            asset.integral() ? Number::downward : Number::towards_zero);
-
-        roundedFee += diff;
-
-        // But again, we cannot allow negative interest fees, therefore we need
-        // to cap the interest fee at 0
-        roundedFee = std::max(Number{}, roundedFee);
-
-        // Finally, the rounded interest fee cannot exceed the outstanding
-        // interest fee
-        roundedFee = std::min(roundedFee, managementFeeOutstanding);
-    }
-
-    // Remove the fee portion from the interest payment, as the fee is paid
-    // separately
-
-    // Ensure that the interest payment does not become negative, this may
-    // happen with high interest fees
-    roundedInterest = std::max(Number{}, roundedInterest - roundedFee);
-
-    // Finally,  ensure that the interest payment does not exceed the
-    // interest outstanding
-    roundedInterest = std::min(interestOutstanding, roundedInterest);
-
-    // Make sure the parts don't add up to too much
-    auto const initialTotal = roundedPrincipal + roundedInterest + roundedFee;
-    Number excess = roundedPeriodicPayment - initialTotal;
-
-    XRPL_ASSERT_PARTS(
-        isRounded(asset, excess, scale),
-        "ripple::detail::computeRoundedInterestAndFeeComponents",
-        "excess is rounded");
-
-#if LOANCOMPLETE
-    if (excess != beast::zero)
-        std::cout << "computeRoundedInterestAndFeeComponents excess is "
-                  << excess << std::endl;
-#endif
-
-    if (excess < beast::zero)
-    {
-        // Take as much of the excess as we can out of the interest
-#if LOANCOMPLETE
-        std::cout << "\tApplying excess to interest\n";
-#endif
-        auto part = std::min(roundedInterest, -excess);
-        roundedInterest -= part;
-        excess += part;
-
-        XRPL_ASSERT_PARTS(
-            excess <= beast::zero,
-            "ripple::detail::computeRoundedInterestAndFeeComponents",
-            "excess not positive (interest)");
-    }
-    if (excess < beast::zero)
-    {
-        // If there's any left, take as much of the excess as we can out of the
-        // fee
-#if LOANCOMPLETE
-        std::cout << "\tApplying excess to fee\n";
-#endif
-        auto part = std::min(roundedFee, -excess);
-        roundedFee -= part;
-        excess += part;
-    }
-
-    // The excess should never be negative, which indicates that the parts are
-    // trying to take more than the whole payment. The excess can be positive,
-    // which indicates that we're not going to take the whole payment amount,
-    // but if so, it must be small.
-    XRPL_ASSERT_PARTS(
-        excess == beast::zero ||
-            (excess > beast::zero &&
-             ((asset.integral() && excess < 3) ||
-              (roundedPeriodicPayment.exponent() - excess.exponent() > 6))),
-        "ripple::detail::computeRoundedInterestAndFeeComponents",
-        "excess is extremely small (fee)");
-
-    XRPL_ASSERT_PARTS(
-        roundedFee >= beast::zero,
-        "ripple::detail::computeRoundedInterestAndFeeComponents",
-        "non-negative fee");
-    XRPL_ASSERT_PARTS(
-        roundedInterest >= beast::zero,
-        "ripple::detail::computeRoundedInterestAndFeeComponents",
-        "non-negative interest");
-
-    return std::make_pair(
-        std::max(Number{}, roundedInterest), std::max(Number{}, roundedFee));
-}
-#endif
-
 struct PaymentComponentsPlus : public PaymentComponents
 {
     // untrackedManagementFeeDelta includes any fees that go directly to the
@@ -846,10 +608,6 @@ computeLatePayment(
         view.parentCloseTime(),
         nextDueDate);
 
-#if LOANCOMPLETE
-    auto const [rawLateInterest, rawLateManagementFee] =
-        computeInterestAndFeeParts(latePaymentInterest, managementFeeRate);
-#endif
     auto const [roundedLateInterest, roundedLateManagementFee] = [&]() {
         auto const interest =
             roundToAsset(asset, latePaymentInterest, loanScale);
@@ -868,9 +626,6 @@ computeLatePayment(
     // This preserves all the other fields without having to enumerate them.
     PaymentComponentsPlus const late = [&]() {
         auto inner = periodic;
-#if LOANCOMPLETE
-        inner.rawInterest += rawLateInterest;
-#endif
 
         return PaymentComponentsPlus{
             inner,
@@ -943,11 +698,6 @@ computeFullPayment(
         startDate,
         closeInterestRate);
 
-#if LOANCOMPLETE
-    auto const [rawFullInterest, rawFullManagementFee] =
-        computeInterestAndFeeParts(fullPaymentInterest, managementFeeRate);
-#endif
-
     auto const [roundedFullInterest, roundedFullManagementFee] = [&]() {
         auto const interest =
             roundToAsset(asset, fullPaymentInterest, loanScale);
@@ -960,11 +710,6 @@ computeFullPayment(
 
     PaymentComponentsPlus const full{
         PaymentComponents{
-#if LOANCOMPLETE
-            .rawInterest = rawFullInterest,
-            .rawPrincipal = rawPrincipalOutstanding,
-            .rawManagementFee = rawFullManagementFee,
-#endif
             .trackedValueDelta = principalOutstanding +
                 totalInterestOutstanding + managementFeeOutstanding,
             .trackedPrincipalDelta = principalOutstanding,
@@ -1121,106 +866,11 @@ computePaymentComponents(
 
         // Pay everything off
         return PaymentComponents{
-#if LOANCOMPLETE
-            .rawInterest = raw.interestOutstanding,
-            .rawPrincipal = raw.principalOutstanding,
-            .rawManagementFee = raw.managementFeeDue,
-#endif
             .trackedValueDelta = totalValueOutstanding,
             .trackedPrincipalDelta = principalOutstanding,
             .trackedManagementFeeDelta = managementFeeOutstanding,
             .specialCase = PaymentSpecialCase::final};
     }
-
-#if LOANCOMPLETE
-    /*
-     * From the spec, once the periodicPayment is computed:
-     *
-     * The principal and interest portions can be derived as follows:
-     *  interest = principalOutstanding * periodicRate
-     *  principal = periodicPayment - interest
-     */
-    Number const rawInterest = raw.principalOutstanding * periodicRate;
-    Number const rawPrincipal = periodicPayment - rawInterest;
-    Number const rawFee = tenthBipsOfValue(rawInterest, managementFeeRate);
-    XRPL_ASSERT_PARTS(
-        rawInterest >= 0,
-        "ripple::detail::computePaymentComponents",
-        "valid raw interest");
-    XRPL_ASSERT_PARTS(
-        rawPrincipal >= 0 && rawPrincipal <= raw.principalOutstanding,
-        "ripple::detail::computePaymentComponents",
-        "valid raw principal");
-    XRPL_ASSERT_PARTS(
-        rawFee >= 0 && rawFee <= raw.managementFeeDue,
-        "ripple::detail::computePaymentComponents",
-        "valid raw fee");
-
-    /*
-        Critical Calculation: Balancing Principal and Interest Outstanding
-
-        This calculation maintains a delicate balance between keeping
-        principal outstanding and interest outstanding as close as possible to
-        reference values. However, we cannot perfectly match the reference
-       values due to rounding issues.
-
-        Key considerations:
-            1. Since the periodic payment is rounded up, we have excess funds
-               that can be used to pay down the loan faster than the reference
-               calculation.
-
-            2. We must ensure that loan repayment is not too fast, otherwise we
-               will end up with negative principal outstanding or negative
-       interest outstanding.
-
-            3. We cannot allow the borrower to repay interest ahead of schedule.
-               If the borrower makes an overpayment, the interest portion could
-       go negative, requiring complex recalculation to refund the borrower by
-               reflecting the overpayment in the principal portion of the loan.
-    */
-
-    Number const roundedPrincipal = detail::computeRoundedPrincipalComponent(
-        asset,
-        principalOutstanding,
-        raw.principalOutstanding,
-        rawPrincipal,
-        roundedPeriodicPayment,
-        scale);
-
-    auto const [roundedInterest, roundedFee] =
-        detail::computeRoundedInterestAndFeeComponents(
-            asset,
-            totalValueOutstanding - principalOutstanding,
-            managementFeeOutstanding,
-            roundedPrincipal,
-            raw.interestOutstanding,
-            raw.managementFeeDue,
-            roundedPeriodicPayment,
-            periodicRate,
-            managementFeeRate,
-            scale);
-
-    XRPL_ASSERT_PARTS(
-        roundedInterest >= 0 && isRounded(asset, roundedInterest, scale),
-        "ripple::detail::computePaymentComponents",
-        "valid rounded interest");
-    XRPL_ASSERT_PARTS(
-        roundedFee >= 0 && roundedFee <= managementFeeOutstanding &&
-            isRounded(asset, roundedFee, scale),
-        "ripple::detail::computePaymentComponents",
-        "valid rounded fee");
-    XRPL_ASSERT_PARTS(
-        roundedPrincipal >= 0 && roundedPrincipal <= principalOutstanding &&
-            roundedPrincipal <= roundedPeriodicPayment &&
-            isRounded(asset, roundedPrincipal, scale),
-        "ripple::detail::computePaymentComponents",
-        "valid rounded principal");
-    XRPL_ASSERT_PARTS(
-        roundedPrincipal + roundedInterest + roundedFee <=
-            roundedPeriodicPayment,
-        "ripple::detail::computePaymentComponents",
-        "payment parts fit within payment limit");
-#endif
 
     // The shortage must never be negative, which indicates that the parts are
     // trying to take more than the whole payment. The excess can be positive,
@@ -1284,16 +934,6 @@ computePaymentComponents(
         shortage >= beast::zero,
         "ripple::detail::computePaymentComponents",
         "no shortage or excess");
-#if LOANCOMPLETE
-    /*
-    // This used to be part of the above assert. It will eventually be removed
-    // if proved accurate
-    ||
-        (shortage > beast::zero &&
-         ((asset.integral() && shortage < 3) ||
-          (scale - shortage.exponent() > 14)))
-          */
-#endif
 
     XRPL_ASSERT_PARTS(
         deltas.valueDelta() ==
@@ -1326,11 +966,6 @@ computePaymentComponents(
         "payment parts add to payment");
 
     return PaymentComponents{
-#if LOANCOMPLETE
-        .rawInterest = rawInterest - rawFee,
-        .rawPrincipal = rawPrincipal,
-        .rawManagementFee = rawFee,
-#endif
         // As a final safety check, ensure the value is non-negative, and won't
         // make the corresponding item negative
         .trackedValueDelta = std::clamp(
@@ -1380,11 +1015,6 @@ computeOverpaymentComponents(
 
     return detail::PaymentComponentsPlus{
         detail::PaymentComponents{
-#if LOANCOMPLETE
-            .rawInterest = rawOverpaymentInterest,
-            .rawPrincipal = payment - rawOverpaymentInterest,
-            .rawManagementFee = 0,
-#endif
             .trackedValueDelta = payment,
             .trackedPrincipalDelta = payment - roundedOverpaymentInterest -
                 roundedOverpaymentManagementFee,
