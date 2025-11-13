@@ -31,17 +31,8 @@ class STTx final : public STObject, public CountedObject<STTx>
     TxType tx_type_;
 
 public:
-    static std::size_t const minMultiSigners = 1;
-
-    // if rules are not supplied then the largest possible value is returned
-    static std::size_t
-    maxMultiSigners(Rules const* rules = 0)
-    {
-        if (rules && !rules->enabled(featureExpandedSignerList))
-            return 8;
-
-        return 32;
-    }
+    static constexpr std::size_t minMultiSigners = 1;
+    static constexpr std::size_t maxMultiSigners = 32;
 
     STTx() = delete;
     STTx(STTx const& other) = default;
