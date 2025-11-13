@@ -99,7 +99,8 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // Sanity check: claw amount can not exceed confidential outstanding amount
-    if (ctx.tx[sfMPTAmount] > (*sleIssuance)[sfConfidentialOutstandingAmount])
+    if (ctx.tx[sfMPTAmount] >
+        (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0))
         return temBAD_AMOUNT;  // LCOV_EXCL_LINE
 
     // todo: ZKP Verification
