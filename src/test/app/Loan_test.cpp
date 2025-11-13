@@ -1354,28 +1354,6 @@ protected:
         auto const borrowerStartbalance = env.balance(borrower, broker.asset);
 
         auto createJtx = loanParams(env, broker);
-#if LOANCOMPLETE
-        {
-            auto createJtxOld = env.jt(
-                set(borrower, broker.brokerID, principalRequest, flags),
-                sig(sfCounterpartySignature, lender),
-                loanOriginationFee(originationFee),
-                loanServiceFee(serviceFee),
-                latePaymentFee(lateFee),
-                closePaymentFee(closeFee),
-                overpaymentFee(overFee),
-                interestRate(interest),
-                lateInterestRate(lateInterest),
-                closeInterestRate(closeInterest),
-                overpaymentInterestRate(overpaymentInterest),
-                paymentTotal(total),
-                paymentInterval(interval),
-                gracePeriod(grace),
-                fee(loanSetFee));
-            BEAST_EXPECT(
-                createJtx.stx->getJson(0) == createJtxOld.stx->getJson(0));
-        }
-#endif
         // Successfully create a Loan
         env(createJtx);
 
@@ -7038,13 +7016,6 @@ class LoanArbitrary_test : public LoanBatch_test
     {
         using namespace jtx;
 
-#if LOANCOMPLETE
-        BEAST_EXPECT(
-            std::numeric_limits<std::int64_t>::max() > INITIAL_XRP.drops());
-        BEAST_EXPECT(Number::maxMantissa > INITIAL_XRP.drops());
-        Number initalXrp{INITIAL_XRP};
-        BEAST_EXPECT(initalXrp.exponent() <= 0);
-#endif
         BrokerParameters const brokerParams{
             .vaultDeposit = 10000,
             .debtMax = 0,

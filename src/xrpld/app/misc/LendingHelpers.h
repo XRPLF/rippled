@@ -164,12 +164,6 @@ enum class PaymentSpecialCase { none, final, extra };
 /// single loan payment
 struct PaymentComponents
 {
-#if LOANCOMPLETE
-    // raw values are unrounded, and are based on pure math
-    Number rawInterest;
-    Number rawPrincipal;
-    Number rawManagementFee;
-#endif
     // tracked values are rounded to the asset and loan scale, and correspond to
     // fields in the Loan ledger object.
     // trackedValueDelta modifies sfTotalValueOutstanding.
