@@ -51,13 +51,6 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
-    if (ctx.tx.getTxnType() == ttUNL_MODIFY &&
-        !ctx.rules.enabled(featureNegativeUNL))
-    {
-        JLOG(ctx.j.warn()) << "Change: NegativeUNL not enabled";
-        return temDISABLED;
-    }
-
     return tesSUCCESS;
 }
 
