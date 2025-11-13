@@ -183,16 +183,16 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto jrr = env.rpc("feature", "MultiSignReserve")[jss::result];
+        auto jrr = env.rpc("feature", "RequireFullyCanonicalSig")[jss::result];
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
         BEAST_EXPECT(
-            jrr.isMember("586480873651E106F1D6339B0C4A8945BA705A777F3F4524626FF"
-                         "1FC07EFE41D"));
+            jrr.isMember("00C1FC4A53E60AB02C864641002B3172F38677E29C26C54066851"
+                         "79B37E1EDAC"));
         auto feature = *(jrr.begin());
 
-        BEAST_EXPECTS(feature[jss::name] == "MultiSignReserve", "name");
+        BEAST_EXPECTS(feature[jss::name] == "RequireFullyCanonicalSig", "name");
         BEAST_EXPECTS(!feature[jss::enabled].asBool(), "enabled");
         BEAST_EXPECTS(
             feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(),
@@ -200,7 +200,7 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECTS(feature[jss::supported].asBool(), "supported");
 
         // feature names are case-sensitive - expect error here
-        jrr = env.rpc("feature", "multiSignReserve")[jss::result];
+        jrr = env.rpc("feature", "requireFullyCanonicalSig")[jss::result];
         BEAST_EXPECT(jrr[jss::error] == "badFeature");
         BEAST_EXPECT(jrr[jss::error_message] == "Feature unknown or invalid.");
     }
@@ -476,8 +476,8 @@ class Feature_test : public beast::unit_test::suite
         testcase("Veto");
 
         using namespace test::jtx;
-        Env env{*this, FeatureBitset(featureMultiSignReserve)};
-        constexpr char const* featureName = "MultiSignReserve";
+        Env env{*this, FeatureBitset{featureRequireFullyCanonicalSig}};
+        constexpr char const* featureName = "RequireFullyCanonicalSig";
 
         auto jrr = env.rpc("feature", featureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
