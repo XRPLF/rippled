@@ -553,7 +553,8 @@ LoanPay::doApply()
         "ripple::LoanPay::doApply",
         "positive account balance");
     XRPL_ASSERT_PARTS(
-        accountBalanceAfter < accountBalanceBefore,
+        accountBalanceAfter < accountBalanceBefore ||
+            account_ == asset.getIssuer(),
         "ripple::LoanPay::doApply",
         "account balance decreased");
     XRPL_ASSERT_PARTS(

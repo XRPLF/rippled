@@ -611,8 +611,10 @@ protected:
                 auto const limit = asset(
                     100 *
                     (brokerParams.vaultDeposit + brokerParams.coverDeposit));
-                env(trust(lender, limit));
-                env(trust(borrower, limit));
+                if (lender != issuer)
+                    env(trust(lender, limit));
+                if (borrower != issuer)
+                    env(trust(borrower, limit));
 
                 return asset;
             }
@@ -639,8 +641,10 @@ protected:
                 PrettyAsset const asset{mptt.issuanceID(), 10'000};
                 // Need to do the authorization here because mptt isn't
                 // accessible outside
-                mptt.authorize({.account = lender});
-                mptt.authorize({.account = borrower});
+                if (lender != issuer)
+                    mptt.authorize({.account = lender});
+                if (borrower != issuer)
+                    mptt.authorize({.account = borrower});
 
                 env.close();
 
@@ -657,17 +661,15 @@ protected:
         jtx::Env& env,
         BrokerParameters const& brokerParams,
         LoanParameters const& loanParams,
-        AssetType assetType)
+        AssetType assetType,
+        jtx::Account const& issuer,
+        jtx::Account const& lender,
+        jtx::Account const& borrower)
     {
         using namespace jtx;
 
-        auto const asset = createAsset(
-            env,
-            assetType,
-            brokerParams,
-            Account("issuer"),
-            Account("lender"),
-            Account("borrower"));
+        auto const asset =
+            createAsset(env, assetType, brokerParams, issuer, lender, borrower);
         auto const principal = asset(loanParams.principalRequest).number();
         auto const interest = loanParams.interest.value_or(TenthBips32{});
         auto const interval =
@@ -720,20 +722,27 @@ protected:
         using namespace jtx;
 
         // Enough to cover initial fees
-        env.fund(
-            env.current()->fees().accountReserve(10) * 10,
-            issuer,
-            noripple(lender, borrower));
+        env.fund(env.current()->fees().accountReserve(10) * 10, issuer);
+        if (lender != issuer)
+            env.fund(
+                env.current()->fees().accountReserve(10) * 10,
+                noripple(lender));
+        if (borrower != issuer && borrower != lender)
+            env.fund(
+                env.current()->fees().accountReserve(10) * 10,
+                noripple(borrower));
 
-        describeLoan(env, brokerParams, loanParams, assetType);
+        describeLoan(
+            env, brokerParams, loanParams, assetType, issuer, lender, borrower);
 
         // Make the asset
         auto const asset =
             createAsset(env, assetType, brokerParams, issuer, lender, borrower);
 
         env.close();
-        env(
-            pay((asset.native() ? env.master : issuer),
+        if (asset.native() || lender != issuer)
+            env(pay(
+                (asset.native() ? env.master : issuer),
                 lender,
                 asset(brokerParams.vaultDeposit + brokerParams.coverDeposit)));
         // Fund the borrower later once we know the total loan
@@ -808,7 +817,8 @@ protected:
 
         auto const shortage = totalNeeded - borrowerBalance.number();
 
-        if (shortage > beast::zero)
+        if (shortage > beast::zero &&
+            (broker.asset.native() || issuer != borrower))
             env(
                 pay((broker.asset.native() ? env.master : issuer),
                     borrower,
@@ -822,6 +832,9 @@ protected:
         LoanParameters const& loanParams,
         Keylet const& loanKeylet,
         VerifyLoanStatus const& verifyLoanStatus,
+        jtx::Account const& issuer,
+        jtx::Account const& lender,
+        jtx::Account const& borrower,
         bool showStepBalances = false)
     {
         // Make all the individual payments
@@ -830,9 +843,6 @@ protected:
         using namespace std::chrono_literals;
         using d = NetClock::duration;
 
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
         // Account const evan{"evan"};
         // Account const alice{"alice"};
 
@@ -939,6 +949,8 @@ protected:
             broker.params.managementFeeRate);
 
         auto validateBorrowerBalance = [&]() {
+            if (borrower == issuer)
+                return;
             auto const totalSpent =
                 (totalPaid.trackedValueDelta + totalFeesPaid +
                  (broker.asset.native() ? Number(baseFee) * totalPaymentsMade
@@ -1213,7 +1225,15 @@ protected:
 
         VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
-        makeLoanPayments(env, broker, loanParams, loanKeylet, verifyLoanStatus);
+        makeLoanPayments(
+            env,
+            broker,
+            loanParams,
+            loanKeylet,
+            verifyLoanStatus,
+            issuer,
+            lender,
+            borrower);
     }
 
     /** Runs through the complete lifecycle of a loan
@@ -6428,8 +6448,6 @@ protected:
             .principalRequest = Number{100'000, -4},
             .interest = TenthBips32{100'000},
             .payTotal = 10,
-            // Guess
-            // .payInterval = 10,
             .gracePd = 0};
 
         auto const assetType = AssetType::MPT;
@@ -6460,7 +6478,15 @@ protected:
         }
 
         makeLoanPayments(
-            env, broker, loanParams, loanKeylet, verifyLoanStatus, true);
+            env,
+            broker,
+            loanParams,
+            loanKeylet,
+            verifyLoanStatus,
+            issuer,
+            lender,
+            borrower,
+            true);
 
         if (auto const brokerSle = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerSle))
@@ -6665,7 +6691,15 @@ protected:
         VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
         makeLoanPayments(
-            env, broker, loanParams, loanKeylet, verifyLoanStatus, true);
+            env,
+            broker,
+            loanParams,
+            loanKeylet,
+            verifyLoanStatus,
+            issuer,
+            lender,
+            borrower,
+            true);
     }
 
     void
@@ -6793,6 +6827,55 @@ protected:
         }
     }
 
+    void
+    testIssuerIsBorrower()
+    {
+        testcase("RIPD-4096 - Issuer as borrower");
+
+        using namespace jtx;
+
+        Account const issuer("issuer");
+        Account const lender("lender");
+
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0}};
+        LoanParameters const loanParams{
+            .account = lender,
+            .counter = issuer,
+            .principalRequest = Number{10000}};
+
+        auto const assetType = AssetType::IOU;
+
+        Env env(*this, all);
+
+        auto loanResult = createLoan(
+            env, assetType, brokerParams, loanParams, issuer, lender, issuer);
+
+        if (!BEAST_EXPECT(loanResult))
+            return;
+
+        auto broker = std::get<BrokerInfo>(*loanResult);
+        auto loanKeylet = std::get<Keylet>(*loanResult);
+        auto pseudoAcct = std::get<Account>(*loanResult);
+
+        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
+
+        makeLoanPayments(
+            env,
+            broker,
+            loanParams,
+            loanKeylet,
+            verifyLoanStatus,
+            issuer,
+            lender,
+            issuer,
+            true);
+    }
+
 public:
     void
     run() override
@@ -6839,6 +6922,7 @@ public:
         testRIPD3902();
         testRoundingAllowsUndercoverage();
         testBorrowerIsBroker();
+        testIssuerIsBorrower();
     }
 };
 
