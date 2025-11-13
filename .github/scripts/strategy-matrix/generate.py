@@ -54,67 +54,70 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
             # - Bookworm using Clang 17: Release and no Unity on linux/amd64,
             #   set the reference fee to 1000.
             # - Bookworm using Clang 20: Debug and Unity on linux/amd64.
-            if os['distro_name'] == 'debian':
-                skip = True
-                if os['distro_version'] == 'bookworm':
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-13' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        cmake_args = f'-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}'
-                        skip = False
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-15' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        skip = False
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-16' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/arm64':
-                        cmake_args = f'-Dvoidstar=ON {cmake_args}'
-                        skip = False
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-17' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        cmake_args = f'-DUNIT_TEST_REFERENCE_FEE=1000 {cmake_args}'
-                        skip = False
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-20' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        skip = False
-                if skip:
-                    continue
+            # if os['distro_name'] == 'debian':
+            #     skip = True
+            #     if os['distro_version'] == 'bookworm':
+            #         if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-13' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
+            #             cmake_args = f'-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}'
+            #             skip = False
+            #         if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-15' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
+            #             skip = False
+            #         if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-16' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/arm64':
+            #             cmake_args = f'-Dvoidstar=ON {cmake_args}'
+            #             skip = False
+            #         if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-17' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
+            #             cmake_args = f'-DUNIT_TEST_REFERENCE_FEE=1000 {cmake_args}'
+            #             skip = False
+            #         if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-20' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
+            #             skip = False
+            #     if skip:
+            #         continue
+            #
+            # # RHEL:
+            # # - 9 using GCC 12: Debug and Unity on linux/amd64.
+            # # - 10 using Clang: Release and no Unity on linux/amd64.
+            # if os['distro_name'] == 'rhel':
+            #     skip = True
+            #     if os['distro_version'] == '9':
+            #         if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-12' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
+            #             skip = False
+            #     elif os['distro_version'] == '10':
+            #         if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-any' and build_type == 'Release' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
+            #             skip = False
+            #     if skip:
+            #         continue
+            #
+            # # Ubuntu:
+            # # - Jammy using GCC 12: Debug and no Unity on linux/arm64.
+            # # - Noble using GCC 14: Release and Unity on linux/amd64.
+            # # - Noble using Clang 18: Debug and no Unity on linux/amd64.
+            # # - Noble using Clang 19: Release and Unity on linux/arm64.
+            # if os['distro_name'] == 'ubuntu':
+            #     skip = True
+            #     if os['distro_version'] == 'jammy':
+            #         if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-12' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/arm64':
+            #             skip = False
+            #     elif os['distro_version'] == 'noble':
+            #         if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-14' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
+            #             skip = False
+            #         if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-18' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
+            #             skip = False
+            #         if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-19' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/arm64':
+            #             skip = False
+            #     if skip:
+            #         continue
+            #
+            # # MacOS:
+            # # - Debug and no Unity on macos/arm64.
+            # if os['distro_name'] == 'macos' and not (build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'macos/arm64'):
+            #     continue
+            #
+            # # Windows:
+            # # - Release and Unity on windows/amd64.
+            # if os['distro_name'] == 'windows' and not (build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'windows/amd64'):
+            #     continue
 
-            # RHEL:
-            # - 9 using GCC 12: Debug and Unity on linux/amd64.
-            # - 10 using Clang: Release and no Unity on linux/amd64.
-            if os['distro_name'] == 'rhel':
-                skip = True
-                if os['distro_version'] == '9':
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-12' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        skip = False
-                elif os['distro_version'] == '10':
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-any' and build_type == 'Release' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        skip = False
-                if skip:
-                    continue
-
-            # Ubuntu:
-            # - Jammy using GCC 12: Debug and no Unity on linux/arm64.
-            # - Noble using GCC 14: Release and Unity on linux/amd64.
-            # - Noble using Clang 18: Debug and no Unity on linux/amd64.
-            # - Noble using Clang 19: Release and Unity on linux/arm64.
-            if os['distro_name'] == 'ubuntu':
-                skip = True
-                if os['distro_version'] == 'jammy':
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-12' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/arm64':
-                        skip = False
-                elif os['distro_version'] == 'noble':
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-14' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        skip = False
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-18' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        skip = False
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-19' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/arm64':
-                        skip = False
-                if skip:
-                    continue
-
-            # MacOS:
-            # - Debug and no Unity on macos/arm64.
-            if os['distro_name'] == 'macos' and not (build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'macos/arm64'):
-                continue
-
-            # Windows:
-            # - Release and Unity on windows/amd64.
-            if os['distro_name'] == 'windows' and not (build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'windows/amd64'):
+            if not (os['distro_name'] == 'debian' and os['distro_version'] == 'trixie'):
                 continue
 
 
