@@ -567,9 +567,6 @@ Payment::makeRipplePayment(Payment::RipplePaymentParams const& p)
     beast::Journal j_ = p.j;
 
     auto view = [&p]() -> ApplyView& { return p.ctx.view(); };
-    bool const depositPreauth =
-        p.ctx.view().rules().enabled(featureDepositPreauth);
-    bool const depositAuth = p.ctx.view().rules().enabled(featureDepositAuth);
 
     // Below this line, copied straight from Payment::doApply
     // except `ctx_.tx.getFieldPathSet(sfPaths)` replaced with `paths`,

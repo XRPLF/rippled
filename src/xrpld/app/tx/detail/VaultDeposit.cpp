@@ -42,9 +42,6 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (assets.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
-    if (!assets.validNumber())
-        return tecPRECISION_LOSS;
-
     if (vaultAsset.native())
         ;  // No special checks for XRP
     else if (vaultAsset.holds<MPTIssue>())
@@ -220,9 +217,6 @@ VaultDeposit::doApply()
     }
 
     STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
-    // STAmount will ignore enforcement for IOUs, so we can set it regardless of
-    // type.
-    sharesCreated.setIntegerEnforcement(Number::weak);
     try
     {
         // Compute exchange before transferring any amounts.
@@ -233,14 +227,14 @@ VaultDeposit::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
         }
-        if (sharesCreated == beast::zero || !sharesCreated.validNumber())
+        if (sharesCreated == beast::zero)
             return tecPRECISION_LOSS;
 
         auto const maybeAssets =
             sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        else if (*maybeAssets > amount || !maybeAssets->validNumber())
+        else if (*maybeAssets > amount)
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
@@ -266,23 +260,13 @@ VaultDeposit::doApply()
         sharesCreated.asset() != assetsDeposited.asset(),
         "ripple::VaultDeposit::doApply : assets are not shares");
 
-    auto assetsTotalProxy = vault->at(sfAssetsTotal);
-    auto assetsAvailableProxy = vault->at(sfAssetsAvailable);
-    if (vault->at(sfAsset).value().integral())
-    {
-        assetsTotalProxy.value().setIntegerEnforcement(Number::weak);
-        assetsAvailableProxy.value().setIntegerEnforcement(Number::weak);
-    }
-    assetsTotalProxy += assetsDeposited;
-    assetsAvailableProxy += assetsDeposited;
-    if (!assetsTotalProxy.value().valid() ||
-        !assetsAvailableProxy.value().valid())
-        return tecLIMIT_EXCEEDED;
+    vault->at(sfAssetsTotal) += assetsDeposited;
+    vault->at(sfAssetsAvailable) += assetsDeposited;
     view().update(vault);
 
     // A deposit must not push the vault over its limit.
     auto const maximum = *vault->at(sfAssetsMaximum);
-    if (maximum != 0 && *assetsTotalProxy > maximum)
+    if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.
