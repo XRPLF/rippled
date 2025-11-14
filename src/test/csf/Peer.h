@@ -404,7 +404,7 @@ struct Peer
         {
             minDuration = std::min(minDuration, link.data.delay);
 
-            // Send a messsage to neighbors to find the ledger
+            // Send a message to neighbors to find the ledger
             net.send(
                 this, link.target, [to = link.target, from = this, ledgerID]() {
                     if (auto it = to->ledgers.find(ledgerID);

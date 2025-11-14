@@ -13,7 +13,7 @@ namespace test {
 namespace csf {
 
 // Events are emitted by peers at a variety of points during the simulation.
-// Each event is emitted by a particlar peer at a particular time. Collectors
+// Each event is emitted by a particular peer at a particular time. Collectors
 // process these events, perhaps calculating statistics or storing events to
 // a log for post-processing.
 //

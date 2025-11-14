@@ -495,18 +495,18 @@ A coverage report is created when the following steps are completed, in order:
 
 1. `rippled` binary built with instrumentation data, enabled by the `coverage`
    option mentioned above
-2. completed run of unit tests, which populates coverage capture data
+2. completed one or more run of the unit tests, which populates coverage capture data
 3. completed run of the `gcovr` tool (which internally invokes either `gcov` or `llvm-cov`)
    to assemble both instrumentation data and the coverage capture data into a coverage report
 
-The above steps are automated into a single target `coverage`. The instrumented
+The last step of the above is automated into a single target `coverage`. The instrumented
 `rippled` binary can also be used for regular development or testing work, at
 the cost of extra disk space utilization and a small performance hit
-(to store coverage capture). In case of a spurious failure of unit tests, it is
-possible to re-run the `coverage` target without rebuilding the `rippled` binary
-(since it is simply a dependency of the coverage report target). It is also possible
-to select only specific tests for the purpose of the coverage report, by setting
-the `coverage_test` variable in `cmake`
+(to store coverage capture data). Since `rippled` binary is simply a dependency of the
+coverage report target, it is possible to re-run the `coverage` target without
+rebuilding the `rippled` binary. Note, running of the unit tests before the `coverage`
+target is left to the developer. Each such run will append to the coverage data
+collected in the build directory.
 
 The default coverage report format is `html-details`, but the user
 can override it to any of the formats listed in `Builds/CMake/CodeCoverage.cmake`
@@ -514,11 +514,6 @@ by setting the `coverage_format` variable in `cmake`. It is also possible
 to generate more than one format at a time by setting the `coverage_extra_args`
 variable in `cmake`. The specific command line used to run the `gcovr` tool will be
 displayed if the `CODE_COVERAGE_VERBOSE` variable is set.
-
-By default, the code coverage tool runs parallel unit tests with `--unittest-jobs`
-set to the number of available CPU cores. This may cause spurious test
-errors on Apple. Developers can override the number of unit test jobs with
-the `coverage_test_parallelism` variable in `cmake`.
 
 Example use with some cmake variables set:
 
