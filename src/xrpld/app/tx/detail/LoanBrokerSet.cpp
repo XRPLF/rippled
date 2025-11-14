@@ -40,6 +40,12 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
             return temINVALID;
     }
 
+    if (auto const vaultID = tx.at(~sfVaultID))
+    {
+        if (*vaultID == beast::zero)
+            return temINVALID;
+    }
+
     {
         auto const minimumZero = tx[~sfCoverRateMinimum].value_or(0) == 0;
         auto const liquidationZero =

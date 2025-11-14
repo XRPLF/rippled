@@ -822,7 +822,7 @@ getTxFee(Application const& app, Config const& config, Json::Value tx)
         if (!tx[jss::Signers].isArray())
             return config.FEES.reference_fee;
 
-        if (tx[jss::Signers].size() > STTx::maxMultiSigners(&ledger->rules()))
+        if (tx[jss::Signers].size() > STTx::maxMultiSigners)
             return config.FEES.reference_fee;
 
         // check multi-signed signers

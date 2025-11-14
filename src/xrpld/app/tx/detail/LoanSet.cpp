@@ -514,11 +514,16 @@ LoanSet::doApply()
         return tecLIMIT_EXCEEDED;
     }
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
-    if (brokerSle->at(sfCoverAvailable) <
-        tenthBipsOfValue(newDebtTotal, coverRateMinimum))
     {
-        JLOG(j_.warn()) << "Insufficient first-loss capital to cover the loan.";
-        return tecINSUFFICIENT_FUNDS;
+        // Always round the minimum required up.
+        NumberRoundModeGuard mg(Number::upward);
+        if (brokerSle->at(sfCoverAvailable) <
+            tenthBipsOfValue(newDebtTotal, coverRateMinimum))
+        {
+            JLOG(j_.warn())
+                << "Insufficient first-loss capital to cover the loan.";
+            return tecINSUFFICIENT_FUNDS;
+        }
     }
 
     adjustOwnerCount(view, borrowerSle, 1, j_);

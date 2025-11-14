@@ -2113,26 +2113,26 @@ static TER
 rippleSendMultiIOU(
     ApplyView& view,
     AccountID const& senderID,
-    Asset const& asset,
+    Issue const& issue,
     MultiplePaymentDestinations const& receivers,
     STAmount& actual,
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
-    auto const issuer = asset.getIssuer();
+    auto const issuer = issue.getIssuer();
 
     XRPL_ASSERT(
         !isXRP(senderID), "ripple::rippleSendMultiIOU : sender is not XRP");
 
     // These may diverge
-    STAmount takeFromSender{asset};
+    STAmount takeFromSender{issue};
     actual = takeFromSender;
 
     // Failures return immediately.
     for (auto const& r : receivers)
     {
         auto const& receiverID = r.first;
-        STAmount amount{asset, r.second};
+        STAmount amount{issue, r.second};
 
         /* If we aren't sending anything or if the sender is the same as the
          * receiver then we don't need to do anything.
@@ -2315,7 +2315,7 @@ static TER
 accountSendMultiIOU(
     ApplyView& view,
     AccountID const& senderID,
-    Asset const& asset,
+    Issue const& issue,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
     WaiveTransferFee waiveFee)
@@ -2325,27 +2325,14 @@ accountSendMultiIOU(
         "ripple::accountSendMultiIOU",
         "multiple recipients provided");
 
-    if (view.rules().enabled(fixAMMv1_1))
-    {
-        if (asset.holds<MPTIssue>())
-        {
-            return tecINTERNAL;
-        }
-    }
-    else
-    {
-        XRPL_ASSERT(
-            !asset.holds<MPTIssue>(), "ripple::accountSendMultiIOU : not MPT");
-    }
-
-    if (!asset.native())
+    if (!issue.native())
     {
         STAmount actual;
         JLOG(j.trace()) << "accountSendMultiIOU: " << to_string(senderID)
                         << " sending " << receivers.size() << " IOUs";
 
         return rippleSendMultiIOU(
-            view, senderID, asset, receivers, actual, j, waiveFee);
+            view, senderID, issue, receivers, actual, j, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -2370,26 +2357,15 @@ accountSendMultiIOU(
     }
 
     // Failures return immediately.
-    STAmount takeFromSender{asset};
+    STAmount takeFromSender{issue};
     for (auto const& r : receivers)
     {
         auto const& receiverID = r.first;
-        STAmount amount{asset, r.second};
+        STAmount amount{issue, r.second};
 
-        takeFromSender += amount;
-
-        if (view.rules().enabled(fixAMMv1_1))
+        if (amount < beast::zero)
         {
-            if (amount < beast::zero)
-            {
-                return tecINTERNAL;
-            }
-        }
-        else
-        {
-            XRPL_ASSERT(
-                amount >= beast::zero,
-                "ripple::accountSendMultiIOU : minimum amount");
+            return tecINTERNAL;  // LCOV_EXCL_LINE
         }
 
         /* If we aren't sending anything or if the sender is the same as the
@@ -2423,6 +2399,9 @@ accountSendMultiIOU(
             view.creditHook(xrpAccount(), receiverID, amount, -rcvBal);
 
             view.update(receiver);
+
+            // Take what is actually sent
+            takeFromSender += amount;
         }
 
         if (auto stream = j.trace())
@@ -2602,7 +2581,7 @@ static TER
 rippleSendMultiMPT(
     ApplyView& view,
     AccountID const& senderID,
-    Asset const& asset,
+    MPTIssue const& mptIssue,
     MultiplePaymentDestinations const& receivers,
     STAmount& actual,
     beast::Journal j,
@@ -2610,29 +2589,25 @@ rippleSendMultiMPT(
 {
     // Safe to get MPT since rippleSendMultiMPT is only called by
     // accountSendMultiMPT
-    auto const issuer = asset.getIssuer();
+    auto const issuer = mptIssue.getIssuer();
 
-    auto const sle =
-        view.read(keylet::mptIssuance(asset.get<MPTIssue>().getMptID()));
+    auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID()));
     if (!sle)
         return tecOBJECT_NOT_FOUND;
 
     // These may diverge
-    STAmount takeFromSender{asset};
+    STAmount takeFromSender{mptIssue};
     actual = takeFromSender;
 
     for (auto const& r : receivers)
     {
         auto const& receiverID = r.first;
-        STAmount amount{asset, r.second};
+        STAmount amount{mptIssue, r.second};
 
-        XRPL_ASSERT(
-            senderID != receiverID,
-            "ripple::rippleSendMultiMPT : sender is not receiver");
-
-        XRPL_ASSERT(
-            amount >= beast::zero,
-            "ripple::rippleSendMultiMPT : minimum amount ");
+        if (amount < beast::zero)
+        {
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
 
         /* If we aren't sending anything or if the sender is the same as the
          * receiver then we don't need to do anything.
@@ -2723,17 +2698,15 @@ static TER
 accountSendMultiMPT(
     ApplyView& view,
     AccountID const& senderID,
-    Asset const& asset,
+    MPTIssue const& mptIssue,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
-    XRPL_ASSERT(asset.holds<MPTIssue>(), "ripple::accountSendMultiMPT : MPT");
-
     STAmount actual;
 
     return rippleSendMultiMPT(
-        view, senderID, asset, receivers, actual, j, waiveFee);
+        view, senderID, mptIssue, receivers, actual, j, waiveFee);
 }
 
 TER
@@ -2774,10 +2747,10 @@ accountSendMulti(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
                 return accountSendMultiIOU(
-                    view, senderID, asset, receivers, j, waiveFee);
+                    view, senderID, issue, receivers, j, waiveFee);
             else
                 return accountSendMultiMPT(
-                    view, senderID, asset, receivers, j, waiveFee);
+                    view, senderID, issue, receivers, j, waiveFee);
         },
         asset.value());
 }
@@ -3495,20 +3468,14 @@ assetsToSharesDeposit(
 
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount shares{vault->at(sfShareMPTID)};
-    // STAmount will ignore enforcement for IOUs, so we can set it regardless of
-    // type.
-    shares.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return STAmount{
             shares.asset(),
             Number(assets.mantissa(), assets.exponent() + vault->at(sfScale))
-                .truncate(),
-            Number::weak};
+                .truncate()};
 
-    Number const shareTotal{
-        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
-        Number::strong};
-    shares = (shareTotal * (assets / assetTotal)).truncate();
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    shares = ((shareTotal * assets) / assetTotal).truncate();
     return shares;
 }
 
@@ -3529,9 +3496,6 @@ sharesToAssetsDeposit(
 
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount assets{vault->at(sfAsset)};
-    // STAmount will ignore enforcement for IOUs, so we can set it regardless of
-    // type.
-    assets.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return STAmount{
             assets.asset(),
@@ -3539,10 +3503,8 @@ sharesToAssetsDeposit(
             shares.exponent() - vault->at(sfScale),
             false};
 
-    Number const shareTotal{
-        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
-        Number::strong};
-    assets = assetTotal * (shares / shareTotal);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    assets = (assetTotal * shares) / shareTotal;
     return assets;
 }
 
@@ -3565,15 +3527,10 @@ assetsToSharesWithdraw(
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount shares{vault->at(sfShareMPTID)};
-    // STAmount will ignore enforcement for IOUs, so we can set it regardless of
-    // type.
-    shares.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return shares;
-    Number const shareTotal{
-        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
-        Number::strong};
-    Number result = shareTotal * (assets / assetTotal);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    Number result = (shareTotal * assets) / assetTotal;
     if (truncate == TruncateShares::yes)
         result = result.truncate();
     shares = result;
@@ -3598,15 +3555,10 @@ sharesToAssetsWithdraw(
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount assets{vault->at(sfAsset)};
-    // STAmount will ignore enforcement for IOUs, so we can set it regardless of
-    // type.
-    assets.setIntegerEnforcement(Number::weak);
     if (assetTotal == 0)
         return assets;
-    Number const shareTotal{
-        unsafe_cast<std::int64_t>(issuance->at(sfOutstandingAmount)),
-        Number::strong};
-    assets = assetTotal * (shares / shareTotal);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    assets = (assetTotal * shares) / shareTotal;
     return assets;
 }
 

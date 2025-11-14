@@ -274,10 +274,11 @@ constexpr std::uint32_t const tfLoanOverpayment = 0x00010000;
 // LoanPay exclusive flags:
 // tfLoanFullPayment: True, indicates that the payment is
 constexpr std::uint32_t const tfLoanFullPayment = 0x00020000;
+constexpr std::uint32_t const tfLoanLatePayment = 0x00040000;
 constexpr std::uint32_t const tfLoanSetMask = ~(tfUniversal |
     tfLoanOverpayment);
 constexpr std::uint32_t const tfLoanPayMask = ~(tfUniversal |
-    tfLoanOverpayment | tfLoanFullPayment);
+    tfLoanOverpayment | tfLoanFullPayment | tfLoanLatePayment);
 
 // LoanManage flags:
 constexpr std::uint32_t const tfLoanDefault = 0x00010000;

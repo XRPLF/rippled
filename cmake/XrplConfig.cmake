@@ -12,7 +12,7 @@ if (static OR MSVC)
 else ()
   set (Boost_USE_STATIC_RUNTIME OFF)
 endif ()
-find_dependency (Boost 1.70
+find_dependency (Boost
   COMPONENTS
     chrono
     container
@@ -52,5 +52,3 @@ if (TARGET ZLIB::ZLIB)
   set_target_properties(OpenSSL::Crypto PROPERTIES
     INTERFACE_LINK_LIBRARIES ZLIB::ZLIB)
 endif ()
-
-include ("${CMAKE_CURRENT_LIST_DIR}/XrplTargets.cmake")

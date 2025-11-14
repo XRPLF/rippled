@@ -542,7 +542,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfPaymentInterval,      soeREQUIRED},
     {sfGracePeriod,          soeDEFAULT},
     {sfPreviousPaymentDate,  soeDEFAULT},
-    {sfNextPaymentDueDate,   soeOPTIONAL},
+    {sfNextPaymentDueDate,   soeDEFAULT},
     // The loan object tracks these values:
     //
     // - PaymentRemaining: The number of payments left in the loan. When it

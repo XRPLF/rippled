@@ -57,26 +57,44 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
 Expected<uint256, TER>
 determineBrokerID(ReadView const& view, STTx const& tx)
 {
+    // If the broker ID was provided in the transaction, that's all we
+    // need.
     if (auto const brokerID = tx[~sfLoanBrokerID])
         return *brokerID;
 
+    // If the broker ID was not provided, and the amount is either
+    // absent or holds a non-IOU - including MPT, something went wrong,
+    // because that should have been rejected in preflight().
     auto const dstAmount = tx[~sfAmount];
     if (!dstAmount || !dstAmount->holds<Issue>())
         return Unexpected{tecINTERNAL};  // LCOV_EXCL_LINE
 
-    // Since we don't have a LoanBrokerID, holder _should_ be the loan broker's
-    // pseudo-account, but we don't know yet whether it is, so use a generic
-    // placeholder name.
-    auto const holder = dstAmount->getIssuer();
-    auto const sle = view.read(keylet::account(holder));
+    // Every trust line is bidirectional. Both sides are simultaneously
+    // issuer and holder. For this transaction, the Account is acting as
+    // a holder, and clawing back funds from the LoanBroker
+    // Pseudo-account acting as holder. If the Amount is an IOU, and the
+    // `issuer` field specified in that Amount is a LoanBroker
+    // Pseudo-account, we can get the LoanBrokerID from there.
+    //
+    // Thus, Amount.issuer _should_ be the loan broker's
+    // pseudo-account, but we don't know yet whether it is.
+    auto const maybePseudo = dstAmount->getIssuer();
+    auto const sle = view.read(keylet::account(maybePseudo));
+
+    // If the account was not found, the transaction can't go further.
     if (!sle)
         return Unexpected{tecNO_ENTRY};
 
+    // If the account was found, and has a LoanBrokerID (and therefore
+    // is a pseudo-account), that's the
+    // answer we need.
     if (auto const brokerID = sle->at(~sfLoanBrokerID))
         return *brokerID;
 
-    // Or tecWRONG_ASSET?
+    // If the account does not have a LoanBrokerID, the transaction
+    // can't go further, even if it's a different type of Pseudo-account.
     return Unexpected{tecOBJECT_NOT_FOUND};
+    // Or tecWRONG_ASSET?
 }
 
 Expected<Asset, TER>
@@ -115,9 +133,15 @@ determineClawAmount(
     Asset const& vaultAsset,
     std::optional<STAmount> const& amount)
 {
-    auto const maxClawAmount = sleBroker[sfCoverAvailable] -
-        tenthBipsOfValue(sleBroker[sfDebtTotal],
-                         TenthBips32(sleBroker[sfCoverRateMinimum]));
+    auto const maxClawAmount = [&]() {
+        // Always round the minimum required up
+        NumberRoundModeGuard mg1(Number::upward);
+        auto const minRequiredCover = tenthBipsOfValue(
+            sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]));
+        // The subtraction probably won't round, but round down if it does.
+        NumberRoundModeGuard mg2(Number::downward);
+        return sleBroker[sfCoverAvailable] - minRequiredCover;
+    }();
     if (maxClawAmount <= beast::zero)
         return Unexpected(tecINSUFFICIENT_FUNDS);
 

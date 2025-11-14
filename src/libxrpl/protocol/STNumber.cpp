@@ -94,24 +94,6 @@ STNumber::isDefault() const
     return value_ == Number();
 }
 
-void
-STNumber::setIntegerEnforcement(Number::EnforceInteger enforce)
-{
-    value_.setIntegerEnforcement(enforce);
-}
-
-Number::EnforceInteger
-STNumber::integerEnforcement() const noexcept
-{
-    return value_.integerEnforcement();
-}
-
-bool
-STNumber::valid() const noexcept
-{
-    return value_.valid();
-}
-
 std::ostream&
 operator<<(std::ostream& out, STNumber const& rhs)
 {
@@ -187,7 +169,7 @@ numberFromJson(SField const& field, Json::Value const& value)
         }
         else
         {
-            parts.mantissa = -value.asInt();
+            parts.mantissa = value.asAbsUInt();
             parts.negative = true;
         }
     }

@@ -62,15 +62,9 @@ public:
     explicit constexpr
     operator bool() const noexcept;
 
-    operator Number() const
+    operator Number() const noexcept
     {
-        return {value(), Number::strong};
-    }
-
-    Number
-    toNumber(Number::EnforceInteger enforce) const
-    {
-        return {value(), enforce};
+        return value();
     }
 
     /** Return the sign of the amount */

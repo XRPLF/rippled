@@ -1384,7 +1384,7 @@ private:
         // equal asset deposit: unit test to exercise the rounding-down of
         // LPTokens in the AMMHelpers.cpp: adjustLPTokens calculations
         // The LPTokens need to have 16 significant digits and a fractional part
-        for (Number const& deltaLPTokens :
+        for (Number const deltaLPTokens :
              {Number{UINT64_C(100000'0000000009), -10},
               Number{UINT64_C(100000'0000000001), -10}})
         {

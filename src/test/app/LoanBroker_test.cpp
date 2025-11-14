@@ -915,6 +915,17 @@ class LoanBroker_test : public beast::unit_test::suite
             // test
             env(jv, txflags(tfFullyCanonicalSig), ter(temINVALID));
         };
+        auto testZeroVaultID = [&](auto&& getTxJv) {
+            auto jv = getTxJv();
+            // empty broker ID
+            jv[sfVaultID] = "";
+            env(jv, ter(temINVALID));
+            // zero broker ID
+            jv[sfVaultID] = to_string(uint256{});
+            // needs a flag to distinguish the parsed STTx from the prior
+            // test
+            env(jv, txflags(tfFullyCanonicalSig), ter(temINVALID));
+        };
 
         if (brokerTest == CoverDeposit)
         {
@@ -1054,6 +1065,12 @@ class LoanBroker_test : public beast::unit_test::suite
         {
             // preflight: temINVALID (empty/zero broker id)
             testZeroBrokerID([&]() {
+                return env.json(
+                    set(alice, vaultInfo.vaultID),
+                    loanBrokerID(brokerKeylet.key));
+            });
+            // preflight: temINVALID (empty/zero vault id)
+            testZeroVaultID([&]() {
                 return env.json(
                     set(alice, vaultInfo.vaultID),
                     loanBrokerID(brokerKeylet.key));

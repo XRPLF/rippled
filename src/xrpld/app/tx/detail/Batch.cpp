@@ -263,12 +263,21 @@ Batch::preflight(PreflightContext const& ctx)
             return temREDUNDANT;
         }
 
-        if (stx.getFieldU16(sfTransactionType) == ttBATCH)
+        auto const txType = stx.getFieldU16(sfTransactionType);
+        if (txType == ttBATCH)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "batch cannot have an inner batch txn. "
                                 << "txID: " << hash;
             return temINVALID;
+        }
+
+        if (std::any_of(
+                disabledTxTypes.begin(),
+                disabledTxTypes.end(),
+                [txType](auto const& disabled) { return txType == disabled; }))
+        {
+            return temINVALID_INNER_BATCH;
         }
 
         if (!(stx.getFlags() & tfInnerBatchTxn))

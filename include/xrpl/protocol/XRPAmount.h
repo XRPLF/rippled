@@ -143,13 +143,7 @@ public:
 
     operator Number() const noexcept
     {
-        return {drops(), Number::compatible};
-    }
-
-    Number
-    toNumber(Number::EnforceInteger enforce) const
-    {
-        return {value(), enforce};
+        return drops();
     }
 
     /** Return the sign of the amount */

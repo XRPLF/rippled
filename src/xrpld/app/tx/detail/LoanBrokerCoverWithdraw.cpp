@@ -103,11 +103,17 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const coverAvail = sleBroker->at(sfCoverAvailable);
     // Cover Rate is in 1/10 bips units
     auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
-    auto const minimumCover = roundToAsset(
-        vaultAsset,
-        tenthBipsOfValue(
-            currentDebtTotal, TenthBips32(sleBroker->at(sfCoverRateMinimum))),
-        currentDebtTotal.exponent());
+    auto const minimumCover = [&]() {
+        // Always round the minimum required up.
+        // Applies to `tenthBipsOfValue` as well as `roundToAsset`.
+        NumberRoundModeGuard mg(Number::upward);
+        return roundToAsset(
+            vaultAsset,
+            tenthBipsOfValue(
+                currentDebtTotal,
+                TenthBips32(sleBroker->at(sfCoverRateMinimum))),
+            currentDebtTotal.exponent());
+    }();
     if (coverAvail < amount)
         return tecINSUFFICIENT_FUNDS;
     if ((coverAvail - amount) < minimumCover)
