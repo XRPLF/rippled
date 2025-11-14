@@ -763,12 +763,12 @@ PaymentComponents::trackedInterestPart() const
 void
 LoanDeltas::nonNegative()
 {
-    if (principalDelta < beast::zero)
-        principalDelta = numZero;
-    if (interestDueDelta < beast::zero)
-        interestDueDelta = numZero;
-    if (managementFeeDueDelta < beast::zero)
-        managementFeeDueDelta = numZero;
+    if (principal < beast::zero)
+        principal = numZero;
+    if (interest < beast::zero)
+        interest = numZero;
+    if (managementFee < beast::zero)
+        managementFee = numZero;
 }
 
 PaymentComponents
@@ -818,32 +818,31 @@ computePaymentComponents(
 
     // Adjust the deltas if necessary for data integrity
     XRPL_ASSERT_PARTS(
-        deltas.principalDelta <= currentLedgerState.principalOutstanding,
+        deltas.principal <= currentLedgerState.principalOutstanding,
         "ripple::detail::computePaymentComponents",
         "principal delta not greater than outstanding");
 
-    deltas.principalDelta = std::min(
-        deltas.principalDelta, currentLedgerState.principalOutstanding);
+    deltas.principal =
+        std::min(deltas.principal, currentLedgerState.principalOutstanding);
 
     XRPL_ASSERT_PARTS(
-        deltas.interestDueDelta <= currentLedgerState.interestDue,
+        deltas.interest <= currentLedgerState.interestDue,
         "ripple::detail::computePaymentComponents",
         "interest due delta not greater than outstanding");
 
-    deltas.interestDueDelta = std::min(
-        {deltas.interestDueDelta,
-         std::max(numZero, roundedPeriodicPayment - deltas.principalDelta),
+    deltas.interest = std::min(
+        {deltas.interest,
+         std::max(numZero, roundedPeriodicPayment - deltas.principal),
          currentLedgerState.interestDue});
 
     XRPL_ASSERT_PARTS(
-        deltas.managementFeeDueDelta <= currentLedgerState.managementFeeDue,
+        deltas.managementFee <= currentLedgerState.managementFeeDue,
         "ripple::detail::computePaymentComponents",
         "management fee due delta not greater than outstanding");
 
-    deltas.managementFeeDueDelta = std::min(
-        {deltas.managementFeeDueDelta,
-         roundedPeriodicPayment -
-             (deltas.principalDelta + deltas.interestDueDelta),
+    deltas.managementFee = std::min(
+        {deltas.managementFee,
+         roundedPeriodicPayment - (deltas.principal + deltas.interest),
          currentLedgerState.managementFeeDue});
 
     if (paymentRemaining == 1 ||
@@ -853,15 +852,15 @@ computePaymentComponents(
         // parts.
 
         XRPL_ASSERT_PARTS(
-            deltas.valueDelta() <= totalValueOutstanding,
+            deltas.total() <= totalValueOutstanding,
             "ripple::detail::computePaymentComponents",
             "last payment total value agrees");
         XRPL_ASSERT_PARTS(
-            deltas.principalDelta <= principalOutstanding,
+            deltas.principal <= principalOutstanding,
             "ripple::detail::computePaymentComponents",
             "last payment principal agrees");
         XRPL_ASSERT_PARTS(
-            deltas.managementFeeDueDelta <= managementFeeOutstanding,
+            deltas.managementFee <= managementFeeOutstanding,
             "ripple::detail::computePaymentComponents",
             "last payment management fee agrees");
 
@@ -895,12 +894,12 @@ computePaymentComponents(
     };
     auto addressExcess = [&takeFrom](LoanDeltas& deltas, Number& excess) {
         // This order is based on where errors are the least problematic
-        takeFrom(deltas.interestDueDelta, excess);
-        takeFrom(deltas.managementFeeDueDelta, excess);
-        takeFrom(deltas.principalDelta, excess);
+        takeFrom(deltas.interest, excess);
+        takeFrom(deltas.managementFee, excess);
+        takeFrom(deltas.principal, excess);
     };
     Number totalOverpayment =
-        deltas.valueDelta() - currentLedgerState.valueOutstanding;
+        deltas.total() - currentLedgerState.valueOutstanding;
     if (totalOverpayment > beast::zero)
     {
         // LCOV_EXCL_START
@@ -912,7 +911,7 @@ computePaymentComponents(
     }
 
     // Make sure the parts don't add up to too much
-    Number shortage = roundedPeriodicPayment - deltas.valueDelta();
+    Number shortage = roundedPeriodicPayment - deltas.total();
 
     XRPL_ASSERT_PARTS(
         isRounded(asset, shortage, scale),
@@ -937,31 +936,29 @@ computePaymentComponents(
         "no shortage or excess");
 
     XRPL_ASSERT_PARTS(
-        deltas.valueDelta() ==
-            deltas.principalDelta + deltas.interestDueDelta +
-                deltas.managementFeeDueDelta,
+        deltas.total() ==
+            deltas.principal + deltas.interest + deltas.managementFee,
         "ripple::detail::computePaymentComponents",
         "total value adds up");
 
     XRPL_ASSERT_PARTS(
-        deltas.principalDelta >= beast::zero &&
-            deltas.principalDelta <= currentLedgerState.principalOutstanding,
+        deltas.principal >= beast::zero &&
+            deltas.principal <= currentLedgerState.principalOutstanding,
         "ripple::detail::computePaymentComponents",
         "valid principal result");
     XRPL_ASSERT_PARTS(
-        deltas.interestDueDelta >= beast::zero &&
-            deltas.interestDueDelta <= currentLedgerState.interestDue,
+        deltas.interest >= beast::zero &&
+            deltas.interest <= currentLedgerState.interestDue,
         "ripple::detail::computePaymentComponents",
         "valid interest result");
     XRPL_ASSERT_PARTS(
-        deltas.managementFeeDueDelta >= beast::zero &&
-            deltas.managementFeeDueDelta <= currentLedgerState.managementFeeDue,
+        deltas.managementFee >= beast::zero &&
+            deltas.managementFee <= currentLedgerState.managementFeeDue,
         "ripple::detail::computePaymentComponents",
         "valid fee result");
 
     XRPL_ASSERT_PARTS(
-        deltas.principalDelta + deltas.interestDueDelta +
-                deltas.managementFeeDueDelta >
+        deltas.principal + deltas.interest + deltas.managementFee >
             beast::zero,
         "ripple::detail::computePaymentComponents",
         "payment parts add to payment");
@@ -970,13 +967,11 @@ computePaymentComponents(
         // As a final safety check, ensure the value is non-negative, and won't
         // make the corresponding item negative
         .trackedValueDelta = std::clamp(
-            deltas.valueDelta(), numZero, currentLedgerState.valueOutstanding),
+            deltas.total(), numZero, currentLedgerState.valueOutstanding),
         .trackedPrincipalDelta = std::clamp(
-            deltas.principalDelta,
-            numZero,
-            currentLedgerState.principalOutstanding),
+            deltas.principal, numZero, currentLedgerState.principalOutstanding),
         .trackedManagementFeeDelta = std::clamp(
-            deltas.managementFeeDueDelta,
+            deltas.managementFee,
             numZero,
             currentLedgerState.managementFeeDue),
     };
@@ -1031,9 +1026,9 @@ detail::LoanDeltas
 operator-(LoanState const& lhs, LoanState const& rhs)
 {
     detail::LoanDeltas result{
-        .principalDelta = lhs.principalOutstanding - rhs.principalOutstanding,
-        .interestDueDelta = lhs.interestDue - rhs.interestDue,
-        .managementFeeDueDelta = lhs.managementFeeDue - rhs.managementFeeDue,
+        .principal = lhs.principalOutstanding - rhs.principalOutstanding,
+        .interest = lhs.interestDue - rhs.interestDue,
+        .managementFee = lhs.managementFeeDue - rhs.managementFeeDue,
     };
 
     return result;
@@ -1043,10 +1038,10 @@ LoanState
 operator-(LoanState const& lhs, detail::LoanDeltas const& rhs)
 {
     LoanState result{
-        .valueOutstanding = lhs.valueOutstanding - rhs.valueDelta(),
-        .principalOutstanding = lhs.principalOutstanding - rhs.principalDelta,
-        .interestDue = lhs.interestDue - rhs.interestDueDelta,
-        .managementFeeDue = lhs.managementFeeDue - rhs.managementFeeDueDelta,
+        .valueOutstanding = lhs.valueOutstanding - rhs.total(),
+        .principalOutstanding = lhs.principalOutstanding - rhs.principal,
+        .interestDue = lhs.interestDue - rhs.interest,
+        .managementFeeDue = lhs.managementFeeDue - rhs.managementFee,
     };
 
     return result;

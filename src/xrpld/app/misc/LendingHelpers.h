@@ -183,14 +183,14 @@ struct PaymentComponents
 
 struct LoanDeltas
 {
-    Number principalDelta;
-    Number interestDueDelta;
-    Number managementFeeDueDelta;
+    Number principal;
+    Number interest;
+    Number managementFee;
 
     Number
-    valueDelta() const
+    total() const
     {
-        return principalDelta + interestDueDelta + managementFeeDueDelta;
+        return principal + interest + managementFee;
     }
 
     void

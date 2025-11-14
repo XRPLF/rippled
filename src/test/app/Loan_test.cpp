@@ -1004,23 +1004,21 @@ protected:
                 broker.params.managementFeeRate);
             detail::LoanDeltas const deltas = currentTrueState - nextTrueState;
             BEAST_EXPECT(
-                deltas.valueDelta() ==
-                deltas.principalDelta + deltas.interestDueDelta +
-                    deltas.managementFeeDueDelta);
+                deltas.total() ==
+                deltas.principal + deltas.interest + deltas.managementFee);
             BEAST_EXPECT(
                 paymentComponents.specialCase ==
                     detail::PaymentSpecialCase::final ||
-                deltas.valueDelta() == state.periodicPayment ||
+                deltas.total() == state.periodicPayment ||
                 (state.loanScale -
-                 (deltas.valueDelta() - state.periodicPayment).exponent()) >
-                    14);
+                 (deltas.total() - state.periodicPayment).exponent()) > 14);
 
             if (!showStepBalances)
                 log << currencyLabel
                     << " Payment components: " << state.paymentRemaining << ", "
 
-                    << deltas.interestDueDelta << ", " << deltas.principalDelta
-                    << ", " << deltas.managementFeeDueDelta << ", "
+                    << deltas.interest << ", " << deltas.principal << ", "
+                    << deltas.managementFee << ", "
                     << paymentComponents.trackedValueDelta << ", "
                     << paymentComponents.trackedPrincipalDelta << ", "
                     << paymentComponents.trackedInterestPart() << ", "
@@ -1099,17 +1097,17 @@ protected:
                     << paymentComponents.trackedValueDelta
                     << "\n\tTotal value: " << current.valueOutstanding
                     << " (true: " << truncate(nextTrueState.valueOutstanding)
-                    << ", error: " << truncate(errors.valueDelta())
+                    << ", error: " << truncate(errors.total())
                     << ")\n\tPrincipal: " << current.principalOutstanding
                     << " (true: "
                     << truncate(nextTrueState.principalOutstanding)
-                    << ", error: " << truncate(errors.principalDelta)
+                    << ", error: " << truncate(errors.principal)
                     << ")\n\tInterest: " << current.interestDue
                     << " (true: " << truncate(nextTrueState.interestDue)
-                    << ", error: " << truncate(errors.interestDueDelta)
+                    << ", error: " << truncate(errors.interest)
                     << ")\n\tMgmt fee: " << current.managementFeeDue
                     << " (true: " << truncate(nextTrueState.managementFeeDue)
-                    << ", error: " << truncate(errors.managementFeeDueDelta)
+                    << ", error: " << truncate(errors.managementFee)
                     << ")\n\tPayments remaining "
                     << loanSle->at(sfPaymentRemaining) << std::endl;
             }
@@ -2703,9 +2701,8 @@ protected:
                     testcase
                         << currencyLabel
                         << " Payment components: " << state.paymentRemaining
-                        << ", " << deltas.interestDueDelta << ", "
-                        << deltas.principalDelta << ", "
-                        << deltas.managementFeeDueDelta << ", "
+                        << ", " << deltas.interest << ", " << deltas.principal
+                        << ", " << deltas.managementFee << ", "
                         << paymentComponents.trackedValueDelta << ", "
                         << paymentComponents.trackedPrincipalDelta << ", "
                         << paymentComponents.trackedInterestPart() << ", "
@@ -2752,7 +2749,7 @@ protected:
                         state.paymentRemaining < 12 ||
                         roundToAsset(
                             broker.asset,
-                            deltas.principalDelta,
+                            deltas.principal,
                             state.loanScale,
                             Number::upward) ==
                             roundToScale(
@@ -2775,8 +2772,8 @@ protected:
                         paymentComponents.specialCase ==
                             detail::PaymentSpecialCase::final ||
                         (state.periodicPayment.exponent() -
-                         (deltas.principalDelta + deltas.interestDueDelta +
-                          deltas.managementFeeDueDelta - state.periodicPayment)
+                         (deltas.principal + deltas.interest +
+                          deltas.managementFee - state.periodicPayment)
                              .exponent()) > 14);
 
                     auto const borrowerBalanceBeforePayment =
