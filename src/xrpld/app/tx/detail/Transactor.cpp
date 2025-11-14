@@ -143,14 +143,6 @@ preflightCheckSimulateKeys(
 NotTEC
 Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 {
-    // This is inappropriate in preflight0, because only Change transactions
-    // skip this function, and those do not allow an sfTicketSequence field.
-    if (ctx.tx.isFieldPresent(sfTicketSequence) &&
-        !ctx.rules.enabled(featureTicketBatch))
-    {
-        return temMALFORMED;
-    }
-
     if (ctx.tx.isFieldPresent(sfDelegate))
     {
         if (!ctx.rules.enabled(featurePermissionDelegationV1_1))
@@ -442,8 +434,7 @@ Transactor::checkSeqProxy(
 
     if (t_seqProx.isSeq())
     {
-        if (tx.isFieldPresent(sfTicketSequence) &&
-            view.rules().enabled(featureTicketBatch))
+        if (tx.isFieldPresent(sfTicketSequence))
         {
             JLOG(j.trace()) << "applyTransaction: has both a TicketSequence "
                                "and a non-zero Sequence number";
