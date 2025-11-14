@@ -2,6 +2,7 @@
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/mpt.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -3006,10 +3007,29 @@ class Vault_test : public beast::unit_test::suite
                     env(tx2, ter{terNO_RIPPLE});
                     env.close();
 
-                    /*
+                    {
+                        // Create MPToken for shares held by Charlie
+                        Json::Value tx{Json::objectValue};
+                        tx[sfAccount] = charlie.human();
+                        tx[sfMPTokenIssuanceID] =
+                            to_string(shares.raw().get<MPTIssue>().getMptID());
+                        tx[sfTransactionType] = jss::MPTokenAuthorize;
+                        env(tx);
+                        env.close();
+                    }
                     env(pay(owner, charlie, shares(100)));
                     env.close();
-                    */
+
+                    // Charlie cannot withdraw
+                    auto tx3 = vault.withdraw(
+                        {.depositor = charlie,
+                         .id = keylet.key,
+                         .amount = shares(100)});
+                    env(tx3, ter{terNO_RIPPLE});
+                    env.close();
+
+                    env(pay(charlie, owner, shares(100)));
+                    env.close();
                 }
 
                 tx = vault.withdraw(
