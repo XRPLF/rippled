@@ -127,9 +127,9 @@ LoanState
 calculateRoundedLoanState(SLE::const_ref loan);
 
 Number
-computeFee(
+computeManagementFee(
     Asset const& asset,
-    Number const& value,
+    Number const& interest,
     TenthBips32 managementFeeRate,
     std::int32_t scale);
 

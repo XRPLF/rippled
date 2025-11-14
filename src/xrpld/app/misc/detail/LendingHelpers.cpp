@@ -563,7 +563,8 @@ computeInterestAndFeeParts(
     TenthBips16 managementFeeRate,
     std::int32_t loanScale)
 {
-    auto const fee = computeFee(asset, interest, managementFeeRate, loanScale);
+    auto const fee =
+        computeManagementFee(asset, interest, managementFeeRate, loanScale);
 
     return std::make_pair(interest - fee, fee);
 }
@@ -1181,7 +1182,7 @@ calculateRoundedLoanState(SLE::const_ref loan)
 }
 
 Number
-computeFee(
+computeManagementFee(
     Asset const& asset,
     Number const& value,
     TenthBips32 managementFeeRate,
@@ -1248,7 +1249,7 @@ computeLoanProperties(
     principalOutstanding = roundToAsset(
         asset, principalOutstanding, loanScale, Number::to_nearest);
 
-    auto const feeOwedToBroker = computeFee(
+    auto const feeOwedToBroker = computeManagementFee(
         asset,
         /*
          * This formula is from the XLS-66 spec, section 3.2.4.2 (Total Loan
