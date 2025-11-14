@@ -361,52 +361,6 @@ class Ticket_test : public beast::unit_test::suite
     }
 
     void
-    testTicketNotEnabled()
-    {
-        testcase("Feature Not Enabled");
-
-        using namespace test::jtx;
-        Env env{*this, testable_amendments() - featureTicketBatch};
-
-        env(ticket::create(env.master, 1), ter(temDISABLED));
-        env.close();
-        env.require(owners(env.master, 0), tickets(env.master, 0));
-
-        env(noop(env.master), ticket::use(1), ter(temMALFORMED));
-        env(noop(env.master),
-            ticket::use(1),
-            seq(env.seq(env.master)),
-            ter(temMALFORMED));
-
-        // Close enough ledgers that the previous transactions are no
-        // longer retried.
-        for (int i = 0; i < 8; ++i)
-            env.close();
-
-        env.enableFeature(featureTicketBatch);
-        env.close();
-        env.require(owners(env.master, 0), tickets(env.master, 0));
-
-        std::uint32_t ticketSeq{env.seq(env.master) + 1};
-        env(ticket::create(env.master, 2));
-        checkTicketCreateMeta(env);
-        env.close();
-        env.require(owners(env.master, 2), tickets(env.master, 2));
-
-        env(noop(env.master), ticket::use(ticketSeq++));
-        checkTicketConsumeMeta(env);
-        env.close();
-        env.require(owners(env.master, 1), tickets(env.master, 1));
-
-        env(fset(env.master, asfDisableMaster),
-            ticket::use(ticketSeq++),
-            ter(tecNO_ALTERNATIVE_KEY));
-        checkTicketConsumeMeta(env);
-        env.close();
-        env.require(owners(env.master, 0), tickets(env.master, 0));
-    }
-
-    void
     testTicketCreatePreflightFail()
     {
         testcase("Create Tickets that fail Preflight");
@@ -907,70 +861,43 @@ class Ticket_test : public beast::unit_test::suite
     void
     testFixBothSeqAndTicket()
     {
+        using namespace test::jtx;
+
         // It is an error if a transaction contains a non-zero Sequence field
         // and a TicketSequence field.  Verify that the error is detected.
         testcase("Fix both Seq and Ticket");
 
-        // Try the test without featureTicketBatch enabled.
-        using namespace test::jtx;
-        {
-            Env env{*this, testable_amendments() - featureTicketBatch};
-            Account alice{"alice"};
+        Env env{*this, testable_amendments()};
+        Account alice{"alice"};
 
-            env.fund(XRP(10000), alice);
-            env.close();
+        env.fund(XRP(10000), alice);
+        env.close();
 
-            // Fail to create a ticket.
-            std::uint32_t const ticketSeq = env.seq(alice) + 1;
-            env(ticket::create(alice, 1), ter(temDISABLED));
-            env.close();
-            env.require(owners(alice, 0), tickets(alice, 0));
-            BEAST_EXPECT(ticketSeq == env.seq(alice) + 1);
+        // Create a ticket.
+        std::uint32_t const ticketSeq = env.seq(alice) + 1;
+        env(ticket::create(alice, 1));
+        env.close();
+        env.require(owners(alice, 1), tickets(alice, 1));
+        BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
 
-            // Create a transaction that includes both a ticket and a non-zero
-            // sequence number.  Since a ticket is used and tickets are not yet
-            // enabled the transaction should be malformed.
-            env(noop(alice),
-                ticket::use(ticketSeq),
-                seq(env.seq(alice)),
-                ter(temMALFORMED));
-            env.close();
-        }
-        // Try the test with featureTicketBatch enabled.
-        {
-            Env env{*this, testable_amendments()};
-            Account alice{"alice"};
+        // Create a transaction that includes both a ticket and a non-zero
+        // sequence number.  The transaction fails with temSEQ_AND_TICKET.
+        env(noop(alice),
+            ticket::use(ticketSeq),
+            seq(env.seq(alice)),
+            ter(temSEQ_AND_TICKET));
+        env.close();
 
-            env.fund(XRP(10000), alice);
-            env.close();
-
-            // Create a ticket.
-            std::uint32_t const ticketSeq = env.seq(alice) + 1;
-            env(ticket::create(alice, 1));
-            env.close();
-            env.require(owners(alice, 1), tickets(alice, 1));
-            BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
-
-            // Create a transaction that includes both a ticket and a non-zero
-            // sequence number.  The transaction fails with temSEQ_AND_TICKET.
-            env(noop(alice),
-                ticket::use(ticketSeq),
-                seq(env.seq(alice)),
-                ter(temSEQ_AND_TICKET));
-            env.close();
-
-            // Verify that the transaction failed by looking at alice's
-            // sequence number and tickets.
-            env.require(owners(alice, 1), tickets(alice, 1));
-            BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
-        }
+        // Verify that the transaction failed by looking at alice's
+        // sequence number and tickets.
+        env.require(owners(alice, 1), tickets(alice, 1));
+        BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
     }
 
 public:
     void
     run() override
     {
-        testTicketNotEnabled();
         testTicketCreatePreflightFail();
         testTicketCreatePreclaimFail();
         testTicketInsufficientReserve();

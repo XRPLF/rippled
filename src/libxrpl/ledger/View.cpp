@@ -2883,7 +2883,7 @@ assetsToSharesDeposit(
                 .truncate()};
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
-    shares = (shareTotal * (assets / assetTotal)).truncate();
+    shares = ((shareTotal * assets) / assetTotal).truncate();
     return shares;
 }
 
@@ -2912,7 +2912,7 @@ sharesToAssetsDeposit(
             false};
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
-    assets = assetTotal * (shares / shareTotal);
+    assets = (assetTotal * shares) / shareTotal;
     return assets;
 }
 
@@ -2938,7 +2938,7 @@ assetsToSharesWithdraw(
     if (assetTotal == 0)
         return shares;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
-    Number result = shareTotal * (assets / assetTotal);
+    Number result = (shareTotal * assets) / assetTotal;
     if (truncate == TruncateShares::yes)
         result = result.truncate();
     shares = result;
@@ -2966,7 +2966,7 @@ sharesToAssetsWithdraw(
     if (assetTotal == 0)
         return assets;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
-    assets = assetTotal * (shares / shareTotal);
+    assets = (assetTotal * shares) / shareTotal;
     return assets;
 }
 

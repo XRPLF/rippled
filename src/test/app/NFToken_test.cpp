@@ -6808,7 +6808,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                         mintAndCreateSellOffer(env, alice, XRP(0));
 
                     // Bob can accept the offer because the new NFT is stored in
-                    // an existing NFTokenPage so no new reserve is requried
+                    // an existing NFTokenPage so no new reserve is required
                     env(token::acceptSellOffer(bob, sellOfferIndex));
                     env.close();
                 }

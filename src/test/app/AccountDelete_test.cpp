@@ -268,12 +268,8 @@ public:
 
         testcase("Owned types");
 
-        // We want to test both...
-        //  o Old-style PayChannels without a recipient backlink as well as
-        //  o New-styled PayChannels with the backlink.
-        // So we start the test using old-style PayChannels.  Then we pass
-        // the amendment to get new-style PayChannels.
-        Env env{*this, testable_amendments() - fixPayChanRecipientOwnerDir};
+        // We want to test PayChannels with the backlink.
+        Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const becky("becky");
         Account const gw("gw");
@@ -374,16 +370,14 @@ public:
             alice, becky, XRP(57), 4s, env.now() + 2s, alice.pk()));
         env.close();
 
-        // An old-style PayChannel does not add a back link from the
-        // destination.  So with the PayChannel in place becky should be
-        // able to delete her account, but alice should not.
+        // With the PayChannel in place becky and alice should not be
+        // able to delete her account
         auto const beckyBalance{env.balance(becky)};
         env(acctdelete(alice, gw), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
-        env(acctdelete(becky, gw), fee(acctDelFee));
-        verifyDeliveredAmount(env, beckyBalance - acctDelFee);
+        env(acctdelete(becky, gw), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
         env.close();
 
-        // Alice cancels her PayChannel which will leave her with only offers
+        // Alice cancels her PayChannel, which will leave her with only offers
         // in her directory.
 
         // Lambda to close a PayChannel.
@@ -401,14 +395,8 @@ public:
         env(payChanClose(alice, alicePayChanKey, alice.pk()));
         env.close();
 
-        // Now enable the amendment so PayChannels add a backlink from the
-        // destination.
-        env.enableFeature(fixPayChanRecipientOwnerDir);
-        env.close();
-
-        // gw creates a PayChannel with alice as the destination.  With the
-        // amendment passed this should prevent alice from deleting her
-        // account.
+        // gw creates a PayChannel with alice as the destination, this should
+        // prevent alice from deleting her account.
         Keylet const gwPayChanKey{keylet::payChan(gw, alice, env.seq(gw))};
 
         env(payChanCreate(gw, alice, XRP(68), 4s, env.now() + 2s, alice.pk()));
@@ -428,84 +416,6 @@ public:
         env(acctdelete(alice, gw), fee(acctDelFee));
         verifyDeliveredAmount(env, aliceBalance - acctDelFee);
         env.close();
-    }
-
-    void
-    testResurrection()
-    {
-        // Create an account with an old-style PayChannel.  Delete the
-        // destination of the PayChannel then resurrect the destination.
-        // The PayChannel should still work.
-        using namespace jtx;
-
-        testcase("Resurrection");
-
-        // We need an old-style PayChannel that doesn't provide a backlink
-        // from the destination.  So don't enable the amendment with that fix.
-        Env env{*this, testable_amendments() - fixPayChanRecipientOwnerDir};
-        Account const alice("alice");
-        Account const becky("becky");
-
-        env.fund(XRP(10000), alice, becky);
-        env.close();
-
-        // Verify that becky's account root is present.
-        Keylet const beckyAcctKey{keylet::account(becky.id())};
-        BEAST_EXPECT(env.closed()->exists(beckyAcctKey));
-
-        using namespace std::chrono_literals;
-        Keylet const payChanKey{keylet::payChan(alice, becky, env.seq(alice))};
-        auto const payChanXRP = XRP(37);
-
-        env(payChanCreate(
-            alice, becky, payChanXRP, 4s, env.now() + 1h, alice.pk()));
-        env.close();
-        BEAST_EXPECT(env.closed()->exists(payChanKey));
-
-        // Close enough ledgers to be able to delete becky's account.
-        incLgrSeqForAccDel(env, becky);
-
-        auto const beckyPreDelBalance{env.balance(becky)};
-
-        auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(becky, alice), fee(acctDelFee));
-        verifyDeliveredAmount(env, beckyPreDelBalance - acctDelFee);
-        env.close();
-
-        // Verify that becky's account root is gone.
-        BEAST_EXPECT(!env.closed()->exists(beckyAcctKey));
-
-        // All it takes is a large enough XRP payment to resurrect
-        // becky's account.  Try too small a payment.
-        env(pay(alice,
-                becky,
-                drops(env.current()->fees().accountReserve(0)) - XRP(1)),
-            ter(tecNO_DST_INSUF_XRP));
-        env.close();
-
-        // Actually resurrect becky's account.
-        env(pay(alice, becky, XRP(10)));
-        env.close();
-
-        // becky's account root should be back.
-        BEAST_EXPECT(env.closed()->exists(beckyAcctKey));
-        BEAST_EXPECT(env.balance(becky) == XRP(10));
-
-        // becky's resurrected account can be the destination of alice's
-        // PayChannel.
-        auto payChanClaim = [&]() {
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::PaymentChannelClaim;
-            jv[jss::Account] = alice.human();
-            jv[sfChannel.jsonName] = to_string(payChanKey.key);
-            jv[sfBalance.jsonName] =
-                payChanXRP.value().getJson(JsonOptions::none);
-            return jv;
-        };
-        env(payChanClaim());
-        env.close();
-
-        BEAST_EXPECT(env.balance(becky) == XRP(10) + payChanXRP);
     }
 
     void
@@ -1238,7 +1148,6 @@ public:
         testBasics();
         testDirectories();
         testOwnedTypes();
-        testResurrection();
         testAmendmentEnable();
         testTooManyOffers();
         testImplicitlyCreatedTrustline();
