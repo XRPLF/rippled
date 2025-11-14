@@ -118,13 +118,13 @@ calculateRawLoanState(
     TenthBips32 const managementFeeRate);
 
 LoanState
-calculateRoundedLoanState(
+constructRoundedLoanState(
     Number const& totalValueOutstanding,
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding);
 
 LoanState
-calculateRoundedLoanState(SLE::const_ref loan);
+constructRoundedLoanState(SLE::const_ref loan);
 
 Number
 computeManagementFee(

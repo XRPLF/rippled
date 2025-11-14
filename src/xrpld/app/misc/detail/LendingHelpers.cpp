@@ -369,7 +369,7 @@ tryOverpayment(
 {
     auto const raw = calculateRawLoanState(
         periodicPayment, periodicRate, paymentRemaining, managementFeeRate);
-    auto const rounded = calculateRoundedLoanState(
+    auto const rounded = constructRoundedLoanState(
         totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
 
     auto const totalValueError = totalValueOutstanding - raw.valueOutstanding;
@@ -437,7 +437,7 @@ tryOverpayment(
         // LCOV_EXCL_STOP
     }
 
-    auto const newRounded = calculateRoundedLoanState(
+    auto const newRounded = constructRoundedLoanState(
         totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
     auto const valueChange =
         newRounded.interestOutstanding() - rounded.interestOutstanding();
@@ -810,7 +810,7 @@ computePaymentComponents(
         .interestDue = roundToAsset(asset, trueTarget.interestDue, scale),
         .managementFeeDue =
             roundToAsset(asset, trueTarget.managementFeeDue, scale)};
-    LoanState const currentLedgerState = calculateRoundedLoanState(
+    LoanState const currentLedgerState = constructRoundedLoanState(
         totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
 
     LoanDeltas deltas = currentLedgerState - roundedTarget;
@@ -1157,7 +1157,7 @@ calculateRawLoanState(
 }
 
 LoanState
-calculateRoundedLoanState(
+constructRoundedLoanState(
     Number const& totalValueOutstanding,
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding)
@@ -1173,9 +1173,9 @@ calculateRoundedLoanState(
 }
 
 LoanState
-calculateRoundedLoanState(SLE::const_ref loan)
+constructRoundedLoanState(SLE::const_ref loan)
 {
-    return calculateRoundedLoanState(
+    return constructRoundedLoanState(
         loan->at(sfTotalValueOutstanding),
         loan->at(sfPrincipalOutstanding),
         loan->at(sfManagementFeeOutstanding));
@@ -1375,7 +1375,7 @@ loanMakePayment(
         Number const closePaymentFee =
             roundToAsset(asset, loan->at(sfClosePaymentFee), loanScale);
 
-        LoanState const roundedLoanState = calculateRoundedLoanState(
+        LoanState const roundedLoanState = constructRoundedLoanState(
             totalValueOutstandingProxy,
             principalOutstandingProxy,
             managementFeeOutstandingProxy);

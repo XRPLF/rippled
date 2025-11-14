@@ -376,7 +376,7 @@ protected:
                     loan->at(sfPeriodicPayment) == periodicPayment);
                 env.test.BEAST_EXPECT(loan->at(sfFlags) == flags);
 
-                auto const ls = calculateRoundedLoanState(loan);
+                auto const ls = constructRoundedLoanState(loan);
 
                 auto const interestRate = TenthBips32{loan->at(sfInterestRate)};
                 auto const paymentInterval = loan->at(sfPaymentInterval);
@@ -546,7 +546,7 @@ protected:
                 state.loanScale));
         BEAST_EXPECT(
             state.managementFeeOutstanding ==
-            computeFee(
+            computeManagementFee(
                 broker.asset,
                 state.totalValue - state.principalOutstanding,
                 broker.params.managementFeeRate,
@@ -897,7 +897,7 @@ protected:
                 periodicRate,
                 state.paymentRemaining,
                 broker.params.managementFeeRate);
-            auto const rounded = calculateRoundedLoanState(
+            auto const rounded = constructRoundedLoanState(
                 state.totalValue,
                 state.principalOutstanding,
                 state.managementFeeOutstanding);
@@ -1092,7 +1092,7 @@ protected:
                 if (!BEAST_EXPECT(loanSle))
                     // No reason for this not to exist
                     return;
-                auto const current = calculateRoundedLoanState(loanSle);
+                auto const current = constructRoundedLoanState(loanSle);
                 auto const errors = nextTrueState - current;
                 log << currencyLabel << " Loan balances: "
                     << "\n\tAmount taken: "
@@ -2628,7 +2628,7 @@ protected:
                         periodicRate,
                         state.paymentRemaining,
                         broker.params.managementFeeRate);
-                    auto const rounded = calculateRoundedLoanState(
+                    auto const rounded = constructRoundedLoanState(
                         state.totalValue,
                         state.principalOutstanding,
                         state.managementFeeOutstanding);
@@ -5747,7 +5747,7 @@ protected:
         Number const latePaymentFeeRounded = roundToAsset(
             broker.asset, loanSle->at(sfLatePaymentFee), state.loanScale);
 
-        auto const roundedLoanState = calculateRoundedLoanState(
+        auto const roundedLoanState = constructRoundedLoanState(
             state.totalValue,
             state.principalOutstanding,
             state.managementFeeOutstanding);
@@ -5776,7 +5776,7 @@ protected:
 
         Number const roundedFullInterestAmount =
             roundToAsset(broker.asset, fullPaymentInterest, state.loanScale);
-        Number const roundedFullManagementFee = computeFee(
+        Number const roundedFullManagementFee = computeManagementFee(
             broker.asset,
             roundedFullInterestAmount,
             managementFeeRate,
@@ -5807,7 +5807,7 @@ protected:
         Number const lateInterestRaw = state.principalOutstanding * overdueRate;
         Number const lateInterestRounded =
             roundToAsset(broker.asset, lateInterestRaw, state.loanScale);
-        Number const lateManagementFeeRounded = computeFee(
+        Number const lateManagementFeeRounded = computeManagementFee(
             broker.asset,
             lateInterestRounded,
             managementFeeRate,
@@ -6060,7 +6060,7 @@ protected:
         // Round to asset scale and split interest/fee parts
         auto const roundedInterest =
             roundToAsset(asset.raw(), fullPaymentInterest, after.loanScale);
-        Number const roundedFullMgmtFee = computeFee(
+        Number const roundedFullMgmtFee = computeManagementFee(
             asset.raw(), roundedInterest, managementFeeRate, after.loanScale);
         Number const roundedFullInterest = roundedInterest - roundedFullMgmtFee;
 
@@ -6094,7 +6094,7 @@ protected:
             closeInterestRate);
         auto const roundedInterestClamped = roundToAsset(
             asset.raw(), fullPaymentInterestClamped, after.loanScale);
-        Number const roundedFullMgmtFeeClamped = computeFee(
+        Number const roundedFullMgmtFeeClamped = computeManagementFee(
             asset.raw(),
             roundedInterestClamped,
             managementFeeRate,
@@ -6268,7 +6268,7 @@ protected:
             auto const loanSle = env.le(loanKeylet);
             if (!BEAST_EXPECT(loanSle))
                 return;
-            auto const state = calculateRoundedLoanState(loanSle);
+            auto const state = constructRoundedLoanState(loanSle);
 
             log << "Loan state:" << std::endl;
             log << "  ValueOutstanding: " << state.valueOutstanding
