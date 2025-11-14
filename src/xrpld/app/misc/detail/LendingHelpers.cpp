@@ -685,7 +685,7 @@ computeFullPayment(
     {
         // If this is the last payment, it has to be a regular payment
         JLOG(j.warn()) << "Full payment requested when only final "
-                        << "payment remains.";
+                       << "payment remains.";
         return Unexpected(tecKILLED);
     }
 
