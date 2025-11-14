@@ -219,7 +219,7 @@ loanAccruedInterest(
         paymentInterval;
 }
 
-struct PaymentComponentsPlus : public PaymentComponents
+struct ExtendedPaymentComponents : public PaymentComponents
 {
     // untrackedManagementFeeDelta includes any fees that go directly to the
     // Broker, such as late fees. This value may be negative, though the final
@@ -232,7 +232,7 @@ struct PaymentComponentsPlus : public PaymentComponents
     Number untrackedInterest;
     Number totalDue;
 
-    PaymentComponentsPlus(
+    ExtendedPaymentComponents(
         PaymentComponents const& p,
         Number f,
         Number v = numZero)
@@ -248,7 +248,7 @@ struct PaymentComponentsPlus : public PaymentComponents
 template <class NumberProxy, class UInt32Proxy, class UInt32OptionalProxy>
 LoanPaymentParts
 doPayment(
-    PaymentComponentsPlus const& payment,
+    ExtendedPaymentComponents const& payment,
     NumberProxy& totalValueOutstandingProxy,
     NumberProxy& principalOutstandingProxy,
     NumberProxy& managementFeeOutstandingProxy,
@@ -353,7 +353,7 @@ Expected<LoanPaymentParts, TER>
 tryOverpayment(
     Asset const& asset,
     std::int32_t loanScale,
-    PaymentComponentsPlus const& overpaymentComponents,
+    ExtendedPaymentComponents const& overpaymentComponents,
     Number& totalValueOutstanding,
     Number& principalOutstanding,
     Number& managementFeeOutstanding,
@@ -460,7 +460,7 @@ Expected<LoanPaymentParts, TER>
 doOverpayment(
     Asset const& asset,
     std::int32_t loanScale,
-    PaymentComponentsPlus const& overpaymentComponents,
+    ExtendedPaymentComponents const& overpaymentComponents,
     NumberProxy& totalValueOutstandingProxy,
     NumberProxy& principalOutstandingProxy,
     NumberProxy& managementFeeOutstandingProxy,
@@ -583,13 +583,13 @@ computeInterestAndFeeParts(
  * * section 3.2.4.1.2 (Late Payment)
  */
 
-Expected<PaymentComponentsPlus, TER>
+Expected<ExtendedPaymentComponents, TER>
 computeLatePayment(
     Asset const& asset,
     ApplyView const& view,
     Number const& principalOutstanding,
     std::int32_t nextDueDate,
-    PaymentComponentsPlus const& periodic,
+    ExtendedPaymentComponents const& periodic,
     TenthBips32 lateInterestRate,
     std::int32_t loanScale,
     Number const& latePaymentFee,
@@ -625,10 +625,10 @@ computeLatePayment(
         "no extra parts to this payment");
     // Copy the periodic payment values, and add on the late interest.
     // This preserves all the other fields without having to enumerate them.
-    PaymentComponentsPlus const late = [&]() {
+    ExtendedPaymentComponents const late = [&]() {
         auto inner = periodic;
 
-        return PaymentComponentsPlus{
+        return ExtendedPaymentComponents{
             inner,
             // A late payment pays both the normal fee, and the extra fees
             periodic.untrackedManagementFee + latePaymentFee +
@@ -656,12 +656,12 @@ computeLatePayment(
 /* Handle possible full payments.
  *
  * If this function processed a full payment, the return value will be
- * a PaymentComponentsPlus object. Otherwise, it'll be an Unexpected with the
- * error code the caller is expected to return. It should NEVER return
+ * an ExtendedPaymentComponents object. Otherwise, it'll be an Unexpected with
+ * the error code the caller is expected to return. It should NEVER return
  * tesSUCCESS
  */
 
-Expected<PaymentComponentsPlus, TER>
+Expected<ExtendedPaymentComponents, TER>
 computeFullPayment(
     Asset const& asset,
     ApplyView& view,
@@ -709,7 +709,7 @@ computeFullPayment(
         return std::make_tuple(parts.first, parts.second);
     }();
 
-    PaymentComponentsPlus const full{
+    ExtendedPaymentComponents const full{
         PaymentComponents{
             .trackedValueDelta = principalOutstanding +
                 totalInterestOutstanding + managementFeeOutstanding,
@@ -958,8 +958,7 @@ computePaymentComponents(
         "valid fee result");
 
     XRPL_ASSERT_PARTS(
-        deltas.principal + deltas.interest + deltas.managementFee >
-            beast::zero,
+        deltas.principal + deltas.interest + deltas.managementFee > beast::zero,
         "ripple::detail::computePaymentComponents",
         "payment parts add to payment");
 
@@ -971,13 +970,11 @@ computePaymentComponents(
         .trackedPrincipalDelta = std::clamp(
             deltas.principal, numZero, currentLedgerState.principalOutstanding),
         .trackedManagementFeeDelta = std::clamp(
-            deltas.managementFee,
-            numZero,
-            currentLedgerState.managementFeeDue),
+            deltas.managementFee, numZero, currentLedgerState.managementFeeDue),
     };
 }
 
-PaymentComponentsPlus
+ExtendedPaymentComponents
 computeOverpaymentComponents(
     Asset const& asset,
     int32_t const loanScale,
@@ -1009,7 +1006,7 @@ computeOverpaymentComponents(
                 asset, interest, managementFeeRate, loanScale);
         }();
 
-    return detail::PaymentComponentsPlus{
+    return detail::ExtendedPaymentComponents{
         detail::PaymentComponents{
             .trackedValueDelta = payment,
             .trackedPrincipalDelta = payment - roundedOverpaymentInterest -
@@ -1419,7 +1416,7 @@ loanMakePayment(
     // -------------------------------------------------------------
     // compute the periodic payment info that will be needed whether the payment
     // is late or regular
-    detail::PaymentComponentsPlus periodic{
+    detail::ExtendedPaymentComponents periodic{
         detail::computePaymentComponents(
             asset,
             loanScale,
@@ -1526,7 +1523,7 @@ loanMakePayment(
         if (periodic.specialCase == detail::PaymentSpecialCase::final)
             break;
 
-        periodic = detail::PaymentComponentsPlus{
+        periodic = detail::ExtendedPaymentComponents{
             detail::computePaymentComponents(
                 asset,
                 loanScale,
@@ -1574,7 +1571,7 @@ loanMakePayment(
         Number const overpayment =
             std::min(amount - totalPaid, *totalValueOutstandingProxy);
 
-        detail::PaymentComponentsPlus const overpaymentComponents =
+        detail::ExtendedPaymentComponents const overpaymentComponents =
             detail::computeOverpaymentComponents(
                 asset,
                 loanScale,
