@@ -180,13 +180,10 @@ public:
         // an offer.  Show that the attempt to remove the offer fails.
         env.require(offers(alice, 2));
 
-        // featureDepositPreauths changes the return code on an expired Offer.
-        // Adapt to that.
-        bool const featPreauth{features[featureDepositPreauth]};
         env(offer(alice, XRP(5), USD(2)),
             json(sfExpiration.fieldName, lastClose(env)),
             json(jss::OfferSequence, offer2Seq),
-            ter(featPreauth ? TER{tecEXPIRED} : TER{tesSUCCESS}));
+            ter(tecEXPIRED));
         env.close();
 
         env.require(offers(alice, 2));
@@ -1082,13 +1079,9 @@ public:
             offers(alice, 0),
             owners(alice, 1));
 
-        // Place an offer that should have already expired.
-        // The DepositPreauth amendment changes the return code; adapt to that.
-        bool const featPreauth{features[featureDepositPreauth]};
-
         env(offer(alice, xrpOffer, usdOffer),
             json(sfExpiration.fieldName, lastClose(env)),
-            ter(featPreauth ? TER{tecEXPIRED} : TER{tesSUCCESS}));
+            ter(tecEXPIRED));
 
         env.require(
             balance(alice, startBalance - f - f),
@@ -4499,21 +4492,13 @@ public:
         env(fset(gw, asfRequireAuth));
         env.close();
 
-        // The test behaves differently with or without DepositPreauth.
-        bool const preauth = features[featureDepositPreauth];
-
         // Before DepositPreauth an account with lsfRequireAuth set could not
         // create an offer to buy their own currency.  After DepositPreauth
         // they can.
-        env(offer(gw, gwUSD(40), XRP(4000)),
-            ter(preauth ? TER{tesSUCCESS} : TER{tecNO_LINE}));
+        env(offer(gw, gwUSD(40), XRP(4000)), ter(tesSUCCESS));
         env.close();
 
-        env.require(offers(gw, preauth ? 1 : 0));
-
-        if (!preauth)
-            // The rest of the test verifies DepositPreauth behavior.
-            return;
+        env.require(offers(gw, 1));
 
         // Set up an authorized trust line and pay alice gwUSD 50.
         env(trust(gw, aliceUSD(100)), txflags(tfSetfAuth));

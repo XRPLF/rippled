@@ -417,43 +417,28 @@ Payment::doApply()
         view().update(sleDst);
     }
 
-    // Determine whether the destination requires deposit authorization.
-    bool const depositAuth = view().rules().enabled(featureDepositAuth);
-    bool const reqDepositAuth =
-        sleDst->getFlags() & lsfDepositAuth && depositAuth;
-
-    bool const depositPreauth = view().rules().enabled(featureDepositPreauth);
-
     bool const ripple =
         (hasPaths || sendMax || !dstAmount.native()) && !mptDirect;
-
-    // If the destination has lsfDepositAuth set, then only direct XRP
-    // payments (no intermediate steps) are allowed to the destination.
-    if (!depositPreauth && ripple && reqDepositAuth)
-        return tecNO_PERMISSION;
 
     if (ripple)
     {
         // Ripple payment with at least one intermediate step and uses
         // transitive balances.
 
-        if (depositPreauth && depositAuth)
-        {
-            // If depositPreauth is enabled, then an account that requires
-            // authorization has two ways to get an IOU Payment in:
-            //  1. If Account == Destination, or
-            //  2. If Account is deposit preauthorized by destination.
+        // An account that requires authorization has two ways to get an
+        // IOU Payment in:
+        //  1. If Account == Destination, or
+        //  2. If Account is deposit preauthorized by destination.
 
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx,
-                    ctx_.view(),
-                    account_,
-                    dstAccountID,
-                    sleDst,
-                    ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx,
+                ctx_.view(),
+                account_,
+                dstAccountID,
+                sleDst,
+                ctx_.journal);
+            !isTesSuccess(err))
+            return err;
 
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = partialPaymentAllowed;
@@ -630,43 +615,40 @@ Payment::doApply()
 
     // The source account does have enough money.  Make sure the
     // source account has authority to deposit to the destination.
-    if (depositAuth)
+    // An account that requires authorization has three ways to get an XRP
+    // Payment in:
+    //  1. If Account == Destination, or
+    //  2. If Account is deposit preauthorized by destination, or
+    //  3. If the destination's XRP balance is
+    //    a. less than or equal to the base reserve and
+    //    b. the deposit amount is less than or equal to the base reserve,
+    // then we allow the deposit.
+    //
+    // Rule 3 is designed to keep an account from getting wedged
+    // in an unusable state if it sets the lsfDepositAuth flag and
+    // then consumes all of its XRP.  Without the rule if an
+    // account with lsfDepositAuth set spent all of its XRP, it
+    // would be unable to acquire more XRP required to pay fees.
+    //
+    // We choose the base reserve as our bound because it is
+    // a small number that seldom changes but is always sufficient
+    // to get the account un-wedged.
+
+    // Get the base reserve.
+    XRPAmount const dstReserve{view().fees().reserve};
+
+    if (dstAmount > dstReserve ||
+        sleDst->getFieldAmount(sfBalance) > dstReserve)
     {
-        // If depositPreauth is enabled, then an account that requires
-        // authorization has three ways to get an XRP Payment in:
-        //  1. If Account == Destination, or
-        //  2. If Account is deposit preauthorized by destination, or
-        //  3. If the destination's XRP balance is
-        //    a. less than or equal to the base reserve and
-        //    b. the deposit amount is less than or equal to the base reserve,
-        // then we allow the deposit.
-        //
-        // Rule 3 is designed to keep an account from getting wedged
-        // in an unusable state if it sets the lsfDepositAuth flag and
-        // then consumes all of its XRP.  Without the rule if an
-        // account with lsfDepositAuth set spent all of its XRP, it
-        // would be unable to acquire more XRP required to pay fees.
-        //
-        // We choose the base reserve as our bound because it is
-        // a small number that seldom changes but is always sufficient
-        // to get the account un-wedged.
-
-        // Get the base reserve.
-        XRPAmount const dstReserve{view().fees().reserve};
-
-        if (dstAmount > dstReserve ||
-            sleDst->getFieldAmount(sfBalance) > dstReserve)
-        {
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx,
-                    ctx_.view(),
-                    account_,
-                    dstAccountID,
-                    sleDst,
-                    ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx,
+                ctx_.view(),
+                account_,
+                dstAccountID,
+                sleDst,
+                ctx_.journal);
+            !isTesSuccess(err))
+            return err;
     }
 
     // Do the arithmetic for the transfer and make the ledger change.

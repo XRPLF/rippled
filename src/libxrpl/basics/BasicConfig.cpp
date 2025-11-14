@@ -30,7 +30,7 @@ Section::append(std::vector<std::string> const& lines)
     // <key> '=' <value>
     static boost::regex const re1(
         "^"                        // start of line
-        "(?:\\s*)"                 // whitespace (optonal)
+        "(?:\\s*)"                 // whitespace (optional)
         "([a-zA-Z][_a-zA-Z0-9]*)"  // <key>
         "(?:\\s*)"                 // whitespace (optional)
         "(?:=)"                    // '='

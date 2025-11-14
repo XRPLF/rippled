@@ -25,7 +25,7 @@ SignerEntries::deserialize(
     }
 
     std::vector<SignerEntry> accountVec;
-    accountVec.reserve(STTx::maxMultiSigners());
+    accountVec.reserve(STTx::maxMultiSigners);
 
     STArray const& sEntries(obj.getFieldArray(sfSignerEntries));
     for (STObject const& sEntry : sEntries)

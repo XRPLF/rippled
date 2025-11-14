@@ -78,12 +78,15 @@ namespace detail {
 #undef XRPL_FEATURE
 #pragma push_macro("XRPL_FIX")
 #undef XRPL_FIX
-#pragma push_macro("XRPL_RETIRE")
-#undef XRPL_RETIRE
+#pragma push_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FEATURE
+#pragma push_macro("XRPL_RETIRE_FIX")
+#undef XRPL_RETIRE_FIX
 
 #define XRPL_FEATURE(name, supported, vote) +1
 #define XRPL_FIX(name, supported, vote) +1
-#define XRPL_RETIRE(name) +1
+#define XRPL_RETIRE_FEATURE(name) +1
+#define XRPL_RETIRE_FIX(name) +1
 
 // This value SHOULD be equal to the number of amendments registered in
 // Feature.cpp. Because it's only used to reserve storage, and determine how
@@ -94,8 +97,10 @@ static constexpr std::size_t numFeatures =
 #include <xrpl/protocol/detail/features.macro>
     );
 
-#undef XRPL_RETIRE
-#pragma pop_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE_FEATURE
+#pragma pop_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FIX
+#pragma pop_macro("XRPL_RETIRE_FIX")
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE
@@ -339,17 +344,22 @@ foreachFeature(FeatureBitset bs, F&& f)
 #undef XRPL_FEATURE
 #pragma push_macro("XRPL_FIX")
 #undef XRPL_FIX
-#pragma push_macro("XRPL_RETIRE")
-#undef XRPL_RETIRE
+#pragma push_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FEATURE
+#pragma push_macro("XRPL_RETIRE_FIX")
+#undef XRPL_RETIRE_FIX
 
 #define XRPL_FEATURE(name, supported, vote) extern uint256 const feature##name;
 #define XRPL_FIX(name, supported, vote) extern uint256 const fix##name;
-#define XRPL_RETIRE(name)
+#define XRPL_RETIRE_FEATURE(name)
+#define XRPL_RETIRE_FIX(name)
 
 #include <xrpl/protocol/detail/features.macro>
 
-#undef XRPL_RETIRE
-#pragma pop_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE_FEATURE
+#pragma pop_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FIX
+#pragma pop_macro("XRPL_RETIRE_FIX")
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE

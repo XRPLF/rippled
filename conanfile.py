@@ -33,7 +33,7 @@ class Xrpl(ConanFile):
     ]
 
     test_requires = [
-        'doctest/2.4.11',
+        'doctest/2.4.12',
     ]
 
     tool_requires = [
@@ -114,7 +114,7 @@ class Xrpl(ConanFile):
         if self.options.jemalloc:
             self.requires('jemalloc/5.3.0')
         if self.options.rocksdb:
-            self.requires('rocksdb/10.0.1')
+            self.requires('rocksdb/10.5.1')
         self.requires('xxhash/0.8.3', **transitive_headers_opt)
 
     exports_sources = (

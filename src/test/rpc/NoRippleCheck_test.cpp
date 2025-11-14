@@ -252,7 +252,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
         auto checkBalance = [&env]() {
             // this is endpoint drop prevention. Non admin ports will drop
             // requests if they are coming too fast, so we manipulate the
-            // resource manager here to reset the enpoint balance (for
+            // resource manager here to reset the endpoint balance (for
             // localhost) if we get too close to the drop limit. It would
             // be better if we could add this functionality to Env somehow
             // or otherwise disable endpoint charging for certain test
