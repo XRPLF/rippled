@@ -1194,16 +1194,6 @@ computeFee(
         Number::downward);
 }
 
-Number
-valueMinusFee(
-    Asset const& asset,
-    Number const& value,
-    TenthBips16 managementFeeRate,
-    std::int32_t scale)
-{
-    return value - computeFee(asset, value, managementFeeRate, scale);
-}
-
 LoanProperties
 computeLoanProperties(
     Asset const& asset,

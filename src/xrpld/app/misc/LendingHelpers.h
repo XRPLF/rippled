@@ -217,13 +217,6 @@ operator-(LoanState const& lhs, LoanState const& rhs);
 LoanState
 operator-(LoanState const& lhs, detail::LoanDeltas const& rhs);
 
-Number
-valueMinusFee(
-    Asset const& asset,
-    Number const& value,
-    TenthBips16 managementFeeRate,
-    std::int32_t scale);
-
 LoanProperties
 computeLoanProperties(
     Asset const& asset,
