@@ -2541,6 +2541,7 @@ class Vault_test : public beast::unit_test::suite
             int initialXRP = 1000;
             Number initialIOU = 200;
             double transferRate = 1.0;
+            bool charlieRipple = true;
         };
 
         auto testCase =
@@ -2567,8 +2568,21 @@ class Vault_test : public beast::unit_test::suite
 
                 PrettyAsset const asset = issuer["IOU"];
                 env.trust(asset(1000), owner);
-                env.trust(asset(1000), charlie);
                 env(pay(issuer, owner, asset(args.initialIOU)));
+                env.close();
+                if (!args.charlieRipple)
+                {
+                    env(fset(issuer, 0, asfDefaultRipple));
+                    env.close();
+                    env.trust(asset(1000), charlie);
+                    env.close();
+                    env(pay(issuer, charlie, asset(args.initialIOU)));
+                    env.close();
+                    env(fset(issuer, asfDefaultRipple));
+                }
+                else
+                    env.trust(asset(1000), charlie);
+                env.close();
                 env(rate(issuer, args.transferRate));
                 env.close();
 
@@ -2946,64 +2960,69 @@ class Vault_test : public beast::unit_test::suite
             env(tx1);
         });
 
-        testCase([&, this](
-                     Env& env,
-                     Account const& owner,
-                     Account const& issuer,
-                     Account const& charlie,
-                     auto,
-                     Vault& vault,
-                     PrettyAsset const& asset,
-                     auto&&...) {
-            testcase("IOU non-transferable");
+        testCase(
+            [&, this](
+                Env& env,
+                Account const& owner,
+                Account const& issuer,
+                Account const& charlie,
+                auto,
+                Vault& vault,
+                PrettyAsset const& asset,
+                std::function<MPTID(ripple::Keylet)> issuanceId) {
+                testcase("IOU non-transferable");
 
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
-            tx = vault.deposit(
-                {.depositor = owner, .id = keylet.key, .amount = asset(100)});
-            env(tx);
-            env.close();
-
-            // Disable DefaultRipple
-            env(fset(issuer, 0, asfDefaultRipple));
-            env.close();
-
-            env(tx, ter{terNO_RIPPLE});
-            env.close();
-
-            // Issuer does not need rippling to deposit or withdraw
-            env(vault.deposit(
-                {.depositor = issuer, .id = keylet.key, .amount = asset(100)}));
-            env(vault.withdraw(
-                {.depositor = issuer, .id = keylet.key, .amount = asset(100)}));
-            env.close();
-
-            tx = vault.withdraw(
-                {.depositor = owner, .id = keylet.key, .amount = asset(50)});
-            env(tx, ter{terNO_RIPPLE});
-            env.close();
-
-            {
-                // Issuer does not need rippling to receive withdrawal
-                auto tx1 = tx;
-                tx1[sfDestination] = issuer.human();
-                env(tx1);
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                tx[sfScale] = 0;
+                env(tx);
                 env.close();
-            }
 
-            // Enable DefaultRipple
-            env(fset(issuer, asfDefaultRipple));
-            env.close();
+                {
+                    // Charlie cannot deposit
+                    auto tx = vault.deposit(
+                        {.depositor = charlie,
+                         .id = keylet.key,
+                         .amount = asset(100)});
+                    env(tx, ter{terNO_RIPPLE});
+                    env.close();
+                }
 
-            // Can now withdraw
-            env(tx);
-            env.close();
+                {
+                    PrettyAsset shares = issuanceId(keylet);
+                    auto tx1 = vault.deposit(
+                        {.depositor = owner,
+                         .id = keylet.key,
+                         .amount = asset(100)});
+                    env(tx1);
+                    env.close();
 
-            // Delete vault with zero balance
-            env(vault.del({.owner = owner, .id = keylet.key}));
-        });
+                    // Charlie cannot receive funds
+                    auto tx2 = vault.withdraw(
+                        {.depositor = owner,
+                         .id = keylet.key,
+                         .amount = shares(100)});
+                    tx2[sfDestination] = charlie.human();
+                    env(tx2, ter{terNO_RIPPLE});
+                    env.close();
+
+                    /*
+                    env(pay(owner, charlie, shares(100)));
+                    env.close();
+                    */
+                }
+
+                tx = vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(100)});
+                env(tx);
+                env.close();
+
+                // Delete vault with zero balance
+                env(vault.del({.owner = owner, .id = keylet.key}));
+            },
+            {.charlieRipple = false});
 
         testCase(
             [&, this](

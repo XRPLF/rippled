@@ -3293,8 +3293,21 @@ canTransfer(
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (issuerId == from || issuerId == to)
         return tesSUCCESS;
-    // Fail if rippling disabled
-    if (!sleIssuer->isFlag(lsfDefaultRipple))
+
+    auto const isRippleDisabled = [&](AccountID account) -> bool {
+        // Line might not exist, but some transfers can create it. If this
+        // is the case, just check the default ripple on the issuer account.
+        auto const line = view.read(keylet::line(account, issue));
+        if (line)
+        {
+            bool const issuerHigh = issuerId > account;
+            return line->isFlag(issuerHigh ? lsfHighNoRipple : lsfLowNoRipple);
+        }
+        return sleIssuer->isFlag(lsfDefaultRipple) == false;
+    };
+
+    // Fail if rippling disabled on either trust line
+    if (isRippleDisabled(from) || isRippleDisabled(to))
         return terNO_RIPPLE;
 
     return tesSUCCESS;
