@@ -84,7 +84,7 @@ XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYe
 //
 // If a feature remains obsolete for long enough that no clients are able
 // to vote for it, the feature can be removed (entirely?) from the code.
-XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
+XRPL_FEATURE(TestObsolete_DO_NOT_USE, Supported::yes, VoteBehavior::Obsolete)
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
@@ -120,6 +120,7 @@ XRPL_RETIRE_FIX(TrustLinesToSelf)
 
 XRPL_RETIRE_FEATURE(CheckCashMakesTrustLine)
 XRPL_RETIRE_FEATURE(CryptoConditions)
+XRPL_RETIRE_FEATURE(CryptoConditionsSuite)
 XRPL_RETIRE_FEATURE(DepositAuth)
 XRPL_RETIRE_FEATURE(DepositPreauth)
 XRPL_RETIRE_FEATURE(Escrow)
