@@ -46,7 +46,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (auto ter = canTransfer(ctx.view, vaultAsset, account, vaultAccount);
         !isTesSuccess(ter))
     {
-        JLOG(ctx.j.error())
+        JLOG(ctx.j.debug())
             << "VaultDeposit: vault assets are non-transferable.";
         return ter;
     }

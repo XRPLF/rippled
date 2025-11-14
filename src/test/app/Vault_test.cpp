@@ -587,6 +587,7 @@ class Vault_test : public beast::unit_test::suite
             Vault vault{env};
             env.fund(XRP(1000), issuer, owner, depositor, charlie, dave);
             env.close();
+            env(fset(issuer, asfDefaultRipple));
             env(fset(issuer, asfAllowTrustLineClawback));
             env(fset(issuer, asfRequireAuth));
             env(fset(dave, asfRequireDest));
@@ -657,6 +658,7 @@ class Vault_test : public beast::unit_test::suite
             env.fund(XRP(1000), issuer, owner);
             env.close();
 
+            env(fset(issuer, asfDefaultRipple));
             env(fset(issuer, asfAllowTrustLineClawback));
             env(fset(issuer, asfRequireAuth));
             env.close();
@@ -2559,6 +2561,7 @@ class Vault_test : public beast::unit_test::suite
                 Account const charlie{"charlie"};
                 Vault vault{env};
                 env.fund(XRP(args.initialXRP), issuer, owner, charlie);
+                env(fset(issuer, asfDefaultRipple));
                 env(fset(issuer, asfAllowTrustLineClawback));
                 env.close();
 
@@ -2943,6 +2946,65 @@ class Vault_test : public beast::unit_test::suite
             env(tx1);
         });
 
+        testCase([&, this](
+                     Env& env,
+                     Account const& owner,
+                     Account const& issuer,
+                     Account const& charlie,
+                     auto,
+                     Vault& vault,
+                     PrettyAsset const& asset,
+                     auto&&...) {
+            testcase("IOU non-transferable");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(100)});
+            env(tx);
+            env.close();
+
+            // Disable DefaultRipple
+            env(fset(issuer, 0, asfDefaultRipple));
+            env.close();
+
+            env(tx, ter{terNO_RIPPLE});
+            env.close();
+
+            // Issuer does not need rippling to deposit or withdraw
+            env(vault.deposit(
+                {.depositor = issuer, .id = keylet.key, .amount = asset(100)}));
+            env(vault.withdraw(
+                {.depositor = issuer, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            tx = vault.withdraw(
+                {.depositor = owner, .id = keylet.key, .amount = asset(50)});
+            env(tx, ter{terNO_RIPPLE});
+            env.close();
+
+            {
+                // Issuer does not need rippling to receive withdrawal
+                auto tx1 = tx;
+                tx1[sfDestination] = issuer.human();
+                env(tx1);
+                env.close();
+            }
+
+            // Enable DefaultRipple
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            // Can now withdraw
+            env(tx);
+            env.close();
+
+            // Delete vault with zero balance
+            env(vault.del({.owner = owner, .id = keylet.key}));
+        });
+
         testCase(
             [&, this](
                 Env& env,
@@ -3259,6 +3321,7 @@ class Vault_test : public beast::unit_test::suite
             credIssuer1,
             credIssuer2);
         env.close();
+        env(fset(issuer, asfDefaultRipple));
         env(fset(issuer, asfAllowTrustLineClawback));
         env.close();
         env.require(flags(issuer, asfAllowTrustLineClawback));
@@ -3688,6 +3751,7 @@ class Vault_test : public beast::unit_test::suite
             Account const depositor{"depositor"};
             Vault vault{env};
             env.fund(XRP(1000), issuer, owner, depositor);
+            env(fset(issuer, asfDefaultRipple));
             env(fset(issuer, asfAllowTrustLineClawback));
             env.close();
 

@@ -3281,13 +3281,22 @@ canTransfer(
 canTransfer(
     ReadView const& view,
     Issue const& issue,
-    AccountID const&,
-    AccountID const&)
+    AccountID const& from,
+    AccountID const& to)
 {
     if (issue.native())
         return tesSUCCESS;
-    if (!view.exists(keylet::account(issue.getIssuer())))
+
+    auto const issuerId = issue.getIssuer();
+    auto const sleIssuer = view.read(keylet::account(issuerId));
+    if (sleIssuer == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+    if (issuerId == from || issuerId == to)
+        return tesSUCCESS;
+    // Fail if rippling disabled
+    if (!sleIssuer->isFlag(lsfDefaultRipple))
+        return terNO_RIPPLE;
+
     return tesSUCCESS;
 }
 
