@@ -682,8 +682,12 @@ computeFullPayment(
     beast::Journal j)
 {
     if (paymentRemaining <= 1)
+    {
         // If this is the last payment, it has to be a regular payment
+        JLOG(j.warn()) << "Full payment requested when only final "
+                        << "payment remains.";
         return Unexpected(tecKILLED);
+    }
 
     Number const rawPrincipalOutstanding = loanPrincipalFromPeriodicPayment(
         periodicPayment, periodicRate, paymentRemaining);
@@ -1156,7 +1160,7 @@ constructRoundedLoanState(
 {
     // This implementation is pretty trivial, but ensures the calculations are
     // consistent everywhere, and reduces copy/paste errors.
-    return {
+    return LoanState{
         .valueOutstanding = totalValueOutstanding,
         .principalOutstanding = principalOutstanding,
         .interestDue = totalValueOutstanding - principalOutstanding -
@@ -1409,6 +1413,7 @@ loanMakePayment(
 
         // LCOV_EXCL_START
         UNREACHABLE("ripple::loanMakePayment : invalid full payment result");
+        JLOG(j.error()) << "Full payment computation failed unexpectedly.";
         return Unexpected(tecINTERNAL);
         // LCOV_EXCL_STOP
     }
@@ -1472,6 +1477,7 @@ loanMakePayment(
 
         // LCOV_EXCL_START
         UNREACHABLE("ripple::loanMakePayment : invalid late payment result");
+        JLOG(j.error()) << "Late payment computation failed unexpectedly.";
         return Unexpected(tecINTERNAL);
         // LCOV_EXCL_STOP
     }
