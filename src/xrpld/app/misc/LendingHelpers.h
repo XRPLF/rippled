@@ -25,22 +25,55 @@ roundPeriodicPayment(
     return roundToAsset(asset, periodicPayment, scale, Number::upward);
 }
 
-/// This structure is explained in the XLS-66 spec, section 3.2.4.4 (Failure
-/// Conditions)
+/* Represents the breakdown of amounts paid and changes applied during a loan
+ * payment.
+ *
+ * This structure is returned after processing a loan payment transaction and
+ * captures the actual amounts that were paid to each recipient (Vault and
+ * Borrower) and any changes to the loan's total value. It provides a complete
+ * accounting of where the payment funds went.
+ *
+ * This structure is explained in the XLS-66 spec, section 3.2.4.4 (Failure
+ * Conditions).
+ *
+ * The sum of principalPaid, interestPaid, and feePaid represents the total
+ * amount deducted from the borrower's account. The valueChange field tracks
+ * whether the loan's total value increased or decreased beyond normal
+ * amortization.
+ */
 struct LoanPaymentParts
 {
-    /// principal_paid is the amount of principal that the payment covered.
+    // The amount of principal paid that reduces the loan balance.
+    // This amount is subtracted from sfPrincipalOutstanding in the Loan object
+    // and paid to the Vault
     Number principalPaid = numZero;
-    /// interest_paid is the amount of interest that the payment covered.
+
+    // The total amount of interest paid to the Vault.
+    // This includes:
+    // - Tracked interest from the amortization schedule
+    // - Untracked interest (e.g., late payment penalty interest)
+    // This value is always non-negative.
     Number interestPaid = numZero;
-    /**
-     * value_change is the amount by which the total value of the Loan changed.
-     *  If value_change < 0, Loan value decreased.
-     *  If value_change > 0, Loan value increased.
-     * This is 0 for regular payments.
-     */
+
+    // The change in the loan's total value outstanding.
+    // - If valueChange < 0: Loan value decreased
+    // - If valueChange > 0: Loan value increased
+    // - If valueChange = 0: No value adjustment
+    //
+    // For regular on-time payments, this is always 0. Non-zero values occur
+    // when:
+    // - Overpayments reduce the loan balance beyond the scheduled amount
+    // - Late payments add penalty interest to the loan value
+    // - Early full payment may increase or decrease the loan value based on
+    // terms
     Number valueChange = numZero;
-    /// feePaid is amount of fee that is paid to the broker
+
+    /* The total amount of fees paid to the Broker.
+     * This includes:
+     * - Tracked management fees from the amortization schedule
+     * - Untracked fees (e.g., late payment fees, service fees, origination
+     * fees) This value is always non-negative.
+     */
     Number feePaid = numZero;
 
     LoanPaymentParts&
