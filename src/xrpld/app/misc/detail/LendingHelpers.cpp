@@ -805,16 +805,25 @@ computeLatePayment(
     return late;
 }
 
-/* Handle possible full payments.
+/* Computes payment components for paying off a loan early (before final
+ * payment).
  *
- * If this function processed a full payment, the return value will be
- * an ExtendedPaymentComponents object. Otherwise, it'll be an Unexpected with
- * the error code the caller is expected to return. It should NEVER return
- * tesSUCCESS
+ * A full payment closes the loan immediately, paying off all outstanding
+ * balances plus a prepayment penalty and any accrued interest since the last
+ * payment. This is different from the final scheduled payment, which has no
+ * prepayment penalty.
+ *
+ * The function calculates:
+ * - Accrued interest since last payment (time-based)
+ * - Prepayment penalty (percentage of remaining principal)
+ * - Close payment fee (fixed fee for early closure)
+ * - All remaining principal and outstanding fees
+ *
+ * The loan's value may increase or decrease depending on whether the prepayment
+ * penalty exceeds the scheduled interest that would have been paid.
  *
  * Implements equation (26) from XLS-66 spec, Section A-2 Equation Glossary
  */
-
 Expected<ExtendedPaymentComponents, TER>
 computeFullPayment(
     Asset const& asset,
@@ -835,21 +844,22 @@ computeFullPayment(
     TenthBips16 managementFeeRate,
     beast::Journal j)
 {
+    // Full payment must be made before the final scheduled payment.
     if (paymentRemaining <= 1)
     {
-        // If this is the last payment, it has to be a regular payment
         JLOG(j.warn()) << "Full payment requested when only final "
                        << "payment remains.";
         return Unexpected(tecKILLED);
     }
 
-    // Calculate the raw principal outstanding from the periodic payment
-    // rawPrincipalOutstanding will be used to compute the full payment interest
+    // Calculate the theoretical principal based on the payment schedule.
+    // This raw (unrounded) value is used to compute interest and penalties
+    // accurately.
     Number const rawPrincipalOutstanding = loanPrincipalFromPeriodicPayment(
         periodicPayment, periodicRate, paymentRemaining);
 
-    // Full payment interest consists of accrued normal interest and the
-    // prepayment penalty, as computed by 3.2.4.1.4.
+    // Full payment interest includes both accrued interest (time since last
+    // payment) and prepayment penalty (for closing early).
     auto const fullPaymentInterest = calculateFullPaymentInterest(
         rawPrincipalOutstanding,
         periodicRate,
@@ -859,36 +869,49 @@ computeFullPayment(
         startDate,
         closeInterestRate);
 
+    // Split the full payment interest into net interest (to vault) and
+    // management fee (to broker), applying proper rounding.
     auto const [roundedFullInterest, roundedFullManagementFee] = [&]() {
         auto const interest =
             roundToAsset(asset, fullPaymentInterest, loanScale);
         auto const parts = computeInterestAndFeeParts(
             asset, interest, managementFeeRate, loanScale);
-        // Apply as much of the fee to the outstanding fee, but no
-        // more
         return std::make_tuple(parts.first, parts.second);
     }();
 
     ExtendedPaymentComponents const full{
         PaymentComponents{
+            // Pay off all tracked outstanding balances: principal, interest,
+            // and fees.
+            // This marks the loan as complete (final payment).
             .trackedValueDelta = principalOutstanding +
                 totalInterestOutstanding + managementFeeOutstanding,
             .trackedPrincipalDelta = principalOutstanding,
-            // to make the accounting work later, the tracked part of the fee
-            // must be paid in full
+
+            // All outstanding management fees are paid. This zeroes out the
+            // tracked fee balance.
             .trackedManagementFeeDelta = managementFeeOutstanding,
-            .specialCase = PaymentSpecialCase::final},
-        // A full payment pays the single close payment fee, plus the computed
-        // management fee part of the interest portion, but for tracking, the
-        // outstanding part is removed. That could make this value negative, but
-        // that's ok, because it's not used until it's recombined with
-        // roundedManagementFee.
+            .specialCase = PaymentSpecialCase::final,
+        },
+
+        // Untracked management fee includes:
+        // 1. Close payment fee (fixed fee for early closure)
+        // 2. Management fee on the full payment interest
+        // 3. Minus the outstanding tracked fee (already accounted for above)
+        // This can be negative because the outstanding fee is subtracted, but
+        // it gets combined with trackedManagementFeeDelta in the final
+        // accounting.
         closePaymentFee + roundedFullManagementFee - managementFeeOutstanding,
-        // A full payment changes the value of the loan by the difference
-        // between expected outstanding interest return and the actual interest
-        // paid. This value can be positive (increasing the value) or negative
-        // (decreasing the value).
-        roundedFullInterest - totalInterestOutstanding};
+
+        // Value change represents the difference between what the loan was
+        // expected to earn (totalInterestOutstanding) and what it actually
+        // earns (roundedFullInterest with prepayment penalty).
+        // - Positive: Prepayment penalty exceeds scheduled interest (loan value
+        // increases)
+        // - Negative: Prepayment penalty is less than scheduled interest (loan
+        // value decreases)
+        roundedFullInterest - totalInterestOutstanding,
+    };
 
     XRPL_ASSERT_PARTS(
         isRounded(asset, full.totalDue, loanScale),
