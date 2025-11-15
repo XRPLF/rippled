@@ -954,11 +954,22 @@ PaymentComponents::trackedInterestPart() const
         (trackedPrincipalDelta + trackedManagementFeeDelta);
 }
 
-PaymentComponents
-computePaymentComponents(
-    Asset const& asset,
-    std::int32_t scale,
-    Number const& totalValueOutstanding,
+/* Computes the breakdown of a regular periodic payment into principal,
+ * interest, and management fee components.
+ *
+ * This function determines how a single scheduled payment should be split among
+ * the three tracked loan components. The calculation accounts for accumulated
+ * rounding errors.
+ *
+ * The algorithm:
+ * 1. Calculate what the loan state SHOULD be after this payment (target)
+ * 2. Compare current state to target to get deltas
+ * 3. Adjust deltas to handle rounding artifacts and edge cases
+ * 4. Ensure deltas don't exceed available balances or payment amount
+ *
+ * Special handling for the final payment: all remaining balances are paid off
+ * regardless of the periodic payment amount.
+ */
 PaymentComponents
 computePaymentComponents(
     Asset const& asset,
@@ -971,10 +982,6 @@ computePaymentComponents(
     std::uint32_t paymentRemaining,
     TenthBips16 managementFeeRate)
 {
-    /*
-     * This function is derived from the XLS-66 spec, section 3.2.4.1.1 (Regular
-     * Payment)
-     */
     XRPL_ASSERT_PARTS(
         isRounded(asset, totalValueOutstanding, scale) &&
             isRounded(asset, principalOutstanding, scale) &&
@@ -985,11 +992,17 @@ computePaymentComponents(
         paymentRemaining > 0,
         "ripple::detail::computePaymentComponents",
         "some payments remaining");
+
     auto const roundedPeriodicPayment =
         roundPeriodicPayment(asset, periodicPayment, scale);
 
+    // Calculate what the loan state SHOULD be after this payment (the target).
+    // This is computed at full precision using the theoretical amortization.
     LoanState const trueTarget = calculateRawLoanState(
         periodicPayment, periodicRate, paymentRemaining - 1, managementFeeRate);
+
+    // Round the target to the loan's scale to match how actual loan values
+    // are stored.
     LoanState const roundedTarget = LoanState{
         .valueOutstanding =
             roundToAsset(asset, trueTarget.valueOutstanding, scale),
@@ -998,18 +1011,25 @@ computePaymentComponents(
         .interestDue = roundToAsset(asset, trueTarget.interestDue, scale),
         .managementFeeDue =
             roundToAsset(asset, trueTarget.managementFeeDue, scale)};
+
+    // Get the current actual loan state from the ledger values
     LoanState const currentLedgerState = constructRoundedLoanState(
         totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
 
+    // The difference between current and target states gives us the payment
+    // components. Any discrepancies from accumulated rounding are captured
+    // here.
     LoanDeltas deltas = currentLedgerState - roundedTarget;
+
+    // Rounding can occasionally produce negative deltas. Zero them out.
     deltas.nonNegative();
 
-    // Adjust the deltas if necessary for data integrity
     XRPL_ASSERT_PARTS(
         deltas.principal <= currentLedgerState.principalOutstanding,
         "ripple::detail::computePaymentComponents",
         "principal delta not greater than outstanding");
 
+    // Cap each component to never exceed what's actually outstanding
     deltas.principal =
         std::min(deltas.principal, currentLedgerState.principalOutstanding);
 
@@ -1018,6 +1038,8 @@ computePaymentComponents(
         "ripple::detail::computePaymentComponents",
         "interest due delta not greater than outstanding");
 
+    // Cap interest to both the outstanding amount AND what's left of the
+    // periodic payment after principal is paid
     deltas.interest = std::min(
         {deltas.interest,
          std::max(numZero, roundedPeriodicPayment - deltas.principal),
@@ -1028,17 +1050,18 @@ computePaymentComponents(
         "ripple::detail::computePaymentComponents",
         "management fee due delta not greater than outstanding");
 
+    // Cap management fee to both the outstanding amount AND what's left of the
+    // periodic payment after principal and interest are paid
     deltas.managementFee = std::min(
         {deltas.managementFee,
          roundedPeriodicPayment - (deltas.principal + deltas.interest),
          currentLedgerState.managementFeeDue});
 
+    // Final payment: pay off everything remaining, ignoring the normal
+    // periodic payment amount. This ensures the loan completes cleanly.
     if (paymentRemaining == 1 ||
         totalValueOutstanding <= roundedPeriodicPayment)
     {
-        // If there's only one payment left, we need to pay off each of the loan
-        // parts.
-
         XRPL_ASSERT_PARTS(
             deltas.total() <= totalValueOutstanding,
             "ripple::detail::computePaymentComponents",
@@ -1052,7 +1075,6 @@ computePaymentComponents(
             "ripple::detail::computePaymentComponents",
             "last payment management fee agrees");
 
-        // Pay everything off
         return PaymentComponents{
             .trackedValueDelta = totalValueOutstanding,
             .trackedPrincipalDelta = principalOutstanding,
@@ -1060,34 +1082,34 @@ computePaymentComponents(
             .specialCase = PaymentSpecialCase::final};
     }
 
-    // The shortage must never be negative, which indicates that the parts are
-    // trying to take more than the whole payment. The excess can be positive,
-    // which indicates that we're not going to take the whole payment amount,
-    // but if so, it must be small.
-    auto takeFrom = [](Number& component, Number& excess) {
+    // Helper to reduce a component by taking from excess
+    auto const takeFrom = [](Number& component, Number& excess) {
         if (excess > beast::zero)
         {
-            // Take as much of the excess as we can out of the provided part and
-            // the total
             auto part = std::min(component, excess);
             component -= part;
             excess -= part;
         }
-        // If the excess goes negative, we took too much, which should be
-        // impossible
         XRPL_ASSERT_PARTS(
             excess >= beast::zero,
             "ripple::detail::computePaymentComponents",
             "excess non-negative");
     };
-    auto addressExcess = [&takeFrom](LoanDeltas& deltas, Number& excess) {
-        // This order is based on where errors are the least problematic
+
+    // Helper to reduce deltas when they collectively exceed a limit.
+    // Order matters: we prefer to reduce interest first (most flexible),
+    // then management fee, then principal (least flexible).
+    auto const addressExcess = [&takeFrom](LoanDeltas& deltas, Number& excess) {
         takeFrom(deltas.interest, excess);
         takeFrom(deltas.managementFee, excess);
         takeFrom(deltas.principal, excess);
     };
+
+    // Check if deltas exceed the total outstanding value. This should never
+    // happen due to earlier caps, but handle it defensively.
     Number totalOverpayment =
         deltas.total() - currentLedgerState.valueOutstanding;
+
     if (totalOverpayment > beast::zero)
     {
         // LCOV_EXCL_START
@@ -1098,7 +1120,7 @@ computePaymentComponents(
         // LCOV_EXCL_STOP
     }
 
-    // Make sure the parts don't add up to too much
+    // Check if deltas exceed the periodic payment amount. Reduce if needed.
     Number shortage = roundedPeriodicPayment - deltas.total();
 
     XRPL_ASSERT_PARTS(
@@ -1108,21 +1130,21 @@ computePaymentComponents(
 
     if (shortage < beast::zero)
     {
+        // Deltas exceed payment amount - reduce them proportionally
         Number excess = -shortage;
-
         addressExcess(deltas, excess);
-
         shortage = -excess;
     }
-    // The shortage should never be negative, which indicates that the
-    // parts are trying to take more than the whole payment. The
-    // shortage may be positive, which indicates that we're not going to
-    // take the whole payment amount.
+
+    // At this point, shortage >= 0 means we're paying less than the full
+    // periodic payment (due to rounding or component caps).
+    // shortage < 0 would mean we're trying to pay more than allowed (bug).
     XRPL_ASSERT_PARTS(
         shortage >= beast::zero,
         "ripple::detail::computePaymentComponents",
         "no shortage or excess");
 
+    // Final validation that all components are valid
     XRPL_ASSERT_PARTS(
         deltas.total() ==
             deltas.principal + deltas.interest + deltas.managementFee,
@@ -1150,9 +1172,8 @@ computePaymentComponents(
         "ripple::detail::computePaymentComponents",
         "payment parts add to payment");
 
+    // Final safety clamp to ensure no value exceeds its outstanding balance
     return PaymentComponents{
-        // As a final safety check, ensure the value is non-negative, and won't
-        // make the corresponding item negative
         .trackedValueDelta = std::clamp(
             deltas.total(), numZero, currentLedgerState.valueOutstanding),
         .trackedPrincipalDelta = std::clamp(
