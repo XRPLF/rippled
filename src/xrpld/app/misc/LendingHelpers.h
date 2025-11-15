@@ -268,18 +268,40 @@ struct ExtendedPaymentComponents : public PaymentComponents
     }
 };
 
+/* Represents the differences between two loan states.
+ *
+ * This structure is used to capture the change in each component of a loan's
+ * state, typically when computing the difference between two LoanState objects
+ * (e.g., before and after a payment). It is a convenient way to capture changes
+ * in each component.
+ *
+ * LoanDeltas is primarily used for:
+ * - Computing the actual amounts paid during a payment transaction
+ * - Validating that loan state changes are correct
+ * - Applying incremental changes to a loan state
+ *
+ */
 struct LoanDeltas
 {
+    // The difference in principal outstanding between two loan states.
     Number principal;
+
+    // The difference in interest due between two loan states.
     Number interest;
+
+    // The difference in management fee outstanding between two loan states.
     Number managementFee;
 
+    /* Calculates the total change across all components.
+     * @return The sum of principal, interest, and management fee deltas.
+     */
     Number
     total() const
     {
         return principal + interest + managementFee;
     }
 
+    // Ensures all delta values are non-negative.
     void
     nonNegative();
 };
