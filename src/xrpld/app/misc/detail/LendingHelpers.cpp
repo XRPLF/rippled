@@ -68,6 +68,17 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 
 namespace detail {
 
+void
+LoanDeltas::nonNegative()
+{
+    if (principal < beast::zero)
+        principal = numZero;
+    if (interest < beast::zero)
+        interest = numZero;
+    if (managementFee < beast::zero)
+        managementFee = numZero;
+}
+
 /* Computes (1 + periodicRate)^paymentsRemaining for amortization calculations.
  *
  * Equation (5) from XLS-66 spec, Section A-2 Equation Glossary
@@ -943,17 +954,11 @@ PaymentComponents::trackedInterestPart() const
         (trackedPrincipalDelta + trackedManagementFeeDelta);
 }
 
-void
-LoanDeltas::nonNegative()
-{
-    if (principal < beast::zero)
-        principal = numZero;
-    if (interest < beast::zero)
-        interest = numZero;
-    if (managementFee < beast::zero)
-        managementFee = numZero;
-}
-
+PaymentComponents
+computePaymentComponents(
+    Asset const& asset,
+    std::int32_t scale,
+    Number const& totalValueOutstanding,
 PaymentComponents
 computePaymentComponents(
     Asset const& asset,
