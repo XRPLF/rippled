@@ -1183,10 +1183,21 @@ computePaymentComponents(
     };
 }
 
-/*
- * Compute the payment components for an overpayment scenario. This includes
- * computing the fee on the overpayment, and splitting the interest and
- * management fee parts.
+/* Computes payment components for an overpayment scenario.
+ *
+ * An overpayment occurs when a borrower pays more than the scheduled periodic
+ * payment amount. The overpayment is treated as extra principal reduction,
+ * but incurs a fee and potentially a penalty interest charge.
+ *
+ * The calculation:
+ * 1. Apply the overpayment fee (reduces the effective payment amount)
+ * 2. Calculate penalty interest on the remaining amount
+ * 3. Split the penalty interest into net interest and management fee
+ * 4. Apply the remainder to principal reduction
+ *
+ * Unlike regular payments which follow the amortization schedule, overpayments
+ * go primarily toward principal, making them more effective at reducing the
+ * loan balance and future interest costs.
  *
  * Equations (20), (21) and (22) from XLS-66 spec, Section A-2 Equation Glossary
  */
@@ -1204,18 +1215,23 @@ computeOverpaymentComponents(
         "ripple::detail::computeOverpaymentComponents : valid overpayment "
         "amount");
 
+    // First, deduct the fixed overpayment fee from the total amount.
+    // This reduces the effective payment that will be applied to the loan.
     // Equation (22) from XLS-66 spec, Section A-2 Equation Glossary
     Number const fee = roundToAsset(
         asset, tenthBipsOfValue(overpayment, overpaymentFeeRate), loanScale);
 
-    // Equation (20) and (21) from XLS-66 spec, Section A-2 Equation
-    // Glossary
+    // Calculate the penalty interest on the effective payment amount.
+    // This interest doesn't follow the normal amortization schedule - it's
+    // a one-time charge for paying early.
+    // Equation (20) and (21) from XLS-66 spec, Section A-2 Equation Glossary
     auto const [rawOverpaymentInterest, _] = [&]() {
         Number const interest =
             tenthBipsOfValue(overpayment, overpaymentInterestRate);
         return detail::computeInterestAndFeeParts(interest, managementFeeRate);
     }();
 
+    // Round the penalty interest components to the loan scale
     auto const [roundedOverpaymentInterest, roundedOverpaymentManagementFee] =
         [&]() {
             Number const interest =
@@ -1225,13 +1241,24 @@ computeOverpaymentComponents(
         }();
 
     auto const result = detail::ExtendedPaymentComponents{
+        // Build the payment components, after fees and penalty
+        // interest are deducted, the remainder goes entirely to principal
+        // reduction.
         detail::PaymentComponents{
             .trackedValueDelta = overpayment - fee,
             .trackedPrincipalDelta = overpayment - roundedOverpaymentInterest -
                 roundedOverpaymentManagementFee - fee,
             .trackedManagementFeeDelta = roundedOverpaymentManagementFee,
             .specialCase = detail::PaymentSpecialCase::extra},
+        // Untracked management fee is the fixed overpayment fee
         fee,
+
+        // Untracked interest is the penalty interest charged for
+        // overpaying.
+        // This is positive, representing a one-time cost, but it's
+        // typically
+        // much smaller than the interest savings from reducing
+        // principal.
         roundedOverpaymentInterest};
     XRPL_ASSERT_PARTS(
         result.trackedInterestPart() == roundedOverpaymentInterest,
@@ -1386,7 +1413,8 @@ calculateFullPaymentInterest(
         paymentInterval);
     XRPL_ASSERT(
         accruedInterest >= 0,
-        "ripple::detail::computeFullPaymentInterest : valid accrued interest");
+        "ripple::detail::computeFullPaymentInterest : valid accrued "
+        "interest");
 
     // Equation (28) from XLS-66 spec, Section A-2 Equation Glossary
     auto const prepaymentPenalty =
@@ -1488,8 +1516,8 @@ constructRoundedLoanState(
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding)
 {
-    // This implementation is pretty trivial, but ensures the calculations are
-    // consistent everywhere, and reduces copy/paste errors.
+    // This implementation is pretty trivial, but ensures the calculations
+    // are consistent everywhere, and reduces copy/paste errors.
     return LoanState{
         .valueOutstanding = totalValueOutstanding,
         .principalOutstanding = principalOutstanding,
@@ -1557,9 +1585,9 @@ computeLoanProperties(
         // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
         STAmount amount{asset, periodicPayment * paymentsRemaining};
 
-        // Base the loan scale on the total value, since that's going to be the
-        // biggest number involved (barring unusual parameters for late, full,
-        // or over payments)
+        // Base the loan scale on the total value, since that's going to be
+        // the biggest number involved (barring unusual parameters for late,
+        // full, or over payments)
         auto const loanScale = std::max(minimumScale, amount.exponent());
         XRPL_ASSERT_PARTS(
             (amount.integral() && loanScale == 0) ||
@@ -1568,7 +1596,8 @@ computeLoanProperties(
             "ripple::computeLoanProperties",
             "loanScale value fits expectations");
 
-        // We may need to truncate the total value because of the minimum scale
+        // We may need to truncate the total value because of the minimum
+        // scale
         amount = roundToAsset(asset, amount, loanScale, Number::to_nearest);
 
         return std::make_pair(amount, loanScale);
@@ -1604,8 +1633,8 @@ computeLoanProperties(
             paymentsRemaining - 1,
             managementFeeRate);
 
-        // The unrounded principal part needs to be large enough to affect the
-        // principal. What to do if not is left to the caller
+        // The unrounded principal part needs to be large enough to affect
+        // the principal. What to do if not is left to the caller
         return startingState.principalOutstanding -
             firstPaymentState.principalOutstanding;
     }();
@@ -1621,8 +1650,8 @@ computeLoanProperties(
 /*
  * This is the main function to make a loan payment.
  * This function handles regular, late, full, and overpayments.
- * It is an implementation of the make_payment function from the XLS-66 spec.
- * Section 3.2.4.4
+ * It is an implementation of the make_payment function from the XLS-66
+ * spec. Section 3.2.4.4
  */
 Expected<LoanPaymentParts, TER>
 loanMakePayment(
@@ -1671,7 +1700,8 @@ loanMakePayment(
 
     std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
 
-    // Compute the periodic rate that will be used for calculations throughout
+    // Compute the periodic rate that will be used for calculations
+    // throughout
     Number const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
     XRPL_ASSERT(
         interestRate == 0 || periodicRate > 0,
@@ -1688,14 +1718,15 @@ loanMakePayment(
     if (paymentType != LoanPaymentType::late &&
         hasExpired(view, nextDueDateProxy))
     {
-        // If the payment is late, and the late flag was not set, it's not valid
-        JLOG(j.warn())
-            << "Loan payment is overdue. Use the tfLoanLatePayment transaction "
-               "flag to make a late payment. Loan was created on "
-            << startDate << ", prev payment due date is "
-            << prevPaymentDateProxy << ", next payment due date is "
-            << nextDueDateProxy << ", ledger time is "
-            << view.parentCloseTime().time_since_epoch().count();
+        // If the payment is late, and the late flag was not set, it's not
+        // valid
+        JLOG(j.warn()) << "Loan payment is overdue. Use the tfLoanLatePayment "
+                          "transaction "
+                          "flag to make a late payment. Loan was created on "
+                       << startDate << ", prev payment due date is "
+                       << prevPaymentDateProxy << ", next payment due date is "
+                       << nextDueDateProxy << ", ledger time is "
+                       << view.parentCloseTime().time_since_epoch().count();
         return Unexpected(tecEXPIRED);
     }
 
@@ -1755,8 +1786,8 @@ loanMakePayment(
     }
 
     // -------------------------------------------------------------
-    // compute the periodic payment info that will be needed whether the payment
-    // is late or regular
+    // compute the periodic payment info that will be needed whether the
+    // payment is late or regular
     detail::ExtendedPaymentComponents periodic{
         detail::computePaymentComponents(
             asset,
@@ -1929,7 +1960,8 @@ loanMakePayment(
                 overpaymentComponents.untrackedInterest >= beast::zero,
                 "ripple::loanMakePayment",
                 "overpayment penalty did not reduce value of loan");
-            // Can't just use `periodicPayment` here, because it might change
+            // Can't just use `periodicPayment` here, because it might
+            // change
             auto periodicPaymentProxy = loan->at(sfPeriodicPayment);
             if (auto const overResult = detail::doOverpayment(
                     asset,
@@ -1949,9 +1981,10 @@ loanMakePayment(
                     j))
                 totalParts += *overResult;
             else if (overResult.error())
-                // error() will be the TER returned if a payment is not made. It
-                // will only evaluate to true if it's unsuccessful. Otherwise,
-                // tesSUCCESS means nothing was done, so continue.
+                // error() will be the TER returned if a payment is not
+                // made. It will only evaluate to true if it's unsuccessful.
+                // Otherwise, tesSUCCESS means nothing was done, so
+                // continue.
                 return Unexpected(overResult.error());
         }
     }
