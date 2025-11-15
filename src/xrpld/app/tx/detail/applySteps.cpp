@@ -14,6 +14,8 @@
 // DO NOT INCLUDE TRANSACTOR HEADER FILES HERE.
 // See the instructions at the top of transactions.macro instead.
 
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFormats.h>
 
 #include <stdexcept>
@@ -158,6 +160,20 @@ invoke_preclaim(PreclaimContext const& ctx)
 
                         if (NotTEC const result = T::checkSign(ctx))
                             return result;
+
+                        // Check if this is a stealth address trying to perform
+                        // an invalid transaction. This must be done before fee
+                        // check to avoid charging a fee for an invalid
+                        // transaction.
+                        auto const sle = ctx.view.read(keylet::account(id));
+                        if (sle && sle->isFlag(lsfStealthAddress) &&
+                            ctx.tx.getTxnType() != ttACCOUNT_DELETE)
+                        {
+                            JLOG(ctx.j.trace())
+                                << "Stealth address can only perform "
+                                   "AccountDelete transactions";
+                            return temSTEALTH_INVALID_TX;
+                        }
 
                         return tesSUCCESS;
                     }())

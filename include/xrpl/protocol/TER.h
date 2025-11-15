@@ -122,6 +122,9 @@ enum TEMcodes : TERUnderlyingType {
     temARRAY_TOO_LARGE,
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
+    
+    temBAD_EPHEMERAL_KEY,    // Invalid ephemeral public key for stealth payment
+    temSTEALTH_INVALID_TX,   // Stealth address can only perform AccountDelete
 };
 
 //------------------------------------------------------------------------------
