@@ -214,6 +214,60 @@ struct PaymentComponents
     trackedInterestPart() const;
 };
 
+/* Extends PaymentComponents with untracked payment amounts.
+ *
+ * This structure adds untracked fees and interest to the base
+ * PaymentComponents, representing amounts that don't affect the Loan object's
+ * tracked state but are still part of the total payment due from the borrower.
+ *
+ * Untracked amounts include:
+ * - Late payment fees that go directly to the Broker
+ * - Late payment penalty interest that goes directly to the Vault
+ * - Service fees
+ * - Origination fees (on first payment)
+ *
+ * The key distinction is that tracked amounts reduce the Loan object's state
+ * (sfTotalValueOutstanding, sfPrincipalOutstanding,
+ * sfManagementFeeOutstanding), while untracked amounts are paid directly to the
+ * recipient without affecting the loan's amortization schedule.
+ */
+struct ExtendedPaymentComponents : public PaymentComponents
+{
+    // Additional management fees that go directly to the Broker.
+    // This includes fees not part of the standard amortization schedule
+    // (e.g., late fees, service fees, origination fees).
+    // This value may be negative, though the final value returned in
+    // LoanPaymentParts.feePaid will never be negative.
+    Number untrackedManagementFee;
+
+    // Additional interest that goes directly to the Vault.
+    // This includes interest not part of the standard amortization schedule
+    // (e.g., late payment penalty interest).
+    // This value may be negative, though the final value returned in
+    // LoanPaymentParts.interestPaid will never be negative.
+    Number untrackedInterest;
+
+    // The complete amount due from the borrower for this payment.
+    // Calculated as: trackedValueDelta + untrackedInterest +
+    // untrackedManagementFee
+    //
+    // This value is used to validate that the payment amount provided by the
+    // borrower is sufficient to cover all components of the payment.
+    Number totalDue;
+
+    ExtendedPaymentComponents(
+        PaymentComponents const& p,
+        Number fee,
+        Number interest = numZero)
+        : PaymentComponents(p)
+        , untrackedManagementFee(fee)
+        , untrackedInterest(interest)
+        , totalDue(
+              trackedValueDelta + untrackedInterest + untrackedManagementFee)
+    {
+    }
+};
+
 struct LoanDeltas
 {
     Number principal;
