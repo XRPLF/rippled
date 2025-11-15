@@ -50,17 +50,41 @@ struct LoanPaymentParts
     operator==(LoanPaymentParts const& other) const;
 };
 
-/** This structure describes the initial computed properties of a loan.
+/* Describes the initial computed properties of a loan.
  *
- * It is used at loan creation and when the terms of a loan change, such as
- * after an overpayment.
+ * This structure contains the fundamental calculated values that define a
+ * loan's payment structure and amortization schedule. These properties are
+ * computed:
+ * - At loan creation (LoanSet transaction)
+ * - When loan terms change (e.g., after an overpayment that reduces the loan
+ * balance)
  */
 struct LoanProperties
 {
+    // The amount the borrower must pay for each regular payment period.
+    // Calculated using the standard amortization formula
+    // based on principal, interest rate, and number of payments.
     Number periodicPayment;
+
+    // The total amount the borrower will pay over the life of the loan.
+    // Equal to periodicPayment * paymentsRemaining.
+    // This includes principal, interest, and management fees.
     Number totalValueOutstanding;
+
+    // The total management fee that will be paid to the broker over the
+    // loan's lifetime. This is a percentage of the total interest (gross)
+    // as specified by the broker's management fee rate.
     Number managementFeeOwedToBroker;
+
+    // The scale (decimal places) used for rounding all loan amounts.
+    // This is the maximum of:
+    // - The asset's native scale
+    // - A minimum scale required to represent the periodic payment accurately
+    // All loan state values (principal, interest, fees) are rounded to this
+    // scale.
     std::int32_t loanScale;
+
+    // The principal portion of the first payment.
     Number firstPaymentPrincipal;
 };
 
