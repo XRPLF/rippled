@@ -50,7 +50,7 @@ struct LoanPaymentParts
     operator==(LoanPaymentParts const& other) const;
 };
 
-/** This structure describes the initial "computed" properties of a loan.
+/** This structure describes the initial computed properties of a loan.
  *
  * It is used at loan creation and when the terms of a loan change, such as
  * after an overpayment.
@@ -64,32 +64,31 @@ struct LoanProperties
     Number firstPaymentPrincipal;
 };
 
-/** This structure captures the current state of a loan and all the
-   relevant parts.
-
-   Whether the values are raw (unrounded) or rounded will
-   depend on how it was computed.
-
-   Many of the fields can be derived from each other, but they're all provided
-   here to reduce code duplication and possible mistakes.
-   e.g.
-     * interestOutstanding = valueOutstanding - principalOutstanding
-     * interestDue = interestOutstanding - managementFeeDue
+/** This structure captures the parts of a loan state.
+ *
+ *  Whether the values are raw (unrounded) or rounded will depend on how it was
+ * computed.
+ *
+ *  Many of the fields can be derived from each other, but they're all provided
+ *  here to reduce code duplication and possible mistakes.
+ *   e.g.
+ *     * interestOutstanding = valueOutstanding - principalOutstanding
+ *     * interestDue = interestOutstanding - managementFeeDue
  */
 struct LoanState
 {
-    /// Total value still due to be paid by the borrower.
+    // Total value still due to be paid by the borrower.
     Number valueOutstanding;
-    /// Prinicipal still due to be paid by the borrower.
+    // Principal still due to be paid by the borrower.
     Number principalOutstanding;
-    /// Interest still due to be paid TO the Vault.
+    // Interest still due to be paid to the Vault.
     // This is a portion of interestOutstanding
     Number interestDue;
-    /// Management fee still due to be paid TO the broker.
+    // Management fee still due to be paid to the broker.
     // This is a portion of interestOutstanding
     Number managementFeeDue;
 
-    /// Interest still due to be paid by the borrower.
+    // Interest still due to be paid by the borrower.
     Number
     interestOutstanding() const
     {
