@@ -168,23 +168,48 @@ namespace detail {
 
 enum class PaymentSpecialCase { none, final, extra };
 
-/// This structure is used internally to compute the breakdown of a
-/// single loan payment
+/* Represents a single loan payment component parts.
+
+* This structure captures the "delta" (change) values that will be applied to
+* the tracked fields in the Loan ledger object when a payment is processed.
+*
+* These are called "deltas" because they represent the amount by which each
+* corresponding field in the Loan object will be reduced.
+* They are "tracked" as they change tracked loan values.
+*/
 struct PaymentComponents
 {
-    // tracked values are rounded to the asset and loan scale, and correspond to
-    // fields in the Loan ledger object.
-    // trackedValueDelta modifies sfTotalValueOutstanding.
+    // The change in total value outstanding for this payment.
+    // This amount will be subtracted from sfTotalValueOutstanding in the Loan
+    // object. Equal to the sum of trackedPrincipalDelta,
+    // trackedInterestPart(), and trackedManagementFeeDelta.
     Number trackedValueDelta;
-    // trackedPrincipalDelta modifies sfPrincipalOutstanding.
+
+    // The change in principal outstanding for this payment.
+    // This amount will be subtracted from sfPrincipalOutstanding in the Loan
+    // object, representing the portion of the payment that reduces the
+    // original loan amount.
     Number trackedPrincipalDelta;
-    // trackedManagementFeeDelta modifies sfManagementFeeOutstanding. It will
-    // not include any "extra" fees that go directly to the broker, such as late
-    // fees.
+
+    // The change in management fee outstanding for this payment.
+    // This amount will be subtracted from sfManagementFeeOutstanding in the
+    // Loan object. This represents only the tracked management fees from the
+    // amortization schedule and does not include additional untracked fees
+    // (such as late payment fees) that go directly to the broker.
     Number trackedManagementFeeDelta;
 
+    // Indicates if this payment has special handling requirements.
+    // - none: Regular scheduled payment
+    // - final: The last payment that closes out the loan
+    // - extra: An additional payment beyond the regular schedule (overpayment)
     PaymentSpecialCase specialCase = PaymentSpecialCase::none;
 
+    // Calculates the tracked interest portion of this payment.
+    // This is derived from the other components as:
+    // trackedValueDelta - trackedPrincipalDelta - trackedManagementFeeDelta
+    //
+    // @return The amount of tracked interest included in this payment that
+    //         will be paid to the vault.
     Number
     trackedInterestPart() const;
 };
