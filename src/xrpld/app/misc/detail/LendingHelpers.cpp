@@ -226,6 +226,15 @@ loanAccruedInterest(
         (secondsSinceLastPayment / paymentInterval);
 }
 
+/* Applies a payment to the loan state and returns the breakdown of amounts
+ * paid.
+ *
+ * This is the core function that updates the Loan ledger object fields based on
+ * a computed payment.
+
+ * The function is templated to work with both direct Number/uint32_t values
+ * (for testing/simulation) and ValueProxy types (for actual ledger updates).
+ */
 template <class NumberProxy, class UInt32Proxy, class UInt32OptionalProxy>
 LoanPaymentParts
 doPayment(
@@ -258,20 +267,26 @@ doPayment(
             "ripple::detail::doPayment",
             "Full management fee payment");
 
+        // Mark the loan as complete
         paymentRemainingProxy = 0;
 
+        // Record when the final payment was made
         prevPaymentDateProxy = *nextDueDateProxy;
-        // Zero out the next due date. Since it's default, it'll be removed from
-        // the object.
+
+        // Clear the next due date. Setting it to 0 causes
+        // it to be removed from the Loan ledger object, saving space.
         nextDueDateProxy = 0;
 
-        // Always zero out the the tracked values on a final payment
+        // Zero out all tracked loan balances to mark the loan as paid off.
+        // These will be removed from the Loan object since they're default
+        // values.
         principalOutstandingProxy = 0;
         totalValueOutstandingProxy = 0;
         managementFeeOutstandingProxy = 0;
     }
     else
     {
+        // For regular payments (not overpayments), advance the payment schedule
         if (payment.specialCase != PaymentSpecialCase::extra)
         {
             paymentRemainingProxy -= 1;
@@ -294,11 +309,13 @@ doPayment(
             "ripple::detail::doPayment",
             "Valid management fee");
 
+        // Apply the payment deltas to reduce the outstanding balances
         principalOutstandingProxy -= payment.trackedPrincipalDelta;
         totalValueOutstandingProxy -= payment.trackedValueDelta;
         managementFeeOutstandingProxy -= payment.trackedManagementFeeDelta;
     }
 
+    // Principal can never exceed total value (principal is part of total value)
     XRPL_ASSERT_PARTS(
         // Use an explicit cast because the template parameter can be
         // ValueProxy<Number> or Number
@@ -306,6 +323,7 @@ doPayment(
             static_cast<Number>(totalValueOutstandingProxy),
         "ripple::detail::doPayment",
         "principal does not exceed total");
+
     XRPL_ASSERT_PARTS(
         // Use an explicit cast because the template parameter can be
         // ValueProxy<Number> or Number
@@ -314,14 +332,23 @@ doPayment(
         "fee outstanding stays valid");
 
     return LoanPaymentParts{
+        // Principal paid is straightforward - it's the tracked delta
         .principalPaid = payment.trackedPrincipalDelta,
-        // Now that the Loan object has been updated, the tracked interest
-        // (computed here) and untracked interest can be combined.
+
+        // Interest paid combines:
+        // 1. Tracked interest from the amortization schedule
+        //    (derived from the tracked deltas)
+        // 2. Untracked interest (e.g., late payment penalties)
         .interestPaid =
             payment.trackedInterestPart() + payment.untrackedInterest,
+
+        // Value change represents how the loan's total value changed beyond
+        // normal amortization.
         .valueChange = payment.untrackedInterest,
-        // Now that the Loan object has been updated, the fee parts can be
-        // combined
+
+        // Fee paid combines:
+        // 1. Tracked management fees from the amortization schedule
+        // 2. Untracked fees (e.g., late payment fees, service fees)
         .feePaid =
             payment.trackedManagementFeeDelta + payment.untrackedManagementFee};
 }
