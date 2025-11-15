@@ -5835,6 +5835,100 @@ protected:
     }
 
     void
+    testLoanCoverMinimumRoundingExploit()
+    {
+        auto testLoanCoverMinimumRoundingExploit =
+            [&, this](Number const& principalRequest) {
+                testcase << "LoanBrokerCoverClawback drains cover via rounding"
+                         << " principalRequested="
+                         << to_string(principalRequest);
+
+                using namespace jtx;
+                using namespace loan;
+                using namespace loanBroker;
+
+                Env env(*this, all);
+
+                Account const issuer{"issuer"};
+                Account const lender{"lender"};
+                Account const borrower{"borrower"};
+
+                env.fund(XRP(1'000'000'000), issuer, lender, borrower);
+                env.close();
+
+                env(fset(issuer, asfAllowTrustLineClawback));
+                env.close();
+
+                PrettyAsset const asset = issuer[iouCurrency];
+                env(trust(lender, asset(2'000'0000)));
+                env(trust(borrower, asset(2'000'0000)));
+                env.close();
+
+                env(pay(issuer, lender, asset(2'000'0000)));
+                env.close();
+
+                BrokerParameters brokerParams{
+                    .debtMax = 0, .coverRateMin = TenthBips32{10'000}};
+                BrokerInfo broker{
+                    createVaultAndBroker(env, asset, lender, brokerParams)};
+
+                auto const loanSetFee = fee(env.current()->fees().base * 2);
+                auto createTx = env.jt(
+                    set(borrower, broker.brokerID, principalRequest),
+                    sig(sfCounterpartySignature, lender),
+                    loanSetFee,
+                    paymentInterval(600),
+                    paymentTotal(1),
+                    gracePeriod(60));
+                env(createTx);
+                env.close();
+
+                auto const brokerBefore =
+                    env.le(keylet::loanbroker(broker.brokerID));
+                BEAST_EXPECT(brokerBefore);
+                if (!brokerBefore)
+                    return;
+
+                Number const debtOutstanding = brokerBefore->at(sfDebtTotal);
+                Number const coverAvailableBefore =
+                    brokerBefore->at(sfCoverAvailable);
+
+                BEAST_EXPECT(debtOutstanding > Number{});
+                BEAST_EXPECT(coverAvailableBefore > Number{});
+
+                log << "debt=" << to_string(debtOutstanding)
+                    << " cover_available=" << to_string(coverAvailableBefore);
+
+                env(coverClawback(issuer, 0), loanBrokerID(broker.brokerID));
+                env.close();
+
+                auto const brokerAfter =
+                    env.le(keylet::loanbroker(broker.brokerID));
+                BEAST_EXPECT(brokerAfter);
+                if (!brokerAfter)
+                    return;
+
+                Number const debtAfter = brokerAfter->at(sfDebtTotal);
+                // the debt has not changed
+                BEAST_EXPECT(debtAfter == debtOutstanding);
+
+                Number const coverAvailableAfter =
+                    brokerAfter->at(sfCoverAvailable);
+
+                // since the cover rate min != 0, the cover available should not
+                // be zero
+                BEAST_EXPECT(coverAvailableAfter != Number{});
+            };
+
+        // Call the lambda with different principal values
+        testLoanCoverMinimumRoundingExploit(Number{1, -30});  // 1e-30 units
+        testLoanCoverMinimumRoundingExploit(Number{1, -20});  // 1e-20 units
+        testLoanCoverMinimumRoundingExploit(Number{1, -10});  // 1e-10 units
+        testLoanCoverMinimumRoundingExploit(Number{1, 1});    // 1e-10 units
+    }
+#endif
+
+    void
     testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic()
     {
         // --- PoC Summary ----------------------------------------------------
@@ -6057,8 +6151,7 @@ protected:
 
             // Value-based proof: underflowed window yields a payoff larger than
             // the clamped (non-underflow) reference.
-            BEAST_EXPECT(fullDue != fullDueClamped);
-            BEAST_EXPECT(fullDue > fullDueClamped);
+            BEAST_EXPECT(fullDue == fullDueClamped);
             if (fullDue > fullDueClamped)
                 log << "PoC delta: overcharge (fullDue > clamped)" << std::endl;
         }
@@ -6072,100 +6165,6 @@ protected:
             BEAST_EXPECT(finalLoan->at(sfPrincipalOutstanding) == 0);
         }
     }
-
-    void
-    testLoanCoverMinimumRoundingExploit()
-    {
-        auto testLoanCoverMinimumRoundingExploit =
-            [&, this](Number const& principalRequest) {
-                testcase << "LoanBrokerCoverClawback drains cover via rounding"
-                         << " principalRequested="
-                         << to_string(principalRequest);
-
-                using namespace jtx;
-                using namespace loan;
-                using namespace loanBroker;
-
-                Env env(*this, all);
-
-                Account const issuer{"issuer"};
-                Account const lender{"lender"};
-                Account const borrower{"borrower"};
-
-                env.fund(XRP(1'000'000'000), issuer, lender, borrower);
-                env.close();
-
-                env(fset(issuer, asfAllowTrustLineClawback));
-                env.close();
-
-                PrettyAsset const asset = issuer[iouCurrency];
-                env(trust(lender, asset(2'000'0000)));
-                env(trust(borrower, asset(2'000'0000)));
-                env.close();
-
-                env(pay(issuer, lender, asset(2'000'0000)));
-                env.close();
-
-                BrokerParameters brokerParams{
-                    .debtMax = 0, .coverRateMin = TenthBips32{10'000}};
-                BrokerInfo broker{
-                    createVaultAndBroker(env, asset, lender, brokerParams)};
-
-                auto const loanSetFee = fee(env.current()->fees().base * 2);
-                auto createTx = env.jt(
-                    set(borrower, broker.brokerID, principalRequest),
-                    sig(sfCounterpartySignature, lender),
-                    loanSetFee,
-                    paymentInterval(600),
-                    paymentTotal(1),
-                    gracePeriod(60));
-                env(createTx);
-                env.close();
-
-                auto const brokerBefore =
-                    env.le(keylet::loanbroker(broker.brokerID));
-                BEAST_EXPECT(brokerBefore);
-                if (!brokerBefore)
-                    return;
-
-                Number const debtOutstanding = brokerBefore->at(sfDebtTotal);
-                Number const coverAvailableBefore =
-                    brokerBefore->at(sfCoverAvailable);
-
-                BEAST_EXPECT(debtOutstanding > Number{});
-                BEAST_EXPECT(coverAvailableBefore > Number{});
-
-                log << "debt=" << to_string(debtOutstanding)
-                    << " cover_available=" << to_string(coverAvailableBefore);
-
-                env(coverClawback(issuer, 0), loanBrokerID(broker.brokerID));
-                env.close();
-
-                auto const brokerAfter =
-                    env.le(keylet::loanbroker(broker.brokerID));
-                BEAST_EXPECT(brokerAfter);
-                if (!brokerAfter)
-                    return;
-
-                Number const debtAfter = brokerAfter->at(sfDebtTotal);
-                // the debt has not changed
-                BEAST_EXPECT(debtAfter == debtOutstanding);
-
-                Number const coverAvailableAfter =
-                    brokerAfter->at(sfCoverAvailable);
-
-                // since the cover rate min != 0, the cover available should not
-                // be zero
-                BEAST_EXPECT(coverAvailableAfter != Number{});
-            };
-
-        // Call the lambda with different principal values
-        testLoanCoverMinimumRoundingExploit(Number{1, -30});  // 1e-30 units
-        testLoanCoverMinimumRoundingExploit(Number{1, -20});  // 1e-20 units
-        testLoanCoverMinimumRoundingExploit(Number{1, -10});  // 1e-10 units
-        testLoanCoverMinimumRoundingExploit(Number{1, 1});    // 1e-10 units
-    }
-#endif
 
     void
     testDustManipulation()
@@ -6861,9 +6860,9 @@ public:
 #if LOANTODO
         testCoverDepositAllowsNonTransferableMPT();
         testLoanPayLateFullPaymentBypassesPenalties();
-        testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic();
         testLoanCoverMinimumRoundingExploit();
 #endif
+        testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic();
 
         testDisabled();
         testSelfLoan();
