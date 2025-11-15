@@ -353,10 +353,16 @@ doPayment(
             payment.trackedManagementFeeDelta + payment.untrackedManagementFee};
 }
 
-// This function mainly exists to guarantee isolation of the "sandbox"
-// variables from the real / proxy variables that will affect actual
-// ledger data in the caller.
-
+/* Simulates an overpayment to validate it won't break the loan's amortization.
+ *
+ * When a borrower pays more than the scheduled amount, the loan needs to be
+ * re-amortized with a lower principal. This function performs that calculation
+ * in a "sandbox" using temporary variables, allowing the caller to validate
+ * the result before committing changes to the actual ledger.
+ *
+ * The function preserves accumulated rounding errors across the re-amortization
+ * to ensure the loan state remains consistent with its payment history.
+ */
 Expected<LoanPaymentParts, TER>
 tryOverpayment(
     Asset const& asset,
@@ -375,18 +381,30 @@ tryOverpayment(
     TenthBips16 const managementFeeRate,
     beast::Journal j)
 {
+    // Calculate what the loan state SHOULD be theoretically (at full precision)
     auto const raw = calculateRawLoanState(
         periodicPayment, periodicRate, paymentRemaining, managementFeeRate);
+
+    // Get the actual loan state (with accumulated rounding from past payments)
     auto const rounded = constructRoundedLoanState(
         totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
 
+    // Calculate the accumulated rounding errors. These need to be preserved
+    // across the re-amortization to maintain consistency with the loan's
+    // payment history. Without preserving these errors, the loan could end
+    // up with a different total value than what the borrower has actually paid.
     auto const errors = rounded - raw;
 
+    // Compute the new principal by applying the overpayment to the raw
+    // (theoretical) principal. Use max with 0 to ensure we never go negative.
     auto const newRawPrincipal = std::max(
         raw.principalOutstanding - overpaymentComponents.trackedPrincipalDelta,
         Number{0});
 
-    auto newLoanProperties = computeLoanProperties(
+    // Compute new loan properties based on the reduced principal. This
+    // recalculates the periodic payment, total value, and management fees
+    // for the remaining payment schedule.
+    auto const newLoanProperties = computeLoanProperties(
         asset,
         newRawPrincipal,
         interestRate,
@@ -402,6 +420,7 @@ tryOverpayment(
                     << ", first payment principal: "
                     << newLoanProperties.firstPaymentPrincipal;
 
+    // Calculate what the new loan state should be with the new periodic payment
     auto const newRaw = calculateRawLoanState(
                             newLoanProperties.periodicPayment,
                             periodicRate,
@@ -412,6 +431,9 @@ tryOverpayment(
     JLOG(j.debug()) << "new raw value: " << newRaw.valueOutstanding
                     << ", principal: " << newRaw.principalOutstanding
                     << ", interest gross: " << newRaw.interestOutstanding();
+    // Update the loan state variables with the new values PLUS the preserved
+    // rounding errors. This ensures the loan's tracked state remains
+    // consistent with its payment history.
 
     principalOutstanding = std::clamp(
         roundToAsset(
@@ -440,6 +462,7 @@ tryOverpayment(
                     << ", principal: " << newRounded.principalOutstanding
                     << ", interest gross: " << newRounded.interestOutstanding();
 
+    // Update the periodic payment to reflect the re-amortized schedule
     periodicPayment = newLoanProperties.periodicPayment;
 
     // check that the loan is still valid
@@ -457,10 +480,12 @@ tryOverpayment(
     {
         JLOG(j.warn()) << "Principal overpayment would cause the loan to be in "
                           "an invalid state. Ignore the overpayment";
+
         return Unexpected(tesSUCCESS);
     }
 
-    // Check that the other computed values are valid
+    // Validate that all computed properties are reasonable. These checks should
+    // never fail under normal circumstances, but we validate defensively.
     if (newLoanProperties.periodicPayment <= 0 ||
         newLoanProperties.totalValueOutstanding <= 0 ||
         newLoanProperties.managementFeeOwedToBroker < 0)
@@ -483,6 +508,9 @@ tryOverpayment(
     auto const hypotheticalValueOutstanding =
         rounded.valueOutstanding - deltas.principal;
 
+    // Calculate how the loan's value changed due to the overpayment.
+    // This should be negative (value decreased) or zero. A principal
+    // overpayment should never increase the loan's value.
     auto const valueChange =
         newRounded.valueOutstanding - hypotheticalValueOutstanding;
     if (valueChange > 0)
@@ -493,15 +521,33 @@ tryOverpayment(
     }
 
     return LoanPaymentParts{
+        // Principal paid is the reduction in principal outstanding
         .principalPaid = deltas.principal,
+        // Interest paid is the reduction in interest due
         .interestPaid =
             deltas.interest + overpaymentComponents.untrackedInterest,
+        // Value change includes both the reduction from paying down principal
+        // (negative) and any untracked interest penalties (positive, e.g., if
+        // the overpayment itself incurs a fee)
         .valueChange =
             valueChange + overpaymentComponents.trackedInterestPart(),
+        // Fee paid includes both the reduction in tracked management fees and
+        // any untracked fees on the overpayment itself
         .feePaid = deltas.managementFee +
             overpaymentComponents.untrackedManagementFee};
 }
 
+/* Validates and applies an overpayment to the loan state.
+ *
+ * This function acts as a wrapper around tryOverpayment(), performing the
+ * re-amortization calculation in a sandbox (using temporary copies of the
+ * loan state), then validating the results before committing them to the
+ * actual ledger via the proxy objects.
+ *
+ * The two-step process (try in sandbox, then commit) ensures that if the
+ * overpayment would leave the loan in an invalid state, we can reject it
+ * gracefully without corrupting the ledger data.
+ */
 template <class NumberProxy>
 Expected<LoanPaymentParts, TER>
 doOverpayment(
@@ -521,8 +567,9 @@ doOverpayment(
     TenthBips16 const managementFeeRate,
     beast::Journal j)
 {
-    // Use temp variables to do the payment, so they can be thrown away if
-    // they don't work
+    // Create temporary copies of the loan state that can be safely modified
+    // and discarded if the overpayment doesn't work out. This prevents
+    // corrupting the actual ledger data if validation fails.
     Number totalValueOutstanding = totalValueOutstandingProxy;
     Number principalOutstanding = principalOutstandingProxy;
     Number managementFeeOutstanding = managementFeeOutstandingProxy;
@@ -539,6 +586,9 @@ doOverpayment(
         << ", untrackedInterest: " << overpaymentComponents.untrackedInterest
         << ", totalDue: " << overpaymentComponents.totalDue
         << ", payments remaining :" << paymentRemaining;
+
+    // Attempt to re-amortize the loan with the overpayment applied.
+    // This modifies the temporary copies, leaving the proxies unchanged.
     auto const ret = tryOverpayment(
         asset,
         loanScale,
@@ -560,6 +610,9 @@ doOverpayment(
 
     auto const& loanPaymentParts = *ret;
 
+    // Safety check: the principal must have decreased. If it didn't (or
+    // increased!), something went wrong in the calculation and we should
+    // reject the overpayment.
     if (principalOutstandingProxy <= principalOutstanding)
     {
         // LCOV_EXCL_START
@@ -571,8 +624,10 @@ doOverpayment(
         // LCOV_EXCL_STOP
     }
 
-    // We haven't updated the proxies yet, so they still have the original
-    // values. Use those to do some checks.
+    // The proxies still hold the original (pre-overpayment) values, which
+    // allows us to compute deltas and verify they match what we expect
+    // from the overpaymentComponents and loanPaymentParts.
+
     XRPL_ASSERT_PARTS(
         overpaymentComponents.trackedPrincipalDelta ==
             principalOutstandingProxy - principalOutstanding,
@@ -622,7 +677,8 @@ doOverpayment(
         "ripple::detail::doOverpayment",
         "fee payment matches");
 
-    // Update the loan object (via proxies)
+    // All validations passed, so update the proxy objects (which will
+    // modify the actual Loan ledger object)
     totalValueOutstandingProxy = totalValueOutstanding;
     principalOutstandingProxy = principalOutstanding;
     managementFeeOutstandingProxy = managementFeeOutstanding;
