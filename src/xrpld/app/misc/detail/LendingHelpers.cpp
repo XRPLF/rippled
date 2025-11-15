@@ -705,16 +705,19 @@ computeInterestAndFeeParts(
     return std::make_pair(interest - fee, fee);
 }
 
-/** Handle possible late payments.
+/* Computes the payment components for a late payment.
  *
- * If this function processed a late payment, the return value will be
- * a LoanPaymentParts object. If the loan is not late, the return will be an
- * Unexpected(tesSUCCESS). Otherwise, it'll be an Unexpected with the error code
- * the caller is expected to return.
+ * A late payment is made after the grace period has expired and includes:
+ * 1. All components of a regular periodic payment
+ * 2. Late payment penalty interest (accrued since the due date)
+ * 3. Late payment fee charged by the broker
  *
- * Equation (15) from XLS-66 spec, Section A-2 Equation Glossary
+ * The late penalty interest increases the loan's total value (the borrower
+ * owes more than scheduled), while the regular payment components follow
+ * the normal amortization schedule.
+ *
+ * Implements equation (15) from XLS-66 spec, Section A-2 Equation Glossary
  */
-
 Expected<ExtendedPaymentComponents, TER>
 computeLatePayment(
     Asset const& asset,
@@ -729,15 +732,21 @@ computeLatePayment(
     TenthBips16 managementFeeRate,
     beast::Journal j)
 {
+    // Check if the due date has passed. If not, reject the payment as
+    // being too soon
     if (!hasExpired(view, nextDueDate))
         return Unexpected(tecTOO_SOON);
 
+    // Calculate the penalty interest based on how long the payment is overdue.
     auto const latePaymentInterest = loanLatePaymentInterest(
         principalOutstanding,
         lateInterestRate,
         view.parentCloseTime(),
         nextDueDate);
 
+    // Round the late interest and split it between the vault (net interest)
+    // and the broker (management fee portion). This lambda ensures we
+    // round before splitting to maintain precision.
     auto const [roundedLateInterest, roundedLateManagementFee] = [&]() {
         auto const interest =
             roundToAsset(asset, latePaymentInterest, loanScale);
@@ -753,18 +762,28 @@ computeLatePayment(
         "ripple::detail::computeLatePayment",
         "no extra parts to this payment");
 
-    // Copy the periodic payment values, and add on the late interest.
-    // This preserves all the other fields without having to enumerate them.
+    // Create the late payment components by copying the regular periodic
+    // payment and adding the late penalties. We use a lambda to construct
+    // this to keep the logic clear. This preserves all the other fields without
+    // having to enumerate them.
+
     ExtendedPaymentComponents const late = [&]() {
         auto inner = periodic;
 
         return ExtendedPaymentComponents{
             inner,
-            // A late payment pays both the normal fee, and the extra fees
+            // Untracked management fee includes:
+            // 1. Regular service fee (from periodic.untrackedManagementFee)
+            // 2. Late payment fee (fixed penalty)
+            // 3. Management fee portion of late interest
             periodic.untrackedManagementFee + latePaymentFee +
                 roundedLateManagementFee,
-            // A late payment increases the value of the loan by the difference
-            // between periodic and late payment interest
+
+            // Untracked interest includes:
+            // 1. Any untracked interest from the regular payment (usually 0)
+            // 2. Late penalty interest (increases loan value)
+            // This positive value indicates the loan's value increased due
+            // to the late payment.
             periodic.untrackedInterest + roundedLateInterest};
     }();
 
@@ -773,6 +792,9 @@ computeLatePayment(
         "ripple::detail::computeLatePayment",
         "total due is rounded");
 
+    // Check that the borrower provided enough funds to cover the late payment.
+    // The late payment is more expensive than a regular payment due to the
+    // penalties.
     if (amount < late.totalDue)
     {
         JLOG(j.warn()) << "Late loan payment amount is insufficient. Due: "
