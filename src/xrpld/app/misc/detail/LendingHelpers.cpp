@@ -1453,6 +1453,25 @@ calculateFullPaymentInterest(
         closeInterestRate);
 }
 
+/* Calculates the theoretical loan state at maximum precision for a given point
+ * in the amortization schedule.
+ *
+ * This function computes what the loan's outstanding balances should be based
+ * on the periodic payment amount and number of payments remaining,
+ * without considering any rounding that may have been applied to the actual
+ * Loan object's state. This "raw" (unrounded) state is used as a target for
+ * computing payment components and validating that the loan's tracked state
+ * hasn't drifted too far from the theoretical values.
+ *
+ * The raw state serves several purposes:
+ * 1. Computing the expected payment breakdown (principal, interest, fees)
+ * 2. Detecting and correcting rounding errors that accumulate over time
+ * 3. Validating that overpayments are calculated correctly
+ * 4. Ensuring the loan will be fully paid off at the end of its term
+ *
+ * If paymentRemaining is 0, returns a fully zeroed-out LoanState,
+ *       representing a completely paid-off loan.
+ */
 LoanState
 calculateRawLoanState(
     Number const& periodicPayment,
@@ -1510,6 +1529,25 @@ calculateRawLoanState(
         managementFeeRate);
 }
 
+/* Constructs a LoanState from rounded Loan ledger object values.
+ *
+ * This function creates a LoanState structure from the three tracked values
+ * stored in a Loan ledger object. Unlike calculateRawLoanState(), which
+ * computes theoretical unrounded values, this function works with values
+ * that have already been rounded to the loan's scale.
+ *
+ * The key difference from calculateRawLoanState():
+ * - calculateRawLoanState: Computes theoretical values at full precision
+ * - constructRoundedLoanState: Builds state from actual rounded ledger values
+ *
+ * The interestDue field is derived from the other three values rather than
+ * stored directly, since it can be calculated as:
+ *   interestDue = totalValueOutstanding - principalOutstanding -
+ * managementFeeOutstanding
+ *
+ * This ensures consistency across the codebase and prevents copy-paste errors
+ * when creating LoanState objects from Loan ledger data.
+ */
 LoanState
 constructRoundedLoanState(
     Number const& totalValueOutstanding,
