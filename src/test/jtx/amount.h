@@ -243,7 +243,7 @@ struct XRP_t
     }
 
     /** Returns an amount of XRP as PrettyAmount,
-        which is trivially convertable to STAmount
+        which is trivially convertible to STAmount
 
         @param v The number of XRP (not drops)
     */

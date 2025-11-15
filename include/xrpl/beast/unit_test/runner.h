@@ -39,7 +39,7 @@ public:
 
         The argument string is available to suites and
         allows for customization of the test. Each suite
-        defines its own syntax for the argumnet string.
+        defines its own syntax for the argument string.
         The same argument is passed to all suites.
     */
     void
