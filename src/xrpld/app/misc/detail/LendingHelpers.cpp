@@ -1,5 +1,4 @@
 #include <xrpld/app/misc/LendingHelpers.h>
-//
 #include <xrpld/app/tx/detail/VaultCreate.h>
 
 namespace ripple {
@@ -43,20 +42,23 @@ LoanPaymentParts::operator==(LoanPaymentParts const& other) const
         valueChange == other.valueChange && feePaid == other.feePaid;
 }
 
+/* Converts annualized interest rate to per-payment-period rate.
+ * The rate is prorated based on the payment interval in seconds.
+ *
+ * Equation (1) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 {
-    // Need floating point math for this one, since we're dividing by some
-    // large numbers
-    /*
-     * This formula is from the XLS-66 spec, section 3.2.4.1.1 (Regular
-     * Payment), specifically "periodicRate = ...", though it is duplicated in
-     * other places.
-     */
+    // Need floating point math, since we're dividing by a large number
     return tenthBipsOfValue(Number(paymentInterval), interestRate) /
         (365 * 24 * 60 * 60);
 }
 
+/* Checks if a value is already rounded to the specified scale.
+ * Returns true if rounding down and rounding up produce the same result,
+ * indicating no further precision exists beyond the scale.
+ */
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 {
@@ -66,37 +68,41 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 
 namespace detail {
 
+/* Computes (1 + periodicRate)^paymentsRemaining for amortization calculations.
+ *
+ * Equation (5) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 Number
 computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining)
 {
-    /*
-     * This formula is from the XLS-66 spec, section 3.2.4.1.1 (Regular
-     * Payment), though "raisedRate" is computed only once and used twice.
-     */
     return power(1 + periodicRate, paymentsRemaining);
 }
 
+/* Computes the payment factor used in standard amortization formulas.
+ * This factor converts principal to periodic payment amount.
+ *
+ * Equation (6) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 Number
 computePaymentFactor(
     Number const& periodicRate,
     std::uint32_t paymentsRemaining)
 {
-    // periodicRate should never be zero in this function, but if it is,
-    // then 1/paymentRemaining is the most accurate factor that avoids
-    // divide by 0.
+    // For zero interest, payment factor is simply 1/paymentsRemaining
     if (periodicRate == beast::zero)
         return Number{1} / paymentsRemaining;
 
-    /*
-     * This formula is from the XLS-66 spec, section 3.2.4.1.1 (Regular
-     * Payment), though "raisedRate" is computed only once and used twice.
-     */
     Number const raisedRate =
         computeRaisedRate(periodicRate, paymentsRemaining);
 
     return (periodicRate * raisedRate) / (raisedRate - 1);
 }
 
+/* Calculates the periodic payment amount using standard amortization formula.
+ * For interest-free loans, returns principal divided equally across payments.
+ *
+ * Equation (7) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 Number
 loanPeriodicPayment(
     Number const& principalOutstanding,
@@ -106,18 +112,19 @@ loanPeriodicPayment(
     if (principalOutstanding == 0 || paymentsRemaining == 0)
         return 0;
 
-    // Special case for interest free loans - equal payments of the principal.
+    // Interest-free loans: equal principal payments
     if (periodicRate == beast::zero)
         return principalOutstanding / paymentsRemaining;
 
-    /*
-     * This formula is from the XLS-66 spec, section 3.2.4.1.1 (Regular
-     * Payment).
-     */
     return principalOutstanding *
         computePaymentFactor(periodicRate, paymentsRemaining);
 }
 
+/* Calculates the periodic payment amount from annualized interest rate.
+ * Converts the annual rate to periodic rate before computing payment.
+ *
+ * Equation (7) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 Number
 loanPeriodicPayment(
     Number const& principalOutstanding,
@@ -127,16 +134,18 @@ loanPeriodicPayment(
 {
     if (principalOutstanding == 0 || paymentsRemaining == 0)
         return 0;
-    /*
-     * This function is derived from the XLS-66 spec, section 3.2.4.1.1 (Regular
-     * payment), though it is duplicated in other places.
-     */
+
     Number const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
 
     return loanPeriodicPayment(
         principalOutstanding, periodicRate, paymentsRemaining);
 }
 
+/* Reverse-calculates principal from periodic payment amount.
+ * Used to determine theoretical principal at any point in the schedule.
+ *
+ * Equation (10) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 Number
 loanPrincipalFromPeriodicPayment(
     Number const& periodicPayment,
@@ -146,14 +155,15 @@ loanPrincipalFromPeriodicPayment(
     if (periodicRate == 0)
         return periodicPayment * paymentsRemaining;
 
-    /*
-     * This formula is the reverse of the one from the XLS-66 spec,
-     * section 3.2.4.1.1 (Regular Payment) used in loanPeriodicPayment
-     */
     return periodicPayment /
         computePaymentFactor(periodicRate, paymentsRemaining);
 }
 
+/* Splits gross interest into net interest (to vault) and management fee (to
+ * broker). Returns pair of (net interest, management fee).
+ *
+ * Equation (33) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 std::pair<Number, Number>
 computeInterestAndFeeParts(
     Number const& interest,
@@ -161,10 +171,14 @@ computeInterestAndFeeParts(
 {
     auto const fee = tenthBipsOfValue(interest, managementFeeRate);
 
-    // No error tracking needed here because this is extra
     return std::make_pair(interest - fee, fee);
 }
 
+/* Calculates penalty interest accrued on overdue payments.
+ * Returns 0 if payment is not late.
+ *
+ * Equation (16) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 Number
 loanLatePaymentInterest(
     Number const& principalOutstanding,
@@ -172,18 +186,10 @@ loanLatePaymentInterest(
     NetClock::time_point parentCloseTime,
     std::uint32_t nextPaymentDueDate)
 {
-    /*
-     * This formula is from the XLS-66 spec, section 3.2.4.1.2 (Late payment),
-     * specifically "latePaymentInterest = ..."
-     *
-     * The spec is to be updated to base the duration on the next due date
-     */
-
-    // If the payment is not late by any amount of time, then there's no late
-    // interest
     if (parentCloseTime.time_since_epoch().count() <= nextPaymentDueDate)
         return 0;
 
+    // Equation (3) from XLS-66 spec, Section A-2 Equation Glossary
     auto const secondsOverdue =
         parentCloseTime.time_since_epoch().count() - nextPaymentDueDate;
 
@@ -192,6 +198,11 @@ loanLatePaymentInterest(
     return principalOutstanding * rate;
 }
 
+/* Calculates interest accrued since the last payment based on time elapsed.
+ * Returns 0 if loan is paid ahead of schedule.
+ *
+ * Equation (27) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 Number
 loanAccruedInterest(
     Number const& principalOutstanding,
@@ -201,49 +212,19 @@ loanAccruedInterest(
     std::uint32_t prevPaymentDate,
     std::uint32_t paymentInterval)
 {
-    /*
-     * This formula is from the XLS-66 spec, section 3.2.4.1.4 (Early Full
-     * Repayment), specifically "accruedInterest = ...".
-     */
     auto const lastPaymentDate = std::max(prevPaymentDate, startDate);
 
-    // If the loan has been paid ahead, then "lastPaymentDate" is in the future,
-    // and no interest has accrued.
+    // No accrued interest if loan is paid ahead
     if (parentCloseTime.time_since_epoch().count() <= lastPaymentDate)
         return 0;
 
+    // Equation (4) from XLS-66 spec, Section A-2 Equation Glossary
     auto const secondsSinceLastPayment =
         parentCloseTime.time_since_epoch().count() - lastPaymentDate;
 
-    return principalOutstanding * periodicRate * secondsSinceLastPayment /
-        paymentInterval;
+    return principalOutstanding * periodicRate *
+        (secondsSinceLastPayment / paymentInterval);
 }
-
-struct ExtendedPaymentComponents : public PaymentComponents
-{
-    // untrackedManagementFeeDelta includes any fees that go directly to the
-    // Broker, such as late fees. This value may be negative, though the final
-    // value returned in LoanPaymentParts.feePaid will never be negative.
-    Number untrackedManagementFee;
-    // untrackedInterest includes any fees that go directly to the Vault, such
-    // as late payment penalty interest. This value may be negative, though the
-    // final value returned in LoanPaymentParts.interestPaid will never be
-    // negative.
-    Number untrackedInterest;
-    Number totalDue;
-
-    ExtendedPaymentComponents(
-        PaymentComponents const& p,
-        Number f,
-        Number v = numZero)
-        : PaymentComponents(p)
-        , untrackedManagementFee(f)
-        , untrackedInterest(v)
-        , totalDue(
-              trackedValueDelta + untrackedInterest + untrackedManagementFee)
-    {
-    }
-};
 
 template <class NumberProxy, class UInt32Proxy, class UInt32OptionalProxy>
 LoanPaymentParts
@@ -623,6 +604,11 @@ doOverpayment(
     return loanPaymentParts;
 }
 
+/*
+ * Computes the interest and management fee parts from interest amount.
+ *
+ * Equation (33) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 std::pair<Number, Number>
 computeInterestAndFeeParts(
     Asset const& asset,
@@ -643,11 +629,7 @@ computeInterestAndFeeParts(
  * Unexpected(tesSUCCESS). Otherwise, it'll be an Unexpected with the error code
  * the caller is expected to return.
  *
- *
- * This function is an implementation of the XLS-66 spec, based on
- * * section 3.2.4.3 (Transaction Pseudo-code), specifically the bit
- *   labeled "the payment is late"
- * * section 3.2.4.1.2 (Late Payment)
+ * Equation (15) from XLS-66 spec, Section A-2 Equation Glossary
  */
 
 Expected<ExtendedPaymentComponents, TER>
@@ -667,9 +649,6 @@ computeLatePayment(
     if (!hasExpired(view, nextDueDate))
         return Unexpected(tecTOO_SOON);
 
-    // the payment is late
-    // Late payment interest is only the part of the interest that comes
-    // from being late, as computed by 3.2.4.1.2.
     auto const latePaymentInterest = loanLatePaymentInterest(
         principalOutstanding,
         lateInterestRate,
@@ -690,6 +669,7 @@ computeLatePayment(
         periodic.specialCase != PaymentSpecialCase::extra,
         "ripple::detail::computeLatePayment",
         "no extra parts to this payment");
+
     // Copy the periodic payment values, and add on the late interest.
     // This preserves all the other fields without having to enumerate them.
     ExtendedPaymentComponents const late = [&]() {
@@ -726,6 +706,8 @@ computeLatePayment(
  * an ExtendedPaymentComponents object. Otherwise, it'll be an Unexpected with
  * the error code the caller is expected to return. It should NEVER return
  * tesSUCCESS
+ *
+ * Implements equation (26) from XLS-66 spec, Section A-2 Equation Glossary
  */
 
 Expected<ExtendedPaymentComponents, TER>
@@ -756,6 +738,8 @@ computeFullPayment(
         return Unexpected(tecKILLED);
     }
 
+    // Calculate the raw principal outstanding from the periodic payment
+    // rawPrincipalOutstanding will be used to compute the full payment interest
     Number const rawPrincipalOutstanding = loanPrincipalFromPeriodicPayment(
         periodicPayment, periodicRate, paymentRemaining);
 
@@ -1045,6 +1029,13 @@ computePaymentComponents(
     };
 }
 
+/*
+ * Compute the payment components for an overpayment scenario. This includes
+ * computing the fee on the overpayment, and splitting the interest and
+ * management fee parts.
+ *
+ * Equations (20), (21) and (22) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 ExtendedPaymentComponents
 computeOverpaymentComponents(
     Asset const& asset,
@@ -1059,14 +1050,18 @@ computeOverpaymentComponents(
         "ripple::detail::computeOverpaymentComponents : valid overpayment "
         "amount");
 
+    // Equation (22) from XLS-66 spec, Section A-2 Equation Glossary
     Number const fee = roundToAsset(
         asset, tenthBipsOfValue(overpayment, overpaymentFeeRate), loanScale);
 
+    // Equation (20) and (21) from XLS-66 spec, Section A-2 Equation
+    // Glossary
     auto const [rawOverpaymentInterest, _] = [&]() {
         Number const interest =
             tenthBipsOfValue(overpayment, overpaymentInterestRate);
         return detail::computeInterestAndFeeParts(interest, managementFeeRate);
     }();
+
     auto const [roundedOverpaymentInterest, roundedOverpaymentManagementFee] =
         [&]() {
             Number const interest =
@@ -1212,6 +1207,12 @@ checkLoanGuards(
     return tesSUCCESS;
 }
 
+/*
+ * This function calculates the full payment interest accrued since the last
+ * payment, plus any prepayment penalty.
+ *
+ * Equations (27) and (28) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 Number
 calculateFullPaymentInterest(
     Number const& rawPrincipalOutstanding,
@@ -1222,8 +1223,6 @@ calculateFullPaymentInterest(
     std::uint32_t startDate,
     TenthBips32 closeInterestRate)
 {
-    // If there is more than one payment remaining, see if enough was
-    // paid for a full payment
     auto const accruedInterest = detail::loanAccruedInterest(
         rawPrincipalOutstanding,
         periodicRate,
@@ -1235,6 +1234,7 @@ calculateFullPaymentInterest(
         accruedInterest >= 0,
         "ripple::detail::computeFullPaymentInterest : valid accrued interest");
 
+    // Equation (28) from XLS-66 spec, Section A-2 Equation Glossary
     auto const prepaymentPenalty =
         tenthBipsOfValue(rawPrincipalOutstanding, closeInterestRate);
     XRPL_ASSERT(
@@ -1242,6 +1242,7 @@ calculateFullPaymentInterest(
         "ripple::detail::computeFullPaymentInterest : valid prepayment "
         "interest");
 
+    // Part of equation (27) from XLS-66 spec, Section A-2 Equation Glossary
     return accruedInterest + prepaymentPenalty;
 }
 
@@ -1285,19 +1286,30 @@ calculateRawLoanState(
             .interestDue = 0,
             .managementFeeDue = 0};
     }
-    Number const rawValueOutstanding = periodicPayment * paymentRemaining;
+
+    // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
+    Number const rawTotalValueOutstanding = periodicPayment * paymentRemaining;
+
     Number const rawPrincipalOutstanding =
         detail::loanPrincipalFromPeriodicPayment(
             periodicPayment, periodicRate, paymentRemaining);
-    Number const rawInterestOutstanding =
-        rawValueOutstanding - rawPrincipalOutstanding;
+
+    // Equation (31) from XLS-66 spec, Section A-2 Equation Glossary
+    Number const rawInterestOutstandingGross =
+        rawTotalValueOutstanding - rawPrincipalOutstanding;
+
+    // Equation (32) from XLS-66 spec, Section A-2 Equation Glossary
     Number const rawManagementFeeOutstanding =
-        tenthBipsOfValue(rawInterestOutstanding, managementFeeRate);
+        tenthBipsOfValue(rawInterestOutstandingGross, managementFeeRate);
+
+    // Equation (33) from XLS-66 spec, Section A-2 Equation Glossary
+    Number const rawInterestOutstandingNet =
+        rawInterestOutstandingGross - rawManagementFeeOutstanding;
 
     return LoanState{
-        .valueOutstanding = rawValueOutstanding,
+        .valueOutstanding = rawTotalValueOutstanding,
         .principalOutstanding = rawPrincipalOutstanding,
-        .interestDue = rawInterestOutstanding - rawManagementFeeOutstanding,
+        .interestDue = rawInterestOutstandingNet,
         .managementFeeDue = rawManagementFeeOutstanding};
 };
 
@@ -1341,6 +1353,12 @@ constructRoundedLoanState(SLE::const_ref loan)
         loan->at(sfManagementFeeOutstanding));
 }
 
+/*
+ * This function calculates the fee owed to the broker based on the asset,
+ * value, and management fee rate.
+ *
+ * Equation (32) from XLS-66 spec, Section A-2 Equation Glossary
+ */
 Number
 computeManagementFee(
     Asset const& asset,
@@ -1355,6 +1373,9 @@ computeManagementFee(
         Number::downward);
 }
 
+/*
+ * Given the loan parameters, compute the derived properties of the loan.
+ */
 LoanProperties
 computeLoanProperties(
     Asset const& asset,
@@ -1372,19 +1393,15 @@ computeLoanProperties(
 
     auto const periodicPayment = detail::loanPeriodicPayment(
         principalOutstanding, periodicRate, paymentsRemaining);
+
     auto const [totalValueOutstanding, loanScale] = [&]() {
         NumberRoundModeGuard mg(Number::to_nearest);
         // Use STAmount's internal rounding instead of roundToAsset, because
         // we're going to use this result to determine the scale for all the
         // other rounding.
-        STAmount amount{
-            asset,
-            /*
-             * This formula is from the XLS-66 spec, section 3.2.4.2 (Total
-             * Loan Value Calculation), specifically "totalValueOutstanding
-             * = ..."
-             */
-            periodicPayment * paymentsRemaining};
+
+        // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
+        STAmount amount{asset, periodicPayment * paymentsRemaining};
 
         // Base the loan scale on the total value, since that's going to be the
         // biggest number involved (barring unusual parameters for late, full,
@@ -1409,16 +1426,15 @@ computeLoanProperties(
     principalOutstanding = roundToAsset(
         asset, principalOutstanding, loanScale, Number::to_nearest);
 
+    // E<quation (31) from XLS-66 spec, Section A-2 Equation Glossary
+    auto const totalInterestOutstanding =
+        totalValueOutstanding - principalOutstanding;
     auto const feeOwedToBroker = computeManagementFee(
-        asset,
-        /*
-         * This formula is from the XLS-66 spec, section 3.2.4.2 (Total Loan
-         * Value Calculation), specifically "totalInterestOutstanding = ..."
-         */
-        totalValueOutstanding - principalOutstanding,
-        managementFeeRate,
-        loanScale);
+        asset, totalInterestOutstanding, managementFeeRate, loanScale);
 
+    // Compute the principal part of the first payment. This is needed
+    // because the principal part may be rounded down to zero, which
+    // would prevent the principal from ever being paid down.
     auto const firstPaymentPrincipal = [&]() {
         // Compute the parts for the first payment. Ensure that the
         // principal payment will actually change the principal.
@@ -1427,6 +1443,7 @@ computeLoanProperties(
             periodicRate,
             paymentsRemaining,
             managementFeeRate);
+
         auto const firstPaymentState = calculateRawLoanState(
             periodicPayment,
             periodicRate,
@@ -1447,6 +1464,12 @@ computeLoanProperties(
         .firstPaymentPrincipal = firstPaymentPrincipal};
 }
 
+/*
+ * This is the main function to make a loan payment.
+ * This function handles regular, late, full, and overpayments.
+ * It is an implementation of the make_payment function from the XLS-66 spec.
+ * Section 3.2.4.4
+ */
 Expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
@@ -1457,17 +1480,12 @@ loanMakePayment(
     LoanPaymentType const paymentType,
     beast::Journal j)
 {
-    /*
-     * This function is an implementation of the XLS-66 spec,
-     * section 3.2.4.3 (Transaction Pseudo-code)
-     */
     auto principalOutstandingProxy = loan->at(sfPrincipalOutstanding);
     auto paymentRemainingProxy = loan->at(sfPaymentRemaining);
 
     if (paymentRemainingProxy == 0 || principalOutstandingProxy == 0)
     {
-        // Loan complete
-        // This is already checked in LoanPay::preclaim()
+        // Loan complete this is already checked in LoanPay::preclaim()
         // LCOV_EXCL_START
         JLOG(j.warn()) << "Loan is already paid off.";
         return Unexpected(tecKILLED);
@@ -1498,8 +1516,8 @@ loanMakePayment(
     std::uint32_t const startDate = loan->at(sfStartDate);
 
     std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
-    // Compute the normal periodic rate, payment, etc.
-    // We'll need it in the remaining calculations
+
+    // Compute the periodic rate that will be used for calculations throughout
     Number const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
     XRPL_ASSERT(
         interestRate == 0 || periodicRate > 0,
@@ -1655,8 +1673,7 @@ loanMakePayment(
         "ripple::loanMakePayment",
         "regular payment type");
 
-    // This will keep a running total of what is actually paid, if the payment
-    // is sufficient for any payment
+    // Keep a running total of the actual parts paid
     LoanPaymentParts totalParts;
     Number totalPaid;
     std::size_t numPayments = 0;
