@@ -1329,7 +1329,7 @@ class Vault_test : public beast::unit_test::suite
                      Vault& vault) {
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             testcase("insufficient fee");
-            env(tx, fee(env.current()->fees().base), ter(telINSUF_FEE_P));
+            env(tx, fee(env.current()->fees().base - 1), ter(telINSUF_FEE_P));
         });
 
         testCase([this](
@@ -2074,6 +2074,10 @@ class Vault_test : public beast::unit_test::suite
                     auto const sleMPT = env.le(mptoken);
                     BEAST_EXPECT(sleMPT == nullptr);
 
+                    // Use one reserve so the next transaction fails
+                    env(ticket::create(owner, 1));
+                    env.close();
+
                     // No reserve to create MPToken for asset in VaultWithdraw
                     tx = vault.withdraw(
                         {.depositor = owner,
@@ -2091,7 +2095,7 @@ class Vault_test : public beast::unit_test::suite
                 }
             },
             {.requireAuth = false,
-             .initialXRP = acctReserve + incReserve * 4 - 1});
+             .initialXRP = acctReserve + incReserve * 4 + 1});
 
         testCase([this](
                      Env& env,
@@ -2980,6 +2984,9 @@ class Vault_test : public beast::unit_test::suite
                     env.le(keylet::line(owner, asset.raw().get<Issue>()));
                 BEAST_EXPECT(trustline == nullptr);
 
+                env(ticket::create(owner, 1));
+                env.close();
+
                 // Fail because not enough reserve to create trust line
                 tx = vault.withdraw(
                     {.depositor = owner,
@@ -2995,7 +3002,7 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             },
-            CaseArgs{.initialXRP = acctReserve + incReserve * 4 - 1});
+            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
 
         testCase(
             [&, this](
@@ -3016,8 +3023,7 @@ class Vault_test : public beast::unit_test::suite
                 env(pay(owner, charlie, asset(100)));
                 env.close();
 
-                // Use up some reserve on tickets
-                env(ticket::create(charlie, 2));
+                env(ticket::create(charlie, 3));
                 env.close();
 
                 // Fail because not enough reserve to create MPToken for shares
@@ -3035,7 +3041,7 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             },
-            CaseArgs{.initialXRP = acctReserve + incReserve * 4 - 1});
+            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
 
         testCase([&, this](
                      Env& env,

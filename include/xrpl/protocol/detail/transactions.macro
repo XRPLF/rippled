@@ -155,7 +155,7 @@ TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel,
 #endif
 TRANSACTION(ttTICKET_CREATE, 10, TicketCreate,
     Delegation::delegatable,
-    featureTicketBatch,
+    uint256{},
     noPriv,
     ({
     {sfTicketCount, soeREQUIRED},
