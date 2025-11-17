@@ -175,6 +175,7 @@ VaultDeposit::doApply()
     }
 
     auto const& vaultAccount = vault->at(sfAccount);
+    auto const& vaultAsset = vault->at(sfAsset);
     // Note, vault owner is always authorized
     if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
     {
@@ -219,10 +220,8 @@ VaultDeposit::doApply()
         }
     }
 
-    STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
-    // STAmount will ignore enforcement for IOUs, so we can set it regardless of
-    // type.
-    sharesCreated.setIntegerEnforcement(Number::weak);
+    STAmount sharesCreated = {vault->at(sfShareMPTID)};
+    STAmount assetsDeposited = {vaultAsset};
     try
     {
         // Compute exchange before transferring any amounts.
@@ -233,14 +232,14 @@ VaultDeposit::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
         }
-        if (sharesCreated == beast::zero || !sharesCreated.validNumber())
+        if (sharesCreated == beast::zero)
             return tecPRECISION_LOSS;
 
         auto const maybeAssets =
             sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        else if (*maybeAssets > amount || !maybeAssets->validNumber())
+        else if (*maybeAssets > amount)
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
@@ -248,6 +247,10 @@ VaultDeposit::doApply()
             // LCOV_EXCL_STOP
         }
         assetsDeposited = *maybeAssets;
+
+        if (!sharesCreated.representableNumber() ||
+            !assetsDeposited.representableNumber())
+            return tecPRECISION_LOSS;
     }
     catch (std::overflow_error const&)
     {
@@ -268,10 +271,10 @@ VaultDeposit::doApply()
 
     auto assetsTotalProxy = vault->at(sfAssetsTotal);
     auto assetsAvailableProxy = vault->at(sfAssetsAvailable);
-    if (vault->at(sfAsset).value().integral())
+    if (vaultAsset.value().integral())
     {
-        assetsTotalProxy.value().setIntegerEnforcement(Number::weak);
-        assetsAvailableProxy.value().setIntegerEnforcement(Number::weak);
+        assetsTotalProxy.value().setIsInteger(true);
+        assetsAvailableProxy.value().setIsInteger(true);
     }
     assetsTotalProxy += assetsDeposited;
     assetsAvailableProxy += assetsDeposited;

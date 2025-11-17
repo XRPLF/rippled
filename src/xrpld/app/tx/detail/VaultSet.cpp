@@ -138,16 +138,17 @@ VaultSet::doApply()
     // Update mutable flags and fields if given.
     if (tx.isFieldPresent(sfData))
         vault->at(sfData) = tx[sfData];
-    if (tx.isFieldPresent(sfAssetsMaximum))
+    if (auto const value = tx[~sfAssetsMaximum])
     {
-        if (tx[sfAssetsMaximum] != 0 &&
-            tx[sfAssetsMaximum] < *vault->at(sfAssetsTotal))
+        if (*value != 0 && *value < *vault->at(sfAssetsTotal))
             return tecLIMIT_EXCEEDED;
-        vault->at(sfAssetsMaximum) = tx[sfAssetsMaximum];
+        auto assetsMaximumProxy = vault->at(sfAssetsMaximum);
+        assetsMaximumProxy = *value;
         if (vault->at(sfAsset).value().integral())
         {
-            if (!vault->at(sfAssetsMaximum).value().valid(Number::compatible))
-                return tecLIMIT_EXCEEDED;
+            assetsMaximumProxy.value().setIsInteger(true);
+            if (!assetsMaximumProxy.value().representable())
+                return tecPRECISION_LOSS;
         }
     }
 

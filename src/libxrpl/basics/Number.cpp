@@ -156,15 +156,6 @@ Number::Guard::round() noexcept
 constexpr Number one{1000000000000000, -15, Number::unchecked{}};
 
 void
-Number::checkInteger(char const* what) const
-{
-    if (enforceInteger_ == strong && !valid())
-        throw std::overflow_error(what);
-    if (enforceInteger_ == weak && !representable())
-        throw std::overflow_error(what);
-}
-
-void
 Number::normalize()
 {
     if (mantissa_ == 0)
@@ -219,51 +210,48 @@ Number::normalize()
 bool
 Number::valid() const noexcept
 {
-    return valid(enforceInteger_);
+    return valid(isInteger_);
 }
 
 bool
-Number::valid(EnforceInteger enforce)
+Number::valid(bool isInteger)
 {
-    setIntegerEnforcement(enforce);
+    setIsInteger(isInteger);
     return valid();
 }
 
 bool
-Number::valid(EnforceInteger enforce) const
+Number::valid(bool isInteger) const
 {
-    if (enforce != none)
-    {
-        static Number const max = maxIntValue;
-        static Number const maxNeg = -maxIntValue;
-        // Avoid making a copy
-        if (mantissa_ < 0)
-            return *this >= maxNeg;
-        return *this <= max;
-    }
-    return true;
+    if (!isInteger)
+        return true;
+    static Number const max = maxIntValue;
+    static Number const maxNeg = -max;
+    // Avoid making a copy
+    if (mantissa_ < 0)
+        return *this >= maxNeg;
+    return *this <= max;
 }
 
 bool
 Number::representable() const noexcept
 {
-    if (enforceInteger_ != none)
-    {
-        static Number const max = maxMantissa;
-        static Number const maxNeg = -maxMantissa;
-        // Avoid making a copy
-        if (mantissa_ < 0)
-            return *this >= maxNeg;
-        return *this <= max;
-    }
-    return true;
+    if (!isInteger_)
+        return true;
+    static Number const max = maxMantissa;
+    static Number const maxNeg = -max;
+    // Avoid making a copy
+    if (mantissa_ < 0)
+        return *this >= maxNeg;
+    return *this <= max;
 }
 
 Number&
 Number::operator+=(Number const& y)
 {
     // The strictest setting prevails
-    enforceInteger_ = std::max(enforceInteger_, y.enforceInteger_);
+    if (!isInteger_)
+        isInteger_ = y.isInteger_;
 
     if (y == Number{})
         return *this;
@@ -377,9 +365,6 @@ Number::operator+=(Number const& y)
     }
     mantissa_ = xm * xn;
     exponent_ = xe;
-
-    checkInteger("Number::addition integer overflow");
-
     return *this;
 }
 
@@ -415,7 +400,8 @@ Number&
 Number::operator*=(Number const& y)
 {
     // The strictest setting prevails
-    enforceInteger_ = std::max(enforceInteger_, y.enforceInteger_);
+    if (!isInteger_)
+        isInteger_ = y.isInteger_;
 
     if (*this == Number{})
         return *this;
@@ -483,9 +469,6 @@ Number::operator*=(Number const& y)
     XRPL_ASSERT(
         isnormal() || *this == Number{},
         "ripple::Number::operator*=(Number) : result is normal");
-
-    checkInteger("Number::multiplication integer overflow");
-
     return *this;
 }
 
@@ -493,7 +476,8 @@ Number&
 Number::operator/=(Number const& y)
 {
     // The strictest setting prevails
-    enforceInteger_ = std::max(enforceInteger_, y.enforceInteger_);
+    if (!isInteger_)
+        isInteger_ = y.isInteger_;
 
     if (y == Number{})
         throw std::overflow_error("Number: divide by 0");
@@ -522,9 +506,6 @@ Number::operator/=(Number const& y)
     exponent_ = ne - de - 17;
     mantissa_ *= np * dp;
     normalize();
-
-    checkInteger("Number::division integer overflow");
-
     return *this;
 }
 

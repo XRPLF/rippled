@@ -193,7 +193,29 @@ VaultCreate::doApply()
     vault->at(sfLossUnrealized) = Number(0);
     // Leave default values for AssetTotal and AssetAvailable, both zero.
     if (auto value = tx[~sfAssetsMaximum])
-        vault->at(sfAssetsMaximum) = *value;
+    {
+        auto assetsMaximumProxy = vault->at(sfAssetsMaximum);
+        assetsMaximumProxy = *value;
+        if (asset.integral())
+        {
+            // Only the Maximum can be a non-zero value, so only it needs to be
+            // checked.
+            assetsMaximumProxy.value().setIsInteger(true);
+            if (!assetsMaximumProxy.value().representable())
+                return tecPRECISION_LOSS;
+        }
+    }
+    // TODO: Should integral types automatically set a limit to the
+    // Number::maxMantissa value? Or maxIntValue?
+    /*
+    else if (asset.integral())
+    {
+        auto assetsMaximumProxy = vault->at(~sfAssetsMaximum);
+        assetsMaximumProxy = STNumber::maxIntValue
+        assetsMaximumProxy.value().setIsInteger(true);
+    }
+    */
+
     vault->at(sfShareMPTID) = mptIssuanceID;
     if (auto value = tx[~sfData])
         vault->at(sfData) = *value;
@@ -204,13 +226,6 @@ VaultCreate::doApply()
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
     if (scale)
         vault->at(sfScale) = scale;
-    if (asset.integral())
-    {
-        // Only the Maximum can be a non-zero value, so only it needs to be
-        // checked.
-        if (!vault->at(sfAssetsMaximum).value().valid(Number::compatible))
-            return tecLIMIT_EXCEEDED;
-    }
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner

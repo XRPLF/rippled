@@ -95,15 +95,15 @@ STNumber::isDefault() const
 }
 
 void
-STNumber::setIntegerEnforcement(Number::EnforceInteger enforce)
+STNumber::setIsInteger(bool isInteger)
 {
-    value_.setIntegerEnforcement(enforce);
+    value_.setIsInteger(isInteger);
 }
 
-Number::EnforceInteger
-STNumber::integerEnforcement() const noexcept
+bool
+STNumber::isInteger() const noexcept
 {
-    return value_.integerEnforcement();
+    return value_.isInteger();
 }
 
 bool

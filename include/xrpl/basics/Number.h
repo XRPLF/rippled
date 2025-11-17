@@ -24,31 +24,16 @@ isPowerOfTen(T value)
 
 class Number
 {
-public:
-    /** Describes whether and how to enforce this number as an integer.
-     *
-     * - none: No enforcement. The value may vary freely. This is the default.
-     * - compatible: If the absolute value is greater than maxIntValue, valid()
-     *   will return false. Needed for backward compatibility with XRP used in
-     *   AMMs, and available for functions that will do their own checking. This
-     *   is the default for automatic conversions from XRPAmount to Number.
-     * - weak: Like compatible, plus, if the value is unrepresentable (larger
-     *   than maxMantissa), assignment and other operations will throw.
-     * - strong: Like weak, plus, if the absolute value is invalid (larger than
-     *   maxIntValue), assignment and other operations will throw. This is the
-     *   default for automatic conversions from MPTAmount to Number.
-     */
-    enum EnforceInteger { none, compatible, weak, strong };
-
 private:
     using rep = std::int64_t;
     rep mantissa_{0};
     int exponent_{std::numeric_limits<int>::lowest()};
 
-    // The enforcement setting is not serialized, and does not affect the
-    // ledger. If not "none", the value is checked to be within the valid
-    // integer range. See the enum description for more detail.
-    EnforceInteger enforceInteger_ = none;
+    // isInteger_ is not serialized, transmitted, or used in
+    // calculations in any way. It is used only for internal validation
+    // of integer types. It is a one-way switch. Once it's on, it stays
+    // on.
+    bool isInteger_ = false;
 
 public:
     // The range for the mantissa when normalized
@@ -71,8 +56,8 @@ public:
 
     explicit constexpr Number() = default;
 
-    Number(rep mantissa, EnforceInteger enforce = none);
-    explicit Number(rep mantissa, int exponent, EnforceInteger enforce = none);
+    Number(rep mantissa, bool isInteger = false);
+    explicit Number(rep mantissa, int exponent, bool isInteger = false);
     explicit constexpr Number(rep mantissa, int exponent, unchecked) noexcept;
     constexpr Number(Number const& other) = default;
     constexpr Number(Number&& other) = default;
@@ -90,22 +75,22 @@ public:
     exponent() const noexcept;
 
     void
-    setIntegerEnforcement(EnforceInteger enforce);
+    setIsInteger(bool isInteger);
 
-    EnforceInteger
-    integerEnforcement() const noexcept;
+    bool
+    isInteger() const noexcept;
 
     bool
     valid() const noexcept;
     bool
     representable() const noexcept;
-    /// Combines setIntegerEnforcement(EnforceInteger) and valid()
+    /// Combines setIsInteger(bool) and valid()
     bool
-    valid(EnforceInteger enforce);
+    valid(bool isInteger);
     /// Because this function is const, it should only be used for one-off
     /// checks
     bool
-    valid(EnforceInteger enforce) const;
+    valid(bool isInteger) const;
 
     constexpr Number
     operator+() const noexcept;
@@ -248,9 +233,6 @@ private:
     static thread_local rounding_mode mode_;
 
     void
-    checkInteger(char const* what) const;
-
-    void
     normalize();
     constexpr bool
     isnormal() const noexcept;
@@ -263,16 +245,14 @@ inline constexpr Number::Number(rep mantissa, int exponent, unchecked) noexcept
 {
 }
 
-inline Number::Number(rep mantissa, int exponent, EnforceInteger enforce)
-    : mantissa_{mantissa}, exponent_{exponent}, enforceInteger_(enforce)
+inline Number::Number(rep mantissa, int exponent, bool isInteger)
+    : mantissa_{mantissa}, exponent_{exponent}, isInteger_(isInteger)
 {
     normalize();
-
-    checkInteger("Number::Number integer overflow");
 }
 
-inline Number::Number(rep mantissa, EnforceInteger enforce)
-    : Number{mantissa, 0, enforce}
+inline Number::Number(rep mantissa, bool isInteger)
+    : Number{mantissa, 0, isInteger}
 {
 }
 
@@ -283,9 +263,8 @@ Number::operator=(Number const& other)
     {
         mantissa_ = other.mantissa_;
         exponent_ = other.exponent_;
-        enforceInteger_ = std::max(enforceInteger_, other.enforceInteger_);
-
-        checkInteger("Number::operator= integer overflow");
+        if (!isInteger_)
+            isInteger_ = other.isInteger_;
     }
 
     return *this;
@@ -300,10 +279,8 @@ Number::operator=(Number&& other)
         // this is future-proof in case the types ever change
         mantissa_ = std::move(other.mantissa_);
         exponent_ = std::move(other.exponent_);
-        if (other.enforceInteger_ > enforceInteger_)
-            enforceInteger_ = std::move(other.enforceInteger_);
-
-        checkInteger("Number::operator= integer overflow");
+        if (!isInteger_)
+            isInteger_ = std::move(other.isInteger_);
     }
 
     return *this;
@@ -322,17 +299,17 @@ Number::exponent() const noexcept
 }
 
 inline void
-Number::setIntegerEnforcement(EnforceInteger enforce)
+Number::setIsInteger(bool isInteger)
 {
-    enforceInteger_ = enforce;
-
-    checkInteger("Number::setIntegerEnforcement integer overflow");
+    if (isInteger_)
+        return;
+    isInteger_ = isInteger;
 }
 
-inline Number::EnforceInteger
-Number::integerEnforcement() const noexcept
+inline bool
+Number::isInteger() const noexcept
 {
-    return enforceInteger_;
+    return isInteger_;
 }
 
 inline constexpr Number

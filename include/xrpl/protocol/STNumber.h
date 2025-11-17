@@ -58,11 +58,11 @@ public:
 
     /// Sets the flag on the underlying number
     void
-    setIntegerEnforcement(Number::EnforceInteger enforce);
+    setIsInteger(bool isInteger);
 
     /// Gets the flag value on the underlying number
-    Number::EnforceInteger
-    integerEnforcement() const noexcept;
+    bool
+    isInteger() const noexcept;
 
     /// Checks the underlying number
     bool

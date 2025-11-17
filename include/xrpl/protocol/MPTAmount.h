@@ -64,13 +64,7 @@ public:
 
     operator Number() const
     {
-        return {value(), Number::strong};
-    }
-
-    Number
-    toNumber(Number::EnforceInteger enforce) const
-    {
-        return {value(), enforce};
+        return {value(), true};
     }
 
     /** Return the sign of the amount */

@@ -156,9 +156,7 @@ VaultWithdraw::doApply()
     Asset const vaultAsset = vault->at(sfAsset);
     MPTIssue const share{mptIssuanceID};
     STAmount sharesRedeemed = {share};
-    STAmount assetsWithdrawn;
-    assetsWithdrawn.setIntegerEnforcement(Number::weak);
-    sharesRedeemed.setIntegerEnforcement(Number::weak);
+    STAmount assetsWithdrawn = {vaultAsset};
     try
     {
         if (amount.asset() == vaultAsset)
@@ -172,15 +170,13 @@ VaultWithdraw::doApply()
                 sharesRedeemed = *maybeShares;
             }
 
-            if (sharesRedeemed == beast::zero || !sharesRedeemed.validNumber())
+            if (sharesRedeemed == beast::zero)
                 return tecPRECISION_LOSS;
             auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
-            if (!assetsWithdrawn.validNumber())
-                return tecPRECISION_LOSS;
         }
         else if (amount.asset() == share)
         {
@@ -191,11 +187,12 @@ VaultWithdraw::doApply()
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
-            if (!assetsWithdrawn.validNumber())
-                return tecPRECISION_LOSS;
         }
         else
             return tefINTERNAL;  // LCOV_EXCL_LINE
+        if (!sharesRedeemed.representableNumber() ||
+            !assetsWithdrawn.representableNumber())
+            return tecPRECISION_LOSS;
     }
     catch (std::overflow_error const&)
     {

@@ -735,230 +735,71 @@ public:
 
         {
             Number a{100};
-            BEAST_EXPECT(a.integerEnforcement() == Number::none);
+            BEAST_EXPECT(!a.isInteger());
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
             a = Number{1, 30};
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
             a = -100;
+            BEAST_EXPECT(!a.isInteger());
+            BEAST_EXPECT(a.valid());
+            BEAST_EXPECT(a.representable());
+            // If there's any interaction with an integer, the value
+            // becomes an integer. This is not always what the value is
+            // being used for, so it's up to the context to check or not
+            // check whether the number is a _valid_ integer.
+            a += Number{37, 2, true};
+            BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
         }
         {
-            Number a{100, Number::compatible};
-            BEAST_EXPECT(a.integerEnforcement() == Number::compatible);
+            Number a{100, true};
+            BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
             a = Number{1, 15};
             BEAST_EXPECT(!a.valid());
             BEAST_EXPECT(a.representable());
-            a = Number{1, 30, Number::none};
+            // The false in the assigned value does not override the
+            // flag in "a"
+            a = Number{1, 30, false};
+            BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(!a.valid());
             BEAST_EXPECT(!a.representable());
             a = -100;
-            BEAST_EXPECT(a.integerEnforcement() == Number::compatible);
+            BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
-            a = Number{5, Number::weak};
-            BEAST_EXPECT(a.integerEnforcement() == Number::weak);
-            BEAST_EXPECT(a.valid());
-            BEAST_EXPECT(a.representable());
-            a = Number{5, Number::strong};
-            BEAST_EXPECT(a.integerEnforcement() == Number::strong);
-            BEAST_EXPECT(a.valid());
-            BEAST_EXPECT(a.representable());
-        }
-        {
-            Number a{100, Number::weak};
-            BEAST_EXPECT(a.integerEnforcement() == Number::weak);
-            BEAST_EXPECT(a.valid());
-            BEAST_EXPECT(a.representable());
-            a = Number{1, 15};
+            a *= Number{1, 16};
+            BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(!a.valid());
             BEAST_EXPECT(a.representable());
-            try
-            {
-                a = Number{1, 30, Number::compatible};
-                BEAST_EXPECT(false);
-            }
-            catch (std::overflow_error const& e)
-            {
-                BEAST_EXPECT(e.what() == "Number::operator= integer overflow"s);
-                // The throw is done _after_ the number is updated.
-                BEAST_EXPECT((a == Number{1, 30}));
-            }
-            BEAST_EXPECT(a.integerEnforcement() == Number::weak);
-            BEAST_EXPECT(!a.valid());
-            BEAST_EXPECT(!a.representable());
-            a = -100;
-            BEAST_EXPECT(a.integerEnforcement() == Number::weak);
+            // Intermittent value rounding can be lost, but the result
+            // will be rounded, so that's fine.
+            a /= Number{1, 5};
+            BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
-            a = Number{5, Number::strong};
-            BEAST_EXPECT(a.integerEnforcement() == Number::strong);
+            a = Number{1, 13} - 3;
+            BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
-        }
-        {
-            Number a{100, Number::strong};
-            BEAST_EXPECT(a.integerEnforcement() == Number::strong);
+            a += 1;
+            BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
-            try
-            {
-                a = Number{1, 15, Number::compatible};
-                BEAST_EXPECT(false);
-            }
-            catch (std::overflow_error const& e)
-            {
-                BEAST_EXPECT(e.what() == "Number::operator= integer overflow"s);
-                // The throw is done _after_ the number is updated.
-                BEAST_EXPECT((a == Number{1, 15}));
-            }
-            BEAST_EXPECT(!a.valid());
-            BEAST_EXPECT(a.representable());
-            try
-            {
-                a = Number{1, 30};
-                BEAST_EXPECT(false);
-            }
-            catch (std::overflow_error const& e)
-            {
-                BEAST_EXPECT(e.what() == "Number::operator= integer overflow"s);
-                // The throw is done _after_ the number is updated.
-                BEAST_EXPECT((a == Number{1, 30}));
-            }
-            BEAST_EXPECT(!a.valid());
-            BEAST_EXPECT(!a.representable());
-            a = -100;
-            BEAST_EXPECT(a.integerEnforcement() == Number::strong);
+            ++a;
+            BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
-        }
-        {
-            Number a{INITIAL_XRP.drops(), Number::compatible};
+            a++;
+            BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(!a.valid());
-            BEAST_EXPECT(!a.representable());
-            a = -a;
-            BEAST_EXPECT(!a.valid());
-            BEAST_EXPECT(!a.representable());
-
-            try
-            {
-                a.setIntegerEnforcement(Number::strong);
-                BEAST_EXPECT(false);
-            }
-            catch (std::overflow_error const& e)
-            {
-                BEAST_EXPECT(
-                    e.what() ==
-                    "Number::setIntegerEnforcement integer overflow"s);
-                // The throw is internal to the operator before the result is
-                // assigned to the Number
-                BEAST_EXPECT(a == -INITIAL_XRP);
-                BEAST_EXPECT(!a.valid());
-                BEAST_EXPECT(!a.representable());
-            }
-            try
-            {
-                ++a;
-                BEAST_EXPECT(false);
-            }
-            catch (std::overflow_error const& e)
-            {
-                BEAST_EXPECT(e.what() == "Number::addition integer overflow"s);
-                // The throw is internal to the operator before the result is
-                // assigned to the Number
-                BEAST_EXPECT(a == -INITIAL_XRP);
-                BEAST_EXPECT(!a.valid());
-                BEAST_EXPECT(!a.representable());
-            }
-            a = Number::maxIntValue;
-            try
-            {
-                ++a;
-                BEAST_EXPECT(false);
-            }
-            catch (std::overflow_error const& e)
-            {
-                BEAST_EXPECT(e.what() == "Number::addition integer overflow"s);
-                // This time, the throw is done _after_ the number is updated.
-                BEAST_EXPECT(a == Number::maxIntValue + 1);
-                BEAST_EXPECT(!a.valid());
-                BEAST_EXPECT(a.representable());
-            }
-            a = -Number::maxIntValue;
-            try
-            {
-                --a;
-                BEAST_EXPECT(false);
-            }
-            catch (std::overflow_error const& e)
-            {
-                BEAST_EXPECT(e.what() == "Number::addition integer overflow"s);
-                // This time, the throw is done _after_ the number is updated.
-                BEAST_EXPECT(a == -Number::maxIntValue - 1);
-                BEAST_EXPECT(!a.valid());
-                BEAST_EXPECT(a.representable());
-            }
-            a = Number(1, 10);
-            try
-            {
-                a *= Number(1, 10);
-                BEAST_EXPECT(false);
-            }
-            catch (std::overflow_error const& e)
-            {
-                BEAST_EXPECT(
-                    e.what() == "Number::multiplication integer overflow"s);
-                // The throw is done _after_ the number is updated.
-                BEAST_EXPECT((a == Number{1, 20}));
-                BEAST_EXPECT(!a.valid());
-                BEAST_EXPECT(!a.representable());
-            }
-            try
-            {
-                a = Number::maxIntValue * 2;
-                BEAST_EXPECT(false);
-            }
-            catch (std::overflow_error const& e)
-            {
-                BEAST_EXPECT(e.what() == "Number::operator= integer overflow"s);
-                // The throw is done _after_ the number is updated.
-                BEAST_EXPECT((a == Number::maxIntValue * 2));
-                BEAST_EXPECT(!a.valid());
-                BEAST_EXPECT(a.representable());
-            }
-            try
-            {
-                a = Number(3, 15, Number::strong);
-                BEAST_EXPECT(false);
-            }
-            catch (std::overflow_error const& e)
-            {
-                BEAST_EXPECT(e.what() == "Number::Number integer overflow"s);
-                // The Number doesn't get updated because the ctor throws
-                BEAST_EXPECT((a == Number::maxIntValue * 2));
-                BEAST_EXPECT(!a.valid());
-                BEAST_EXPECT(a.representable());
-            }
-            a = Number(1, 10);
-            try
-            {
-                a /= Number(1, -10);
-                BEAST_EXPECT(false);
-            }
-            catch (std::overflow_error const& e)
-            {
-                BEAST_EXPECT(e.what() == "Number::division integer overflow"s);
-                // The throw is done _after_ the number is updated.
-                BEAST_EXPECT((a == Number{1, 20}));
-                BEAST_EXPECT(!a.valid());
-                BEAST_EXPECT(!a.representable());
-            }
-            a /= Number(1, 15);
-            BEAST_EXPECT((a == Number{1, 5}));
+            BEAST_EXPECT(a.representable());
+            a = Number{5, true};
+            BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
         }
