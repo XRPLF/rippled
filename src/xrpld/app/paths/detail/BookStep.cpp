@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/paths/AMMLiquidity.h>
 #include <xrpld/app/paths/AMMOffer.h>
@@ -47,7 +28,7 @@ class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 protected:
     enum class OfferType { AMM, CLOB };
 
-    uint32_t const maxOffersToConsume_;
+    static constexpr uint32_t MaxOffersToConsume{1000};
     Book book_;
     AccountID strandSrc_;
     AccountID strandDst_;
@@ -82,18 +63,9 @@ protected:
 
     std::optional<Cache> cache_;
 
-    static uint32_t
-    getMaxOffersToConsume(StrandContext const& ctx)
-    {
-        if (ctx.view.rules().enabled(fix1515))
-            return 1000;
-        return 2000;
-    }
-
 public:
     BookStep(StrandContext const& ctx, Issue const& in, Issue const& out)
-        : maxOffersToConsume_(getMaxOffersToConsume(ctx))
-        , book_(in, out, ctx.domainID)
+        : book_(in, out, ctx.domainID)
         , strandSrc_(ctx.strandSrc)
         , strandDst_(ctx.strandDst)
         , prevStep_(ctx.prevStep)
@@ -738,7 +710,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         ownerPaysTransferFee_ ? rate(book_.out.account) : QUALITY_ONE;
 
     typename FlowOfferStream<TIn, TOut>::StepCounter counter(
-        maxOffersToConsume_, j_);
+        MaxOffersToConsume, j_);
 
     FlowOfferStream<TIn, TOut> offers(
         sb, afView, book_, sb.parentCloseTime(), counter, j_);
@@ -1093,18 +1065,9 @@ BookStep<TIn, TOut, TDerived>::revImp(
         offersUsed_ = offersConsumed;
         SetUnion(ofrsToRm, toRm);
 
-        if (offersConsumed >= maxOffersToConsume_)
+        // Too many iterations, mark this strand as inactive
+        if (offersConsumed >= MaxOffersToConsume)
         {
-            // Too many iterations, mark this strand as inactive
-            if (!afView.rules().enabled(fix1515))
-            {
-                // Don't use the liquidity
-                cache_.emplace(beast::zero, beast::zero);
-                return {beast::zero, beast::zero};
-            }
-
-            // Use the liquidity, but use this to mark the strand as inactive so
-            // it's not used further
             inactive_ = true;
         }
     }
@@ -1266,18 +1229,9 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         offersUsed_ = offersConsumed;
         SetUnion(ofrsToRm, toRm);
 
-        if (offersConsumed >= maxOffersToConsume_)
+        // Too many iterations, mark this strand as inactive (dry)
+        if (offersConsumed >= MaxOffersToConsume)
         {
-            // Too many iterations, mark this strand as inactive (dry)
-            if (!afView.rules().enabled(fix1515))
-            {
-                // Don't use the liquidity
-                cache_.emplace(beast::zero, beast::zero);
-                return {beast::zero, beast::zero};
-            }
-
-            // Use the liquidity, but use this to mark the strand as inactive so
-            // it's not used further
             inactive_ = true;
         }
     }

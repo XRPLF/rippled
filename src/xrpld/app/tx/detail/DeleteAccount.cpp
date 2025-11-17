@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/DID.h>
 #include <xrpld/app/tx/detail/DelegateSet.h>
 #include <xrpld/app/tx/detail/DeleteAccount.h>
@@ -251,8 +232,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
-        if (ctx.view.rules().enabled(featureDepositAuth) &&
-            (sleDst->getFlags() & lsfDepositAuth))
+        if (sleDst->getFlags() & lsfDepositAuth)
         {
             if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
                 return tecNO_PERMISSION;
@@ -265,24 +245,20 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if (!sleAccount)
         return terNO_ACCOUNT;
 
-    if (ctx.view.rules().enabled(featureNonFungibleTokensV1))
-    {
-        // If an issuer has any issued NFTs resident in the ledger then it
-        // cannot be deleted.
-        if ((*sleAccount)[~sfMintedNFTokens] !=
-            (*sleAccount)[~sfBurnedNFTokens])
-            return tecHAS_OBLIGATIONS;
+    // If an issuer has any issued NFTs resident in the ledger then it
+    // cannot be deleted.
+    if ((*sleAccount)[~sfMintedNFTokens] != (*sleAccount)[~sfBurnedNFTokens])
+        return tecHAS_OBLIGATIONS;
 
-        // If the account owns any NFTs it cannot be deleted.
-        Keylet const first = keylet::nftpage_min(account);
-        Keylet const last = keylet::nftpage_max(account);
+    // If the account owns any NFTs it cannot be deleted.
+    Keylet const first = keylet::nftpage_min(account);
+    Keylet const last = keylet::nftpage_max(account);
 
-        auto const cp = ctx.view.read(Keylet(
-            ltNFTOKEN_PAGE,
-            ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
-        if (cp)
-            return tecHAS_OBLIGATIONS;
-    }
+    auto const cp = ctx.view.read(Keylet(
+        ltNFTOKEN_PAGE,
+        ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
+    if (cp)
+        return tecHAS_OBLIGATIONS;
 
     // We don't allow an account to be deleted if its sequence number
     // is within 256 of the current ledger.  This prevents replay of old
@@ -294,8 +270,8 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
-    // When fixNFTokenRemint is enabled, we don't allow an account to be
-    // deleted if <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
+    // We don't allow an account to be deleted if
+    // <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
     // current ledger. This is to prevent having duplicate NFTokenIDs after
     // account re-creation.
     //
@@ -305,10 +281,9 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     // their account and mints a NFToken, it is possible that the
     // NFTokenSequence of this NFToken is the same as the one that the
     // authorized minter minted in a previous ledger.
-    if (ctx.view.rules().enabled(fixNFTokenRemint) &&
-        ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-             (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
-         ctx.view.seq()))
+    if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
+            (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+        ctx.view.seq())
         return tecTOO_SOON;
 
     // Verify that the account does not own any objects that would prevent
@@ -377,8 +352,7 @@ DeleteAccount::doApply()
     if (!src || !dst)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    if (ctx_.view().rules().enabled(featureDepositAuth) &&
-        ctx_.tx.isFieldPresent(sfCredentialIDs))
+    if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
         if (auto err = verifyDepositPreauth(
                 ctx_.tx, ctx_.view(), account_, dstID, dst, ctx_.journal);

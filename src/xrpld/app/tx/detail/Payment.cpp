@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/RippleCalc.h>
@@ -250,7 +231,7 @@ Payment::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+NotTEC
 Payment::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -261,7 +242,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
@@ -270,42 +251,23 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     loadGranularPermission(sle, ttPAYMENT, granularPermissions);
 
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
-    // post-amendment: disallow cross currency payments for PaymentMint and
-    // PaymentBurn
-    if (view.rules().enabled(fixDelegateV1_1))
-    {
-        auto const& amountAsset = dstAmount.asset();
-        if (tx.isFieldPresent(sfSendMax) &&
-            tx[sfSendMax].asset() != amountAsset)
-            return tecNO_DELEGATE_PERMISSION;
+    auto const& amountAsset = dstAmount.asset();
 
-        if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
-            amountAsset.getIssuer() == tx[sfAccount])
-            return tesSUCCESS;
+    // Granular permissions are only valid for direct payments.
+    if ((tx.isFieldPresent(sfSendMax) &&
+         tx[sfSendMax].asset() != amountAsset) ||
+        tx.isFieldPresent(sfPaths))
+        return terNO_DELEGATE_PERMISSION;
 
-        if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
-            amountAsset.getIssuer() == tx[sfDestination])
-            return tesSUCCESS;
-
-        return tecNO_DELEGATE_PERMISSION;
-    }
-
-    // Calling dstAmount.issue() in the next line would throw if it holds MPT.
-    // That exception would be caught in preclaim and returned as tefEXCEPTION.
-    // This check is just a cleaner, more explicit way to get the same result.
-    if (dstAmount.holds<MPTIssue>())
-        return tefEXCEPTION;
-
-    auto const& amountIssue = dstAmount.issue();
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountIssue) &&
-        amountIssue.account == tx[sfAccount])
+    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
+        amountAsset.getIssuer() == tx[sfAccount])
         return tesSUCCESS;
 
-    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountIssue) &&
-        amountIssue.account == tx[sfDestination])
+    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
+        amountAsset.getIssuer() == tx[sfDestination])
         return tesSUCCESS;
 
-    return tecNO_DELEGATE_PERMISSION;
+    return terNO_DELEGATE_PERMISSION;
 }
 
 TER
@@ -455,43 +417,28 @@ Payment::doApply()
         view().update(sleDst);
     }
 
-    // Determine whether the destination requires deposit authorization.
-    bool const depositAuth = view().rules().enabled(featureDepositAuth);
-    bool const reqDepositAuth =
-        sleDst->getFlags() & lsfDepositAuth && depositAuth;
-
-    bool const depositPreauth = view().rules().enabled(featureDepositPreauth);
-
     bool const ripple =
         (hasPaths || sendMax || !dstAmount.native()) && !mptDirect;
-
-    // If the destination has lsfDepositAuth set, then only direct XRP
-    // payments (no intermediate steps) are allowed to the destination.
-    if (!depositPreauth && ripple && reqDepositAuth)
-        return tecNO_PERMISSION;
 
     if (ripple)
     {
         // Ripple payment with at least one intermediate step and uses
         // transitive balances.
 
-        if (depositPreauth && depositAuth)
-        {
-            // If depositPreauth is enabled, then an account that requires
-            // authorization has two ways to get an IOU Payment in:
-            //  1. If Account == Destination, or
-            //  2. If Account is deposit preauthorized by destination.
+        // An account that requires authorization has two ways to get an
+        // IOU Payment in:
+        //  1. If Account == Destination, or
+        //  2. If Account is deposit preauthorized by destination.
 
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx,
-                    ctx_.view(),
-                    account_,
-                    dstAccountID,
-                    sleDst,
-                    ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx,
+                ctx_.view(),
+                account_,
+                dstAccountID,
+                sleDst,
+                ctx_.journal);
+            !isTesSuccess(err))
+            return err;
 
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = partialPaymentAllowed;
@@ -668,43 +615,40 @@ Payment::doApply()
 
     // The source account does have enough money.  Make sure the
     // source account has authority to deposit to the destination.
-    if (depositAuth)
+    // An account that requires authorization has three ways to get an XRP
+    // Payment in:
+    //  1. If Account == Destination, or
+    //  2. If Account is deposit preauthorized by destination, or
+    //  3. If the destination's XRP balance is
+    //    a. less than or equal to the base reserve and
+    //    b. the deposit amount is less than or equal to the base reserve,
+    // then we allow the deposit.
+    //
+    // Rule 3 is designed to keep an account from getting wedged
+    // in an unusable state if it sets the lsfDepositAuth flag and
+    // then consumes all of its XRP.  Without the rule if an
+    // account with lsfDepositAuth set spent all of its XRP, it
+    // would be unable to acquire more XRP required to pay fees.
+    //
+    // We choose the base reserve as our bound because it is
+    // a small number that seldom changes but is always sufficient
+    // to get the account un-wedged.
+
+    // Get the base reserve.
+    XRPAmount const dstReserve{view().fees().reserve};
+
+    if (dstAmount > dstReserve ||
+        sleDst->getFieldAmount(sfBalance) > dstReserve)
     {
-        // If depositPreauth is enabled, then an account that requires
-        // authorization has three ways to get an XRP Payment in:
-        //  1. If Account == Destination, or
-        //  2. If Account is deposit preauthorized by destination, or
-        //  3. If the destination's XRP balance is
-        //    a. less than or equal to the base reserve and
-        //    b. the deposit amount is less than or equal to the base reserve,
-        // then we allow the deposit.
-        //
-        // Rule 3 is designed to keep an account from getting wedged
-        // in an unusable state if it sets the lsfDepositAuth flag and
-        // then consumes all of its XRP.  Without the rule if an
-        // account with lsfDepositAuth set spent all of its XRP, it
-        // would be unable to acquire more XRP required to pay fees.
-        //
-        // We choose the base reserve as our bound because it is
-        // a small number that seldom changes but is always sufficient
-        // to get the account un-wedged.
-
-        // Get the base reserve.
-        XRPAmount const dstReserve{view().fees().reserve};
-
-        if (dstAmount > dstReserve ||
-            sleDst->getFieldAmount(sfBalance) > dstReserve)
-        {
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx,
-                    ctx_.view(),
-                    account_,
-                    dstAccountID,
-                    sleDst,
-                    ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx,
+                ctx_.view(),
+                account_,
+                dstAccountID,
+                sleDst,
+                ctx_.journal);
+            !isTesSuccess(err))
+            return err;
     }
 
     // Do the arithmetic for the transfer and make the ledger change.
