@@ -220,16 +220,14 @@ bool
 verifyDigest(
     PublicKey const& publicKey,
     uint256 const& digest,
-    Slice const& sig,
-    bool mustBeFullyCanonical) noexcept
+    Slice const& sig) noexcept
 {
     if (publicKeyType(publicKey) != KeyType::secp256k1)
         LogicError("sign: secp256k1 required for digest signing");
     auto const canonicality = ecdsaCanonicality(sig);
     if (!canonicality)
         return false;
-    if (mustBeFullyCanonical &&
-        (*canonicality != ECDSACanonicality::fullyCanonical))
+    if (*canonicality != ECDSACanonicality::fullyCanonical)
         return false;
 
     secp256k1_pubkey pubkey_imp;
@@ -267,18 +265,13 @@ verifyDigest(
 }
 
 bool
-verify(
-    PublicKey const& publicKey,
-    Slice const& m,
-    Slice const& sig,
-    bool mustBeFullyCanonical) noexcept
+verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 {
     if (auto const type = publicKeyType(publicKey))
     {
         if (*type == KeyType::secp256k1)
         {
-            return verifyDigest(
-                publicKey, sha512Half(m), sig, mustBeFullyCanonical);
+            return verifyDigest(publicKey, sha512Half(m), sig);
         }
         else if (*type == KeyType::ed25519)
         {

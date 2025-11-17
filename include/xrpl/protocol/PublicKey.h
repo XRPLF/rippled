@@ -223,19 +223,14 @@ publicKeyType(PublicKey const& publicKey)
 verifyDigest(
     PublicKey const& publicKey,
     uint256 const& digest,
-    Slice const& sig,
-    bool mustBeFullyCanonical = true) noexcept;
+    Slice const& sig) noexcept;
 
 /** Verify a signature on a message.
     With secp256k1 signatures, the data is first hashed with
     SHA512-Half, and the resulting digest is signed.
 */
 [[nodiscard]] bool
-verify(
-    PublicKey const& publicKey,
-    Slice const& m,
-    Slice const& sig,
-    bool mustBeFullyCanonical = true) noexcept;
+verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept;
 
 /** Calculate the 160-bit node ID from a node public key. */
 NodeID
