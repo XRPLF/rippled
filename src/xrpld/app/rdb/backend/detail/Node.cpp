@@ -254,6 +254,14 @@ saveValidatedLedger(
 
         if (app.config().useTxTables())
         {
+            if (!txnDB)
+            {
+                // LCOV_EXCL_START
+                JLOG(j.fatal()) << "TxTables db isn't available";
+                Throw<std::runtime_error>("TxTables db isn't available");
+                // LCOV_EXCL_STOP
+            }
+
             auto db = txnDB->checkoutDb();
 
             soci::transaction tr(*db);
