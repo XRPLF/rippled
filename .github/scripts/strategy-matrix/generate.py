@@ -131,7 +131,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
             continue
 
         # We skip all clang 20+ on arm64 due to Boost build error.
-        if f'{os['compiler_name']}' in ['clang-20', 'clang-21'] and architecture['platform'] == 'linux/arm64':
+        if f'{os['compiler_name']}-{os['compiler_version']}' in ['clang-20', 'clang-21'] and architecture['platform'] == 'linux/arm64':
             continue
 
         # Enable code coverage for Debian Bookworm using GCC 15 in Debug and no
