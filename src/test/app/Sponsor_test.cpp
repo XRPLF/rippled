@@ -3918,8 +3918,8 @@ public:
                 cosigning,
                 sponsor,
                 alice,
-                2,
-                2,
+                3,  // Vault, PseudoAccount, MPToken(Share Token)
+                3,
                 tecINSUFFICIENT_RESERVE,
                 [&](Env& env, auto const& submit) {
                     auto result =
@@ -4120,9 +4120,11 @@ public:
                 sig(sfSponsorSignature, sponsor));
             env.close();
 
-            BEAST_EXPECT(ownerCount(env, alice) == 2);  // Vault, MPToken(share)
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+            BEAST_EXPECT(
+                ownerCount(env, alice) ==
+                3);  // Vault, PseudoAccount, MPToken(share)
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 3);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 3);
 
             env(vault.del({.owner = alice, .id = keylet.key}));
             env.close();
