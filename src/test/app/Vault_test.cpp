@@ -962,16 +962,25 @@ class Vault_test : public beast::unit_test::suite
                 env(tx, ter(temMALFORMED));
             }
 
-            // accepted range from 0 to 18
+            // the prior acceptable upper limit
             {
                 auto [tx, keylet] =
                     vault.create({.owner = owner, .asset = asset});
                 tx[sfScale] = 18;
+                env(tx, ter(temMALFORMED));
+            }
+
+            // accepted range from 0 to 13
+            {
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                tx[sfScale] = 13;
                 env(tx);
                 env.close();
                 auto const sleVault = env.le(keylet);
-                BEAST_EXPECT(sleVault);
-                BEAST_EXPECT((*sleVault)[sfScale] == 18);
+                if (BEAST_EXPECT(sleVault))
+                    ;
+                BEAST_EXPECT((*sleVault)[sfScale] == 13);
             }
 
             {
