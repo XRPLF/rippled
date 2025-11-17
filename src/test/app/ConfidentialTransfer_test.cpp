@@ -863,7 +863,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Account const carol("carol");
             MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
-            // Basic setup just to have accounts and MPT ID
             mptAlice.create();
             mptAlice.authorize({.account = bob});
             mptAlice.authorize({.account = carol});
@@ -905,7 +904,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             // issuer can not be the same as sender
             mptAlice.send(
-                {.account = alice,  // Issuer is sender
+                {.account = alice,
                  .dest = carol,
                  .amt = 10,
                  .proof = "123",
@@ -951,7 +950,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .proof = "123",
                  .senderEncryptedAmt =
                      Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .destEncryptedAmt = Buffer(10),  // Incorrect length
+                 .destEncryptedAmt = Buffer(10),
                  .issuerEncryptedAmt =
                      Buffer(ripple::ecGamalEncryptedTotalLength),
                  .err = temBAD_CIPHERTEXT});
@@ -1066,26 +1065,41 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .account = carol,
         });
 
-        // // sender does not exist
-        // {
-        //     Json::Value jv;
-        //     jv[jss::Account] = Account("unknown").human();
-        //     jv[jss::Destination] = carol.human();
-        //     jv[jss::TransactionType] = jss::ConfidentialSend;
-        //     jv[jss::Sequence] = 1;
-        //     jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
-        //     jv[sfSenderEncryptedAmount.jsonName] =
-        //     strHex(Buffer(ripple::ecGamalEncryptedTotalLength));
-        //     jv[sfDestinationEncryptedAmount.jsonName] =
-        //     strHex(Buffer(ripple::ecGamalEncryptedTotalLength));
-        //     jv[sfIssuerEncryptedAmount.jsonName] =
-        //     strHex(Buffer(ripple::ecGamalEncryptedTotalLength));
-        //     jv[sfZKProof.jsonName] = "123";
-        //     env(jv, ter(terNO_ACCOUNT));
-        //     env.close();
-        // }
-
         auto const ciphertextHex = generatePlaceholderCiphertext();
+
+        // issuance not found
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+            mptAlice.create({.flags = tfMPTCanTransfer});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            // destroy the issuance
+            mptAlice.destroy();
+            env.close();
+
+            Json::Value jv;
+            jv[jss::Account] = bob.human();
+            jv[jss::Destination] = carol.human();
+            jv[jss::TransactionType] = jss::ConfidentialSend;
+            jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
+
+            auto const encryptedAmt = strHex(ciphertextHex);
+            jv[sfSenderEncryptedAmount] = encryptedAmt;
+            jv[sfDestinationEncryptedAmount] = encryptedAmt;
+            jv[sfIssuerEncryptedAmount] = encryptedAmt;
+            jv[sfZKProof] = "123";
+
+            env(jv, ter(tecOBJECT_NOT_FOUND));
+        }
 
         // destination does not exist
         {
@@ -1095,8 +1109,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .dest = unknown,
                  .amt = 10,
                  .proof = "123",
-                 .issuerEncryptedAmt = ciphertextHex,
                  .destEncryptedAmt = ciphertextHex,
+                 .issuerEncryptedAmt = ciphertextHex,
                  .err = tecNO_TARGET});
         }
 
@@ -1985,6 +1999,405 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testClawback(FeatureBitset features)
+    {
+        testcase("test ConfidentialClawback");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dave("dave");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol, dave}});
+
+        mptAlice.create(
+            {.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback});
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 100);
+        mptAlice.authorize({.account = carol});
+        mptAlice.pay(alice, carol, 200);
+        mptAlice.authorize({.account = dave});
+        mptAlice.pay(alice, dave, 300);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+        mptAlice.generateKeyPair(dave);
+        mptAlice.set({.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+        // setup bob.
+        // after setup, bob's spending balance is 60, inbox balance is 0.
+        {
+            // bob converts 60 to confidential
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 60,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob)});
+
+            // bob merge inbox
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+        }
+
+        // setup carol.
+        // after setup, carol's spending balance is 120, inbox balance is 0.
+        {
+            // carol converts 120 to confidential
+            mptAlice.convert(
+                {.account = carol,
+                 .amt = 120,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(carol)});
+
+            // carol merge inbox
+            mptAlice.mergeInbox({
+                .account = carol,
+            });
+        }
+
+        // setup dave.
+        // dave will not merge inbox.
+        // after setup, dave's inbox balance is 200, spending balance is 0.
+        mptAlice.convert(
+            {.account = dave,
+             .amt = 200,
+             .proof = "123",
+             .holderPubKey = mptAlice.getPubKey(dave)});
+
+        // setup: carol confidential send 50 to bob.
+        // after send, bob's inbox balance is 50, spending balance remains 60.
+        // carol's inbox balance remains 0, spending balance drops to 70.
+        mptAlice.send(
+            {.account = carol, .dest = bob, .amt = 50, .proof = "123"});
+
+        // alice clawback all confidential balance from bob, 110 in total.
+        // bob has balance in both inbox and spending. These balances should
+        // become zero after clawback, which is verified in the confidentialClaw
+        // function.
+        mptAlice.confidentialClaw(
+            {.account = alice, .holder = bob, .amt = 110, .proof = "123"});
+
+        // alice clawback all confidential balance from carol, which is 70.
+        // carol only has balance in spending.
+        mptAlice.confidentialClaw(
+            {.account = alice, .holder = carol, .amt = 70, .proof = "123"});
+
+        // alice clawback all confidential balance from dave, which is 200.
+        // dave only has balance in inbox.
+        mptAlice.confidentialClaw(
+            {.account = alice, .holder = dave, .amt = 200, .proof = "123"});
+    }
+
+    void
+    testClawbackPreflight(FeatureBitset features)
+    {
+        testcase("test ConfidentialClawback Preflight");
+        using namespace test::jtx;
+
+        // test feature disabled
+        {
+            Env env{*this, features - featureConfidentialTransfer};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create();
+            mptAlice.authorize({.account = bob});
+            env.close();
+
+            mptAlice.confidentialClaw(
+                {.account = alice,
+                 .holder = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .err = temDISABLED});
+        }
+
+        // test malformed
+        {
+            // set up
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+            mptAlice.create();
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 50);
+            env.close();
+
+            // only issuer can clawback
+            mptAlice.confidentialClaw(
+                {.account = carol,
+                 .holder = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .err = temMALFORMED});
+
+            // invalid issuance ID, whose issuer is not alice
+            {
+                Json::Value jv;
+                jv[jss::Account] = alice.human();
+                jv[sfHolder] = bob.human();
+                jv[jss::TransactionType] = jss::ConfidentialClawback;
+                jv[sfMPTAmount] = std::to_string(10);
+                jv[sfZKProof] = "123";
+
+                // wrong issuance ID
+                jv[sfMPTokenIssuanceID] =
+                    "00000004AE123A8556F3CF91154711376AFB0F894F832B3E";
+
+                env(jv, ter(temMALFORMED));
+            }
+
+            // issuer cannot clawback from self
+            mptAlice.confidentialClaw(
+                {.account = alice,
+                 .holder = alice,
+                 .amt = 10,
+                 .proof = "123",
+                 .err = temMALFORMED});
+
+            // invalid amount
+            mptAlice.confidentialClaw(
+                {.account = alice,
+                 .holder = bob,
+                 .amt = 0,
+                 .proof = "123",
+                 .err = temBAD_AMOUNT});
+
+            // todo: proof length check
+        }
+    }
+
+    void
+    testClawbackPreclaim(FeatureBitset features)
+    {
+        testcase("Clawback Preclaim Errors");
+        using namespace test::jtx;
+
+        {
+            // set up, alice is the issuer, bob and carol are authorized
+            // holders. dave is not authorized. bob has confidential balance,
+            // carol does not.
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol, dave}});
+
+            mptAlice.create(
+                {.flags =
+                     tfMPTCanTransfer | tfMPTCanClawback | tfMPTRequireAuth});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = alice, .holder = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.authorize({.account = alice, .holder = carol});
+
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 50);
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 60,
+                .proof = "123",
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+
+            // holder does not exist
+            {
+                Account const unknown("unknown");
+                mptAlice.confidentialClaw(
+                    {.account = alice,
+                     .holder = unknown,
+                     .amt = 10,
+                     .proof = "123",
+                     .err = tecNO_TARGET});
+            }
+
+            // dave does not hold mpt at all, no MPT object
+            {
+                mptAlice.confidentialClaw(
+                    {.account = alice,
+                     .holder = dave,
+                     .amt = 10,
+                     .proof = "123",
+                     .err = tecOBJECT_NOT_FOUND});
+            }
+
+            // carol has no confidential balance
+            {
+                mptAlice.confidentialClaw(
+                    {.account = alice,
+                     .holder = carol,
+                     .amt = 10,
+                     .proof = "123",
+                     .err = tecNO_PERMISSION});
+            }
+        }
+
+        // lsfMPTCanClawback not set
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({.flags = tfMPTCanTransfer});
+            mptAlice.authorize({.account = bob});
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+            env.close();
+
+            mptAlice.confidentialClaw(
+                {.account = alice,
+                 .holder = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .err = tecNO_PERMISSION});
+        }
+
+        // no issuer key
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({.flags = tfMPTCanClawback});
+            mptAlice.authorize({.account = bob});
+            mptAlice.generateKeyPair(alice);
+            env.close();
+
+            mptAlice.confidentialClaw(
+                {.account = alice,
+                 .holder = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .err = tecNO_PERMISSION});
+        }
+
+        // issuance not found
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({.flags = tfMPTCanClawback});
+            mptAlice.authorize({.account = bob});
+            mptAlice.generateKeyPair(alice);
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            // destroy the issuance
+            mptAlice.destroy();
+            env.close();
+
+            Json::Value jv;
+            jv[jss::Account] = alice.human();
+            jv[sfHolder] = bob.human();
+            jv[jss::TransactionType] = jss::ConfidentialClawback;
+            jv[sfMPTAmount] = std::to_string(10);
+            jv[sfZKProof] = "123";
+            jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
+
+            env(jv, ter(tecOBJECT_NOT_FOUND));
+        }
+
+        // helper function to set up accounts to test lock and unauthorize
+        // cases. after set up, bob has confidential balance 60 in spending.
+        auto setupAccounts = [&](Env& env,
+                                 Account const& alice,
+                                 Account const& bob) -> MPTTester {
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanClawback |
+                     tfMPTRequireAuth | tfMPTCanLock});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = alice, .holder = bob});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 60,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+
+            return mptAlice;
+        };
+
+        // lock should not block clawback. lock bob individually
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice = setupAccounts(env, alice, bob);
+            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+
+            // clawback should still work
+            mptAlice.confidentialClaw(
+                {.account = alice, .holder = bob, .amt = 60, .proof = "123"});
+        }
+
+        // lock globally
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice = setupAccounts(env, alice, bob);
+            mptAlice.set({.account = alice, .flags = tfMPTLock});
+
+            // clawback should still work
+            mptAlice.confidentialClaw(
+                {.account = alice, .holder = bob, .amt = 60, .proof = "123"});
+        }
+
+        // unauthorize should not block clawback
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice = setupAccounts(env, alice, bob);
+
+            // unauthorize bob
+            mptAlice.authorize(
+                {.account = alice, .holder = bob, .flags = tfMPTUnauthorize});
+            // clawback should still work
+            mptAlice.confidentialClaw(
+                {.account = alice, .holder = bob, .amt = 60, .proof = "123"});
+        }
+
+        // todo: test zkp verification failure
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testConvert(features);
@@ -2002,6 +2415,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testSendPreflight(features);
         testSendPreclaim(features);
         testSendDepositPreauth(features);
+
+        // ConfidentialClawback
+        testClawback(features);
+        testClawbackPreflight(features);
+        testClawbackPreclaim(features);
 
         testDelete(features);
 

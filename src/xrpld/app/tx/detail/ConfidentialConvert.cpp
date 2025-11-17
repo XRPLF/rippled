@@ -113,9 +113,9 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
         return tecDUPLICATE;
 
-    auto const holderPubKey = ctx.tx.isFieldPresent(sfHolderElGamalPublicKey)
-        ? ctx.tx[sfHolderElGamalPublicKey]
-        : (*sleMptoken)[sfHolderElGamalPublicKey];
+    // auto const holderPubKey = ctx.tx.isFieldPresent(sfHolderElGamalPublicKey)
+    //     ? ctx.tx[sfHolderElGamalPublicKey]
+    //     : (*sleMptoken)[sfHolderElGamalPublicKey];
 
     // todo: check zkproof/well formed
 

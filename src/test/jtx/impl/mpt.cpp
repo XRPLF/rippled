@@ -373,8 +373,10 @@ MPTTester::checkDomainID(std::optional<uint256> expected) const
 MPTTester::printMPT(Account const& holder_) const
 {
     return forObject(
-        [&](SLEP const& sle) -> bool { std::cout << "\n"
-                                                 << sle->getJson(); },
+        [&](SLEP const& sle) -> bool {
+            std::cout << "\n" << sle->getJson();
+            return true;
+        },
         holder_);
 }
 
@@ -678,9 +680,6 @@ MPTTester::convert(MPTConvert const& arg)
         uint64_t postSpendingBalance =
             getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
 
-        // std::cout << "\n postIssuerBalance is " << postIssuerBalance << '\n';
-        // std::cout << "\n postInboxBalance is " << postInboxBalance << '\n';
-
         // spending balance should not change
         env_.require(requireAny([&]() -> bool {
             return postSpendingBalance == prevSpendingBalance;
@@ -746,26 +745,24 @@ MPTTester::send(MPTConfidentialSend const& arg)
 
     // Generate the encrypted amounts if not provided
     if (arg.senderEncryptedAmt)
-        jv[sfSenderEncryptedAmount.jsonName] = strHex(*arg.senderEncryptedAmt);
+        jv[sfSenderEncryptedAmount] = strHex(*arg.senderEncryptedAmt);
     else
-        jv[sfSenderEncryptedAmount.jsonName] =
+        jv[sfSenderEncryptedAmount] =
             strHex(encryptAmount(*arg.account, *arg.amt));
 
     if (arg.destEncryptedAmt)
-        jv[sfDestinationEncryptedAmount.jsonName] =
-            strHex(*arg.destEncryptedAmt);
+        jv[sfDestinationEncryptedAmount] = strHex(*arg.destEncryptedAmt);
     else
-        jv[sfDestinationEncryptedAmount.jsonName] =
+        jv[sfDestinationEncryptedAmount] =
             strHex(encryptAmount(*arg.dest, *arg.amt));
 
     if (arg.issuerEncryptedAmt)
-        jv[sfIssuerEncryptedAmount.jsonName] = strHex(*arg.issuerEncryptedAmt);
+        jv[sfIssuerEncryptedAmount] = strHex(*arg.issuerEncryptedAmt);
     else
-        jv[sfIssuerEncryptedAmount.jsonName] =
-            strHex(encryptAmount(issuer_, *arg.amt));
+        jv[sfIssuerEncryptedAmount] = strHex(encryptAmount(issuer_, *arg.amt));
 
     if (arg.proof)
-        jv[sfZKProof.jsonName] = *arg.proof;
+        jv[sfZKProof] = *arg.proof;
 
     if (arg.credentials)
     {
@@ -852,6 +849,68 @@ MPTTester::send(MPTConfidentialSend const& arg)
         }));
         env_.require(requireAny([&]() -> bool {
             return postDestInbox + postDestSpending == postDestIssuer;
+        }));
+    }
+}
+
+void
+MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
+{
+    Json::Value jv;
+    auto const account = arg.account ? *arg.account : issuer_;
+    jv[sfAccount] = account.human();
+
+    if (arg.holder)
+        jv[sfHolder] = arg.holder->human();
+    else
+        Throw<std::runtime_error>("Holder not specified");
+
+    jv[jss::TransactionType] = jss::ConfidentialClawback;
+    if (arg.id)
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    else if (id_)
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    else
+        Throw<std::runtime_error>("MPT has not been created");
+
+    if (arg.amt)
+        jv[sfMPTAmount] = std::to_string(*arg.amt);
+
+    if (arg.proof)
+        jv[sfZKProof] = *arg.proof;
+
+    auto const holderPubAmt = getBalance(*arg.holder);
+    auto const prevCOA = getIssuanceConfidentialBalance();
+    auto const prevOA = getIssuanceOutstandingBalance();
+
+    if (submit(arg, jv) == tesSUCCESS)
+    {
+        auto const postCOA = getIssuanceConfidentialBalance();
+        auto const postOA = getIssuanceOutstandingBalance();
+
+        // Verify holder's public balance is unchanged
+        env_.require(mptbalance(*this, *arg.holder, holderPubAmt));
+
+        // Verify COA and OA are reduced correctly
+        env_.require(requireAny([&]() -> bool {
+            return prevCOA >= *arg.amt && postCOA == prevCOA - *arg.amt;
+        }));
+        env_.require(requireAny([&]() -> bool {
+            return prevOA >= *arg.amt && postOA == prevOA - *arg.amt;
+        }));
+
+        // Verify holder's confidential balances are zeroed out
+        env_.require(requireAny([&]() -> bool {
+            return getDecryptedBalance(*arg.holder, HOLDER_ENCRYPTED_INBOX) ==
+                0;
+        }));
+        env_.require(requireAny([&]() -> bool {
+            return getDecryptedBalance(
+                       *arg.holder, HOLDER_ENCRYPTED_SPENDING) == 0;
+        }));
+        env_.require(requireAny([&]() -> bool {
+            return getDecryptedBalance(*arg.holder, ISSUER_ENCRYPTED_BALANCE) ==
+                0;
         }));
     }
 }
