@@ -24,7 +24,6 @@ isPowerOfTen(T value)
 
 class Number
 {
-private:
     using rep = std::int64_t;
     rep mantissa_{0};
     int exponent_{std::numeric_limits<int>::lowest()};

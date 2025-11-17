@@ -23,7 +23,10 @@ VaultDeposit::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (ctx.tx[sfAmount] <= beast::zero)
+    auto const amount = ctx.tx[sfAmount];
+    if (amount <= beast::zero)
+        return temBAD_AMOUNT;
+    if (!amount.validNumber())
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -41,9 +44,6 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     auto const vaultAsset = vault->at(sfAsset);
     if (assets.asset() != vaultAsset)
         return tecWRONG_ASSET;
-
-    if (!assets.validNumber())
-        return tecPRECISION_LOSS;
 
     if (vaultAsset.native())
         ;  // No special checks for XRP
@@ -165,7 +165,8 @@ VaultDeposit::doApply()
     auto const amount = ctx_.tx[sfAmount];
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    SLE::const_pointer sleIssuance =
+        view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -176,6 +177,7 @@ VaultDeposit::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     auto const& vaultAsset = vault->at(sfAsset);
+
     // Note, vault owner is always authorized
     if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
     {
@@ -248,8 +250,10 @@ VaultDeposit::doApply()
         }
         assetsDeposited = *maybeAssets;
 
-        if (!sharesCreated.representableNumber() ||
-            !assetsDeposited.representableNumber())
+        // Deposit needs to be more strict than the other Vault transactions
+        // that deal with asset <-> share calculations, because we don't
+        // want to go over the "soft" limit.
+        if (!sharesCreated.validNumber() || !assetsDeposited.validNumber())
             return tecPRECISION_LOSS;
     }
     catch (std::overflow_error const&)
@@ -257,7 +261,7 @@ VaultDeposit::doApply()
         // It's easy to hit this exception from Number with large enough Scale
         // so we avoid spamming the log and only use debug here.
         JLOG(j_.debug())  //
-            << "VaultDeposit: overflow error with"
+            << "VaultDeposit: overflow error computing shares with"
             << " scale=" << (int)vault->at(sfScale).value()  //
             << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
             << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
@@ -280,13 +284,28 @@ VaultDeposit::doApply()
     assetsAvailableProxy += assetsDeposited;
     if (!assetsTotalProxy.value().valid() ||
         !assetsAvailableProxy.value().valid())
-        return tecLIMIT_EXCEEDED;
+    {
+        // It's easy to hit this exception from Number with large enough
+        // Scale so we avoid spamming the log and only use debug here.
+        JLOG(j_.warn())  //
+            << "VaultDeposit: integer overflow error in total assets with"
+            << " scale=" << (int)vault->at(sfScale).value()  //
+            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+            << ", amount=" << amount;
+
+        return tecPRECISION_LOSS;
+    }
+
     view().update(vault);
 
     // A deposit must not push the vault over its limit.
     auto const maximum = *vault->at(sfAssetsMaximum);
     if (maximum != 0 && *assetsTotalProxy > maximum)
         return tecLIMIT_EXCEEDED;
+
+    // Reset the sleIssance ptr, since it's about to get invalidated
+    sleIssuance.reset();
 
     // Transfer assets from depositor to vault.
     if (auto const ter = accountSend(
@@ -324,6 +343,37 @@ VaultDeposit::doApply()
             WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
+
+    {
+        // Load the updated issuance
+        sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+        if (!sleIssuance)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error())
+                << "VaultDeposit: missing issuance of vault shares.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
+        // Check if the deposit pushed the total over the integer Number limit.
+        // That is not a problem for the MPT itself, which is 64-bit, but for
+        // any computations that use it, such as converting assets to shares and
+        // vice-versa
+        STAmount const shareTotal{
+            vault->at(sfShareMPTID), sleIssuance->at(sfOutstandingAmount)};
+        if (!shareTotal.validNumber())
+        {
+            JLOG(j_.warn())  //
+                << "VaultDeposit: integer overflow error in total shares with"
+                << " scale=" << (int)vault->at(sfScale).value()  //
+                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+                << ", amount=" << amount;
+
+            return tecPRECISION_LOSS;
+        }
+    }
 
     return tesSUCCESS;
 }

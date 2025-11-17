@@ -552,7 +552,6 @@ STAmount::operator=(Number const& number)
     mValue = mIsNegative ? -number.mantissa() : number.mantissa();
     mOffset = number.exponent();
     canonicalize();
-
     return *this;
 }
 
@@ -568,7 +567,7 @@ STAmount::clear()
 {
     // The -100 is used to allow 0 to sort less than a small positive values
     // which have a negative exponent.
-    mOffset = integral() ? 0 : -100;
+    mOffset = native() ? 0 : -100;
     mValue = 0;
     mIsNegative = false;
 }

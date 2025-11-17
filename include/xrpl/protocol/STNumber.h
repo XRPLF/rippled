@@ -56,18 +56,6 @@ public:
     bool
     isDefault() const override;
 
-    /// Sets the flag on the underlying number
-    void
-    setIsInteger(bool isInteger);
-
-    /// Gets the flag value on the underlying number
-    bool
-    isInteger() const noexcept;
-
-    /// Checks the underlying number
-    bool
-    valid() const noexcept;
-
     operator Number() const
     {
         return value_;

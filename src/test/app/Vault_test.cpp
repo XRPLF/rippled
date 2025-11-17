@@ -3684,7 +3684,7 @@ class Vault_test : public beast::unit_test::suite
         });
 
         testCase(18, [&, this](Env& env, Data d) {
-            testcase("MPT scale deposit overflow");
+            testcase("MPT scale deposit over maxIntValue");
             // The computed number of shares can not be represented as an MPT
             // without truncation
 
@@ -3699,7 +3699,7 @@ class Vault_test : public beast::unit_test::suite
         });
 
         testCase(13, [&, this](Env& env, Data d) {
-            testcase("MPT scale deposit overflow on first deposit");
+            testcase("MPT scale deposit over maxIntValue on first deposit");
             auto tx = d.vault.deposit(
                 {.depositor = d.depositor,
                  .id = d.keylet.key,
@@ -3709,7 +3709,7 @@ class Vault_test : public beast::unit_test::suite
         });
 
         testCase(13, [&, this](Env& env, Data d) {
-            testcase("MPT scale deposit overflow on second deposit");
+            testcase("MPT scale deposit over maxIntValue on second deposit");
 
             {
                 auto tx = d.vault.deposit(
@@ -3725,13 +3725,13 @@ class Vault_test : public beast::unit_test::suite
                     {.depositor = d.depositor,
                      .id = d.keylet.key,
                      .amount = d.asset(10)});
-                env(tx, ter{tecPATH_DRY});
+                env(tx, ter{tecPRECISION_LOSS});
                 env.close();
             }
         });
 
         testCase(13, [&, this](Env& env, Data d) {
-            testcase("No MPT scale deposit overflow on total shares");
+            testcase("MPT scale deposit over maxIntValue on total shares");
 
             {
                 auto tx = d.vault.deposit(
@@ -3747,7 +3747,7 @@ class Vault_test : public beast::unit_test::suite
                     {.depositor = d.depositor,
                      .id = d.keylet.key,
                      .amount = d.asset(5)});
-                env(tx);
+                env(tx, ter(tecPRECISION_LOSS));
                 env.close();
             }
         });
@@ -4051,7 +4051,7 @@ class Vault_test : public beast::unit_test::suite
         });
 
         testCase(13, [&, this](Env& env, Data d) {
-            testcase("MPT scale withdraw overflow");
+            testcase("MPT scale withdraw over maxIntValue");
 
             {
                 auto tx = d.vault.deposit(
@@ -4063,11 +4063,22 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
+                // withdraws are allowed to be invalid...
                 auto tx = d.vault.withdraw(
                     {.depositor = d.depositor,
                      .id = d.keylet.key,
                      .amount = STAmount(d.asset, Number(10, 0))});
-                env(tx, ter{tecPATH_DRY});
+                env(tx, ter{tecINSUFFICIENT_FUNDS});
+                env.close();
+            }
+
+            {
+                // ...but they are not allowed to be unrepresentable
+                auto tx = d.vault.withdraw(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = STAmount(d.asset, Number(1000, 0))});
+                env(tx, ter{tecPRECISION_LOSS});
                 env.close();
             }
         });
@@ -4304,14 +4315,27 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
+                // clawbacks are allowed to be invalid...
                 auto tx = d.vault.clawback(
                     {.issuer = d.issuer,
                      .id = d.keylet.key,
                      .holder = d.depositor,
                      .amount = STAmount(d.asset, Number(10, 0))});
-                env(tx, ter{tecPATH_DRY});
+                env(tx);
                 env.close();
             }
+
+            {
+                // ...but they are not allowed to be unrepresentable
+                auto tx = d.vault.clawback(
+                    {.issuer = d.issuer,
+                     .id = d.keylet.key,
+                     .holder = d.depositor,
+                     .amount = STAmount(d.asset, Number(1000, 0))});
+                env(tx, ter{tecPRECISION_LOSS});
+                env.close();
+            }
+
         });
 
         testCase(1, [&, this](Env& env, Data d) {

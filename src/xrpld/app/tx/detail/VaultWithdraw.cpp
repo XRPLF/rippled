@@ -20,7 +20,10 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (ctx.tx[sfAmount] <= beast::zero)
+    auto const amount = ctx.tx[sfAmount];
+    if (amount <= beast::zero)
+        return temBAD_AMOUNT;
+    if (!amount.representableNumber())
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination];
@@ -49,9 +52,6 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const vaultShare = vault->at(sfShareMPTID);
     if (assets.asset() != vaultAsset && assets.asset() != vaultShare)
         return tecWRONG_ASSET;
-
-    if (!assets.validNumber())
-        return tecPRECISION_LOSS;
 
     if (vaultAsset.native())
         ;  // No special checks for XRP
@@ -190,6 +190,9 @@ VaultWithdraw::doApply()
         }
         else
             return tefINTERNAL;  // LCOV_EXCL_LINE
+        // Withdraw amounts are allowed to be invalid, but not unrepresentable.
+        // Amounts over the "soft" limit help bring the numbers back into the
+        // valid range.
         if (!sharesRedeemed.representableNumber() ||
             !assetsWithdrawn.representableNumber())
             return tecPRECISION_LOSS;

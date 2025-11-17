@@ -48,6 +48,8 @@ VaultClawback::preflight(PreflightContext const& ctx)
                 << "VaultClawback: only asset issuer can clawback.";
             return temMALFORMED;
         }
+        else if (!amount->representableNumber())
+            return temBAD_AMOUNT;
     }
 
     return tesSUCCESS;
@@ -71,13 +73,8 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     }
 
     Asset const vaultAsset = vault->at(sfAsset);
-    if (auto const amount = ctx.tx[~sfAmount])
-    {
-        if (vaultAsset != amount->asset())
-            return tecWRONG_ASSET;
-        else if (!amount->validNumber())
-            return tecPRECISION_LOSS;
-    }
+    if (auto const amount = ctx.tx[~sfAmount]; vaultAsset != amount->asset())
+        return tecWRONG_ASSET;
 
     if (vaultAsset.native())
     {
@@ -199,6 +196,9 @@ VaultClawback::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;
         }
+        // Clawback amounts are allowed to be invalid, but not unrepresentable.
+        // Amounts over the "soft" limit help bring the numbers back into the
+        // valid range.
         if (!sharesDestroyed.representableNumber() ||
             !assetsRecovered.representableNumber())
             return tecPRECISION_LOSS;

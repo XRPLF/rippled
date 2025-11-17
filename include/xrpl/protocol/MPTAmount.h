@@ -62,7 +62,7 @@ public:
     explicit constexpr
     operator bool() const noexcept;
 
-    operator Number() const
+    operator Number() const noexcept
     {
         return {value(), true};
     }

@@ -94,24 +94,6 @@ STNumber::isDefault() const
     return value_ == Number();
 }
 
-void
-STNumber::setIsInteger(bool isInteger)
-{
-    value_.setIsInteger(isInteger);
-}
-
-bool
-STNumber::isInteger() const noexcept
-{
-    return value_.isInteger();
-}
-
-bool
-STNumber::valid() const noexcept
-{
-    return value_.valid();
-}
-
 std::ostream&
 operator<<(std::ostream& out, STNumber const& rhs)
 {

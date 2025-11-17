@@ -2,7 +2,6 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/SystemParameters.h>
 
 #include <sstream>
 #include <tuple>
@@ -772,17 +771,21 @@ public:
             BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
-            a *= Number{1, 16};
+            a *= Number{1, 13};
             BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(!a.valid());
             BEAST_EXPECT(a.representable());
-            // Intermittent value rounding can be lost, but the result
+            a *= Number{1, 3};
+            BEAST_EXPECT(a.isInteger());
+            BEAST_EXPECT(!a.valid());
+            BEAST_EXPECT(!a.representable());
+            // Intermittent value precision can be lost, but the result
             // will be rounded, so that's fine.
             a /= Number{1, 5};
             BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
-            a = Number{1, 13} - 3;
+            a = Number{1, 14} - 3;
             BEAST_EXPECT(a.isInteger());
             BEAST_EXPECT(a.valid());
             BEAST_EXPECT(a.representable());
