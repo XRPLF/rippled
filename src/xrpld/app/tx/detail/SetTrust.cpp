@@ -200,8 +200,9 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 
     // This might be nullptr
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
-    if ((ammEnabled(ctx.view.rules()) ||
-         ctx.view.rules().enabled(featureSingleAssetVault)) &&
+    if (ammEnabled(
+            ctx.view.rules() ||
+            ctx.view.rules().enabled(featureSingleAssetVault)) &&
         sleDst == nullptr)
         return tecNO_DST;
 

@@ -918,6 +918,7 @@ tokenOfferCreatePreclaim(
         if (!sleDst)
             return tecNO_DST;
 
+        // check if the destination has disallowed incoming offers
         if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
             return tecNO_PERMISSION;
     }
