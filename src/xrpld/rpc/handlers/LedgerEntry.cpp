@@ -176,13 +176,6 @@ static Expected<STArray, Json::Value>
 parseAuthorizeCredentials(Json::Value const& jv)
 {
     if (!jv.isArray())
-        return LedgerEntryHelpers::invalidFieldError(
-            "malformedAuthorizedCredentials",
-            jss::authorized_credentials,
-            "array");
-
-    std::uint32_t const n = jv.size();
-    if (n == 0 || n > maxCredentialsArraySize)
     {
         return LedgerEntryHelpers::invalidFieldError(
             "malformedAuthorizedCredentials",
@@ -190,14 +183,34 @@ parseAuthorizeCredentials(Json::Value const& jv)
             "array");
     }
 
+    std::uint32_t const n = jv.size();
+    if (n > maxCredentialsArraySize)
+    {
+        return Unexpected(LedgerEntryHelpers::malformedError(
+            "malformedAuthorizedCredentials",
+            "Invalid field '" + std::string(jss::authorized_credentials) +
+                "', array too long."));
+    }
+
+    if (n == 0)
+    {
+        return Unexpected(LedgerEntryHelpers::malformedError(
+            "malformedAuthorizedCredentials",
+            "Invalid field '" + std::string(jss::authorized_credentials) +
+                "', array empty."));
+    }
+
     STArray arr(sfAuthorizeCredentials, n);
     for (auto const& jo : jv)
     {
         if (!jo.isObject())
+        {
             return LedgerEntryHelpers::invalidFieldError(
                 "malformedAuthorizedCredentials",
                 jss::authorized_credentials,
                 "array");
+        }
+
         if (auto const value = LedgerEntryHelpers::hasRequired(
                 jo,
                 {jss::issuer, jss::credential_type},
