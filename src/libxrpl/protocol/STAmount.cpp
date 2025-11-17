@@ -1087,7 +1087,7 @@ amountFromJson(SField const& name, Json::Value const& v)
         }
         else
         {
-            parts.mantissa = -value.asInt();
+            parts.mantissa = value.asAbsUInt();
             parts.negative = true;
         }
     }

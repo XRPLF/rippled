@@ -3,6 +3,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 namespace ripple {
 
@@ -586,6 +587,216 @@ public:
     }
 
     void
+    testParseJson()
+    {
+        static_assert(!std::is_convertible_v<STAmount*, Number*>);
+
+        {
+            STAmount const stnum{sfNumber};
+            BEAST_EXPECT(stnum.getSType() == STI_AMOUNT);
+            BEAST_EXPECT(stnum.getText() == "0");
+            BEAST_EXPECT(stnum.isDefault() == true);
+            BEAST_EXPECT(stnum.value() == Number{0});
+        }
+
+        {
+            BEAST_EXPECT(
+                amountFromJson(sfNumber, Json::Value(42)) == XRPAmount(42));
+            BEAST_EXPECT(
+                amountFromJson(sfNumber, Json::Value(-42)) == XRPAmount(-42));
+
+            BEAST_EXPECT(
+                amountFromJson(sfNumber, Json::UInt(42)) == XRPAmount(42));
+
+            BEAST_EXPECT(amountFromJson(sfNumber, "-123") == XRPAmount(-123));
+
+            BEAST_EXPECT(amountFromJson(sfNumber, "123") == XRPAmount(123));
+            BEAST_EXPECT(amountFromJson(sfNumber, "-123") == XRPAmount(-123));
+
+            BEAST_EXPECT(amountFromJson(sfNumber, "3.14e2") == XRPAmount(314));
+            BEAST_EXPECT(
+                amountFromJson(sfNumber, "-3.14e2") == XRPAmount(-314));
+
+            BEAST_EXPECT(amountFromJson(sfNumber, "0") == XRPAmount(0));
+            BEAST_EXPECT(amountFromJson(sfNumber, "-0") == XRPAmount(0));
+
+            constexpr auto imin = std::numeric_limits<int>::min();
+            BEAST_EXPECT(amountFromJson(sfNumber, imin) == XRPAmount(imin));
+            BEAST_EXPECT(
+                amountFromJson(sfNumber, std::to_string(imin)) ==
+                XRPAmount(imin));
+
+            constexpr auto imax = std::numeric_limits<int>::max();
+            BEAST_EXPECT(amountFromJson(sfNumber, imax) == XRPAmount(imax));
+            BEAST_EXPECT(
+                amountFromJson(sfNumber, std::to_string(imax)) ==
+                XRPAmount(imax));
+
+            constexpr auto umax = std::numeric_limits<unsigned int>::max();
+            BEAST_EXPECT(amountFromJson(sfNumber, umax) == XRPAmount(umax));
+            BEAST_EXPECT(
+                amountFromJson(sfNumber, std::to_string(umax)) ==
+                XRPAmount(umax));
+
+            // XRP does not handle fractional part
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "0.0");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected =
+                    "XRP and MPT must be specified as integral amount.";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            // XRP does not handle fractional part
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "1000e-2");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected =
+                    "XRP and MPT must be specified as integral amount.";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            // Obvious non-numbers tested here
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "e");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'e' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "1e");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'1e' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "e2");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'e2' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, Json::Value());
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected =
+                    "XRP may not be specified with a null Json value";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(
+                    sfNumber,
+                    "123456789012345678901234567890123456789012345678901234"
+                    "5678"
+                    "901234567890123456789012345678901234567890123456789012"
+                    "3456"
+                    "78901234567890123456789012345678901234567890");
+                BEAST_EXPECT(false);
+            }
+            catch (std::bad_cast const& e)
+            {
+                BEAST_EXPECT(true);
+            }
+
+            // We do not handle leading zeros
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "001");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'001' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "000.0");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'000.0' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            // We do not handle dangling dot
+            try
+            {
+                auto _ = amountFromJson(sfNumber, ".1");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'.1' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "1.");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'1.' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "1.e3");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'1.e3' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+        }
+    }
+
+    void
     testConvertXRP()
     {
         testcase("STAmount to XRPAmount conversions");
@@ -1022,6 +1233,7 @@ public:
         testArithmetic();
         testUnderflow();
         testRounding();
+        testParseJson();
         testConvertXRP();
         testConvertIOU();
         testCanAddXRP();
