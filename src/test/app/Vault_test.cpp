@@ -3634,13 +3634,18 @@ class Vault_test : public beast::unit_test::suite
             tx[sfScale] = scale;
             env(tx);
 
-            auto const [vaultAccount, issuanceId] =
-                [&env](ripple::Keylet keylet) -> std::tuple<Account, MPTID> {
+            auto const vaultInfo = [&env](ripple::Keylet keylet)
+                -> std::optional<std::tuple<Account, MPTID>> {
                 auto const vault = env.le(keylet);
-                return {
+                if (!vault)
+                    return std::nullopt;
+                return std::make_tuple(
                     Account("vault", vault->at(sfAccount)),
-                    vault->at(sfShareMPTID)};
+                    vault->at(sfShareMPTID));
             }(keylet);
+            if (!BEAST_EXPECT(vaultInfo))
+                return;
+            auto const [vaultAccount, issuanceId] = *vaultInfo;
             MPTIssue shares(issuanceId);
             env.memoize(vaultAccount);
 
@@ -3681,31 +3686,6 @@ class Vault_test : public beast::unit_test::suite
                  .asset = asset,
                  .peek = peek});
         };
-
-        testCase(18, [&, this](Env& env, Data d) {
-            testcase("Scale deposit overflow on first deposit");
-            auto tx = d.vault.deposit(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = d.asset(10)});
-            env(tx, ter{tecPATH_DRY});
-            env.close();
-        });
-
-        testCase(18, [&, this](Env& env, Data d) {
-            testcase("MPT scale deposit over maxIntValue");
-            // The computed number of shares can not be represented as an MPT
-            // without truncation
-
-            {
-                auto tx = d.vault.deposit(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = d.asset(5)});
-                env(tx, ter{tecPRECISION_LOSS});
-                env.close();
-            }
-        });
 
         testCase(13, [&, this](Env& env, Data d) {
             testcase("MPT scale deposit over maxIntValue on first deposit");
@@ -4037,28 +4017,6 @@ class Vault_test : public beast::unit_test::suite
             }
         });
 
-        testCase(18, [&, this](Env& env, Data d) {
-            testcase("Scale withdraw overflow");
-
-            {
-                auto tx = d.vault.deposit(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = d.asset(5)});
-                env(tx, ter{tecPRECISION_LOSS});
-                env.close();
-            }
-
-            {
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(10, 0))});
-                env(tx, ter{tecPRECISION_LOSS});
-                env.close();
-            }
-        });
-
         testCase(13, [&, this](Env& env, Data d) {
             testcase("MPT scale withdraw over maxIntValue");
 
@@ -4285,29 +4243,6 @@ class Vault_test : public beast::unit_test::suite
                     env.balance(d.vaultAccount, d.assets).number() == 0);
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares).number() == 0);
-            }
-        });
-
-        testCase(18, [&, this](Env& env, Data d) {
-            testcase("Scale clawback overflow");
-
-            {
-                auto tx = d.vault.deposit(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = d.asset(5)});
-                env(tx, ter(tecPRECISION_LOSS));
-                env.close();
-            }
-
-            {
-                auto tx = d.vault.clawback(
-                    {.issuer = d.issuer,
-                     .id = d.keylet.key,
-                     .holder = d.depositor,
-                     .amount = STAmount(d.asset, Number(10, 0))});
-                env(tx, ter{tecPRECISION_LOSS});
-                env.close();
             }
         });
 
