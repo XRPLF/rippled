@@ -79,13 +79,6 @@ VaultCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-XRPAmount
-VaultCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
-{
-    // One reserve increment is typically much greater than one base fee.
-    return calculateOwnerReserveFee(view, tx);
-}
-
 TER
 VaultCreate::preclaim(PreclaimContext const& ctx)
 {
@@ -142,10 +135,11 @@ VaultCreate::doApply()
 
     if (auto ter = dirLink(view(), account_, vault))
         return ter;
+    // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
     auto const sponsor = getTxReserveSponsor(view(), tx);
     if (!ctx_.view().rules().enabled(featureSponsor))
     {
-        adjustOwnerCount(view(), tx, owner, sponsor, 1, j_);
+        adjustOwnerCount(view(), tx, owner, sponsor, 2, j_);
         addSponsorToLedgerEntry(vault, sponsor);
         if (auto const ret = checkInsufficientReserve(
                 view(), tx, owner, mPriorBalance, sponsor, 0);
@@ -156,10 +150,10 @@ VaultCreate::doApply()
     {
         // after Sponsor Amendment, check insufficient reserve first
         if (auto const ret = checkInsufficientReserve(
-                view(), tx, owner, mPriorBalance, sponsor, 1);
+                view(), tx, owner, mPriorBalance, sponsor, 2);
             !isTesSuccess(ret))
             return ret;
-        adjustOwnerCount(view(), tx, owner, sponsor, 1, j_);
+        adjustOwnerCount(view(), tx, owner, sponsor, 2, j_);
         addSponsorToLedgerEntry(vault, sponsor);
     }
 

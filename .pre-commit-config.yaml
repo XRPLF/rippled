@@ -34,6 +34,5 @@ repos:
 exclude: |
   (?x)^(
       external/.*|
-      .github/scripts/levelization/results/.*\.txt|
-      conan\.lock
+      .github/scripts/levelization/results/.*\.txt
   )$
