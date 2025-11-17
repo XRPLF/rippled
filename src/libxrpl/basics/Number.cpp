@@ -164,9 +164,8 @@ Number::normalize()
         return;
     }
     bool const negative = (mantissa_ < 0);
-    auto m = static_cast<std::make_unsigned_t<rep>>(mantissa_);
-    if (negative)
-        m = -m;
+    auto m = static_cast<std::make_unsigned_t<rep>>(
+        negative ? -mantissa_ : mantissa_);
     while ((m < minMantissa) && (exponent_ > minExponent))
     {
         m *= 10;
