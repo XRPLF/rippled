@@ -3039,8 +3039,6 @@ private:
         using namespace jtx;
         Account const becky{"becky"};
 
-        bool const supportsPreauth = {features[featureDepositPreauth]};
-
         // The initial implementation of DepositAuth had a bug where an
         // account with the DepositAuth flag set could not make a payment
         // to itself.  That bug was fixed in the DepositPreauth amendment.
@@ -3068,15 +3066,11 @@ private:
         env(fset(becky, asfDepositAuth));
         env.close();
 
-        // becky pays herself again.  Whether it succeeds depends on
-        // whether featureDepositPreauth is enabled.
-        TER const expect{
-            supportsPreauth ? TER{tesSUCCESS} : TER{tecNO_PERMISSION}};
-
+        // becky pays herself again.
         env(pay(becky, becky, USD(10)),
             path(~USD),
             sendmax(XRP(10)),
-            ter(expect));
+            ter(tesSUCCESS));
 
         env.close();
     }
@@ -3540,8 +3534,7 @@ private:
         // Attach signers to alice.
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}}), sig(alie));
         env.close();
-        int const signerListOwners{features[featureMultiSignReserve] ? 2 : 5};
-        env.require(owners(alice, signerListOwners + 0));
+        env.require(owners(alice, 2));
 
         msig const ms{becky, bogie};
 
@@ -3784,9 +3777,7 @@ private:
     void
     testDepositAuth()
     {
-        auto const supported{jtx::testable_amendments()};
-        testPayment(supported - featureDepositPreauth);
-        testPayment(supported);
+        testPayment(jtx::testable_amendments());
         testPayIOU();
     }
 
@@ -3803,20 +3794,13 @@ private:
     void
     testMultisign()
     {
-        using namespace jtx;
-        auto const all = testable_amendments();
-
-        testTxMultisign(
-            all - featureMultiSignReserve - featureExpandedSignerList);
-        testTxMultisign(all - featureExpandedSignerList);
-        testTxMultisign(all);
+        testTxMultisign(jtx::testable_amendments());
     }
 
     void
     testPayStrand()
     {
-        using namespace jtx;
-        auto const all = testable_amendments();
+        auto const all = jtx::testable_amendments();
 
         testToStrand(all);
         testRIPD1373(all);
