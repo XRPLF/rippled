@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
-#define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
+#ifndef XRPL_PROTOCOL_STAMOUNT_H_INCLUDED
+#define XRPL_PROTOCOL_STAMOUNT_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/LocalValue.h>
@@ -708,37 +689,6 @@ canAdd(STAmount const& amt1, STAmount const& amt2);
 
 bool
 canSubtract(STAmount const& amt1, STAmount const& amt2);
-
-// Since `canonicalize` does not have access to a ledger, this is needed to put
-// the low-level routine stAmountCanonicalize on an amendment switch. Only
-// transactions need to use this switchover. Outside of a transaction it's safe
-// to unconditionally use the new behavior.
-
-bool
-getSTAmountCanonicalizeSwitchover();
-
-void
-setSTAmountCanonicalizeSwitchover(bool v);
-
-/** RAII class to set and restore the STAmount canonicalize switchover.
- */
-
-class STAmountSO
-{
-public:
-    explicit STAmountSO(bool v) : saved_(getSTAmountCanonicalizeSwitchover())
-    {
-        setSTAmountCanonicalizeSwitchover(v);
-    }
-
-    ~STAmountSO()
-    {
-        setSTAmountCanonicalizeSwitchover(saved_);
-    }
-
-private:
-    bool saved_;
-};
 
 }  // namespace ripple
 

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
@@ -115,15 +96,21 @@ readLimitField(
     JsonContext const& context)
 {
     limit = range.rdefault;
-    if (auto const& jvLimit = context.params[jss::limit])
-    {
-        if (!(jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
-            return RPC::expected_field_error(jss::limit, "unsigned integer");
+    if (!context.params.isMember(jss::limit) ||
+        context.params[jss::limit].isNull())
+        return std::nullopt;
 
-        limit = jvLimit.asUInt();
-        if (!isUnlimited(context.role))
-            limit = std::max(range.rmin, std::min(range.rmax, limit));
-    }
+    auto const& jvLimit = context.params[jss::limit];
+    if (!(jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
+        return RPC::expected_field_error(jss::limit, "unsigned integer");
+
+    limit = jvLimit.asUInt();
+    if (limit == 0)
+        return RPC::invalid_field_error(jss::limit);
+
+    if (!isUnlimited(context.role))
+        limit = std::max(range.rmin, std::min(range.rmax, limit));
+
     return std::nullopt;
 }
 

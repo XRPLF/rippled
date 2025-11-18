@@ -1,21 +1,3 @@
-macro(group_sources_in source_dir curdir)
-  file(GLOB children RELATIVE ${source_dir}/${curdir}
-    ${source_dir}/${curdir}/*)
-  foreach (child ${children})
-    if (IS_DIRECTORY ${source_dir}/${curdir}/${child})
-      group_sources_in(${source_dir} ${curdir}/${child})
-    else()
-      string(REPLACE "/" "\\" groupname ${curdir})
-      source_group(${groupname} FILES
-        ${source_dir}/${curdir}/${child})
-    endif()
-  endforeach()
-endmacro()
-
-macro(group_sources curdir)
-  group_sources_in(${PROJECT_SOURCE_DIR} ${curdir})
-endmacro()
-
 macro (exclude_from_default target_)
   set_target_properties (${target_} PROPERTIES EXCLUDE_FROM_ALL ON)
   set_target_properties (${target_} PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD ON)

@@ -50,7 +50,12 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # When a PR is merged into the develop branch it will be assigned a unique
+  # group identifier, so execution will continue even if another PR is merged
+  # while it is still running. In all other cases the group identifier is shared
+  # per branch, so that any in-progress runs are cancelled when a new commit is
+  # pushed.
+  group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.sha || github.ref }}
   cancel-in-progress: true
 
 defaults:
