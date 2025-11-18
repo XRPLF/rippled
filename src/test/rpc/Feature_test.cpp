@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpld/app/misc/AmendmentTable.h>
@@ -140,13 +121,14 @@ class Feature_test : public beast::unit_test::suite
         // Test a random sampling of the variables. If any of these get retired
         // or removed, swap out for any other feature.
         BEAST_EXPECT(
-            featureToName(fixTrustLinesToSelf) == "fixTrustLinesToSelf");
+            featureToName(fixRemoveNFTokenAutoTrustLine) ==
+            "fixRemoveNFTokenAutoTrustLine");
         BEAST_EXPECT(featureToName(featureFlow) == "Flow");
-        BEAST_EXPECT(featureToName(featureNegativeUNL) == "NegativeUNL");
-        BEAST_EXPECT(featureToName(fix1578) == "fix1578");
         BEAST_EXPECT(
-            featureToName(fixTakerDryOfferRemoval) ==
-            "fixTakerDryOfferRemoval");
+            featureToName(featureDeletableAccounts) == "DeletableAccounts");
+        BEAST_EXPECT(
+            featureToName(fixIncludeKeyletFields) == "fixIncludeKeyletFields");
+        BEAST_EXPECT(featureToName(featureTokenEscrow) == "TokenEscrow");
     }
 
     void
@@ -202,16 +184,16 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto jrr = env.rpc("feature", "MultiSignReserve")[jss::result];
+        auto jrr = env.rpc("feature", "RequireFullyCanonicalSig")[jss::result];
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
         BEAST_EXPECT(
-            jrr.isMember("586480873651E106F1D6339B0C4A8945BA705A777F3F4524626FF"
-                         "1FC07EFE41D"));
+            jrr.isMember("00C1FC4A53E60AB02C864641002B3172F38677E29C26C54066851"
+                         "79B37E1EDAC"));
         auto feature = *(jrr.begin());
 
-        BEAST_EXPECTS(feature[jss::name] == "MultiSignReserve", "name");
+        BEAST_EXPECTS(feature[jss::name] == "RequireFullyCanonicalSig", "name");
         BEAST_EXPECTS(!feature[jss::enabled].asBool(), "enabled");
         BEAST_EXPECTS(
             feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(),
@@ -219,7 +201,7 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECTS(feature[jss::supported].asBool(), "supported");
 
         // feature names are case-sensitive - expect error here
-        jrr = env.rpc("feature", "multiSignReserve")[jss::result];
+        jrr = env.rpc("feature", "requireFullyCanonicalSig")[jss::result];
         BEAST_EXPECT(jrr[jss::error] == "badFeature");
         BEAST_EXPECT(jrr[jss::error_message] == "Feature unknown or invalid.");
     }
@@ -333,23 +315,6 @@ class Feature_test : public beast::unit_test::suite
                 result[jss::error_message] ==
                 "You don't have permission for this command.");
         }
-
-        {
-            std::string const feature =
-                "C4483A1896170C66C098DEA5B0E024309C60DC960DE5F01CD7AF986AA3D9AD"
-                "37";
-            Json::Value params;
-            params[jss::feature] = feature;
-            auto const result =
-                env.rpc("json", "feature", to_string(params))[jss::result];
-            BEAST_EXPECT(result.isMember(feature));
-            auto const amendmentResult = result[feature];
-            BEAST_EXPECT(amendmentResult[jss::enabled].asBool() == false);
-            BEAST_EXPECT(amendmentResult[jss::supported].asBool() == true);
-            BEAST_EXPECT(
-                amendmentResult[jss::name].asString() ==
-                "fixMasterKeyAsRegularKey");
-        }
     }
 
     void
@@ -358,8 +323,7 @@ class Feature_test : public beast::unit_test::suite
         testcase("No Params, Some Enabled");
 
         using namespace test::jtx;
-        Env env{
-            *this, FeatureBitset(featureDepositAuth, featureDepositPreauth)};
+        Env env{*this, FeatureBitset{}};
 
         std::map<std::string, VoteBehavior> const& votes =
             ripple::detail::supportedAmendments();
@@ -513,8 +477,8 @@ class Feature_test : public beast::unit_test::suite
         testcase("Veto");
 
         using namespace test::jtx;
-        Env env{*this, FeatureBitset(featureMultiSignReserve)};
-        constexpr char const* featureName = "MultiSignReserve";
+        Env env{*this, FeatureBitset{featureRequireFullyCanonicalSig}};
+        constexpr char const* featureName = "RequireFullyCanonicalSig";
 
         auto jrr = env.rpc("feature", featureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
@@ -565,7 +529,7 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        constexpr char const* featureName = "NonFungibleTokensV1";
+        constexpr char const* featureName = "CryptoConditionsSuite";
 
         auto jrr = env.rpc("feature", featureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))

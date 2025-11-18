@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/Flow.h>
@@ -196,13 +177,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     {
         // Note that this will get checked again in applyGuts, but it saves
         // us a call to checkAcceptAsset and possible false negative.
-        //
-        // The return code change is attached to featureDepositPreauth as a
-        // convenience, as the change is not big enough to deserve its own
-        // amendment.
-        return ctx.view.rules().enabled(featureDepositPreauth)
-            ? TER{tecEXPIRED}
-            : TER{tesSUCCESS};
+        return tecEXPIRED;
     }
 
     // Make sure that we are authorized to hold what the taker will pay us.
@@ -254,10 +229,7 @@ CreateOffer::checkAcceptAsset(
         return (flags & tapRETRY) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
 
-    // This code is attached to the DepositPreauth amendment as a matter of
-    // convenience.  The change is not significant enough to deserve its
-    // own amendment.
-    if (view.rules().enabled(featureDepositPreauth) && (issue.account == id))
+    if (issue.account == id)
         // An account can always accept its own issuance.
         return tesSUCCESS;
 
@@ -477,22 +449,8 @@ CreateOffer::flowCross(
                         // what is a good threshold to check?
                         afterCross.in.clear();
 
-                    afterCross.out = [&]() {
-                        // Careful analysis showed that rounding up this
-                        // divRound result could lead to placing a reduced
-                        // offer in the ledger that blocks order books.  So
-                        // the fixReducedOffersV1 amendment changes the
-                        // behavior to round down instead.
-                        if (psb.rules().enabled(fixReducedOffersV1))
-                            return divRoundStrict(
-                                afterCross.in,
-                                rate,
-                                takerAmount.out.issue(),
-                                false);
-
-                        return divRound(
-                            afterCross.in, rate, takerAmount.out.issue(), true);
-                    }();
+                    afterCross.out = divRoundStrict(
+                        afterCross.in, rate, takerAmount.out.issue(), false);
                 }
                 else
                 {
@@ -632,13 +590,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         // If the offer has expired, the transaction has successfully
         // done nothing, so short circuit from here.
-        //
-        // The return code change is attached to featureDepositPreauth as a
-        // convenience.  The change is not big enough to deserve a fix code.
-        TER const ter{
-            sb.rules().enabled(featureDepositPreauth) ? TER{tecEXPIRED}
-                                                      : TER{tesSUCCESS}};
-        return {ter, true};
+        return {tecEXPIRED, true};
     }
 
     bool const bOpenLedger = sb.open();
@@ -795,9 +747,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (bFillOrKill)
     {
         JLOG(j_.trace()) << "Fill or Kill: offer killed";
-        if (sb.rules().enabled(fix1578))
-            return {tecKILLED, false};
-        return {tesSUCCESS, false};
+        return {tecKILLED, false};
     }
 
     // For 'immediate or cancel' offers, the amount remaining doesn't get
@@ -805,9 +755,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (bImmediateOrCancel)
     {
         JLOG(j_.trace()) << "Immediate or cancel: offer canceled";
-        if (!crossed && sb.rules().enabled(featureImmediateOfferKilled))
-            // If the ImmediateOfferKilled amendment is enabled, any
-            // ImmediateOrCancel offer that transfers absolutely no funds
+        if (!crossed)
+            // Any ImmediateOrCancel offer that transfers absolutely no funds
             // returns tecKILLED rather than tesSUCCESS.  Motivation for the
             // change is here: https://github.com/ripple/rippled/issues/4115
             return {tecKILLED, false};
