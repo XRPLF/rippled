@@ -28,10 +28,11 @@ class Number
     rep mantissa_{0};
     int exponent_{std::numeric_limits<int>::lowest()};
 
-    // isInteger_ is not serialized, transmitted, or used in
-    // calculations in any way. It is used only for internal validation
-    // of integer types. It is a one-way switch. Once it's on, it stays
-    // on.
+    // isInteger_ is informational only. It is not serialized, transmitted, or
+    // used in calculations in any way. It is used only for internal validation
+    // of integer types, usually in transactions. It is a one-way switch. Once
+    // it's on, it stays on. It is also transmissible in that any operation
+    // involving a Number with this flag will have a result with this flag.
     bool isInteger_ = false;
 
 public:
