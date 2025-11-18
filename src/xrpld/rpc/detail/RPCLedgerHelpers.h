@@ -1,5 +1,5 @@
-#ifndef XRPL_RPC_RPCHELPERS_H_INCLUDED
-#define XRPL_RPC_RPCHELPERS_H_INCLUDED
+#ifndef XRPL_RPC_RPCLEDGERHELPERS_H_INCLUDED
+#define XRPL_RPC_RPCLEDGERHELPERS_H_INCLUDED
 
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/TxQ.h>
