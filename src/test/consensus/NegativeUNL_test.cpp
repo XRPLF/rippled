@@ -15,7 +15,6 @@ namespace test {
 /*
  * This file implements the following negative UNL related tests:
  * -- test filling and applying ttUNL_MODIFY Tx and ledger update
- * -- test ttUNL_MODIFY Tx failure without featureNegativeUNL amendment
  * -- test the NegativeUNLVote class. The test cases are split to multiple
  *    test classes to allow parallel execution.
  * -- test the negativeUNLFilter function
@@ -208,7 +207,7 @@ class NegativeUNL_test : public beast::unit_test::suite
 
         testcase("Create UNLModify Tx and apply to ledgers");
 
-        jtx::Env env(*this, jtx::testable_amendments() | featureNegativeUNL);
+        jtx::Env env(*this, jtx::testable_amendments());
         std::vector<PublicKey> publicKeys = createPublicKeys(3);
         // genesis ledger
         auto l = std::make_shared<Ledger>(
@@ -216,7 +215,6 @@ class NegativeUNL_test : public beast::unit_test::suite
             env.app().config(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
-        BEAST_EXPECT(l->rules().enabled(featureNegativeUNL));
 
         // Record the public keys and ledger sequences of expected negative UNL
         // validators when we build the ledger history
@@ -500,44 +498,6 @@ class NegativeUNL_test : public beast::unit_test::suite
     }
 };
 
-class NegativeUNLNoAmendment_test : public beast::unit_test::suite
-{
-    void
-    testNegativeUNLNoAmendment()
-    {
-        testcase("No negative UNL amendment");
-
-        jtx::Env env(*this, jtx::testable_amendments() - featureNegativeUNL);
-        std::vector<PublicKey> publicKeys = createPublicKeys(1);
-        // genesis ledger
-        auto l = std::make_shared<Ledger>(
-            create_genesis,
-            env.app().config(),
-            std::vector<uint256>{},
-            env.app().getNodeFamily());
-        BEAST_EXPECT(!l->rules().enabled(featureNegativeUNL));
-
-        // generate more ledgers
-        for (auto i = 0; i < 256 - 1; ++i)
-        {
-            l = std::make_shared<Ledger>(
-                *l, env.app().timeKeeper().closeTime());
-        }
-        BEAST_EXPECT(l->seq() == 256);
-        auto txDisable_0 = createTx(true, l->seq(), publicKeys[0]);
-        OpenView accum(&*l);
-        BEAST_EXPECT(applyAndTestResult(env, accum, txDisable_0, false));
-        accum.apply(*l);
-        BEAST_EXPECT(negUnlSizeTest(l, 0, false, false));
-    }
-
-    void
-    run() override
-    {
-        testNegativeUNLNoAmendment();
-    }
-};
-
 /**
  * Utility class for creating validators and ledger history
  */
@@ -563,7 +523,7 @@ struct NetworkHistory
     };
 
     NetworkHistory(beast::unit_test::suite& suite, Parameter const& p)
-        : env(suite, jtx::testable_amendments() | featureNegativeUNL)
+        : env(suite, jtx::testable_amendments())
         , param(p)
         , validations(env.app().getValidations())
     {
@@ -1867,7 +1827,6 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
 };
 
 BEAST_DEFINE_TESTSUITE(NegativeUNL, consensus, ripple);
-BEAST_DEFINE_TESTSUITE(NegativeUNLNoAmendment, consensus, ripple);
 
 BEAST_DEFINE_TESTSUITE(NegativeUNLVoteInternal, consensus, ripple);
 BEAST_DEFINE_TESTSUITE_MANUAL(NegativeUNLVoteScoreTable, consensus, ripple);
