@@ -2927,7 +2927,7 @@ assetsToSharesWithdraw(
 {
     XRPL_ASSERT(
         !assets.negative(),
-        "ripple::assetsToSharesDeposit : non-negative assets");
+        "ripple::assetsToSharesWithdraw : non-negative assets");
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
         "ripple::assetsToSharesWithdraw : assets and vault match");

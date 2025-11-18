@@ -3687,6 +3687,80 @@ class Vault_test : public beast::unit_test::suite
                  .peek = peek});
         };
 
+        // The scale can go to 15, which will allow the total assets to
+        // go that high, but single deposits are not allowed over 10^13.
+        // There probably aren't too many use cases that will be able to
+        // use this, but it does work.
+        testCase(15, [&, this](Env& env, Data d) {
+            testcase("MPT fractional deposits are supported");
+
+            // Deposits large than Number::maxIntValue are invalid
+            {
+                auto tx = d.vault.deposit(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = d.asset(10)});
+                env(tx, ter{tecPRECISION_LOSS});
+                env.close();
+            }
+            {
+                auto tx = d.vault.deposit(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = d.asset(5)});
+                env(tx, ter{tecPRECISION_LOSS});
+                env.close();
+            }
+            {
+                auto tx = d.vault.deposit(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = d.asset(Number{1, -1})});
+                env(tx, ter{tecPRECISION_LOSS});
+                env.close();
+            }
+
+            auto const smallDeposit = d.asset(Number{5, -2});
+            {
+                // Individual deposits that fit within
+                // Number::maxIntValue are valid
+                auto tx = d.vault.deposit(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = smallDeposit});
+                env(tx);
+            }
+            env.close();
+            {
+                // The total shares can not go over Number::maxIntValue
+                auto tx = d.vault.deposit(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = smallDeposit});
+                env(tx, ter{tecPRECISION_LOSS});
+                env.close();
+            }
+
+            {
+                auto tx = d.vault.withdraw(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = d.asset(Number(10, 0))});
+                env(tx, ter{tecPRECISION_LOSS});
+                env.close();
+            }
+
+            {
+                // A withdraw can take any representable amount, even one
+                // that can't be deposited
+                auto tx = d.vault.withdraw(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = d.asset(Number{10, -2})});
+                env(tx, ter{tecINSUFFICIENT_FUNDS});
+            }
+        });
+
         testCase(13, [&, this](Env& env, Data d) {
             testcase("MPT scale deposit over maxIntValue on first deposit");
             auto tx = d.vault.deposit(
@@ -4243,6 +4317,48 @@ class Vault_test : public beast::unit_test::suite
                     env.balance(d.vaultAccount, d.assets).number() == 0);
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares).number() == 0);
+            }
+        });
+
+        // The scale can go to 15, which will allow the total assets to
+        // go that high, but single deposits are not allowed over 10^13.
+        // There probably aren't too many use cases that will be able to
+        // use this, but it does work.
+        testCase(15, [&, this](Env& env, Data d) {
+            testcase("Scale clawback overflow");
+
+            auto const smallDeposit = d.asset(Number{5, -2});
+            {
+                // Individual deposits that fit within
+                // Number::maxIntValue are valid
+                auto tx = d.vault.deposit(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = smallDeposit});
+                env(tx);
+            }
+            env.close();
+
+            {
+                auto tx = d.vault.clawback(
+                    {.issuer = d.issuer,
+                     .id = d.keylet.key,
+                     .holder = d.depositor,
+                     .amount = d.asset(10)});
+                env(tx, ter{tecPRECISION_LOSS});
+                env.close();
+            }
+
+            {
+                // A clawback can take any representable amount, even one
+                // that can't be deposited
+                auto tx = d.vault.clawback(
+                    {.issuer = d.issuer,
+                     .id = d.keylet.key,
+                     .holder = d.depositor,
+                     .amount = d.asset(Number(10, -2))});
+                env(tx);
+                env.close();
             }
         });
 
