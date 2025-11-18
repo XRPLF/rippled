@@ -78,7 +78,7 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
 
     // Sanity check: issuer must be the same as account
     if (sleIssuance->getAccountID(sfIssuer) != account)
-        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check if issuance has issuer ElGamal public key
     if (!sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
@@ -101,7 +101,7 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
     // Sanity check: claw amount can not exceed confidential outstanding amount
     if (ctx.tx[sfMPTAmount] >
         (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0))
-        return temBAD_AMOUNT;  // LCOV_EXCL_LINE
+        return tecINSUFFICIENT_FUNDS;
 
     // todo: ZKP Verification
     // verify the MPT amount to clawback is the holder's confidential balance
@@ -143,7 +143,8 @@ ConfidentialClawback::doApply()
     catch (std::exception const& e)
     {
         JLOG(ctx_.journal.error())
-            << "Clawback: Failed to generate canonical zero: " << e.what();
+            << "ConfidentialClawback: Failed to generate canonical zero: "
+            << e.what();
         return tecINTERNAL;
     }
 
