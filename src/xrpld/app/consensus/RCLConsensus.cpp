@@ -346,9 +346,7 @@ RCLConsensus::Adaptor::onClose(
                     prevLedger, validations, initialSet, j_);
             }
         }
-        else if (
-            prevLedger->isVotingLedger() &&
-            prevLedger->rules().enabled(featureNegativeUNL))
+        else if (prevLedger->isVotingLedger())
         {
             // previous ledger was a voting ledger,
             // so the current consensus session is for a flag ledger,
@@ -1015,8 +1013,7 @@ RCLConsensus::Adaptor::preStartRound(
     inboundTransactions_.newRound(prevLgr.seq());
 
     // Notify NegativeUNLVote that new validators are added
-    if (prevLgr.ledger_->rules().enabled(featureNegativeUNL) &&
-        !nowTrusted.empty())
+    if (!nowTrusted.empty())
         nUnlVote_.newValidators(prevLgr.seq() + 1, nowTrusted);
 
     // propose only if we're in sync with the network (and validating)
