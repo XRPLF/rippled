@@ -33,7 +33,7 @@ roundPeriodicPayment(
  * Borrower) and any changes to the loan's total value. It provides a complete
  * accounting of where the payment funds went.
  *
- * This structure is explained in the XLS-66 spec, section 3.2.4.4 (Failure
+ * This structure is explained in the XLS-66 spec, section 3.2.4.2 (Failure
  * Conditions).
  *
  * The sum of principalPaid, interestPaid, and feePaid represents the total
