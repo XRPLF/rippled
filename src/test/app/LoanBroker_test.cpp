@@ -1068,6 +1068,9 @@ class LoanBroker_test : public beast::unit_test::suite
             env(del(alice, brokerKeylet.key), ter(tecFROZEN));
             env(trust(
                 issuer, asset(0), alice, tfClearFreeze | tfClearDeepFreeze));
+
+            // successful delete the loan broker object
+            env(del(alice, brokerKeylet.key), ter(tesSUCCESS));
         }
         else
             env(del(alice, brokerKeylet.key));
