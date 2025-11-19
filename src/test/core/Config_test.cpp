@@ -1183,7 +1183,7 @@ r.ripple.com:51235
         BEAST_EXPECT(cfg.IPS_FIXED[6] == "12.34.12.123 12345");
         BEAST_EXPECT(cfg.IPS_FIXED[7] == "12.34.12.123 12345");
 
-        // all ipv6 should be ignored by colon replacer, howsoever formated
+        // all ipv6 should be ignored by colon replacer, howsoever formatted
         BEAST_EXPECT(cfg.IPS_FIXED[8] == "::");
         BEAST_EXPECT(cfg.IPS_FIXED[9] == "2001:db8::");
         BEAST_EXPECT(cfg.IPS_FIXED[10] == "::1");
