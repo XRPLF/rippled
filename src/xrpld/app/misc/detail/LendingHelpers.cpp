@@ -219,7 +219,7 @@ loanAccruedInterest(
         paymentInterval;
 }
 
-struct PaymentComponentsPlus : public PaymentComponents
+struct ExtendedPaymentComponents : public PaymentComponents
 {
     // untrackedManagementFeeDelta includes any fees that go directly to the
     // Broker, such as late fees. This value may be negative, though the final
@@ -232,7 +232,7 @@ struct PaymentComponentsPlus : public PaymentComponents
     Number untrackedInterest;
     Number totalDue;
 
-    PaymentComponentsPlus(
+    ExtendedPaymentComponents(
         PaymentComponents const& p,
         Number f,
         Number v = numZero)
@@ -248,7 +248,7 @@ struct PaymentComponentsPlus : public PaymentComponents
 template <class NumberProxy, class UInt32Proxy, class UInt32OptionalProxy>
 LoanPaymentParts
 doPayment(
-    PaymentComponentsPlus const& payment,
+    ExtendedPaymentComponents const& payment,
     NumberProxy& totalValueOutstandingProxy,
     NumberProxy& principalOutstandingProxy,
     NumberProxy& managementFeeOutstandingProxy,
@@ -353,7 +353,7 @@ Expected<LoanPaymentParts, TER>
 tryOverpayment(
     Asset const& asset,
     std::int32_t loanScale,
-    PaymentComponentsPlus const& overpaymentComponents,
+    ExtendedPaymentComponents const& overpaymentComponents,
     Number& totalValueOutstanding,
     Number& principalOutstanding,
     Number& managementFeeOutstanding,
@@ -369,7 +369,7 @@ tryOverpayment(
 {
     auto const raw = calculateRawLoanState(
         periodicPayment, periodicRate, paymentRemaining, managementFeeRate);
-    auto const rounded = calculateRoundedLoanState(
+    auto const rounded = constructRoundedLoanState(
         totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
 
     auto const totalValueError = totalValueOutstanding - raw.valueOutstanding;
@@ -437,7 +437,7 @@ tryOverpayment(
         // LCOV_EXCL_STOP
     }
 
-    auto const newRounded = calculateRoundedLoanState(
+    auto const newRounded = constructRoundedLoanState(
         totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
     auto const valueChange =
         newRounded.interestOutstanding() - rounded.interestOutstanding();
@@ -460,7 +460,7 @@ Expected<LoanPaymentParts, TER>
 doOverpayment(
     Asset const& asset,
     std::int32_t loanScale,
-    PaymentComponentsPlus const& overpaymentComponents,
+    ExtendedPaymentComponents const& overpaymentComponents,
     NumberProxy& totalValueOutstandingProxy,
     NumberProxy& principalOutstandingProxy,
     NumberProxy& managementFeeOutstandingProxy,
@@ -563,7 +563,8 @@ computeInterestAndFeeParts(
     TenthBips16 managementFeeRate,
     std::int32_t loanScale)
 {
-    auto const fee = computeFee(asset, interest, managementFeeRate, loanScale);
+    auto const fee =
+        computeManagementFee(asset, interest, managementFeeRate, loanScale);
 
     return std::make_pair(interest - fee, fee);
 }
@@ -582,13 +583,13 @@ computeInterestAndFeeParts(
  * * section 3.2.4.1.2 (Late Payment)
  */
 
-Expected<PaymentComponentsPlus, TER>
+Expected<ExtendedPaymentComponents, TER>
 computeLatePayment(
     Asset const& asset,
     ApplyView const& view,
     Number const& principalOutstanding,
     std::int32_t nextDueDate,
-    PaymentComponentsPlus const& periodic,
+    ExtendedPaymentComponents const& periodic,
     TenthBips32 lateInterestRate,
     std::int32_t loanScale,
     Number const& latePaymentFee,
@@ -624,10 +625,10 @@ computeLatePayment(
         "no extra parts to this payment");
     // Copy the periodic payment values, and add on the late interest.
     // This preserves all the other fields without having to enumerate them.
-    PaymentComponentsPlus const late = [&]() {
+    ExtendedPaymentComponents const late = [&]() {
         auto inner = periodic;
 
-        return PaymentComponentsPlus{
+        return ExtendedPaymentComponents{
             inner,
             // A late payment pays both the normal fee, and the extra fees
             periodic.untrackedManagementFee + latePaymentFee +
@@ -655,12 +656,12 @@ computeLatePayment(
 /* Handle possible full payments.
  *
  * If this function processed a full payment, the return value will be
- * a PaymentComponentsPlus object. Otherwise, it'll be an Unexpected with the
- * error code the caller is expected to return. It should NEVER return
+ * an ExtendedPaymentComponents object. Otherwise, it'll be an Unexpected with
+ * the error code the caller is expected to return. It should NEVER return
  * tesSUCCESS
  */
 
-Expected<PaymentComponentsPlus, TER>
+Expected<ExtendedPaymentComponents, TER>
 computeFullPayment(
     Asset const& asset,
     ApplyView& view,
@@ -681,8 +682,12 @@ computeFullPayment(
     beast::Journal j)
 {
     if (paymentRemaining <= 1)
+    {
         // If this is the last payment, it has to be a regular payment
+        JLOG(j.warn()) << "Full payment requested when only final "
+                       << "payment remains.";
         return Unexpected(tecKILLED);
+    }
 
     Number const rawPrincipalOutstanding = loanPrincipalFromPeriodicPayment(
         periodicPayment, periodicRate, paymentRemaining);
@@ -708,7 +713,7 @@ computeFullPayment(
         return std::make_tuple(parts.first, parts.second);
     }();
 
-    PaymentComponentsPlus const full{
+    ExtendedPaymentComponents const full{
         PaymentComponents{
             .trackedValueDelta = principalOutstanding +
                 totalInterestOutstanding + managementFeeOutstanding,
@@ -762,12 +767,12 @@ PaymentComponents::trackedInterestPart() const
 void
 LoanDeltas::nonNegative()
 {
-    if (principalDelta < beast::zero)
-        principalDelta = numZero;
-    if (interestDueDelta < beast::zero)
-        interestDueDelta = numZero;
-    if (managementFeeDueDelta < beast::zero)
-        managementFeeDueDelta = numZero;
+    if (principal < beast::zero)
+        principal = numZero;
+    if (interest < beast::zero)
+        interest = numZero;
+    if (managementFee < beast::zero)
+        managementFee = numZero;
 }
 
 PaymentComponents
@@ -809,7 +814,7 @@ computePaymentComponents(
         .interestDue = roundToAsset(asset, trueTarget.interestDue, scale),
         .managementFeeDue =
             roundToAsset(asset, trueTarget.managementFeeDue, scale)};
-    LoanState const currentLedgerState = calculateRoundedLoanState(
+    LoanState const currentLedgerState = constructRoundedLoanState(
         totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
 
     LoanDeltas deltas = currentLedgerState - roundedTarget;
@@ -817,32 +822,31 @@ computePaymentComponents(
 
     // Adjust the deltas if necessary for data integrity
     XRPL_ASSERT_PARTS(
-        deltas.principalDelta <= currentLedgerState.principalOutstanding,
+        deltas.principal <= currentLedgerState.principalOutstanding,
         "ripple::detail::computePaymentComponents",
         "principal delta not greater than outstanding");
 
-    deltas.principalDelta = std::min(
-        deltas.principalDelta, currentLedgerState.principalOutstanding);
+    deltas.principal =
+        std::min(deltas.principal, currentLedgerState.principalOutstanding);
 
     XRPL_ASSERT_PARTS(
-        deltas.interestDueDelta <= currentLedgerState.interestDue,
+        deltas.interest <= currentLedgerState.interestDue,
         "ripple::detail::computePaymentComponents",
         "interest due delta not greater than outstanding");
 
-    deltas.interestDueDelta = std::min(
-        {deltas.interestDueDelta,
-         std::max(numZero, roundedPeriodicPayment - deltas.principalDelta),
+    deltas.interest = std::min(
+        {deltas.interest,
+         std::max(numZero, roundedPeriodicPayment - deltas.principal),
          currentLedgerState.interestDue});
 
     XRPL_ASSERT_PARTS(
-        deltas.managementFeeDueDelta <= currentLedgerState.managementFeeDue,
+        deltas.managementFee <= currentLedgerState.managementFeeDue,
         "ripple::detail::computePaymentComponents",
         "management fee due delta not greater than outstanding");
 
-    deltas.managementFeeDueDelta = std::min(
-        {deltas.managementFeeDueDelta,
-         roundedPeriodicPayment -
-             (deltas.principalDelta + deltas.interestDueDelta),
+    deltas.managementFee = std::min(
+        {deltas.managementFee,
+         roundedPeriodicPayment - (deltas.principal + deltas.interest),
          currentLedgerState.managementFeeDue});
 
     if (paymentRemaining == 1 ||
@@ -852,15 +856,15 @@ computePaymentComponents(
         // parts.
 
         XRPL_ASSERT_PARTS(
-            deltas.valueDelta() <= totalValueOutstanding,
+            deltas.total() <= totalValueOutstanding,
             "ripple::detail::computePaymentComponents",
             "last payment total value agrees");
         XRPL_ASSERT_PARTS(
-            deltas.principalDelta <= principalOutstanding,
+            deltas.principal <= principalOutstanding,
             "ripple::detail::computePaymentComponents",
             "last payment principal agrees");
         XRPL_ASSERT_PARTS(
-            deltas.managementFeeDueDelta <= managementFeeOutstanding,
+            deltas.managementFee <= managementFeeOutstanding,
             "ripple::detail::computePaymentComponents",
             "last payment management fee agrees");
 
@@ -894,12 +898,12 @@ computePaymentComponents(
     };
     auto addressExcess = [&takeFrom](LoanDeltas& deltas, Number& excess) {
         // This order is based on where errors are the least problematic
-        takeFrom(deltas.interestDueDelta, excess);
-        takeFrom(deltas.managementFeeDueDelta, excess);
-        takeFrom(deltas.principalDelta, excess);
+        takeFrom(deltas.interest, excess);
+        takeFrom(deltas.managementFee, excess);
+        takeFrom(deltas.principal, excess);
     };
     Number totalOverpayment =
-        deltas.valueDelta() - currentLedgerState.valueOutstanding;
+        deltas.total() - currentLedgerState.valueOutstanding;
     if (totalOverpayment > beast::zero)
     {
         // LCOV_EXCL_START
@@ -911,7 +915,7 @@ computePaymentComponents(
     }
 
     // Make sure the parts don't add up to too much
-    Number shortage = roundedPeriodicPayment - deltas.valueDelta();
+    Number shortage = roundedPeriodicPayment - deltas.total();
 
     XRPL_ASSERT_PARTS(
         isRounded(asset, shortage, scale),
@@ -936,32 +940,29 @@ computePaymentComponents(
         "no shortage or excess");
 
     XRPL_ASSERT_PARTS(
-        deltas.valueDelta() ==
-            deltas.principalDelta + deltas.interestDueDelta +
-                deltas.managementFeeDueDelta,
+        deltas.total() ==
+            deltas.principal + deltas.interest + deltas.managementFee,
         "ripple::detail::computePaymentComponents",
         "total value adds up");
 
     XRPL_ASSERT_PARTS(
-        deltas.principalDelta >= beast::zero &&
-            deltas.principalDelta <= currentLedgerState.principalOutstanding,
+        deltas.principal >= beast::zero &&
+            deltas.principal <= currentLedgerState.principalOutstanding,
         "ripple::detail::computePaymentComponents",
         "valid principal result");
     XRPL_ASSERT_PARTS(
-        deltas.interestDueDelta >= beast::zero &&
-            deltas.interestDueDelta <= currentLedgerState.interestDue,
+        deltas.interest >= beast::zero &&
+            deltas.interest <= currentLedgerState.interestDue,
         "ripple::detail::computePaymentComponents",
         "valid interest result");
     XRPL_ASSERT_PARTS(
-        deltas.managementFeeDueDelta >= beast::zero &&
-            deltas.managementFeeDueDelta <= currentLedgerState.managementFeeDue,
+        deltas.managementFee >= beast::zero &&
+            deltas.managementFee <= currentLedgerState.managementFeeDue,
         "ripple::detail::computePaymentComponents",
         "valid fee result");
 
     XRPL_ASSERT_PARTS(
-        deltas.principalDelta + deltas.interestDueDelta +
-                deltas.managementFeeDueDelta >
-            beast::zero,
+        deltas.principal + deltas.interest + deltas.managementFee > beast::zero,
         "ripple::detail::computePaymentComponents",
         "payment parts add to payment");
 
@@ -969,19 +970,15 @@ computePaymentComponents(
         // As a final safety check, ensure the value is non-negative, and won't
         // make the corresponding item negative
         .trackedValueDelta = std::clamp(
-            deltas.valueDelta(), numZero, currentLedgerState.valueOutstanding),
+            deltas.total(), numZero, currentLedgerState.valueOutstanding),
         .trackedPrincipalDelta = std::clamp(
-            deltas.principalDelta,
-            numZero,
-            currentLedgerState.principalOutstanding),
+            deltas.principal, numZero, currentLedgerState.principalOutstanding),
         .trackedManagementFeeDelta = std::clamp(
-            deltas.managementFeeDueDelta,
-            numZero,
-            currentLedgerState.managementFeeDue),
+            deltas.managementFee, numZero, currentLedgerState.managementFeeDue),
     };
 }
 
-PaymentComponentsPlus
+ExtendedPaymentComponents
 computeOverpaymentComponents(
     Asset const& asset,
     int32_t const loanScale,
@@ -1013,7 +1010,7 @@ computeOverpaymentComponents(
                 asset, interest, managementFeeRate, loanScale);
         }();
 
-    return detail::PaymentComponentsPlus{
+    return detail::ExtendedPaymentComponents{
         detail::PaymentComponents{
             .trackedValueDelta = payment,
             .trackedPrincipalDelta = payment - roundedOverpaymentInterest -
@@ -1030,9 +1027,9 @@ detail::LoanDeltas
 operator-(LoanState const& lhs, LoanState const& rhs)
 {
     detail::LoanDeltas result{
-        .principalDelta = lhs.principalOutstanding - rhs.principalOutstanding,
-        .interestDueDelta = lhs.interestDue - rhs.interestDue,
-        .managementFeeDueDelta = lhs.managementFeeDue - rhs.managementFeeDue,
+        .principal = lhs.principalOutstanding - rhs.principalOutstanding,
+        .interest = lhs.interestDue - rhs.interestDue,
+        .managementFee = lhs.managementFeeDue - rhs.managementFeeDue,
     };
 
     return result;
@@ -1042,10 +1039,10 @@ LoanState
 operator-(LoanState const& lhs, detail::LoanDeltas const& rhs)
 {
     LoanState result{
-        .valueOutstanding = lhs.valueOutstanding - rhs.valueDelta(),
-        .principalOutstanding = lhs.principalOutstanding - rhs.principalDelta,
-        .interestDue = lhs.interestDue - rhs.interestDueDelta,
-        .managementFeeDue = lhs.managementFeeDue - rhs.managementFeeDueDelta,
+        .valueOutstanding = lhs.valueOutstanding - rhs.total(),
+        .principalOutstanding = lhs.principalOutstanding - rhs.principal,
+        .interestDue = lhs.interestDue - rhs.interest,
+        .managementFeeDue = lhs.managementFeeDue - rhs.managementFee,
     };
 
     return result;
@@ -1156,14 +1153,14 @@ calculateRawLoanState(
 }
 
 LoanState
-calculateRoundedLoanState(
+constructRoundedLoanState(
     Number const& totalValueOutstanding,
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding)
 {
     // This implementation is pretty trivial, but ensures the calculations are
     // consistent everywhere, and reduces copy/paste errors.
-    return {
+    return LoanState{
         .valueOutstanding = totalValueOutstanding,
         .principalOutstanding = principalOutstanding,
         .interestDue = totalValueOutstanding - principalOutstanding -
@@ -1172,16 +1169,16 @@ calculateRoundedLoanState(
 }
 
 LoanState
-calculateRoundedLoanState(SLE::const_ref loan)
+constructRoundedLoanState(SLE::const_ref loan)
 {
-    return calculateRoundedLoanState(
+    return constructRoundedLoanState(
         loan->at(sfTotalValueOutstanding),
         loan->at(sfPrincipalOutstanding),
         loan->at(sfManagementFeeOutstanding));
 }
 
 Number
-computeFee(
+computeManagementFee(
     Asset const& asset,
     Number const& value,
     TenthBips32 managementFeeRate,
@@ -1192,16 +1189,6 @@ computeFee(
         tenthBipsOfValue(value, managementFeeRate),
         scale,
         Number::downward);
-}
-
-Number
-valueMinusFee(
-    Asset const& asset,
-    Number const& value,
-    TenthBips16 managementFeeRate,
-    std::int32_t scale)
-{
-    return value - computeFee(asset, value, managementFeeRate, scale);
 }
 
 LoanProperties
@@ -1258,7 +1245,7 @@ computeLoanProperties(
     principalOutstanding = roundToAsset(
         asset, principalOutstanding, loanScale, Number::to_nearest);
 
-    auto const feeOwedToBroker = computeFee(
+    auto const feeOwedToBroker = computeManagementFee(
         asset,
         /*
          * This formula is from the XLS-66 spec, section 3.2.4.2 (Total Loan
@@ -1384,7 +1371,7 @@ loanMakePayment(
         Number const closePaymentFee =
             roundToAsset(asset, loan->at(sfClosePaymentFee), loanScale);
 
-        LoanState const roundedLoanState = calculateRoundedLoanState(
+        LoanState const roundedLoanState = constructRoundedLoanState(
             totalValueOutstandingProxy,
             principalOutstandingProxy,
             managementFeeOutstandingProxy);
@@ -1426,6 +1413,7 @@ loanMakePayment(
 
         // LCOV_EXCL_START
         UNREACHABLE("ripple::loanMakePayment : invalid full payment result");
+        JLOG(j.error()) << "Full payment computation failed unexpectedly.";
         return Unexpected(tecINTERNAL);
         // LCOV_EXCL_STOP
     }
@@ -1433,7 +1421,7 @@ loanMakePayment(
     // -------------------------------------------------------------
     // compute the periodic payment info that will be needed whether the payment
     // is late or regular
-    detail::PaymentComponentsPlus periodic{
+    detail::ExtendedPaymentComponents periodic{
         detail::computePaymentComponents(
             asset,
             loanScale,
@@ -1489,6 +1477,7 @@ loanMakePayment(
 
         // LCOV_EXCL_START
         UNREACHABLE("ripple::loanMakePayment : invalid late payment result");
+        JLOG(j.error()) << "Late payment computation failed unexpectedly.";
         return Unexpected(tecINTERNAL);
         // LCOV_EXCL_STOP
     }
@@ -1540,7 +1529,7 @@ loanMakePayment(
         if (periodic.specialCase == detail::PaymentSpecialCase::final)
             break;
 
-        periodic = detail::PaymentComponentsPlus{
+        periodic = detail::ExtendedPaymentComponents{
             detail::computePaymentComponents(
                 asset,
                 loanScale,
@@ -1588,7 +1577,7 @@ loanMakePayment(
         Number const overpayment =
             std::min(amount - totalPaid, *totalValueOutstandingProxy);
 
-        detail::PaymentComponentsPlus const overpaymentComponents =
+        detail::ExtendedPaymentComponents const overpaymentComponents =
             detail::computeOverpaymentComponents(
                 asset,
                 loanScale,

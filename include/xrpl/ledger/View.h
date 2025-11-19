@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
@@ -1081,6 +1082,26 @@ canTransfer(
     MPTIssue const& mptIssue,
     AccountID const& from,
     AccountID const& to);
+
+[[nodiscard]] TER
+canTransfer(
+    ReadView const& view,
+    Issue const& issue,
+    AccountID const& from,
+    AccountID const& to);
+
+[[nodiscard]] TER inline canTransfer(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& from,
+    AccountID const& to)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+            return canTransfer(view, issue, from, to);
+        },
+        asset.value());
+}
 
 /** Deleter function prototype. Returns the status of the entry deletion
  * (if should not be skipped) and if the entry should be skipped. The status

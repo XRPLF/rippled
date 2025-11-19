@@ -60,14 +60,21 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
     if (!vault)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto const vaultAsset = vault->at(sfAsset);
 
+    auto const vaultAsset = vault->at(sfAsset);
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
+    // The broker's pseudo-account is the source of funds.
+    auto const pseudoAccountID = sleBroker->at(sfAccount);
+    // Cannot transfer a non-transferable Asset
+    if (auto const ret =
+            canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct))
+        return ret;
+
     // Withdrawal to a 3rd party destination account is essentially a transfer.
     // Enforce all the usual asset transfer checks.
-    AuthType authType = AuthType::Legacy;
+    AuthType authType = AuthType::WeakAuth;
     if (account != dstAcct)
     {
         if (auto const ret = canWithdraw(ctx.view, tx))
@@ -81,9 +88,6 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // Destination MPToken must exist (if asset is an MPT)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType))
         return ter;
-
-    // The broker's pseudo-account is the source of funds.
-    auto const pseudoAccountID = sleBroker->at(sfAccount);
 
     // Check for freezes, unless sending directly to the issuer
     if (dstAcct != vaultAsset.getIssuer())
@@ -146,8 +150,16 @@ LoanBrokerCoverWithdraw::doApply()
     broker->at(sfCoverAvailable) -= amount;
     view().update(broker);
 
-    // Move the funds from the broker's pseudo-account to the dstAcct
+    // Create trust line or MPToken for the receiving account
+    if (dstAcct == account_)
+    {
+        if (auto const ter = addEmptyHolding(
+                view(), account_, mPriorBalance, amount.asset(), j_);
+            !isTesSuccess(ter) && ter != tecDUPLICATE)
+            return ter;
+    }
 
+    // Move the funds from the broker's pseudo-account to the dstAcct
     if (dstAcct == account_ || amount.native())
     {
         // Transfer assets directly from pseudo-account to depositor.
