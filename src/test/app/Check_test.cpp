@@ -126,25 +126,6 @@ class Check_test : public beast::unit_test::suite
         using namespace test::jtx;
         Account const alice{"alice"};
         {
-            // If the Checks amendment is not enabled, you should not be able
-            // to create, cash, or cancel checks.
-            Env env{*this, features - featureChecks};
-
-            env.fund(XRP(1000), alice);
-            env.close();
-
-            uint256 const checkId{
-                getCheckIndex(env.master, env.seq(env.master))};
-            env(check::create(env.master, alice, XRP(100)), ter(temDISABLED));
-            env.close();
-
-            env(check::cash(alice, checkId, XRP(100)), ter(temDISABLED));
-            env.close();
-
-            env(check::cancel(alice, checkId), ter(temDISABLED));
-            env.close();
-        }
-        {
             // If the Checks amendment is enabled all check-related
             // facilities should be available.
             Env env{*this, features};
