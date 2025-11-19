@@ -706,16 +706,16 @@ public:
     void
     run() override
     {
-        // testLedgerRequest();
-        // testBadInput();
-        // testLedgerCurrent();
-        // testLedgerFull();
-        // testLedgerFullNonAdmin();
-        // testLedgerAccounts();
+        testLedgerRequest();
+        testBadInput();
+        testLedgerCurrent();
+        testLedgerFull();
+        testLedgerFullNonAdmin();
+        testLedgerAccounts();
         testLookupLedger();
-        // testNoQueue();
-        // testQueue();
-        // testLedgerAccountsOption();
+        testNoQueue();
+        testQueue();
+        testLedgerAccountsOption();
     }
 };
 
