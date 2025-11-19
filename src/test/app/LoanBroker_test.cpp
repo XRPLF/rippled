@@ -4,8 +4,6 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 
-#include "test/jtx/TestHelpers.h"
-
 namespace ripple {
 namespace test {
 
