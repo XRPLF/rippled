@@ -227,7 +227,7 @@ public:
         BEAST_EXPECT(!c->load(s4));
 
         // Check if we properly terminate when we encounter
-        // a malformed or unparseable entry:
+        // a malformed or unparsable entry:
         auto const node1 = randomNode();
         auto const node2 = randomNode();
 

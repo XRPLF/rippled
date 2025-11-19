@@ -79,7 +79,7 @@ public:
     void
     testSQLiteFileNames()
     {
-        // confirm that files are given the correct exensions
+        // confirm that files are given the correct extensions
         testcase("sqliteFileNames");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
