@@ -1,4 +1,5 @@
 #include <xrpld/app/misc/LendingHelpers.h>
+// DO NOT REMOVE forces header file include to sort first
 #include <xrpld/app/tx/detail/VaultCreate.h>
 
 namespace ripple {
