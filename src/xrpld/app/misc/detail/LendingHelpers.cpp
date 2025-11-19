@@ -185,6 +185,24 @@ computeInterestAndFeeParts(
     return std::make_pair(interest - fee, fee);
 }
 
+/*
+ * Computes the interest and management fee parts from interest amount.
+ *
+ * Equation (33) from XLS-66 spec, Section A-2 Equation Glossary
+ */
+std::pair<Number, Number>
+computeInterestAndFeeParts(
+    Asset const& asset,
+    Number const& interest,
+    TenthBips16 managementFeeRate,
+    std::int32_t loanScale)
+{
+    auto const fee =
+        computeManagementFee(asset, interest, managementFeeRate, loanScale);
+
+    return std::make_pair(interest - fee, fee);
+}
+
 /* Calculates penalty interest accrued on overdue payments.
  * Returns 0 if payment is not late.
  *
@@ -696,24 +714,6 @@ doOverpayment(
     periodicPaymentProxy = periodicPayment;
 
     return loanPaymentParts;
-}
-
-/*
- * Computes the interest and management fee parts from interest amount.
- *
- * Equation (33) from XLS-66 spec, Section A-2 Equation Glossary
- */
-std::pair<Number, Number>
-computeInterestAndFeeParts(
-    Asset const& asset,
-    Number const& interest,
-    TenthBips16 managementFeeRate,
-    std::int32_t loanScale)
-{
-    auto const fee =
-        computeManagementFee(asset, interest, managementFeeRate, loanScale);
-
-    return std::make_pair(interest - fee, fee);
 }
 
 /* Computes the payment components for a late payment.
