@@ -555,6 +555,32 @@ public:
     operator=(NumberRoundModeGuard const&) = delete;
 };
 
+// Sets the EnforceIntegerOverflow flag and restores the old value when it
+// leaves scope.  Since Number doesn't have that facility, we'll build it here.
+//
+// This class may only end up needed in tests
+class NumberIntegerOverflowGuard
+{
+    bool const saved_;
+
+public:
+    explicit NumberIntegerOverflowGuard(bool enforce) noexcept
+        : saved_{Number::getEnforceIntegerOverflow()}
+    {
+        Number::setEnforceIntegerOverflow(enforce);
+    }
+
+    ~NumberIntegerOverflowGuard()
+    {
+        Number::setEnforceIntegerOverflow(saved_);
+    }
+
+    NumberIntegerOverflowGuard(NumberIntegerOverflowGuard const&) = delete;
+
+    NumberIntegerOverflowGuard&
+    operator=(NumberIntegerOverflowGuard const&) = delete;
+};
+
 }  // namespace ripple
 
 #endif  // XRPL_BASICS_NUMBER_H_INCLUDED

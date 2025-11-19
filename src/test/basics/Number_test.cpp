@@ -732,18 +732,19 @@ public:
 
         using namespace std::string_literals;
 
-        auto toInt = [this](Number const& a, std::string const& ex = {})
-            -> std::optional<std::int64_t> {
+        auto checkInt = [this](
+                            Number const& a,
+                            std::int64_t expected,
+                            std::string const& ex = {}) {
             try
             {
-                return static_cast<std::int64_t>(a);
+                BEAST_EXPECT(static_cast<std::int64_t>(a) == expected);
             }
             catch (std::overflow_error const& e)
             {
                 BEAST_EXPECTS(
                     ex.empty() || e.what() == ex,
                     to_string(a) + ": " + e.what());
-                return std::nullopt;
             }
         };
         {
@@ -751,11 +752,11 @@ public:
             BEAST_EXPECT(!a.getLimited());
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
-            BEAST_EXPECT(toInt(a) == 100);
+            checkInt(a, 100);
             a = Number{1, 30};
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
-            BEAST_EXPECT(!toInt(a, "Number::operator rep() overflow"));
+            checkInt(a, 0, "Number::operator rep() overflow");
             a = -100;
             BEAST_EXPECT(!a.getLimited());
             BEAST_EXPECT(a.fits());
@@ -822,26 +823,45 @@ public:
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
 
-            a = 0x7FFF'FFFF'FFFF'FFFFll;
+            auto const maxUint = 0x7FFF'FFFF'FFFF'FFFFll;
+            a = maxUint;
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(!a.representable());
-            BEAST_EXPECT(!toInt(a, "Number::operator rep() overflow"));
-            Number::setEnforceIntegerOverflow(true);
-            BEAST_EXPECT(
-                !toInt(a, "Number::operator rep() overflow unrepresentable"));
-            Number::setEnforceIntegerOverflow(false);
+            BEAST_EXPECT(to_string(a) == "9223372036854776e3");
+            checkInt(a, 0, "Number::operator rep() overflow");
+            {
+                NumberIntegerOverflowGuard og(true);
+                checkInt(
+                    a, 0, "Number::operator rep() overflow unrepresentable");
+            }
 
             a = 0xFFF'FFFF'FFFF'FFFFll;
             // 1152921504606846975
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(!a.representable());
-            BEAST_EXPECT(toInt(a) == 1152921504606847000ll);
-            Number::setEnforceIntegerOverflow(true);
-            BEAST_EXPECT(
-                !toInt(a, "Number::operator rep() overflow unrepresentable"));
-            Number::setEnforceIntegerOverflow(false);
+            checkInt(a, 1152921504606847000ll);
+            {
+                NumberIntegerOverflowGuard og(true);
+                checkInt(
+                    a, 0, "Number::operator rep() overflow unrepresentable");
+            }
+
+            // Same number, but using the "unchecked" option
+            a = Number{maxUint, 0, Number::unchecked{}};
+            // 1152921504606846975
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
+            BEAST_EXPECT(!a.representable());
+            // Because "a" is not normalized, "to_string" returns the
+            // wrong answer.
+            BEAST_EXPECT(to_string(a) == "9223372036854775.807");
+            checkInt(a, maxUint);
+            {
+                NumberIntegerOverflowGuard og(true);
+                checkInt(a, maxUint);
+            }
         }
     }
 
