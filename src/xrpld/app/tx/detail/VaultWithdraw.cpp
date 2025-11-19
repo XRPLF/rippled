@@ -47,35 +47,15 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (assets.asset() != vaultAsset && assets.asset() != vaultShare)
         return tecWRONG_ASSET;
 
-    if (vaultAsset.native())
-        ;  // No special checks for XRP
-    else if (vaultAsset.holds<MPTIssue>())
+    auto const& vaultAccount = vault->at(sfAccount);
+    auto const& account = ctx.tx[sfAccount];
+    auto const& dstAcct = ctx.tx[~sfDestination].value_or(account);
+    if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct);
+        !isTesSuccess(ter))
     {
-        auto mptID = vaultAsset.get<MPTIssue>().getMptID();
-        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
-        if (!issuance)
-            return tecOBJECT_NOT_FOUND;
-        if (!issuance->isFlag(lsfMPTCanTransfer))
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.error())
-                << "VaultWithdraw: vault assets are non-transferable.";
-            return tecNO_AUTH;
-            // LCOV_EXCL_STOP
-        }
-    }
-    else if (vaultAsset.holds<Issue>())
-    {
-        auto const issuer =
-            ctx.view.read(keylet::account(vaultAsset.getIssuer()));
-        if (!issuer)
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.error())
-                << "VaultWithdraw: missing issuer of vault assets.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
+        JLOG(ctx.j.debug())
+            << "VaultWithdraw: vault assets are non-transferable.";
+        return ter;
     }
 
     // Enforce valid withdrawal policy
@@ -86,9 +66,6 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         return tefINTERNAL;
         // LCOV_EXCL_STOP
     }
-
-    auto const account = ctx.tx[sfAccount];
-    auto const dstAcct = ctx.tx[~sfDestination].value_or(account);
 
     if (auto const ret = canWithdraw(ctx.view, ctx.tx))
         return ret;
@@ -259,9 +236,9 @@ VaultWithdraw::doApply()
     }
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
-    if (!vaultAsset.native() &&               //
-        dstAcct != vaultAsset.getIssuer() &&  //
-        dstAcct == account_)
+
+    // Create trust line or MPToken for the receiving account
+    if (dstAcct == account_)
     {
         if (auto const ter = addEmptyHolding(
                 view(), account_, mPriorBalance, vaultAsset, j_);

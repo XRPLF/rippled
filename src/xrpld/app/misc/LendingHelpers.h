@@ -118,18 +118,18 @@ calculateRawLoanState(
     TenthBips32 const managementFeeRate);
 
 LoanState
-calculateRoundedLoanState(
+constructRoundedLoanState(
     Number const& totalValueOutstanding,
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding);
 
 LoanState
-calculateRoundedLoanState(SLE::const_ref loan);
+constructRoundedLoanState(SLE::const_ref loan);
 
 Number
-computeFee(
+computeManagementFee(
     Asset const& asset,
-    Number const& value,
+    Number const& interest,
     TenthBips32 managementFeeRate,
     std::int32_t scale);
 
@@ -183,14 +183,14 @@ struct PaymentComponents
 
 struct LoanDeltas
 {
-    Number principalDelta;
-    Number interestDueDelta;
-    Number managementFeeDueDelta;
+    Number principal;
+    Number interest;
+    Number managementFee;
 
     Number
-    valueDelta() const
+    total() const
     {
-        return principalDelta + interestDueDelta + managementFeeDueDelta;
+        return principal + interest + managementFee;
     }
 
     void
@@ -216,13 +216,6 @@ operator-(LoanState const& lhs, LoanState const& rhs);
 
 LoanState
 operator-(LoanState const& lhs, detail::LoanDeltas const& rhs);
-
-Number
-valueMinusFee(
-    Asset const& asset,
-    Number const& value,
-    TenthBips16 managementFeeRate,
-    std::int32_t scale);
 
 LoanProperties
 computeLoanProperties(

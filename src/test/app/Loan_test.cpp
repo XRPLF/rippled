@@ -376,7 +376,7 @@ protected:
                     loan->at(sfPeriodicPayment) == periodicPayment);
                 env.test.BEAST_EXPECT(loan->at(sfFlags) == flags);
 
-                auto const ls = calculateRoundedLoanState(loan);
+                auto const ls = constructRoundedLoanState(loan);
 
                 auto const interestRate = TenthBips32{loan->at(sfInterestRate)};
                 auto const paymentInterval = loan->at(sfPaymentInterval);
@@ -576,7 +576,7 @@ protected:
                 state.loanScale));
         BEAST_EXPECT(
             state.managementFeeOutstanding ==
-            computeFee(
+            computeManagementFee(
                 broker.asset,
                 state.totalValue - state.principalOutstanding,
                 broker.params.managementFeeRate,
@@ -927,7 +927,7 @@ protected:
                 periodicRate,
                 state.paymentRemaining,
                 broker.params.managementFeeRate);
-            auto const rounded = calculateRoundedLoanState(
+            auto const rounded = constructRoundedLoanState(
                 state.totalValue,
                 state.principalOutstanding,
                 state.managementFeeOutstanding);
@@ -1034,23 +1034,21 @@ protected:
                 broker.params.managementFeeRate);
             detail::LoanDeltas const deltas = currentTrueState - nextTrueState;
             BEAST_EXPECT(
-                deltas.valueDelta() ==
-                deltas.principalDelta + deltas.interestDueDelta +
-                    deltas.managementFeeDueDelta);
+                deltas.total() ==
+                deltas.principal + deltas.interest + deltas.managementFee);
             BEAST_EXPECT(
                 paymentComponents.specialCase ==
                     detail::PaymentSpecialCase::final ||
-                deltas.valueDelta() == state.periodicPayment ||
+                deltas.total() == state.periodicPayment ||
                 (state.loanScale -
-                 (deltas.valueDelta() - state.periodicPayment).exponent()) >
-                    14);
+                 (deltas.total() - state.periodicPayment).exponent()) > 14);
 
             if (!showStepBalances)
                 log << currencyLabel
                     << " Payment components: " << state.paymentRemaining << ", "
 
-                    << deltas.interestDueDelta << ", " << deltas.principalDelta
-                    << ", " << deltas.managementFeeDueDelta << ", "
+                    << deltas.interest << ", " << deltas.principal << ", "
+                    << deltas.managementFee << ", "
                     << paymentComponents.trackedValueDelta << ", "
                     << paymentComponents.trackedPrincipalDelta << ", "
                     << paymentComponents.trackedInterestPart() << ", "
@@ -1122,24 +1120,24 @@ protected:
                 if (!BEAST_EXPECT(loanSle))
                     // No reason for this not to exist
                     return;
-                auto const current = calculateRoundedLoanState(loanSle);
+                auto const current = constructRoundedLoanState(loanSle);
                 auto const errors = nextTrueState - current;
                 log << currencyLabel << " Loan balances: "
                     << "\n\tAmount taken: "
                     << paymentComponents.trackedValueDelta
                     << "\n\tTotal value: " << current.valueOutstanding
                     << " (true: " << truncate(nextTrueState.valueOutstanding)
-                    << ", error: " << truncate(errors.valueDelta())
+                    << ", error: " << truncate(errors.total())
                     << ")\n\tPrincipal: " << current.principalOutstanding
                     << " (true: "
                     << truncate(nextTrueState.principalOutstanding)
-                    << ", error: " << truncate(errors.principalDelta)
+                    << ", error: " << truncate(errors.principal)
                     << ")\n\tInterest: " << current.interestDue
                     << " (true: " << truncate(nextTrueState.interestDue)
-                    << ", error: " << truncate(errors.interestDueDelta)
+                    << ", error: " << truncate(errors.interest)
                     << ")\n\tMgmt fee: " << current.managementFeeDue
                     << " (true: " << truncate(nextTrueState.managementFeeDue)
-                    << ", error: " << truncate(errors.managementFeeDueDelta)
+                    << ", error: " << truncate(errors.managementFee)
                     << ")\n\tPayments remaining "
                     << loanSle->at(sfPaymentRemaining) << std::endl;
             }
@@ -2676,7 +2674,7 @@ protected:
                         periodicRate,
                         state.paymentRemaining,
                         broker.params.managementFeeRate);
-                    auto const rounded = calculateRoundedLoanState(
+                    auto const rounded = constructRoundedLoanState(
                         state.totalValue,
                         state.principalOutstanding,
                         state.managementFeeOutstanding);
@@ -2766,9 +2764,8 @@ protected:
                     testcase
                         << currencyLabel
                         << " Payment components: " << state.paymentRemaining
-                        << ", " << deltas.interestDueDelta << ", "
-                        << deltas.principalDelta << ", "
-                        << deltas.managementFeeDueDelta << ", "
+                        << ", " << deltas.interest << ", " << deltas.principal
+                        << ", " << deltas.managementFee << ", "
                         << paymentComponents.trackedValueDelta << ", "
                         << paymentComponents.trackedPrincipalDelta << ", "
                         << paymentComponents.trackedInterestPart() << ", "
@@ -2815,7 +2812,7 @@ protected:
                         state.paymentRemaining < 12 ||
                         roundToAsset(
                             broker.asset,
-                            deltas.principalDelta,
+                            deltas.principal,
                             state.loanScale,
                             Number::upward) ==
                             roundToScale(
@@ -2838,8 +2835,8 @@ protected:
                         paymentComponents.specialCase ==
                             detail::PaymentSpecialCase::final ||
                         (state.periodicPayment.exponent() -
-                         (deltas.principalDelta + deltas.interestDueDelta +
-                          deltas.managementFeeDueDelta - state.periodicPayment)
+                         (deltas.principal + deltas.interest +
+                          deltas.managementFee - state.periodicPayment)
                              .exponent()) > 14);
 
                     auto const borrowerBalanceBeforePayment =
@@ -4590,8 +4587,8 @@ protected:
         // preclaim
         Env env(*this);
         env.fund(XRP(1'000), lender, issuer, borrower);
-        env(trust(lender, IOU(10'000'000)));
-        env(pay(issuer, lender, IOU(5'000'000)));
+        env(trust(lender, IOU(10'000'000)), THISLINE);
+        env(pay(issuer, lender, IOU(5'000'000)), THISLINE);
         BrokerInfo brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
 
         auto const loanSetFee = fee(env.current()->fees().base * 2);
@@ -4599,21 +4596,24 @@ protected:
 
         env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
             sig(sfCounterpartySignature, lender),
-            loanSetFee);
+            loanSetFee,
+            THISLINE);
 
         env.close();
 
         std::uint32_t const loanSequence = 1;
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, loanSequence);
 
-        env(fset(issuer, asfGlobalFreeze));
+        env(fset(issuer, asfGlobalFreeze), THISLINE);
         env.close();
 
         // preclaim: tecFROZEN
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecFROZEN));
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest),
+            ter(tecFROZEN),
+            THISLINE);
         env.close();
 
-        env(fclear(issuer, asfGlobalFreeze));
+        env(fclear(issuer, asfGlobalFreeze), THISLINE);
         env.close();
 
         auto const pseudoBroker = [&]() -> std::optional<Account> {
@@ -4633,37 +4633,51 @@ protected:
 
         // Lender and pseudoaccount must both be frozen
         env(trust(
-            issuer,
-            lender["IOU"](1'000),
-            lender,
-            tfSetFreeze | tfSetDeepFreeze));
+                issuer,
+                lender["IOU"](1'000),
+                lender,
+                tfSetFreeze | tfSetDeepFreeze),
+            THISLINE);
         env(trust(
-            issuer,
-            (*pseudoBroker)["IOU"](1'000),
-            *pseudoBroker,
-            tfSetFreeze | tfSetDeepFreeze));
+                issuer,
+                (*pseudoBroker)["IOU"](1'000),
+                *pseudoBroker,
+                tfSetFreeze | tfSetDeepFreeze),
+            THISLINE);
         env.close();
 
         // preclaim: tecFROZEN due to deep frozen
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecFROZEN));
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest),
+            ter(tecFROZEN),
+            THISLINE);
         env.close();
 
         // Only one needs to be unfrozen
         env(trust(
-            issuer, lender["IOU"](1'000), tfClearFreeze | tfClearDeepFreeze));
+                issuer,
+                lender["IOU"](1'000),
+                tfClearFreeze | tfClearDeepFreeze),
+            THISLINE);
         env.close();
 
         // The payment is late by this point
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecEXPIRED));
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest),
+            ter(tecEXPIRED),
+            THISLINE);
         env.close();
-        env(pay(
-            borrower, loanKeylet.key, debtMaximumRequest, tfLoanLatePayment));
+        env(pay(borrower,
+                loanKeylet.key,
+                debtMaximumRequest,
+                tfLoanLatePayment),
+            THISLINE);
         env.close();
 
         // preclaim: tecKILLED
         // note that tecKILLED in loanMakePayment()
         // doesn't happen because of the preclaim check.
-        env(pay(borrower, loanKeylet.key, debtMaximumRequest), ter(tecKILLED));
+        env(pay(borrower, loanKeylet.key, debtMaximumRequest),
+            ter(tecKILLED),
+            THISLINE);
     }
 
     void
@@ -5662,11 +5676,11 @@ protected:
         });
     }
 
-#if LOANTODO
     void
-    testCoverDepositAllowsNonTransferableMPT()
+    testCoverDepositWithdrawNonTransferableMPT()
     {
-        testcase("CoverDeposit accepts MPT without CanTransfer");
+        testcase(
+            "CoverDeposit and CoverWithdraw reject MPT without CanTransfer");
         using namespace jtx;
         using namespace loanBroker;
 
@@ -5686,7 +5700,7 @@ protected:
 
         env.close();
 
-        PrettyAsset const asset = mpt["BUG"];
+        PrettyAsset const asset = mpt["MPT"];
         mpt.authorize({.account = alice});
         env.close();
 
@@ -5720,21 +5734,58 @@ protected:
         env(pay(alice, pseudoAccount, asset(1)), ter(tecNO_AUTH));
         env.close();
 
+        // Cover cannot be transferred to broker account
         auto const depositAmount = asset(1);
-        env(coverDeposit(alice, brokerKeylet.key, depositAmount));
-        BEAST_EXPECT(env.ter() == tesSUCCESS);
+        env(coverDeposit(alice, brokerKeylet.key, depositAmount),
+            ter{tecNO_AUTH});
         env.close();
 
         if (auto const refreshed = env.le(brokerKeylet);
             BEAST_EXPECT(refreshed))
         {
-            // with an MPT that cannot be transferred the covrAvailable should
-            // remain zero
             BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 0);
+            env.require(balance(pseudoAccount, asset(0)));
+        }
+
+        // Set CanTransfer again and transfer some deposit
+        mpt.set({.mutableFlags = tmfMPTSetCanTransfer});
+        env.close();
+
+        env(coverDeposit(alice, brokerKeylet.key, depositAmount));
+        env.close();
+
+        if (auto const refreshed = env.le(brokerKeylet);
+            BEAST_EXPECT(refreshed))
+        {
+            BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 1);
             env.require(balance(pseudoAccount, depositAmount));
+        }
+
+        // Remove CanTransfer after the deposit
+        mpt.set({.mutableFlags = tmfMPTClearCanTransfer});
+        env.close();
+
+        // Cover cannot be transferred from broker account
+        env(coverWithdraw(alice, brokerKeylet.key, depositAmount),
+            ter{tecNO_AUTH});
+        env.close();
+
+        // Set CanTransfer again and withdraw
+        mpt.set({.mutableFlags = tmfMPTSetCanTransfer});
+        env.close();
+
+        env(coverWithdraw(alice, brokerKeylet.key, depositAmount));
+        env.close();
+
+        if (auto const refreshed = env.le(brokerKeylet);
+            BEAST_EXPECT(refreshed))
+        {
+            BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 0);
+            env.require(balance(pseudoAccount, asset(0)));
         }
     }
 
+#if LOANTODO
     void
     testLoanPayLateFullPaymentBypassesPenalties()
     {
@@ -5818,7 +5869,7 @@ protected:
         Number const latePaymentFeeRounded = roundToAsset(
             broker.asset, loanSle->at(sfLatePaymentFee), state.loanScale);
 
-        auto const roundedLoanState = calculateRoundedLoanState(
+        auto const roundedLoanState = constructRoundedLoanState(
             state.totalValue,
             state.principalOutstanding,
             state.managementFeeOutstanding);
@@ -5847,7 +5898,7 @@ protected:
 
         Number const roundedFullInterestAmount =
             roundToAsset(broker.asset, fullPaymentInterest, state.loanScale);
-        Number const roundedFullManagementFee = computeFee(
+        Number const roundedFullManagementFee = computeManagementFee(
             broker.asset,
             roundedFullInterestAmount,
             managementFeeRate,
@@ -5878,7 +5929,7 @@ protected:
         Number const lateInterestRaw = state.principalOutstanding * overdueRate;
         Number const lateInterestRounded =
             roundToAsset(broker.asset, lateInterestRaw, state.loanScale);
-        Number const lateManagementFeeRounded = computeFee(
+        Number const lateManagementFeeRounded = computeManagementFee(
             broker.asset,
             lateInterestRounded,
             managementFeeRate,
@@ -6131,7 +6182,7 @@ protected:
         // Round to asset scale and split interest/fee parts
         auto const roundedInterest =
             roundToAsset(asset.raw(), fullPaymentInterest, after.loanScale);
-        Number const roundedFullMgmtFee = computeFee(
+        Number const roundedFullMgmtFee = computeManagementFee(
             asset.raw(), roundedInterest, managementFeeRate, after.loanScale);
         Number const roundedFullInterest = roundedInterest - roundedFullMgmtFee;
 
@@ -6165,7 +6216,7 @@ protected:
             closeInterestRate);
         auto const roundedInterestClamped = roundToAsset(
             asset.raw(), fullPaymentInterestClamped, after.loanScale);
-        Number const roundedFullMgmtFeeClamped = computeFee(
+        Number const roundedFullMgmtFeeClamped = computeManagementFee(
             asset.raw(),
             roundedInterestClamped,
             managementFeeRate,
@@ -6339,7 +6390,7 @@ protected:
             auto const loanSle = env.le(loanKeylet);
             if (!BEAST_EXPECT(loanSle))
                 return;
-            auto const state = calculateRoundedLoanState(loanSle);
+            auto const state = constructRoundedLoanState(loanSle);
 
             log << "Loan state:" << std::endl;
             log << "  ValueOutstanding: " << state.valueOutstanding
@@ -6929,10 +6980,10 @@ public:
     run() override
     {
 #if LOANTODO
-        testCoverDepositAllowsNonTransferableMPT();
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif
+        testCoverDepositWithdrawNonTransferableMPT();
         testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic();
 
         testDisabled();
