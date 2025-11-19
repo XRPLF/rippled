@@ -29,9 +29,10 @@ roundPeriodicPayment(
  * payment.
  *
  * This structure is returned after processing a loan payment transaction and
- * captures the actual amounts that were paid to each recipient (Vault and
- * Borrower) and any changes to the loan's total value. It provides a complete
- * accounting of where the payment funds went.
+ * captures the actual amounts that need to be paid to each recipient (Vault and
+Borrower). The 
+
+ * It provides a complete accounting of where the payment funds went.
  *
  * This structure is explained in the XLS-66 spec, section 3.2.4.2 (Failure
  * Conditions).

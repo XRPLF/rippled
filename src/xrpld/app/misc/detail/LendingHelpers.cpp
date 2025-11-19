@@ -1193,15 +1193,15 @@ computePaymentComponents(
  * payment amount. The overpayment is treated as extra principal reduction,
  * but incurs a fee and potentially a penalty interest charge.
  *
- * The calculation:
- * 1. Apply the overpayment fee (reduces the effective payment amount)
- * 2. Calculate penalty interest on the remaining amount
- * 3. Split the penalty interest into net interest and management fee
- * 4. Apply the remainder to principal reduction
+ * The calculation (Section 3.2.4.2.3 from XLS-66 spec):
+ * 1. Calculate gross penalty interest on the overpayment amount
+ * 2. Split the gross interest into net interest and management fee
+ * 3. Calculate the penalty fee
+ * 4. Determine the principal portion by subtracting the interest (gross) and
+ * management fee from the overpayment amount
  *
  * Unlike regular payments which follow the amortization schedule, overpayments
- * go primarily toward principal, making them more effective at reducing the
- * loan balance and future interest costs.
+ * apply to principal, reducing the loan balance and future interest costs.
  *
  * Equations (20), (21) and (22) from XLS-66 spec, Section A-2 Equation Glossary
  */
