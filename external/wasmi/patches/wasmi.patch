@@ -1,5 +1,5 @@
 diff --git a/crates/c_api/CMakeLists.txt b/crates/c_api/CMakeLists.txt
-index b15c787a..0d0a04b7 100644
+index b15c787a..2420bea2 100644
 --- a/crates/c_api/CMakeLists.txt
 +++ b/crates/c_api/CMakeLists.txt
 @@ -43,6 +43,11 @@ endif()
@@ -14,6 +14,48 @@ index b15c787a..0d0a04b7 100644
  # Instructions on how to build and install the Wasmi Rust crate.
  find_program(WASMI_CARGO_BINARY cargo REQUIRED)
  include(ExternalProject)
+@@ -112,23 +117,25 @@ install(
+     DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )
+ 
+-if(WASMI_TARGET MATCHES "darwin")
+-    set(INSTALLED_LIB "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libwasmi.dylib")
+-    install(
+-        FILES "${INSTALLED_LIB}"
+-        DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+-        COMPONENT Runtime
+-    )
+-    if(NOT CMAKE_INSTALL_NAME_TOOL)
+-        message(WARNING "CMAKE_INSTALL_NAME_TOOL is not set. LC_ID_DYLIB for libwasmi.dylib will not be set.")
+-    else()
+-        set(install_name_tool_cmd
+-            "${CMAKE_INSTALL_NAME_TOOL}"
+-            "-id"
+-            "@rpath/libwasmi.dylib"
+-            "${INSTALLED_LIB}"
++if(BUILD_SHARED_LIBS)
++    if(WASMI_TARGET MATCHES "darwin")
++        set(INSTALLED_LIB "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libwasmi.dylib")
++        install(
++            FILES "${INSTALLED_LIB}"
++            DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
++            COMPONENT Runtime
+         )
+-        install(CODE "execute_process(COMMAND ${install_name_tool_cmd})")
++        if(NOT CMAKE_INSTALL_NAME_TOOL)
++            message(WARNING "CMAKE_INSTALL_NAME_TOOL is not set. LC_ID_DYLIB for libwasmi.dylib will not be set.")
++        else()
++            set(install_name_tool_cmd
++                "${CMAKE_INSTALL_NAME_TOOL}"
++                "-id"
++                "@rpath/libwasmi.dylib"
++                "${INSTALLED_LIB}"
++            )
++            install(CODE "execute_process(COMMAND ${install_name_tool_cmd})")
++        endif()
+     endif()
+ endif()
+ 
 diff --git a/crates/c_api/include/wasm.h b/crates/c_api/include/wasm.h
 index 5ee617ff..0199192d 100644
 --- a/crates/c_api/include/wasm.h
