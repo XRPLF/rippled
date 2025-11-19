@@ -252,8 +252,11 @@ loanAccruedInterest(
     auto const secondsSinceLastPayment =
         parentCloseTime.time_since_epoch().count() - lastPaymentDate;
 
-    return principalOutstanding * periodicRate *
-        (secondsSinceLastPayment / paymentInterval);
+    // Division is more likely to introduce rounding errors, which will then get
+    // amplified by multiplication. Therefore, we first multiply, and only then
+    // divide.
+    return principalOutstanding * periodicRate * secondsSinceLastPayment /
+        paymentInterval;
 }
 
 /* Applies a payment to the loan state and returns the breakdown of amounts
