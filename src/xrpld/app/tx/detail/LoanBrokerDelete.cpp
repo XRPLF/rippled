@@ -49,8 +49,12 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
 
     auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
     if (!vault)
-        // Should be impossible
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "Vault is missing for Broker " << brokerID;
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
 
     Asset const asset = vault->at(sfAsset);
 
