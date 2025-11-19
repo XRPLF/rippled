@@ -966,8 +966,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
     {
         testcase("Remove unfunded offer");
 
-        // checking that an unfunded offer will be implictly removed by a
-        // successfuly payment tx
+        // checking that an unfunded offer will be implicitly removed by a
+        // successful payment tx
         Env env(*this, features);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
             PermissionedDEX(env);

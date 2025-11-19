@@ -159,7 +159,7 @@ public:
         @param count the number of items the slab allocator can allocate; note
                      that a count of 0 is valid and means that the allocator
                      is, effectively, disabled. This can be very useful in some
-                     contexts (e.g. when mimimal memory usage is needed) and
+                     contexts (e.g. when minimal memory usage is needed) and
                      allows for graceful failure.
      */
     constexpr explicit SlabAllocator(
