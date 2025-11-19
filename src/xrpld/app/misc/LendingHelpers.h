@@ -25,22 +25,20 @@ roundPeriodicPayment(
     return roundToAsset(asset, periodicPayment, scale, Number::upward);
 }
 
-/* Represents the breakdown of amounts paid and changes applied during a loan
- * payment.
+/* Represents the breakdown of amounts to be paidpaid and changes applied to the
+ * Loan object while processing a loan payment.
  *
  * This structure is returned after processing a loan payment transaction and
- * captures the actual amounts that need to be paid to each recipient (Vault and
-Borrower). The 
-
- * It provides a complete accounting of where the payment funds went.
- *
- * This structure is explained in the XLS-66 spec, section 3.2.4.2 (Failure
- * Conditions).
+ * captures the amounts that need to be paid. The actual ledger entry changes
+ * are made in LoanPay based on this structure values.
  *
  * The sum of principalPaid, interestPaid, and feePaid represents the total
- * amount deducted from the borrower's account. The valueChange field tracks
- * whether the loan's total value increased or decreased beyond normal
+ * amount to be deducted from the borrower's account. The valueChange field
+ * tracks whether the loan's total value increased or decreased beyond normal
  * amortization.
+ *
+ * This structure is explained in the XLS-66 spec, section 3.2.4.2 (Payment
+ * Processing).
  */
 struct LoanPaymentParts
 {
