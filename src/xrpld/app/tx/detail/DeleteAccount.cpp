@@ -22,9 +22,6 @@ namespace ripple {
 bool
 DeleteAccount::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureDeletableAccounts))
-        return false;
-
     if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
         !ctx.rules.enabled(featureCredentials))
         return false;

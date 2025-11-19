@@ -67,7 +67,6 @@ XRPL_FEATURE(DisallowIncoming,           Supported::yes, VoteBehavior::DefaultNo
 XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(FlowSortStrands,            Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(RequireFullyCanonicalSig,   Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(DeletableAccounts,          Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Checks,                     Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
 
@@ -118,6 +117,7 @@ XRPL_RETIRE_FIX(TrustLinesToSelf)
 
 XRPL_RETIRE_FEATURE(CheckCashMakesTrustLine)
 XRPL_RETIRE_FEATURE(CryptoConditions)
+XRPL_RETIRE_FEATURE(DeletableAccounts)
 XRPL_RETIRE_FEATURE(DepositAuth)
 XRPL_RETIRE_FEATURE(DepositPreauth)
 XRPL_RETIRE_FEATURE(Escrow)

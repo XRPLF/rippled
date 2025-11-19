@@ -421,13 +421,11 @@ public:
     void
     testAmendmentEnable()
     {
-        // Start with the featureDeletableAccounts amendment disabled.
-        // Then enable the amendment and delete an account.
         using namespace jtx;
 
         testcase("Amendment enable");
 
-        Env env{*this, testable_amendments() - featureDeletableAccounts};
+        Env env{*this};
         Account const alice("alice");
         Account const becky("becky");
 
@@ -445,22 +443,7 @@ public:
         auto const beckyPreDelBal{env.balance(becky)};
 
         auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, becky), fee(acctDelFee), ter(temDISABLED));
-        env.close();
-
-        // Verify that alice's account root is still present and alice and
-        // becky both have their XRP.
-        BEAST_EXPECT(env.current()->exists(aliceAcctKey));
-        BEAST_EXPECT(env.balance(alice) == alicePreDelBal);
-        BEAST_EXPECT(env.balance(becky) == beckyPreDelBal);
-
-        // When the amendment is enabled the previous transaction is
-        // retried into the new open ledger and succeeds.
-        env.enableFeature(featureDeletableAccounts);
-        env.close();
-
-        // alice's account is still in the most recently closed ledger.
-        BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
+        env(acctdelete(alice, becky), fee(acctDelFee));
 
         // Verify that alice's account root is gone from the current ledger
         // and becky has alice's XRP.
