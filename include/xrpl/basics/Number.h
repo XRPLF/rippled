@@ -45,10 +45,11 @@ class Number
     //    of -maxMantissa to maxMantissa. Values larger than this will be
     //    truncated before the decimal point, rendering the value inaccurate.
     // 3. In "operator rep()", which explicitly converts the number into a
-    //    64-bit integer, if the Number is not representable(), AND one of the
-    //    SingleAssetVault (or LendingProtocol, coming soon) amendments are
-    //    enabled, the operator will throw a "std::overflow_error" as if the
-    //    number had overflowed the limits of the 64-bit integer range.
+    //    64-bit integer, if the integer value grows larger than maxMantissa
+    //    while it's being computed, AND one of the SingleAssetVault (or
+    //    LendingProtocol, coming soon) amendments are enabled, the operator
+    //    will throw a "std::overflow_error" as if the number had overflowed the
+    //    limits of the 64-bit integer range.
     //
     // The Number is usually only going to be checked in transactions, based on
     // the specific transaction logic, and is entirely context dependent.
@@ -159,10 +160,11 @@ public:
      *  "mixed mode" more convenient, e.g. MPTAmount + Number.
 
          3. In "operator rep()", which explicitly converts the number into a
-            64-bit integer, if the Number is not representable(), AND one of the
-            SingleAssetVault (or LendingProtocol, coming soon) amendments are
-            enabled, the operator will throw a "std::overflow_error" as if the
-            number had overflowed the limits of the 64-bit integer range.
+            64-bit integer, if the integer value grows larger than maxMantissa
+            while it's being computed, AND one of the SingleAssetVault (or
+            LendingProtocol, coming soon) amendments are enabled, the operator
+            will throw a "std::overflow_error" as if the number had overflowed
+            the limits of the 64-bit integer range.
      */
     explicit
     operator rep() const;  // round to nearest, even on tie

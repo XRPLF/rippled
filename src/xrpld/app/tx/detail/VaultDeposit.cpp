@@ -287,7 +287,7 @@ VaultDeposit::doApply()
     {
         // It's easy to hit this exception from Number with large enough
         // Scale so we avoid spamming the log and only use debug here.
-        JLOG(j_.warn())  //
+        JLOG(j_.debug())  //
             << "VaultDeposit: integer overflow error in total assets with"
             << " scale=" << (int)vault->at(sfScale).value()  //
             << ", assetsTotal=" << vault->at(sfAssetsTotal).value()

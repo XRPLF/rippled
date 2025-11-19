@@ -970,17 +970,17 @@ class Vault_test : public beast::unit_test::suite
                 env(tx, ter(temMALFORMED));
             }
 
-            // accepted range from 0 to 13
+            // accepted range from 0 to 15
             {
                 auto [tx, keylet] =
                     vault.create({.owner = owner, .asset = asset});
-                tx[sfScale] = 13;
+                tx[sfScale] = 15;
                 env(tx);
                 env.close();
                 auto const sleVault = env.le(keylet);
                 if (!BEAST_EXPECT(sleVault))
                     return;
-                BEAST_EXPECT((*sleVault)[sfScale] == 13);
+                BEAST_EXPECT((*sleVault)[sfScale] == 15);
             }
 
             {
@@ -3696,7 +3696,8 @@ class Vault_test : public beast::unit_test::suite
         testCase(15, [&, this](Env& env, Data d) {
             testcase("MPT fractional deposits are supported");
 
-            // Deposits large than Number::maxIntValue are invalid
+            // Deposits that result in share amounts larger than
+            // Number::maxIntValue are invalid
             {
                 auto tx = d.vault.deposit(
                     {.depositor = d.depositor,

@@ -761,6 +761,7 @@ public:
             BEAST_EXPECT(!a.getLimited());
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
+            checkInt(a, -100);
             // If there's any interaction with an integer, the value
             // becomes an integer. This is not always what the value is
             // being used for, so it's up to the context to check or not
@@ -769,59 +770,72 @@ public:
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
+            checkInt(a, 3600);
         }
         {
             Number a{100, true};
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
+            checkInt(a, 100);
             a = Number{1, 15};
             BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(a.representable());
+            checkInt(a, 1'000'000'000'000'000);
             // The false in the assigned value does not override the
             // flag in "a"
             a = Number{1, 30, false};
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(!a.representable());
+            checkInt(a, 0, "Number::operator rep() overflow");
             a = -100;
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
+            checkInt(a, -100);
             a *= Number{1, 13};
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(a.representable());
+            checkInt(a, -1'000'000'000'000'000);
             a *= Number{1, 3};
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(!a.representable());
+            checkInt(a, -1'000'000'000'000'000'000);
             // Intermittent value precision can be lost, but the result
             // will be rounded, so that's fine.
             a /= Number{1, 5};
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
+            checkInt(a, -10'000'000'000'000);
             a = Number{1, 14} - 3;
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
+            checkInt(a, 99'999'999'999'997);
             a += 1;
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
+            checkInt(a, 99'999'999'999'998);
             ++a;
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
+            checkInt(a, 99'999'999'999'999);
             a++;
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(a.representable());
+            checkInt(a, 100'000'000'000'000);
             a = Number{5, true};
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
+            checkInt(a, 5);
 
             auto const maxInt = std::numeric_limits<std::int64_t>::max();
             a = maxInt;
