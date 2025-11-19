@@ -123,7 +123,7 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECT(
             featureToName(fixRemoveNFTokenAutoTrustLine) ==
             "fixRemoveNFTokenAutoTrustLine");
-        BEAST_EXPECT(featureToName(featureFlow) == "Flow");
+        BEAST_EXPECT(featureToName(featureBatch) == "Batch");
         BEAST_EXPECT(
             featureToName(featureDeletableAccounts) == "DeletableAccounts");
         BEAST_EXPECT(
