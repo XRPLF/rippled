@@ -3702,7 +3702,7 @@ class Vault_test : public beast::unit_test::suite
                     {.depositor = d.depositor,
                      .id = d.keylet.key,
                      .amount = d.asset(10)});
-                env(tx, ter{tecPRECISION_LOSS});
+                env(tx, ter{tecPATH_DRY});
                 env.close();
             }
             {
@@ -3748,7 +3748,7 @@ class Vault_test : public beast::unit_test::suite
                     {.depositor = d.depositor,
                      .id = d.keylet.key,
                      .amount = d.asset(Number(10, 0))});
-                env(tx, ter{tecPRECISION_LOSS});
+                env(tx, ter{tecPATH_DRY});
                 env.close();
             }
 
@@ -4121,7 +4121,7 @@ class Vault_test : public beast::unit_test::suite
                     {.depositor = d.depositor,
                      .id = d.keylet.key,
                      .amount = STAmount(d.asset, Number(1000, 0))});
-                env(tx, ter{tecPRECISION_LOSS});
+                env(tx, ter{tecPATH_DRY});
                 env.close();
             }
         });
@@ -4347,7 +4347,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = d.keylet.key,
                      .holder = d.depositor,
                      .amount = d.asset(10)});
-                env(tx, ter{tecPRECISION_LOSS});
+                env(tx, ter{tecPATH_DRY});
                 env.close();
             }
 
