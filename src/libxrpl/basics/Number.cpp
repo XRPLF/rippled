@@ -523,9 +523,6 @@ Number::operator/=(Number const& y)
 
 Number::operator rep() const
 {
-    if (Number::overflowLargeIntegers_ && !representable())
-        throw std::overflow_error(
-            "Number::operator rep() overflow unrepresentable");
     rep drops = mantissa_;
     int offset = exponent_;
     Guard g;
@@ -543,6 +540,9 @@ Number::operator rep() const
         }
         for (; offset > 0; --offset)
         {
+            if (Number::overflowLargeIntegers_ && drops > maxMantissa / 10)
+                throw std::overflow_error(
+                    "Number::operator rep() overflow unrepresentable");
             if (drops > std::numeric_limits<decltype(drops)>::max() / 10)
                 throw std::overflow_error("Number::operator rep() overflow");
             drops *= 10;

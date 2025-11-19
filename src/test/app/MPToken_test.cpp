@@ -1677,8 +1677,11 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, maxMPTokenAmount);
             BEAST_EXPECT(
                 mptAlice.checkMPTokenOutstandingAmount(maxMPTokenAmount));
-            env.require(balance(
-                bob, STAmount{mptAlice.issuanceID(), maxMPTokenAmount}));
+            STAmount const expectedAmount{
+                mptAlice.issuanceID(), maxMPTokenAmount};
+            // the value was not truncated or rounded
+            BEAST_EXPECT(expectedAmount.mantissa() == maxMPTokenAmount);
+            env.require(balance(bob, expectedAmount));
 
             // payment between the holders
             mptAlice.pay(bob, carol, maxMPTokenAmount);

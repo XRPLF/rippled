@@ -823,8 +823,8 @@ public:
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
 
-            auto const maxUint = 0x7FFF'FFFF'FFFF'FFFFll;
-            a = maxUint;
+            auto const maxInt = std::numeric_limits<std::int64_t>::max();
+            a = maxInt;
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(!a.representable());
@@ -836,20 +836,8 @@ public:
                     a, 0, "Number::operator rep() overflow unrepresentable");
             }
 
-            a = 0xFFF'FFFF'FFFF'FFFFll;
-            // 1152921504606846975
-            BEAST_EXPECT(a.getLimited());
-            BEAST_EXPECT(!a.fits());
-            BEAST_EXPECT(!a.representable());
-            checkInt(a, 1152921504606847000ll);
-            {
-                NumberIntegerOverflowGuard og(true);
-                checkInt(
-                    a, 0, "Number::operator rep() overflow unrepresentable");
-            }
-
             // Same number, but using the "unchecked" option
-            a = Number{maxUint, 0, Number::unchecked{}};
+            a = Number{maxInt, 0, Number::unchecked{}};
             // 1152921504606846975
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(!a.fits());
@@ -857,10 +845,23 @@ public:
             // Because "a" is not normalized, "to_string" returns the
             // wrong answer.
             BEAST_EXPECT(to_string(a) == "9223372036854775.807");
-            checkInt(a, maxUint);
+            checkInt(a, maxInt);
             {
                 NumberIntegerOverflowGuard og(true);
-                checkInt(a, maxUint);
+                checkInt(a, maxInt);
+            }
+
+            // Use a smaller number that doesn't overflow int64 when rounded up
+            a = maxInt / 10;
+            // 922337203685477580
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
+            BEAST_EXPECT(!a.representable());
+            checkInt(a, ((maxInt / 1000) + 1) * 100);
+            {
+                NumberIntegerOverflowGuard og(true);
+                checkInt(
+                    a, 0, "Number::operator rep() overflow unrepresentable");
             }
         }
     }

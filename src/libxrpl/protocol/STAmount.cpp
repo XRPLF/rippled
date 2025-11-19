@@ -871,6 +871,12 @@ STAmount::canonicalize()
 
         if (getSTNumberSwitchover())
         {
+            // "unchecked" skips the normalization step, so the parameters are
+            // left unmodified. When converting the `Number` back into an
+            // integer, if `mOffset` is 0 (which is the default), the value is
+            // unmodified, so the original integer drops back out, no matter how
+            // large. Precision loss is only an issue if there is an
+            // exponent/offset that requires making the value larger.
             Number num(
                 mIsNegative ? -mValue : mValue, mOffset, Number::unchecked{});
             auto set = [&](auto const& val) {
