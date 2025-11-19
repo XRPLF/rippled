@@ -732,14 +732,30 @@ public:
 
         using namespace std::string_literals;
 
+        auto toInt = [this](Number const& a, std::string const& ex = {})
+            -> std::optional<std::int64_t> {
+            try
+            {
+                return static_cast<std::int64_t>(a);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECTS(
+                    ex.empty() || e.what() == ex,
+                    to_string(a) + ": " + e.what());
+                return std::nullopt;
+            }
+        };
         {
             Number a{100};
             BEAST_EXPECT(!a.getLimited());
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
+            BEAST_EXPECT(toInt(a) == 100);
             a = Number{1, 30};
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
+            BEAST_EXPECT(!toInt(a, "Number::operator rep() overflow"));
             a = -100;
             BEAST_EXPECT(!a.getLimited());
             BEAST_EXPECT(a.fits());
@@ -805,6 +821,27 @@ public:
             BEAST_EXPECT(a.getLimited());
             BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
+
+            a = 0x7FFF'FFFF'FFFF'FFFFll;
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
+            BEAST_EXPECT(!a.representable());
+            BEAST_EXPECT(!toInt(a, "Number::operator rep() overflow"));
+            Number::setEnforceIntegerOverflow(true);
+            BEAST_EXPECT(
+                !toInt(a, "Number::operator rep() overflow unrepresentable"));
+            Number::setEnforceIntegerOverflow(false);
+
+            a = 0xFFF'FFFF'FFFF'FFFFll;
+            // 1152921504606846975
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
+            BEAST_EXPECT(!a.representable());
+            BEAST_EXPECT(toInt(a) == 1152921504606847000ll);
+            Number::setEnforceIntegerOverflow(true);
+            BEAST_EXPECT(
+                !toInt(a, "Number::operator rep() overflow unrepresentable"));
+            Number::setEnforceIntegerOverflow(false);
         }
     }
 
