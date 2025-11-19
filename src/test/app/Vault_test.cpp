@@ -978,8 +978,8 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
                 auto const sleVault = env.le(keylet);
-                if (BEAST_EXPECT(sleVault))
-                    ;
+                if (!BEAST_EXPECT(sleVault))
+                    return;
                 BEAST_EXPECT((*sleVault)[sfScale] == 13);
             }
 
@@ -990,7 +990,8 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
                 auto const sleVault = env.le(keylet);
-                BEAST_EXPECT(sleVault);
+                if (!BEAST_EXPECT(sleVault))
+                    return;
                 BEAST_EXPECT((*sleVault)[sfScale] == 0);
             }
 
@@ -1000,7 +1001,8 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
                 auto const sleVault = env.le(keylet);
-                BEAST_EXPECT(sleVault);
+                if (!BEAST_EXPECT(sleVault))
+                    return;
                 BEAST_EXPECT((*sleVault)[sfScale] == 6);
             }
         });
@@ -4395,7 +4397,6 @@ class Vault_test : public beast::unit_test::suite
                 env(tx, ter{tecPRECISION_LOSS});
                 env.close();
             }
-
         });
 
         testCase(1, [&, this](Env& env, Data d) {
