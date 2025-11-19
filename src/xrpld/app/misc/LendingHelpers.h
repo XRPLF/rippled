@@ -93,9 +93,11 @@ struct LoanPaymentParts
  */
 struct LoanProperties
 {
-    // The amount the borrower must pay for each regular payment period.
-    // Calculated using the standard amortization formula
-    // based on principal, interest rate, and number of payments.
+    // The unrounded amount to be paid at each regular payment period.
+    // Calculated using the standard amortization formula based on principal,
+    // interest rate, and number of payments.
+    // The actual amount paid in the LoanPay transaction must be rounded up to
+    // the precision of the asset.
     Number periodicPayment;
 
     // The total amount the borrower will pay over the life of the loan.
@@ -280,7 +282,6 @@ struct PaymentComponents
  * - Late payment fees that go directly to the Broker
  * - Late payment penalty interest that goes directly to the Vault
  * - Service fees
- * - Origination fees (on first payment)
  *
  * The key distinction is that tracked amounts reduce the Loan object's state
  * (sfTotalValueOutstanding, sfPrincipalOutstanding,
