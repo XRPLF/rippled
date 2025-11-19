@@ -33,7 +33,10 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
         return tecNO_ENTRY;
     }
-    if (account != sleBroker->at(sfOwner))
+
+    auto const brokerOwner = sleBroker->at(sfOwner);
+
+    if (account != brokerOwner)
     {
         JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
         return tecNO_PERMISSION;
@@ -42,6 +45,26 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.warn()) << "LoanBrokerDelete: Owner count is " << ownerCount;
         return tecHAS_OBLIGATIONS;
+    }
+
+    auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+    if (!vault)
+        // Should be impossible
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    Asset const asset = vault->at(sfAsset);
+
+    auto const coverAvailable =
+        STAmount{asset, sleBroker->at(sfCoverAvailable)};
+    // If there are assets in the cover, broker will receive them on deletion.
+    // So we need to check if the broker owner is deep frozen for that asset.
+    if (coverAvailable > beast::zero)
+    {
+        if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
+        {
+            JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
+            return ret;
+        }
     }
 
     return tesSUCCESS;
