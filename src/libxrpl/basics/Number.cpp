@@ -23,6 +23,7 @@ using uint128_t = __uint128_t;
 namespace ripple {
 
 thread_local Number::rounding_mode Number::mode_ = Number::to_nearest;
+thread_local bool Number::overflowLargeIntegers_ = false;
 
 Number::rounding_mode
 Number::getround()
@@ -34,6 +35,18 @@ Number::rounding_mode
 Number::setround(rounding_mode mode)
 {
     return std::exchange(mode_, mode);
+}
+
+bool
+Number::getEnforceIntegerOverflow()
+{
+    return overflowLargeIntegers_;
+}
+
+void
+Number::setEnforceIntegerOverflow(bool enforce)
+{
+    std::exchange(overflowLargeIntegers_, enforce);
 }
 
 // Guard
@@ -207,22 +220,22 @@ Number::normalize()
 }
 
 bool
-Number::valid() const noexcept
+Number::fits() const noexcept
 {
-    return valid(isInteger_);
+    return fits(limited_);
 }
 
 bool
-Number::valid(bool isInteger)
+Number::fits(bool limited)
 {
-    setIsInteger(isInteger);
-    return valid();
+    setLimited(limited);
+    return fits();
 }
 
 bool
-Number::valid(bool isInteger) const
+Number::fits(bool limited) const
 {
-    if (!isInteger)
+    if (!limited)
         return true;
     static Number const max = maxIntValue;
     static Number const maxNeg = -max;
@@ -235,7 +248,7 @@ Number::valid(bool isInteger) const
 bool
 Number::representable() const noexcept
 {
-    if (!isInteger_)
+    if (!limited_)
         return true;
     static Number const max = maxMantissa;
     static Number const maxNeg = -max;
@@ -249,8 +262,8 @@ Number&
 Number::operator+=(Number const& y)
 {
     // The strictest setting prevails
-    if (!isInteger_)
-        isInteger_ = y.isInteger_;
+    if (!limited_)
+        limited_ = y.limited_;
 
     if (y == Number{})
         return *this;
@@ -399,8 +412,8 @@ Number&
 Number::operator*=(Number const& y)
 {
     // The strictest setting prevails
-    if (!isInteger_)
-        isInteger_ = y.isInteger_;
+    if (!limited_)
+        limited_ = y.limited_;
 
     if (*this == Number{})
         return *this;
@@ -475,8 +488,8 @@ Number&
 Number::operator/=(Number const& y)
 {
     // The strictest setting prevails
-    if (!isInteger_)
-        isInteger_ = y.isInteger_;
+    if (!limited_)
+        limited_ = y.limited_;
 
     if (y == Number{})
         throw std::overflow_error("Number: divide by 0");
@@ -510,6 +523,9 @@ Number::operator/=(Number const& y)
 
 Number::operator rep() const
 {
+    if (Number::overflowLargeIntegers_ && !representable())
+        throw std::overflow_error(
+            "Number::operator rep() overflow unrepresentable");
     rep drops = mantissa_;
     int offset = exponent_;
     Guard g;

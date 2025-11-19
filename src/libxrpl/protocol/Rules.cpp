@@ -33,6 +33,14 @@ getCurrentTransactionRules()
 void
 setCurrentTransactionRules(std::optional<Rules> r)
 {
+    // Make global changes associated with the rules before the value is moved.
+    // Push the appropriate setting to Number, which has no access to even this
+    // global rules object.
+    bool enableIntegerOverflow = r &&
+        (r->enabled(featureSingleAssetVault) /*||
+         r->enabled(featureLendingProtocol)*/);
+    Number::setEnforceIntegerOverflow(enableIntegerOverflow);
+
     *getCurrentTransactionRulesRef() = std::move(r);
 }
 

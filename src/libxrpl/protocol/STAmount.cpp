@@ -256,15 +256,21 @@ STAmount::move(std::size_t n, void* buf)
 }
 
 bool
-STAmount::validNumber() const noexcept
+STAmount::numberFits() const noexcept
 {
+    // Converting this STAmount to a Number will automatically create a number
+    // with the correct value for `limited_`, because the conversions from
+    // MPTAmount, XRPAmount, and IOUAmount always set the flag correctly.
     Number n = *this;
-    return n.valid();
+    return n.fits();
 }
 
 bool
 STAmount::representableNumber() const noexcept
 {
+    // Converting this STAmount to a Number will automatically create a number
+    // with the correct value for `limited_`, because the conversions from
+    // MPTAmount, XRPAmount, and IOUAmount always set the flag correctly.
     Number n = *this;
     return n.representable();
 }

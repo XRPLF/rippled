@@ -200,7 +200,7 @@ VaultCreate::doApply()
         {
             // Only the Maximum can be a non-zero value, so only it needs to be
             // checked.
-            assetsMaximumProxy.value().setIsInteger(true);
+            assetsMaximumProxy.value().setLimited(true);
             if (!assetsMaximumProxy.value().representable())
                 return tecPRECISION_LOSS;
         }
@@ -212,7 +212,7 @@ VaultCreate::doApply()
     {
         auto assetsMaximumProxy = vault->at(~sfAssetsMaximum);
         assetsMaximumProxy = STNumber::maxIntValue
-        assetsMaximumProxy.value().setIsInteger(true);
+        assetsMaximumProxy.value().setLimited(true);
     }
     */
 

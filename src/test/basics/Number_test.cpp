@@ -734,76 +734,76 @@ public:
 
         {
             Number a{100};
-            BEAST_EXPECT(!a.isInteger());
-            BEAST_EXPECT(a.valid());
+            BEAST_EXPECT(!a.getLimited());
+            BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
             a = Number{1, 30};
-            BEAST_EXPECT(a.valid());
+            BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
             a = -100;
-            BEAST_EXPECT(!a.isInteger());
-            BEAST_EXPECT(a.valid());
+            BEAST_EXPECT(!a.getLimited());
+            BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
             // If there's any interaction with an integer, the value
             // becomes an integer. This is not always what the value is
             // being used for, so it's up to the context to check or not
             // check whether the number is a _valid_ integer.
             a += Number{37, 2, true};
-            BEAST_EXPECT(a.isInteger());
-            BEAST_EXPECT(a.valid());
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
         }
         {
             Number a{100, true};
-            BEAST_EXPECT(a.isInteger());
-            BEAST_EXPECT(a.valid());
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
             a = Number{1, 15};
-            BEAST_EXPECT(!a.valid());
+            BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(a.representable());
             // The false in the assigned value does not override the
             // flag in "a"
             a = Number{1, 30, false};
-            BEAST_EXPECT(a.isInteger());
-            BEAST_EXPECT(!a.valid());
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(!a.representable());
             a = -100;
-            BEAST_EXPECT(a.isInteger());
-            BEAST_EXPECT(a.valid());
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
             a *= Number{1, 13};
-            BEAST_EXPECT(a.isInteger());
-            BEAST_EXPECT(!a.valid());
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(a.representable());
             a *= Number{1, 3};
-            BEAST_EXPECT(a.isInteger());
-            BEAST_EXPECT(!a.valid());
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(!a.representable());
             // Intermittent value precision can be lost, but the result
             // will be rounded, so that's fine.
             a /= Number{1, 5};
-            BEAST_EXPECT(a.isInteger());
-            BEAST_EXPECT(a.valid());
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
             a = Number{1, 14} - 3;
-            BEAST_EXPECT(a.isInteger());
-            BEAST_EXPECT(a.valid());
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
             a += 1;
-            BEAST_EXPECT(a.isInteger());
-            BEAST_EXPECT(a.valid());
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
             ++a;
-            BEAST_EXPECT(a.isInteger());
-            BEAST_EXPECT(a.valid());
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
             a++;
-            BEAST_EXPECT(a.isInteger());
-            BEAST_EXPECT(!a.valid());
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
             BEAST_EXPECT(a.representable());
             a = Number{5, true};
-            BEAST_EXPECT(a.isInteger());
-            BEAST_EXPECT(a.valid());
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
             BEAST_EXPECT(a.representable());
         }
     }

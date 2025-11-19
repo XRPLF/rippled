@@ -146,7 +146,7 @@ VaultSet::doApply()
         assetsMaximumProxy = *value;
         if (vault->at(sfAsset).value().integral())
         {
-            assetsMaximumProxy.value().setIsInteger(true);
+            assetsMaximumProxy.value().setLimited(true);
             if (!assetsMaximumProxy.value().representable())
                 return tecPRECISION_LOSS;
         }

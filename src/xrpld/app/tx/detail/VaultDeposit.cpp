@@ -26,7 +26,7 @@ VaultDeposit::preflight(PreflightContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
     if (amount <= beast::zero)
         return temBAD_AMOUNT;
-    if (!amount.validNumber())
+    if (!amount.numberFits())
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -253,7 +253,7 @@ VaultDeposit::doApply()
         // Deposit needs to be more strict than the other Vault transactions
         // that deal with asset <-> share calculations, because we don't
         // want to go over the "soft" limit.
-        if (!sharesCreated.validNumber() || !assetsDeposited.validNumber())
+        if (!sharesCreated.numberFits() || !assetsDeposited.numberFits())
             return tecPRECISION_LOSS;
     }
     catch (std::overflow_error const&)
@@ -277,13 +277,13 @@ VaultDeposit::doApply()
     auto assetsAvailableProxy = vault->at(sfAssetsAvailable);
     if (vaultAsset.value().integral())
     {
-        assetsTotalProxy.value().setIsInteger(true);
-        assetsAvailableProxy.value().setIsInteger(true);
+        assetsTotalProxy.value().setLimited(true);
+        assetsAvailableProxy.value().setLimited(true);
     }
     assetsTotalProxy += assetsDeposited;
     assetsAvailableProxy += assetsDeposited;
-    if (!assetsTotalProxy.value().valid() ||
-        !assetsAvailableProxy.value().valid())
+    if (!assetsTotalProxy.value().fits() ||
+        !assetsAvailableProxy.value().fits())
     {
         // It's easy to hit this exception from Number with large enough
         // Scale so we avoid spamming the log and only use debug here.
@@ -362,7 +362,7 @@ VaultDeposit::doApply()
         // vice-versa
         STAmount const shareTotal{
             vault->at(sfShareMPTID), sleIssuance->at(sfOutstandingAmount)};
-        if (!shareTotal.validNumber())
+        if (!shareTotal.numberFits())
         {
             JLOG(j_.warn())  //
                 << "VaultDeposit: integer overflow error in total shares with"

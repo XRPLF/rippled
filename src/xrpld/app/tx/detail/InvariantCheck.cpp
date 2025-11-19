@@ -2182,10 +2182,10 @@ ValidVault::Vault::make(SLE const& from)
     self.lossUnrealized = from.at(sfLossUnrealized);
     if (self.asset.integral())
     {
-        self.assetsTotal.setIsInteger(true);
-        self.assetsAvailable.setIsInteger(true);
-        self.assetsMaximum.setIsInteger(true);
-        self.lossUnrealized.setIsInteger(true);
+        self.assetsTotal.setLimited(true);
+        self.assetsAvailable.setLimited(true);
+        self.assetsMaximum.setLimited(true);
+        self.lossUnrealized.setLimited(true);
     }
     return self;
 }
