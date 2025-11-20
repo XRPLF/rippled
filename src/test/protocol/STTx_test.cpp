@@ -1612,7 +1612,7 @@ public:
         // proper lifetime.
         std::unordered_set<uint256, beast::uhash<>> const presets;
         Rules const defaultRules{presets};
-        BEAST_EXPECT(!defaultRules.enabled(featureExpandedSignerList));
+        BEAST_EXPECT(!defaultRules.enabled(featureAMM));
 
         unexpected(
             !j.checkSign(STTx::RequireFullyCanonicalSig::yes, defaultRules),

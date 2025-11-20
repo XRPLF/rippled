@@ -19,7 +19,6 @@ Vault::create(CreateArgs const& args)
     jv[jss::TransactionType] = jss::VaultCreate;
     jv[jss::Account] = args.owner.human();
     jv[jss::Asset] = to_json(args.asset);
-    jv[jss::Fee] = STAmount(env.current()->fees().increment).getJson();
     if (args.flags)
         jv[jss::Flags] = *args.flags;
     return {jv, keylet};
