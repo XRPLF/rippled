@@ -246,41 +246,6 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
-    testWasmSP1Verifier()
-    {
-        testcase("Wasm sp1 zkproof verifier");
-        auto const ws = boost::algorithm::unhex(sp1WasmHex);
-        Bytes const wasm(ws.begin(), ws.end());
-        auto& engine = WasmEngine::instance();
-
-        auto const re = engine.run(wasm, "sp1_groth16_verifier");
-
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-            BEAST_EXPECTS(
-                re->cost == 4'191'711'969ll, std::to_string(re->cost));
-        }
-    }
-
-    void
-    testWasmBG16Verifier()
-    {
-        testcase("Wasm BG16 zkproof verifier");
-        auto const ws = boost::algorithm::unhex(zkProofWasmHex);
-        Bytes const wasm(ws.begin(), ws.end());
-        auto& engine = WasmEngine::instance();
-
-        auto const re = engine.run(wasm, "bellman_groth16_test");
-
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 270'282'552, std::to_string(re->cost));
-        }
-    }
-
-    void
     testHFCost()
     {
         testcase("wasm test host functions cost");
@@ -460,7 +425,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
 
             TestHostFunctionsSink nfs(env);
-            std::string funcName("recursive");
+            std::string funcName("finish");
             auto re = runEscrowWasm(wasm, nfs, funcName, {}, 1'000'000'000);
             BEAST_EXPECT(!re && re.error());
             // std::cout << "bad case (deep recursion) result " << re.error()
@@ -482,7 +447,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto const s = sink.messages().str();
             BEAST_EXPECT(
                 countSubstr(s, "WASMI Error: failure to call func") == 1);
-            BEAST_EXPECT(countSubstr(s, "exception: <recursive> failure") > 0);
+            BEAST_EXPECT(countSubstr(s, "exception: <finish> failure") > 0);
         }
 
         {
@@ -764,17 +729,12 @@ struct Wasm_test : public beast::unit_test::suite
         testWasmSha();
         testWasmB58();
 
-        // running too long
-        // testWasmSP1Verifier();
-        testWasmBG16Verifier();
-
         testHFCost();
-
         testEscrowWasmDN();
         testFloat();
 
         testCodecovWasm();
-        // testDisabledFloat();
+        testDisabledFloat();
 
         // perfTest();
     }

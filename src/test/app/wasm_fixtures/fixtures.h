@@ -16,10 +16,6 @@ extern std::string const b58WasmHex;
 
 extern std::string const sha512PureWasmHex;
 
-extern std::string const zkProofWasmHex;
-
-extern std::string const sp1WasmHex;
-
 extern std::string const hfPerfTest;
 
 extern std::string const allKeyletsWasmHex;
