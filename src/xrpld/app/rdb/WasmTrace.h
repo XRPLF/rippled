@@ -1,5 +1,5 @@
-#ifndef RIPPLE_APP_RDB_WasmTrace_H_INCLUDED
-#define RIPPLE_APP_RDB_WasmTrace_H_INCLUDED
+#ifndef XRPL_APP_RDB_WasmTrace_H_INCLUDED
+#define XRPL_APP_RDB_WasmTrace_H_INCLUDED
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
