@@ -15,6 +15,7 @@ Release/
 /build/
 /db/
 /out.txt
+/Testing/
 /tmp/
 CMakeSettings.json
 CMakeUserPresets.json
@@ -60,3 +61,4 @@ DerivedData
 
 # AI tools.
 .augment
+.claude
