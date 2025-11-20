@@ -489,8 +489,6 @@ tryOverpayment(
     auto const newRounded = constructRoundedLoanState(
         totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
 
-    newLoanProperties.totalValueOutstanding = newRounded.valueOutstanding;
-
     JLOG(j.debug()) << "new rounded value: " << newRounded.valueOutstanding
                     << ", principal: " << newRounded.principalOutstanding
                     << ", interest gross: " << newRounded.interestOutstanding();
