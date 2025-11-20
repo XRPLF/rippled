@@ -8,7 +8,7 @@
 *.o
 *.pdb
 *.swp
-.clangd
+/.clangd
 Debug/
 Release/
 /.build/
@@ -34,8 +34,8 @@ gmon.out
 !.github/scripts/levelization/results/ordering.txt
 
 # Customized configs.
-rippled.cfg
-validators.txt
+/rippled.cfg
+/validators.txt
 
 # XCode IDE.
 *.pbxuser
@@ -56,9 +56,10 @@ DerivedData
 /.idea/
 
 # Microsoft Visual Studio IDE.
-.vs/
-.vscode/
+/.vs/
+/.vscode/
 
 # AI tools.
-.augment
-.claude
+/.augment
+/.claude
+/CLAUDE.md
