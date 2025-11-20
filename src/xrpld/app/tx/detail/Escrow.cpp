@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/rdb/WasmTrace.h>
 #include <xrpld/app/tx/detail/Escrow.h>
@@ -147,13 +128,6 @@ EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
     return true;
 }
 
-std::uint32_t
-EscrowCreate::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
-}
-
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
@@ -191,19 +165,16 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         !ctx.tx.isFieldPresent(sfCancelAfter))
         return temBAD_EXPIRATION;
 
-    if (ctx.rules.enabled(fix1571))
+    // In the absence of a FinishAfter, the escrow can be finished
+    // immediately, which can be confusing. When creating an escrow,
+    // we want to ensure that either a FinishAfter time is explicitly
+    // specified or a completion condition is attached.
+    if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition] &&
+        !ctx.tx[~sfFinishFunction])
     {
-        // In the absence of a FinishAfter, the escrow can be finished
-        // immediately, which can be confusing. When creating an escrow,
-        // we want to ensure that either a FinishAfter time is explicitly
-        // specified or a completion condition is attached.
-        if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition] &&
-            !ctx.tx[~sfFinishFunction])
-        {
-            JLOG(ctx.j.debug()) << "Must have at least one of FinishAfter, "
-                                   "Condition, or FinishFunction.";
-            return temMALFORMED;
-        }
+        JLOG(ctx.j.debug()) << "Must have at least one of FinishAfter, "
+                               "Condition, or FinishFunction.";
+        return temMALFORMED;
     }
 
     if (auto const cb = ctx.tx[~sfCondition])
@@ -539,41 +510,11 @@ EscrowCreate::doApply()
 {
     auto const closeTime = ctx_.view().info().parentCloseTime;
 
-    // Prior to fix1571, the cancel and finish times could be greater
-    // than or equal to the parent ledgers' close time.
-    //
-    // With fix1571, we require that they both be strictly greater
-    // than the parent ledgers' close time.
-    if (ctx_.view().rules().enabled(fix1571))
-    {
-        if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
-            return tecNO_PERMISSION;
+    if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
+        return tecNO_PERMISSION;
 
-        if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
-            return tecNO_PERMISSION;
-    }
-    else
-    {
-        // This is old code that needs to stay to support replaying old ledgers,
-        // but does not need to be covered by new tests.
-        // LCOV_EXCL_START
-        if (ctx_.tx[~sfCancelAfter])
-        {
-            auto const cancelAfter = ctx_.tx[sfCancelAfter];
-
-            if (closeTime.time_since_epoch().count() >= cancelAfter)
-                return tecNO_PERMISSION;
-        }
-
-        if (ctx_.tx[~sfFinishAfter])
-        {
-            auto const finishAfter = ctx_.tx[sfFinishAfter];
-
-            if (closeTime.time_since_epoch().count() >= finishAfter)
-                return tecNO_PERMISSION;
-        }
-        // LCOV_EXCL_STOP
-    }
+    if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
+        return tecNO_PERMISSION;
 
     auto const sle = ctx_.view().peek(keylet::account(account_));
     if (!sle)
@@ -735,13 +676,6 @@ EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
         return false;
     }
     return true;
-}
-
-std::uint32_t
-EscrowFinish::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
 }
 
 NotTEC
@@ -1191,50 +1125,16 @@ EscrowFinish::doApply()
     }
 
     // If a cancel time is present, a finish operation should only succeed prior
-    // to that time. fix1571 corrects a logic error in the check that would make
-    // a finish only succeed strictly after the cancel time.
-    if (ctx_.view().rules().enabled(fix1571))
-    {
-        auto const now = ctx_.view().info().parentCloseTime;
+    // to that time.
+    auto const now = ctx_.view().info().parentCloseTime;
 
-        // Too soon: can't execute before the finish time
-        if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
-        {
-            JLOG(j_.debug()) << "Too soon";
-            return tecNO_PERMISSION;
-        }
+    // Too soon: can't execute before the finish time
+    if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
+        return tecNO_PERMISSION;
 
-        // Too late: can't execute after the cancel time
-        if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
-        {
-            JLOG(j_.debug()) << "Too late";
-            return tecNO_PERMISSION;
-        }
-    }
-    else
-    {
-        // This is old code that needs to stay to support replaying old ledgers,
-        // but does not need to be covered by new tests.
-        // LCOV_EXCL_START
-        // Too soon?
-        if ((*slep)[~sfFinishAfter] &&
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-                (*slep)[sfFinishAfter])
-        {
-            JLOG(j_.debug()) << "Too soon?";
-            return tecNO_PERMISSION;
-        }
-
-        // Too late?
-        if ((*slep)[~sfCancelAfter] &&
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-                (*slep)[sfCancelAfter])
-        {
-            JLOG(j_.debug()) << "Too late?";
-            return tecNO_PERMISSION;
-        }
-        // LCOV_EXCL_STOP
-    }
+    // Too late: can't execute after the cancel time
+    if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
+        return tecNO_PERMISSION;
 
     AccountID const destID = (*slep)[sfDestination];
     auto const sled = ctx_.view().peek(keylet::account(destID));
@@ -1489,13 +1389,6 @@ EscrowFinish::doApply()
 
 //------------------------------------------------------------------------------
 
-std::uint32_t
-EscrowCancel::getFlagsMask(PreflightContext const& ctx)
-{
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
-}
-
 NotTEC
 EscrowCancel::preflight(PreflightContext const& ctx)
 {
@@ -1600,30 +1493,15 @@ EscrowCancel::doApply()
         return tecNO_TARGET;
     }
 
-    if (ctx_.view().rules().enabled(fix1571))
-    {
-        auto const now = ctx_.view().info().parentCloseTime;
+    auto const now = ctx_.view().info().parentCloseTime;
 
-        // No cancel time specified: can't execute at all.
-        if (!(*slep)[~sfCancelAfter])
-            return tecNO_PERMISSION;
+    // No cancel time specified: can't execute at all.
+    if (!(*slep)[~sfCancelAfter])
+        return tecNO_PERMISSION;
 
-        // Too soon: can't execute before the cancel time.
-        if (!after(now, (*slep)[sfCancelAfter]))
-            return tecNO_PERMISSION;
-    }
-    else
-    {
-        // This is old code that needs to stay to support replaying old ledgers,
-        // but does not need to be covered by new tests.
-        // LCOV_EXCL_START
-        // Too soon?
-        if (!(*slep)[~sfCancelAfter] ||
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-                (*slep)[sfCancelAfter])
-            return tecNO_PERMISSION;
-        // LCOV_EXCL_STOP
-    }
+    // Too soon: can't execute before the cancel time.
+    if (!after(now, (*slep)[sfCancelAfter]))
+        return tecNO_PERMISSION;
 
     AccountID const account = (*slep)[sfAccount];
 

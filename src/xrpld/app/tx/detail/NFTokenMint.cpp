@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2021 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/NFTokenMint.h>
 
 #include <xrpl/basics/Expected.h>
@@ -230,24 +211,6 @@ NFTokenMint::doApply()
             // Should not happen.  Checked in preclaim.
             return Unexpected(tecNO_ISSUER);
 
-        if (!ctx_.view().rules().enabled(fixNFTokenRemint))
-        {
-            // Get the unique sequence number for this token:
-            std::uint32_t const tokenSeq =
-                (*root)[~sfMintedNFTokens].value_or(0);
-            {
-                std::uint32_t const nextTokenSeq = tokenSeq + 1;
-                if (nextTokenSeq < tokenSeq)
-                    return Unexpected(tecMAX_SEQUENCE_REACHED);
-
-                (*root)[sfMintedNFTokens] = nextTokenSeq;
-            }
-            ctx_.view().update(root);
-            return tokenSeq;
-        }
-
-        // With fixNFTokenRemint amendment enabled:
-        //
         // If the issuer hasn't minted an NFToken before we must add a
         // FirstNFTokenSequence field to the issuer's AccountRoot.  The
         // value of the FirstNFTokenSequence must equal the issuer's

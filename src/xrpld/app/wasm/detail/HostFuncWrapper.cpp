@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/wasm/HostFunc.h>
 #include <xrpld/app/wasm/HostFuncWrapper.h>
@@ -44,13 +25,16 @@ setData(
     if (dst < 0 || dstSize < 0 || !src || srcSize < 0)
         return HfErrorToInt(HostFunctionError::INVALID_PARAMS);
 
-    auto memory = runtime ? runtime->getMem() : wmem();
+    if (srcSize > maxWasmDataLength)
+        return HfErrorToInt(HostFunctionError::DATA_FIELD_TOO_LARGE);
+
+    auto const memory = runtime ? runtime->getMem() : wmem();
 
     // LCOV_EXCL_START
     if (!memory.s)
         return HfErrorToInt(HostFunctionError::NO_MEM_EXPORTED);
     // LCOV_EXCL_STOP
-    if (dst + dstSize > memory.s)
+    if ((int64_t)dst + dstSize > memory.s)
         return HfErrorToInt(HostFunctionError::POINTER_OUT_OF_BOUNDS);
     if (srcSize > dstSize)
         return HfErrorToInt(HostFunctionError::BUFFER_TOO_SMALL);
@@ -113,8 +97,8 @@ getDataSlice(
     int32_t& i,
     bool isUpdate = false)
 {
-    auto const ptr = params->data[i].of.i32;
-    auto const size = params->data[i + 1].of.i32;
+    int64_t const ptr = params->data[i].of.i32;
+    int64_t const size = params->data[i + 1].of.i32;
     if (ptr < 0 || size < 0)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
@@ -124,7 +108,7 @@ getDataSlice(
     if (size > (isUpdate ? maxWasmDataLength : maxWasmParamLength))
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-    auto memory = runtime ? runtime->getMem() : wmem();
+    auto const memory = runtime ? runtime->getMem() : wmem();
     // LCOV_EXCL_START
     if (!memory.s)
         return Unexpected(HostFunctionError::NO_MEM_EXPORTED);
@@ -1604,7 +1588,7 @@ traceAmount_wrap(
     {
         amount = std::nullopt;
     }
-    if (!amount || !amount.value())
+    if (!amount)
         return hfResult(results, HostFunctionError::INVALID_PARAMS);
 
     return returnResult(

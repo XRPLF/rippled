@@ -8,10 +8,12 @@ use xrpl_std::core::ledger_objects::current_escrow::get_current_escrow;
 use xrpl_std::core::ledger_objects::current_escrow::CurrentEscrow;
 use xrpl_std::core::ledger_objects::ledger_object;
 use xrpl_std::core::ledger_objects::traits::CurrentEscrowFields;
-use xrpl_std::core::types::amount::asset::{Asset, IouAsset, XrpAsset};
-use xrpl_std::core::types::amount::currency_code::CurrencyCode;
-use xrpl_std::core::types::amount::mpt_id::MptId;
+use xrpl_std::core::types::account_id::AccountID;
+use xrpl_std::core::types::currency::Currency;
+use xrpl_std::core::types::issue::{IouIssue, Issue, XrpIssue};
 use xrpl_std::core::types::keylets;
+use xrpl_std::core::types::mpt_id::MptId;
+use xrpl_std::core::types::uint::Hash256;
 use xrpl_std::host;
 use xrpl_std::host::trace::{trace, trace_account, trace_data, trace_num, DataRepr};
 use xrpl_std::sfield;
@@ -34,7 +36,7 @@ pub fn object_exists(
             if field == 0 {
                 let new_field = sfield::PreviousTxnID;
                 let _ = trace_num("Getting field: ", new_field.into());
-                match ledger_object::get_hash_256_field(slot, new_field) {
+                match ledger_object::get_field::<Hash256>(slot, new_field) {
                     Ok(data) => {
                         let _ = trace_data("Field data: ", &data.0, DataRepr::AsHex);
                     }
@@ -45,7 +47,7 @@ pub fn object_exists(
                 }
             } else {
                 let _ = trace_num("Getting field: ", field.into());
-                match ledger_object::get_account_id_field(slot, field) {
+                match ledger_object::get_field::<AccountID>(slot, field) {
                     Ok(data) => {
                         let _ = trace_data("Field data: ", &data.0, DataRepr::AsHex);
                     }
@@ -101,13 +103,13 @@ pub extern "C" fn finish() -> i32 {
     check_object_exists!(account_keylet, "Account", sfield::Account);
 
     let currency_code: &[u8; 3] = b"USD";
-    let currency: CurrencyCode = CurrencyCode::from(*currency_code);
+    let currency: Currency = Currency::from(*currency_code);
     let line_keylet = keylets::line_keylet(&account, &destination, &currency);
     check_object_exists!(line_keylet, "Trustline", sfield::Generic);
     seq += 1;
 
-    let asset1 = Asset::XRP(XrpAsset {});
-    let asset2 = Asset::IOU(IouAsset::new(destination, currency));
+    let asset1 = Issue::XRP(XrpIssue {});
+    let asset2 = Issue::IOU(IouIssue::new(destination, currency));
     check_object_exists!(
         keylets::amm_keylet(&asset1, &asset2),
         "AMM",

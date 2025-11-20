@@ -34,6 +34,11 @@ on:
         required: true
         type: string
 
+      nproc_subtract:
+        description: "The number of processors to subtract when calculating parallelism."
+        required: true
+        type: number
+
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
@@ -58,12 +63,18 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/.github/actions/prepare-runner@638e0dc11ea230f91bd26622fb542116bb5254d5
+        uses: XRPLF/actions/.github/actions/prepare-runner@99685816bb60a95a66852f212f382580e180df3a
         with:
           disable_ccache: false
 
       - name: Print build environment
         uses: ./.github/actions/print-env
+
+      - name: Get number of processors
+        uses: XRPLF/actions/.github/actions/get-nproc@046b1620f6bfd6cd0985dc82c3df02786801fe0a
+        id: nproc
+        with:
+          subtract: ${{ inputs.nproc_subtract }}
 
       - name: Setup Conan
         uses: ./.github/actions/setup-conan
@@ -72,7 +83,11 @@ jobs:
         uses: ./.github/actions/build-deps
         with:
           build_dir: ${{ inputs.build_dir }}
+          build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ inputs.build_type }}
+          # Set the verbosity to "quiet" for Windows to avoid an excessive
+          # amount of logs. For other OSes, the "verbose" logs are more useful.
+          log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
 
       - name: Configure CMake
         shell: bash
@@ -92,25 +107,42 @@ jobs:
         shell: bash
         working-directory: ${{ inputs.build_dir }}
         env:
+          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_TARGET: ${{ inputs.cmake_target }}
         run: |
           cmake \
             --build . \
             --config "${BUILD_TYPE}" \
-            --parallel $(nproc) \
+            --parallel ${BUILD_NPROC} \
             --target "${CMAKE_TARGET}"
+
+      - name: Put built binaries in one location
+        shell: bash
+        working-directory: ${{ inputs.build_dir }}
+        env:
+          BUILD_TYPE_DIR: ${{ runner.os == 'Windows' && inputs.build_type || '' }}
+          CMAKE_TARGET: ${{ inputs.cmake_target }}
+        run: |
+          mkdir -p ./binaries/doctest/
+
+          cp ./${BUILD_TYPE_DIR}/rippled* ./binaries/
+          if [ "${CMAKE_TARGET}" != 'coverage' ]; then
+            cp ./src/tests/libxrpl/${BUILD_TYPE_DIR}/xrpl.test.* ./binaries/doctest/
+          fi
 
       - name: Upload rippled artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        env:
+          BUILD_DIR: ${{ inputs.build_dir }}
         with:
           name: rippled-${{ inputs.config_name }}
-          path: ${{ inputs.build_dir }}/${{ runner.os == 'Windows' && inputs.build_type || '' }}/rippled${{ runner.os == 'Windows' && '.exe' || '' }}
+          path: ${{ env.BUILD_DIR }}/binaries/
           retention-days: 3
           if-no-files-found: error
 
       - name: Upload coverage report
-        if: ${{ inputs.cmake_target == 'coverage' }}
+        if: ${{ github.repository_owner == 'XRPLF' && inputs.cmake_target == 'coverage' }}
         uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
         with:
           disable_search: true

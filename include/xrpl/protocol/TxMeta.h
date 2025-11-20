@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_TX_TRANSACTIONMETA_H_INCLUDED
-#define RIPPLE_APP_TX_TRANSACTIONMETA_H_INCLUDED
+#ifndef XRPL_APP_TX_TRANSACTIONMETA_H_INCLUDED
+#define XRPL_APP_TX_TRANSACTIONMETA_H_INCLUDED
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STArray.h>
@@ -33,48 +14,35 @@ namespace ripple {
 
 class TxMeta
 {
-private:
-    struct CtorHelper
-    {
-        explicit CtorHelper() = default;
-    };
-    template <class T>
-    TxMeta(
-        uint256 const& txID,
-        std::uint32_t ledger,
-        T const& data,
-        CtorHelper);
-
 public:
     TxMeta(uint256 const& transactionID, std::uint32_t ledger);
     TxMeta(uint256 const& txID, std::uint32_t ledger, Blob const&);
-    TxMeta(uint256 const& txID, std::uint32_t ledger, std::string const&);
     TxMeta(uint256 const& txID, std::uint32_t ledger, STObject const&);
 
     uint256 const&
     getTxID() const
     {
-        return mTransactionID;
+        return transactionID_;
     }
     std::uint32_t
     getLgrSeq() const
     {
-        return mLedger;
+        return ledgerSeq_;
     }
     int
     getResult() const
     {
-        return mResult;
+        return result_;
     }
     TER
     getResultTER() const
     {
-        return TER::fromInt(mResult);
+        return TER::fromInt(result_);
     }
     std::uint32_t
     getIndex() const
     {
-        return mIndex;
+        return index_;
     }
 
     void
@@ -101,110 +69,84 @@ public:
     STArray&
     getNodes()
     {
-        return (mNodes);
+        return nodes_;
     }
     STArray const&
     getNodes() const
     {
-        return (mNodes);
+        return nodes_;
     }
 
     void
-    setDeliveredAmount(STAmount const& delivered)
+    setAdditionalFields(STObject const& obj)
     {
-        mDelivered = delivered;
+        if (obj.isFieldPresent(sfDeliveredAmount))
+            deliveredAmount_ = obj.getFieldAmount(sfDeliveredAmount);
+
+        if (obj.isFieldPresent(sfParentBatchID))
+            parentBatchID_ = obj.getFieldH256(sfParentBatchID);
+
+        if (obj.isFieldPresent(sfGasUsed))
+            gasUsed_ = obj.getFieldU32(sfGasUsed);
+
+        if (obj.isFieldPresent(sfWasmReturnCode))
+            wasmReturnCode_ = obj.getFieldI32(sfWasmReturnCode);
     }
 
-    STAmount
+    std::optional<STAmount> const&
     getDeliveredAmount() const
     {
-        XRPL_ASSERT(
-            hasDeliveredAmount(),
-            "ripple::TxMeta::getDeliveredAmount : non-null delivered amount");
-        return *mDelivered;
-    }
-
-    bool
-    hasDeliveredAmount() const
-    {
-        return static_cast<bool>(mDelivered);
+        return deliveredAmount_;
     }
 
     void
-    setParentBatchId(uint256 const& parentBatchId)
+    setDeliveredAmount(std::optional<STAmount> const& amount)
     {
-        parentBatchId_ = parentBatchId;
-    }
-
-    uint256
-    getParentBatchId() const
-    {
-        XRPL_ASSERT(
-            hasParentBatchId(),
-            "ripple::TxMeta::getParentBatchId : non-null batch id");
-        return *parentBatchId_;
-    }
-
-    bool
-    hasParentBatchId() const
-    {
-        return static_cast<bool>(parentBatchId_);
+        deliveredAmount_ = amount;
     }
 
     void
-    setGasUsed(std::uint32_t const gasUsed)
+    setParentBatchID(std::optional<uint256> const& id)
+    {
+        parentBatchID_ = id;
+    }
+
+    void
+    setGasUsed(std::optional<std::uint32_t> const gasUsed)
     {
         gasUsed_ = gasUsed;
     }
 
-    std::uint32_t
+    std::optional<std::uint32_t> const&
     getGasUsed() const
     {
-        XRPL_ASSERT(
-            hasGasUsed(),
-            "ripple::TxMeta::getGasUsed : non-null gas used field");
-        return *gasUsed_;
-    }
-
-    bool
-    hasGasUsed() const
-    {
-        return gasUsed_.has_value();
+        return gasUsed_;
     }
 
     void
-    setWasmReturnCode(std::int32_t const wasmReturnCode)
+    setWasmReturnCode(std::optional<std::int32_t> const wasmReturnCode)
     {
         wasmReturnCode_ = wasmReturnCode;
     }
 
-    std::int32_t
+    std::optional<std::int32_t> const&
     getWasmReturnCode() const
     {
-        XRPL_ASSERT(
-            hasWasmReturnCode(),
-            "ripple::TxMeta::getWasmReturnCode : non-null wasm return code");
-        return *wasmReturnCode_;
-    }
-
-    bool
-    hasWasmReturnCode() const
-    {
-        return wasmReturnCode_.has_value();
+        return wasmReturnCode_;
     }
 
 private:
-    uint256 mTransactionID;
-    std::uint32_t mLedger;
-    std::uint32_t mIndex;
-    int mResult;
+    uint256 transactionID_;
+    std::uint32_t ledgerSeq_;
+    std::uint32_t index_;
+    int result_;
 
-    std::optional<STAmount> mDelivered;
-    std::optional<uint256> parentBatchId_;
+    std::optional<STAmount> deliveredAmount_;
+    std::optional<uint256> parentBatchID_;
     std::optional<std::uint32_t> gasUsed_;
     std::optional<std::int32_t> wasmReturnCode_;
 
-    STArray mNodes;
+    STArray nodes_;
 };
 
 }  // namespace ripple
