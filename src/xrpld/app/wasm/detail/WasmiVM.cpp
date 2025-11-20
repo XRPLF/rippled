@@ -499,6 +499,81 @@ WasmiEngine::init()
             nullptr, &wasm_engine_delete};
     wasmi_config_consume_fuel_set(config, true);
 
+    /**
+     * \brief Whether or not to ignore Wasm custom sections.
+     *
+     * When enabled it will ignoe Wasm custom sections when creating a Wasm
+     * module.
+     *
+     * Default value: `false`
+     */
+    wasmi_config_ignore_custom_sections_set(config, true);
+
+    /**
+     * \brief Whether or not to Wasm mutable-globals proposal is enabled.
+     *
+     * Default value: `true`
+     */
+    wasmi_config_wasm_mutable_globals_set(config, false);
+
+    /**
+     * \brief Whether or not to Wasm multi-value proposal is enabled.
+     *
+     * Default value: `true`
+     */
+    wasmi_config_wasm_multi_value_set(config, false);
+
+    /**
+     * \brief Whether or not to Wasm sign-extension proposal is enabled.
+     *
+     * Default value: `true`
+     */
+    wasmi_config_wasm_sign_extension_set(config, false);
+
+    /**
+     * \brief Whether or not to Wasm non-trapping-float-to-int-conversions
+     * proposal is enabled.
+     *
+     * Default value: `true`
+     */
+    wasmi_config_wasm_saturating_float_to_int_set(config, false);
+
+    /**
+     * \brief Whether or not to Wasm bulk-memory-ops proposal is enabled.
+     *
+     * Default value: `true`
+     */
+    wasmi_config_wasm_bulk_memory_set(config, false);
+
+    /**
+     * \brief Whether or not to Wasm reference-types proposal is enabled.
+     *
+     * Default value: `true`
+     */
+    wasmi_config_wasm_reference_types_set(config, false);
+
+    /**
+     * \brief Whether or not to Wasm tail-call proposal is enabled.
+     *
+     * Default value: `true`
+     */
+    wasmi_config_wasm_tail_call_set(config, false);
+
+    /**
+     * \brief Whether or not to Wasm extended-const proposal is enabled.
+     *
+     * Default value: `true`
+     */
+    wasmi_config_wasm_extended_const_set(config, false);
+
+    /**
+     * \brief Whether or not to floating Wasm point types and operations are
+     * enabled.
+     *
+     * Default value: `true`
+     */
+    wasmi_config_floats_set(config, false);
+
     return std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)>(
         wasm_engine_new_with_config(config), &wasm_engine_delete);
 }
@@ -517,7 +592,9 @@ WasmiEngine::addModule(
 {
     moduleWrap_.reset();
     store_.reset();  // to free the memory before creating new store
-    store_ = {wasm_store_new(engine_.get()), &wasm_store_delete};
+    store_ = {
+        wasm_store_new_with_memory_max_pages(engine_.get(), MAX_PAGES),
+        &wasm_store_delete};
 
     if (gas < 0)
         gas = std::numeric_limits<decltype(gas)>::max();

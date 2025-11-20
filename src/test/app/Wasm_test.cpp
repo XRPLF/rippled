@@ -276,11 +276,9 @@ struct Wasm_test : public beast::unit_test::suite
 
         auto const re = engine.run(wasm, "bellman_groth16_test");
 
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 270'282'552, std::to_string(re->cost));
-        }
+        // the wasm code uses bulk-memory instructions that we disabled,
+        // so the module cannot be created.
+        BEAST_EXPECT(!re.has_value());
     }
 
     void
@@ -428,7 +426,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
 
             TestHostFunctionsSink nfs(env);
-            std::string funcName("recursive");
+            std::string funcName("finish");
             auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 1'000'000'000);
             BEAST_EXPECT(!re && re.error());
             // std::cout << "bad case (deep recursion) result " << re.error()
@@ -450,7 +448,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto const s = sink.messages().str();
             BEAST_EXPECT(
                 countSubstr(s, "WASMI Error: failure to call func") == 1);
-            BEAST_EXPECT(countSubstr(s, "exception: <recursive> failure") > 0);
+            BEAST_EXPECT(countSubstr(s, "exception: <finish> failure") > 0);
         }
 
         {
@@ -694,10 +692,11 @@ struct Wasm_test : public beast::unit_test::suite
         testHFCost();
 
         testEscrowWasmDN();
+
         testFloat();
 
         testCodecovWasm();
-        // testDisabledFloat();
+        testDisabledFloat();
 
         // perfTest();
     }

@@ -18,6 +18,8 @@ static std::string_view const W_PROC_EXIT = "proc_exit";
 
 static std::string_view const ESCROW_FUNCTION_NAME = "finish";
 
+uint32_t const MAX_PAGES = 128;  // 8MB = 64KB*128
+
 class WasmiEngine;
 
 class WasmEngine
