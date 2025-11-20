@@ -36,15 +36,6 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    static TER
-    checkGuards(
-        Asset const& vaultAsset,
-        Number const& principalRequested,
-        TenthBips32 interestRate,
-        std::uint32_t paymentTotal,
-        LoanProperties const& properties,
-        beast::Journal j);
-
     TER
     doApply() override;
 
