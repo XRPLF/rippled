@@ -58,6 +58,7 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
   done
 done
 
+
 # Restore copyright notices that were removed from specific files, without
 # restoring the verbiage that is already present in LICENSE.md. Ensure that if
 # the script is run multiple times, duplicate notices are not added.
@@ -69,9 +70,6 @@ if ! grep -q 'Dev Null' src/test/app/NetworkID_test.cpp; then
 fi
 if ! grep -q 'Dev Null' src/test/app/tx/apply_test.cpp; then
   echo -e "// Copyright (c) 2020 Dev Null Productions\n\n$(cat src/test/app/tx/apply_test.cpp)" > src/test/app/tx/apply_test.cpp
-fi
-if ! grep -q 'Dev Null' src/test/app/NetworkOPs_test.cpp; then
-  echo -e "// Copyright (c) 2020 Dev Null Productions\n\n$(cat src/test/app/NetworkOPs_test.cpp)" > src/test/app/NetworkOPs_test.cpp
 fi
 if ! grep -q 'Dev Null' src/test/rpc/ManifestRPC_test.cpp; then
   echo -e "// Copyright (c) 2020 Dev Null Productions\n\n$(cat src/test/rpc/ManifestRPC_test.cpp)" > src/test/rpc/ManifestRPC_test.cpp
