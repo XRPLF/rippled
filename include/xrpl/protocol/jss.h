@@ -357,8 +357,8 @@ JSS(ledger_min);              // in, out: AccountTx*
 JSS(ledger_time);             // out: NetworkOPs
 JSS(LEDGER_ENTRY_TYPES);      // out: RPC server_definitions
                               // matches definitions.json format
-JSS(LEDGER_FLAGS);            // out: RPC server_definitions
-JSS(LEDGER_FORMATS);          // out: RPC server_definitions
+JSS(LEDGER_ENTRY_FLAGS);      // out: RPC server_definitions
+JSS(LEDGER_ENTRY_FORMATS);    // out: RPC server_definitions
 JSS(levels);                  // LogLevels
 JSS(limit);                   // in/out: AccountTx*, AccountOffers,
                               //         AccountLines, AccountObjects
@@ -458,6 +458,7 @@ JSS(open);                    // out: handlers/Ledger
 JSS(open_ledger_cost);        // out: SubmitTransaction
 JSS(open_ledger_fee);         // out: TxQ
 JSS(open_ledger_level);       // out: TxQ
+JSS(optionality);             // out: server_definitions
 JSS(oracles);                 // in: get_aggregate_price
 JSS(oracle_document_id);      // in: get_aggregate_price
 JSS(owner);                   // in: LedgerEntry, out: NetworkOPs
@@ -517,7 +518,6 @@ JSS(remaining);               // out: ValidatorList
 JSS(remote);                  // out: Logic.h
 JSS(request);                 // RPC
 JSS(requested);               // out: Manifest
-JSS(required);
 JSS(reservations);            // out: Reservations
 JSS(reserve_base);            // out: NetworkOPs
 JSS(reserve_base_xrp);        // out: NetworkOPs

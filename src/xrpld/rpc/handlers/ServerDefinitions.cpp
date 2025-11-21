@@ -275,7 +275,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     {
         Json::Value elementObj = Json::objectValue;
         elementObj[jss::name] = element.sField().getName();
-        elementObj[jss::required] = element.style();
+        elementObj[jss::optionality] = element.style();
         defs_[jss::TRANSACTION_FORMATS][jss::common].append(elementObj);
         txCommonFields.insert(element.sField().getName());
     }
@@ -290,22 +290,22 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
                 continue;  // skip common fields, already added
             Json::Value elementObj = Json::objectValue;
             elementObj[jss::name] = element.sField().getName();
-            elementObj[jss::required] = element.style();
+            elementObj[jss::optionality] = element.style();
             templateArray.append(elementObj);
         }
         defs_[jss::TRANSACTION_FORMATS][f.getName()] = templateArray;
     }
 
     // populate LedgerFormats
-    defs_[jss::LEDGER_FORMATS] = Json::objectValue;
-    defs_[jss::LEDGER_FORMATS][jss::common] = Json::arrayValue;
+    defs_[jss::LEDGER_ENTRY_FORMATS] = Json::objectValue;
+    defs_[jss::LEDGER_ENTRY_FORMATS][jss::common] = Json::arrayValue;
     auto ledgerCommonFields = std::set<std::string>();
     for (auto const& element : LedgerFormats::getCommonFields())
     {
         Json::Value elementObj = Json::objectValue;
         elementObj[jss::name] = element.sField().getName();
-        elementObj[jss::required] = element.style();
-        defs_[jss::LEDGER_FORMATS][jss::common].append(elementObj);
+        elementObj[jss::optionality] = element.style();
+        defs_[jss::LEDGER_ENTRY_FORMATS][jss::common].append(elementObj);
         ledgerCommonFields.insert(element.sField().getName());
     }
     for (auto const& f : LedgerFormats::getInstance())
@@ -318,10 +318,10 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
                 continue;  // skip common fields, already added
             Json::Value elementObj = Json::objectValue;
             elementObj[jss::name] = element.sField().getName();
-            elementObj[jss::required] = element.style();
+            elementObj[jss::optionality] = element.style();
             templateArray.append(elementObj);
         }
-        defs_[jss::LEDGER_FORMATS][f.getName()] = templateArray;
+        defs_[jss::LEDGER_ENTRY_FORMATS][f.getName()] = templateArray;
     }
 
     defs_[jss::TRANSACTION_FLAGS] = Json::objectValue;
@@ -335,7 +335,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::TRANSACTION_FLAGS][name] = txObj;
     }
 
-    defs_[jss::LEDGER_FLAGS] = Json::objectValue;
+    defs_[jss::LEDGER_ENTRY_FLAGS] = Json::objectValue;
     for (auto const& [name, value] : allLedgerFlags)
     {
         Json::Value ledgerObj = Json::objectValue;
@@ -343,7 +343,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         {
             ledgerObj[flagName] = flagValue;
         }
-        defs_[jss::LEDGER_FLAGS][name] = ledgerObj;
+        defs_[jss::LEDGER_ENTRY_FLAGS][name] = ledgerObj;
     }
 
     defs_[jss::ACCOUNT_SET_FLAGS] = Json::objectValue;
