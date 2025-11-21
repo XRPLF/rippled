@@ -16,8 +16,6 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
 
-#include <functional>
-
 namespace ripple {
 
 using FunctionType = std::function<Expected<uint256, Json::Value>(
@@ -235,18 +233,41 @@ static Expected<STArray, Json::Value>
 parseAuthorizeCredentials(Json::Value const& jv)
 {
     if (!jv.isArray())
+    {
         return LedgerEntryHelpers::invalidFieldError(
             "malformedAuthorizedCredentials",
             jss::authorized_credentials,
             "array");
-    STArray arr(sfAuthorizeCredentials, jv.size());
+    }
+
+    std::uint32_t const n = jv.size();
+    if (n > maxCredentialsArraySize)
+    {
+        return Unexpected(LedgerEntryHelpers::malformedError(
+            "malformedAuthorizedCredentials",
+            "Invalid field '" + std::string(jss::authorized_credentials) +
+                "', array too long."));
+    }
+
+    if (n == 0)
+    {
+        return Unexpected(LedgerEntryHelpers::malformedError(
+            "malformedAuthorizedCredentials",
+            "Invalid field '" + std::string(jss::authorized_credentials) +
+                "', array empty."));
+    }
+
+    STArray arr(sfAuthorizeCredentials, n);
     for (auto const& jo : jv)
     {
         if (!jo.isObject())
+        {
             return LedgerEntryHelpers::invalidFieldError(
                 "malformedAuthorizedCredentials",
                 jss::authorized_credentials,
                 "array");
+        }
+
         if (auto const value = LedgerEntryHelpers::hasRequired(
                 jo,
                 {jss::issuer, jss::credential_type},
@@ -320,13 +341,6 @@ parseDepositPreauth(
     auto const arr = parseAuthorizeCredentials(ac);
     if (!arr.has_value())
         return Unexpected(arr.error());
-    if (arr->empty() || (arr->size() > maxCredentialsArraySize))
-    {
-        return LedgerEntryHelpers::invalidFieldError(
-            "malformedAuthorizedCredentials",
-            jss::authorized_credentials,
-            "array");
-    }
 
     auto const& sorted = credentials::makeSorted(arr.value());
     if (sorted.empty())
