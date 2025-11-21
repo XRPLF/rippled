@@ -372,9 +372,7 @@ tryOverpayment(
     auto const rounded = constructRoundedLoanState(
         totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
 
-    auto const totalValueError = totalValueOutstanding - raw.valueOutstanding;
-    auto const principalError = principalOutstanding - raw.principalOutstanding;
-    auto const feeError = managementFeeOutstanding - raw.managementFeeDue;
+    auto const errors = rounded - raw;
 
     auto const newRawPrincipal = std::max(
         raw.principalOutstanding - overpaymentComponents.trackedPrincipalDelta,
@@ -389,33 +387,68 @@ tryOverpayment(
         managementFeeRate,
         loanScale);
 
-    auto const newRaw = calculateRawLoanState(
-        newLoanProperties.periodicPayment,
-        periodicRate,
-        paymentRemaining,
-        managementFeeRate);
+    JLOG(j.debug()) << "new periodic payment: "
+                    << newLoanProperties.periodicPayment
+                    << ", new total value: "
+                    << newLoanProperties.totalValueOutstanding
+                    << ", first payment principal: "
+                    << newLoanProperties.firstPaymentPrincipal;
 
-    totalValueOutstanding = roundToAsset(
-        asset, newRaw.valueOutstanding + totalValueError, loanScale);
-    principalOutstanding = roundToAsset(
-        asset,
-        newRaw.principalOutstanding + principalError,
-        loanScale,
-        Number::downward);
-    managementFeeOutstanding =
-        roundToAsset(asset, newRaw.managementFeeDue + feeError, loanScale);
+    auto const newRaw = calculateRawLoanState(
+                            newLoanProperties.periodicPayment,
+                            periodicRate,
+                            paymentRemaining,
+                            managementFeeRate) +
+        errors;
+
+    JLOG(j.debug()) << "new raw value: " << newRaw.valueOutstanding
+                    << ", principal: " << newRaw.principalOutstanding
+                    << ", interest gross: " << newRaw.interestOutstanding();
+
+    principalOutstanding = std::clamp(
+        roundToAsset(
+            asset, newRaw.principalOutstanding, loanScale, Number::upward),
+        numZero,
+        rounded.principalOutstanding);
+    totalValueOutstanding = std::clamp(
+        roundToAsset(
+            asset,
+            principalOutstanding + newRaw.interestOutstanding(),
+            loanScale,
+            Number::upward),
+        numZero,
+        rounded.valueOutstanding);
+    managementFeeOutstanding = std::clamp(
+        roundToAsset(asset, newRaw.managementFeeDue, loanScale),
+        numZero,
+        rounded.managementFeeDue);
+
+    auto const newRounded = constructRoundedLoanState(
+        totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
+
+    newLoanProperties.totalValueOutstanding = newRounded.valueOutstanding;
+
+    JLOG(j.debug()) << "new rounded value: " << newRounded.valueOutstanding
+                    << ", principal: " << newRounded.principalOutstanding
+                    << ", interest gross: " << newRounded.interestOutstanding();
 
     periodicPayment = newLoanProperties.periodicPayment;
 
     // check that the loan is still valid
-    if (newLoanProperties.firstPaymentPrincipal <= 0 &&
-        principalOutstanding > 0)
+    if (auto const ter = checkLoanGuards(
+            asset,
+            principalOutstanding,
+            // The loan may have been created with interest, but for
+            // small interest amounts, that may have already been paid
+            // off. Check what's still outstanding. This should
+            // guarantee that the interest checks pass.
+            newRounded.interestOutstanding() != beast::zero,
+            paymentRemaining,
+            newLoanProperties,
+            j))
     {
-        // The overpayment has caused the loan to be in a state
-        // where no further principal can be paid.
-        JLOG(j.warn())
-            << "Loan overpayment would cause loan to be stuck. "
-               "Rejecting overpayment, but normal payments are unaffected.";
+        JLOG(j.warn()) << "Principal overpayment would cause the loan to be in "
+                          "an invalid state. Ignore the overpayment";
         return Unexpected(tesSUCCESS);
     }
 
@@ -437,21 +470,27 @@ tryOverpayment(
         // LCOV_EXCL_STOP
     }
 
-    auto const newRounded = constructRoundedLoanState(
-        totalValueOutstanding, principalOutstanding, managementFeeOutstanding);
+    auto const deltas = rounded - newRounded;
+
+    auto const hypotheticalValueOutstanding =
+        rounded.valueOutstanding - deltas.principal;
+
     auto const valueChange =
-        newRounded.interestOutstanding() - rounded.interestOutstanding();
-    XRPL_ASSERT_PARTS(
-        valueChange <= beast::zero,
-        "ripple::detail::tryOverpayment",
-        "principal overpayment did not increase value of loan");
+        newRounded.valueOutstanding - hypotheticalValueOutstanding;
+    if (valueChange > 0)
+    {
+        JLOG(j.warn()) << "Principal overpayment would increase the value of "
+                          "the loan. Ignore the overpayment";
+        return Unexpected(tesSUCCESS);
+    }
 
     return LoanPaymentParts{
-        .principalPaid =
-            rounded.principalOutstanding - newRounded.principalOutstanding,
-        .interestPaid = rounded.interestDue - newRounded.interestDue,
-        .valueChange = valueChange + overpaymentComponents.untrackedInterest,
-        .feePaid = rounded.managementFeeDue - newRounded.managementFeeDue +
+        .principalPaid = deltas.principal,
+        .interestPaid =
+            deltas.interest + overpaymentComponents.untrackedInterest,
+        .valueChange =
+            valueChange + overpaymentComponents.trackedInterestPart(),
+        .feePaid = deltas.managementFee +
             overpaymentComponents.untrackedManagementFee};
 }
 
@@ -481,6 +520,17 @@ doOverpayment(
     Number managementFeeOutstanding = managementFeeOutstandingProxy;
     Number periodicPayment = periodicPaymentProxy;
 
+    JLOG(j.debug())
+        << "overpayment components:"
+        << ", totalValue before: " << *totalValueOutstandingProxy
+        << ", valueDelta: " << overpaymentComponents.trackedValueDelta
+        << ", principalDelta: " << overpaymentComponents.trackedPrincipalDelta
+        << ", managementFeeDelta: "
+        << overpaymentComponents.trackedManagementFeeDelta
+        << ", interestPart: " << overpaymentComponents.trackedInterestPart()
+        << ", untrackedInterest: " << overpaymentComponents.untrackedInterest
+        << ", totalDue: " << overpaymentComponents.totalDue
+        << ", payments remaining :" << paymentRemaining;
     auto const ret = tryOverpayment(
         asset,
         loanScale,
@@ -527,12 +577,29 @@ doOverpayment(
         "ripple::detail::doOverpayment",
         "no fee change");
 
+    // I'm not 100% sure the following asserts are correct. If in doubt, and
+    // everything else works, remove any that cause trouble.
+
+    JLOG(j.debug()) << "valueChange: " << loanPaymentParts.valueChange
+                    << ", totalValue before: " << *totalValueOutstandingProxy
+                    << ", totalValue after: " << totalValueOutstanding
+                    << ", totalValue delta: "
+                    << (totalValueOutstandingProxy - totalValueOutstanding)
+                    << ", principalDelta: "
+                    << overpaymentComponents.trackedPrincipalDelta
+                    << ", principalPaid: " << loanPaymentParts.principalPaid
+                    << ", Computed difference: "
+                    << overpaymentComponents.trackedPrincipalDelta -
+            (totalValueOutstandingProxy - totalValueOutstanding);
+
     XRPL_ASSERT_PARTS(
-        overpaymentComponents.untrackedInterest ==
-            totalValueOutstandingProxy - totalValueOutstanding -
-                overpaymentComponents.trackedPrincipalDelta,
+        loanPaymentParts.valueChange ==
+            totalValueOutstanding -
+                (totalValueOutstandingProxy -
+                 overpaymentComponents.trackedPrincipalDelta) +
+                overpaymentComponents.trackedInterestPart(),
         "ripple::detail::doOverpayment",
-        "value change agrees");
+        "interest paid agrees");
 
     XRPL_ASSERT_PARTS(
         overpaymentComponents.trackedPrincipalDelta ==
@@ -995,11 +1062,9 @@ computeOverpaymentComponents(
     Number const fee = roundToAsset(
         asset, tenthBipsOfValue(overpayment, overpaymentFeeRate), loanScale);
 
-    Number const payment = overpayment - fee;
-
-    auto const [rawOverpaymentInterest, rawOverpaymentManagementFee] = [&]() {
+    auto const [rawOverpaymentInterest, _] = [&]() {
         Number const interest =
-            tenthBipsOfValue(payment, overpaymentInterestRate);
+            tenthBipsOfValue(overpayment, overpaymentInterestRate);
         return detail::computeInterestAndFeeParts(interest, managementFeeRate);
     }();
     auto const [roundedOverpaymentInterest, roundedOverpaymentManagementFee] =
@@ -1010,15 +1075,20 @@ computeOverpaymentComponents(
                 asset, interest, managementFeeRate, loanScale);
         }();
 
-    return detail::ExtendedPaymentComponents{
+    auto const result = detail::ExtendedPaymentComponents{
         detail::PaymentComponents{
-            .trackedValueDelta = payment,
-            .trackedPrincipalDelta = payment - roundedOverpaymentInterest -
-                roundedOverpaymentManagementFee,
+            .trackedValueDelta = overpayment - fee,
+            .trackedPrincipalDelta = overpayment - roundedOverpaymentInterest -
+                roundedOverpaymentManagementFee - fee,
             .trackedManagementFeeDelta = roundedOverpaymentManagementFee,
             .specialCase = detail::PaymentSpecialCase::extra},
         fee,
         roundedOverpaymentInterest};
+    XRPL_ASSERT_PARTS(
+        result.trackedInterestPart() == roundedOverpaymentInterest,
+        "ripple::detail::computeOverpaymentComponents",
+        "valid interest computation");
+    return result;
 }
 
 }  // namespace detail
@@ -1046,6 +1116,100 @@ operator-(LoanState const& lhs, detail::LoanDeltas const& rhs)
     };
 
     return result;
+}
+
+LoanState
+operator+(LoanState const& lhs, detail::LoanDeltas const& rhs)
+{
+    LoanState result{
+        .valueOutstanding = lhs.valueOutstanding + rhs.total(),
+        .principalOutstanding = lhs.principalOutstanding + rhs.principal,
+        .interestDue = lhs.interestDue + rhs.interest,
+        .managementFeeDue = lhs.managementFeeDue + rhs.managementFee,
+    };
+
+    return result;
+}
+
+TER
+checkLoanGuards(
+    Asset const& vaultAsset,
+    Number const& principalRequested,
+    bool expectInterest,
+    std::uint32_t paymentTotal,
+    LoanProperties const& properties,
+    beast::Journal j)
+{
+    auto const totalInterestOutstanding =
+        properties.totalValueOutstanding - principalRequested;
+    // Guard 1: if there is no computed total interest over the life of the
+    // loan for a non-zero interest rate, we cannot properly amortize the
+    // loan
+    if (expectInterest && totalInterestOutstanding <= 0)
+    {
+        // Unless this is a zero-interest loan, there must be some interest
+        // due on the loan, even if it's (measurable) dust
+        JLOG(j.warn()) << "Loan for " << principalRequested
+                       << " with interest has no interest due";
+        return tecPRECISION_LOSS;
+    }
+    // Guard 1a: If there is any interest computed over the life of the
+    // loan, for a zero interest rate, something went sideways.
+    if (!expectInterest && totalInterestOutstanding > 0)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.warn()) << "Loan for " << principalRequested
+                       << " with no interest has interest due";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
+    // Guard 2: if the principal portion of the first periodic payment is
+    // too small to be accurately represented with the given rounding mode,
+    // raise an error
+    if (properties.firstPaymentPrincipal <= 0)
+    {
+        // Check that some true (unrounded) principal is paid each period.
+        // Since the first payment pays the least principal, if it's good,
+        // they'll all be good. Note that the outstanding principal is
+        // rounded, and may not change right away.
+        JLOG(j.warn()) << "Loan is unable to pay principal.";
+        return tecPRECISION_LOSS;
+    }
+
+    // Guard 3: If the periodic payment is so small that it can't even be
+    // rounded to a representable value, then the loan can't be paid. Also,
+    // avoids dividing by 0.
+    auto const roundedPayment = roundPeriodicPayment(
+        vaultAsset, properties.periodicPayment, properties.loanScale);
+    if (roundedPayment == beast::zero)
+    {
+        JLOG(j.warn()) << "Loan Periodic payment ("
+                       << properties.periodicPayment << ") rounds to 0. ";
+        return tecPRECISION_LOSS;
+    }
+
+    // Guard 4: if the rounded periodic payment is large enough that the
+    // loan can't be amortized in the specified number of payments, raise an
+    // error
+    {
+        NumberRoundModeGuard mg(Number::upward);
+
+        if (std::int64_t const computedPayments{
+                properties.totalValueOutstanding / roundedPayment};
+            computedPayments != paymentTotal)
+        {
+            JLOG(j.warn()) << "Loan Periodic payment ("
+                           << properties.periodicPayment << ") rounding ("
+                           << roundedPayment << ") on a total value of "
+                           << properties.totalValueOutstanding
+                           << " can not complete the loan in the specified "
+                              "number of payments ("
+                           << computedPayments << " != " << paymentTotal << ")";
+            return tecPRECISION_LOSS;
+        }
+    }
+    return tesSUCCESS;
 }
 
 Number

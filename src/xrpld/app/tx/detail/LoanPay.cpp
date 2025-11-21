@@ -361,6 +361,12 @@ LoanPay::doApply()
         // LCOV_EXCL_STOP
     }
 
+    JLOG(j_.debug()) << "Loan Pay: principal paid: "
+                     << paymentParts->principalPaid
+                     << ", interest paid: " << paymentParts->interestPaid
+                     << ", fee paid: " << paymentParts->feePaid
+                     << ", value change: " << paymentParts->valueChange;
+
     //------------------------------------------------------
     // LoanBroker object state changes
     view.update(brokerSle);
@@ -441,6 +447,12 @@ LoanPay::doApply()
             // LCOV_EXCL_STOP
         }
     }
+
+    JLOG(j_.debug()) << "total paid to vault raw: " << totalPaidToVaultRaw
+                     << ", total paid to vault rounded: "
+                     << totalPaidToVaultRounded
+                     << ", total paid to broker: " << totalPaidToBroker
+                     << ", amount from transaction: " << amount;
 
     // Move funds
     XRPL_ASSERT_PARTS(
