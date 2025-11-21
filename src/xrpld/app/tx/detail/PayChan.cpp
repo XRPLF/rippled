@@ -116,8 +116,7 @@ closeChannel(
     }
 
     // Remove PayChan from recipient's owner directory, if present.
-    if (auto const page = (*slep)[~sfDestinationNode];
-        page && view.rules().enabled(fixPayChanRecipientOwnerDir))
+    if (auto const page = (*slep)[~sfDestinationNode])
     {
         auto const dst = (*slep)[sfDestination];
         if (!view.dirRemove(keylet::ownerDir(dst), *page, key, true))
@@ -203,18 +202,11 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         auto const flags = sled->getFlags();
 
         // Check if they have disallowed incoming payment channels
-        if (ctx.view.rules().enabled(featureDisallowIncoming) &&
-            (flags & lsfDisallowIncomingPayChan))
+        if (flags & lsfDisallowIncomingPayChan)
             return tecNO_PERMISSION;
 
         if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
-
-        // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
-        // featureDepositAuth to remove the bug.
-        if (!ctx.view.rules().enabled(featureDepositAuth) &&
-            (flags & lsfDisallowXRP))
-            return tecNO_TARGET;
 
         // Pseudo-accounts cannot receive payment channels, other than native
         // to their underlying ledger object - implemented in their respective
@@ -284,7 +276,6 @@ PayChanCreate::doApply()
     }
 
     // Add PayChan to the recipient's owner directory
-    if (ctx_.view().rules().enabled(fixPayChanRecipientOwnerDir))
     {
         auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
@@ -527,20 +518,10 @@ PayChanClaim::doApply()
         if (!sled)
             return tecNO_DST;
 
-        // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
-        // featureDepositAuth to remove the bug.
-        bool const depositAuth{ctx_.view().rules().enabled(featureDepositAuth)};
-        if (!depositAuth &&
-            (txAccount == src && (sled->getFlags() & lsfDisallowXRP)))
-            return tecNO_TARGET;
-
-        if (depositAuth)
-        {
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;

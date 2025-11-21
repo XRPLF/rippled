@@ -21,7 +21,7 @@ public:
     void
     testAllBadHeldTransactions()
     {
-        // All trasactions are already marked as SF_BAD, and we should be able
+        // All transactions are already marked as SF_BAD, and we should be able
         // to handle the case properly without an assertion failure
         testcase("No valid transactions in batch");
 

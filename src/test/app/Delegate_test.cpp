@@ -1703,11 +1703,6 @@ class Delegate_test : public beast::unit_test::suite
         // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer,
         // NFTokenAcceptOffer are not included, they are tested separately.
         std::unordered_map<std::string, uint256> txRequiredFeatures{
-            {"TicketCreate", featureTicketBatch},
-            {"CheckCreate", featureChecks},
-            {"CheckCash", featureChecks},
-            {"CheckCancel", featureChecks},
-            {"DepositPreauth", featureDepositPreauth},
             {"Clawback", featureClawback},
             {"AMMClawback", featureAMMClawback},
             {"AMMCreate", featureAMM},
