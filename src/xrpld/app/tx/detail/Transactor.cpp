@@ -154,9 +154,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     }
 
     if (ctx.tx.isFieldPresent(sfSponsor) && !ctx.rules.enabled(featureSponsor))
-    {
         return temDISABLED;
-    }
 
     if (auto const ret = preflight0(ctx, flagMask))
         return ret;
@@ -206,7 +204,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
             JLOG(ctx.j.debug()) << "preflight1: invalid sponsor account";
             return temMALFORMED;
         }
-        if (!(sponsor.getFlags() & tfSponsorMask))
+        if (sponsor.getFlags() & tfSponsorMask)
         {
             JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
             return temINVALID_FLAG;

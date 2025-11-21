@@ -53,26 +53,27 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     if (sponsee == sponsor)
         return temMALFORMED;
 
-    if (ctx.tx.isFieldPresent(sfFeeAmount))
-    {
-        auto const feeAmount = ctx.tx.getFieldAmount(sfFeeAmount);
+    auto const checkOptionalAmountField = [&](SField const& field) -> NotTEC {
+        if (!ctx.tx.isFieldPresent(field))
+            return tesSUCCESS;
 
-        if (!isXRP(feeAmount))
+        auto const amount = ctx.tx.getFieldAmount(field);
+
+        if (!isXRP(amount))
             return temBAD_AMOUNT;
 
-        if (feeAmount.xrp().drops() <= 0)
-            return temBAD_AMOUNT;
-    }
-
-    if (ctx.tx.isFieldPresent(sfMaxFee))
-    {
-        auto const maxFee = ctx.tx.getFieldAmount(sfMaxFee);
-        if (!isXRP(maxFee))
+        if (amount.xrp().drops() <= 0)
             return temBAD_AMOUNT;
 
-        if (maxFee.xrp().drops() <= 0)
-            return temBAD_AMOUNT;
-    }
+        return tesSUCCESS;
+    };
+
+    if (auto const ret = checkOptionalAmountField(sfFeeAmount);
+        !isTesSuccess(ret))
+        return ret;
+
+    if (auto const ret = checkOptionalAmountField(sfMaxFee); !isTesSuccess(ret))
+        return ret;
 
     if (ctx.tx.isFieldPresent(sfReserveCount))
     {
@@ -122,15 +123,13 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
     auto const sponsoringReserve = tx.isFieldPresent(sfReserveCount) ||
         tx.isFlag(tfSponsorshipSetRequireSignForReserve);
 
-    if (granularPermissions.contains(SponsorFee) && sponsoringFee)
-        return tesSUCCESS;
+    if (sponsoringFee && !granularPermissions.contains(SponsorFee))
+        return terNO_DELEGATE_PERMISSION;
 
-    if (granularPermissions.contains(SponsorReserve) && sponsoringReserve)
-        return tesSUCCESS;
+    if (sponsoringReserve && !granularPermissions.contains(SponsorReserve))
+        return terNO_DELEGATE_PERMISSION;
 
-    // TODO: needs to check permission to delete sponsorship?
-
-    return terNO_DELEGATE_PERMISSION;
+    return tesSUCCESS;
 }
 
 TER

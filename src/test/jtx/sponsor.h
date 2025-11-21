@@ -1,4 +1,5 @@
-#pragma once
+#ifndef XRPL_TEST_JTX_SPONSOR_H_INCLUDED
+#define XRPL_TEST_JTX_SPONSOR_H_INCLUDED
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -92,3 +93,5 @@ ledgerEntry(
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple
+
+#endif

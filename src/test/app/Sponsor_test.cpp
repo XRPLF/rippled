@@ -335,7 +335,7 @@ public:
         // Invalid Flags
         env(noop(alice), sponsor::as(sponsor, 4), ter(temINVALID_FLAG));
         env(noop(alice),
-            sponsor::as(sponsor, ~tfSponsorMask),
+            sponsor::as(sponsor, tfSponsorMask),
             ter(temINVALID_FLAG));
     }
 
@@ -4511,6 +4511,12 @@ public:
             env.close();
 
             testFeePermission(tesSUCCESS);
+
+            // test with SponsorReserve (should failed)
+            env(sponsor::set(alice, 0, 100, XRP(100)),
+                sponsor::sponseeAcc(bob),
+                delegate::as(carol),
+                ter(terNO_DELEGATE_PERMISSION));
         }
 
         //
@@ -4549,6 +4555,12 @@ public:
             env.close();
 
             testReservePermission(tesSUCCESS);
+
+            // test with SponsorFee (should failed)
+            env(sponsor::set(alice, 0, 100, XRP(100)),
+                sponsor::sponseeAcc(bob),
+                delegate::as(carol),
+                ter(terNO_DELEGATE_PERMISSION));
         }
     }
 
