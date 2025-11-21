@@ -58,7 +58,6 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
   done
 done
 
-
 # Restore copyright notices that were removed from specific files, without
 # restoring the verbiage that is already present in LICENSE.md. Ensure that if
 # the script is run multiple times, duplicate notices are not added.
