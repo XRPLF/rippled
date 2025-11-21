@@ -615,33 +615,23 @@ public:
                      {"disallowIncomingTrustline",
                       asfDisallowIncomingTrustline}}};
 
-        if (features[featureDisallowIncoming])
+        for (auto& asf : disallowIncomingFlags)
         {
-            for (auto& asf : disallowIncomingFlags)
-            {
-                // Clear a flag and check that account_info returns results
-                // as expected
-                env(fclear(alice, asf.second));
-                env.close();
-                auto const f1 = getAccountFlag(asf.first, alice);
-                BEAST_EXPECT(f1.has_value());
-                BEAST_EXPECT(!f1.value());
+            // Clear a flag and check that account_info returns results
+            // as expected
+            env(fclear(alice, asf.second));
+            env.close();
+            auto const f1 = getAccountFlag(asf.first, alice);
+            BEAST_EXPECT(f1.has_value());
+            BEAST_EXPECT(!f1.value());
 
-                // Set a flag and check that account_info returns results
-                // as expected
-                env(fset(alice, asf.second));
-                env.close();
-                auto const f2 = getAccountFlag(asf.first, alice);
-                BEAST_EXPECT(f2.has_value());
-                BEAST_EXPECT(f2.value());
-            }
-        }
-        else
-        {
-            for (auto& asf : disallowIncomingFlags)
-            {
-                BEAST_EXPECT(!getAccountFlag(asf.first, alice));
-            }
+            // Set a flag and check that account_info returns results
+            // as expected
+            env(fset(alice, asf.second));
+            env.close();
+            auto const f2 = getAccountFlag(asf.first, alice);
+            BEAST_EXPECT(f2.has_value());
+            BEAST_EXPECT(f2.value());
         }
 
         static constexpr std::pair<std::string_view, std::uint32_t>
@@ -706,12 +696,8 @@ public:
         FeatureBitset const allFeatures{
             ripple::test::jtx::testable_amendments()};
         testAccountFlags(allFeatures);
-        testAccountFlags(allFeatures - featureDisallowIncoming);
-        testAccountFlags(
-            allFeatures - featureDisallowIncoming - featureClawback);
-        testAccountFlags(
-            allFeatures - featureDisallowIncoming - featureClawback -
-            featureTokenEscrow);
+        testAccountFlags(allFeatures - featureClawback);
+        testAccountFlags(allFeatures - featureClawback - featureTokenEscrow);
     }
 };
 
