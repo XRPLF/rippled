@@ -716,6 +716,67 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testInfiniteLoop()
+    {
+        testcase("infinite loop");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        /*
+            void
+            loop()
+            {
+                int volatile x = 0;
+                while (1)
+                    x++;
+            }
+        */
+        static std::string const infiniteWasmHex =
+            "0061736d01000000010401600000030302000005030100020638097f004180080b"
+            "7f004180"
+            "080b7f004180080b7f00418088040b7f004180080b7f00418088040b7f00418080"
+            "080b7f00"
+            "41000b7f0041010b07a8010c066d656d6f72790200115f5f7761736d5f63616c6c"
+            "5f63746f"
+            "72730000046c6f6f7000010c5f5f64736f5f68616e646c6503000a5f5f64617461"
+            "5f656e64"
+            "03010b5f5f737461636b5f6c6f7703020c5f5f737461636b5f6869676803030d5f"
+            "5f676c6f"
+            "62616c5f6261736503040b5f5f686561705f6261736503050a5f5f686561705f65"
+            "6e640306"
+            "0d5f5f6d656d6f72795f6261736503070c5f5f7461626c655f6261736503080a27"
+            "0202000b"
+            "220041fc87044100360200034041fc870441fc870428020041016a3602000c000b"
+            "000b007f"
+            "0970726f647563657273010c70726f6365737365642d62790105636c616e675f31"
+            "392e312e"
+            "352d776173692d73646b202868747470733a2f2f6769746875622e636f6d2f6c6c"
+            "766d2f6c"
+            "6c766d2d70726f6a65637420616234623561326462353832393538616631656533"
+            "30386137"
+            "3930636664623432626432343732302900490f7461726765745f66656174757265"
+            "73042b0f"
+            "6d757461626c652d676c6f62616c732b087369676e2d6578742b0f726566657265"
+            "6e63652d"
+            "74797065732b0a6d756c746976616c7565";
+        auto const wasmStr = boost::algorithm::unhex(infiniteWasmHex);
+        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        std::string const funcName("infinite");
+        TestHostFunctions hfs(env, 0);
+
+        {
+            // f32 set constant, opcode disabled exception
+            auto const re =
+                runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
+            if (BEAST_EXPECT(!re.has_value()))
+            {
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+            }
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -735,6 +796,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         testCodecovWasm();
         testDisabledFloat();
+        testInfiniteLoop();
 
         // perfTest();
     }
