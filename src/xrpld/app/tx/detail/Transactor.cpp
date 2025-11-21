@@ -204,12 +204,17 @@ Transactor::preflight2(PreflightContext const& ctx)
         // regardless of success or failure
         return *ret;
 
-    auto const sigValid = checkValidity(
-        ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
-    if (sigValid.first == Validity::SigBad)
+    // Skip signature check on batch inner transactions
+    if (!ctx.tx.isFlag(tfInnerBatchTxn) || !ctx.rules.enabled(featureBatch))
     {
-        JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
-        return temINVALID;  // LCOV_EXCL_LINE
+        auto const sigValid = checkValidity(
+            ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
+        if (sigValid.first == Validity::SigBad)
+        {
+            JLOG(ctx.j.debug())
+                << "preflight2: bad signature. " << sigValid.second;
+            return temINVALID;  // LCOV_EXCL_LINE
+        }
     }
     return tesSUCCESS;
 }
@@ -642,13 +647,17 @@ NotTEC
 Transactor::checkSign(
     ReadView const& view,
     ApplyFlags flags,
+    std::optional<uint256 const> const& parentBatchId,
     AccountID const& idAccount,
     STObject const& sigObject,
     beast::Journal const j)
 {
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     // Ignore signature check on batch inner transactions
-    if (sigObject.isFlag(tfInnerBatchTxn) && view.rules().enabled(featureBatch))
+    bool const useCtx = view.rules().enabled(fixBatchInnerSigs);
+    if ((useCtx ? parentBatchId.has_value()
+                : sigObject.isFlag(tfInnerBatchTxn)) &&
+        view.rules().enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
         if (sigObject.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
@@ -701,7 +710,8 @@ Transactor::checkSign(PreclaimContext const& ctx)
     auto const idAccount = ctx.tx.isFieldPresent(sfDelegate)
         ? ctx.tx.getAccountID(sfDelegate)
         : ctx.tx.getAccountID(sfAccount);
-    return checkSign(ctx.view, ctx.flags, idAccount, ctx.tx, ctx.j);
+    return checkSign(
+        ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
 }
 
 NotTEC

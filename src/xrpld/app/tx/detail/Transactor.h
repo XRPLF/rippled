@@ -266,6 +266,7 @@ protected:
     checkSign(
         ReadView const& view,
         ApplyFlags flags,
+        std::optional<uint256 const> const& parentBatchId,
         AccountID const& idAccount,
         STObject const& sigObject,
         beast::Journal const j);
