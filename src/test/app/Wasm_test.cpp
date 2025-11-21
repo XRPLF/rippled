@@ -716,6 +716,122 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testWasmMemory()
+    {
+        testcase("Wasm additional memory limit tests");
+        auto& engine = WasmEngine::instance();
+        {
+            auto const ws = boost::algorithm::unhex(memoryPointerAtLimitHex);
+            Bytes const wasm(ws.begin(), ws.end());
+            auto const re = engine.run(wasm, "finish");
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result == 1);
+            }
+        }
+        {
+            auto const ws = boost::algorithm::unhex(memoryPointerOverLimitHex);
+            Bytes const wasm(ws.begin(), ws.end());
+            auto const re = engine.run(wasm, "finish");
+            BEAST_EXPECT(!re.has_value());
+        }
+        {
+            auto const ws = boost::algorithm::unhex(memoryOffsetOverLimitHex);
+            Bytes const wasm(ws.begin(), ws.end());
+            auto const re = engine.run(wasm, "finish");
+            BEAST_EXPECT(!re.has_value());
+        }
+        {
+            auto const ws =
+                boost::algorithm::unhex(memoryEndOfWordOverLimitHex);
+            Bytes const wasm(ws.begin(), ws.end());
+            auto const re = engine.run(wasm, "finish");
+            BEAST_EXPECT(!re.has_value());
+        }
+        {
+            auto const ws = boost::algorithm::unhex(memoryGrow0To1PageHex);
+            Bytes const wasm(ws.begin(), ws.end());
+            auto const re = engine.run(wasm, "finish");
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result == 1);
+            }
+        }
+        {
+            auto const ws = boost::algorithm::unhex(memoryLastByteOf8MBHex);
+            Bytes const wasm(ws.begin(), ws.end());
+            auto const re = engine.run(wasm, "finish");
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result == 1);
+            }
+        }
+        {
+            auto const ws = boost::algorithm::unhex(memoryGrow1MoreThan8MBHex);
+            Bytes const wasm(ws.begin(), ws.end());
+            auto const re = engine.run(wasm, "finish");
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result == -1);
+            }
+        }
+    }
+
+    void
+    testWasmTable()
+    {
+        testcase("Wasm table limit tests");
+        auto& engine = WasmEngine::instance();
+        {
+            auto const ws = boost::algorithm::unhex(table64ElementsHex);
+            Bytes const wasm(ws.begin(), ws.end());
+            auto const re = engine.run(wasm, "finish");
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result == 1);
+            }
+        }
+        {
+            auto const ws = boost::algorithm::unhex(table65ElementsHex);
+            Bytes const wasm(ws.begin(), ws.end());
+            auto const re = engine.run(wasm, "finish");
+            BEAST_EXPECT(!re.has_value());
+        }
+        {
+            auto const ws = boost::algorithm::unhex(table2TablesHex);
+            Bytes const wasm(ws.begin(), ws.end());
+            auto const re = engine.run(wasm, "finish");
+            BEAST_EXPECT(!re.has_value());
+        }
+    }
+
+    void
+    testWasmProposal()
+    {
+        testcase("Wasm disabled proposal tests");
+        auto& engine = WasmEngine::instance();
+        {
+            auto const ws = boost::algorithm::unhex(proposalMutableGlobalHex);
+            Bytes const wasm(ws.begin(), ws.end());
+            auto const re = engine.run(wasm, "finish");
+            BEAST_EXPECT(!re.has_value());
+        }
+    }
+
+    void
+    testWasmTrap()
+    {
+        testcase("Wasm trap tests");
+        auto& engine = WasmEngine::instance();
+        {
+            auto const ws = boost::algorithm::unhex(divideBy0Hex);
+            Bytes const wasm(ws.begin(), ws.end());
+            auto const re = engine.run(wasm, "finish");
+            BEAST_EXPECT(!re.has_value());
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -735,6 +851,11 @@ struct Wasm_test : public beast::unit_test::suite
 
         testCodecovWasm();
         testDisabledFloat();
+
+        testWasmMemory();
+        testWasmTable();
+        testWasmProposal();
+        testWasmTrap();
 
         // perfTest();
     }
