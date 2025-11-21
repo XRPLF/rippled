@@ -102,6 +102,15 @@ struct LoanState
     }
 };
 
+TER
+checkLoanGuards(
+    Asset const& vaultAsset,
+    Number const& principalRequested,
+    bool expectInterest,
+    std::uint32_t paymentTotal,
+    LoanProperties const& properties,
+    beast::Journal j);
+
 LoanState
 calculateRawLoanState(
     Number const& periodicPayment,
@@ -216,6 +225,9 @@ operator-(LoanState const& lhs, LoanState const& rhs);
 
 LoanState
 operator-(LoanState const& lhs, detail::LoanDeltas const& rhs);
+
+LoanState
+operator+(LoanState const& lhs, detail::LoanDeltas const& rhs);
 
 LoanProperties
 computeLoanProperties(
