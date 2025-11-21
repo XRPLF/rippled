@@ -14,8 +14,6 @@ using namespace jtx::paychan;
 
 struct PayChan_test : public beast::unit_test::suite
 {
-    FeatureBitset const disallowIncoming{featureDisallowIncoming};
-
     static std::pair<uint256, std::shared_ptr<SLE const>>
     channelKeyAndSle(
         ReadView const& view,
@@ -242,20 +240,8 @@ struct PayChan_test : public beast::unit_test::suite
         testcase("Disallow Incoming Flag");
         using namespace jtx;
 
-        // test flag doesn't set unless amendment enabled
-        {
-            Env env{*this, features - disallowIncoming};
-            Account const alice{"alice"};
-            env.fund(XRP(10000), alice);
-            env(fset(alice, asfDisallowIncomingPayChan));
-            env.close();
-            auto const sle = env.le(alice);
-            uint32_t flags = sle->getFlags();
-            BEAST_EXPECT(!(flags & lsfDisallowIncomingPayChan));
-        }
-
         using namespace std::literals::chrono_literals;
-        Env env{*this, features | disallowIncoming};
+        Env env{*this, features};
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const cho = Account("cho");
@@ -2127,7 +2113,6 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{testable_amendments()};
-        testWithFeats(all - disallowIncoming);
         testWithFeats(all);
         testDepositAuthCreds();
         testMetaAndOwnership(all - fixIncludeKeyletFields);

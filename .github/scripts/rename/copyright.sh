@@ -70,9 +70,6 @@ fi
 if ! grep -q 'Dev Null' src/test/app/tx/apply_test.cpp; then
   echo -e "// Copyright (c) 2020 Dev Null Productions\n\n$(cat src/test/app/tx/apply_test.cpp)" > src/test/app/tx/apply_test.cpp
 fi
-if ! grep -q 'Dev Null' src/test/app/NetworkOPs_test.cpp; then
-  echo -e "// Copyright (c) 2020 Dev Null Productions\n\n$(cat src/test/app/NetworkOPs_test.cpp)" > src/test/app/NetworkOPs_test.cpp
-fi
 if ! grep -q 'Dev Null' src/test/rpc/ManifestRPC_test.cpp; then
   echo -e "// Copyright (c) 2020 Dev Null Productions\n\n$(cat src/test/rpc/ManifestRPC_test.cpp)" > src/test/rpc/ManifestRPC_test.cpp
 fi
