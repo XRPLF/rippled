@@ -19,7 +19,7 @@ TER
 PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
-    auto const sleDomain = ctx.view.read({ltPERMISSIONED_DOMAIN, domain});
+    auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domain));
 
     if (!sleDomain)
         return tecNO_ENTRY;
@@ -42,7 +42,7 @@ PermissionedDomainDelete::doApply()
         "ripple::PermissionedDomainDelete::doApply : required field present");
 
     auto const slePd =
-        view().peek({ltPERMISSIONED_DOMAIN, ctx_.tx.at(sfDomainID)});
+        view().peek(keylet::permissionedDomain(ctx_.tx.at(sfDomainID)));
     auto const page = (*slePd)[sfOwnerNode];
 
     if (!view().dirRemove(keylet::ownerDir(account_), page, slePd->key(), true))
@@ -54,7 +54,8 @@ PermissionedDomainDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const ownerSle = view().peek(keylet::account(account_));
+    auto const owner = (*slePd)[sfOwner];
+    auto const ownerSle = view().peek(keylet::account(owner));
     XRPL_ASSERT(
         ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
         "ripple::PermissionedDomainDelete::doApply : nonzero owner count");
