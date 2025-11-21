@@ -25,7 +25,7 @@ roundPeriodicPayment(
     return roundToAsset(asset, periodicPayment, scale, Number::upward);
 }
 
-/* Represents the breakdown of amounts to be paidpaid and changes applied to the
+/* Represents the breakdown of amounts to be paid and changes applied to the
  * Loan object while processing a loan payment.
  *
  * This structure is returned after processing a loan payment transaction and
@@ -97,7 +97,7 @@ struct LoanProperties
     // Calculated using the standard amortization formula based on principal,
     // interest rate, and number of payments.
     // The actual amount paid in the LoanPay transaction must be rounded up to
-    // the precision of the asset.
+    // the precision of the asset and loan.
     Number periodicPayment;
 
     // The total amount the borrower will pay over the life of the loan.
