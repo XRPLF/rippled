@@ -190,7 +190,7 @@ getRowsMinMax(soci::session& session, TableType type)
 bool
 saveValidatedLedger(
     DatabaseCon& ldgDB,
-    DatabaseCon& txnDB,
+    std::unique_ptr<DatabaseCon> const& txnDB,
     Application& app,
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
@@ -273,7 +273,15 @@ saveValidatedLedger(
 
         if (app.config().useTxTables())
         {
-            auto db = txnDB.checkoutDb();
+            if (!txnDB)
+            {
+                // LCOV_EXCL_START
+                JLOG(j.fatal()) << "TxTables db isn't available";
+                Throw<std::runtime_error>("TxTables db isn't available");
+                // LCOV_EXCL_STOP
+            }
+
+            auto db = txnDB->checkoutDb();
 
             soci::transaction tr(*db);
 
