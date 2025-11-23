@@ -3,6 +3,7 @@
 #include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ReadView.h>

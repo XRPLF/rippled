@@ -6,7 +6,7 @@
 namespace ripple {
 namespace test {
 
-// frequently used macros defined here for convinience.
+// frequently used macros defined here for convenience.
 #define PORT_WS "port_ws"
 #define PORT_RPC "port_rpc"
 #define PORT_PEER "port_peer"
