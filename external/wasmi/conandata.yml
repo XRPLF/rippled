@@ -1,5 +1,11 @@
+# Do not update. Maintained by programmability team.
+
+sources:
+  "0.42.1":
+    sha256: 2a5697be33c7afce8f671af4a5a3621d9e93ce55d253d31bd8201458e465fbb8
+    url: https://github.com/wasmi-labs/wasmi/archive/refs/tags/v0.42.1.tar.gz
 patches:
-  0.42.1:
-  - patch_description: install only static lib (to prevent conflict with shared)
-    patch_file: patches/wasmi.patch
-    patch_type: conan
+  "0.42.1":
+    - patch_file: "patches/0001-xrplf-0.42.1.patch"
+      patch_type: conan
+      patch_description: Integration patch. Make wasmi lib to be able to build with existing smart-escrow branch.
