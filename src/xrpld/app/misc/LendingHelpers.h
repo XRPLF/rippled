@@ -12,6 +12,8 @@ struct PreflightContext;
 bool
 checkLendingProtocolDependencies(PreflightContext const& ctx);
 
+static constexpr std::uint32_t secondsInYear = 365 * 24 * 60 * 60;
+
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 
@@ -102,6 +104,31 @@ struct LoanState
     }
 };
 
+// Some values get re-rounded to the vault scale any time they are adjusted. In
+// addition, they are prevented from ever going below zero. This helps avoid
+// accumulated rounding errors and leftover dust amounts.
+template <class NumberProxy>
+void
+adjustImpreciseNumber(
+    NumberProxy value,
+    Number const& adjustment,
+    Asset const& asset,
+    int vaultScale)
+{
+    value = roundToAsset(asset, value + adjustment, vaultScale);
+
+    if (*value < beast::zero)
+        value = 0;
+}
+
+inline int
+getVaultScale(SLE::const_ref vaultSle)
+{
+    if (!vaultSle)
+        return Number::minExponent - 1;  // LCOV_EXCL_LINE
+    return vaultSle->at(sfAssetsTotal).exponent();
+}
+
 TER
 checkLoanGuards(
     Asset const& vaultAsset,
@@ -112,26 +139,29 @@ checkLoanGuards(
     beast::Journal j);
 
 LoanState
-calculateRawLoanState(
+computeRawLoanState(
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t const paymentRemaining,
     TenthBips32 const managementFeeRate);
 
 LoanState
-calculateRawLoanState(
+computeRawLoanState(
     Number const& periodicPayment,
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
     std::uint32_t const paymentRemaining,
     TenthBips32 const managementFeeRate);
 
+// Constructs a valid LoanState object from arbitrary inputs
 LoanState
-constructRoundedLoanState(
+constructLoanState(
     Number const& totalValueOutstanding,
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding);
 
+// Constructs a valid LoanState object from a Loan object, which always has
+// rounded values
 LoanState
 constructRoundedLoanState(SLE::const_ref loan);
 
@@ -143,7 +173,7 @@ computeManagementFee(
     std::int32_t scale);
 
 Number
-calculateFullPaymentInterest(
+computeFullPaymentInterest(
     Number const& rawPrincipalOutstanding,
     Number const& periodicRate,
     NetClock::time_point parentCloseTime,
@@ -153,7 +183,7 @@ calculateFullPaymentInterest(
     TenthBips32 closeInterestRate);
 
 Number
-calculateFullPaymentInterest(
+computeFullPaymentInterest(
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t paymentRemaining,
@@ -190,7 +220,10 @@ struct PaymentComponents
     trackedInterestPart() const;
 };
 
-struct LoanDeltas
+// This structure describes the difference between two LoanState objects so that
+// the differences between components don't have to be tracked individually,
+// risking more errors. How that difference is used depends on the context.
+struct LoanStateDeltas
 {
     Number principal;
     Number interest;
@@ -220,14 +253,14 @@ computePaymentComponents(
 
 }  // namespace detail
 
-detail::LoanDeltas
+detail::LoanStateDeltas
 operator-(LoanState const& lhs, LoanState const& rhs);
 
 LoanState
-operator-(LoanState const& lhs, detail::LoanDeltas const& rhs);
+operator-(LoanState const& lhs, detail::LoanStateDeltas const& rhs);
 
 LoanState
-operator+(LoanState const& lhs, detail::LoanDeltas const& rhs);
+operator+(LoanState const& lhs, detail::LoanStateDeltas const& rhs);
 
 LoanProperties
 computeLoanProperties(

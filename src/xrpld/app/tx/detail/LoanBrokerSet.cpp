@@ -13,6 +13,8 @@ LoanBrokerSet::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerSet::preflight(PreflightContext const& ctx)
 {
+    using namespace Lending;
+
     auto const& tx = ctx.tx;
     if (auto const data = tx[~sfData]; data && !data->empty() &&
         !validDataLength(tx[~sfData], maxDataPayloadLength))
@@ -142,9 +144,9 @@ LoanBrokerSet::doApply()
             std::make_shared<SLE>(keylet::loanbroker(account_, sequence));
 
         if (auto const ter = dirLink(view, account_, broker))
-            return ter;
+            return ter;  // LCOV_EXCL_LINE
         if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
-            return ter;
+            return ter;  // LCOV_EXCL_LINE
 
         adjustOwnerCount(view, owner, 2, j_);
         auto const ownerCount = owner->at(sfOwnerCount);
@@ -154,7 +156,7 @@ LoanBrokerSet::doApply()
         auto maybePseudo =
             createPseudoAccount(view, broker->key(), sfLoanBrokerID);
         if (!maybePseudo)
-            return maybePseudo.error();
+            return maybePseudo.error();  // LCOV_EXCL_LINE
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
 

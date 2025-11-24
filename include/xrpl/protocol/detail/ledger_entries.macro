@@ -572,7 +572,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     //
     // - InterestOwedToVault = InterestOutstanding - ManagementFeeOutstanding
     //   The amount of the total interest that is owed to the vault, and
-    //   will be sent to as part of a payment.
+    //   will be sent to it as part of a payment.
     //
     // - TrueTotalLoanValue = PaymentRemaining * PeriodicPayment
     //   The unrounded true total value of the loan.

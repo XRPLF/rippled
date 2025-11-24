@@ -226,7 +226,7 @@ TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim,
 #endif
 TRANSACTION(ttCHECK_CREATE, 16, CheckCreate,
     Delegation::delegatable,
-    featureChecks,
+    uint256{},
     noPriv,
     ({
     {sfDestination, soeREQUIRED},
@@ -242,7 +242,7 @@ TRANSACTION(ttCHECK_CREATE, 16, CheckCreate,
 #endif
 TRANSACTION(ttCHECK_CASH, 17, CheckCash,
     Delegation::delegatable,
-    featureChecks,
+    uint256{},
     noPriv,
     ({
     {sfCheckID, soeREQUIRED},
@@ -256,7 +256,7 @@ TRANSACTION(ttCHECK_CASH, 17, CheckCash,
 #endif
 TRANSACTION(ttCHECK_CANCEL, 18, CheckCancel,
     Delegation::delegatable,
-    featureChecks,
+    uint256{},
     noPriv,
     ({
     {sfCheckID, soeREQUIRED},

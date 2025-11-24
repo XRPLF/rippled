@@ -40,6 +40,16 @@ checkValidity(
             return {
                 Validity::SigBad,
                 "Malformed: Invalid inner batch transaction."};
+
+        std::string reason;
+        if (!passesLocalChecks(tx, reason))
+        {
+            router.setFlags(id, SF_LOCALBAD);
+            return {Validity::SigGoodOnly, reason};
+        }
+
+        router.setFlags(id, SF_SIGGOOD);
+        return {Validity::Valid, ""};
     }
 
     if (any(flags & SF_SIGBAD))

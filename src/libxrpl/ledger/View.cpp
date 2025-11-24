@@ -564,7 +564,7 @@ accountHolds(
 }
 
 STAmount
-accountCanSend(
+accountSpendable(
     ReadView const& view,
     AccountID const& account,
     Currency const& currency,
@@ -589,19 +589,19 @@ accountCanSend(
 }
 
 STAmount
-accountCanSend(
+accountSpendable(
     ReadView const& view,
     AccountID const& account,
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
     beast::Journal j)
 {
-    return accountCanSend(
+    return accountSpendable(
         view, account, issue.currency, issue.account, zeroIfFrozen, j);
 }
 
 STAmount
-accountCanSend(
+accountSpendable(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
@@ -631,7 +631,7 @@ accountCanSend(
 }
 
 [[nodiscard]] STAmount
-accountCanSend(
+accountSpendable(
     ReadView const& view,
     AccountID const& account,
     Asset const& asset,
@@ -645,9 +645,9 @@ accountCanSend(
                               std::remove_cvref_t<decltype(value)>,
                               Issue>)
             {
-                return accountCanSend(view, account, value, zeroIfFrozen, j);
+                return accountSpendable(view, account, value, zeroIfFrozen, j);
             }
-            return accountCanSend(
+            return accountSpendable(
                 view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
         },
         asset.value());
@@ -2064,7 +2064,7 @@ rippleSendIOU(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
-    auto const issuer = saAmount.getIssuer();
+    auto const& issuer = saAmount.getIssuer();
 
     XRPL_ASSERT(
         !isXRP(uSenderID) && !isXRP(uReceiverID),
@@ -2119,7 +2119,7 @@ rippleSendMultiIOU(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
-    auto const issuer = issue.getIssuer();
+    auto const& issuer = issue.getIssuer();
 
     XRPL_ASSERT(
         !isXRP(senderID), "ripple::rippleSendMultiIOU : sender is not XRP");
@@ -2459,7 +2459,7 @@ rippleCreditMPT(
 {
     // Do not check MPT authorization here - it must have been checked earlier
     auto const mptID = keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
-    auto const issuer = saAmount.getIssuer();
+    auto const& issuer = saAmount.getIssuer();
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -2526,7 +2526,7 @@ rippleSendMPT(
         "ripple::rippleSendMPT : sender is not receiver");
 
     // Safe to get MPT since rippleSendMPT is only called by accountSendMPT
-    auto const issuer = saAmount.getIssuer();
+    auto const& issuer = saAmount.getIssuer();
 
     auto const sle =
         view.read(keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID()));
@@ -2589,7 +2589,7 @@ rippleSendMultiMPT(
 {
     // Safe to get MPT since rippleSendMultiMPT is only called by
     // accountSendMultiMPT
-    auto const issuer = mptIssue.getIssuer();
+    auto const& issuer = mptIssue.getIssuer();
 
     auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID()));
     if (!sle)
@@ -2621,12 +2621,16 @@ rippleSendMultiMPT(
             // not exceed MaximumAmount
             if (senderID == issuer)
             {
+                XRPL_ASSERT_PARTS(
+                    takeFromSender == beast::zero,
+                    "rippler::rippleSendMultiMPT",
+                    "sender == issuer, takeFromSender == zero");
                 auto const sendAmount = amount.mpt().value();
                 auto const maximumAmount =
                     sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
-                if (sendAmount > maximumAmount - takeFromSender ||
+                if (sendAmount > maximumAmount ||
                     sle->getFieldU64(sfOutstandingAmount) >
-                        maximumAmount - sendAmount - takeFromSender)
+                        maximumAmount - sendAmount)
                     return tecPATH_DRY;
             }
 
@@ -3287,7 +3291,7 @@ canTransfer(
     if (issue.native())
         return tesSUCCESS;
 
-    auto const issuerId = issue.getIssuer();
+    auto const& issuerId = issue.getIssuer();
     if (issuerId == from || issuerId == to)
         return tesSUCCESS;
     auto const sleIssuer = view.read(keylet::account(issuerId));
