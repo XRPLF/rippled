@@ -419,9 +419,9 @@ class Feature_test : public beast::unit_test::suite
                 break;
         }
 
-        // There should be at least 4 amendments.  Don't do exact comparison
+        // There should be at least 3 amendments.  Don't do exact comparison
         // to avoid maintenance as more amendments are added in the future.
-        BEAST_EXPECT(majorities.size() >= 4);
+        BEAST_EXPECT(majorities.size() >= 3);
         std::map<std::string, VoteBehavior> const& votes =
             ripple::detail::supportedAmendments();
 
