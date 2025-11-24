@@ -223,7 +223,8 @@ publicKeyType(PublicKey const& publicKey)
 verifyDigest(
     PublicKey const& publicKey,
     uint256 const& digest,
-    Slice const& sig) noexcept;
+    Slice const& sig,
+    bool mustBeFullyCanonical = true) noexcept;
 
 /** Verify a signature on a message.
     With secp256k1 signatures, the data is first hashed with
