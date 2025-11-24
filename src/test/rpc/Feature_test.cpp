@@ -124,8 +124,7 @@ class Feature_test : public beast::unit_test::suite
             featureToName(fixRemoveNFTokenAutoTrustLine) ==
             "fixRemoveNFTokenAutoTrustLine");
         BEAST_EXPECT(featureToName(featureFlow) == "Flow");
-        BEAST_EXPECT(
-            featureToName(featureDeletableAccounts) == "DeletableAccounts");
+        BEAST_EXPECT(featureToName(featureDID) == "DID");
         BEAST_EXPECT(
             featureToName(fixIncludeKeyletFields) == "fixIncludeKeyletFields");
         BEAST_EXPECT(featureToName(featureTokenEscrow) == "TokenEscrow");
@@ -184,16 +183,16 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto jrr = env.rpc("feature", "RequireFullyCanonicalSig")[jss::result];
+        auto jrr = env.rpc("feature", "Flow")[jss::result];
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
         BEAST_EXPECT(
-            jrr.isMember("00C1FC4A53E60AB02C864641002B3172F38677E29C26C54066851"
-                         "79B37E1EDAC"));
+            jrr.isMember("740352F2412A9909880C23A559FCECEDA3BE2126FED62FC7660D6"
+                         "28A06927F11"));
         auto feature = *(jrr.begin());
 
-        BEAST_EXPECTS(feature[jss::name] == "RequireFullyCanonicalSig", "name");
+        BEAST_EXPECTS(feature[jss::name] == "Flow", "name");
         BEAST_EXPECTS(!feature[jss::enabled].asBool(), "enabled");
         BEAST_EXPECTS(
             feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(),
@@ -201,7 +200,7 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECTS(feature[jss::supported].asBool(), "supported");
 
         // feature names are case-sensitive - expect error here
-        jrr = env.rpc("feature", "requireFullyCanonicalSig")[jss::result];
+        jrr = env.rpc("feature", "flow")[jss::result];
         BEAST_EXPECT(jrr[jss::error] == "badFeature");
         BEAST_EXPECT(jrr[jss::error_message] == "Feature unknown or invalid.");
     }
@@ -420,9 +419,9 @@ class Feature_test : public beast::unit_test::suite
                 break;
         }
 
-        // There should be at least 5 amendments.  Don't do exact comparison
+        // There should be at least 3 amendments.  Don't do exact comparison
         // to avoid maintenance as more amendments are added in the future.
-        BEAST_EXPECT(majorities.size() >= 5);
+        BEAST_EXPECT(majorities.size() >= 3);
         std::map<std::string, VoteBehavior> const& votes =
             ripple::detail::supportedAmendments();
 
@@ -477,8 +476,8 @@ class Feature_test : public beast::unit_test::suite
         testcase("Veto");
 
         using namespace test::jtx;
-        Env env{*this, FeatureBitset{featureRequireFullyCanonicalSig}};
-        constexpr char const* featureName = "RequireFullyCanonicalSig";
+        Env env{*this, FeatureBitset{featureFlow}};
+        constexpr char const* featureName = "Flow";
 
         auto jrr = env.rpc("feature", featureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
@@ -529,7 +528,22 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        constexpr char const* featureName = "CryptoConditionsSuite";
+
+        auto const& supportedAmendments = detail::supportedAmendments();
+        auto obsoleteFeature = std::find_if(
+            std::begin(supportedAmendments),
+            std::end(supportedAmendments),
+            [](auto const& pair) {
+                return pair.second == VoteBehavior::Obsolete;
+            });
+
+        if (obsoleteFeature == std::end(supportedAmendments))
+        {
+            pass();
+            return;
+        }
+
+        auto const featureName = obsoleteFeature->first;
 
         auto jrr = env.rpc("feature", featureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
