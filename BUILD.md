@@ -93,8 +93,7 @@ unfamiliar with Conan, then please read [this crash course](./docs/build/conan.m
 To achieve reproducible dependencies, we use a [Conan lockfile](https://docs.conan.io/2/tutorial/versioning/lockfiles.html),
 which has to be updated every time dependencies change.
 
-Please see the instructions [here](conan/lockfile/README.md) on how to
-regenerate the lockfile.
+Please see the [instructions on how to regenerate the lockfile](conan/lockfile/README.md).
 
 #### Default profile
 
