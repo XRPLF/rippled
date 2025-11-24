@@ -9,7 +9,7 @@ namespace ripple {
 
 /*
  * MSVC 2019 version 16.9.0 added [[nodiscard]] to the std comparison
- * operator() functions. boost::bimap checks that the comparitor is a
+ * operator() functions. boost::bimap checks that the comparator is a
  * BinaryFunction, in part by calling the function and ignoring the value.
  * These two things don't play well together. These wrapper classes simply
  * strip [[nodiscard]] from operator() for use in boost::bimap.

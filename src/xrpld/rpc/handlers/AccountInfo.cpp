@@ -3,6 +3,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
@@ -115,11 +116,8 @@ doAccountInfo(RPC::JsonContext& context)
         for (auto const& lsf : lsFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
-        if (ledger->rules().enabled(featureDisallowIncoming))
-        {
-            for (auto const& lsf : disallowIncomingFlags)
-                acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
-        }
+        for (auto const& lsf : disallowIncomingFlags)
+            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
         if (ledger->rules().enabled(featureClawback))
             acctFlags[allowTrustLineClawbackFlag.first.data()] =

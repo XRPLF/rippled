@@ -46,7 +46,7 @@ public:
                                  fully_canonical.app().config())
                                  .first;
             if (valid == Validity::Valid)
-                fail("Non-Fully canoncial signature was permitted");
+                fail("Non-Fully canonical signature was permitted");
         }
 
         pass();

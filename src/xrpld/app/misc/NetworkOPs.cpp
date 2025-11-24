@@ -2063,8 +2063,7 @@ NetworkOPsImp::beginConsensus(
         "ripple::NetworkOPsImp::beginConsensus : closedLedger parent matches "
         "hash");
 
-    if (prevLedger->rules().enabled(featureNegativeUNL))
-        app_.validators().setNegativeUNL(prevLedger->negativeUNL());
+    app_.validators().setNegativeUNL(prevLedger->negativeUNL());
     TrustChanges const changes = app_.validators().updateTrusted(
         app_.getValidations().getCurrentNodeIDs(),
         closingInfo.parentCloseTime,
