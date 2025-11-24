@@ -130,7 +130,7 @@ jobs:
             --target "${CMAKE_TARGET}"
 
       - name: Upload rippled artifact (Linux)
-        if: ${{ runner.os == 'Linux' }}
+        if: ${{ github.repository_owner == 'XRPLF' && runner.os == 'Linux' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         env:
           BUILD_DIR: ${{ inputs.build_dir }}
