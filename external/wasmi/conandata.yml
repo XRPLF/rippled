@@ -8,3 +8,4 @@ patches:
   "0.42.1":
     - patch_file: "patches/0001-xrplf-0.42.1.patch"
       patch_type: conan
+      patch_description: Integration patch. Make wasmi lib to be able to build with existing smart-escrow branch.
