@@ -1,61 +1,54 @@
 diff --git a/crates/c_api/CMakeLists.txt b/crates/c_api/CMakeLists.txt
-index b15c787a..2420bea2 100644
+index b15c787a..4e6de690 100644
 --- a/crates/c_api/CMakeLists.txt
 +++ b/crates/c_api/CMakeLists.txt
-@@ -43,6 +43,11 @@ endif()
+@@ -43,6 +43,10 @@ endif()
  list(TRANSFORM WASMI_SHARED_FILES PREPEND ${WASMI_TARGET_DIR}/)
  list(TRANSFORM WASMI_STATIC_FILES PREPEND ${WASMI_TARGET_DIR}/)
  
 +if(NOT BUILD_SHARED_LIBS)
-+  set(WASMI_SHARED_FILES )
++  set(WASMI_SHARED_FILES)
 +endif()
-+
 +
  # Instructions on how to build and install the Wasmi Rust crate.
  find_program(WASMI_CARGO_BINARY cargo REQUIRED)
  include(ExternalProject)
-@@ -112,23 +117,25 @@ install(
+@@ -112,6 +116,7 @@ install(
      DESTINATION ${CMAKE_INSTALL_LIBDIR}
  )
  
--if(WASMI_TARGET MATCHES "darwin")
--    set(INSTALLED_LIB "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libwasmi.dylib")
--    install(
--        FILES "${INSTALLED_LIB}"
--        DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
--        COMPONENT Runtime
--    )
--    if(NOT CMAKE_INSTALL_NAME_TOOL)
--        message(WARNING "CMAKE_INSTALL_NAME_TOOL is not set. LC_ID_DYLIB for libwasmi.dylib will not be set.")
--    else()
--        set(install_name_tool_cmd
--            "${CMAKE_INSTALL_NAME_TOOL}"
--            "-id"
--            "@rpath/libwasmi.dylib"
--            "${INSTALLED_LIB}"
 +if(BUILD_SHARED_LIBS)
-+    if(WASMI_TARGET MATCHES "darwin")
-+        set(INSTALLED_LIB "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libwasmi.dylib")
-+        install(
-+            FILES "${INSTALLED_LIB}"
-+            DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
-+            COMPONENT Runtime
-         )
--        install(CODE "execute_process(COMMAND ${install_name_tool_cmd})")
-+        if(NOT CMAKE_INSTALL_NAME_TOOL)
-+            message(WARNING "CMAKE_INSTALL_NAME_TOOL is not set. LC_ID_DYLIB for libwasmi.dylib will not be set.")
-+        else()
-+            set(install_name_tool_cmd
-+                "${CMAKE_INSTALL_NAME_TOOL}"
-+                "-id"
-+                "@rpath/libwasmi.dylib"
-+                "${INSTALLED_LIB}"
-+            )
-+            install(CODE "execute_process(COMMAND ${install_name_tool_cmd})")
-+        endif()
+ if(WASMI_TARGET MATCHES "darwin")
+     set(INSTALLED_LIB "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libwasmi.dylib")
+     install(
+@@ -131,6 +136,7 @@ if(WASMI_TARGET MATCHES "darwin")
+         install(CODE "execute_process(COMMAND ${install_name_tool_cmd})")
      endif()
  endif()
++endif()
  
+ # Documentation Generation via Doxygen:
+ set(DOXYGEN_CONF_IN ${CMAKE_CURRENT_SOURCE_DIR}/doxygen.conf.in)
+@@ -141,19 +147,3 @@ add_custom_target(doc
+     DEPENDS ${WASMI_GENERATED_CONF_H} ${DOXYGEN_CONF_OUT}
+     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+ )
+-
+-# C-Header Formatting via clang-format:
+-find_program(CLANG_FORMAT clang-format REQUIRED)
+-file(GLOB_RECURSE HEADER_FILES
+-    ${CMAKE_CURRENT_SOURCE_DIR}/include/wasmi.h
+-    ${CMAKE_CURRENT_SOURCE_DIR}/include/wasmi/*.h
+-    ${CMAKE_CURRENT_SOURCE_DIR}/include/wasmi/*.hh
+-)
+-add_custom_target(check-format
+-    COMMAND ${CLANG_FORMAT} -style=llvm -Werror --dry-run ${HEADER_FILES}
+-    COMMENT "clang-format: Check formatting for Wasmi C-API header files"
+-)
+-add_custom_target(format
+-    COMMAND ${CLANG_FORMAT} -style=llvm -i ${HEADER_FILES}
+-    COMMENT "clang-format: Apply formatting rules for Wasmi C-API header files"
+-)
 diff --git a/crates/c_api/include/wasm.h b/crates/c_api/include/wasm.h
 index 5ee617ff..0199192d 100644
 --- a/crates/c_api/include/wasm.h
