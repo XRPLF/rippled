@@ -184,6 +184,8 @@ LoanBrokerDelete::doApply()
         if (!owner)
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
+        // Decreases the owner count by two: one for the LoanBroker object, and
+        // one for the pseudo-account.
         adjustOwnerCount(view(), owner, -2, j_);
     }
 

@@ -609,6 +609,10 @@ LoanSet::doApply()
     // and is distinct from the broker's pseudo-account's owner count
     adjustOwnerCount(view, brokerSle, 1, j_);
     loanSequenceProxy += 1;
+    // The sequence should be extremely unlikely to roll over, but fail if it
+    // does
+    if (loanSequenceProxy == 0)
+        return tecMAX_SEQUENCE_REACHED;
     view.update(brokerSle);
 
     // Put the loan into the pseudo-account's directory

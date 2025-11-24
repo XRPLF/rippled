@@ -1730,10 +1730,13 @@ removeEmptyHolding(
     }
 
     // `asset` is an IOU.
+    // If the account is the issuer, then no line should exist. Check anyway. If
+    // a line does exist, it will get deleted. If not, return success.
+    bool const accountIsIssuer = accountID == issue.account;
     auto const line = view.peek(keylet::line(accountID, issue));
     if (!line)
-        return tecOBJECT_NOT_FOUND;
-    if (line->at(sfBalance)->iou() != beast::zero)
+        return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
+    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::zero)
         return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)
@@ -1782,10 +1785,18 @@ removeEmptyHolding(
     MPTIssue const& mptIssue,
     beast::Journal journal)
 {
+    // If the account is the issuer, then no token should exist. MPTs do not
+    // have the legacy ability to create such a situation, but check anyway. If
+    // a token does exist, it will get deleted. If not, return success.
+    bool const accountIsIssuer = accountID == mptIssue.getIssuer();
     auto const& mptID = mptIssue.getMptID();
     auto const mptoken = view.peek(keylet::mptoken(mptID, accountID));
     if (!mptoken)
-        return tecOBJECT_NOT_FOUND;
+        return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
+    // Unlike a trust line, if the account is the issuer, and the token has a
+    // balance, it can not just be deleted, because that will throw the issuance
+    // accounting out of balance, so fail. Since this should be impossible
+    // anyway, I'm not going to put any effort into it.
     if (mptoken->at(sfMPTAmount) != 0)
         return tecHAS_OBLIGATIONS;
 

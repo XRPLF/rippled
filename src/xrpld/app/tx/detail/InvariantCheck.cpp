@@ -2356,7 +2356,7 @@ ValidLoanBroker::visitEntry(
         {
             auto const& loanBrokerID = after->at(sfLoanBrokerID);
             // create an entry if one doesn't already exist
-            auto& broker = brokers_[loanBrokerID];
+            brokers_.emplace(loanBrokerID, BrokerInfo{});
         }
         else if (after->getType() == ltRIPPLE_STATE)
         {
@@ -2437,7 +2437,7 @@ ValidLoanBroker::finalize(
             {
                 auto const& loanBrokerID = account->at(sfLoanBrokerID);
                 // create an entry if one doesn't already exist
-                auto& broker = brokers_[loanBrokerID];
+                brokers_.emplace(loanBrokerID, BrokerInfo{});
             }
         }
     }
@@ -2451,7 +2451,7 @@ ValidLoanBroker::finalize(
         {
             auto const& loanBrokerID = account->at(sfLoanBrokerID);
             // create an entry if one doesn't already exist
-            auto& broker = brokers_[loanBrokerID];
+            brokers_.emplace(loanBrokerID, BrokerInfo{});
         }
     }
 

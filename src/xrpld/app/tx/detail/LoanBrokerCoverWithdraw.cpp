@@ -3,6 +3,8 @@
 #include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/app/tx/detail/Payment.h>
 
+#include <xrpl/ledger/CredentialHelpers.h>
+
 namespace ripple {
 
 bool
@@ -59,7 +61,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     }
     auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
     if (!vault)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "Vault is missing for Broker " << brokerID;
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
 
     auto const vaultAsset = vault->at(sfAsset);
     if (amount.asset() != vaultAsset)
@@ -157,6 +164,13 @@ LoanBrokerCoverWithdraw::doApply()
                 view(), account_, mPriorBalance, amount.asset(), j_);
             !isTesSuccess(ter) && ter != tecDUPLICATE)
             return ter;
+    }
+    else
+    {
+        auto dstSle = view().peek(keylet::account(dstAcct));
+        if (auto err =
+                verifyDepositPreauth(tx, view(), account_, dstAcct, dstSle, j_))
+            return err;
     }
 
     // Sanity check

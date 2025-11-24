@@ -245,6 +245,13 @@ VaultWithdraw::doApply()
             !isTesSuccess(ter) && ter != tecDUPLICATE)
             return ter;
     }
+    else
+    {
+        auto dstSle = view().peek(keylet::account(dstAcct));
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, view(), account_, dstAcct, dstSle, j_))
+            return err;
+    }
 
     // Transfer assets from vault to depositor or destination account.
     if (auto const ter = accountSend(

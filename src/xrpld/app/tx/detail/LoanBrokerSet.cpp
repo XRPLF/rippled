@@ -148,6 +148,8 @@ LoanBrokerSet::doApply()
         if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
             return ter;  // LCOV_EXCL_LINE
 
+        // Increases the owner count by two: one for the LoanBroker object, and
+        // one for the pseudo-account.
         adjustOwnerCount(view, owner, 2, j_);
         auto const ownerCount = owner->at(sfOwnerCount);
         if (mPriorBalance < view.fees().accountReserve(ownerCount))
@@ -169,6 +171,7 @@ LoanBrokerSet::doApply()
         broker->at(sfVaultID) = vaultID;
         broker->at(sfOwner) = account_;
         broker->at(sfAccount) = pseudoId;
+        // The LoanSequence indexes loans created by this broker, starting at 1
         broker->at(sfLoanSequence) = 1;
         if (auto const data = tx[~sfData])
             broker->at(sfData) = *data;
