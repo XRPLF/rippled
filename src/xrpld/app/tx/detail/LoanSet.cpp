@@ -21,6 +21,8 @@ LoanSet::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanSet::preflight(PreflightContext const& ctx)
 {
+    using namespace Lending;
+
     auto const& tx = ctx.tx;
 
     // Special case for Batch inner transactions
@@ -157,9 +159,13 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     // for the transaction. Note that unlike the base class, the single signer
     // is counted if present. It will only be absent in a batch inner
     // transaction.
-    std::size_t const signerCount = counterSig.isFieldPresent(sfSigners)
-        ? counterSig.getFieldArray(sfSigners).size()
-        : (counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0);
+    std::size_t const signerCount = [&counterSig]() {
+        // Compute defensively. Assure that "tx" cannot be accessed and cause
+        // confusion or miscalculations.
+        return counterSig.isFieldPresent(sfSigners)
+            ? counterSig.getFieldArray(sfSigners).size()
+            : (counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0);
+    }();
 
     return normalCost + (signerCount * baseFee);
 }
@@ -179,7 +185,7 @@ LoanSet::getValueFields()
     return valueFields;
 }
 
-std::uint32_t
+static std::uint32_t
 getStartDate(ReadView const& view)
 {
     return view.info().closeTime.time_since_epoch().count();
@@ -213,18 +219,32 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // The grace period can't be larger than the interval. Check it first,
         // mostly so that unit tests can test that specific case.
         if (grace > timeAvailable)
+        {
+            JLOG(ctx.j.warn()) << "Grace period exceeds protocol time limit.";
             return tecKILLED;
+        }
 
         if (interval > timeAvailable)
+        {
+            JLOG(ctx.j.warn())
+                << "Payment interval exceeds protocol time limit.";
             return tecKILLED;
+        }
 
         if (total > timeAvailable)
+        {
+            JLOG(ctx.j.warn()) << "Payment total exceeds protocol time limit.";
             return tecKILLED;
+        }
 
         auto const timeLastPayment = timeAvailable - grace;
 
         if (timeLastPayment / interval < total)
+        {
+            JLOG(ctx.j.warn()) << "Last payment due date, or grace period for "
+                                  "last payment exceeds protocol time limit.";
             return tecKILLED;
+        }
     }
 
     auto const account = tx[sfAccount];
@@ -246,6 +266,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
                               "of the LoanBroker.";
         return tecNO_PERMISSION;
     }
+    auto const brokerPseudo = brokerSle->at(sfAccount);
 
     auto const borrower = counterparty == brokerOwner ? account : counterparty;
     if (auto const borrowerSle = ctx.view.read(keylet::account(borrower));
@@ -292,6 +313,16 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
         return ret;
     }
+
+    // brokerPseudo is the fallback account to receive LoanPay fees, even if the
+    // broker owner is unable to accept them. Don't create the loan if it is
+    // deep frozen.
+    if (auto const ret = checkDeepFrozen(ctx.view, brokerPseudo, asset))
+    {
+        JLOG(ctx.j.warn()) << "Broker pseudo-account is frozen.";
+        return ret;
+    }
+
     // borrower is eventually going to have to pay back the loan, so it can't be
     // frozen now. It is also going to receive funds, so it can't be deep
     // frozen, but being frozen is a prerequisite for being deep frozen, so
@@ -352,7 +383,7 @@ LoanSet::doApply()
 
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
-    auto const vaultScale = vaultTotalProxy.value().exponent();
+    auto const vaultScale = getVaultScale(vaultSle);
     if (vaultAvailableProxy < principalRequested)
     {
         JLOG(j_.warn())
@@ -414,7 +445,7 @@ LoanSet::doApply()
         // LCOV_EXCL_STOP
     }
 
-    LoanState const state = constructRoundedLoanState(
+    LoanState const state = constructLoanState(
         properties.totalValueOutstanding,
         principalRequested,
         properties.managementFeeOwedToBroker);
@@ -574,7 +605,8 @@ LoanSet::doApply()
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    brokerSle->at(sfDebtTotal) += newDebtDelta;
+    adjustImpreciseNumber(
+        brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
     // The broker's owner count is solely for the number of outstanding loans,
     // and is distinct from the broker's pseudo-account's owner count
     adjustOwnerCount(view, brokerSle, 1, j_);

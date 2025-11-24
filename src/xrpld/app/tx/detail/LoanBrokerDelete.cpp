@@ -43,6 +43,30 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "LoanBrokerDelete: Owner count is " << ownerCount;
         return tecHAS_OBLIGATIONS;
     }
+    if (auto const debtTotal = sleBroker->at(sfDebtTotal);
+        debtTotal != beast::zero)
+    {
+        // Any remaining debt should have been wiped out by the last Loan
+        // Delete. This check is purely defensive.
+        auto const vault =
+            ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+        if (!vault)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        auto const asset = vault->at(sfAsset);
+        auto const scale = getVaultScale(vault);
+
+        auto const rounded =
+            roundToAsset(asset, debtTotal, scale, Number::towards_zero);
+
+        if (rounded != beast::zero)
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.warn()) << "LoanBrokerDelete: Debt total is "
+                               << debtTotal << ", which rounds to " << rounded;
+            return tecHAS_OBLIGATIONS;
+            // LCOV_EXCL_START
+        }
+    }
 
     return tesSUCCESS;
 }

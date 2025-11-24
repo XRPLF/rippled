@@ -159,60 +159,25 @@ LoanBrokerCoverWithdraw::doApply()
             return ter;
     }
 
-    // Move the funds from the broker's pseudo-account to the dstAcct
-    if (dstAcct == account_ || amount.native())
+    // Sanity check
+    if (accountHolds(
+            view(),
+            brokerPseudoID,
+            amount.asset(),
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j_) < amount)
     {
-        // Transfer assets directly from pseudo-account to depositor.
-        // Because this is either a self-transfer or an XRP payment, there is no
-        // need to use the payment engine.
-        return accountSend(
-            view(), brokerPseudoID, dstAcct, amount, j_, WaiveTransferFee::Yes);
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "LoanBrokerCoverWithdraw: negative balance of "
+                            "broker cover assets.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
-    {
-        // If sending the Cover to a different account, then this is
-        // effectively a payment. Use the Payment transaction code to call
-        // the payment engine, though only a subset of the functionality is
-        // supported in this transaction. e.g. No paths, no partial
-        // payments.
-        bool const mptDirect = amount.holds<MPTIssue>();
-        STAmount const maxSourceAmount =
-            Payment::getMaxSourceAmount(brokerPseudoID, amount);
-        SLE::pointer sleDst = view().peek(keylet::account(dstAcct));
-        if (!sleDst)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-
-        Payment::RipplePaymentParams paymentParams{
-            .ctx = ctx_,
-            .maxSourceAmount = maxSourceAmount,
-            .srcAccountID = brokerPseudoID,
-            .dstAccountID = dstAcct,
-            .sleDst = sleDst,
-            .dstAmount = amount,
-            .paths = STPathSet{},
-            .deliverMin = std::nullopt,
-            .j = j_};
-
-        TER ret;
-        if (mptDirect)
-        {
-            ret = Payment::makeMPTDirectPayment(paymentParams);
-        }
-        else
-        {
-            ret = Payment::makeRipplePayment(paymentParams);
-        }
-        // Always claim a fee
-        if (!isTesSuccess(ret) && !isTecClaim(ret))
-        {
-            JLOG(j_.info())
-                << "LoanBrokerCoverWithdraw: changing result from "
-                << transToken(ret)
-                << " to tecPATH_DRY for IOU payment with Destination";
-            return tecPATH_DRY;
-        }
-        return ret;
-    }
+    // Move the funds directly from the broker's pseudo-account to the dstAcct
+    return accountSend(
+        view(), brokerPseudoID, dstAcct, amount, j_, WaiveTransferFee::Yes);
 }
 
 //------------------------------------------------------------------------------

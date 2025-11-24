@@ -114,9 +114,20 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-Number
+static Number
 owedToVault(SLE::ref loanSle)
 {
+    // Spec section 3.2.3.2, defines the default amount as
+    //
+    // DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
+    //
+    // Loan.InterestOutstanding is not stored directly on ledger.
+    // It is computed as
+    //
+    // Loan.TotalValueOutstanding - Loan.PrincipalOutstanding -
+    //      Loan.ManagementFeeOutstanding
+    //
+    // Add that to the original formula, and you get this:
     return loanSle->at(sfTotalValueOutstanding) -
         loanSle->at(sfManagementFeeOutstanding);
 }
@@ -134,13 +145,6 @@ LoanManage::defaultLoan(
 
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
     auto brokerDebtTotalProxy = brokerSle->at(sfDebtTotal);
-
-    auto principalOutstandingProxy = loanSle->at(sfPrincipalOutstanding);
-    auto managementFeeOutstandingProxy =
-        loanSle->at(sfManagementFeeOutstanding);
-
-    auto totalValueOutstandingProxy = loanSle->at(sfTotalValueOutstanding);
-    auto paymentRemainingProxy = loanSle->at(sfPaymentRemaining);
 
     Number const totalDefaultAmount = owedToVault(loanSle);
 
@@ -171,15 +175,15 @@ LoanManage::defaultLoan(
 
     // Update the Vault object:
 
+    // The vault may be at a different scale than the loan. Reduce rounding
+    // errors during the accounting by rounding some of the values to that
+    // scale.
+    auto const vaultScale = getVaultScale(vaultSle);
+
     {
         // Decrease the Total Value of the Vault:
         auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
         auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
-
-        // The vault may be at a different scale than the loan. Reduce rounding
-        // errors during the accounting by rounding some of the values to that
-        // scale.
-        auto const vaultScale = vaultTotalProxy.value().exponent();
 
         if (vaultTotalProxy < vaultDefaultAmount)
         {
@@ -246,16 +250,11 @@ LoanManage::defaultLoan(
     // Update the LoanBroker object:
 
     {
+        auto const asset = *vaultSle->at(sfAsset);
+
         // Decrease the Debt of the LoanBroker:
-        if (brokerDebtTotalProxy < totalDefaultAmount)
-        {
-            // LCOV_EXCL_START
-            JLOG(j.warn())
-                << "LoanBroker debt total is less than the default amount";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-        brokerDebtTotalProxy -= totalDefaultAmount;
+        adjustImpreciseNumber(
+            brokerDebtTotalProxy, -totalDefaultAmount, asset, vaultScale);
         // Decrease the First-Loss Capital Cover Available:
         auto coverAvailableProxy = brokerSle->at(sfCoverAvailable);
         if (coverAvailableProxy < defaultCovered)
@@ -272,10 +271,11 @@ LoanManage::defaultLoan(
 
     // Update the Loan object:
     loanSle->setFlag(lsfLoanDefault);
-    totalValueOutstandingProxy = 0;
-    paymentRemainingProxy = 0;
-    principalOutstandingProxy = 0;
-    managementFeeOutstandingProxy = 0;
+
+    loanSle->at(sfTotalValueOutstanding) = 0;
+    loanSle->at(sfPaymentRemaining) = 0;
+    loanSle->at(sfPrincipalOutstanding) = 0;
+    loanSle->at(sfManagementFeeOutstanding) = 0;
     // Zero out the next due date. Since it's default, it'll be removed from
     // the object.
     loanSle->at(sfNextPaymentDueDate) = 0;
