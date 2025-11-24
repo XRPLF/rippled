@@ -124,8 +124,7 @@ class Feature_test : public beast::unit_test::suite
             featureToName(fixRemoveNFTokenAutoTrustLine) ==
             "fixRemoveNFTokenAutoTrustLine");
         BEAST_EXPECT(featureToName(featureFlow) == "Flow");
-        BEAST_EXPECT(
-            featureToName(featureDeletableAccounts) == "DeletableAccounts");
+        BEAST_EXPECT(featureToName(featureDID) == "DID");
         BEAST_EXPECT(
             featureToName(fixIncludeKeyletFields) == "fixIncludeKeyletFields");
         BEAST_EXPECT(featureToName(featureTokenEscrow) == "TokenEscrow");
