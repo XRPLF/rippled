@@ -202,8 +202,7 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         auto const flags = sled->getFlags();
 
         // Check if they have disallowed incoming payment channels
-        if (ctx.view.rules().enabled(featureDisallowIncoming) &&
-            (flags & lsfDisallowIncomingPayChan))
+        if (flags & lsfDisallowIncomingPayChan)
             return tecNO_PERMISSION;
 
         if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])

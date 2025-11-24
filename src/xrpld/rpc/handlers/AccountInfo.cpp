@@ -116,11 +116,8 @@ doAccountInfo(RPC::JsonContext& context)
         for (auto const& lsf : lsFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
-        if (ledger->rules().enabled(featureDisallowIncoming))
-        {
-            for (auto const& lsf : disallowIncomingFlags)
-                acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
-        }
+        for (auto const& lsf : disallowIncomingFlags)
+            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
         if (ledger->rules().enabled(featureClawback))
             acctFlags[allowTrustLineClawbackFlag.first.data()] =

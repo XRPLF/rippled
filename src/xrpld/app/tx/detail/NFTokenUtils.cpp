@@ -919,31 +919,21 @@ tokenOfferCreatePreclaim(
             return tecNO_DST;
 
         // check if the destination has disallowed incoming offers
-        if (view.rules().enabled(featureDisallowIncoming))
-        {
-            // flag cannot be set unless amendment is enabled but
-            // out of an abundance of caution check anyway
-
-            if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
-                return tecNO_PERMISSION;
-        }
+        if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
+            return tecNO_PERMISSION;
     }
 
     if (owner)
     {
-        // Check if the owner (buy offer) has disallowed incoming offers
-        if (view.rules().enabled(featureDisallowIncoming))
-        {
-            auto const sleOwner = view.read(keylet::account(*owner));
+        auto const sleOwner = view.read(keylet::account(*owner));
 
-            // defensively check
-            // it should not be possible to specify owner that doesn't exist
-            if (!sleOwner)
-                return tecNO_TARGET;
+        // defensively check
+        // it should not be possible to specify owner that doesn't exist
+        if (!sleOwner)
+            return tecNO_TARGET;
 
-            if (sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
-                return tecNO_PERMISSION;
-        }
+        if (sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
+            return tecNO_PERMISSION;
     }
 
     if (view.rules().enabled(fixEnforceNFTokenTrustlineV2) && !amount.native())
