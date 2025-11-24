@@ -830,7 +830,7 @@ STAmount::isDefault() const
 void
 STAmount::canonicalize()
 {
-    if (native() || mAsset.holds<MPTIssue>())
+    if (integral())
     {
         // native and MPT currency amounts should always have an offset of zero
         // log(2^64,10) ~ 19.2
@@ -859,8 +859,10 @@ STAmount::canonicalize()
             };
             if (native())
                 set(XRPAmount{num});
-            else
+            else if (mAsset.holds<MPTIssue>())
                 set(MPTAmount{num});
+            else
+                Throw<std::runtime_error>("Unknown integral asset type");
             mOffset = 0;
         }
         else
