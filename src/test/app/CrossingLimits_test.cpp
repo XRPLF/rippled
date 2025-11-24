@@ -469,14 +469,10 @@ public:
         n_offers(env, 998, alice, XRP(0.96), USD(1));
         n_offers(env, 998, alice, XRP(0.95), USD(1));
 
-        auto const expectedTER = tesSUCCESS;
-
-        env(offer(bob, USD(8000), XRP(8000)), ter(expectedTER));
+        env(offer(bob, USD(8000), XRP(8000)), ter(tesSUCCESS));
         env.close();
 
-        auto const expectedUSD = USD(1996);
-
-        env.require(balance(bob, expectedUSD));
+        env.require(balance(bob, USD(1996)));
     }
 
     void
