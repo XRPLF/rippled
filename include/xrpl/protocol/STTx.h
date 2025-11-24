@@ -103,22 +103,15 @@ public:
         std::optional<std::reference_wrapper<SField const>> signatureTarget =
             {});
 
-    enum class RequireFullyCanonicalSig : bool { no, yes };
-
     /** Check the signature.
-        @param requireCanonicalSig If `true`, check that the signature is fully
-            canonical. If `false`, only check that the signature is valid.
         @param rules The current ledger rules.
         @return `true` if valid signature. If invalid, the error message string.
     */
     Expected<void, std::string>
-    checkSign(RequireFullyCanonicalSig requireCanonicalSig, Rules const& rules)
-        const;
+    checkSign(Rules const& rules) const;
 
     Expected<void, std::string>
-    checkBatchSign(
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules) const;
+    checkBatchSign(Rules const& rules) const;
 
     // SQL Functions with metadata.
     static std::string const&
@@ -140,40 +133,25 @@ public:
 
 private:
     /** Check the signature.
-        @param requireCanonicalSig If `true`, check that the signature is fully
-            canonical. If `false`, only check that the signature is valid.
         @param rules The current ledger rules.
         @param sigObject Reference to object that contains the signature fields.
             Will be *this more often than not.
         @return `true` if valid signature. If invalid, the error message string.
     */
     Expected<void, std::string>
-    checkSign(
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules,
-        STObject const& sigObject) const;
+    checkSign(Rules const& rules, STObject const& sigObject) const;
 
     Expected<void, std::string>
-    checkSingleSign(
-        RequireFullyCanonicalSig requireCanonicalSig,
-        STObject const& sigObject) const;
+    checkSingleSign(STObject const& sigObject) const;
 
     Expected<void, std::string>
-    checkMultiSign(
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules,
-        STObject const& sigObject) const;
+    checkMultiSign(Rules const& rules, STObject const& sigObject) const;
 
     Expected<void, std::string>
-    checkBatchSingleSign(
-        STObject const& batchSigner,
-        RequireFullyCanonicalSig requireCanonicalSig) const;
+    checkBatchSingleSign(STObject const& batchSigner) const;
 
     Expected<void, std::string>
-    checkBatchMultiSign(
-        STObject const& batchSigner,
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules) const;
+    checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const;
 
     STBase*
     copy(std::size_t n, void* buf) const override;

@@ -64,7 +64,6 @@ XRPL_FEATURE(Clawback,                   Supported::yes, VoteBehavior::DefaultNo
 XRPL_FIX    (UniversalNumber,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(XRPFees,                    Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(RequireFullyCanonicalSig,   Supported::yes, VoteBehavior::DefaultYes)
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.
@@ -133,6 +132,7 @@ XRPL_RETIRE_FEATURE(MultiSignReserve)
 XRPL_RETIRE_FEATURE(NegativeUNL)
 XRPL_RETIRE_FEATURE(NonFungibleTokensV1_1)
 XRPL_RETIRE_FEATURE(PayChan)
+XRPL_RETIRE_FEATURE(RequireFullyCanonicalSig)
 XRPL_RETIRE_FEATURE(SortedDirectories)
 XRPL_RETIRE_FEATURE(TicketBatch)
 XRPL_RETIRE_FEATURE(TickSize)
