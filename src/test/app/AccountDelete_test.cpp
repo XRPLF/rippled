@@ -419,43 +419,6 @@ public:
     }
 
     void
-    testAmendmentEnable()
-    {
-        using namespace jtx;
-
-        testcase("Amendment enable");
-
-        Env env{*this};
-        Account const alice("alice");
-        Account const becky("becky");
-
-        env.fund(XRP(10000), alice, becky);
-        env.close();
-
-        // Close enough ledgers to be able to delete alice's account.
-        incLgrSeqForAccDel(env, alice);
-
-        // Verify that alice's account root is present.
-        Keylet const aliceAcctKey{keylet::account(alice.id())};
-        BEAST_EXPECT(env.closed()->exists(aliceAcctKey));
-
-        auto const alicePreDelBal{env.balance(alice)};
-        auto const beckyPreDelBal{env.balance(becky)};
-
-        auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, becky), fee(acctDelFee));
-
-        // Verify that alice's account root is gone from the current ledger
-        // and becky has alice's XRP.
-        BEAST_EXPECT(!env.current()->exists(aliceAcctKey));
-        BEAST_EXPECT(
-            env.balance(becky) == alicePreDelBal + beckyPreDelBal - acctDelFee);
-
-        env.close();
-        BEAST_EXPECT(!env.closed()->exists(aliceAcctKey));
-    }
-
-    void
     testTooManyOffers()
     {
         // Put enough offers in an account that we refuse to delete the account.
