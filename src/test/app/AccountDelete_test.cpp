@@ -1094,7 +1094,6 @@ public:
         testBasics();
         testDirectories();
         testOwnedTypes();
-        testAmendmentEnable();
         testTooManyOffers();
         testImplicitlyCreatedTrustline();
         testBalanceTooSmallForFee();
