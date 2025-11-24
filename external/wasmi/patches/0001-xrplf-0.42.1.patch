@@ -1,8 +1,17 @@
 diff --git a/crates/c_api/CMakeLists.txt b/crates/c_api/CMakeLists.txt
-index b15c787a..4e6de690 100644
+index b15c787a..54eaed2d 100644
 --- a/crates/c_api/CMakeLists.txt
 +++ b/crates/c_api/CMakeLists.txt
-@@ -43,6 +43,10 @@ endif()
+@@ -6,6 +6,8 @@ option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+ option(WASMI_ALWAYS_BUILD "If cmake should always invoke cargo to build Wasmi" ON)
+ set(WASMI_TARGET "" CACHE STRING "Rust target to build for")
+ 
++add_compile_definitions(COMPILING_WASM_RUNTIME_API=1)
++
+ if(NOT WASMI_TARGET)
+     execute_process(
+         COMMAND rustc -vV
+@@ -43,6 +45,10 @@ endif()
  list(TRANSFORM WASMI_SHARED_FILES PREPEND ${WASMI_TARGET_DIR}/)
  list(TRANSFORM WASMI_STATIC_FILES PREPEND ${WASMI_TARGET_DIR}/)
  
@@ -13,7 +22,15 @@ index b15c787a..4e6de690 100644
  # Instructions on how to build and install the Wasmi Rust crate.
  find_program(WASMI_CARGO_BINARY cargo REQUIRED)
  include(ExternalProject)
-@@ -112,6 +116,7 @@ install(
+@@ -79,7 +85,6 @@ else()
+     target_link_libraries(wasmi INTERFACE ${WASMI_STATIC_FILES})
+ 
+     if(WASMI_TARGET MATCHES "windows")
+-        target_compile_options(wasmi INTERFACE -DWASM_API_EXTERN= -DWASI_API_EXTERN=)
+         target_link_libraries(wasmi INTERFACE ws2_32 advapi32 userenv ntdll shell32 ole32 bcrypt)
+     elseif(NOT WASMI_TARGET MATCHES "darwin")
+         target_link_libraries(wasmi INTERFACE pthread dl m)
+@@ -112,6 +117,7 @@ install(
      DESTINATION ${CMAKE_INSTALL_LIBDIR}
  )
  
@@ -21,7 +38,7 @@ index b15c787a..4e6de690 100644
  if(WASMI_TARGET MATCHES "darwin")
      set(INSTALLED_LIB "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/libwasmi.dylib")
      install(
-@@ -131,6 +136,7 @@ if(WASMI_TARGET MATCHES "darwin")
+@@ -131,6 +137,7 @@ if(WASMI_TARGET MATCHES "darwin")
          install(CODE "execute_process(COMMAND ${install_name_tool_cmd})")
      endif()
  endif()
@@ -29,7 +46,7 @@ index b15c787a..4e6de690 100644
  
  # Documentation Generation via Doxygen:
  set(DOXYGEN_CONF_IN ${CMAKE_CURRENT_SOURCE_DIR}/doxygen.conf.in)
-@@ -141,19 +147,3 @@ add_custom_target(doc
+@@ -141,19 +148,3 @@ add_custom_target(doc
      DEPENDS ${WASMI_GENERATED_CONF_H} ${DOXYGEN_CONF_OUT}
      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
  )
@@ -50,10 +67,29 @@ index b15c787a..4e6de690 100644
 -    COMMENT "clang-format: Apply formatting rules for Wasmi C-API header files"
 -)
 diff --git a/crates/c_api/include/wasm.h b/crates/c_api/include/wasm.h
-index 5ee617ff..0199192d 100644
+index 5ee617ff..37809a6f 100644
 --- a/crates/c_api/include/wasm.h
 +++ b/crates/c_api/include/wasm.h
-@@ -146,6 +146,13 @@ WASM_DECLARE_OWN(store)
+@@ -13,11 +13,17 @@
+ #include <assert.h>
+ 
+ #ifndef WASM_API_EXTERN
+-#if defined(_WIN32) && !defined(__MINGW32__) && !defined(LIBWASM_STATIC)
++#if defined(_MSC_BUILD)
++#if defined(COMPILING_WASM_RUNTIME_API)
++#define WASM_API_EXTERN __declspec(dllexport)
++#elif defined(_DLL)
+ #define WASM_API_EXTERN __declspec(dllimport)
+ #else
+ #define WASM_API_EXTERN
+ #endif
++#else
++#define WASM_API_EXTERN
++#endif
+ #endif
+ 
+ #ifdef __cplusplus
+@@ -146,6 +152,13 @@ WASM_DECLARE_OWN(store)
  
  WASM_API_EXTERN own wasm_store_t* wasm_store_new(wasm_engine_t*);
  
