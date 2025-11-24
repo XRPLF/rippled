@@ -529,7 +529,22 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        constexpr char const* featureName = "CryptoConditionsSuite";
+
+        auto const& supportedAmendments = detail::supportedAmendments();
+        auto obsoleteFeature = std::find_if(
+            std::begin(supportedAmendments),
+            std::end(supportedAmendments),
+            [](auto const& pair) {
+                return pair.second == VoteBehavior::Obsolete;
+            });
+
+        if (obsoleteFeature == std::end(supportedAmendments))
+        {
+            pass();
+            return;
+        }
+
+        auto const featureName = obsoleteFeature->first;
 
         auto jrr = env.rpc("feature", featureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
