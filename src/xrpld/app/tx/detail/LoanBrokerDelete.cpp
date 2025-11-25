@@ -33,7 +33,10 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
         return tecNO_ENTRY;
     }
-    if (account != sleBroker->at(sfOwner))
+
+    auto const brokerOwner = sleBroker->at(sfOwner);
+
+    if (account != brokerOwner)
     {
         JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
         return tecNO_PERMISSION;
@@ -42,6 +45,54 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.warn()) << "LoanBrokerDelete: Owner count is " << ownerCount;
         return tecHAS_OBLIGATIONS;
+    }
+    if (auto const debtTotal = sleBroker->at(sfDebtTotal);
+        debtTotal != beast::zero)
+    {
+        // Any remaining debt should have been wiped out by the last Loan
+        // Delete. This check is purely defensive.
+        auto const vault =
+            ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+        if (!vault)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        auto const asset = vault->at(sfAsset);
+        auto const scale = getVaultScale(vault);
+
+        auto const rounded =
+            roundToAsset(asset, debtTotal, scale, Number::towards_zero);
+
+        if (rounded != beast::zero)
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.warn()) << "LoanBrokerDelete: Debt total is "
+                               << debtTotal << ", which rounds to " << rounded;
+            return tecHAS_OBLIGATIONS;
+            // LCOV_EXCL_START
+        }
+    }
+
+    auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+    if (!vault)
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "Vault is missing for Broker " << brokerID;
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
+    Asset const asset = vault->at(sfAsset);
+
+    auto const coverAvailable =
+        STAmount{asset, sleBroker->at(sfCoverAvailable)};
+    // If there are assets in the cover, broker will receive them on deletion.
+    // So we need to check if the broker owner is deep frozen for that asset.
+    if (coverAvailable > beast::zero)
+    {
+        if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
+        {
+            JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
+            return ret;
+        }
     }
 
     return tesSUCCESS;
@@ -133,6 +184,8 @@ LoanBrokerDelete::doApply()
         if (!owner)
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
+        // Decreases the owner count by two: one for the LoanBroker object, and
+        // one for the pseudo-account.
         adjustOwnerCount(view(), owner, -2, j_);
     }
 

@@ -763,9 +763,25 @@ public:
  */
 class ValidLoanBroker
 {
-    // Pair is <before, after>. After is used for most of the checks, except
-    // those that check changed values.
-    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> brokers_;
+    // Not all of these elements will necessarily be populated. Remaining items
+    // will be looked up as needed.
+    struct BrokerInfo
+    {
+        SLE::const_pointer brokerBefore = nullptr;
+        // After is used for most of the checks, except
+        // those that check changed values.
+        SLE::const_pointer brokerAfter = nullptr;
+    };
+    // Collect all the LoanBrokers found directly or indirectly through
+    // pseudo-accounts. Key is the brokerID / index. It will be used to find the
+    // LoanBroker object if brokerBefore and brokerAfter are nullptr
+    std::map<uint256, BrokerInfo> brokers_;
+    // Collect all the modified trust lines. Their high and low accounts will be
+    // loaded to look for LoanBroker pseudo-accounts.
+    std::vector<SLE::const_pointer> lines_;
+    // Collect all the modified MPTokens. Their accounts will be loaded to look
+    // for LoanBroker pseudo-accounts.
+    std::vector<SLE::const_pointer> mpts_;
 
     bool
     goodZeroDirectory(

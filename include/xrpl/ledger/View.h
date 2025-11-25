@@ -352,7 +352,7 @@ accountHolds(
 //
 // <-- saAmount: amount of currency held by account. May be negative.
 [[nodiscard]] STAmount
-accountCanSend(
+accountSpendable(
     ReadView const& view,
     AccountID const& account,
     Currency const& currency,
@@ -361,7 +361,7 @@ accountCanSend(
     beast::Journal j);
 
 [[nodiscard]] STAmount
-accountCanSend(
+accountSpendable(
     ReadView const& view,
     AccountID const& account,
     Issue const& issue,
@@ -369,7 +369,7 @@ accountCanSend(
     beast::Journal j);
 
 [[nodiscard]] STAmount
-accountCanSend(
+accountSpendable(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
@@ -378,7 +378,7 @@ accountCanSend(
     beast::Journal j);
 
 [[nodiscard]] STAmount
-accountCanSend(
+accountSpendable(
     ReadView const& view,
     AccountID const& account,
     Asset const& asset,
@@ -752,6 +752,17 @@ canWithdraw(
  */
 [[nodiscard]] TER
 canWithdraw(ReadView const& view, STTx const& tx);
+
+[[nodiscard]] TER
+doWithdraw(
+    ApplyView& view,
+    STTx const& tx,
+    AccountID const& senderAcct,
+    AccountID const& dstAcct,
+    AccountID const& sourceAcct,
+    XRPAmount priorBalance,
+    STAmount const& amount,
+    beast::Journal j);
 
 /// Any transactors that call addEmptyHolding() in doApply must call
 /// canAddHolding() in preflight with the same View and Asset

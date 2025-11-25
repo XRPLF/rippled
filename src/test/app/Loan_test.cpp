@@ -141,11 +141,7 @@ protected:
             using namespace jtx;
 
             auto const vaultSle = env.le(keylet::vault(vaultID));
-            if (!vaultSle)
-                // This function is not important enough to return an optional.
-                // Return an impossibly small number
-                return STAmount::cMinOffset - 1;
-            return vaultSle->at(sfAssetsTotal).exponent();
+            return getVaultScale(vaultSle);
         }
     };
 
@@ -940,12 +936,12 @@ protected:
             state.loanScale,
             Number::upward);
 
-        auto currentRoundedState = constructRoundedLoanState(
+        auto currentRoundedState = constructLoanState(
             state.totalValue,
             state.principalOutstanding,
             state.managementFeeOutstanding);
         {
-            auto const raw = calculateRawLoanState(
+            auto const raw = computeRawLoanState(
                 state.periodicPayment,
                 periodicRate,
                 state.paymentRemaining,
@@ -998,7 +994,7 @@ protected:
         Number totalFeesPaid = 0;
         std::size_t totalPaymentsMade = 0;
 
-        ripple::LoanState currentTrueState = calculateRawLoanState(
+        ripple::LoanState currentTrueState = computeRawLoanState(
             state.periodicPayment,
             periodicRate,
             state.paymentRemaining,
@@ -1053,12 +1049,13 @@ protected:
                     paymentComponents.trackedInterestPart() +
                     paymentComponents.trackedManagementFeeDelta);
 
-            ripple::LoanState const nextTrueState = calculateRawLoanState(
+            ripple::LoanState const nextTrueState = computeRawLoanState(
                 state.periodicPayment,
                 periodicRate,
                 state.paymentRemaining - 1,
                 broker.params.managementFeeRate);
-            detail::LoanDeltas const deltas = currentTrueState - nextTrueState;
+            detail::LoanStateDeltas const deltas =
+                currentTrueState - nextTrueState;
             BEAST_EXPECT(
                 deltas.total() ==
                 deltas.principal + deltas.interest + deltas.managementFee);
@@ -1670,6 +1667,7 @@ protected:
         int interestExponent)
     {
         using namespace jtx;
+        using namespace Lending;
 
         auto const& asset = broker.asset.raw();
         auto const currencyLabel = getCurrencyLabel(asset);
@@ -2423,7 +2421,7 @@ protected:
                 // the below BEAST_EXPECTs may not hold across assets.
                 Number const interval = state.paymentInterval;
                 auto const periodicRate =
-                    interval * Number(12, -2) / (365 * 24 * 60 * 60);
+                    interval * Number(12, -2) / secondsInYear;
                 BEAST_EXPECT(
                     periodicRate ==
                     Number(2283105022831050, -21, Number::unchecked{}));
@@ -2671,7 +2669,7 @@ protected:
                 // the below BEAST_EXPECTs may not hold across assets.
                 Number const interval = state.paymentInterval;
                 auto const periodicRate =
-                    interval * Number(12, -2) / (365 * 24 * 60 * 60);
+                    interval * Number(12, -2) / secondsInYear;
                 BEAST_EXPECT(
                     periodicRate ==
                     Number(2283105022831050, -21, Number::unchecked{}));
@@ -2712,12 +2710,12 @@ protected:
                         Number::upward));
 
                 {
-                    auto const raw = calculateRawLoanState(
+                    auto const raw = computeRawLoanState(
                         state.periodicPayment,
                         periodicRate,
                         state.paymentRemaining,
                         broker.params.managementFeeRate);
-                    auto const rounded = constructRoundedLoanState(
+                    auto const rounded = constructLoanState(
                         state.totalValue,
                         state.principalOutstanding,
                         state.managementFeeOutstanding);
@@ -2755,7 +2753,7 @@ protected:
                 Number totalInterestPaid = 0;
                 std::size_t totalPaymentsMade = 0;
 
-                ripple::LoanState currentTrueState = calculateRawLoanState(
+                ripple::LoanState currentTrueState = computeRawLoanState(
                     state.periodicPayment,
                     periodicRate,
                     state.paymentRemaining,
@@ -2795,13 +2793,12 @@ protected:
                         paymentComponents.trackedValueDelta <=
                         roundedPeriodicPayment);
 
-                    ripple::LoanState const nextTrueState =
-                        calculateRawLoanState(
-                            state.periodicPayment,
-                            periodicRate,
-                            state.paymentRemaining - 1,
-                            broker.params.managementFeeRate);
-                    detail::LoanDeltas const deltas =
+                    ripple::LoanState const nextTrueState = computeRawLoanState(
+                        state.periodicPayment,
+                        periodicRate,
+                        state.paymentRemaining - 1,
+                        broker.params.managementFeeRate);
+                    detail::LoanStateDeltas const deltas =
                         currentTrueState - nextTrueState;
 
                     testcase
@@ -4914,6 +4911,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
+        using namespace Lending;
         Env env(*this, all);
 
         Account const issuer{"issuer"};
@@ -5087,6 +5085,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
+        using namespace Lending;
         Env env(*this, all);
 
         Account const issuer{"issuer"};
@@ -5170,6 +5169,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
+        using namespace Lending;
         Env env(*this, all);
 
         Account const issuer{"issuer"};
@@ -5282,6 +5282,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
+        using namespace Lending;
         Env env(*this, all);
 
         Account const issuer{"issuer"};
@@ -5376,6 +5377,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
+        using namespace Lending;
         Env env(*this, all);
 
         Account const issuer{"issuer"};
@@ -5912,7 +5914,7 @@ protected:
         Number const latePaymentFeeRounded = roundToAsset(
             broker.asset, loanSle->at(sfLatePaymentFee), state.loanScale);
 
-        auto const roundedLoanState = constructRoundedLoanState(
+        auto const roundedLoanState = constructLoanState(
             state.totalValue,
             state.principalOutstanding,
             state.managementFeeOutstanding);
@@ -5920,7 +5922,7 @@ protected:
 
         auto const periodicRate =
             loanPeriodicRate(interestRateValue, state.paymentInterval);
-        auto const rawLoanState = calculateRawLoanState(
+        auto const rawLoanState = computeRawLoanState(
             state.periodicPayment,
             periodicRate,
             state.paymentRemaining,
@@ -5930,7 +5932,7 @@ protected:
         auto const startDateSeconds = static_cast<std::uint32_t>(
             state.startDate.time_since_epoch().count());
 
-        Number const fullPaymentInterest = calculateFullPaymentInterest(
+        Number const fullPaymentInterest = computeFullPaymentInterest(
             rawLoanState.principalOutstanding,
             periodicRate,
             parentCloseTime,
@@ -6212,7 +6214,7 @@ protected:
             loanPeriodicRate(after.interestRate, after.paymentInterval);
         // Accrued + prepayment-penalty interest based on current periodic
         // schedule
-        auto const fullPaymentInterest = calculateFullPaymentInterest(
+        auto const fullPaymentInterest = computeFullPaymentInterest(
             after.periodicPayment,
             periodicRate2,
             after.paymentRemaining,
@@ -6248,7 +6250,7 @@ protected:
         // Reference (clamped) computation: emulate a non-negative accrual
         // window by clamping prevPaymentDate to 'now' for the full-pay path.
         auto const prevClamped = std::min(after.previousPaymentDate, nowSecs);
-        auto const fullPaymentInterestClamped = calculateFullPaymentInterest(
+        auto const fullPaymentInterestClamped = computeFullPaymentInterest(
             after.periodicPayment,
             periodicRate2,
             after.paymentRemaining,

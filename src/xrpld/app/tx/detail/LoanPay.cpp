@@ -7,6 +7,8 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <bit>
+
 namespace ripple {
 
 bool
@@ -32,14 +34,11 @@ LoanPay::preflight(PreflightContext const& ctx)
 
     // The loan payment flags are all mutually exclusive. If more than one is
     // set, the tx is malformed.
-    int flagsSet = 0;
-    for (auto const flag :
-         {tfLoanLatePayment, tfLoanFullPayment, tfLoanOverpayment})
-    {
-        if (ctx.tx.isFlag(flag))
-            ++flagsSet;
-    }
-    if (flagsSet > 1)
+    static_assert(
+        (tfLoanLatePayment | tfLoanFullPayment | tfLoanOverpayment) ==
+        ~(tfLoanPayMask | tfUniversal));
+    auto const flagsSet = ctx.tx.getFlags() & ~(tfLoanPayMask | tfUniversal);
+    if (std::popcount(flagsSet) > 1)
     {
         JLOG(ctx.j.warn()) << "Only one LoanPay flag can be set per tx. "
                            << flagsSet << " is too many.";
@@ -52,6 +51,8 @@ LoanPay::preflight(PreflightContext const& ctx)
 XRPAmount
 LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    using namespace Lending;
+
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
 
     if (tx.isFlag(tfLoanFullPayment) || tx.isFlag(tfLoanLatePayment))
@@ -210,7 +211,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     // Do not support "partial payments" - if the transaction says to pay X,
     // then the account must have X available, even if the loan payment takes
     // less.
-    if (auto const balance = accountCanSend(
+    if (auto const balance = accountSpendable(
             ctx.view,
             account,
             asset,
@@ -386,6 +387,11 @@ LoanPay::doApply()
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "ripple::LoanPay::doApply",
         "rounding does nothing for integral asset");
+    // Account for value changes when reducing the broker's debt:
+    // - Positive value change (from full/late/overpayments): Subtract from the
+    //   amount credited toward debt to avoid over-reducing the debt.
+    // - Negative value change (from full/overpayments): Add to the amount
+    //   credited toward debt,effectively increasing the debt reduction.
     auto const totalPaidToVaultForDebt =
         totalPaidToVaultRaw - paymentParts->valueChange;
 
@@ -407,11 +413,9 @@ LoanPay::doApply()
         "totalPaidToVaultForDebt rounding good");
     // Despite our best efforts, it's possible for rounding errors to accumulate
     // in the loan broker's debt total. This is because the broker may have more
-    // that one loan with significantly different scales.
-    if (totalPaidToVaultForDebt >= debtTotalProxy)
-        debtTotalProxy = 0;
-    else
-        debtTotalProxy -= totalPaidToVaultForDebt;
+    // than one loan with significantly different scales.
+    adjustImpreciseNumber(
+        debtTotalProxy, -totalPaidToVaultForDebt, asset, vaultScale);
 
     //------------------------------------------------------
     // Vault object state changes
@@ -470,11 +474,11 @@ LoanPay::doApply()
     }
 
 #if !NDEBUG
-    auto const accountBalanceBefore = accountCanSend(
+    auto const accountBalanceBefore = accountSpendable(
         view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
     auto const vaultBalanceBefore = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
-        : accountCanSend(
+        : accountSpendable(
               view,
               vaultPseudoAccount,
               asset,
@@ -483,7 +487,7 @@ LoanPay::doApply()
               j_);
     auto const brokerBalanceBefore = account_ == brokerPayee
         ? STAmount{asset, 0}
-        : accountCanSend(
+        : accountSpendable(
               view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
 #endif
 
@@ -539,11 +543,11 @@ LoanPay::doApply()
         "vault pseudo balance agrees after");
 
 #if !NDEBUG
-    auto const accountBalanceAfter = accountCanSend(
+    auto const accountBalanceAfter = accountSpendable(
         view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
     auto const vaultBalanceAfter = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
-        : accountCanSend(
+        : accountSpendable(
               view,
               vaultPseudoAccount,
               asset,
@@ -552,7 +556,7 @@ LoanPay::doApply()
               j_);
     auto const brokerBalanceAfter = account_ == brokerPayee
         ? STAmount{asset, 0}
-        : accountCanSend(
+        : accountSpendable(
               view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
 
     XRPL_ASSERT_PARTS(
