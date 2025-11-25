@@ -14,9 +14,7 @@ on:
       - "master"
     paths:
       # These paths are unique to `on-trigger.yml`.
-      - ".github/workflows/reusable-check-missing-commits.yml"
       - ".github/workflows/on-trigger.yml"
-      - ".github/workflows/publish-docs.yml"
 
       # Keep the paths below in sync with those in `on-pr.yml`.
       - ".github/actions/build-deps/**"
@@ -63,10 +61,6 @@ defaults:
     shell: bash
 
 jobs:
-  check-missing-commits:
-    if: ${{ github.event_name == 'push' && github.ref_type == 'branch' && contains(fromJSON('["develop", "release"]'), github.ref_name) }}
-    uses: ./.github/workflows/reusable-check-missing-commits.yml
-
   build-test:
     uses: ./.github/workflows/reusable-build-test.yml
     strategy:
