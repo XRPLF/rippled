@@ -111,7 +111,7 @@ getRowsMinMax(soci::session& session, TableType type);
 bool
 saveValidatedLedger(
     DatabaseCon& ldgDB,
-    DatabaseCon& txnDB,
+    std::unique_ptr<DatabaseCon> const& txnDB,
     Application& app,
     std::shared_ptr<Ledger const> const& ledger,
     bool current);

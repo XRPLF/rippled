@@ -440,7 +440,7 @@ PayChanClaim::preflight(PreflightContext const& ctx)
         PublicKey const pk(ctx.tx[sfPublicKey]);
         Serializer msg;
         serializePayChanAuthorization(msg, k.key, authAmt);
-        if (!verify(pk, msg.slice(), *sig, /*canonical*/ true))
+        if (!verify(pk, msg.slice(), *sig))
             return temBAD_SIGNATURE;
     }
 
