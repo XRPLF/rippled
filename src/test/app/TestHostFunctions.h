@@ -15,11 +15,12 @@ namespace test {
 
 struct TestLedgerDataProvider : public HostFunctions
 {
-    jtx::Env* env_;
+    jtx::Env& env_;
     void const* rt_ = nullptr;
 
 public:
-    TestLedgerDataProvider(jtx::Env* env) : env_(env)
+    TestLedgerDataProvider(jtx::Env& env)
+        : HostFunctions(env.journal), env_(env)
     {
     }
 
@@ -38,7 +39,7 @@ public:
     Expected<std::int32_t, HostFunctionError>
     getLedgerSqn() override
     {
-        return env_->current()->seq();
+        return env_.current()->seq();
     }
 };
 
@@ -52,7 +53,7 @@ struct TestHostFunctions : public HostFunctions
 
 public:
     TestHostFunctions(test::jtx::Env& env, int cd = 0)
-        : env_(env), clock_drift_(cd)
+        : HostFunctions(env.journal), env_(env), clock_drift_(cd)
     {
         accountID_ = env_.master.id();
         std::string t = "10000";
@@ -69,12 +70,6 @@ public:
     getRT() const override
     {
         return rt_;
-    }
-
-    beast::Journal
-    getJournal() override
-    {
-        return env_.journal;
     }
 
     Expected<std::int32_t, HostFunctionError>
@@ -548,27 +543,19 @@ public:
 struct TestHostFunctionsSink : public TestHostFunctions
 {
     test::StreamSink sink_;
-    beast::Journal jlog_;
     void const* rt_ = nullptr;
 
 public:
     explicit TestHostFunctionsSink(test::jtx::Env& env, int cd = 0)
-        : TestHostFunctions(env, cd)
-        , sink_(beast::severities::kDebug)
-        , jlog_(sink_)
+        : TestHostFunctions(env, cd), sink_(beast::severities::kDebug)
     {
+        j_ = beast::Journal(sink_);
     }
 
     test::StreamSink&
     getSink()
     {
         return sink_;
-    }
-
-    beast::Journal
-    getJournal() override
-    {
-        return jlog_;
     }
 };
 

@@ -300,13 +300,44 @@ returnResult(
     }
 }
 
+static inline HostFunctions*
+getHF(void* env)
+{
+    auto const* udata = reinterpret_cast<WasmUserData*>(env);
+    HostFunctions* hf = reinterpret_cast<HostFunctions*>(udata->first);
+    return hf;
+}
+
+static inline Expected<std::int64_t, HostFunctionError>
+checkGas(void* env)
+{
+    auto const* udata = reinterpret_cast<WasmUserData*>(env);
+    HostFunctions* hf = reinterpret_cast<HostFunctions*>(udata->first);
+
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    if (!runtime)
+        return Unexpected(HostFunctionError::NO_RUNTIME);  // LCOV_EXCL_LINE
+
+    int64_t const gas = runtime->getGas();
+    WasmImportFunc const& impFunc = udata->second;
+    int64_t const x = gas >= impFunc.gas ? gas - impFunc.gas : 0;
+    runtime->setGas(x);
+    if (gas < impFunc.gas)
+        return Unexpected(HostFunctionError::OUT_OF_GAS);
+
+    return x;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 wasm_trap_t*
 getLedgerSqn_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -319,7 +350,9 @@ getParentLedgerTime_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -333,7 +366,9 @@ getParentLedgerHash_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -347,7 +382,9 @@ getBaseFee_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -360,7 +397,9 @@ isAmendmentEnabled_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -396,7 +435,9 @@ cacheLedgerObj_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -422,7 +463,9 @@ getTxField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -441,7 +484,9 @@ getCurrentLedgerObjField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -461,7 +506,9 @@ getLedgerObjField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -487,7 +534,9 @@ getTxNestedField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -507,7 +556,9 @@ getCurrentLedgerObjNestedField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -530,7 +581,9 @@ getLedgerObjNestedField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -560,7 +613,9 @@ getTxArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -580,7 +635,9 @@ getCurrentLedgerObjArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -604,7 +661,9 @@ getLedgerObjArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -634,7 +693,9 @@ getTxNestedArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -654,7 +715,9 @@ getCurrentLedgerObjNestedArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -677,7 +740,9 @@ getLedgerObjNestedArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -706,7 +771,9 @@ updateData_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -726,7 +793,9 @@ checkSignature_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -762,7 +831,9 @@ computeSha512HalfHash_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -781,7 +852,9 @@ accountKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -798,7 +871,9 @@ accountKeylet_wrap(
 wasm_trap_t*
 ammKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -828,7 +903,9 @@ checkKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -854,7 +931,9 @@ credentialKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -890,7 +969,9 @@ delegateKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -920,7 +1001,9 @@ depositPreauthKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -947,7 +1030,9 @@ depositPreauthKeylet_wrap(
 wasm_trap_t*
 didKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -967,7 +1052,9 @@ escrowKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -993,7 +1080,9 @@ lineKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1029,7 +1118,9 @@ mptIssuanceKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1059,7 +1150,9 @@ mptokenKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1095,7 +1188,9 @@ nftOfferKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1125,7 +1220,9 @@ offerKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1155,7 +1252,9 @@ oracleKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1180,7 +1279,9 @@ paychanKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1216,7 +1317,9 @@ permissionedDomainKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1246,7 +1349,9 @@ signersKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1266,7 +1371,9 @@ ticketKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1296,7 +1403,9 @@ vaultKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1323,7 +1432,9 @@ vaultKeylet_wrap(
 wasm_trap_t*
 getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1349,7 +1460,9 @@ getNFTIssuer_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1369,7 +1482,9 @@ getNFTTaxon_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1389,7 +1504,9 @@ getNFTFlags_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1409,7 +1526,9 @@ getNFTTransferFee_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1429,7 +1548,9 @@ getNFTSerial_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1446,7 +1567,9 @@ getNFTSerial_wrap(
 wasm_trap_t*
 trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
@@ -1480,7 +1603,9 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 wasm_trap_t*
 traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmParamLength)
@@ -1510,7 +1635,9 @@ traceAccount_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     if (params->data[1].of.i32 > maxWasmParamLength)
@@ -1535,7 +1662,9 @@ traceFloat_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     if (params->data[1].of.i32 > maxWasmParamLength)
@@ -1560,7 +1689,9 @@ traceAmount_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     if (params->data[1].of.i32 > maxWasmParamLength)
@@ -1600,7 +1731,9 @@ floatFromInt_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
@@ -1624,7 +1757,9 @@ floatFromUint_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
@@ -1645,7 +1780,9 @@ floatFromUint_wrap(
 wasm_trap_t*
 floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
@@ -1673,7 +1810,9 @@ floatCompare_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
@@ -1691,7 +1830,9 @@ floatCompare_wrap(
 wasm_trap_t*
 floatAdd_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
@@ -1719,7 +1860,9 @@ floatSubtract_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
@@ -1747,7 +1890,9 @@ floatMultiply_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
@@ -1775,7 +1920,9 @@ floatDivide_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
@@ -1800,7 +1947,9 @@ floatDivide_wrap(
 wasm_trap_t*
 floatRoot_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
@@ -1828,7 +1977,9 @@ floatPower_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
@@ -1853,7 +2004,9 @@ floatPower_wrap(
 wasm_trap_t*
 floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    if (auto x = checkGas(env); !x)
+        return hfResult(results, x.error());
+    auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;

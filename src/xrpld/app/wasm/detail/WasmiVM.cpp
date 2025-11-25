@@ -86,7 +86,8 @@ InstanceWrapper::InstanceWrapper(
     wasm_module_t* m,
     wasm_extern_vec_t const& imports,
     beast::Journal j)
-    : exports_ WASM_EMPTY_VEC
+    : store_(s)
+    , exports_ WASM_EMPTY_VEC
     , instance_(init(s, m, &exports_, imports, j))
     , j_(j)
 {
@@ -104,6 +105,8 @@ InstanceWrapper::operator=(InstanceWrapper&& o)
     if (this == &o)
         return *this;
 
+    store_ = o.store_;
+    o.store_ = nullptr;
     if (exports_.size)
         wasm_extern_vec_delete(&exports_);
     exports_ = o.exports_;
@@ -191,6 +194,35 @@ InstanceWrapper::getMem() const
         wasm_memory_data_size(mem)};
 }
 
+std::int64_t
+InstanceWrapper::getGas() const
+{
+    if (!store_)
+        return -1;
+    std::uint64_t gas = 0;
+    wasm_store_get_fuel(store_, &gas);
+    return static_cast<std::int64_t>(gas);
+}
+
+std::int64_t
+InstanceWrapper::setGas(std::int64_t gas) const
+{
+    if (!store_)
+        return -1;
+
+    if (gas < 0)
+        gas = std::numeric_limits<decltype(gas)>::max();
+    wasmi_error_t* err =
+        wasm_store_set_fuel(store_, static_cast<std::uint64_t>(gas));
+    if (err)
+    {
+        print_wasm_error("Can't set instance gas", nullptr, j_);
+        throw std::runtime_error("Can't set instance gas");
+    }
+
+    return gas;
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ModulePtr
@@ -219,9 +251,9 @@ ModuleWrapper::ModuleWrapper(
     wasm_store_t* s,
     Bytes const& wasmBin,
     bool instantiate,
-    std::vector<WasmImportFunc> const& imports,
+    ImportVec const& imports,
     beast::Journal j)
-    : store_(s), module_(init(s, wasmBin, j)), exportTypes_{0, nullptr}, j_(j)
+    : module_(init(s, wasmBin, j)), exportTypes_{0, nullptr}, j_(j)
 {
     wasm_module_exports(module_.get(), &exportTypes_);
     if (instantiate)
@@ -244,8 +276,6 @@ ModuleWrapper::operator=(ModuleWrapper&& o)
     if (this == &o)
         return *this;
 
-    store_ = o.store_;
-    o.store_ = nullptr;
     module_ = std::move(o.module_);
     instanceWrap_ = std::move(o.instanceWrap_);
     if (exportTypes_.size)
@@ -313,9 +343,7 @@ ModuleWrapper::makeImpReturn(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
 }
 
 wasm_extern_vec_t
-ModuleWrapper::buildImports(
-    wasm_store_t* s,
-    std::vector<WasmImportFunc> const& imports)
+ModuleWrapper::buildImports(wasm_store_t* s, ImportVec const& imports)
 {
     wasm_importtype_vec_t importTypes = WASM_EMPTY_VEC;
     wasm_module_imports(module_.get(), &importTypes);
@@ -350,8 +378,9 @@ ModuleWrapper::buildImports(
         //     continue;
 
         bool impSet = false;
-        for (auto const& imp : imports)
+        for (auto const& obj : imports)
         {
+            auto const& imp = obj.second;
             if (imp.name != fieldName)
                 continue;
 
@@ -368,7 +397,7 @@ ModuleWrapper::buildImports(
                 s,
                 ftype.get(),
                 reinterpret_cast<wasm_func_callback_with_env_t>(imp.wrap),
-                imp.udata,
+                (void*)&obj,
                 nullptr);
             if (!func)
             {
@@ -450,11 +479,7 @@ ModuleWrapper::addInstance(wasm_store_t* s, wasm_extern_vec_t const& imports)
 std::int64_t
 ModuleWrapper::getGas()
 {
-    if (!store_)
-        return 0;
-    std::uint64_t gas = 0;
-    wasm_store_get_fuel(store_, &gas);
-    return static_cast<std::int64_t>(gas);
+    return instanceWrap_ ? instanceWrap_.getGas() : -1;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -490,7 +515,7 @@ WasmiEngine::addModule(
     Bytes const& wasmCode,
     bool instantiate,
     int64_t gas,
-    std::vector<WasmImportFunc> const& imports)
+    ImportVec const& imports)
 {
     moduleWrap_.reset();
     store_.reset();  // to free the memory before creating new store
@@ -722,7 +747,7 @@ WasmiEngine::run(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::vector<WasmImportFunc> const& imports,
+    ImportVec const& imports,
     HostFunctions* hfs,
     int64_t gas,
     beast::Journal j)
@@ -748,7 +773,7 @@ WasmiEngine::runHlp(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::vector<WasmImportFunc> const& imports,
+    ImportVec const& imports,
     HostFunctions* hfs,
     int64_t gas)
 {
@@ -808,7 +833,7 @@ WasmiEngine::check(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::vector<WasmImportFunc> const& imports,
+    ImportVec const& imports,
     beast::Journal j)
 {
     j_ = j;
@@ -834,7 +859,7 @@ WasmiEngine::checkHlp(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::vector<WasmImportFunc> const& imports)
+    ImportVec const& imports)
 {
     // currently only 1 module support, possible parallel UT run
     std::lock_guard<decltype(m_)> lg(m_);
@@ -862,7 +887,7 @@ WasmiEngine::checkHlp(
 std::int64_t
 WasmiEngine::getGas()
 {
-    return moduleWrap_ ? moduleWrap_->getGas() : 0;
+    return moduleWrap_ ? moduleWrap_->getGas() : -1;
 }
 
 wmem

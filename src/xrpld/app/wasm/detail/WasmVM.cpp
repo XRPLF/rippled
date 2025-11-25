@@ -16,7 +16,7 @@
 namespace ripple {
 
 static void
-setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
+setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
 {
     // clang-format off
     WASM_IMPORT_FUNC2(i, getLedgerSqn, "get_ledger_sqn", hfs,                                                   60);
@@ -89,16 +89,13 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     // clang-format on
 }
 
-std::vector<WasmImportFunc>
-createWasmImport(HostFunctions* hfs)
+ImportVec
+createWasmImport(HostFunctions& hfs)
 {
-    std::vector<WasmImportFunc> i;
+    ImportVec i;
 
-    if (hfs)
-    {
-        setCommonHostFunctions(hfs, i);
-        WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs, 1000);
-    }
+    setCommonHostFunctions(&hfs, i);
+    WASM_IMPORT_FUNC2(i, updateData, "update_data", &hfs, 1000);
 
     return i;
 }
@@ -106,11 +103,10 @@ createWasmImport(HostFunctions* hfs)
 Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    HostFunctions* hfs,
-    int64_t gasLimit,
-    beast::Journal j)
+    int64_t gasLimit)
 {
     //  create VM and set cost limit
     auto& vm = WasmEngine::instance();
@@ -121,9 +117,9 @@ runEscrowWasm(
         funcName,
         params,
         createWasmImport(hfs),
-        hfs,
+        &hfs,
         gasLimit,
-        hfs ? hfs->getJournal() : j);
+        hfs.getJournal());
 
     // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
@@ -146,10 +142,9 @@ runEscrowWasm(
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName,
-    std::vector<WasmParam> const& params,
-    HostFunctions* hfs,
-    beast::Journal j)
+    std::vector<WasmParam> const& params)
 {
     //  create VM and set cost limit
     auto& vm = WasmEngine::instance();
@@ -160,7 +155,8 @@ preflightEscrowWasm(
         funcName,
         params,
         createWasmImport(hfs),
-        hfs ? hfs->getJournal() : j);
+        &hfs,
+        hfs.getJournal());
 
     return ret;
 }
@@ -178,16 +174,27 @@ WasmEngine::instance()
     return e;
 }
 
+static inline void
+checkImports(ImportVec const& imports, HostFunctions* hfs)
+{
+    for (auto const& obj : imports)
+    {
+        if (hfs != obj.first)
+            Throw<std::runtime_error>("Imports hf unsync");
+    }
+}
+
 Expected<WasmResult<int32_t>, TER>
 WasmEngine::run(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::vector<WasmImportFunc> const& imports,
+    ImportVec const& imports,
     HostFunctions* hfs,
     int64_t gasLimit,
     beast::Journal j)
 {
+    checkImports(imports, hfs);
     return impl->run(wasmCode, funcName, params, imports, hfs, gasLimit, j);
 }
 
@@ -196,9 +203,11 @@ WasmEngine::check(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::vector<WasmImportFunc> const& imports,
+    ImportVec const& imports,
+    HostFunctions* hfs,
     beast::Journal j)
 {
+    checkImports(imports, hfs);
     return impl->check(wasmCode, funcName, params, imports, j);
 }
 
