@@ -415,7 +415,7 @@ LoanPay::doApply()
         "totalPaidToVaultForDebt rounding good");
     // Despite our best efforts, it's possible for rounding errors to accumulate
     // in the loan broker's debt total. This is because the broker may have more
-    // that one loan with significantly different scales.
+    // than one loan with significantly different scales.
     adjustImpreciseNumber(
         debtTotalProxy, -totalPaidToVaultForDebt, asset, vaultScale);
 

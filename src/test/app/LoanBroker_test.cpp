@@ -1063,6 +1063,20 @@ class LoanBroker_test : public beast::unit_test::suite
 
             // preclaim: tecHAS_OBLIGATIONS
             env(del(alice, brokerKeylet.key), ter(tecHAS_OBLIGATIONS));
+
+            // Repay and delete the loan
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            env(loan::pay(borrower, loanKeylet.key, asset(50).value()));
+            env(loan::del(alice, loanKeylet.key));
+
+            env(trust(issuer, asset(0), alice, tfSetFreeze | tfSetDeepFreeze));
+            // preclaim: tecFROZEN (deep frozen)
+            env(del(alice, brokerKeylet.key), ter(tecFROZEN));
+            env(trust(
+                issuer, asset(0), alice, tfClearFreeze | tfClearDeepFreeze));
+
+            // successful delete the loan broker object
+            env(del(alice, brokerKeylet.key), ter(tesSUCCESS));
         }
         else
             env(del(alice, brokerKeylet.key));

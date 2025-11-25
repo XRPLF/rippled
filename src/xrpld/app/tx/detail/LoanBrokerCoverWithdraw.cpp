@@ -3,6 +3,8 @@
 #include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/app/tx/detail/Payment.h>
 
+#include <xrpl/ledger/CredentialHelpers.h>
+
 namespace ripple {
 
 bool
@@ -59,7 +61,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     }
     auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
     if (!vault)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "Vault is missing for Broker " << brokerID;
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
 
     auto const vaultAsset = vault->at(sfAsset);
     if (amount.asset() != vaultAsset)
@@ -150,34 +157,15 @@ LoanBrokerCoverWithdraw::doApply()
     broker->at(sfCoverAvailable) -= amount;
     view().update(broker);
 
-    // Create trust line or MPToken for the receiving account
-    if (dstAcct == account_)
-    {
-        if (auto const ter = addEmptyHolding(
-                view(), account_, mPriorBalance, amount.asset(), j_);
-            !isTesSuccess(ter) && ter != tecDUPLICATE)
-            return ter;
-    }
-
-    // Sanity check
-    if (accountHolds(
-            view(),
-            brokerPseudoID,
-            amount.asset(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_) < amount)
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "LoanBrokerCoverWithdraw: negative balance of "
-                            "broker cover assets.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
-
-    // Move the funds directly from the broker's pseudo-account to the dstAcct
-    return accountSend(
-        view(), brokerPseudoID, dstAcct, amount, j_, WaiveTransferFee::Yes);
+    return doWithdraw(
+        view(),
+        tx,
+        account_,
+        dstAcct,
+        brokerPseudoID,
+        mPriorBalance,
+        amount,
+        j_);
 }
 
 //------------------------------------------------------------------------------

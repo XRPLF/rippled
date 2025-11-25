@@ -1057,12 +1057,7 @@ ValidNewAccountRoot::finalize(
             return false;
         }
 
-        std::uint32_t const startingSeq =                     //
-            pseudoAccount                                     //
-            ? 0                                               //
-            : view.rules().enabled(featureDeletableAccounts)  //
-                ? view.seq()                                  //
-                : 1;
+        std::uint32_t const startingSeq = pseudoAccount ? 0 : view.seq();
 
         if (accountSeq_ != startingSeq)
         {
@@ -2356,7 +2351,7 @@ ValidLoanBroker::visitEntry(
         {
             auto const& loanBrokerID = after->at(sfLoanBrokerID);
             // create an entry if one doesn't already exist
-            auto& broker = brokers_[loanBrokerID];
+            brokers_.emplace(loanBrokerID, BrokerInfo{});
         }
         else if (after->getType() == ltRIPPLE_STATE)
         {
@@ -2437,7 +2432,7 @@ ValidLoanBroker::finalize(
             {
                 auto const& loanBrokerID = account->at(sfLoanBrokerID);
                 // create an entry if one doesn't already exist
-                auto& broker = brokers_[loanBrokerID];
+                brokers_.emplace(loanBrokerID, BrokerInfo{});
             }
         }
     }
@@ -2451,7 +2446,7 @@ ValidLoanBroker::finalize(
         {
             auto const& loanBrokerID = account->at(sfLoanBrokerID);
             // create an entry if one doesn't already exist
-            auto& broker = brokers_[loanBrokerID];
+            brokers_.emplace(loanBrokerID, BrokerInfo{});
         }
     }
 

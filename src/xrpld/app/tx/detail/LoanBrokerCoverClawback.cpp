@@ -226,7 +226,13 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
 
     auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
     if (!vault)
-        return tecINTERNAL;
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "Vault is missing for Broker " << brokerID;
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
 
     auto const vaultAsset = vault->at(sfAsset);
 
@@ -269,7 +275,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     STAmount const clawAmount = *findClawAmount;
 
     // Explicitly check the balance of the trust line / MPT to make sure the
-    // balance is actually there. It should always match `stCoverAvailable`, so
+    // balance is actually there. It should always match `sfCoverAvailable`, so
     // if there isn't, this is an internal error.
     if (accountHolds(
             ctx.view,

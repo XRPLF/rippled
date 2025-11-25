@@ -1386,6 +1386,55 @@ canWithdraw(ReadView const& view, STTx const& tx)
     return canWithdraw(from, view, to, tx.isFieldPresent(sfDestinationTag));
 }
 
+TER
+doWithdraw(
+    ApplyView& view,
+    STTx const& tx,
+    AccountID const& senderAcct,
+    AccountID const& dstAcct,
+    AccountID const& sourceAcct,
+    XRPAmount priorBalance,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    // Create trust line or MPToken for the receiving account
+    if (dstAcct == senderAcct)
+    {
+        if (auto const ter = addEmptyHolding(
+                view, senderAcct, priorBalance, amount.asset(), j);
+            !isTesSuccess(ter) && ter != tecDUPLICATE)
+            return ter;
+    }
+    else
+    {
+        auto dstSle = view.peek(keylet::account(dstAcct));
+        if (auto err =
+                verifyDepositPreauth(tx, view, senderAcct, dstAcct, dstSle, j))
+            return err;
+    }
+
+    // Sanity check
+    if (accountHolds(
+            view,
+            sourceAcct,
+            amount.asset(),
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j) < amount)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "LoanBrokerCoverWithdraw: negative balance of "
+                           "broker cover assets.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
+    // Move the funds directly from the broker's pseudo-account to the
+    // dstAcct
+    return accountSend(
+        view, sourceAcct, dstAcct, amount, j, WaiveTransferFee::Yes);
+}
+
 [[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
@@ -1730,10 +1779,13 @@ removeEmptyHolding(
     }
 
     // `asset` is an IOU.
+    // If the account is the issuer, then no line should exist. Check anyway. If
+    // a line does exist, it will get deleted. If not, return success.
+    bool const accountIsIssuer = accountID == issue.account;
     auto const line = view.peek(keylet::line(accountID, issue));
     if (!line)
-        return tecOBJECT_NOT_FOUND;
-    if (line->at(sfBalance)->iou() != beast::zero)
+        return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
+    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::zero)
         return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)
@@ -1782,10 +1834,18 @@ removeEmptyHolding(
     MPTIssue const& mptIssue,
     beast::Journal journal)
 {
+    // If the account is the issuer, then no token should exist. MPTs do not
+    // have the legacy ability to create such a situation, but check anyway. If
+    // a token does exist, it will get deleted. If not, return success.
+    bool const accountIsIssuer = accountID == mptIssue.getIssuer();
     auto const& mptID = mptIssue.getMptID();
     auto const mptoken = view.peek(keylet::mptoken(mptID, accountID));
     if (!mptoken)
-        return tecOBJECT_NOT_FOUND;
+        return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
+    // Unlike a trust line, if the account is the issuer, and the token has a
+    // balance, it can not just be deleted, because that will throw the issuance
+    // accounting out of balance, so fail. Since this should be impossible
+    // anyway, I'm not going to put any effort into it.
     if (mptoken->at(sfMPTAmount) != 0)
         return tecHAS_OBLIGATIONS;
 
@@ -2078,7 +2138,7 @@ rippleSendIOU(
         // Direct send: redeeming IOUs and/or sending own IOUs.
         auto const ter =
             rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, false, j);
-        if (view.rules().enabled(featureDeletableAccounts) && ter != tesSUCCESS)
+        if (ter != tesSUCCESS)
             return ter;
         saActual = saAmount;
         return tesSUCCESS;

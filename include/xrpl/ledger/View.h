@@ -753,6 +753,17 @@ canWithdraw(
 [[nodiscard]] TER
 canWithdraw(ReadView const& view, STTx const& tx);
 
+[[nodiscard]] TER
+doWithdraw(
+    ApplyView& view,
+    STTx const& tx,
+    AccountID const& senderAcct,
+    AccountID const& dstAcct,
+    AccountID const& sourceAcct,
+    XRPAmount priorBalance,
+    STAmount const& amount,
+    beast::Journal j);
+
 /// Any transactors that call addEmptyHolding() in doApply must call
 /// canAddHolding() in preflight with the same View and Asset
 [[nodiscard]] TER
