@@ -869,6 +869,9 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_BETA_RPC_API, strTemp, j_))
         BETA_RPC_API = beast::lexicalCastThrow<bool>(strTemp);
 
+    if (getSingleSection(secConfig, SECTION_ALLOW_WASM, strTemp, j_))
+        ALLOW_WASM = beast::lexicalCastThrow<bool>(strTemp);
+
     // Do not load trusted validator configuration for standalone mode
     if (!RUN_STANDALONE)
     {
