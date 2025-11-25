@@ -218,14 +218,14 @@ loanLatePaymentInterest(
 {
     auto const now = parentCloseTime.time_since_epoch().count();
 
+    // If the payment is not late by any amount of time, then there's no late
+    // interest
     if (now <= nextPaymentDueDate)
         return 0;
 
     // Equation (3) from XLS-66 spec, Section A-2 Equation Glossary
     auto const secondsOverdue = now - nextPaymentDueDate;
 
-    // If the payment is not late by any amount of time, then there's no late
-    // interest
     auto const rate = loanPeriodicRate(lateInterestRate, secondsOverdue);
 
     return principalOutstanding * rate;
