@@ -392,8 +392,7 @@ SQLiteDatabaseImp::saveValidatedLedger(
 {
     if (existsLedger())
     {
-        if (!detail::saveValidatedLedger(
-                *lgrdb_, *txdb_, app_, ledger, current))
+        if (!detail::saveValidatedLedger(*lgrdb_, txdb_, app_, ledger, current))
             return false;
     }
 

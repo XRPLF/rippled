@@ -5720,7 +5720,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // Close the ledger until the ledger sequence is large enough to delete
         // the account (no longer within <Sequence + 256>)
-        // This is enforced by the featureDeletableAccounts amendment
         auto incLgrSeqForAcctDel = [&](Env& env, Account const& acct) {
             int const delta = [&]() -> int {
                 if (env.seq(acct) + 255 > openLedgerSeq(env))
@@ -5839,8 +5838,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             }
             env.close();
 
-            // Increment ledger sequence to the number that is
-            // enforced by the featureDeletableAccounts amendment
             incLgrSeqForAcctDel(env, alice);
 
             // Verify that alice's account root is present.
@@ -5943,8 +5940,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             BEAST_EXPECT(ticketCount(env, alice) == 0);
 
-            // Increment ledger sequence to the number that is
-            // enforced by the featureDeletableAccounts amendment
             incLgrSeqForAcctDel(env, alice);
 
             // Verify that alice's account root is present.
@@ -6053,8 +6048,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         BEAST_EXPECT(ticketCount(env, minter) == 0);
 
-        // Increment ledger sequence to the number that is
-        // enforced by the featureDeletableAccounts amendment
         incLgrSeqForAcctDel(env, alice);
 
         // Verify that alice's account root is present.
