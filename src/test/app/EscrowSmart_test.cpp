@@ -888,6 +888,67 @@ struct EscrowSmart_test : public beast::unit_test::suite
     }
 
     void
+    testConfigWasmDisabled()
+    {
+        testcase("test the allow_wasm config");
+        {
+            Config c;
+            BEAST_EXPECT(c.ALLOW_WASM == true);
+        }
+
+        {
+            Config c;
+            c.loadFromString("\n[allow_wasm]\n1\n");
+            BEAST_EXPECT(c.ALLOW_WASM == true);
+        }
+
+        {
+            Config c;
+            c.loadFromString("\n[allow_wasm]\n0\n");
+            BEAST_EXPECT(c.ALLOW_WASM == false);
+        }
+
+        {
+            using namespace test::jtx;
+            Env env{*this, envconfig([](std::unique_ptr<Config> c) {
+                        c->loadFromString("\n[allow_wasm]\n0\n");
+                        return c;
+                    })};
+
+            Account const alice{"alice"};
+            env.fund(XRP(1000), alice);
+            env.close();
+
+            auto const wasmHex = ledgerSqnWasmHex;
+            env(escrow::create(alice, alice, XRP(100)),
+                escrow::finish_function(wasmHex),
+                escrow::finish_time(env.now() + 100s),
+                ter(telFEATURE_DEACTIVATED));
+        }
+
+        {
+            using namespace test::jtx;
+            Env env{*this};
+
+            Account const alice{"alice"};
+            env.fund(XRP(1000), alice);
+            env.close();
+
+            auto const wasmHex = ledgerSqnWasmHex;
+            env(escrow::create(alice, alice, XRP(100)),
+                escrow::finish_function(wasmHex),
+                escrow::finish_time(env.now() + 100s));
+
+            env.app().config().ALLOW_WASM = false;
+            env.close();
+
+            env(escrow::finish(alice, alice, 1),
+                escrow::comp_allowance(1000),
+                ter(telFEATURE_DEACTIVATED));
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testCreateFinishFunctionPreflight(features);
@@ -898,6 +959,8 @@ struct EscrowSmart_test : public beast::unit_test::suite
         // TODO: Update module with new host functions
         testAllHostFunctions(features);
         testKeyletHostFunctions(features);
+
+        testConfigWasmDisabled();
     }
 
 public:
