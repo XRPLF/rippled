@@ -264,8 +264,7 @@ STTx::checkSign(Rules const& rules) const
     if (isFieldPresent(sfCounterpartySignature))
     {
         auto const counterSig = getFieldObject(sfCounterpartySignature);
-        if (auto const ret = checkSign(rules, counterSig);
-            !ret)
+        if (auto const ret = checkSign(rules, counterSig); !ret)
             return Unexpected("Counterparty: " + ret.error());
     }
     return {};

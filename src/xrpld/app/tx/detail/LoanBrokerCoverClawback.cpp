@@ -230,7 +230,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Vault is missing for Broker " << brokerID;
         return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP  
+        // LCOV_EXCL_STOP
     }
 
 
