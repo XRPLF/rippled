@@ -716,6 +716,10 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
         {
             return temBAD_LIMIT;
         }
+        if (!ctx.app.config().ALLOW_WASM)
+        {
+            return telFEATURE_DEACTIVATED;
+        }
         if (*allowance > ctx.app.config().FEES.extension_compute_limit)
         {
             JLOG(ctx.j.debug())
