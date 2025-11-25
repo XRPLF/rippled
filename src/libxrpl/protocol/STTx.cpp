@@ -237,10 +237,7 @@ STTx::sign(
 }
 
 Expected<void, std::string>
-STTx::checkSign(
-    RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules,
-    STObject const& sigObject) const
+STTx::checkSign(Rules const& rules, STObject const& sigObject) const
 {
     try
     {
@@ -249,9 +246,8 @@ STTx::checkSign(
         // multi-signing.  Otherwise we're single-signing.
 
         Blob const& signingPubKey = sigObject.getFieldVL(sfSigningPubKey);
-        return signingPubKey.empty()
-            ? checkMultiSign(requireCanonicalSig, rules, sigObject)
-            : checkSingleSign(requireCanonicalSig, sigObject);
+        return signingPubKey.empty() ? checkMultiSign(rules, sigObject)
+                                     : checkSingleSign(sigObject);
     }
     catch (std::exception const&)
     {
@@ -260,18 +256,16 @@ STTx::checkSign(
 }
 
 Expected<void, std::string>
-STTx::checkSign(
-    RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules) const
+STTx::checkSign(Rules const& rules) const
 {
-    if (auto const ret = checkSign(requireCanonicalSig, rules, *this); !ret)
+    if (auto const ret = checkSign(rules, *this); !ret)
         return ret;
 
     /* Placeholder for field that will be added by Lending Protocol
     if (isFieldPresent(sfCounterpartySignature))
     {
         auto const counterSig = getFieldObject(sfCounterpartySignature);
-        if (auto const ret = checkSign(requireCanonicalSig, rules, counterSig);
+        if (auto const ret = checkSign(rules, counterSig);
             !ret)
             return Unexpected("Counterparty: " + ret.error());
     }
@@ -280,9 +274,7 @@ STTx::checkSign(
 }
 
 Expected<void, std::string>
-STTx::checkBatchSign(
-    RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules) const
+STTx::checkBatchSign(Rules const& rules) const
 {
     try
     {
@@ -299,8 +291,8 @@ STTx::checkBatchSign(
         {
             Blob const& signingPubKey = signer.getFieldVL(sfSigningPubKey);
             auto const result = signingPubKey.empty()
-                ? checkBatchMultiSign(signer, requireCanonicalSig, rules)
-                : checkBatchSingleSign(signer, requireCanonicalSig);
+                ? checkBatchMultiSign(signer, rules)
+                : checkBatchSingleSign(signer);
 
             if (!result)
                 return result;
@@ -395,10 +387,7 @@ STTx::getMetaSQL(
 }
 
 static Expected<void, std::string>
-singleSignHelper(
-    STObject const& sigObject,
-    Slice const& data,
-    bool const fullyCanonical)
+singleSignHelper(STObject const& sigObject, Slice const& data)
 {
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
     // That would allow the transaction to be signed two ways.  So if both
@@ -413,11 +402,8 @@ singleSignHelper(
         if (publicKeyType(makeSlice(spk)))
         {
             Blob const signature = sigObject.getFieldVL(sfTxnSignature);
-            validSig = verify(
-                PublicKey(makeSlice(spk)),
-                data,
-                makeSlice(signature),
-                fullyCanonical);
+            validSig =
+                verify(PublicKey(makeSlice(spk)), data, makeSlice(signature));
         }
     }
     catch (std::exception const&)
@@ -432,33 +418,24 @@ singleSignHelper(
 }
 
 Expected<void, std::string>
-STTx::checkSingleSign(
-    RequireFullyCanonicalSig requireCanonicalSig,
-    STObject const& sigObject) const
+STTx::checkSingleSign(STObject const& sigObject) const
 {
     auto const data = getSigningData(*this);
-    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
-        (requireCanonicalSig == STTx::RequireFullyCanonicalSig::yes);
-    return singleSignHelper(sigObject, makeSlice(data), fullyCanonical);
+    return singleSignHelper(sigObject, makeSlice(data));
 }
 
 Expected<void, std::string>
-STTx::checkBatchSingleSign(
-    STObject const& batchSigner,
-    RequireFullyCanonicalSig requireCanonicalSig) const
+STTx::checkBatchSingleSign(STObject const& batchSigner) const
 {
     Serializer msg;
     serializeBatch(msg, getFlags(), getBatchTransactionIDs());
-    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
-        (requireCanonicalSig == STTx::RequireFullyCanonicalSig::yes);
-    return singleSignHelper(batchSigner, msg.slice(), fullyCanonical);
+    return singleSignHelper(batchSigner, msg.slice());
 }
 
 Expected<void, std::string>
 multiSignHelper(
     STObject const& sigObject,
     std::optional<AccountID> txnAccountID,
-    bool const fullyCanonical,
     std::function<Serializer(AccountID const&)> makeMsg,
     Rules const& rules)
 {
@@ -515,8 +492,7 @@ multiSignHelper(
                 validSig = verify(
                     PublicKey(makeSlice(spk)),
                     makeMsg(accountID).slice(),
-                    makeSlice(signature),
-                    fullyCanonical);
+                    makeSlice(signature));
             }
         }
         catch (std::exception const& e)
@@ -535,14 +511,8 @@ multiSignHelper(
 }
 
 Expected<void, std::string>
-STTx::checkBatchMultiSign(
-    STObject const& batchSigner,
-    RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules) const
+STTx::checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const
 {
-    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
-        (requireCanonicalSig == RequireFullyCanonicalSig::yes);
-
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.
@@ -551,7 +521,6 @@ STTx::checkBatchMultiSign(
     return multiSignHelper(
         batchSigner,
         std::nullopt,
-        fullyCanonical,
         [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
@@ -561,14 +530,8 @@ STTx::checkBatchMultiSign(
 }
 
 Expected<void, std::string>
-STTx::checkMultiSign(
-    RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules,
-    STObject const& sigObject) const
+STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 {
-    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
-        (requireCanonicalSig == RequireFullyCanonicalSig::yes);
-
     // Used inside the loop in multiSignHelper to enforce that
     // the account owner may not multisign for themselves.
     auto const txnAccountID = &sigObject != this
@@ -582,7 +545,6 @@ STTx::checkMultiSign(
     return multiSignHelper(
         sigObject,
         txnAccountID,
-        fullyCanonical,
         [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
