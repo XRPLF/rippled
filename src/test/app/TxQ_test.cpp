@@ -4330,7 +4330,7 @@ public:
         Account const ellie("ellie");
         Account const fiona("fiona");
 
-        constexpr int ledgersInQueue = 10;
+        constexpr int ledgersInQueue = 20;
         auto cfg = makeConfig(
             {{"minimum_txn_in_ledger_standalone", "1"},
              {"ledgers_in_queue", std::to_string(ledgersInQueue)},

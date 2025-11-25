@@ -13,6 +13,8 @@ LoanBrokerSet::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerSet::preflight(PreflightContext const& ctx)
 {
+    using namespace Lending;
+
     auto const& tx = ctx.tx;
     if (auto const data = tx[~sfData]; data && !data->empty() &&
         !validDataLength(tx[~sfData], maxDataPayloadLength))
@@ -118,7 +120,13 @@ LoanBrokerSet::doApply()
         // Modify an existing LoanBroker
         auto broker = view.peek(keylet::loanbroker(*brokerID));
         if (!broker)
-            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        {
+            // This should be impossible
+            // LCOV_EXCL_START
+            JLOG(j_.fatal()) << "LoanBroker does not exist.";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
 
         if (auto const data = tx[~sfData])
             broker->at(sfData) = *data;
@@ -132,20 +140,36 @@ LoanBrokerSet::doApply()
         // Create a new LoanBroker pointing back to the given Vault
         auto const vaultID = tx[sfVaultID];
         auto const sleVault = view.read(keylet::vault(vaultID));
+        if (!sleVault)
+        {
+            // This should be impossible
+            // LCOV_EXCL_START
+            JLOG(j_.fatal()) << "Vault does not exist.";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
         auto const vaultPseudoID = sleVault->at(sfAccount);
         auto const sequence = tx.getSeqValue();
 
         auto owner = view.peek(keylet::account(account_));
         if (!owner)
-            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        {
+            // This should be impossible
+            // LCOV_EXCL_START
+            JLOG(j_.fatal()) << "Account does not exist.";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
         auto broker =
             std::make_shared<SLE>(keylet::loanbroker(account_, sequence));
 
         if (auto const ter = dirLink(view, account_, broker))
-            return ter;
+            return ter;  // LCOV_EXCL_LINE
         if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
-            return ter;
+            return ter;  // LCOV_EXCL_LINE
 
+        // Increases the owner count by two: one for the LoanBroker object, and
+        // one for the pseudo-account.
         adjustOwnerCount(view, owner, 2, j_);
         auto const ownerCount = owner->at(sfOwnerCount);
         if (mPriorBalance < view.fees().accountReserve(ownerCount))
@@ -154,7 +178,7 @@ LoanBrokerSet::doApply()
         auto maybePseudo =
             createPseudoAccount(view, broker->key(), sfLoanBrokerID);
         if (!maybePseudo)
-            return maybePseudo.error();
+            return maybePseudo.error();  // LCOV_EXCL_LINE
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
 
@@ -167,6 +191,7 @@ LoanBrokerSet::doApply()
         broker->at(sfVaultID) = vaultID;
         broker->at(sfOwner) = account_;
         broker->at(sfAccount) = pseudoId;
+        // The LoanSequence indexes loans created by this broker, starting at 1
         broker->at(sfLoanSequence) = 1;
         if (auto const data = tx[~sfData])
             broker->at(sfData) = *data;

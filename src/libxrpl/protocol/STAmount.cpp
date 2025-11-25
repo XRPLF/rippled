@@ -830,7 +830,7 @@ STAmount::isDefault() const
 void
 STAmount::canonicalize()
 {
-    if (native() || mAsset.holds<MPTIssue>())
+    if (integral())
     {
         // native and MPT currency amounts should always have an offset of zero
         // log(2^64,10) ~ 19.2
@@ -859,8 +859,10 @@ STAmount::canonicalize()
             };
             if (native())
                 set(XRPAmount{num});
-            else
+            else if (mAsset.holds<MPTIssue>())
                 set(MPTAmount{num});
+            else
+                Throw<std::runtime_error>("Unknown integral asset type");
             mOffset = 0;
         }
         else
@@ -1462,9 +1464,12 @@ canonicalizeRoundStrict(
 }
 
 STAmount
-roundToScale(STAmount value, std::int32_t scale, Number::rounding_mode rounding)
+roundToScale(
+    STAmount const& value,
+    std::int32_t scale,
+    Number::rounding_mode rounding)
 {
-    // Nothing to do for intgral types.
+    // Nothing to do for integral types.
     if (value.integral())
         return value;
 
@@ -1474,16 +1479,15 @@ roundToScale(STAmount value, std::int32_t scale, Number::rounding_mode rounding)
     if (value.exponent() >= scale)
         return value;
 
-    STAmount referenceValue{
+    STAmount const referenceValue{
         value.asset(), STAmount::cMinValue, scale, value.negative()};
 
     NumberRoundModeGuard mg(rounding);
-    // With an IOU, the total will be truncated to the precision of the
-    // larger value: referenceValue
-    value += referenceValue;
-    // Remove the reference value, and we're left with the rounded value.
-    value -= referenceValue;
-    return value;
+    // With an IOU, the the result of addition will be truncated to the
+    // precision of the larger value, which in this case is referenceValue. Then
+    // remove the reference value via subtraction, and we're left with the
+    // rounded value.
+    return (value + referenceValue) - referenceValue;
 }
 
 namespace {

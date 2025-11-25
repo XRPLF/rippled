@@ -110,6 +110,7 @@ tenthBipsOfValue(T value, TenthBips<TBips> bips)
     return value * bips.value() / tenthBipsPerUnity.value();
 }
 
+namespace Lending {
 /** The maximum management fee rate allowed by a loan broker in 1/10 bips.
 
     Valid values are between 0 and 10% inclusive.
@@ -197,6 +198,7 @@ static constexpr int loanPaymentsPerFeeIncrement = 5;
  * without an amendment
  */
 static constexpr int loanMaximumPaymentsPerTransaction = 100;
+}  // namespace Lending
 
 /** The maximum length of a URI inside an NFT */
 std::size_t constexpr maxTokenURILength = 256;

@@ -456,8 +456,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         }
 
         // Check the batch signers signatures.
-        auto const sigResult = ctx.tx.checkBatchSign(
-            STTx::RequireFullyCanonicalSig::yes, ctx.rules);
+        auto const sigResult = ctx.tx.checkBatchSign(ctx.rules);
 
         if (!sigResult)
         {

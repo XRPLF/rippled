@@ -3,6 +3,8 @@
 #include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/app/tx/detail/Payment.h>
 
+#include <xrpl/ledger/CredentialHelpers.h>
+
 namespace ripple {
 
 bool
@@ -59,7 +61,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     }
     auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
     if (!vault)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "Vault is missing for Broker " << brokerID;
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
 
     auto const vaultAsset = vault->at(sfAsset);
     if (amount.asset() != vaultAsset)
@@ -150,69 +157,15 @@ LoanBrokerCoverWithdraw::doApply()
     broker->at(sfCoverAvailable) -= amount;
     view().update(broker);
 
-    // Create trust line or MPToken for the receiving account
-    if (dstAcct == account_)
-    {
-        if (auto const ter = addEmptyHolding(
-                view(), account_, mPriorBalance, amount.asset(), j_);
-            !isTesSuccess(ter) && ter != tecDUPLICATE)
-            return ter;
-    }
-
-    // Move the funds from the broker's pseudo-account to the dstAcct
-    if (dstAcct == account_ || amount.native())
-    {
-        // Transfer assets directly from pseudo-account to depositor.
-        // Because this is either a self-transfer or an XRP payment, there is no
-        // need to use the payment engine.
-        return accountSend(
-            view(), brokerPseudoID, dstAcct, amount, j_, WaiveTransferFee::Yes);
-    }
-
-    {
-        // If sending the Cover to a different account, then this is
-        // effectively a payment. Use the Payment transaction code to call
-        // the payment engine, though only a subset of the functionality is
-        // supported in this transaction. e.g. No paths, no partial
-        // payments.
-        bool const mptDirect = amount.holds<MPTIssue>();
-        STAmount const maxSourceAmount =
-            Payment::getMaxSourceAmount(brokerPseudoID, amount);
-        SLE::pointer sleDst = view().peek(keylet::account(dstAcct));
-        if (!sleDst)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-
-        Payment::RipplePaymentParams paymentParams{
-            .ctx = ctx_,
-            .maxSourceAmount = maxSourceAmount,
-            .srcAccountID = brokerPseudoID,
-            .dstAccountID = dstAcct,
-            .sleDst = sleDst,
-            .dstAmount = amount,
-            .paths = STPathSet{},
-            .deliverMin = std::nullopt,
-            .j = j_};
-
-        TER ret;
-        if (mptDirect)
-        {
-            ret = Payment::makeMPTDirectPayment(paymentParams);
-        }
-        else
-        {
-            ret = Payment::makeRipplePayment(paymentParams);
-        }
-        // Always claim a fee
-        if (!isTesSuccess(ret) && !isTecClaim(ret))
-        {
-            JLOG(j_.info())
-                << "LoanBrokerCoverWithdraw: changing result from "
-                << transToken(ret)
-                << " to tecPATH_DRY for IOU payment with Destination";
-            return tecPATH_DRY;
-        }
-        return ret;
-    }
+    return doWithdraw(
+        view(),
+        tx,
+        account_,
+        dstAcct,
+        brokerPseudoID,
+        mPriorBalance,
+        amount,
+        j_);
 }
 
 //------------------------------------------------------------------------------

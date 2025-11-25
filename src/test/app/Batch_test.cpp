@@ -2295,12 +2295,9 @@ class Batch_test : public beast::unit_test::suite
             Serializer s;
             parsed.object->add(s);
             auto const jrr = env.rpc("submit", strHex(s.slice()))[jss::result];
-            BEAST_EXPECTS(
-                jrr[jss::status] == "error" &&
-                    jrr[jss::error] == "invalidTransaction" &&
-                    jrr[jss::error_exception] ==
-                        "fails local checks: Empty SigningPubKey.",
-                to_string(jrr));
+            BEAST_EXPECT(
+                jrr[jss::status] == "success" &&
+                jrr[jss::engine_result] == "temINVALID_FLAG");
 
             env.close();
         }

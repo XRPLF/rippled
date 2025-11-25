@@ -564,7 +564,7 @@ STAmount::clear()
 {
     // The -100 is used to allow 0 to sort less than a small positive values
     // which have a negative exponent.
-    mOffset = native() ? 0 : -100;
+    mOffset = integral() ? 0 : -100;
     mValue = 0;
     mIsNegative = false;
 }
@@ -701,7 +701,7 @@ getRate(STAmount const& offerOut, STAmount const& offerIn);
  */
 STAmount
 roundToScale(
-    STAmount value,
+    STAmount const& value,
     std::int32_t scale,
     Number::rounding_mode rounding = Number::getround());
 
@@ -729,7 +729,7 @@ roundToAsset(
     STAmount const ret{asset, value};
     if (ret.integral())
         return ret;
-    // Not that the ctor will round integral types (XRP, MPT) via canonicalize,
+    // Note that the ctor will round integral types (XRP, MPT) via canonicalize,
     // so no extra work is needed for those.
     return roundToScale(ret, scale);
 }

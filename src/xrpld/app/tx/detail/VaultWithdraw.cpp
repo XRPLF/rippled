@@ -85,6 +85,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
         return ret;
 
+    // Cannot return shares to the vault, if the underlying asset was frozen for
+    // the submitter
     if (auto const ret = checkFrozen(ctx.view, account, vaultShare))
         return ret;
 
@@ -239,92 +241,15 @@ VaultWithdraw::doApply()
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
 
-    // Create trust line or MPToken for the receiving account
-    if (dstAcct == account_)
-    {
-        if (auto const ter = addEmptyHolding(
-                view(), account_, mPriorBalance, vaultAsset, j_);
-            !isTesSuccess(ter) && ter != tecDUPLICATE)
-            return ter;
-    }
-
-    if (dstAcct != account_ && !assetsWithdrawn.native())
-    {
-        bool const mptDirect = assetsWithdrawn.holds<MPTIssue>();
-        STAmount const maxSourceAmount =
-            Payment::getMaxSourceAmount(vaultAccount, assetsWithdrawn);
-        SLE::pointer sleDst = view().peek(keylet::account(dstAcct));
-        if (!sleDst)
-            return tecINTERNAL;
-
-        Payment::RipplePaymentParams paymentParams{
-            .ctx = ctx_,
-            .maxSourceAmount = maxSourceAmount,
-            .srcAccountID = vaultAccount,
-            .dstAccountID = dstAcct,
-            .sleDst = sleDst,
-            .dstAmount = assetsWithdrawn,
-            .paths = STPathSet{},
-            .deliverMin = std::nullopt,
-            .j = j_};
-
-        // If sending the assets to a different account, then this is
-        // effectively a payment. Use the Payment transaction code to call
-        // the payment engine, though only a subset of the functionality is
-        // supported in this transaction. e.g. No paths, no partial
-        // payments.
-        TER ret;
-        if (mptDirect)
-        {
-            ret = Payment::makeMPTDirectPayment(paymentParams);
-        }
-        else
-        {
-            ret = Payment::makeRipplePayment(paymentParams);
-        }
-        // Always claim a fee
-        if (!isTesSuccess(ret) && !isTecClaim(ret))
-        {
-            JLOG(j_.info())
-                << "LoanBrokerCoverWithdraw: changing result from "
-                << transToken(ret)
-                << " to tecPATH_DRY for IOU payment with Destination";
-            return tecPATH_DRY;
-        }
-        if (ret)
-            return ret;
-    }
-    else
-    {
-        // Transfer assets from vault to depositor or destination (only if XRP)
-        // account.
-        if (auto const ter = accountSend(
-                view(),
-                vaultAccount,
-                dstAcct,
-                assetsWithdrawn,
-                j_,
-                WaiveTransferFee::Yes);
-            !isTesSuccess(ter))
-            return ter;
-    }
-
-    // Sanity check
-    if (accountHolds(
-            view(),
-            vaultAccount,
-            assetsWithdrawn.asset(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_) < beast::zero)
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultWithdraw: negative balance of vault assets.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
-
-    return tesSUCCESS;
+    return doWithdraw(
+        view(),
+        ctx_.tx,
+        account_,
+        dstAcct,
+        vaultAccount,
+        mPriorBalance,
+        assetsWithdrawn,
+        j_);
 }
 
 }  // namespace ripple

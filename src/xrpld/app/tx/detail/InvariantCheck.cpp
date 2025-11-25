@@ -1057,12 +1057,7 @@ ValidNewAccountRoot::finalize(
             return false;
         }
 
-        std::uint32_t const startingSeq =                     //
-            pseudoAccount                                     //
-            ? 0                                               //
-            : view.rules().enabled(featureDeletableAccounts)  //
-                ? view.seq()                                  //
-                : 1;
+        std::uint32_t const startingSeq = pseudoAccount ? 0 : view.seq();
 
         if (accountSeq_ != startingSeq)
         {
@@ -2342,9 +2337,30 @@ ValidLoanBroker::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    if (after && after->getType() == ltLOAN_BROKER)
+    if (after)
     {
-        brokers_.emplace_back(before, after);
+        if (after->getType() == ltLOAN_BROKER)
+        {
+            auto& broker = brokers_[after->key()];
+            broker.brokerBefore = before;
+            broker.brokerAfter = after;
+        }
+        else if (
+            after->getType() == ltACCOUNT_ROOT &&
+            after->isFieldPresent(sfLoanBrokerID))
+        {
+            auto const& loanBrokerID = after->at(sfLoanBrokerID);
+            // create an entry if one doesn't already exist
+            brokers_.emplace(loanBrokerID, BrokerInfo{});
+        }
+        else if (after->getType() == ltRIPPLE_STATE)
+        {
+            lines_.emplace_back(after);
+        }
+        else if (after->getType() == ltMPTOKEN)
+        {
+            mpts_.emplace_back(after);
+        }
     }
 }
 
@@ -2403,8 +2419,51 @@ ValidLoanBroker::finalize(
     // Loan Brokers will not exist on ledger if the Lending Protocol amendment
     // is not enabled, so there's no need to check it.
 
-    for (auto const& [before, after] : brokers_)
+    for (auto const& line : lines_)
     {
+        for (auto const& field : {&sfLowLimit, &sfHighLimit})
+        {
+            auto const account =
+                view.read(keylet::account(line->at(*field).getIssuer()));
+            // This Invariant doesn't know about the rules for Trust Lines, so
+            // if the account is missing, don't treat it as an error. This
+            // loop is only concerned with finding Broker pseudo-accounts
+            if (account && account->isFieldPresent(sfLoanBrokerID))
+            {
+                auto const& loanBrokerID = account->at(sfLoanBrokerID);
+                // create an entry if one doesn't already exist
+                brokers_.emplace(loanBrokerID, BrokerInfo{});
+            }
+        }
+    }
+    for (auto const& mpt : mpts_)
+    {
+        auto const account = view.read(keylet::account(mpt->at(sfAccount)));
+        // This Invariant doesn't know about the rules for MPTokens, so
+        // if the account is missing, don't treat is as an error. This
+        // loop is only concerned with finding Broker pseudo-accounts
+        if (account && account->isFieldPresent(sfLoanBrokerID))
+        {
+            auto const& loanBrokerID = account->at(sfLoanBrokerID);
+            // create an entry if one doesn't already exist
+            brokers_.emplace(loanBrokerID, BrokerInfo{});
+        }
+    }
+
+    for (auto const& [brokerID, broker] : brokers_)
+    {
+        auto const& after = broker.brokerAfter
+            ? broker.brokerAfter
+            : view.read(keylet::loanbroker(brokerID));
+
+        if (!after)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan Broker missing";
+            return false;
+        }
+
+        auto const& before = broker.brokerBefore;
+
         // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3123-invariants
         // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most
         // one node (the root), which will only hold entries for `RippleState`
@@ -2436,6 +2495,26 @@ ValidLoanBroker::finalize(
         {
             JLOG(j.fatal())
                 << "Invariant failed: Loan Broker cover available is negative";
+            return false;
+        }
+        auto const vault = view.read(keylet::vault(after->at(sfVaultID)));
+        if (!vault)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker vault ID is invalid";
+            return false;
+        }
+        auto const& vaultAsset = vault->at(sfAsset);
+        if (after->at(sfCoverAvailable) < accountHolds(
+                                              view,
+                                              after->at(sfAccount),
+                                              vaultAsset,
+                                              FreezeHandling::fhIGNORE_FREEZE,
+                                              AuthHandling::ahIGNORE_AUTH,
+                                              j))
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan Broker cover available "
+                               "is less than pseudo-account asset balance";
             return false;
         }
     }
@@ -2470,10 +2549,25 @@ ValidLoan::finalize(
     for (auto const& [before, after] : loans_)
     {
         // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3223-invariants
-        // If `Loan.PaymentRemaining = 0` then `Loan.PrincipalOutstanding = 0`
+        // If `Loan.PaymentRemaining = 0` then the loan MUST be fully paid off
         if (after->at(sfPaymentRemaining) == 0 &&
-            after->at(sfPrincipalOutstanding) != 0)
+            (after->at(sfTotalValueOutstanding) != beast::zero ||
+             after->at(sfPrincipalOutstanding) != beast::zero ||
+             after->at(sfManagementFeeOutstanding) != beast::zero))
         {
+            JLOG(j.fatal()) << "Invariant failed: Loan with zero payments "
+                               "remaining has not been paid off";
+            return false;
+        }
+        // If `Loan.PaymentRemaining != 0` then the loan MUST NOT be fully paid
+        // off
+        if (after->at(sfPaymentRemaining) != 0 &&
+            after->at(sfTotalValueOutstanding) == beast::zero &&
+            after->at(sfPrincipalOutstanding) == beast::zero &&
+            after->at(sfManagementFeeOutstanding) == beast::zero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan with zero payments "
+                               "remaining has not been paid off";
             return false;
         }
         if (before &&
