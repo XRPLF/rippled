@@ -1054,7 +1054,7 @@ public:
         // Charlie - queue a transaction, with a higher fee
         // than default
         env(noop(charlie), fee(15), queued);
-        checkMetrics(*this, env, 6, initQueueMax, 4, 3);
+        checkMetrics(*this, env, 6, initQueueMax, 4, 3, 257);
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
         BEAST_EXPECT(env.seq(bob) == bobSeq);
@@ -4330,7 +4330,7 @@ public:
         Account const ellie("ellie");
         Account const fiona("fiona");
 
-        constexpr int ledgersInQueue = 20;
+        constexpr int ledgersInQueue = 30;
         auto cfg = makeConfig(
             {{"minimum_txn_in_ledger_standalone", "1"},
              {"ledgers_in_queue", std::to_string(ledgersInQueue)},
