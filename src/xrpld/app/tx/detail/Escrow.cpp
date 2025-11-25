@@ -217,6 +217,11 @@ EscrowCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
 
+        if (!ctx.app.config().ALLOW_WASM)
+        {
+            return telFEATURE_DEACTIVATED;
+        }
+
         HostFunctions mock;
         auto const re =
             preflightEscrowWasm(code, ESCROW_FUNCTION_NAME, {}, &mock, ctx.j);
