@@ -307,8 +307,8 @@ class LedgerRPC_test : public beast::unit_test::suite
 
         {
             std::string const hash3{
-                "E86DE7F3D7A4D9CE17EF7C8BA08A8F4D"
-                "8F643B9552F0D895A31CDA78F541DE4E"};
+                "0F1A9E0C109ADEF6DA2BDE19217C12BBEC57174CBDBD212B0EBDC1CEDB8531"
+                "85"};
             // access via the ledger_hash field
             Json::Value jvParams;
             jvParams[jss::ledger_hash] = hash3;
