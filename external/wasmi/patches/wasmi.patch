@@ -1,28 +1,15 @@
-From 383cea1996b4471735b87a55a77c5e0907a1da6b Mon Sep 17 00:00:00 2001
+From 7f3aea7449095387b961408b520d1ce158e5c957 Mon Sep 17 00:00:00 2001
 From: Peng Wang <pwang200@gmail.com>
-Date: Wed, 19 Nov 2025 18:24:35 -0500
-Subject: [PATCH] wasm_store_new_with_memory_max_pages, fuel, build fix
+Date: Mon, 24 Nov 2025 20:29:26 -0500
+Subject: [PATCH] memory limit and fuel working
 
 ---
- .gitignore                   |   2 +
  crates/c_api/CMakeLists.txt  |  39 +++++++------
- crates/c_api/Cargo.toml      |   1 +
  crates/c_api/include/wasm.h  |   6 ++
  crates/c_api/include/wasmi.h |   6 +-
- crates/c_api/src/store.rs    | 107 ++++++++++++++++++++++++++++++++---
- 6 files changed, 135 insertions(+), 26 deletions(-)
+ crates/c_api/src/store.rs    | 105 ++++++++++++++++++++++++++++++++---
+ 4 files changed, 130 insertions(+), 26 deletions(-)
 
-diff --git a/.gitignore b/.gitignore
-index 08f2b95..e455195 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -8,3 +8,5 @@ spec/target
- **/fuzz/artifacts/
- **/fuzz/crash-inputs/
- **/fuzz/Cargo.lock
-+.idea
-+artifacts
-\ No newline at end of file
 diff --git a/crates/c_api/CMakeLists.txt b/crates/c_api/CMakeLists.txt
 index b15c787..2420bea 100644
 --- a/crates/c_api/CMakeLists.txt
@@ -81,18 +68,6 @@ index b15c787..2420bea 100644
      endif()
  endif()
  
-diff --git a/crates/c_api/Cargo.toml b/crates/c_api/Cargo.toml
-index 90c231e..369bfcf 100644
---- a/crates/c_api/Cargo.toml
-+++ b/crates/c_api/Cargo.toml
-@@ -22,6 +22,7 @@ wasmi_c_api_macros = { workspace = true }
- name = "wasmi_c_api"
- test = false
- doctest = false
-+crate-type = ["cdylib", "staticlib", "rlib"]
- 
- [features]
- default = ["std"]
 diff --git a/crates/c_api/include/wasm.h b/crates/c_api/include/wasm.h
 index 5ee617f..4226c29 100644
 --- a/crates/c_api/include/wasm.h
@@ -137,7 +112,7 @@ index 2caffa3..0c0584e 100644
  
  #endif // WASMI_H
 diff --git a/crates/c_api/src/store.rs b/crates/c_api/src/store.rs
-index 56d4898..1ba5337 100644
+index 56d4898..9abda8e 100644
 --- a/crates/c_api/src/store.rs
 +++ b/crates/c_api/src/store.rs
 @@ -1,7 +1,7 @@
@@ -251,13 +226,11 @@ index 56d4898..1ba5337 100644
      Box::new(wasm_store_t {
          inner: WasmStoreRef {
              inner: Arc::new(UnsafeCell::new(store)),
-@@ -175,3 +229,42 @@ pub extern "C" fn wasmi_context_set_fuel(
+@@ -175,3 +229,40 @@ pub extern "C" fn wasmi_context_set_fuel(
  ) -> Option<Box<wasmi_error_t>> {
      crate::handle_result(store.set_fuel(fuel), |()| {})
  }
 +
-+////////////////////////////////////////////////////////////////////////////////////////
-+////////////////////////////////////////////////////////////////////////////////////////
 +////////////////////////////////////////////////////////////////////////////////////////
 +////////////////////////////////////////////////////////////////////////////////////////
 +
@@ -295,5 +268,5 @@ index 56d4898..1ba5337 100644
 +    crate::handle_result(context.set_fuel(fuel), |()| {})
 +}
 -- 
-2.37.3
+2.43.0
 
