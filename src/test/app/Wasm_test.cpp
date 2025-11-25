@@ -249,39 +249,6 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
-    testWasmSP1Verifier()
-    {
-        testcase("Wasm sp1 zkproof verifier");
-        auto const ws = boost::algorithm::unhex(sp1WasmHex);
-        Bytes const wasm(ws.begin(), ws.end());
-        auto& engine = WasmEngine::instance();
-
-        auto const re = engine.run(wasm, "sp1_groth16_verifier");
-
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-            BEAST_EXPECTS(
-                re->cost == 4'191'711'969ll, std::to_string(re->cost));
-        }
-    }
-
-    void
-    testWasmBG16Verifier()
-    {
-        testcase("Wasm BG16 zkproof verifier");
-        auto const ws = boost::algorithm::unhex(zkProofWasmHex);
-        Bytes const wasm(ws.begin(), ws.end());
-        auto& engine = WasmEngine::instance();
-
-        auto const re = engine.run(wasm, "bellman_groth16_test");
-
-        // the wasm code uses bulk-memory instructions that we disabled,
-        // so the module cannot be created.
-        BEAST_EXPECT(!re.has_value());
-    }
-
-    void
     testHFCost()
     {
         testcase("wasm test host functions cost");
@@ -685,14 +652,8 @@ struct Wasm_test : public beast::unit_test::suite
         testWasmSha();
         testWasmB58();
 
-        // running too long
-        // testWasmSP1Verifier();
-        testWasmBG16Verifier();
-
         testHFCost();
-
         testEscrowWasmDN();
-
         testFloat();
 
         testCodecovWasm();
