@@ -17,18 +17,19 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
 {
     // check Flags
     {
-        if (ctx.tx.isFlag(tfSponsorshipSetRequireSignForFee) &&
-            ctx.tx.isFlag(tfSponsorshipClearRequireSignForFee))
+        auto const flags = ctx.tx.getFlags();
+        if ((flags & tfSponsorshipSetRequireSignForFee) &&
+            (flags & tfSponsorshipClearRequireSignForFee))
             return temINVALID_FLAG;
 
-        if (ctx.tx.isFlag(tfSponsorshipSetRequireSignForReserve) &&
-            ctx.tx.isFlag(tfSponsorshipClearRequireSignForReserve))
+        if ((flags & tfSponsorshipSetRequireSignForReserve) &&
+            (flags & tfSponsorshipClearRequireSignForReserve))
             return temINVALID_FLAG;
 
-        if (ctx.tx.isFlag(tfDeleteObject))
+        if (flags & tfDeleteObject)
         {
             // check Flags
-            if (ctx.tx.getFlags() &
+            if (flags &
                 (tfSponsorshipSetRequireSignForFee |
                  tfSponsorshipSetRequireSignForReserve |
                  tfSponsorshipClearRequireSignForFee |
@@ -37,53 +38,34 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
         }
     }
 
-    if ((ctx.tx.isFieldPresent(sfSponsorAccount) &&
-         ctx.tx.isFieldPresent(sfSponsee)) ||
-        (!ctx.tx.isFieldPresent(sfSponsorAccount) &&
-         !ctx.tx.isFieldPresent(sfSponsee)))
+    auto const account = ctx.tx.getAccountID(sfAccount);
+    bool hasSponsor = ctx.tx.isFieldPresent(sfSponsorAccount);
+    bool hasSponsee = ctx.tx.isFieldPresent(sfSponsee);
+
+    //  The transaction must specify either Sponsor or Sponsee, but not both.
+    if (hasSponsor == hasSponsee)
         return temMALFORMED;
 
-    auto const sponsor = ctx.tx.isFieldPresent(sfSponsorAccount)
-        ? ctx.tx.getAccountID(sfSponsorAccount)
-        : ctx.tx.getAccountID(sfAccount);
-    auto const sponsee = ctx.tx.isFieldPresent(sfSponsee)
-        ? ctx.tx.getAccountID(sfSponsee)
-        : ctx.tx.getAccountID(sfAccount);
+    auto const sponsor = ctx.tx[~sfSponsorAccount].value_or(account);
+    auto const sponsee = ctx.tx[~sfSponsee].value_or(account);
 
-    if (sponsee == sponsor)
+    if (sponsor == sponsee)
         return temMALFORMED;
 
-    auto const checkOptionalAmountField = [&](SField const& field) -> NotTEC {
-        if (!ctx.tx.isFieldPresent(field))
-            return tesSUCCESS;
-
-        auto const amount = ctx.tx.getFieldAmount(field);
-
-        if (!isXRP(amount))
-            return temBAD_AMOUNT;
-
-        if (amount.xrp().drops() <= 0)
-            return temBAD_AMOUNT;
-
-        return tesSUCCESS;
-    };
-
-    if (auto const ret = checkOptionalAmountField(sfFeeAmount);
-        !isTesSuccess(ret))
-        return ret;
-
-    if (auto const ret = checkOptionalAmountField(sfMaxFee); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.isFieldPresent(sfReserveCount))
+    auto const flags = ctx.tx.getFlags();
+    if (flags & tfDeleteObject)
     {
-        auto const reserveCount = ctx.tx.getFieldU32(sfReserveCount);
-        if (reserveCount < 1)
-            return temMALFORMED;
-    }
+        // can not combine with any modification flags when deleting
+        constexpr std::uint32_t modifyFlags =
+            tfSponsorshipSetRequireSignForFee |
+            tfSponsorshipSetRequireSignForReserve |
+            tfSponsorshipClearRequireSignForFee |
+            tfSponsorshipClearRequireSignForReserve;
 
-    if (ctx.tx.isFlag(tfDeleteObject))
-    {
+        if (flags & modifyFlags)
+            return temINVALID_FLAG;
+
+        // can not include these fields when deleting
         if (ctx.tx.isFieldPresent(sfFeeAmount) ||
             ctx.tx.isFieldPresent(sfReserveCount) ||
             ctx.tx.isFieldPresent(sfMaxFee))
@@ -91,8 +73,51 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     }
     else
     {
-        if (!ctx.tx.isFieldPresent(sfSponsee))
+        // although both Sponsor and Sponsee can delete,
+        // only the Sponsor can create or update sponsorship.
+        if (account != sponsor)
             return temMALFORMED;
+
+        if ((flags & tfSponsorshipSetRequireSignForFee) &&
+            (flags & tfSponsorshipClearRequireSignForFee))
+            return temINVALID_FLAG;
+
+        if ((flags & tfSponsorshipSetRequireSignForReserve) &&
+            (flags & tfSponsorshipClearRequireSignForReserve))
+            return temINVALID_FLAG;
+
+        // Check FeeAmount and MaxFee
+        auto const checkOptionalAmountField =
+            [&](SField const& field) -> NotTEC {
+            if (!ctx.tx.isFieldPresent(field))
+                return tesSUCCESS;
+
+            auto const amount = ctx.tx.getFieldAmount(field);
+
+            if (!isXRP(amount))
+                return temBAD_AMOUNT;
+
+            if (amount.xrp().drops() <= 0)
+                return temBAD_AMOUNT;
+
+            return tesSUCCESS;
+        };
+
+        if (auto const ret = checkOptionalAmountField(sfFeeAmount);
+            !isTesSuccess(ret))
+            return ret;
+
+        if (auto const ret = checkOptionalAmountField(sfMaxFee);
+            !isTesSuccess(ret))
+            return ret;
+
+        // Check ReserveCount
+        if (ctx.tx.isFieldPresent(sfReserveCount))
+        {
+            auto const reserveCount = ctx.tx.getFieldU32(sfReserveCount);
+            if (reserveCount < 1)
+                return temMALFORMED;
+        }
     }
 
     return tesSUCCESS;
