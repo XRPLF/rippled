@@ -145,10 +145,12 @@ cd external
 git init
 git remote add origin git@github.com:XRPLF/conan-center-index.git
 git sparse-checkout init
-git sparse-checkout set recipes/snappy
+git sparse-checkout set recipes/ed25519
+git sparse-checkout add recipes/snappy
 git sparse-checkout add recipes/soci
 git fetch origin master
 git checkout master
+conan export --version 2015.03 recipes/ed25519/all
 conan export --version 1.1.10 recipes/snappy/all
 conan export --version 4.0.3 recipes/soci/all
 rm -rf .git
@@ -162,7 +164,8 @@ the new recipe will be automatically pulled from the official Conan Center.
 
 > [!NOTE]
 > You might need to add `--lockfile=""` to your `conan install` command
-> to avoid automatic use of the existing `conan.lock` file when you run `conan export` manually on your machine
+> to avoid automatic use of the existing `conan.lock` file when you run
+> `conan export` manually on your machine
 
 ### Conan profile tweaks
 
