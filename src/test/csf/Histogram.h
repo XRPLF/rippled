@@ -18,14 +18,14 @@ namespace csf {
       - Comparison : T a, b;  bool res = a < b
       - Addition: T a, b; T c = a + b;
       - Multiplication : T a, std::size_t b; T c = a * b;
-      - Divison: T a; std::size_t b;  T c = a/b;
+      - Division: T a; std::size_t b;  T c = a/b;
 
 
 */
 template <class T, class Compare = std::less<T>>
 class Histogram
 {
-    // TODO: Consider logarithimic bins around expected median if this becomes
+    // TODO: Consider logarithmic bins around expected median if this becomes
     // unscaleable
     std::map<T, std::size_t, Compare> counts_;
     std::size_t samples = 0;
