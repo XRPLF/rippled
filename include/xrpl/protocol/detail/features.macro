@@ -64,8 +64,6 @@ XRPL_FEATURE(Clawback,                   Supported::yes, VoteBehavior::DefaultNo
 XRPL_FIX    (UniversalNumber,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(XRPFees,                    Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(FlowSortStrands,            Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.
@@ -124,7 +122,9 @@ XRPL_RETIRE_FEATURE(Escrow)
 XRPL_RETIRE_FEATURE(EnforceInvariants)
 XRPL_RETIRE_FEATURE(ExpandedSignerList)
 XRPL_RETIRE_FEATURE(FeeEscalation)
+XRPL_RETIRE_FEATURE(Flow)
 XRPL_RETIRE_FEATURE(FlowCross)
+XRPL_RETIRE_FEATURE(FlowSortStrands)
 XRPL_RETIRE_FEATURE(HardenedValidations)
 XRPL_RETIRE_FEATURE(ImmediateOfferKilled)
 XRPL_RETIRE_FEATURE(MultiSign)
