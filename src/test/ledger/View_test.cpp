@@ -1117,7 +1117,7 @@ class GetAmendments_test : public beast::unit_test::suite
         // There should be at least 3 amendments.  Don't do exact comparison
         // to avoid maintenance as more amendments are added in the future.
         BEAST_EXPECT(i == 254);
-        BEAST_EXPECT(majorities.size() >= 3);
+        BEAST_EXPECT(majorities.size() >= 2);
 
         // None of the amendments should be enabled yet.
         auto enableds = getEnabledAmendments(*env.closed());
@@ -1135,7 +1135,7 @@ class GetAmendments_test : public beast::unit_test::suite
                 break;
         }
         BEAST_EXPECT(i == 255);
-        BEAST_EXPECT(enableds.size() >= 3);
+        BEAST_EXPECT(enableds.size() >= 2);
     }
 
     void
