@@ -27,22 +27,54 @@ roundPeriodicPayment(
     return roundToAsset(asset, periodicPayment, scale, Number::upward);
 }
 
-/// This structure is explained in the XLS-66 spec, section 3.2.4.4 (Failure
-/// Conditions)
+/* Represents the breakdown of amounts to be paid and changes applied to the
+ * Loan object while processing a loan payment.
+ *
+ * This structure is returned after processing a loan payment transaction and
+ * captures the amounts that need to be paid. The actual ledger entry changes
+ * are made in LoanPay based on this structure values.
+ *
+ * The sum of principalPaid, interestPaid, and feePaid represents the total
+ * amount to be deducted from the borrower's account. The valueChange field
+ * tracks whether the loan's total value increased or decreased beyond normal
+ * amortization.
+ *
+ * This structure is explained in the XLS-66 spec, section 3.2.4.2 (Payment
+ * Processing).
+ */
 struct LoanPaymentParts
 {
-    /// principal_paid is the amount of principal that the payment covered.
+    // The amount of principal paid that reduces the loan balance.
+    // This amount is subtracted from sfPrincipalOutstanding in the Loan object
+    // and paid to the Vault
     Number principalPaid = numZero;
-    /// interest_paid is the amount of interest that the payment covered.
+
+    // The total amount of interest paid to the Vault.
+    // This includes:
+    // - Tracked interest from the amortization schedule
+    // - Untracked interest (e.g., late payment penalty interest)
+    // This value is always non-negative.
     Number interestPaid = numZero;
-    /**
-     * value_change is the amount by which the total value of the Loan changed.
-     *  If value_change < 0, Loan value decreased.
-     *  If value_change > 0, Loan value increased.
-     * This is 0 for regular payments.
-     */
+
+    // The change in the loan's total value outstanding.
+    // - If valueChange < 0: Loan value decreased
+    // - If valueChange > 0: Loan value increased
+    // - If valueChange = 0: No value adjustment
+    //
+    // For regular on-time payments, this is always 0. Non-zero values occur
+    // when:
+    // - Overpayments reduce the loan balance beyond the scheduled amount
+    // - Late payments add penalty interest to the loan value
+    // - Early full payment may increase or decrease the loan value based on
+    // terms
     Number valueChange = numZero;
-    /// feePaid is amount of fee that is paid to the broker
+
+    /* The total amount of fees paid to the Broker.
+     * This includes:
+     * - Tracked management fees from the amortization schedule
+     * - Untracked fees (e.g., late payment fees, service fees, origination
+     * fees) This value is always non-negative.
+     */
     Number feePaid = numZero;
 
     LoanPaymentParts&
@@ -52,46 +84,71 @@ struct LoanPaymentParts
     operator==(LoanPaymentParts const& other) const;
 };
 
-/** This structure describes the initial "computed" properties of a loan.
+/* Describes the initial computed properties of a loan.
  *
- * It is used at loan creation and when the terms of a loan change, such as
- * after an overpayment.
+ * This structure contains the fundamental calculated values that define a
+ * loan's payment structure and amortization schedule. These properties are
+ * computed:
+ * - At loan creation (LoanSet transaction)
+ * - When loan terms change (e.g., after an overpayment that reduces the loan
+ * balance)
  */
 struct LoanProperties
 {
+    // The unrounded amount to be paid at each regular payment period.
+    // Calculated using the standard amortization formula based on principal,
+    // interest rate, and number of payments.
+    // The actual amount paid in the LoanPay transaction must be rounded up to
+    // the precision of the asset and loan.
     Number periodicPayment;
+
+    // The total amount the borrower will pay over the life of the loan.
+    // Equal to periodicPayment * paymentsRemaining.
+    // This includes principal, interest, and management fees.
     Number totalValueOutstanding;
+
+    // The total management fee that will be paid to the broker over the
+    // loan's lifetime. This is a percentage of the total interest (gross)
+    // as specified by the broker's management fee rate.
     Number managementFeeOwedToBroker;
+
+    // The scale (decimal places) used for rounding all loan amounts.
+    // This is the maximum of:
+    // - The asset's native scale
+    // - A minimum scale required to represent the periodic payment accurately
+    // All loan state values (principal, interest, fees) are rounded to this
+    // scale.
     std::int32_t loanScale;
+
+    // The principal portion of the first payment.
     Number firstPaymentPrincipal;
 };
 
-/** This structure captures the current state of a loan and all the
-   relevant parts.
-
-   Whether the values are raw (unrounded) or rounded will
-   depend on how it was computed.
-
-   Many of the fields can be derived from each other, but they're all provided
-   here to reduce code duplication and possible mistakes.
-   e.g.
-     * interestOutstanding = valueOutstanding - principalOutstanding
-     * interestDue = interestOutstanding - managementFeeDue
+/** This structure captures the parts of a loan state.
+ *
+ *  Whether the values are raw (unrounded) or rounded will depend on how it was
+ * computed.
+ *
+ *  Many of the fields can be derived from each other, but they're all provided
+ *  here to reduce code duplication and possible mistakes.
+ *   e.g.
+ *     * interestOutstanding = valueOutstanding - principalOutstanding
+ *     * interestDue = interestOutstanding - managementFeeDue
  */
 struct LoanState
 {
-    /// Total value still due to be paid by the borrower.
+    // Total value still due to be paid by the borrower.
     Number valueOutstanding;
-    /// Prinicipal still due to be paid by the borrower.
+    // Principal still due to be paid by the borrower.
     Number principalOutstanding;
-    /// Interest still due to be paid TO the Vault.
+    // Interest still due to be paid to the Vault.
     // This is a portion of interestOutstanding
     Number interestDue;
-    /// Management fee still due to be paid TO the broker.
+    // Management fee still due to be paid to the broker.
     // This is a portion of interestOutstanding
     Number managementFeeDue;
 
-    /// Interest still due to be paid by the borrower.
+    // Interest still due to be paid by the borrower.
     Number
     interestOutstanding() const
     {
@@ -199,42 +256,133 @@ namespace detail {
 
 enum class PaymentSpecialCase { none, final, extra };
 
-/// This structure is used internally to compute the breakdown of a
-/// single loan payment
+/* Represents a single loan payment component parts.
+
+* This structure captures the "delta" (change) values that will be applied to
+* the tracked fields in the Loan ledger object when a payment is processed.
+*
+* These are called "deltas" because they represent the amount by which each
+* corresponding field in the Loan object will be reduced.
+* They are "tracked" as they change tracked loan values.
+*/
 struct PaymentComponents
 {
-    // tracked values are rounded to the asset and loan scale, and correspond to
-    // fields in the Loan ledger object.
-    // trackedValueDelta modifies sfTotalValueOutstanding.
+    // The change in total value outstanding for this payment.
+    // This amount will be subtracted from sfTotalValueOutstanding in the Loan
+    // object. Equal to the sum of trackedPrincipalDelta,
+    // trackedInterestPart(), and trackedManagementFeeDelta.
     Number trackedValueDelta;
-    // trackedPrincipalDelta modifies sfPrincipalOutstanding.
+
+    // The change in principal outstanding for this payment.
+    // This amount will be subtracted from sfPrincipalOutstanding in the Loan
+    // object, representing the portion of the payment that reduces the
+    // original loan amount.
     Number trackedPrincipalDelta;
-    // trackedManagementFeeDelta modifies sfManagementFeeOutstanding. It will
-    // not include any "extra" fees that go directly to the broker, such as late
-    // fees.
+
+    // The change in management fee outstanding for this payment.
+    // This amount will be subtracted from sfManagementFeeOutstanding in the
+    // Loan object. This represents only the tracked management fees from the
+    // amortization schedule and does not include additional untracked fees
+    // (such as late payment fees) that go directly to the broker.
     Number trackedManagementFeeDelta;
 
+    // Indicates if this payment has special handling requirements.
+    // - none: Regular scheduled payment
+    // - final: The last payment that closes out the loan
+    // - extra: An additional payment beyond the regular schedule (overpayment)
     PaymentSpecialCase specialCase = PaymentSpecialCase::none;
 
+    // Calculates the tracked interest portion of this payment.
+    // This is derived from the other components as:
+    // trackedValueDelta - trackedPrincipalDelta - trackedManagementFeeDelta
+    //
+    // @return The amount of tracked interest included in this payment that
+    //         will be paid to the vault.
     Number
     trackedInterestPart() const;
 };
 
-// This structure describes the difference between two LoanState objects so that
-// the differences between components don't have to be tracked individually,
-// risking more errors. How that difference is used depends on the context.
+/* Extends PaymentComponents with untracked payment amounts.
+ *
+ * This structure adds untracked fees and interest to the base
+ * PaymentComponents, representing amounts that don't affect the Loan object's
+ * tracked state but are still part of the total payment due from the borrower.
+ *
+ * Untracked amounts include:
+ * - Late payment fees that go directly to the Broker
+ * - Late payment penalty interest that goes directly to the Vault
+ * - Service fees
+ *
+ * The key distinction is that tracked amounts reduce the Loan object's state
+ * (sfTotalValueOutstanding, sfPrincipalOutstanding,
+ * sfManagementFeeOutstanding), while untracked amounts are paid directly to the
+ * recipient without affecting the loan's amortization schedule.
+ */
+struct ExtendedPaymentComponents : public PaymentComponents
+{
+    // Additional management fees that go directly to the Broker.
+    // This includes fees not part of the standard amortization schedule
+    // (e.g., late fees, service fees, origination fees).
+    // This value may be negative, though the final value returned in
+    // LoanPaymentParts.feePaid will never be negative.
+    Number untrackedManagementFee;
+
+    // Additional interest that goes directly to the Vault.
+    // This includes interest not part of the standard amortization schedule
+    // (e.g., late payment penalty interest).
+    // This value may be negative, though the final value returned in
+    // LoanPaymentParts.interestPaid will never be negative.
+    Number untrackedInterest;
+
+    // The complete amount due from the borrower for this payment.
+    // Calculated as: trackedValueDelta + untrackedInterest +
+    // untrackedManagementFee
+    //
+    // This value is used to validate that the payment amount provided by the
+    // borrower is sufficient to cover all components of the payment.
+    Number totalDue;
+
+    ExtendedPaymentComponents(
+        PaymentComponents const& p,
+        Number fee,
+        Number interest = numZero)
+        : PaymentComponents(p)
+        , untrackedManagementFee(fee)
+        , untrackedInterest(interest)
+        , totalDue(
+              trackedValueDelta + untrackedInterest + untrackedManagementFee)
+    {
+    }
+};
+
+/* Represents the differences between two loan states.
+ *
+ * This structure is used to capture the change in each component of a loan's
+ * state, typically when computing the difference between two LoanState objects
+ * (e.g., before and after a payment). It is a convenient way to capture changes
+ * in each component. How that difference is used depends on the context.
+ */
 struct LoanStateDeltas
 {
+    // The difference in principal outstanding between two loan states.
     Number principal;
+
+    // The difference in interest due between two loan states.
     Number interest;
+
+    // The difference in management fee outstanding between two loan states.
     Number managementFee;
 
+    /* Calculates the total change across all components.
+     * @return The sum of principal, interest, and management fee deltas.
+     */
     Number
     total() const
     {
         return principal + interest + managementFee;
     }
 
+    // Ensures all delta values are non-negative.
     void
     nonNegative();
 };

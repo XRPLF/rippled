@@ -612,6 +612,34 @@ public:
         beast::Journal const&);
 };
 
+/**
+ * @brief Invariants: Pseudo-accounts have valid and consisent properties
+ *
+ * Pseudo-accounts have certain properties, and some of those properties are
+ * unique to pseudo-accounts. Check that all pseudo-accounts are following the
+ * rules, and that only pseudo-accounts look like pseudo-accounts.
+ *
+ */
+class ValidPseudoAccounts
+{
+    std::vector<std::string> errors_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 class ValidPermissionedDEX
 {
     bool regularOffers_ = false;
@@ -708,34 +736,6 @@ class NoModifiedUnmodifiableFields
 {
     // Pair is <before, after>.
     std::set<std::pair<SLE::const_pointer, SLE::const_pointer>> changedEntries_;
-
-public:
-    void
-    visitEntry(
-        bool,
-        std::shared_ptr<SLE const> const&,
-        std::shared_ptr<SLE const> const&);
-
-    bool
-    finalize(
-        STTx const&,
-        TER const,
-        XRPAmount const,
-        ReadView const&,
-        beast::Journal const&);
-};
-
-/**
- * @brief Invariants: Pseudo-accounts have valid and consisent properties
- *
- * Pseudo-accounts have certain properties, and some of those properties are
- * unique to pseudo-accounts. Check that all pseudo-accounts are following the
- * rules, and that only pseudo-accounts look like pseudo-accounts.
- *
- */
-class ValidPseudoAccounts
-{
-    std::vector<std::string> errors_;
 
 public:
     void

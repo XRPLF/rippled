@@ -269,7 +269,9 @@ LoanPay::doApply()
     // Normally freeze status is checked in preflight, but we do it here to
     // avoid duplicating the check. It'll claim a fee either way.
     bool const sendBrokerFeeToOwner = [&]() {
-        // Always round the minimum required up.
+        // Round the minimum required cover up to be conservative. This ensures
+        // CoverAvailable never drops below the theoretical minimum, protecting
+        // the broker's solvency.
         NumberRoundModeGuard mg(Number::upward);
         return coverAvailableProxy >=
             roundToAsset(

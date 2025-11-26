@@ -465,7 +465,9 @@ LoanSet::doApply()
     }
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
-        // Always round the minimum required up.
+        // Round the minimum required cover up to be conservative. This ensures
+        // CoverAvailable never drops below the theoretical minimum, protecting
+        // the broker's solvency.
         NumberRoundModeGuard mg(Number::upward);
         if (brokerSle->at(sfCoverAvailable) <
             tenthBipsOfValue(newDebtTotal, coverRateMinimum))
