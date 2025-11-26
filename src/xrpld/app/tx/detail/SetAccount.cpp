@@ -595,36 +595,32 @@ SetAccount::doApply()
         sle->isFieldPresent(sfNFTokenMinter))
         sle->makeFieldAbsent(sfNFTokenMinter);
 
-    // Set or clear flags for disallowing various incoming instruments
-    if (ctx_.view().rules().enabled(featureDisallowIncoming))
+    if (uSetFlag == asfDisallowIncomingNFTokenOffer)
+        uFlagsOut |= lsfDisallowIncomingNFTokenOffer;
+    else if (uClearFlag == asfDisallowIncomingNFTokenOffer)
+        uFlagsOut &= ~lsfDisallowIncomingNFTokenOffer;
+
+    if (uSetFlag == asfDisallowIncomingCheck)
+        uFlagsOut |= lsfDisallowIncomingCheck;
+    else if (uClearFlag == asfDisallowIncomingCheck)
+        uFlagsOut &= ~lsfDisallowIncomingCheck;
+
+    if (uSetFlag == asfDisallowIncomingPayChan)
+        uFlagsOut |= lsfDisallowIncomingPayChan;
+    else if (uClearFlag == asfDisallowIncomingPayChan)
+        uFlagsOut &= ~lsfDisallowIncomingPayChan;
+
+    if (uSetFlag == asfDisallowIncomingTrustline)
+        uFlagsOut |= lsfDisallowIncomingTrustline;
+    else if (uClearFlag == asfDisallowIncomingTrustline)
+        uFlagsOut &= ~lsfDisallowIncomingTrustline;
+
+    if (ctx_.view().rules().enabled(featureSponsor))
     {
-        if (uSetFlag == asfDisallowIncomingNFTokenOffer)
-            uFlagsOut |= lsfDisallowIncomingNFTokenOffer;
-        else if (uClearFlag == asfDisallowIncomingNFTokenOffer)
-            uFlagsOut &= ~lsfDisallowIncomingNFTokenOffer;
-
-        if (uSetFlag == asfDisallowIncomingCheck)
-            uFlagsOut |= lsfDisallowIncomingCheck;
-        else if (uClearFlag == asfDisallowIncomingCheck)
-            uFlagsOut &= ~lsfDisallowIncomingCheck;
-
-        if (uSetFlag == asfDisallowIncomingPayChan)
-            uFlagsOut |= lsfDisallowIncomingPayChan;
-        else if (uClearFlag == asfDisallowIncomingPayChan)
-            uFlagsOut &= ~lsfDisallowIncomingPayChan;
-
-        if (uSetFlag == asfDisallowIncomingTrustline)
-            uFlagsOut |= lsfDisallowIncomingTrustline;
-        else if (uClearFlag == asfDisallowIncomingTrustline)
-            uFlagsOut &= ~lsfDisallowIncomingTrustline;
-
-        if (ctx_.view().rules().enabled(featureSponsor))
-        {
-            if (uSetFlag == asfDisallowIncomingSponsor)
-                uFlagsOut |= lsfDisallowIncomingSponsor;
-            else if (uClearFlag == asfDisallowIncomingSponsor)
-                uFlagsOut &= ~lsfDisallowIncomingSponsor;
-        }
+        if (uSetFlag == asfDisallowIncomingSponsor)
+            uFlagsOut |= lsfDisallowIncomingSponsor;
+        else if (uClearFlag == asfDisallowIncomingSponsor)
+            uFlagsOut &= ~lsfDisallowIncomingSponsor;
     }
 
     // Set or clear flags for disallowing escrow

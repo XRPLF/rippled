@@ -2187,7 +2187,7 @@ rippleSendIOU(
             sponsorAccount,
             isSponsorCoSigning,
             j);
-        if (view.rules().enabled(featureDeletableAccounts) && ter != tesSUCCESS)
+        if (ter != tesSUCCESS)
             return ter;
         saActual = saAmount;
         return tesSUCCESS;

@@ -1036,12 +1036,7 @@ ValidNewAccountRoot::finalize(
             return false;
         }
 
-        std::uint32_t const startingSeq =                     //
-            pseudoAccount                                     //
-            ? 0                                               //
-            : view.rules().enabled(featureDeletableAccounts)  //
-                ? view.seq()                                  //
-                : 1;
+        std::uint32_t const startingSeq = pseudoAccount ? 0 : view.seq();
 
         if (accountSeq_ != startingSeq)
         {
