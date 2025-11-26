@@ -183,6 +183,7 @@ public:
         std::string_view funcName,
         std::vector<WasmParam> const& params,
         ImportVec const& imports,
+        HostFunctions* hfs,
         beast::Journal j);
 
     std::int64_t
@@ -190,7 +191,7 @@ public:
 
     // Host functions helper functionality
     wasm_trap_t*
-    newTrap(std::string_view msg);
+    newTrap(std::string const& msg);
 
     beast::Journal
     getJournal() const;

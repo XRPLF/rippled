@@ -351,6 +351,30 @@ struct Wasm_test : public beast::unit_test::suite
 
             env.close();
         }
+
+        // not enough gas
+        {
+            std::string const wasmHex = allHostFunctionsWasmHex;
+            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+            auto& engine = WasmEngine::instance();
+
+            TestHostFunctions hfs(env, 0);
+            ImportVec const imp = createWasmImport(hfs);
+
+            auto re = engine.run(
+                wasm, ESCROW_FUNCTION_NAME, {}, imp, &hfs, 200, env.journal);
+
+            if (BEAST_EXPECT(!re))
+            {
+                BEAST_EXPECTS(
+                    re.error() == tecFAILED_PROCESSING,
+                    std::to_string(TERtoInt(re.error())));
+            }
+
+            env.close();
+        }
     }
 
     void
@@ -368,6 +392,17 @@ struct Wasm_test : public beast::unit_test::suite
             TestHostFunctions nfs(env, 0);
             auto re =
                 runEscrowWasm(wasm, nfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 40'102, std::to_string(re->cost));
+            }
+        }
+
+        {
+            // max<int64_t>() gas
+            TestHostFunctions nfs(env, 0);
+            auto re = runEscrowWasm(wasm, nfs, ESCROW_FUNCTION_NAME, {}, -1);
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
@@ -451,6 +486,7 @@ struct Wasm_test : public beast::unit_test::suite
         }
 
         {
+            // expected import not provided
             auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
             Bytes wasm(wasmStr.begin(), wasmStr.end());
             TestLedgerDataProvider ledgerDataProvider(env);
@@ -470,7 +506,54 @@ struct Wasm_test : public beast::unit_test::suite
                 1'000'000,
                 env.journal);
 
-            // expected import not provided
+            BEAST_EXPECT(!re);
+        }
+
+        {
+            // bad import format
+            auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
+            Bytes wasm(wasmStr.begin(), wasmStr.end());
+            TestLedgerDataProvider ledgerDataProvider(env);
+
+            ImportVec imports;
+            WASM_IMPORT_FUNC2(
+                imports, getLedgerSqn, "get_ledger_sqn", &ledgerDataProvider);
+            imports[0].first = nullptr;
+
+            auto& engine = WasmEngine::instance();
+
+            auto re = engine.run(
+                wasm,
+                ESCROW_FUNCTION_NAME,
+                {},
+                imports,
+                &ledgerDataProvider,
+                1'000'000,
+                env.journal);
+
+            BEAST_EXPECT(!re);
+        }
+
+        {
+            // bad function name
+            auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
+            Bytes wasm(wasmStr.begin(), wasmStr.end());
+            TestLedgerDataProvider ledgerDataProvider(env);
+
+            ImportVec imports;
+            WASM_IMPORT_FUNC2(
+                imports, getLedgerSqn, "get_ledger_sqn", &ledgerDataProvider);
+
+            auto& engine = WasmEngine::instance();
+            auto re = engine.run(
+                wasm,
+                "func1",
+                {},
+                imports,
+                &ledgerDataProvider,
+                1'000'000,
+                env.journal);
+
             BEAST_EXPECT(!re);
         }
     }

@@ -1269,10 +1269,12 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 
         return res.toBytes();
     }
+    // LCOV_EXCL_START
     catch (...)
     {
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    // LCOV_EXCL_STOP
 }
 
 Expected<Bytes, HostFunctionError>

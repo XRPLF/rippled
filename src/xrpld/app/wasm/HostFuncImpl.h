@@ -43,7 +43,7 @@ class WasmHostFunctionsImpl : public HostFunctions
 
 public:
     WasmHostFunctionsImpl(ApplyContext& ct, Keylet const& leKey)
-        :HostFunctions(ct.journal), ctx(ct), leKey(leKey)
+        : HostFunctions(ct.journal), ctx(ct), leKey(leKey)
     {
     }
 

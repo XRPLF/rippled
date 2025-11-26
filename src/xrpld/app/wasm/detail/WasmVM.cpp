@@ -174,16 +174,6 @@ WasmEngine::instance()
     return e;
 }
 
-static inline void
-checkImports(ImportVec const& imports, HostFunctions* hfs)
-{
-    for (auto const& obj : imports)
-    {
-        if (hfs != obj.first)
-            Throw<std::runtime_error>("Imports hf unsync");
-    }
-}
-
 Expected<WasmResult<int32_t>, TER>
 WasmEngine::run(
     Bytes const& wasmCode,
@@ -194,7 +184,6 @@ WasmEngine::run(
     int64_t gasLimit,
     beast::Journal j)
 {
-    checkImports(imports, hfs);
     return impl->run(wasmCode, funcName, params, imports, hfs, gasLimit, j);
 }
 
@@ -207,20 +196,21 @@ WasmEngine::check(
     HostFunctions* hfs,
     beast::Journal j)
 {
-    checkImports(imports, hfs);
-    return impl->check(wasmCode, funcName, params, imports, j);
+    return impl->check(wasmCode, funcName, params, imports, hfs, j);
 }
 
 void*
-WasmEngine::newTrap(std::string_view msg)
+WasmEngine::newTrap(std::string const& msg)
 {
     return impl->newTrap(msg);
 }
 
+// LCOV_EXCL_START
 beast::Journal
 WasmEngine::getJournal() const
 {
     return impl->getJournal();
 }
+// LCOV_EXCL_STOP
 
 }  // namespace ripple

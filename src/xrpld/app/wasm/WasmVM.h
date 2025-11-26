@@ -59,7 +59,7 @@ public:
 
     // Host functions helper functionality
     void*
-    newTrap(std::string_view msg = {});
+    newTrap(std::string const& txt = std::string());
 
     beast::Journal
     getJournal() const;
