@@ -387,6 +387,20 @@ struct LoanStateDeltas
     nonNegative();
 };
 
+std::pair<Number, Number>
+computeInterestAndFeeParts(
+    Number const& interest,
+    TenthBips16 managementFeeRate);
+
+ExtendedPaymentComponents
+computeOverpaymentComponents(
+    Asset const& asset,
+    int32_t const loanScale,
+    Number const& overpayment,
+    TenthBips32 const overpaymentInterestRate,
+    TenthBips32 const overpaymentFeeRate,
+    TenthBips16 const managementFeeRate);
+
 PaymentComponents
 computePaymentComponents(
     Asset const& asset,

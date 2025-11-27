@@ -1231,19 +1231,14 @@ computeOverpaymentComponents(
     // This interest doesn't follow the normal amortization schedule - it's
     // a one-time charge for paying early.
     // Equation (20) and (21) from XLS-66 spec, Section A-2 Equation Glossary
-    auto const [rawOverpaymentInterest, _] = [&]() {
-        Number const interest =
-            tenthBipsOfValue(overpayment, overpaymentInterestRate);
-        return detail::computeInterestAndFeeParts(interest, managementFeeRate);
-    }();
-
-    // Round the penalty interest components to the loan scale
     auto const [roundedOverpaymentInterest, roundedOverpaymentManagementFee] =
         [&]() {
-            Number const interest =
-                roundToAsset(asset, rawOverpaymentInterest, loanScale);
+            auto const interest = roundToAsset(
+                asset,
+                tenthBipsOfValue(overpayment, overpaymentInterestRate),
+                loanScale);
             return detail::computeInterestAndFeeParts(
-                asset, interest, managementFeeRate, loanScale);
+                interest, managementFeeRate);
         }();
 
     auto const result = detail::ExtendedPaymentComponents{
