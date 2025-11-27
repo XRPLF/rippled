@@ -88,6 +88,13 @@ These instructions assume a basic familiarity with Conan and CMake. If you are
 unfamiliar with Conan, then please read [this crash course](./docs/build/conan.md) or the official
 [Getting Started][3] walkthrough.
 
+#### Conan lockfile
+
+To achieve reproducible dependencies, we use a [Conan lockfile](https://docs.conan.io/2/tutorial/versioning/lockfiles.html),
+which has to be updated every time dependencies change.
+
+Please see the [instructions on how to regenerate the lockfile](conan/lockfile/README.md).
+
 #### Default profile
 
 We recommend that you import the provided `conan/profiles/default` profile:
@@ -449,33 +456,6 @@ tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
 
    The location of `rippled` binary in your build directory depends on your
    CMake generator. Pass `--help` to see the rest of the command line options.
-
-#### Conan lockfile
-
-To achieve reproducible dependencies, we use [Conan lockfile](https://docs.conan.io/2/tutorial/versioning/lockfiles.html).
-
-The `conan.lock` file in the repository contains a "snapshot" of the current dependencies.
-It is implicitly used when running `conan` commands, you don't need to specify it.
-
-You have to update this file every time you add a new dependency or change a revision or version of an existing dependency.
-
-> [!NOTE]
-> Conan uses local cache by default when creating a lockfile.
->
-> To ensure, that lockfile creation works the same way on all developer machines, you should clear the local cache before creating a new lockfile.
-
-To create a new lockfile, run the following commands in the repository root:
-
-```bash
-conan remove '*' --confirm
-rm conan.lock
-# This ensure that xrplf remote is the first to be consulted
-conan remote add --force --index 0 xrplf https://conan.ripplex.io
-conan lock create . -o '&:jemalloc=True' -o '&:rocksdb=True'
-```
-
-> [!NOTE]
-> If some dependencies are exclusive for some OS, you may need to run the last command for them adding `--profile:all <PROFILE>`.
 
 ## Coverage report
 
