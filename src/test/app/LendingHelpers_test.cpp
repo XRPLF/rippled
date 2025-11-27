@@ -51,6 +51,7 @@ class LendingHelpers_test : public beast::unit_test::suite
 
         BEAST_EXPECT(
             components.untrackedManagementFee == expectedOverpaymentFee);
+
         BEAST_EXPECT(
             components.untrackedInterest == expectedOverpaymentInterestNet);
         BEAST_EXPECT(
@@ -58,6 +59,17 @@ class LendingHelpers_test : public beast::unit_test::suite
             expectedOverpaymentManagementFee);
         BEAST_EXPECT(
             components.trackedPrincipalDelta == expectedPrincipalPortion);
+        BEAST_EXPECT(
+            components.trackedManagementFeeDelta +
+                components.untrackedInterest ==
+            expectedOverpaymentInterestGross);
+
+        BEAST_EXPECT(
+            components.trackedManagementFeeDelta +
+                components.untrackedInterest +
+                components.trackedPrincipalDelta +
+                components.untrackedManagementFee ==
+            overpayment);
     }
 
 public:
