@@ -31,6 +31,11 @@ repos:
     hooks:
       - id: prettier
 
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 25.11.0
+    hooks:
+      - id: black
+
 exclude: |
   (?x)^(
       external/.*|
