@@ -58,7 +58,7 @@ class Xrpl(ConanFile):
         "unity": False,
         "xrpld": False,
         "date/*:header_only": True,
-        "secp256k1/*:shared": False,
+        "ed25519/*:shared": False,
         "grpc/*:shared": False,
         "grpc/*:secure": True,
         "libarchive/*:shared": False,
