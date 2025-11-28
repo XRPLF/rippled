@@ -36,18 +36,24 @@ class LendingHelpers_test : public beast::unit_test::suite
         };
 
         auto const testCases = std::vector<TestCase>{
-            {.name = "Zero payments remaining",
-             .periodicRate = Number{5, -2},
-             .paymentsRemaining = 0,
-             .expectedRaisedRate = Number{1}},
-            {.name = "One payment remaining",
-             .periodicRate = Number{5, -2},
-             .paymentsRemaining = 1,
-             .expectedRaisedRate = Number{105, -2}},  // 1.05^1
-            {.name = "Multiple payments remaining",
-             .periodicRate = Number{5, -2},
-             .paymentsRemaining = 3,
-             .expectedRaisedRate = Number{1157625, -6}},  // 1.05^3
+            {
+                .name = "Zero payments remaining",
+                .periodicRate = Number{5, -2},
+                .paymentsRemaining = 0,
+                .expectedRaisedRate = Number{1},  // (1 + r)^0 = 1
+            },
+            {
+                .name = "One payment remaining",
+                .periodicRate = Number{5, -2},
+                .paymentsRemaining = 1,
+                .expectedRaisedRate = Number{105, -2},
+            },  // 1.05^1
+            {
+                .name = "Multiple payments remaining",
+                .periodicRate = Number{5, -2},
+                .paymentsRemaining = 3,
+                .expectedRaisedRate = Number{1157625, -6},
+            },  // 1.05^3
             {
                 .name = "Zero periodic rate",
                 .periodicRate = Number{0},
