@@ -135,27 +135,6 @@ loanPeriodicPayment(
         computePaymentFactor(periodicRate, paymentsRemaining);
 }
 
-/* Calculates the periodic payment amount from annualized interest rate.
- * Converts the annual rate to periodic rate before computing payment.
- *
- * Equation (7) from XLS-66 spec, Section A-2 Equation Glossary
- */
-Number
-loanPeriodicPayment(
-    Number const& principalOutstanding,
-    TenthBips32 interestRate,
-    std::uint32_t paymentInterval,
-    std::uint32_t paymentsRemaining)
-{
-    if (principalOutstanding == 0 || paymentsRemaining == 0)
-        return 0;
-
-    Number const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
-
-    return loanPeriodicPayment(
-        principalOutstanding, periodicRate, paymentsRemaining);
-}
-
 /* Reverse-calculates principal from periodic payment amount.
  * Used to determine theoretical principal at any point in the schedule.
  *
@@ -175,21 +154,6 @@ loanPrincipalFromPeriodicPayment(
 
     return periodicPayment /
         computePaymentFactor(periodicRate, paymentsRemaining);
-}
-
-/* Splits gross interest into net interest (to vault) and management fee (to
- * broker). Returns pair of (net interest, management fee).
- *
- * Equation (33) from XLS-66 spec, Section A-2 Equation Glossary
- */
-std::pair<Number, Number>
-computeInterestAndFeeParts(
-    Number const& interest,
-    TenthBips16 managementFeeRate)
-{
-    auto const fee = tenthBipsOfValue(interest, managementFeeRate);
-
-    return std::make_pair(interest - fee, fee);
 }
 
 /*
@@ -1253,7 +1217,7 @@ computeOverpaymentComponents(
                 tenthBipsOfValue(overpayment, overpaymentInterestRate),
                 loanScale);
             return detail::computeInterestAndFeeParts(
-                interest, managementFeeRate);
+                asset, interest, managementFeeRate, loanScale);
         }();
 
     auto const result = detail::ExtendedPaymentComponents{
