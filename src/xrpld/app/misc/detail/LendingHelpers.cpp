@@ -100,6 +100,9 @@ computePaymentFactor(
     Number const& periodicRate,
     std::uint32_t paymentsRemaining)
 {
+    if (paymentsRemaining == 0)
+        return numZero;
+
     // For zero interest, payment factor is simply 1/paymentsRemaining
     if (periodicRate == beast::zero)
         return Number{1} / paymentsRemaining;
@@ -164,6 +167,9 @@ loanPrincipalFromPeriodicPayment(
     Number const& periodicRate,
     std::uint32_t paymentsRemaining)
 {
+    if (paymentsRemaining == 0)
+        return numZero;
+
     if (periodicRate == 0)
         return periodicPayment * paymentsRemaining;
 
@@ -216,6 +222,12 @@ loanLatePaymentInterest(
     NetClock::time_point parentCloseTime,
     std::uint32_t nextPaymentDueDate)
 {
+    if (principalOutstanding == beast::zero)
+        return numZero;
+
+    if (lateInterestRate == TenthBips32{0})
+        return numZero;
+
     auto const now = parentCloseTime.time_since_epoch().count();
 
     // If the payment is not late by any amount of time, then there's no late
@@ -246,6 +258,9 @@ loanAccruedInterest(
     std::uint32_t paymentInterval)
 {
     if (periodicRate == beast::zero)
+        return numZero;
+
+    if (paymentInterval == 0)
         return numZero;
 
     auto const lastPaymentDate = std::max(prevPaymentDate, startDate);

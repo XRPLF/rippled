@@ -387,10 +387,48 @@ struct LoanStateDeltas
     nonNegative();
 };
 
+Number
+computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining);
+
+Number
+computePaymentFactor(
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining);
+
 std::pair<Number, Number>
 computeInterestAndFeeParts(
+    Asset const& asset,
     Number const& interest,
-    TenthBips16 managementFeeRate);
+    TenthBips16 managementFeeRate,
+    std::int32_t loanScale);
+
+Number
+loanPeriodicPayment(
+    Number const& principalOutstanding,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining);
+
+Number
+loanPrincipalFromPeriodicPayment(
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining);
+
+Number
+loanLatePaymentInterest(
+    Number const& principalOutstanding,
+    TenthBips32 lateInterestRate,
+    NetClock::time_point parentCloseTime,
+    std::uint32_t nextPaymentDueDate);
+
+Number
+loanAccruedInterest(
+    Number const& principalOutstanding,
+    Number const& periodicRate,
+    NetClock::time_point parentCloseTime,
+    std::uint32_t startDate,
+    std::uint32_t prevPaymentDate,
+    std::uint32_t paymentInterval);
 
 ExtendedPaymentComponents
 computeOverpaymentComponents(
