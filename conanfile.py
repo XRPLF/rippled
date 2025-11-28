@@ -28,6 +28,7 @@ class Xrpl(ConanFile):
     }
 
     requires = [
+        "ed25519/2015.03",
         "grpc/1.50.1",
         "libarchive/3.8.1",
         "nudb/2.0.9",
@@ -188,6 +189,7 @@ class Xrpl(ConanFile):
             "boost::system",
             "boost::thread",
             "date::date",
+            "ed25519::ed25519",
             "grpc::grpc++",
             "libarchive::libarchive",
             "lz4::lz4",
