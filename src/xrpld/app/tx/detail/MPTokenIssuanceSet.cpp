@@ -240,6 +240,20 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    auto const mutableFlags = ctx.tx[~sfMutableFlags];
+    auto const metadata = ctx.tx[~sfMPTokenMetadata];
+    auto const transferFee = ctx.tx[~sfTransferFee];
+    auto const isMutate = mutableFlags || metadata || transferFee;
+
+    if (ctx.view.rules().enabled(featureConfidentialTransfer) && isMutate)
+    {
+        std::uint64_t const confidentialOA =
+            (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
+
+        if (confidentialOA > 0)
+            return tecNO_PERMISSION;
+    }
+
     // sfMutableFlags is soeDEFAULT, defaulting to 0 if not specified on
     // the ledger.
     auto const currentMutableFlags =
@@ -249,7 +263,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         return currentMutableFlags & mutableFlag;
     };
 
-    if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
+    if (mutableFlags)
     {
         if (std::any_of(
                 mptMutabilityFlags.begin(),
@@ -261,17 +275,16 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
-    if (!isMutableFlag(lsmfMPTCanMutateMetadata) &&
-        ctx.tx.isFieldPresent(sfMPTokenMetadata))
+    if (!isMutableFlag(lsmfMPTCanMutateMetadata) && metadata)
         return tecNO_PERMISSION;
 
-    if (auto const fee = ctx.tx[~sfTransferFee])
+    if (transferFee)
     {
         // A non-zero TransferFee is only valid if the lsfMPTCanTransfer flag
         // was previously enabled (at issuance or via a prior mutation). Setting
         // it by tmfMPTSetCanTransfer in the current transaction does not meet
         // this requirement.
-        if (fee > 0u && !sleMptIssuance->isFlag(lsfMPTCanTransfer))
+        if (transferFee > 0u && !sleMptIssuance->isFlag(lsfMPTCanTransfer))
             return tecNO_PERMISSION;
 
         if (!isMutableFlag(lsmfMPTCanMutateTransferFee))

@@ -590,7 +590,8 @@ class MPToken_test : public beast::unit_test::suite
                  .err = temINVALID_FLAG});
 
             if (!features[featureSingleAssetVault] &&
-                !features[featureDynamicMPT])
+                !features[featureDynamicMPT] &&
+                !features[featureConfidentialTransfer])
             {
                 // test invalid flags - nothing is being changed
                 mptAlice.set(

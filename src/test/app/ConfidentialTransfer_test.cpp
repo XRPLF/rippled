@@ -2398,6 +2398,68 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testBlockingMutation(FeatureBitset features)
+    {
+        testcase("disallow mutation when there's confidential OA");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create(
+            {.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback,
+             .mutableFlags = tmfMPTCanMutateMetadata |
+                 tmfMPTCanMutateTransferFee | tmfMPTCanMutateCanLock});
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 1000);
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+
+        mptAlice.set({.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+        // muatation is allowed because confidential outstanding amount is 0.
+        mptAlice.set({.account = alice, .metadata = "test"});
+
+        // bob convert 100
+        mptAlice.convert({
+            .account = bob,
+            .amt = 100,
+            .proof = "123",
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+        BEAST_EXPECT(mptAlice.getIssuanceConfidentialBalance() == 100);
+
+        // can not mutate metadata
+        mptAlice.set(
+            {.account = alice, .metadata = "modify", .err = tecNO_PERMISSION});
+
+        // can not mutate transfer fee
+        mptAlice.set(
+            {.account = alice, .transferFee = 50, .err = tecNO_PERMISSION});
+
+        // can not mutate flags
+        mptAlice.set(
+            {.account = alice,
+             .mutableFlags = tmfMPTClearCanLock,
+             .err = tecNO_PERMISSION});
+
+        // clawback all confidential balance and make COA to 0
+        mptAlice.confidentialClaw({
+            .account = alice,
+            .holder = bob,
+            .amt = 100,
+            .proof = "123",
+        });
+        BEAST_EXPECT(mptAlice.getIssuanceConfidentialBalance() == 0);
+
+        // now we can mutate because COA is 0
+        mptAlice.set({.account = alice, .metadata = "modify"});
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testConvert(features);
@@ -2426,6 +2488,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testConvertBack(features);
         testConvertBackPreflight(features);
         testConvertBackPreclaim(features);
+
+        testBlockingMutation(features);
     }
 
 public:
