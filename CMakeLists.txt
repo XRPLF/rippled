@@ -90,6 +90,12 @@ set_target_properties(OpenSSL::SSL PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS OPENSSL_NO_SSL2
 )
 
+# On Windows, SECP256K1_STATIC must be defined when consuming libsecp256k1 as a
+# static library.
+if (MSVC)
+  set(SECP256K1_STATIC, TRUE)
+endif()
+
 add_subdirectory(external/antithesis-sdk)
 find_package(gRPC REQUIRED)
 find_package(lz4 REQUIRED)

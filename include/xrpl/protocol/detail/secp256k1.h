@@ -1,9 +1,6 @@
 #ifndef XRPL_PROTOCOL_SECP256K1_H_INCLUDED
 #define XRPL_PROTOCOL_SECP256K1_H_INCLUDED
 
-#ifndef SECP256K1_STATIC
-#define SECP256K1_STATIC
-#endif
 #include <secp256k1.h>
 
 namespace ripple {
