@@ -547,6 +547,14 @@ tryOverpayment(
 
     auto const deltas = rounded - newRounded;
 
+    // The change in loan management fee is equal to the change between the old
+    // and the new outstanding management fees
+    XRPL_ASSERT_PARTS(
+        deltas.managementFee ==
+            rounded.managementFeeDue - managementFeeOutstanding,
+        "ripple::detail::tryOverpayment",
+        "no fee change");
+
     auto const hypotheticalValueOutstanding =
         rounded.valueOutstanding - deltas.principal;
 
@@ -561,7 +569,6 @@ tryOverpayment(
                           "the loan. Ignore the overpayment";
         return Unexpected(tesSUCCESS);
     }
-
     return LoanPaymentParts{
         // Principal paid is the reduction in principal outstanding
         .principalPaid = deltas.principal,
@@ -676,12 +683,6 @@ doOverpayment(
         "ripple::detail::doOverpayment",
         "principal change agrees");
 
-    XRPL_ASSERT_PARTS(
-        overpaymentComponents.trackedManagementFeeDelta ==
-            managementFeeOutstandingProxy - managementFeeOutstanding,
-        "ripple::detail::doOverpayment",
-        "no fee change");
-
     // I'm not 100% sure the following asserts are correct. If in doubt, and
     // everything else works, remove any that cause trouble.
 
@@ -711,13 +712,6 @@ doOverpayment(
             loanPaymentParts.principalPaid,
         "ripple::detail::doOverpayment",
         "principal payment matches");
-
-    XRPL_ASSERT_PARTS(
-        loanPaymentParts.feePaid ==
-            overpaymentComponents.untrackedManagementFee +
-                overpaymentComponents.trackedManagementFeeDelta,
-        "ripple::detail::doOverpayment",
-        "fee payment matches");
 
     // All validations passed, so update the proxy objects (which will
     // modify the actual Loan ledger object)
