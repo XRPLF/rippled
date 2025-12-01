@@ -85,8 +85,8 @@ struct EscrowSmart_test : public beast::unit_test::suite
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.extension_compute_limit =
-                        0;  // WASM runtime disabled
+                    // WASM runtime disabled
+                    cfg->FEES.extension_compute_limit = 0;
                     return cfg;
                 }),
                 features);
@@ -101,7 +101,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
                 fee(txnFees),
-                ter(temMALFORMED));
+                ter(temINVALID));
             env.close();
         }
 
