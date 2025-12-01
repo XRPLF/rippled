@@ -34,6 +34,8 @@ enum class HostFunctionError : int32_t {
     INDEX_OUT_OF_BOUNDS = -18,
     FLOAT_INPUT_MALFORMED = -19,
     FLOAT_COMPUTATION_ERROR = -20,
+    NO_RUNTIME = -21,
+    OUT_OF_GAS = -22,
 };
 
 inline int32_t
@@ -80,6 +82,14 @@ floatLogImpl(Slice const& x, int32_t mode);
 
 struct HostFunctions
 {
+    beast::Journal j_;
+
+    HostFunctions(
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : j_(j)
+    {
+    }
+
     // LCOV_EXCL_START
     virtual void
     setRT(void const*)
@@ -92,10 +102,22 @@ struct HostFunctions
         return nullptr;
     }
 
-    virtual beast::Journal
+    std::int64_t
+    getGas()
+    {
+        return -1;
+    }
+
+    void
+    setGas(std::int64_t)
+    {
+        return;
+    }
+
+    beast::Journal
     getJournal()
     {
-        return beast::Journal{beast::Journal::getNullSink()};
+        return j_;
     }
 
     virtual Expected<std::int32_t, HostFunctionError>

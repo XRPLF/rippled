@@ -48,11 +48,14 @@ struct WasmiResult
 using ModulePtr = std::unique_ptr<wasm_module_t, decltype(&wasm_module_delete)>;
 using InstancePtr =
     std::unique_ptr<wasm_instance_t, decltype(&wasm_instance_delete)>;
+using EnginePtr = std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)>;
+using StorePtr = std::unique_ptr<wasm_store_t, decltype(&wasm_store_delete)>;
 
 using FuncInfo = std::pair<wasm_func_t const*, wasm_functype_t const*>;
 
 struct InstanceWrapper
 {
+    wasm_store_t* store_ = nullptr;
     wasm_extern_vec_t exports_;
     InstancePtr instance_;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
@@ -91,11 +94,15 @@ public:
 
     wmem
     getMem() const;
+
+    std::int64_t
+    getGas() const;
+
+    std::int64_t setGas(std::int64_t) const;
 };
 
 struct ModuleWrapper
 {
-    wasm_store_t* store_ = nullptr;
     ModulePtr module_;
     InstanceWrapper instanceWrap_;
     wasm_exporttype_vec_t exportTypes_;
@@ -114,7 +121,7 @@ public:
         wasm_store_t* s,
         Bytes const& wasmBin,
         bool instantiate,
-        std::vector<WasmImportFunc> const& imports,
+        ImportVec const& imports,
         beast::Journal j);
     ~ModuleWrapper();
 
@@ -142,13 +149,13 @@ private:
     static void
     makeImpReturn(wasm_valtype_vec_t& v, WasmImportFunc const& imp);
     wasm_extern_vec_t
-    buildImports(wasm_store_t* s, std::vector<WasmImportFunc> const& imports);
+    buildImports(wasm_store_t* s, ImportVec const& imports);
 };
 
 class WasmiEngine
 {
-    std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)> engine_;
-    std::unique_ptr<wasm_store_t, decltype(&wasm_store_delete)> store_;
+    EnginePtr engine_;
+    StorePtr store_;
     std::unique_ptr<ModuleWrapper> moduleWrap_;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
@@ -158,14 +165,14 @@ public:
     WasmiEngine();
     ~WasmiEngine() = default;
 
-    static std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)>
+    static EnginePtr
     init();
 
     Expected<WasmResult<int32_t>, TER>
     run(Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        std::vector<WasmImportFunc> const& imports,
+        ImportVec const& imports,
         HostFunctions* hfs,
         int64_t gas,
         beast::Journal j);
@@ -175,7 +182,8 @@ public:
         Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        std::vector<WasmImportFunc> const& imports,
+        ImportVec const& imports,
+        HostFunctions* hfs,
         beast::Journal j);
 
     std::int64_t
@@ -183,7 +191,7 @@ public:
 
     // Host functions helper functionality
     wasm_trap_t*
-    newTrap(std::string_view msg);
+    newTrap(std::string const& msg);
 
     beast::Journal
     getJournal() const;
@@ -203,7 +211,7 @@ private:
         Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        std::vector<WasmImportFunc> const& imports,
+        ImportVec const& imports,
         HostFunctions* hfs,
         int64_t gas);
 
@@ -212,14 +220,14 @@ private:
         Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        std::vector<WasmImportFunc> const& imports);
+        ImportVec const& imports);
 
     int
     addModule(
         Bytes const& wasmCode,
         bool instantiate,
         int64_t gas,
-        std::vector<WasmImportFunc> const& imports);
+        ImportVec const& imports);
     void
     clearModules();
 
