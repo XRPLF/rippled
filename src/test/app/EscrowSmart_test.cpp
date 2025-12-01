@@ -31,14 +31,14 @@ struct EscrowSmart_test : public beast::unit_test::suite
 
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
-        static auto wasmHex = ledgerSqnWasmHex;
+        static auto const& wasmHex = ledgerSqnWasmHex;
 
         {
             // featureSmartEscrow disabled
             Env env(*this, features - featureSmartEscrow);
             env.fund(XRP(5000), alice, carol);
             XRPAmount const txnFees = env.current()->fees().base + 1000;
-            auto escrowCreate = escrow::create(alice, carol, XRP(1000));
+            auto const escrowCreate = escrow::create(alice, carol, XRP(1000));
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
@@ -68,15 +68,39 @@ struct EscrowSmart_test : public beast::unit_test::suite
             // create escrow
             env.fund(XRP(5000), alice, carol);
 
-            auto escrowCreate = escrow::create(alice, carol, XRP(500));
+            auto const escrowCreate = escrow::create(alice, carol, XRP(500));
 
             // 11-byte string
-            std::string longWasmHex = "00112233445566778899AA";
+            std::string const longWasmHex = "00112233445566778899AA";
             env(escrowCreate,
                 escrow::finish_function(longWasmHex),
                 escrow::cancel_time(env.now() + 100s),
                 fee(txnFees),
                 ter(temMALFORMED));
+            env.close();
+        }
+
+        {
+            // compute limit == 0
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.extension_compute_limit = 0;  // WASM disabled
+                    return cfg;
+                }),
+                features);
+            XRPAmount const txnFees = env.current()->fees().base + 1000;
+            // create escrow
+            env.fund(XRP(5000), alice, carol);
+
+            auto const escrowCreate = escrow::create(alice, carol, XRP(500));
+
+            // 11-byte string
+            env(escrowCreate,
+                escrow::finish_function(wasmHex),
+                escrow::cancel_time(env.now() + 100s),
+                fee(txnFees),
+                ter(temINVALID));
             env.close();
         }
 
@@ -87,9 +111,9 @@ struct EscrowSmart_test : public beast::unit_test::suite
             // create escrow
             env.fund(XRP(5000), alice, carol);
 
-            auto escrowCreate = escrow::create(alice, carol, XRP(500));
+            auto const escrowCreate = escrow::create(alice, carol, XRP(500));
 
-            std::string longData(4, 'A');
+            std::string const longData(4, 'A');
             env(escrowCreate,
                 escrow::data(longData),
                 escrow::finish_time(env.now() + 100s),
@@ -105,10 +129,10 @@ struct EscrowSmart_test : public beast::unit_test::suite
             // create escrow
             env.fund(XRP(5000), alice, carol);
 
-            auto escrowCreate = escrow::create(alice, carol, XRP(500));
+            auto const escrowCreate = escrow::create(alice, carol, XRP(500));
 
             // string of length maxWasmDataLength * 2 + 2
-            std::string longData(maxWasmDataLength * 2 + 2, 'B');
+            std::string const longData(maxWasmDataLength * 2 + 2, 'B');
             env(escrowCreate,
                 escrow::data(longData),
                 escrow::finish_function(wasmHex),
@@ -656,7 +680,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         // wasm that always fails
-        static auto const wasmHex = updateDataWasmHex;
+        static auto const& wasmHex = updateDataWasmHex;
 
         Account const alice{"alice"};
         Account const carol{"carol"};
@@ -722,7 +746,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         // TODO: create wasm module for all host functions
-        static auto wasmHex = allHostFunctionsWasmHex;
+        static auto const& wasmHex = allHostFunctionsWasmHex;
 
         Account const alice{"alice"};
         Account const carol{"carol"};
