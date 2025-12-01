@@ -17,6 +17,9 @@
 #include <boost/utility/string_view.hpp>
 
 #include <ed25519.h>
+#ifndef SECP256K1_STATIC
+#define SECP256K1_STATIC
+#endif
 #include <secp256k1.h>
 
 #include <algorithm>
