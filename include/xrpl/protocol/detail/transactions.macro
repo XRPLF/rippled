@@ -974,3 +974,18 @@ TRANSACTION(ttUNL_MODIFY, 102, UNLModify,
     {sfLedgerSequence, soeREQUIRED},
     {sfUNLModifyValidator, soeREQUIRED},
 }))
+
+/** This transaction type executes a stealth payment for enhanced privacy. */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/StealthPayment.h>
+#endif
+TRANSACTION(ttSTEALTH_PAYMENT, 103, StealthPayment,
+    Delegation::delegatable,
+    featureStealthAddresses,
+    createAcct,
+    ({
+    {sfDestination, soeREQUIRED},
+    {sfAmount, soeREQUIRED},
+    {sfEphemeralPublicKey, soeREQUIRED},
+    {sfDestinationTag, soeOPTIONAL},
+}))

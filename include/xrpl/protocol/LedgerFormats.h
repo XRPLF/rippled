@@ -103,6 +103,8 @@ enum LedgerEntryType : std::uint16_t
 */
 enum LedgerSpecificFlags {
     // ltACCOUNT_ROOT
+    lsfStealthAddress =
+        0x00001000,               // True, account is a stealth address (can only AccountDelete)
     lsfPasswordSpent = 0x00010000,  // True, if password set fee is spent.
     lsfRequireDestTag =
         0x00020000,  // True, to require a DestinationTag for payments.
