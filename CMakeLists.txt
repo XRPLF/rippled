@@ -97,7 +97,6 @@ set(SECP256K1_BUILD_CTIME_TESTS FALSE)
 set(SECP256K1_BUILD_EXAMPLES FALSE)
 add_subdirectory(external/secp256k1)
 add_library(secp256k1::secp256k1 ALIAS secp256k1)
-add_subdirectory(external/ed25519-donna)
 add_subdirectory(external/antithesis-sdk)
 find_package(gRPC REQUIRED)
 find_package(lz4 REQUIRED)
@@ -117,8 +116,9 @@ if(rocksdb)
   target_link_libraries(xrpl_libs INTERFACE RocksDB::rocksdb)
 endif()
 
-find_package(nudb REQUIRED)
 find_package(date REQUIRED)
+find_package(ed25519 REQUIRED)
+find_package(nudb REQUIRED)
 find_package(xxHash REQUIRED)
 
 target_link_libraries(xrpl_libs INTERFACE
