@@ -256,6 +256,8 @@ EscrowCreate::preflightSigValidated(PreflightContext const& ctx)
             return re;
         }
     }
+
+    return tesSUCCESS;
 }
 
 template <ValidIssueType T>
