@@ -217,7 +217,6 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 
         auto const code = ctx.tx.getFieldVL(sfFinishFunction);
         if (code.size() == 0 ||
-            ctx.app.config().FEES.extension_size_limit == 0 ||
             code.size() > ctx.app.config().FEES.extension_size_limit)
         {
             JLOG(ctx.j.debug())
