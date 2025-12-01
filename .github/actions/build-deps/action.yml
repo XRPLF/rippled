@@ -34,7 +34,6 @@ runs:
         BUILD_TYPE: ${{ inputs.build_type }}
         LOG_VERBOSITY: ${{ inputs.log_verbosity }}
       run: |
-        conan export --version 0.7.0 external/secp256k1/all
         echo 'Installing dependencies.'
         mkdir -p "${BUILD_DIR}"
         cd "${BUILD_DIR}"
