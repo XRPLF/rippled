@@ -81,11 +81,36 @@ struct EscrowSmart_test : public beast::unit_test::suite
         }
 
         {
-            // compute limit == 0
+            // FinishFunction > max length
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.extension_compute_limit = 0;  // WASM disabled
+                    cfg->FEES.extension_size_limit = 10;  // 10 bytes
+                    return cfg;
+                }),
+                features);
+            XRPAmount const txnFees = env.current()->fees().base + 1000;
+            // create escrow
+            env.fund(XRP(5000), alice, carol);
+
+            auto const escrowCreate = escrow::create(alice, carol, XRP(500));
+
+            // 11-byte string
+            std::string const longWasmHex = "00112233445566778899AA";
+            env(escrowCreate,
+                escrow::finish_function(longWasmHex),
+                escrow::cancel_time(env.now() + 100s),
+                fee(txnFees),
+                ter(temMALFORMED));
+            env.close();
+        }
+
+        {
+            // size limit
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.extension_size_limit = 0;  // WASM upload disabled
                     return cfg;
                 }),
                 features);
@@ -97,7 +122,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
 
             // 11-byte string
             env(escrowCreate,
-                escrow::finish_function(wasmHex),
+                escrow::finish_function("AA"),
                 escrow::cancel_time(env.now() + 100s),
                 fee(txnFees),
                 ter(temINVALID));

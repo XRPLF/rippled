@@ -208,6 +208,13 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfFinishFunction))
     {
+        if (ctx.app.config().FEES.extension_size_limit == 0 ||
+            ctx.app.config().FEES.extension_compute_limit == 0)
+        {
+            JLOG(ctx.j.debug()) << "WASM runtime disabled by fee voting";
+            return temINVALID;
+        }
+
         auto const code = ctx.tx.getFieldVL(sfFinishFunction);
         if (code.size() == 0 ||
             ctx.app.config().FEES.extension_size_limit == 0 ||
@@ -216,21 +223,6 @@ EscrowCreate::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.debug())
                 << "EscrowCreate.FinishFunction bad size " << code.size();
             return temMALFORMED;
-        }
-
-        if (ctx.app.config().FEES.extension_compute_limit == 0)
-        {
-            JLOG(ctx.j.debug()) << "WASM runtime disabled by fee voting";
-            return temINVALID;
-        }
-
-        HostFunctions mock;
-        auto const re =
-            preflightEscrowWasm(code, ESCROW_FUNCTION_NAME, {}, &mock, ctx.j);
-        if (!isTesSuccess(re))
-        {
-            JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";
-            return re;
         }
         // validity of WASM code happens in `preflightSigValidated`
         // (after the signature is checked)
