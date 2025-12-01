@@ -240,7 +240,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
+EscrowCreate::preflightSigValidated(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfFinishFunction))
     {
