@@ -16,7 +16,7 @@
 namespace ripple {
 
 static void
-setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
+setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
 {
     // clang-format off
     WASM_IMPORT_FUNC2(i, getLedgerSqn, "get_ledger_sqn", hfs,                                                   60);
@@ -89,16 +89,13 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     // clang-format on
 }
 
-std::vector<WasmImportFunc>
-createWasmImport(HostFunctions* hfs)
+ImportVec
+createWasmImport(HostFunctions& hfs)
 {
-    std::vector<WasmImportFunc> i;
+    ImportVec i;
 
-    if (hfs)
-    {
-        setCommonHostFunctions(hfs, i);
-        WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs, 1000);
-    }
+    setCommonHostFunctions(&hfs, i);
+    WASM_IMPORT_FUNC2(i, updateData, "update_data", &hfs, 1000);
 
     return i;
 }
@@ -106,11 +103,10 @@ createWasmImport(HostFunctions* hfs)
 Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    HostFunctions* hfs,
-    int64_t gasLimit,
-    beast::Journal j)
+    int64_t gasLimit)
 {
     //  create VM and set cost limit
     auto& vm = WasmEngine::instance();
@@ -121,9 +117,9 @@ runEscrowWasm(
         funcName,
         params,
         createWasmImport(hfs),
-        hfs,
+        &hfs,
         gasLimit,
-        hfs ? hfs->getJournal() : j);
+        hfs.getJournal());
 
     // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
@@ -146,10 +142,9 @@ runEscrowWasm(
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName,
-    std::vector<WasmParam> const& params,
-    HostFunctions* hfs,
-    beast::Journal j)
+    std::vector<WasmParam> const& params)
 {
     //  create VM and set cost limit
     auto& vm = WasmEngine::instance();
@@ -160,7 +155,8 @@ preflightEscrowWasm(
         funcName,
         params,
         createWasmImport(hfs),
-        hfs ? hfs->getJournal() : j);
+        &hfs,
+        hfs.getJournal());
 
     return ret;
 }
@@ -183,7 +179,7 @@ WasmEngine::run(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::vector<WasmImportFunc> const& imports,
+    ImportVec const& imports,
     HostFunctions* hfs,
     int64_t gasLimit,
     beast::Journal j)
@@ -196,22 +192,25 @@ WasmEngine::check(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::vector<WasmImportFunc> const& imports,
+    ImportVec const& imports,
+    HostFunctions* hfs,
     beast::Journal j)
 {
-    return impl->check(wasmCode, funcName, params, imports, j);
+    return impl->check(wasmCode, funcName, params, imports, hfs, j);
 }
 
 void*
-WasmEngine::newTrap(std::string_view msg)
+WasmEngine::newTrap(std::string const& msg)
 {
     return impl->newTrap(msg);
 }
 
+// LCOV_EXCL_START
 beast::Journal
 WasmEngine::getJournal() const
 {
     return impl->getJournal();
 }
+// LCOV_EXCL_STOP
 
 }  // namespace ripple

@@ -1,5 +1,5 @@
 from conan import ConanFile, tools
-from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps, cmake_layout
+from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 from conan.tools.files import apply_conandata_patches, export_conandata_patches, get
 import os
 
@@ -30,9 +30,6 @@ class WasmiConan(ConanFile):
         tc.variables["BUILD_SHARED_LIBS"] = self.options.shared
         tc.generate()
 
-        deps = CMakeDeps(self)
-        deps.generate()
-
     def build(self):
         cmake = CMake(self)
         cmake.configure(build_script_folder=os.path.join(self.source_folder, "crates", "c_api"))
@@ -44,5 +41,3 @@ class WasmiConan(ConanFile):
 
     def package_info(self):
         self.cpp_info.libs = ["wasmi"]
-        self.cpp_info.names["cmake_find_package"] = "wasmi"
-        self.cpp_info.names["cmake_find_package_multi"] = "wasmi"

@@ -18,6 +18,8 @@ static std::string_view const W_PROC_EXIT = "proc_exit";
 
 static std::string_view const ESCROW_FUNCTION_NAME = "finish";
 
+uint32_t const MAX_PAGES = 128;  // 8MB = 64KB*128
+
 class WasmiEngine;
 
 class WasmEngine
@@ -43,7 +45,7 @@ public:
     run(Bytes const& wasmCode,
         std::string_view funcName = {},
         std::vector<WasmParam> const& params = {},
-        std::vector<WasmImportFunc> const& imports = {},
+        ImportVec const& imports = {},
         HostFunctions* hfs = nullptr,
         int64_t gasLimit = -1,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
@@ -53,12 +55,13 @@ public:
         Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params = {},
-        std::vector<WasmImportFunc> const& imports = {},
+        ImportVec const& imports = {},
+        HostFunctions* hfs = nullptr,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
     // Host functions helper functionality
     void*
-    newTrap(std::string_view msg = {});
+    newTrap(std::string const& txt = std::string());
 
     beast::Journal
     getJournal() const;
@@ -66,24 +69,22 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::vector<WasmImportFunc>
-createWasmImport(HostFunctions* hfs);
+ImportVec
+createWasmImport(HostFunctions& hfs);
 
 Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName = ESCROW_FUNCTION_NAME,
     std::vector<WasmParam> const& params = {},
-    HostFunctions* hfs = nullptr,
-    int64_t gasLimit = -1,
-    beast::Journal j = beast::Journal(beast::Journal::getNullSink()));
+    int64_t gasLimit = -1);
 
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName = ESCROW_FUNCTION_NAME,
-    std::vector<WasmParam> const& params = {},
-    HostFunctions* hfs = nullptr,
-    beast::Journal j = beast::Journal(beast::Journal::getNullSink()));
+    std::vector<WasmParam> const& params = {});
 
 }  // namespace ripple

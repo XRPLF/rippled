@@ -41,11 +41,14 @@ struct WasmImportFunc
     std::string name;
     std::optional<WasmTypes> result;
     std::vector<WasmTypes> params;
-    void* udata = nullptr;
+    // void* udata = nullptr;
     // wasm_func_callback_with_env_t
     void* wrap = nullptr;
     uint32_t gas = 0;
 };
+
+typedef std::pair<void*, WasmImportFunc> WasmUserData;
+typedef std::vector<WasmUserData> ImportVec;
 
 #define WASM_IMPORT_FUNC(v, f, ...) \
     WasmImpFunc<f##_proto>(         \
@@ -111,7 +114,7 @@ WasmImpFuncHelper(WasmImportFunc& e)
 template <typename F>
 void
 WasmImpFunc(
-    std::vector<WasmImportFunc>& v,
+    ImportVec& v,
     std::string_view imp_name,
     void* f_wrap,
     void* data = nullptr,
@@ -119,11 +122,10 @@ WasmImpFunc(
 {
     WasmImportFunc e;
     e.name = imp_name;
-    e.udata = data;
     e.wrap = f_wrap;
     e.gas = gas;
     WasmImpFuncHelper<F>(e);
-    v.push_back(std::move(e));
+    v.push_back(std::make_pair(data, std::move(e)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
