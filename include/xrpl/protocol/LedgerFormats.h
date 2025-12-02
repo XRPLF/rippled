@@ -186,6 +186,11 @@ enum LedgerSpecificFlags {
 
     // ltVAULT
     lsfVaultPrivate = 0x00010000,
+
+    // ltLOAN
+    lsfLoanDefault = 0x00010000,
+    lsfLoanImpaired = 0x00020000,
+    lsfLoanOverpayment = 0x00040000, // True, loan allows overpayments
 };
 
 //------------------------------------------------------------------------------
