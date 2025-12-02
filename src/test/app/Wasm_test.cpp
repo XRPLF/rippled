@@ -757,8 +757,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         {
             // f32 set constant, opcode disabled exception
-            auto const re =
-                runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
+            auto const re = runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000);
             if (BEAST_EXPECT(!re.has_value()))
             {
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
