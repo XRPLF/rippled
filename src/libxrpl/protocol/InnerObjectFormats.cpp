@@ -153,6 +153,14 @@ InnerObjectFormats::InnerObjectFormats()
             {sfBookDirectory, soeREQUIRED},
             {sfBookNode, soeREQUIRED},
         });
+
+    add(sfCounterpartySignature.jsonName,
+        sfCounterpartySignature.getCode(),
+        {
+            {sfSigningPubKey, soeOPTIONAL},
+            {sfTxnSignature, soeOPTIONAL},
+            {sfSigners, soeOPTIONAL},
+        });
 }
 
 InnerObjectFormats const&

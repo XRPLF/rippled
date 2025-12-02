@@ -73,81 +73,6 @@ isRelatedToAccount(
     std::shared_ptr<SLE const> const& sle,
     AccountID const& accountID);
 
-/** Gathers all objects for an account in a ledger.
-    @param ledger Ledger to search account objects.
-    @param account AccountID to find objects for.
-    @param typeFilter Gathers objects of these types. empty gathers all types.
-    @param dirIndex Begin gathering account objects from this directory.
-    @param entryIndex Begin gathering objects from this directory node.
-    @param limit Maximum number of objects to find.
-    @param jvResult A JSON result that holds the request objects.
-*/
-bool
-getAccountObjects(
-    ReadView const& ledger,
-    AccountID const& account,
-    std::optional<std::vector<LedgerEntryType>> const& typeFilter,
-    uint256 dirIndex,
-    uint256 entryIndex,
-    std::uint32_t const limit,
-    Json::Value& jvResult);
-
-/** Get ledger by hash
-    If there is no error in the return value, the ledger pointer will have
-    been filled
-*/
-template <class T>
-Status
-getLedger(T& ledger, uint256 const& ledgerHash, Context& context);
-
-/** Get ledger by sequence
-    If there is no error in the return value, the ledger pointer will have
-    been filled
-*/
-template <class T>
-Status
-getLedger(T& ledger, uint32_t ledgerIndex, Context& context);
-
-enum LedgerShortcut { CURRENT, CLOSED, VALIDATED };
-/** Get ledger specified in shortcut.
-    If there is no error in the return value, the ledger pointer will have
-    been filled
-*/
-template <class T>
-Status
-getLedger(T& ledger, LedgerShortcut shortcut, Context& context);
-
-/** Look up a ledger from a request and fill a Json::Result with either
-    an error, or data representing a ledger.
-
-    If there is no error in the return value, then the ledger pointer will have
-    been filled.
-*/
-Json::Value
-lookupLedger(std::shared_ptr<ReadView const>&, JsonContext&);
-
-/** Look up a ledger from a request and fill a Json::Result with the data
-    representing a ledger.
-
-    If the returned Status is OK, the ledger pointer will have been filled.
-*/
-Status
-lookupLedger(
-    std::shared_ptr<ReadView const>&,
-    JsonContext&,
-    Json::Value& result);
-
-template <class T, class R>
-Status
-ledgerFromRequest(T& ledger, GRPCContext<R>& context);
-
-template <class T>
-Status
-ledgerFromSpecifier(
-    T& ledger,
-    org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
-    Context& context);
-
 hash_set<AccountID>
 parseAccountIds(Json::Value const& jvArray);
 
@@ -193,11 +118,6 @@ chooseLedgerEntryType(Json::Value const& params);
  */
 bool
 isAccountObjectsValidType(LedgerEntryType const& type);
-
-/** Return a ledger based on ledger_hash or ledger_index,
-    or an RPC error */
-std::variant<std::shared_ptr<Ledger const>, Json::Value>
-getLedgerByContext(RPC::JsonContext& context);
 
 std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(

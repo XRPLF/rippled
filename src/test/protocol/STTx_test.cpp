@@ -1615,8 +1615,7 @@ public:
         BEAST_EXPECT(!defaultRules.enabled(featureAMM));
 
         unexpected(
-            !j.checkSign(STTx::RequireFullyCanonicalSig::yes, defaultRules),
-            "Transaction fails signature test");
+            !j.checkSign(defaultRules), "Transaction fails signature test");
 
         Serializer rawTxn;
         j.add(rawTxn);

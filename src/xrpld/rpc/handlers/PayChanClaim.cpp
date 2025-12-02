@@ -137,8 +137,7 @@ doChannelVerify(RPC::JsonContext& context)
     serializePayChanAuthorization(msg, channelId, XRPAmount(drops));
 
     Json::Value result;
-    result[jss::signature_verified] =
-        verify(*pk, msg.slice(), makeSlice(*sig), /*canonical*/ true);
+    result[jss::signature_verified] = verify(*pk, msg.slice(), makeSlice(*sig));
     return result;
 }
 

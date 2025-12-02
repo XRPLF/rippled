@@ -1,5 +1,3 @@
-// Copyright (c) 2020 Dev Null Productions
-
 #include <test/jtx.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>

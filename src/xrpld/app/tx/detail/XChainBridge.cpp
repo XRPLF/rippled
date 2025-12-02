@@ -464,12 +464,9 @@ transferHelper(
             }
 
             // Create the account.
-            std::uint32_t const seqno{
-                psb.rules().enabled(featureDeletableAccounts) ? psb.seq() : 1};
-
             sleDst = std::make_shared<SLE>(dstK);
             sleDst->setAccountID(sfAccount, dst);
-            sleDst->setFieldU32(sfSequence, seqno);
+            sleDst->setFieldU32(sfSequence, psb.seq());
 
             psb.insert(sleDst);
         }

@@ -40,6 +40,8 @@ JSS(BaseAsset);            // in: Oracle
 JSS(BidMax);               // in: AMM Bid
 JSS(BidMin);               // in: AMM Bid
 JSS(ClearFlag);            // field.
+JSS(Counterparty);         // field.
+JSS(CounterpartySignature);// field.
 JSS(DeliverMax);           // out: alias to Amount
 JSS(DeliverMin);           // in: TransactionSign
 JSS(Destination);          // in: TransactionSign; field.
@@ -373,6 +375,8 @@ JSS(load_factor_local);       // out: NetworkOPs
 JSS(load_factor_net);         // out: NetworkOPs
 JSS(load_factor_server);      // out: NetworkOPs
 JSS(load_fee);                // out: LoadFeeTrackImp, NetworkOPs
+JSS(loan_broker_id);          // in: LedgerEntry
+JSS(loan_seq);                // in: LedgerEntry
 JSS(local);                   // out: resource/Logic.h
 JSS(local_txs);               // out: GetCounts
 JSS(local_static_keys);       // out: ValidatorList
@@ -485,6 +489,7 @@ JSS(propose_seq);             // out: LedgerPropose
 JSS(proposers);               // out: NetworkOPs, LedgerConsensus
 JSS(protocol);                // out: NetworkOPs, PeerImp
 JSS(proxied);                 // out: RPC ping
+JSS(pseudo_account);          // out: AccountInfo
 JSS(pubkey_node);             // out: NetworkOPs
 JSS(pubkey_publisher);        // out: ValidatorList
 JSS(pubkey_validator);        // out: NetworkOPs, ValidatorList

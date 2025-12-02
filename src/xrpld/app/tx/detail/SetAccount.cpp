@@ -595,29 +595,25 @@ SetAccount::doApply()
         sle->isFieldPresent(sfNFTokenMinter))
         sle->makeFieldAbsent(sfNFTokenMinter);
 
-    // Set or clear flags for disallowing various incoming instruments
-    if (ctx_.view().rules().enabled(featureDisallowIncoming))
-    {
-        if (uSetFlag == asfDisallowIncomingNFTokenOffer)
-            uFlagsOut |= lsfDisallowIncomingNFTokenOffer;
-        else if (uClearFlag == asfDisallowIncomingNFTokenOffer)
-            uFlagsOut &= ~lsfDisallowIncomingNFTokenOffer;
+    if (uSetFlag == asfDisallowIncomingNFTokenOffer)
+        uFlagsOut |= lsfDisallowIncomingNFTokenOffer;
+    else if (uClearFlag == asfDisallowIncomingNFTokenOffer)
+        uFlagsOut &= ~lsfDisallowIncomingNFTokenOffer;
 
-        if (uSetFlag == asfDisallowIncomingCheck)
-            uFlagsOut |= lsfDisallowIncomingCheck;
-        else if (uClearFlag == asfDisallowIncomingCheck)
-            uFlagsOut &= ~lsfDisallowIncomingCheck;
+    if (uSetFlag == asfDisallowIncomingCheck)
+        uFlagsOut |= lsfDisallowIncomingCheck;
+    else if (uClearFlag == asfDisallowIncomingCheck)
+        uFlagsOut &= ~lsfDisallowIncomingCheck;
 
-        if (uSetFlag == asfDisallowIncomingPayChan)
-            uFlagsOut |= lsfDisallowIncomingPayChan;
-        else if (uClearFlag == asfDisallowIncomingPayChan)
-            uFlagsOut &= ~lsfDisallowIncomingPayChan;
+    if (uSetFlag == asfDisallowIncomingPayChan)
+        uFlagsOut |= lsfDisallowIncomingPayChan;
+    else if (uClearFlag == asfDisallowIncomingPayChan)
+        uFlagsOut &= ~lsfDisallowIncomingPayChan;
 
-        if (uSetFlag == asfDisallowIncomingTrustline)
-            uFlagsOut |= lsfDisallowIncomingTrustline;
-        else if (uClearFlag == asfDisallowIncomingTrustline)
-            uFlagsOut &= ~lsfDisallowIncomingTrustline;
-    }
+    if (uSetFlag == asfDisallowIncomingTrustline)
+        uFlagsOut |= lsfDisallowIncomingTrustline;
+    else if (uClearFlag == asfDisallowIncomingTrustline)
+        uFlagsOut &= ~lsfDisallowIncomingTrustline;
 
     // Set or clear flags for disallowing escrow
     if (ctx_.view().rules().enabled(featureTokenEscrow))
