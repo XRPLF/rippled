@@ -155,9 +155,13 @@ class Invariants_test : public beast::unit_test::suite
             {{"an account root was deleted"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
                 // remove an account from the view
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
+                // Clear the balance so the "account deletion left behind a
+                // non-zero balance" check doesn't trip earlier than the desired
+                // check.
+                sle->at(sfBalance) = beast::zero;
                 ac.view().erase(sle);
                 return true;
             });
@@ -181,10 +185,15 @@ class Invariants_test : public beast::unit_test::suite
             {{"account deletion succeeded but deleted multiple accounts"}},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // remove two accounts from the view
-                auto const sleA1 = ac.view().peek(keylet::account(A1.id()));
-                auto const sleA2 = ac.view().peek(keylet::account(A2.id()));
+                auto sleA1 = ac.view().peek(keylet::account(A1.id()));
+                auto sleA2 = ac.view().peek(keylet::account(A2.id()));
                 if (!sleA1 || !sleA2)
                     return false;
+                // Clear the balance so the "account deletion left behind a
+                // non-zero balance" check doesn't trip earlier than the desired
+                // check.
+                sleA1->at(sfBalance) = beast::zero;
+                sleA2->at(sfBalance) = beast::zero;
                 ac.view().erase(sleA1);
                 ac.view().erase(sleA2);
                 return true;
@@ -198,6 +207,46 @@ class Invariants_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
         testcase << "account root deletion left artifact";
+
+        doInvariantCheck(
+            {{"account deletion left behind a non-zero balance"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                // A1 has a balance. Delete A1
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                if (!sleA1)
+                    return false;
+                if (!BEAST_EXPECT(*sleA1->at(sfBalance) != beast::zero))
+                    return false;
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+
+        doInvariantCheck(
+            {{"account deletion left behind a non-zero owner count"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                // Increment A1's owner count, then delete A1
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                if (!sleA1)
+                    return false;
+                // Clear the balance so the "account deletion left behind a
+                // non-zero balance" check doesn't trip earlier than the desired
+                // check.
+                sleA1->at(sfBalance) = beast::zero;
+                BEAST_EXPECT(sleA1->at(sfOwnerCount) == 0);
+                adjustOwnerCount(ac.view(), sleA1, 1, ac.journal);
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
         for (auto const& keyletInfo : directAccountKeylets)
         {
@@ -219,29 +268,38 @@ class Invariants_test : public beast::unit_test::suite
                     // Add an object to the ledger for account A1, then delete
                     // A1
                     auto const a1 = A1.id();
-                    auto const sleA1 = ac.view().peek(keylet::account(a1));
+                    auto sleA1 = ac.view().peek(keylet::account(a1));
                     if (!sleA1)
                         return false;
 
                     auto const key = std::invoke(keyletfunc, a1);
                     auto const newSLE = std::make_shared<SLE>(key);
                     ac.view().insert(newSLE);
+                    // Clear the balance so the "account deletion left behind a
+                    // non-zero balance" check doesn't trip earlier than the
+                    // desired check.
+                    sleA1->at(sfBalance) = beast::zero;
                     ac.view().erase(sleA1);
 
                     return true;
                 },
                 XRPAmount{},
                 STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
-        };
+        }
 
         // NFT special case
         doInvariantCheck(
             {{"account deletion left behind a NFTokenPage object"}},
             [&](Account const& A1, Account const&, ApplyContext& ac) {
                 // remove an account from the view
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
+                // Clear the balance so the "account deletion left behind a
+                // non-zero balance" check doesn't trip earlier than the desired
+                // check.
+                sle->at(sfBalance) = beast::zero;
+                sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
                 return true;
             },
@@ -265,13 +323,18 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // Delete the AMM account without cleaning up the directory or
                 // deleting the AMM object
-                auto const sle = ac.view().peek(keylet::account(ammAcctID));
+                auto sle = ac.view().peek(keylet::account(ammAcctID));
                 if (!sle)
                     return false;
 
                 BEAST_EXPECT(sle->at(~sfAMMID));
                 BEAST_EXPECT(sle->at(~sfAMMID) == ammKey);
 
+                // Clear the balance so the "account deletion left behind a
+                // non-zero balance" check doesn't trip earlier than the desired
+                // check.
+                sle->at(sfBalance) = beast::zero;
+                sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
 
                 return true;
@@ -294,7 +357,7 @@ class Invariants_test : public beast::unit_test::suite
                 // Delete all the AMM's trust lines, remove the AMM from the AMM
                 // account's directory (this deletes the directory), and delete
                 // the AMM account. Do not delete the AMM object.
-                auto const sle = ac.view().peek(keylet::account(ammAcctID));
+                auto sle = ac.view().peek(keylet::account(ammAcctID));
                 if (!sle)
                     return false;
 
@@ -334,6 +397,11 @@ class Invariants_test : public beast::unit_test::suite
                     !ac.view().exists(ownerDirKeylet) ||
                     ac.view().emptyDirDelete(ownerDirKeylet));
 
+                // Clear the balance so the "account deletion left behind a
+                // non-zero balance" check doesn't trip earlier than the desired
+                // check.
+                sle->at(sfBalance) = beast::zero;
+                sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
 
                 return true;
@@ -1720,6 +1788,359 @@ class Invariants_test : public beast::unit_test::suite
                     tx.setFieldAmount(sfTakerGets, XRP(1));
                 }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+    }
+
+    Keylet
+    createLoanBroker(
+        jtx::Account const& a,
+        jtx::Env& env,
+        jtx::PrettyAsset const& asset)
+    {
+        using namespace jtx;
+
+        // Create vault
+        uint256 vaultID;
+        Vault vault{env};
+        auto [tx, vKeylet] = vault.create({.owner = a, .asset = asset});
+        env(tx);
+        BEAST_EXPECT(env.le(vKeylet));
+
+        vaultID = vKeylet.key;
+
+        // Create Loan Broker
+        using namespace loanBroker;
+
+        auto const loanBrokerKeylet = keylet::loanbroker(a.id(), env.seq(a));
+        // Create a Loan Broker with all default values.
+        env(set(a, vaultID), fee(increment));
+
+        return loanBrokerKeylet;
+    };
+
+    void
+    testNoModifiedUnmodifiableFields()
+    {
+        testcase("no modified unmodifiable fields");
+        using namespace jtx;
+
+        // Initialize with a placeholder value because there's no default ctor
+        Keylet loanBrokerKeylet = keylet::amendments();
+        Preclose createLoanBroker =
+            [&, this](Account const& a, Account const& b, Env& env) {
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+                loanBrokerKeylet = this->createLoanBroker(a, env, xrpAsset);
+                return BEAST_EXPECT(env.le(loanBrokerKeylet));
+            };
+
+        {
+            auto const mods =
+                std::to_array<std::function<void(SLE::pointer&)>>({
+                    [](SLE::pointer& sle) { sle->at(sfSequence) += 1; },
+                    [](SLE::pointer& sle) { sle->at(sfOwnerNode) += 1; },
+                    [](SLE::pointer& sle) { sle->at(sfVaultNode) += 1; },
+                    [](SLE::pointer& sle) { sle->at(sfVaultID) = uint256(1u); },
+                    [](SLE::pointer& sle) {
+                        sle->at(sfAccount) = sle->at(sfOwner);
+                    },
+                    [](SLE::pointer& sle) {
+                        sle->at(sfOwner) = sle->at(sfAccount);
+                    },
+                    [](SLE::pointer& sle) {
+                        sle->at(sfManagementFeeRate) += 1;
+                    },
+                    [](SLE::pointer& sle) { sle->at(sfCoverRateMinimum) += 1; },
+                    [](SLE::pointer& sle) {
+                        sle->at(sfCoverRateLiquidation) += 1;
+                    },
+                    [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
+                    [](SLE::pointer& sle) {
+                        sle->at(sfLedgerIndex) = sle->at(sfVaultID).value();
+                    },
+                });
+
+            for (auto const& mod : mods)
+            {
+                doInvariantCheck(
+                    {{"changed an unchangable field"}},
+                    [&](Account const& A1, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(loanBrokerKeylet);
+                        if (!sle)
+                            return false;
+                        mod(sle);
+                        ac.view().update(sle);
+                        return true;
+                    },
+                    XRPAmount{},
+                    STTx{ttACCOUNT_SET, [](STObject& tx) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    createLoanBroker);
+            }
+        }
+
+        // TODO: Loan Object
+
+        {
+            auto const mods =
+                std::to_array<std::function<void(SLE::pointer&)>>({
+                    [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
+                    [](SLE::pointer& sle) {
+                        sle->at(sfLedgerIndex) = uint256(1u);
+                    },
+                });
+
+            for (auto const& mod : mods)
+            {
+                doInvariantCheck(
+                    {{"changed an unchangable field"}},
+                    [&](Account const& A1, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(keylet::account(A1.id()));
+                        if (!sle)
+                            return false;
+                        mod(sle);
+                        ac.view().update(sle);
+                        return true;
+                    });
+            }
+        }
+    }
+
+    void
+    testValidLoanBroker()
+    {
+        testcase << "valid loan broker";
+
+        using namespace jtx;
+
+        enum class Asset { XRP, IOU, MPT };
+        auto const assetTypes =
+            std::to_array({Asset::XRP, Asset::IOU, Asset::MPT});
+
+        for (auto const assetType : assetTypes)
+        {
+            // Initialize with a placeholder value because there's no default
+            // ctor
+            Keylet loanBrokerKeylet = keylet::amendments();
+            Preclose createLoanBroker = [&, this](
+                                            Account const& alice,
+                                            Account const& issuer,
+                                            Env& env) {
+                PrettyAsset const asset = [&]() {
+                    switch (assetType)
+                    {
+                        case Asset::IOU: {
+                            PrettyAsset const iouAsset = issuer["IOU"];
+                            env(trust(alice, iouAsset(1000)));
+                            env(pay(issuer, alice, iouAsset(1000)));
+                            env.close();
+                            return iouAsset;
+                        }
+
+                        case Asset::MPT: {
+                            MPTTester mptt{env, issuer, mptInitNoFund};
+                            mptt.create(
+                                {.flags = tfMPTCanClawback | tfMPTCanTransfer |
+                                     tfMPTCanLock});
+                            PrettyAsset const mptAsset = mptt.issuanceID();
+                            mptt.authorize({.account = alice});
+                            env(pay(issuer, alice, mptAsset(1000)));
+                            env.close();
+                            return mptAsset;
+                        }
+
+                        case Asset::XRP:
+                        default:
+                            return PrettyAsset{xrpIssue(), 1'000'000};
+                    }
+                }();
+                loanBrokerKeylet = this->createLoanBroker(alice, env, asset);
+                return BEAST_EXPECT(env.le(loanBrokerKeylet));
+            };
+
+            // Ensure the test scenarios are set up completely. The test cases
+            // will need to recompute any of these values it needs for itself
+            // rather than trying to return a bunch of items
+            auto setupTest =
+                [&, this](Account const& A1, Account const&, ApplyContext& ac)
+                -> std::optional<std::pair<SLE::pointer, SLE::pointer>> {
+                if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                    return {};
+                auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                if (!sleBroker)
+                    return {};
+                if (!BEAST_EXPECT(sleBroker->at(sfOwnerCount) == 0))
+                    return {};
+                // Need to touch sleBroker so that it is included in the
+                // modified entries for the invariant to find
+                ac.view().update(sleBroker);
+
+                // The pseudo-account holds the directory, so get it
+                auto const pseudoAccountID = sleBroker->at(sfAccount);
+                auto const pseudoAccountKeylet =
+                    keylet::account(pseudoAccountID);
+                // Strictly speaking, we don't need to load the
+                // ACCOUNT_ROOT, but check anyway
+                auto slePseudo = ac.view().peek(pseudoAccountKeylet);
+                if (!BEAST_EXPECT(slePseudo))
+                    return {};
+                // Make sure the directory doesn't already exist
+                auto const dirKeylet = keylet::ownerDir(pseudoAccountID);
+                auto sleDir = ac.view().peek(dirKeylet);
+                auto const describe = describeOwnerDir(pseudoAccountID);
+                if (!sleDir)
+                {
+                    // Create the directory
+                    BEAST_EXPECT(
+                        ::ripple::directory::createRoot(
+                            ac.view(),
+                            dirKeylet,
+                            loanBrokerKeylet.key,
+                            describe) == 0);
+
+                    sleDir = ac.view().peek(dirKeylet);
+                }
+
+                return std::make_pair(slePseudo, sleDir);
+            };
+
+            doInvariantCheck(
+                {{"Loan Broker with zero OwnerCount has multiple directory "
+                  "pages"}},
+                [&setupTest, this](
+                    Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto test = setupTest(A1, A2, ac);
+                    if (!test || !test->first || !test->second)
+                        return false;
+
+                    auto slePseudo = test->first;
+                    auto sleDir = test->second;
+                    auto const describe =
+                        describeOwnerDir(slePseudo->at(sfAccount));
+
+                    BEAST_EXPECT(
+                        ::ripple::directory::insertPage(
+                            ac.view(),
+                            0,
+                            sleDir,
+                            0,
+                            sleDir,
+                            slePseudo->key(),
+                            keylet::page(sleDir->key(), 0),
+                            describe) == 1);
+
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            doInvariantCheck(
+                {{"Loan Broker with zero OwnerCount has multiple indexes in "
+                  "the Directory root"}},
+                [&setupTest](
+                    Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto test = setupTest(A1, A2, ac);
+                    if (!test || !test->first || !test->second)
+                        return false;
+
+                    auto slePseudo = test->first;
+                    auto sleDir = test->second;
+                    auto indexes = sleDir->getFieldV256(sfIndexes);
+
+                    // Put some extra garbage into the directory
+                    for (auto const& key : {slePseudo->key(), sleDir->key()})
+                    {
+                        ::ripple::directory::insertKey(
+                            ac.view(), sleDir, 0, false, indexes, key);
+                    }
+
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            doInvariantCheck(
+                {{"Loan Broker directory corrupt"}},
+                [&setupTest](
+                    Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto test = setupTest(A1, A2, ac);
+                    if (!test || !test->first || !test->second)
+                        return false;
+
+                    auto slePseudo = test->first;
+                    auto sleDir = test->second;
+                    auto const describe =
+                        describeOwnerDir(slePseudo->at(sfAccount));
+                    // Empty vector will overwrite the existing entry for the
+                    // holding, if any, avoiding the "has multiple indexes"
+                    // failure.
+                    STVector256 indexes;
+
+                    // Put one meaningless key into the directory
+                    auto const key =
+                        keylet::account(Account("random").id()).key;
+                    ::ripple::directory::insertKey(
+                        ac.view(), sleDir, 0, false, indexes, key);
+
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            doInvariantCheck(
+                {{"Loan Broker with zero OwnerCount has an unexpected entry in "
+                  "the directory"}},
+                [&setupTest](
+                    Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto test = setupTest(A1, A2, ac);
+                    if (!test || !test->first || !test->second)
+                        return false;
+
+                    auto slePseudo = test->first;
+                    auto sleDir = test->second;
+                    // Empty vector will overwrite the existing entry for the
+                    // holding, if any, avoiding the "has multiple indexes"
+                    // failure.
+                    STVector256 indexes;
+
+                    ::ripple::directory::insertKey(
+                        ac.view(), sleDir, 0, false, indexes, slePseudo->key());
+
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            doInvariantCheck(
+                {{"Loan Broker sequence number decreased"}},
+                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    if (!BEAST_EXPECT(sleBroker->at(sfLoanSequence) > 0))
+                        return false;
+                    // Need to touch sleBroker so that it is included in the
+                    // modified entries for the invariant to find
+                    ac.view().update(sleBroker);
+
+                    sleBroker->at(sfLoanSequence) -= 1;
+
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+        }
     }
 
     void
@@ -3485,8 +3906,10 @@ public:
         testValidNewAccountRoot();
         testNFTokenPageInvariants();
         testPermissionedDomainInvariants();
-        testValidPseudoAccounts();
         testPermissionedDEX();
+        testNoModifiedUnmodifiableFields();
+        testValidPseudoAccounts();
+        testValidLoanBroker();
         testVault();
     }
 };
