@@ -1403,30 +1403,6 @@ computeFullPaymentInterest(
     return accruedInterest + prepaymentPenalty;
 }
 
-Number
-computeFullPaymentInterest(
-    Number const& periodicPayment,
-    Number const& periodicRate,
-    std::uint32_t paymentRemaining,
-    NetClock::time_point parentCloseTime,
-    std::uint32_t paymentInterval,
-    std::uint32_t prevPaymentDate,
-    std::uint32_t startDate,
-    TenthBips32 closeInterestRate)
-{
-    Number const rawPrincipalOutstanding =
-        detail::loanPrincipalFromPeriodicPayment(
-            periodicPayment, periodicRate, paymentRemaining);
-
-    return computeFullPaymentInterest(
-        rawPrincipalOutstanding,
-        periodicRate,
-        parentCloseTime,
-        paymentInterval,
-        prevPaymentDate,
-        startDate,
-        closeInterestRate);
-}
 
 /* Calculates the theoretical loan state at maximum precision for a given point
  * in the amortization schedule.
@@ -1488,21 +1464,6 @@ computeRawLoanState(
         .interestDue = rawInterestOutstandingNet,
         .managementFeeDue = rawManagementFeeOutstanding};
 };
-
-LoanState
-computeRawLoanState(
-    Number const& periodicPayment,
-    TenthBips32 interestRate,
-    std::uint32_t paymentInterval,
-    std::uint32_t const paymentRemaining,
-    TenthBips32 const managementFeeRate)
-{
-    return computeRawLoanState(
-        periodicPayment,
-        loanPeriodicRate(interestRate, paymentInterval),
-        paymentRemaining,
-        managementFeeRate);
-}
 
 /* Constructs a LoanState from rounded Loan ledger object values.
  *

@@ -202,14 +202,6 @@ computeRawLoanState(
     std::uint32_t const paymentRemaining,
     TenthBips32 const managementFeeRate);
 
-LoanState
-computeRawLoanState(
-    Number const& periodicPayment,
-    TenthBips32 interestRate,
-    std::uint32_t paymentInterval,
-    std::uint32_t const paymentRemaining,
-    TenthBips32 const managementFeeRate);
-
 // Constructs a valid LoanState object from arbitrary inputs
 LoanState
 constructLoanState(
@@ -233,17 +225,6 @@ Number
 computeFullPaymentInterest(
     Number const& rawPrincipalOutstanding,
     Number const& periodicRate,
-    NetClock::time_point parentCloseTime,
-    std::uint32_t paymentInterval,
-    std::uint32_t prevPaymentDate,
-    std::uint32_t startDate,
-    TenthBips32 closeInterestRate);
-
-Number
-computeFullPaymentInterest(
-    Number const& periodicPayment,
-    Number const& periodicRate,
-    std::uint32_t paymentRemaining,
     NetClock::time_point parentCloseTime,
     std::uint32_t paymentInterval,
     std::uint32_t prevPaymentDate,
