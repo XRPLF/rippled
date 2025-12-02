@@ -381,6 +381,9 @@ public:
     /// Return true if the object has a member named key.
     bool
     isMember(std::string const& key) const;
+    /// Return true if the object has a member named key.
+    bool
+    isMember(StaticString const& key) const;
 
     /// \brief Return a list of the member names.
     ///

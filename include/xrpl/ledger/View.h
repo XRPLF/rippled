@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
@@ -223,6 +224,80 @@ isDeepFrozen(
     Currency const& currency,
     AccountID const& issuer);
 
+[[nodiscard]] inline bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    int = 0 /*ignored*/)
+{
+    return isDeepFrozen(view, account, issue.currency, issue.account);
+}
+
+[[nodiscard]] inline bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    int depth = 0)
+{
+    // Unlike IOUs, frozen / locked MPTs are not allowed to send or receive
+    // funds, so checking "deep frozen" is the same as checking "frozen".
+    return isFrozen(view, account, mptIssue, depth);
+}
+
+/**
+ *   isFrozen check is recursive for MPT shares in a vault, descending to
+ *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is
+ *   purely defensive, as we currently do not allow such vaults to be created.
+ */
+[[nodiscard]] inline bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    int depth = 0)
+{
+    return std::visit(
+        [&](auto const& issue) {
+            return isDeepFrozen(view, account, issue, depth);
+        },
+        asset.value());
+}
+
+[[nodiscard]] inline TER
+checkDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue)
+{
+    return isDeepFrozen(view, account, issue) ? (TER)tecFROZEN
+                                              : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue)
+{
+    return isDeepFrozen(view, account, mptIssue) ? (TER)tecLOCKED
+                                                 : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset)
+{
+    return std::visit(
+        [&](auto const& issue) {
+            return checkDeepFrozen(view, account, issue);
+        },
+        asset.value());
+}
+
 [[nodiscard]] bool
 isLPTokenFrozen(
     ReadView const& view,
@@ -261,6 +336,49 @@ accountHolds(
 
 [[nodiscard]] STAmount
 accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j);
+
+// Returns the amount an account can spend total.
+//
+// These functions use accountHolds, but unlike accountHolds:
+// * The account can go into debt.
+// * If the account is the asset issuer the only limit is defined by the asset /
+//   issuance.
+//
+// <-- saAmount: amount of currency held by account. May be negative.
+[[nodiscard]] STAmount
+accountSpendable(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer,
+    FreezeHandling zeroIfFrozen,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
+accountSpendable(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    FreezeHandling zeroIfFrozen,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
+accountSpendable(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
+accountSpendable(
     ReadView const& view,
     AccountID const& account,
     Asset const& asset,
@@ -514,7 +632,11 @@ dirNext(
 describeOwnerDir(AccountID const& account);
 
 [[nodiscard]] TER
-dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object);
+dirLink(
+    ApplyView& view,
+    AccountID const& owner,
+    std::shared_ptr<SLE>& object,
+    SF_UINT64 const& node = sfOwnerNode);
 
 AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
@@ -533,14 +655,17 @@ createPseudoAccount(
     uint256 const& pseudoOwnerKey,
     SField const& ownerField);
 
-// Returns true iff sleAcct is a pseudo-account.
+// Returns true iff sleAcct is a pseudo-account or specific
+// pseudo-accounts in pseudoFieldFilter.
 //
 // Returns false if sleAcct is
 // * NOT a pseudo-account OR
 // * NOT a ltACCOUNT_ROOT OR
 // * null pointer
 [[nodiscard]] bool
-isPseudoAccount(std::shared_ptr<SLE const> sleAcct);
+isPseudoAccount(
+    std::shared_ptr<SLE const> sleAcct,
+    std::set<SField const*> const& pseudoFieldFilter = {});
 
 // Returns the list of fields that define an ACCOUNT_ROOT as a pseudo-account if
 // set
@@ -554,13 +679,90 @@ isPseudoAccount(std::shared_ptr<SLE const> sleAcct);
 getPseudoAccountFields();
 
 [[nodiscard]] inline bool
-isPseudoAccount(ReadView const& view, AccountID accountId)
+isPseudoAccount(
+    ReadView const& view,
+    AccountID const& accountId,
+    std::set<SField const*> const& pseudoFieldFilter = {})
 {
-    return isPseudoAccount(view.read(keylet::account(accountId)));
+    return isPseudoAccount(
+        view.read(keylet::account(accountId)), pseudoFieldFilter);
 }
 
 [[nodiscard]] TER
 canAddHolding(ReadView const& view, Asset const& asset);
+
+/** Validates that the destination SLE and tag are valid
+
+   - Checks that the SLE is not null.
+   - If the SLE requires a destination tag, checks that there is a tag.
+*/
+[[nodiscard]] TER
+checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag);
+
+/** Checks that can withdraw funds from an object to itself or a destination.
+ *
+ * The receiver may be either the submitting account (sfAccount) or a different
+ * destination account (sfDestination).
+ *
+ *    - Checks that the receiver account exists.
+ *    - If the receiver requires a destination tag, check that one exists, even
+ *      if withdrawing to self.
+ *    - If withdrawing to self, succeed.
+ *    - If not, checks if the receiver requires deposit authorization, and if
+ *      the sender has it.
+ */
+[[nodiscard]] TER
+canWithdraw(
+    AccountID const& from,
+    ReadView const& view,
+    AccountID const& to,
+    SLE::const_ref toSle,
+    bool hasDestinationTag);
+
+/** Checks that can withdraw funds from an object to itself or a destination.
+ *
+ * The receiver may be either the submitting account (sfAccount) or a different
+ * destination account (sfDestination).
+ *
+ *    - Checks that the receiver account exists.
+ *    - If the receiver requires a destination tag, check that one exists, even
+ *      if withdrawing to self.
+ *    - If withdrawing to self, succeed.
+ *    - If not, checks if the receiver requires deposit authorization, and if
+ *      the sender has it.
+ */
+[[nodiscard]] TER
+canWithdraw(
+    AccountID const& from,
+    ReadView const& view,
+    AccountID const& to,
+    bool hasDestinationTag);
+
+/** Checks that can withdraw funds from an object to itself or a destination.
+ *
+ * The receiver may be either the submitting account (sfAccount) or a different
+ * destination account (sfDestination).
+ *
+ *    - Checks that the receiver account exists.
+ *    - If the receiver requires a destination tag, check that one exists, even
+ *      if withdrawing to self.
+ *    - If withdrawing to self, succeed.
+ *    - If not, checks if the receiver requires deposit authorization, and if
+ *      the sender has it.
+ */
+[[nodiscard]] TER
+canWithdraw(ReadView const& view, STTx const& tx);
+
+[[nodiscard]] TER
+doWithdraw(
+    ApplyView& view,
+    STTx const& tx,
+    AccountID const& senderAcct,
+    AccountID const& dstAcct,
+    AccountID const& sourceAcct,
+    XRPAmount priorBalance,
+    STAmount const& amount,
+    beast::Journal j);
 
 /// Any transactors that call addEmptyHolding() in doApply must call
 /// canAddHolding() in preflight with the same View and Asset
@@ -731,6 +933,22 @@ accountSend(
     beast::Journal j,
     WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
+using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
+/** Like accountSend, except one account is sending multiple payments (with the
+ *  same asset!) simultaneously
+ *
+ * Calls static accountSendMultiIOU if saAmount represents Issue.
+ * Calls static accountSendMultiMPT if saAmount represents MPTIssue.
+ */
+[[nodiscard]] TER
+accountSendMulti(
+    ApplyView& view,
+    AccountID const& senderID,
+    Asset const& asset,
+    MultiplePaymentDestinations const& receivers,
+    beast::Journal j,
+    WaiveTransferFee waiveFee = WaiveTransferFee::No);
+
 [[nodiscard]] TER
 issueIOU(
     ApplyView& view,
@@ -802,7 +1020,8 @@ requireAuth(
  * purely defensive, as we currently do not allow such vaults to be created.
  *
  * If StrongAuth then return tecNO_AUTH if MPToken doesn't exist or
- * lsfMPTRequireAuth is set and MPToken is not authorized.
+ * lsfMPTRequireAuth is set and MPToken is not authorized. Vault and LoanBroker
+ * pseudo-accounts are implicitly authorized.
  *
  * If WeakAuth then return tecNO_AUTH if lsfMPTRequireAuth is set and MPToken
  * doesn't exist or is not authorized (explicitly or via credentials, if
@@ -874,6 +1093,26 @@ canTransfer(
     MPTIssue const& mptIssue,
     AccountID const& from,
     AccountID const& to);
+
+[[nodiscard]] TER
+canTransfer(
+    ReadView const& view,
+    Issue const& issue,
+    AccountID const& from,
+    AccountID const& to);
+
+[[nodiscard]] TER inline canTransfer(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& from,
+    AccountID const& to)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+            return canTransfer(view, issue, from, to);
+        },
+        asset.value());
+}
 
 /** Deleter function prototype. Returns the status of the entry deletion
  * (if should not be skipped) and if the entry should be skipped. The status

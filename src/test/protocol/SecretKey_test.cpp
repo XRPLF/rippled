@@ -145,7 +145,7 @@ public:
                 auto sig = sign(pk, sk, makeSlice(data));
 
                 BEAST_EXPECT(sig.size() != 0);
-                BEAST_EXPECT(verify(pk, makeSlice(data), sig, true));
+                BEAST_EXPECT(verify(pk, makeSlice(data), sig));
 
                 // Construct wrong data:
                 auto badData = data;
@@ -156,17 +156,17 @@ public:
                     std::max_element(badData.begin(), badData.end()));
 
                 // Wrong data: should fail
-                BEAST_EXPECT(!verify(pk, makeSlice(badData), sig, true));
+                BEAST_EXPECT(!verify(pk, makeSlice(badData), sig));
 
                 // Slightly change the signature:
                 if (auto ptr = sig.data())
                     ptr[j % sig.size()]++;
 
                 // Wrong signature: should fail
-                BEAST_EXPECT(!verify(pk, makeSlice(data), sig, true));
+                BEAST_EXPECT(!verify(pk, makeSlice(data), sig));
 
                 // Wrong data and signature: should fail
-                BEAST_EXPECT(!verify(pk, makeSlice(badData), sig, true));
+                BEAST_EXPECT(!verify(pk, makeSlice(badData), sig));
             }
         }
     }

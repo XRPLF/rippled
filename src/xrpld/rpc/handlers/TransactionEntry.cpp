@@ -1,7 +1,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/jss.h>

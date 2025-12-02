@@ -3,6 +3,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
@@ -115,11 +116,8 @@ doAccountInfo(RPC::JsonContext& context)
         for (auto const& lsf : lsFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
-        if (ledger->rules().enabled(featureDisallowIncoming))
-        {
-            for (auto const& lsf : disallowIncomingFlags)
-                acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
-        }
+        for (auto const& lsf : disallowIncomingFlags)
+            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
         if (ledger->rules().enabled(featureClawback))
             acctFlags[allowTrustLineClawbackFlag.first.data()] =
@@ -130,6 +128,28 @@ doAccountInfo(RPC::JsonContext& context)
                 sleAccepted->isFlag(allowTrustLineLockingFlag.second);
 
         result[jss::account_flags] = std::move(acctFlags);
+
+        auto const pseudoFields = getPseudoAccountFields();
+        for (auto const& pseudoField : pseudoFields)
+        {
+            if (sleAccepted->isFieldPresent(*pseudoField))
+            {
+                std::string name = pseudoField->fieldName;
+                if (name.ends_with("ID"))
+                {
+                    // Remove the ID suffix from the field name.
+                    name = name.substr(0, name.size() - 2);
+                    XRPL_ASSERT_PARTS(
+                        !name.empty(),
+                        "xrpl::doAccountInfo",
+                        "name is not empty");
+                }
+                // ValidPseudoAccounts invariant guarantees that only one field
+                // can be set
+                result[jss::pseudo_account][jss::type] = name;
+                break;
+            }
+        }
 
         // The document[https://xrpl.org/account_info.html#account_info] states
         // that signer_lists is a bool, however assigning any string value

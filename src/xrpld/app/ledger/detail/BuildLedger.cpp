@@ -28,7 +28,7 @@ buildLedgerImpl(
 {
     auto built = std::make_shared<Ledger>(*parent, closeTime);
 
-    if (built->isFlagLedger() && built->rules().enabled(featureNegativeUNL))
+    if (built->isFlagLedger())
     {
         built->updateNegativeUNL();
     }

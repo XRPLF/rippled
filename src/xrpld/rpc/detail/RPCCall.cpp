@@ -332,15 +332,31 @@ private:
 
         if (jvParams.size() >= 5)
         {
-            int iLimit = jvParams[5u].asInt();
+            try
+            {
+                int iLimit = jvParams[4u].asInt();
 
-            if (iLimit > 0)
-                jvRequest[jss::limit] = iLimit;
+                if (iLimit > 0)
+                    jvRequest[jss::limit] = iLimit;
+            }
+            catch (std::exception const&)
+            {
+                return RPC::invalid_field_error(jss::limit);
+            }
         }
 
-        if (jvParams.size() >= 6 && jvParams[5u].asInt())
+        if (jvParams.size() >= 6)
         {
-            jvRequest[jss::proof] = true;
+            try
+            {
+                int bProof = jvParams[5u].asInt();
+                if (bProof)
+                    jvRequest[jss::proof] = true;
+            }
+            catch (std::exception const&)
+            {
+                return RPC::invalid_field_error(jss::proof);
+            }
         }
 
         if (jvParams.size() == 7)

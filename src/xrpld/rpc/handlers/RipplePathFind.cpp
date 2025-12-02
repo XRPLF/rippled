@@ -2,7 +2,7 @@
 #include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/resource/Fees.h>

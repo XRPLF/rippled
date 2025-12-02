@@ -160,6 +160,29 @@ public:
     }
 };
 
+struct stAmountField : public JTxField<SF_AMOUNT, STAmount, Json::Value>
+{
+    using SF = SF_AMOUNT;
+    using SV = STAmount;
+    using OV = Json::Value;
+    using base = JTxField<SF, SV, OV>;
+
+protected:
+    using base::value_;
+
+public:
+    explicit stAmountField(SF const& sfield, SV const& value)
+        : JTxField(sfield, value)
+    {
+    }
+
+    OV
+    value() const override
+    {
+        return value_.getJson(JsonOptions::none);
+    }
+};
+
 struct blobField : public JTxField<SF_VL, std::string>
 {
     using SF = SF_VL;
@@ -274,6 +297,8 @@ using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
 /** General field definitions, or fields used in multiple transaction namespaces
  */
 auto const data = JTxFieldWrapper<blobField>(sfData);
+
+auto const amount = JTxFieldWrapper<stAmountField>(sfAmount);
 
 // TODO We only need this long "requires" clause as polyfill, for C++20
 // implementations which are missing <ranges> header. Replace with
@@ -696,6 +721,110 @@ checkMetrics(
               file,
               line);
 }
+
+/* LoanBroker */
+/******************************************************************************/
+
+namespace loanBroker {
+
+Json::Value
+set(AccountID const& account, uint256 const& vaultId, std::uint32_t flags = 0);
+
+// Use "del" because "delete" is a reserved word in C++.
+Json::Value
+del(AccountID const& account, uint256 const& brokerID, std::uint32_t flags = 0);
+
+Json::Value
+coverDeposit(
+    AccountID const& account,
+    uint256 const& brokerID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
+
+Json::Value
+coverWithdraw(
+    AccountID const& account,
+    uint256 const& brokerID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
+
+// Must specify at least one of loanBrokerID or amount.
+Json::Value
+coverClawback(AccountID const& account, std::uint32_t flags = 0);
+
+auto const loanBrokerID = JTxFieldWrapper<uint256Field>(sfLoanBrokerID);
+
+auto const managementFeeRate =
+    valueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);
+
+auto const debtMaximum = simpleField<SF_NUMBER>(sfDebtMaximum);
+
+auto const coverRateMinimum =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateMinimum);
+
+auto const coverRateLiquidation =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
+
+auto const destination = JTxFieldWrapper<accountIDField>(sfDestination);
+
+}  // namespace loanBroker
+
+/* Loan */
+/******************************************************************************/
+namespace loan {
+
+Json::Value
+set(AccountID const& account,
+    uint256 const& loanBrokerID,
+    Number principalRequested,
+    std::uint32_t flags = 0);
+
+auto const counterparty = JTxFieldWrapper<accountIDField>(sfCounterparty);
+
+// For `CounterPartySignature`, use `sig(sfCounterpartySignature, ...)`
+
+auto const loanOriginationFee = simpleField<SF_NUMBER>(sfLoanOriginationFee);
+
+auto const loanServiceFee = simpleField<SF_NUMBER>(sfLoanServiceFee);
+
+auto const latePaymentFee = simpleField<SF_NUMBER>(sfLatePaymentFee);
+
+auto const closePaymentFee = simpleField<SF_NUMBER>(sfClosePaymentFee);
+
+auto const overpaymentFee =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentFee);
+
+auto const interestRate =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfInterestRate);
+
+auto const lateInterestRate =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfLateInterestRate);
+
+auto const closeInterestRate =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCloseInterestRate);
+
+auto const overpaymentInterestRate =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentInterestRate);
+
+auto const paymentTotal = simpleField<SF_UINT32>(sfPaymentTotal);
+
+auto const paymentInterval = simpleField<SF_UINT32>(sfPaymentInterval);
+
+auto const gracePeriod = simpleField<SF_UINT32>(sfGracePeriod);
+
+Json::Value
+manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags);
+
+Json::Value
+del(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
+
+Json::Value
+pay(AccountID const& account,
+    uint256 const& loanID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
+
+}  // namespace loan
 
 }  // namespace jtx
 }  // namespace test

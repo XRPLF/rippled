@@ -1365,8 +1365,23 @@ PeerImp::handleTransaction(
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
-        if (stx->isFlag(tfInnerBatchTxn) &&
-            getCurrentTransactionRules()->enabled(featureBatch))
+        /*
+           There is no need to check whether the featureBatch amendment is
+           enabled.
+
+           * If the `tfInnerBatchTxn` flag is set, and the amendment is
+           enabled, then it's an invalid transaction because inner batch
+           transactions should not be relayed.
+           * If the `tfInnerBatchTxn` flag is set, and the amendment is *not*
+           enabled, then the transaction is malformed because it's using an
+           "unknown" flag. There's no need to waste the resources to send it
+           to the transaction engine.
+
+           We don't normally check transaction validity at this level, but
+           since we _need_ to check it when the amendment is enabled, we may as
+           well drop it if the flag is set regardless.
+        */
+        if (stx->isFlag(tfInnerBatchTxn))
         {
             JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
                                        "tfInnerBatchTxn (handleTransaction).";
@@ -2924,8 +2939,23 @@ PeerImp::checkTransaction(
     {
         // charge strongly for relaying batch txns
         // LCOV_EXCL_START
-        if (stx->isFlag(tfInnerBatchTxn) &&
-            getCurrentTransactionRules()->enabled(featureBatch))
+        /*
+           There is no need to check whether the featureBatch amendment is
+           enabled.
+
+           * If the `tfInnerBatchTxn` flag is set, and the amendment is
+           enabled, then it's an invalid transaction because inner batch
+           transactions should not be relayed.
+           * If the `tfInnerBatchTxn` flag is set, and the amendment is *not*
+           enabled, then the transaction is malformed because it's using an
+           "unknown" flag. There's no need to waste the resources to send it
+           to the transaction engine.
+
+           We don't normally check transaction validity at this level, but
+           since we _need_ to check it when the amendment is enabled, we may as
+           well drop it if the flag is set regardless.
+        */
+        if (stx->isFlag(tfInnerBatchTxn))
         {
             JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
                                        "tfInnerBatchTxn (checkSignature).";
