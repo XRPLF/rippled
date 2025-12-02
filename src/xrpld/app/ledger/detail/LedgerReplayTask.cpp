@@ -280,7 +280,7 @@ LedgerReplayTask::addDelta(std::shared_ptr<LedgerDeltaAcquire> const& delta)
             deltas_.empty() ||
                 deltas_.back()->ledgerSeq_ + 1 == delta->ledgerSeq_,
             "ripple::LedgerReplayTask::addDelta : no deltas or consecutive "
-            "sequence", );
+            "sequence");
         deltas_.push_back(delta);
     }
 }

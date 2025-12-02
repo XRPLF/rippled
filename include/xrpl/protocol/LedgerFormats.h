@@ -127,7 +127,7 @@ enum LedgerEntryType : std::uint16_t
 // clang-format off
 #undef ALL_LEDGER_FLAGS
 
-#define XMACRO(LEDGER_OBJECT, LSF_FLAG, LSF_FLAG2)                   \
+#define XMACRO(LEDGER_OBJECT, LSF_FLAG, LSF_FLAG2)                \
     LEDGER_OBJECT(AccountRoot,                                    \
         LSF_FLAG(lsfPasswordSpent, 0x00010000)                    \
         LSF_FLAG(lsfRequireDestTag, 0x00020000)                   \
@@ -200,7 +200,12 @@ enum LedgerEntryType : std::uint16_t
         LSF_FLAG(lsfAccepted, 0x00010000))                        \
                                                                   \
     LEDGER_OBJECT(Vault,                                          \
-        LSF_FLAG(lsfVaultPrivate, 0x00010000))
+        LSF_FLAG(lsfVaultPrivate, 0x00010000))                    \
+                                                                  \
+    LEDGER_OBJECT(Loan,                                           \
+        LSF_FLAG(lsfLoanDefault, 0x00010000)                      \
+        LSF_FLAG(lsfLoanImpaired, 0x00020000)                     \
+        LSF_FLAG(lsfLoanOverpayment, 0x00040000))
 
 // clang-format on
 

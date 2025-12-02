@@ -1152,7 +1152,7 @@ class MPToken_test : public beast::unit_test::suite
                 env(credentials::accept(bob, credIssuer1, credType));
                 env.close();
 
-                MPTTester mptAlice(env, alice, {});
+                MPTTester mptAlice(env, alice);
                 env.close();
 
                 mptAlice.create({
@@ -1194,7 +1194,7 @@ class MPToken_test : public beast::unit_test::suite
                 env(credentials::accept(bob, credIssuer1, credType));
                 env.close();
 
-                MPTTester mptAlice(env, alice, {});
+                MPTTester mptAlice(env, alice);
                 env.close();
 
                 mptAlice.create({
@@ -1274,7 +1274,7 @@ class MPToken_test : public beast::unit_test::suite
                 env(credentials::accept(carol, credIssuer2, credType));
                 env.close();
 
-                MPTTester mptAlice(env, alice, {});
+                MPTTester mptAlice(env, alice);
                 env.close();
 
                 mptAlice.create({

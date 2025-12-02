@@ -160,7 +160,20 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfAllOrNothing, 0x00010000)               \
         TF_FLAG(tfOnlyOne, 0x00020000)                    \
         TF_FLAG(tfUntilFailure, 0x00040000)               \
-        TF_FLAG(tfIndependent, 0x00080000))
+        TF_FLAG(tfIndependent, 0x00080000))               \
+                                                          \
+    TRANSACTION(LoanSet,                                  \
+        TF_FLAG(tfLoanOverpayment, 0x00010000))           \
+                                                          \
+    TRANSACTION(LoanPay,                                  \
+        TF_FLAG2(tfLoanOverpayment, 0x00010000)           \
+        TF_FLAG(tfLoanFullPayment, 0x00020000)            \
+        TF_FLAG(tfLoanLatePayment, 0x00040000))           \
+                                                          \
+    TRANSACTION(LoanManage,                               \
+        TF_FLAG(tfLoanDefault, 0x00010000)                \
+        TF_FLAG(tfLoanImpair, 0x00020000)                 \
+        TF_FLAG(tfLoanUnimpair, 0x00040000))
 
 // clang-format on
 
