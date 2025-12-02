@@ -752,11 +752,11 @@ struct Wasm_test : public beast::unit_test::suite
             "746976616c7565";
         auto const wasmStr = boost::algorithm::unhex(infiniteWasmHex);
         Bytes wasm(wasmStr.begin(), wasmStr.end());
-        std::string const funcName("infinite");
+        std::string const funcName("loop");
         TestHostFunctions hfs(env, 0);
 
         {
-            // f32 set constant, opcode disabled exception
+            // infinite loop should be caught and fail
             auto const re = runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000);
             if (BEAST_EXPECT(!re.has_value()))
             {
