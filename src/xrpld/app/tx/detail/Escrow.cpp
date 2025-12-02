@@ -238,9 +238,8 @@ EscrowCreate::preflightSigValidated(PreflightContext const& ctx)
         auto const code = ctx.tx.getFieldVL(sfFinishFunction);
         // basic checks happen in `preflight`
 
-        HostFunctions mock;
-        auto const re =
-            preflightEscrowWasm(code, ESCROW_FUNCTION_NAME, {}, &mock, ctx.j);
+        HostFunctions mock(ctx.j);
+        auto const re = preflightEscrowWasm(code, mock, ESCROW_FUNCTION_NAME);
         if (!isTesSuccess(re))
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";
@@ -1240,7 +1239,7 @@ EscrowFinish::doApply()
         }
         std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
         auto re = runEscrowWasm(
-            wasm, ESCROW_FUNCTION_NAME, {}, &ledgerDataProvider, allowance);
+            wasm, ledgerDataProvider, ESCROW_FUNCTION_NAME, {}, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
 
         if (auto const& data = ledgerDataProvider.getData(); data.has_value())
