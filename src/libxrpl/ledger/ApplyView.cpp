@@ -40,7 +40,10 @@ findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
     {
         node = view.peek(keylet::page(directory, page));
         if (!node)
+        {  // LCOV_EXCL_START
             LogicError("Directory chain: root back-pointer broken.");
+            // LCOV_EXCL_STOP
+        }
     }
 
     auto indexes = node->getFieldV256(sfIndexes);
@@ -59,7 +62,7 @@ insertKey(
     if (preserveOrder)
     {
         if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
-            LogicError("dirInsert: double insertion");
+            LogicError("dirInsert: double insertion");  // LCOV_EXCL_LINE
 
         indexes.push_back(key);
     }
@@ -73,7 +76,7 @@ insertKey(
         auto pos = std::lower_bound(indexes.begin(), indexes.end(), key);
 
         if (pos != indexes.end() && key == *pos)
-            LogicError("dirInsert: double insertion");
+            LogicError("dirInsert: double insertion");  // LCOV_EXCL_LINE
 
         indexes.insert(pos, key);
     }
@@ -131,8 +134,15 @@ insertPage(
     // it's the default.
     if (page != 1)
         node->setFieldU64(sfIndexPrevious, page - 1);
+    XRPL_ASSERT_PARTS(
+        !nextPage,
+        "ripple::directory::insertPage",
+        "nextPage has default value");
+    /* Reserved for future use when directory pages may be inserted in
+     * between two other pages instead of only at the end of the chain.
     if (nextPage)
         node->setFieldU64(sfIndexNext, nextPage);
+    */
     describe(node);
     view.insert(node);
 
@@ -197,10 +207,10 @@ ApplyView::emptyDirDelete(Keylet const& directory)
     auto nextPage = node->getFieldU64(sfIndexNext);
 
     if (nextPage == rootPage && prevPage != rootPage)
-        LogicError("Directory chain: fwd link broken");
+        LogicError("Directory chain: fwd link broken");  // LCOV_EXCL_LINE
 
     if (prevPage == rootPage && nextPage != rootPage)
-        LogicError("Directory chain: rev link broken");
+        LogicError("Directory chain: rev link broken");  // LCOV_EXCL_LINE
 
     // Older versions of the code would, in some cases, allow the last
     // page to be empty. Remove such pages:
@@ -209,7 +219,10 @@ ApplyView::emptyDirDelete(Keylet const& directory)
         auto last = peek(keylet::page(directory, nextPage));
 
         if (!last)
+        {  // LCOV_EXCL_START
             LogicError("Directory chain: fwd link broken.");
+            // LCOV_EXCL_STOP
+        }
 
         if (!last->getFieldV256(sfIndexes).empty())
             return false;
@@ -281,10 +294,16 @@ ApplyView::dirRemove(
     if (page == rootPage)
     {
         if (nextPage == page && prevPage != page)
+        {  // LCOV_EXCL_START
             LogicError("Directory chain: fwd link broken");
+            // LCOV_EXCL_STOP
+        }
 
         if (prevPage == page && nextPage != page)
+        {  // LCOV_EXCL_START
             LogicError("Directory chain: rev link broken");
+            // LCOV_EXCL_STOP
+        }
 
         // Older versions of the code would, in some cases,
         // allow the last page to be empty. Remove such
@@ -293,7 +312,10 @@ ApplyView::dirRemove(
         {
             auto last = peek(keylet::page(directory, nextPage));
             if (!last)
+            {  // LCOV_EXCL_START
                 LogicError("Directory chain: fwd link broken.");
+                // LCOV_EXCL_STOP
+            }
 
             if (last->getFieldV256(sfIndexes).empty())
             {
@@ -325,10 +347,10 @@ ApplyView::dirRemove(
 
     // This can never happen for nodes other than the root:
     if (nextPage == page)
-        LogicError("Directory chain: fwd link broken");
+        LogicError("Directory chain: fwd link broken");  // LCOV_EXCL_LINE
 
     if (prevPage == page)
-        LogicError("Directory chain: rev link broken");
+        LogicError("Directory chain: rev link broken");  // LCOV_EXCL_LINE
 
     // This node isn't the root, so it can either be in the
     // middle of the list, or at the end. Unlink it first
@@ -336,14 +358,14 @@ ApplyView::dirRemove(
     // root:
     auto prev = peek(keylet::page(directory, prevPage));
     if (!prev)
-        LogicError("Directory chain: fwd link broken.");
+        LogicError("Directory chain: fwd link broken.");  // LCOV_EXCL_LINE
     // Fix previous to point to its new next.
     prev->setFieldU64(sfIndexNext, nextPage);
     update(prev);
 
     auto next = peek(keylet::page(directory, nextPage));
     if (!next)
-        LogicError("Directory chain: rev link broken.");
+        LogicError("Directory chain: rev link broken.");  // LCOV_EXCL_LINE
     // Fix next to point to its new previous.
     next->setFieldU64(sfIndexPrevious, prevPage);
     update(next);
@@ -367,7 +389,10 @@ ApplyView::dirRemove(
         // And the root points to the last page:
         auto root = peek(keylet::page(directory, rootPage));
         if (!root)
+        {  // LCOV_EXCL_START
             LogicError("Directory chain: root link broken.");
+            // LCOV_EXCL_STOP
+        }
         root->setFieldU64(sfIndexPrevious, prevPage);
         update(root);
 

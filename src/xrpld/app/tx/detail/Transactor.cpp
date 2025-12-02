@@ -205,17 +205,23 @@ Transactor::preflight2(PreflightContext const& ctx)
         return *ret;
 
     // Skip signature check on batch inner transactions
-    if (!ctx.tx.isFlag(tfInnerBatchTxn) || !ctx.rules.enabled(featureBatch))
-    {
-        auto const sigValid = checkValidity(
-            ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
-        if (sigValid.first == Validity::SigBad)
-        {  // LCOV_EXCL_START
-            JLOG(ctx.j.debug())
-                << "preflight2: bad signature. " << sigValid.second;
-            return temINVALID;
-        }  // LCOV_EXCL_STOP
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+        return tesSUCCESS;
+    // Do not add any checks after this point that are relevant for
+    // batch inner transactions. They will be skipped.
+
+    auto const sigValid = checkValidity(
+        ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
+    if (sigValid.first == Validity::SigBad)
+    {  // LCOV_EXCL_START
+        JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
+        return temINVALID;
+        // LCOV_EXCL_STOP
     }
+
+    // Do not add any checks after this point that are relevant for
+    // batch inner transactions. They will be skipped.
+
     return tesSUCCESS;
 }
 
