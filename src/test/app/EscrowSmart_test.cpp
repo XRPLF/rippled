@@ -356,7 +356,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             using namespace std::chrono;
             Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
                         cfg->FEES.extension_compute_limit = 0;
-                        return c;
+                        return cfg;
                     })};
 
             Account const alice{"alice"};
