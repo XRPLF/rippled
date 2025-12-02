@@ -387,7 +387,7 @@ class LendingHelpers_test : public beast::unit_test::suite
                 .nextPaymentDueDate = 3'000,
                 .expectedLateInterest = Number{0},
             },
-                 {
+            {
                 .name = "Early payment",
                 .principalOutstanding = Number{1'000},
                 .lateInterestRate = TenthBips32{10'000},  // 10%
