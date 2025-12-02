@@ -55,5 +55,8 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
   done
 done
 
+# Restore the old config file name in the code that maintains support for now.
+${SED_COMMAND} -i 's/configLegacyName = "xrpld.cfg"/configLegacyName = "rippled.cfg"/g' src/xrpld/core/detail/Config.cpp
+
 popd
 echo "Renaming complete."
