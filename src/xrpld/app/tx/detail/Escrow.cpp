@@ -700,6 +700,11 @@ EscrowFinish::preflight(PreflightContext const& ctx)
 
     if (auto const allowance = ctx.tx[~sfComputationAllowance]; allowance)
     {
+        if (ctx.app.config().FEES.extension_compute_limit == 0)
+        {
+            JLOG(ctx.j.debug()) << "WASM runtime disabled by fee voting";
+            return temINVALID;
+        }
         if (*allowance == 0)
         {
             return temBAD_LIMIT;

@@ -350,6 +350,58 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 ter(temBAD_LIMIT));
         }
 
+        {
+            // WASM compute disabled
+            using namespace test::jtx;
+            using namespace std::chrono;
+            Env env{*this, envconfig([](std::unique_ptr<Config> c) {
+                        cfg->FEES.extension_compute_limit = 0;
+                        return c;
+                    })};
+
+            Account const alice{"alice"};
+            env.fund(XRP(1000), alice);
+            env.close();
+
+            auto const seq = env.seq(alice);
+            auto const keylet = keylet::escrow(alice.id(), seq);
+            env(noop(alice));  // to align sequence numbers
+
+            // This adds the Escrow ledger object by hand, bypassing normal
+            // transaction processing This is necessary because the config
+            // cannot be updated in the middle of a test, and we cannot create a
+            // Smart Escrow while ALLOW_WASM is disabled (which is what we're
+            // testing)
+            env.app().openLedger().modify([&](OpenView& view,
+                                              beast::Journal j) {
+                auto sle = std::make_shared<SLE>(keylet);
+
+                sle->setAccountID(sfAccount, alice.id());
+                sle->setFieldAmount(sfAmount, XRP(100));
+                sle->setFieldU32(sfCancelAfter, 110);
+                sle->setAccountID(sfDestination, alice.id());
+                sle->setFieldVL(sfFinishFunction, strUnHex(wasmHex).value());
+                sle->setFieldU32(sfFlags, 0);
+                sle->setFieldU64(sfOwnerNode, 0);
+                uint256 tmp;
+                BEAST_EXPECT(
+                    tmp.parseHex("F63D1A452A96C19EFD77901FB37D236C59EAA746771A6"
+                                 "85D1BBA57A2238B9401"));
+                sle->setFieldH256(sfPreviousTxnID, tmp);
+                sle->setFieldU32(sfPreviousTxnLgrSeq, 4);
+                sle->setFieldU32(sfSequence, seq);
+
+                view.rawInsert(sle);
+                return true;
+            });
+            BEAST_EXPECT(env.le(keylet));
+
+            env(escrow::finish(alice, alice, seq),
+                escrow::comp_allowance(1000),
+                fee(env.current()->fees().base + 1000),
+                ter(temINVALID));
+        }
+
         Env env(*this, features);
 
         // Run past the flag ledger so that a Fee change vote occurs and
