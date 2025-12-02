@@ -354,7 +354,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             // WASM compute disabled
             using namespace test::jtx;
             using namespace std::chrono;
-            Env env{*this, envconfig([](std::unique_ptr<Config> c) {
+            Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
                         cfg->FEES.extension_compute_limit = 0;
                         return c;
                     })};
