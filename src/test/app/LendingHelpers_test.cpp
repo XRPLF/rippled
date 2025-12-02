@@ -1,6 +1,8 @@
 #include <xrpl/beast/unit_test/suite.h>
-//
+// DO NOT REMOVE
 #include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/mpt.h>
 
 #include <xrpld/app/misc/LendingHelpers.h>
@@ -10,9 +12,6 @@
 
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/SField.h>
-
-#include "test/jtx/Account.h"
-#include "test/jtx/amount.h"
 
 #include <string>
 #include <vector>
@@ -265,16 +264,16 @@ class LendingHelpers_test : public beast::unit_test::suite
         int32_t const loanScale = 1;
         auto const overpayment = Number{1'000};
         auto const overpaymentInterestRate = TenthBips32{10'000};  // 10%
-        auto const overpaymentFeeRate = TenthBips32{10'000};       // 10%
+        auto const overpaymentFeeRate = TenthBips32{50'000};       // 50%
         auto const managementFeeRate = TenthBips16{10'000};        // 10%
 
-        auto const expectedOverpaymentFee = Number{100};  // 10% of 1,000
+        auto const expectedOverpaymentFee = Number{500};  // 50% of 1,000
         auto const expectedOverpaymentInterestGross =
             Number{100};  // 10% of 1,000
         auto const expectedOverpaymentInterestNet =
             Number{90};  // 100 - 10% of 100
-        auto const expectedOverpaymentManagementFee = Number{10};  // 10% of
-        auto const expectedPrincipalPortion = Number{800};  // 1,000 - 100 - 100
+        auto const expectedOverpaymentManagementFee = Number{10};  // 10% of 100
+        auto const expectedPrincipalPortion = Number{400};  // 1,000 - 100 - 500
 
         auto const components = detail::computeOverpaymentComponents(
             IOU,
@@ -364,7 +363,7 @@ class LendingHelpers_test : public beast::unit_test::suite
     }
 
     void
-    testLoanLatePayementInterest()
+    testLoanLatePaymentInterest()
     {
         using namespace jtx;
         using namespace ripple::detail;
@@ -386,6 +385,15 @@ class LendingHelpers_test : public beast::unit_test::suite
                 .parentCloseTime =
                     NetClock::time_point{NetClock::duration{3'000}},
                 .nextPaymentDueDate = 3'000,
+                .expectedLateInterest = Number{0},
+            },
+                 {
+                .name = "Early payment",
+                .principalOutstanding = Number{1'000},
+                .lateInterestRate = TenthBips32{10'000},  // 10%
+                .parentCloseTime =
+                    NetClock::time_point{NetClock::duration{3'000}},
+                .nextPaymentDueDate = 4'000,
                 .expectedLateInterest = Number{0},
             },
             {
@@ -535,7 +543,7 @@ public:
     run() override
     {
         testLoanAccruedInterest();
-        testLoanLatePayementInterest();
+        testLoanLatePaymentInterest();
         testLoanPeriodicPayment();
         testLoanPrincipalFromPeriodicPayment();
         testComputeRaisedRate();
