@@ -105,10 +105,10 @@ OpenLedger::accept(
         auto const txId = tx->getTransactionID();
 
         // skip batch txns
-        // LCOV_EXCL_START
         // The flag should only be settable if Batch feature is enabled. If
         // Batch is not enabled, the flag is always invalid, so don't relay it
         // regardless.
+        // LCOV_EXCL_START
         if (tx->isFlag(tfInnerBatchTxn))
         {
             XRPL_ASSERT(

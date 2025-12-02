@@ -205,17 +205,23 @@ Transactor::preflight2(PreflightContext const& ctx)
         return *ret;
 
     // Skip signature check on batch inner transactions
-    if (!ctx.tx.isFlag(tfInnerBatchTxn) || !ctx.rules.enabled(featureBatch))
-    {
-        auto const sigValid = checkValidity(
-            ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
-        if (sigValid.first == Validity::SigBad)
-        {
-            JLOG(ctx.j.debug())
-                << "preflight2: bad signature. " << sigValid.second;
-            return temINVALID;  // LCOV_EXCL_LINE
-        }
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+        return tesSUCCESS;
+    // Do not add any checks after this point that are relevant for
+    // batch inner transactions. They will be skipped.
+
+    auto const sigValid = checkValidity(
+        ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
+    if (sigValid.first == Validity::SigBad)
+    {  // LCOV_EXCL_START
+        JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
+        return temINVALID;
+        // LCOV_EXCL_STOP
     }
+
+    // Do not add any checks after this point that are relevant for
+    // batch inner transactions. They will be skipped.
+
     return tesSUCCESS;
 }
 
@@ -652,6 +658,17 @@ Transactor::checkSign(
     STObject const& sigObject,
     beast::Journal const j)
 {
+    {
+        auto const sle = view.read(keylet::account(idAccount));
+
+        if (view.rules().enabled(featureLendingProtocol) &&
+            isPseudoAccount(sle))
+            // Pseudo-accounts can't sign transactions. This check is gated on
+            // the Lending Protocol amendment because that's the project it was
+            // added under, and it doesn't justify another amendment
+            return tefBAD_AUTH;
+    }
+
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     // Ignore signature check on batch inner transactions
     bool const useCtx = view.rules().enabled(fixBatchInnerSigs);

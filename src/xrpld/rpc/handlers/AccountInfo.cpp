@@ -129,6 +129,28 @@ doAccountInfo(RPC::JsonContext& context)
 
         result[jss::account_flags] = std::move(acctFlags);
 
+        auto const pseudoFields = getPseudoAccountFields();
+        for (auto const& pseudoField : pseudoFields)
+        {
+            if (sleAccepted->isFieldPresent(*pseudoField))
+            {
+                std::string name = pseudoField->fieldName;
+                if (name.ends_with("ID"))
+                {
+                    // Remove the ID suffix from the field name.
+                    name = name.substr(0, name.size() - 2);
+                    XRPL_ASSERT_PARTS(
+                        !name.empty(),
+                        "ripple::doAccountInfo",
+                        "name is not empty");
+                }
+                // ValidPseudoAccounts invariant guarantees that only one field
+                // can be set
+                result[jss::pseudo_account][jss::type] = name;
+                break;
+            }
+        }
+
         // The document[https://xrpl.org/account_info.html#account_info] states
         // that signer_lists is a bool, however assigning any string value
         // works. Do not allow this. This check is for api Version 2 onwards
