@@ -1271,7 +1271,8 @@ protected:
             verifyLoanStatus,
             issuer,
             lender,
-            borrower);
+            borrower,
+            PaymentParameters{.showStepBalances = true});
     }
 
     /** Runs through the complete lifecycle of a loan
@@ -7193,15 +7194,15 @@ class LoanArbitrary_test : public LoanBatch_test
             .vaultDeposit = 10000,
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
-            // .managementFeeRate = TenthBips16{5919},
+            .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0}};
         LoanParameters const loanParams{
             .account = Account("lender"),
             .counter = Account("borrower"),
-            .principalRequest = Number{10000, 0},
-            // .interest = TenthBips32{0},
-            // .payTotal = 5816,
-            .payInterval = 150};
+            .principalRequest = Number{200000, -6},
+            .interest = TenthBips32{50000},
+            .payTotal = 2,
+            .payInterval = 200};
 
         runLoan(AssetType::XRP, brokerParams, loanParams);
     }
