@@ -324,9 +324,9 @@ port_wss_admin
                 BEAST_EXPECT(c.legacy("database_path") == "");
             }
         }
-        char const* configNames[] = {
+        char const* configFiles[] = {
             Config::configFileName, Config::configLegacyName};
-        for (auto const& configName : configNames)
+        for (auto const& configFile : configFiles)
         {
             {
                 // read from file absolute path
@@ -335,7 +335,7 @@ port_wss_admin
                 path const dataDirRel("test_data_dir");
                 path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
                 detail::RippledCfgGuard const g(
-                    *this, g0.subdir(), dataDirAbs, configName, "", false);
+                    *this, g0.subdir(), dataDirAbs, configFile, "", false);
                 auto const& c(g.config());
                 BEAST_EXPECT(g.dataDirExists());
                 BEAST_EXPECT(g.configFileExists());
@@ -345,7 +345,7 @@ port_wss_admin
                 // read from file relative path
                 std::string const dbPath("my_db");
                 detail::RippledCfgGuard const g(
-                    *this, "test_db", dbPath, configName, "");
+                    *this, "test_db", dbPath, configFile, "");
                 auto const& c(g.config());
                 std::string const nativeDbPath =
                     absolute(path(dbPath)).string();
@@ -356,7 +356,7 @@ port_wss_admin
             {
                 // read from file no path
                 detail::RippledCfgGuard const g(
-                    *this, "test_db", "", configName, "");
+                    *this, "test_db", "", configFile, "");
                 auto const& c(g.config());
                 std::string const nativeDbPath =
                     absolute(g.subdir() / path(Config::databaseDirName))
