@@ -1876,14 +1876,16 @@ protected:
             msig(alice, issuer),
             msig(sfCounterpartySignature, evan, borrower),
             fee(env.current()->fees().base * 5),
-            ter(tefBAD_SIGNATURE));
+            ter(tefBAD_SIGNATURE),
+            THISLINE);
         // Bad multisign signatures for issuer (Counterparty)
         env(set(borrower, broker.brokerID, principalRequest),
             counterparty(lender),
             msig(evan, lender),
             msig(sfCounterpartySignature, alice, issuer),
-            fee(env.current()->fees().base * 5 - 1),
-            ter(tefBAD_SIGNATURE));
+            fee(env.current()->fees().base * 5),
+            ter(tefBAD_SIGNATURE),
+            THISLINE);
         env(signers(lender, none));
         env(signers(borrower, none));
         // multisign sufficient fee, but no signers set up
