@@ -538,10 +538,93 @@ class LendingHelpers_test : public beast::unit_test::suite
         }
     }
 
+    // This test overlaps with testLoanAccruedInterest, the test cases only
+    // exercise the computeFullPaymentInterest parts unique to it.
+    void
+    testComputeFullPaymentInterest()
+    {
+        using namespace jtx;
+        using namespace ripple::detail;
+
+        struct TestCase
+        {
+            std::string name;
+            Number rawPrincipalOutstanding;
+            Number periodicRate;
+            NetClock::time_point parentCloseTime;
+            std::uint32_t paymentInterval;
+            std::uint32_t prevPaymentDate;
+            std::uint32_t startDate;
+            TenthBips32 closeInterestRate;
+            Number expectedFullPaymentInterest;
+        };
+
+        auto const testCases = std::vector<TestCase>{
+            {
+                .name = "Zero principal outstanding",
+                .rawPrincipalOutstanding = Number{0},
+                .periodicRate = Number{5, -2},
+                .parentCloseTime =
+                    NetClock::time_point{NetClock::duration{3'000}},
+                .paymentInterval = 30 * 24 * 60 * 60,
+                .prevPaymentDate = 2'000,
+                .startDate = 1'000,
+                .closeInterestRate = TenthBips32{10'000},
+                .expectedFullPaymentInterest = Number{0},
+            },
+            {
+                .name = "Zero close interest rate",
+                .rawPrincipalOutstanding = Number{1'000},
+                .periodicRate = Number{5, -2},
+                .parentCloseTime =
+                    NetClock::time_point{NetClock::duration{3'000}},
+                .paymentInterval = 30 * 24 * 60 * 60,
+                .prevPaymentDate = 2'000,
+                .startDate = 1'000,
+                .closeInterestRate = TenthBips32{0},
+                .expectedFullPaymentInterest =
+                    Number{1929012345679012, -17},  // from calc
+            },
+            {
+                .name = "Standard case",
+                .rawPrincipalOutstanding = Number{1'000},
+                .periodicRate = Number{5, -2},
+                .parentCloseTime =
+                    NetClock::time_point{NetClock::duration{3'000}},
+                .paymentInterval = 30 * 24 * 60 * 60,
+                .prevPaymentDate = 2'000,
+                .startDate = 1'000,
+                .closeInterestRate = TenthBips32{10'000},
+                .expectedFullPaymentInterest =
+                    Number{1000192901234568, -13},  // from calc
+            },
+        };
+
+        for (auto const& tc : testCases)
+        {
+            testcase("computeFullPaymentInterest: " + tc.name);
+
+            auto const computedFullPaymentInterest = computeFullPaymentInterest(
+                tc.rawPrincipalOutstanding,
+                tc.periodicRate,
+                tc.parentCloseTime,
+                tc.paymentInterval,
+                tc.prevPaymentDate,
+                tc.startDate,
+                tc.closeInterestRate);
+            BEAST_EXPECTS(
+                computedFullPaymentInterest == tc.expectedFullPaymentInterest,
+                "Full payment interest mismatch: expected " +
+                    to_string(tc.expectedFullPaymentInterest) + ", got " +
+                    to_string(computedFullPaymentInterest));
+        }
+    }
+
 public:
     void
     run() override
     {
+        testComputeFullPaymentInterest();
         testLoanAccruedInterest();
         testLoanLatePaymentInterest();
         testLoanPeriodicPayment();
