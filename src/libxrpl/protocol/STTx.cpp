@@ -286,7 +286,6 @@ STTx::checkSign(
     if (auto const ret = checkSign(requireCanonicalSig, rules, *this); !ret)
         return ret;
 
-    /* Placeholder for field that will be added by Lending Protocol
     if (isFieldPresent(sfCounterpartySignature))
     {
         auto const counterSig = getFieldObject(sfCounterpartySignature);
@@ -294,7 +293,6 @@ STTx::checkSign(
             !ret)
             return Unexpected("Counterparty: " + ret.error());
     }
-    */
     return {};
 }
 

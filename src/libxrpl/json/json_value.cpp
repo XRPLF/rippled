@@ -1061,6 +1061,12 @@ Value::isMember(std::string const& key) const
     return isMember(key.c_str());
 }
 
+bool
+Value::isMember(StaticString const& key) const
+{
+    return isMember(key.c_str());
+}
+
 Value::Members
 Value::getMemberNames() const
 {

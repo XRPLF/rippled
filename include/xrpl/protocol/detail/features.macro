@@ -27,9 +27,12 @@
 #error "undefined macro: XRPL_RETIRE"
 #endif
 
+// clang-format off
+
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
 
+XRPL_FEATURE(LendingProtocol,            Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (DirectoryLimit,             Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (IncludeKeyletFields,        Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(DynamicMPT,                 Supported::no,  VoteBehavior::DefaultNo)
@@ -155,3 +158,5 @@ XRPL_RETIRE(fix1512)
 XRPL_RETIRE(fix1523)
 XRPL_RETIRE(fix1528)
 XRPL_RETIRE(FlowCross)
+
+// clang-format on
