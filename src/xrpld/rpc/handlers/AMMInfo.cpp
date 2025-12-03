@@ -17,11 +17,7 @@ getAccount(Json::Value const& v)
 {
     std::string strIdent(v.asString());
 
-    if (auto opt = parseBase58<AccountID>(strIdent); opt.has_value())
-    {
-        return *opt;
-    }
-    return std::nullopt;
+    return parseBase58<AccountID>(v.asString());
 }
 
 Expected<Issue, error_code_i>
@@ -104,7 +100,8 @@ doAMMInfo(RPC::JsonContext& context)
 
         if (params.isMember(jss::amm_account))
         {
-            auto const id = getAccount(params[jss::amm_account], result);
+            auto const id =
+                parseBase58<AccountID>((params[jss::amm_account].asString()));
             if (!id)
                 return Unexpected(rpcACT_MALFORMED);
             auto const sle = ledger->read(keylet::account(*id));
@@ -117,7 +114,7 @@ doAMMInfo(RPC::JsonContext& context)
 
         if (params.isMember(jss::account))
         {
-            accountID = getAccount(params[jss::account], result);
+            accountID = parseBase58<AccountID>(params[jss::account].asString());
             if (!accountID || !ledger->read(keylet::account(*accountID)))
                 return Unexpected(rpcACT_MALFORMED);
         }
