@@ -726,6 +726,115 @@ public:
     }
 
     void
+    testRounding()
+    {
+        // Test that rounding works as expected.
+        testcase("Rounding");
+
+        using NumberRoundings = std::map<Number::rounding_mode, std::int64_t>;
+
+        std::map<Number, NumberRoundings> const expected{
+            // Positive numbers
+            {Number{13, -1},
+             {{Number::to_nearest, 1},
+              {Number::towards_zero, 1},
+              {Number::downward, 1},
+              {Number::upward, 2}}},
+            {Number{23, -1},
+             {{Number::to_nearest, 2},
+              {Number::towards_zero, 2},
+              {Number::downward, 2},
+              {Number::upward, 3}}},
+            {Number{15, -1},
+             {{Number::to_nearest, 2},
+              {Number::towards_zero, 1},
+              {Number::downward, 1},
+              {Number::upward, 2}}},
+            {Number{25, -1},
+             {{Number::to_nearest, 2},
+              {Number::towards_zero, 2},
+              {Number::downward, 2},
+              {Number::upward, 3}}},
+            {Number{152, -2},
+             {{Number::to_nearest, 2},
+              {Number::towards_zero, 1},
+              {Number::downward, 1},
+              {Number::upward, 2}}},
+            {Number{252, -2},
+             {{Number::to_nearest, 3},
+              {Number::towards_zero, 2},
+              {Number::downward, 2},
+              {Number::upward, 3}}},
+            {Number{17, -1},
+             {{Number::to_nearest, 2},
+              {Number::towards_zero, 1},
+              {Number::downward, 1},
+              {Number::upward, 2}}},
+            {Number{27, -1},
+             {{Number::to_nearest, 3},
+              {Number::towards_zero, 2},
+              {Number::downward, 2},
+              {Number::upward, 3}}},
+
+            // Negative numbers
+            {Number{-13, -1},
+             {{Number::to_nearest, -1},
+              {Number::towards_zero, -1},
+              {Number::downward, -2},
+              {Number::upward, -1}}},
+            {Number{-23, -1},
+             {{Number::to_nearest, -2},
+              {Number::towards_zero, -2},
+              {Number::downward, -3},
+              {Number::upward, -2}}},
+            {Number{-15, -1},
+             {{Number::to_nearest, -2},
+              {Number::towards_zero, -1},
+              {Number::downward, -2},
+              {Number::upward, -1}}},
+            {Number{-25, -1},
+             {{Number::to_nearest, -2},
+              {Number::towards_zero, -2},
+              {Number::downward, -3},
+              {Number::upward, -2}}},
+            {Number{-152, -2},
+             {{Number::to_nearest, -2},
+              {Number::towards_zero, -1},
+              {Number::downward, -2},
+              {Number::upward, -1}}},
+            {Number{-252, -2},
+             {{Number::to_nearest, -3},
+              {Number::towards_zero, -2},
+              {Number::downward, -3},
+              {Number::upward, -2}}},
+            {Number{-17, -1},
+             {{Number::to_nearest, -2},
+              {Number::towards_zero, -1},
+              {Number::downward, -2},
+              {Number::upward, -1}}},
+            {Number{-27, -1},
+             {{Number::to_nearest, -3},
+              {Number::towards_zero, -2},
+              {Number::downward, -3},
+              {Number::upward, -2}}},
+        };
+
+        for (auto const& [num, roundings] : expected)
+        {
+            for (auto const& [mode, val] : roundings)
+            {
+                NumberRoundModeGuard g{mode};
+                auto const res = static_cast<std::int64_t>(num);
+                BEAST_EXPECTS(
+                    res == val,
+                    to_string(num) + " with mode " + std::to_string(mode) +
+                        " expected " + std::to_string(val) + " got " +
+                        std::to_string(res));
+            }
+        }
+    }
+
+    void
     run() override
     {
         testZero();
@@ -746,6 +855,7 @@ public:
         test_inc_dec();
         test_toSTAmount();
         test_truncate();
+        testRounding();
     }
 };
 
