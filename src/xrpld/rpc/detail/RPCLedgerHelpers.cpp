@@ -24,17 +24,26 @@ isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
 
 template <class T>
 Status
-ledgerFromHash(T& ledger, Json::Value hash, Context const& context)
+ledgerFromHash(
+    T& ledger,
+    Json::Value hash,
+    Context const& context,
+    Json::StaticString const fieldName)
 {
     uint256 ledgerHash;
     if (!ledgerHash.parseHex(hash.asString()))
-        return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
+        return {
+            rpcINVALID_PARAMS, expected_field_message(fieldName, "hex string")};
     return getLedger(ledger, ledgerHash, context);
 }
 
 template <class T>
 Status
-ledgerFromIndex(T& ledger, Json::Value indexValue, Context const& context)
+ledgerFromIndex(
+    T& ledger,
+    Json::Value indexValue,
+    Context const& context,
+    Json::StaticString const fieldName)
 {
     auto const index = indexValue.asString();
 
@@ -49,7 +58,9 @@ ledgerFromIndex(T& ledger, Json::Value indexValue, Context const& context)
 
     std::uint32_t iVal;
     if (!beast::lexicalCastChecked(iVal, index))
-        return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
+        return {
+            rpcINVALID_PARAMS,
+            expected_field_message(fieldName, "string or number")};
 
     return getLedger(ledger, iVal, context);
 }
@@ -87,12 +98,14 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
         if (!legacyLedger.isString() && !legacyLedger.isUInt() &&
             !legacyLedger.isInt())
         {
-            return {rpcINVALID_PARAMS, invalid_field_message(jss::ledger)};
+            return {
+                rpcINVALID_PARAMS,
+                expected_field_message(jss::ledger, "string or number")};
         }
         if (legacyLedger.asString().size() > 12)
-            return ledgerFromHash(ledger, legacyLedger, context);
+            return ledgerFromHash(ledger, legacyLedger, context, jss::ledger);
         else
-            return ledgerFromIndex(ledger, legacyLedger, context);
+            return ledgerFromIndex(ledger, legacyLedger, context, jss::ledger);
     }
 
     if (hasHash)
@@ -101,8 +114,8 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
         if (!ledgerHash.isString())
             return {
                 rpcINVALID_PARAMS,
-                expected_field_message(jss::ledger_hash, "string")};
-        return ledgerFromHash(ledger, ledgerHash, context);
+                expected_field_message(jss::ledger_hash, "hex string")};
+        return ledgerFromHash(ledger, ledgerHash, context, jss::ledger_hash);
     }
 
     if (hasIndex)
@@ -115,12 +128,11 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
                 rpcINVALID_PARAMS,
                 expected_field_message(jss::ledger_index, "string or number")};
         }
-        return ledgerFromIndex(ledger, ledgerIndex, context);
+        return ledgerFromIndex(ledger, ledgerIndex, context, jss::ledger_index);
     }
 
     // nothing specified, `index` has a default setting
-    // TODO: more cleanup in this file needed
-    return ledgerFromIndex(ledger, Json::nullValue, context);
+    return getLedger(ledger, LedgerShortcut::Current, context);
 }
 }  // namespace
 
@@ -307,7 +319,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
     return Status::OK;
 }
 
-// Explicit instantiaion of above three functions
+// Explicit instantiation of above three functions
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint32_t, Context const&);
 
