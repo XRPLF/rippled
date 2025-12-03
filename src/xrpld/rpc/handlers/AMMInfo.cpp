@@ -13,7 +13,7 @@
 namespace ripple {
 
 std::optional<AccountID>
-getAccount(Json::Value const& v, Json::Value& result)
+getAccount(Json::Value const& v)
 {
     std::string strIdent(v.asString());
 
