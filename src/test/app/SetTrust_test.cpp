@@ -9,8 +9,6 @@ namespace test {
 
 class SetTrust_test : public beast::unit_test::suite
 {
-    FeatureBitset const disallowIncoming{featureDisallowIncoming};
-
 public:
     void
     testTrustLineDelete()
@@ -478,25 +476,12 @@ public:
 
         using namespace test::jtx;
 
-        // test flag doesn't set unless amendment enabled
-        {
-            Env env{*this, features - disallowIncoming};
-            Account const alice{"alice"};
-            env.fund(XRP(10000), alice);
-            env(fset(alice, asfDisallowIncomingTrustline));
-            env.close();
-            auto const sle = env.le(alice);
-            uint32_t flags = sle->getFlags();
-            BEAST_EXPECT(!(flags & lsfDisallowIncomingTrustline));
-        }
-
         // fixDisallowIncomingV1
         {
             for (bool const withFix : {true, false})
             {
-                auto const amend = withFix
-                    ? features | disallowIncoming
-                    : (features | disallowIncoming) - fixDisallowIncomingV1;
+                auto const amend =
+                    withFix ? features : features - fixDisallowIncomingV1;
 
                 Env env{*this, amend};
                 auto const dist = Account("dist");
@@ -532,7 +517,7 @@ public:
             }
         }
 
-        Env env{*this, features | disallowIncoming};
+        Env env{*this, features};
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
@@ -630,7 +615,6 @@ public:
     {
         using namespace test::jtx;
         auto const sa = testable_amendments();
-        testWithFeats(sa - disallowIncoming);
         testWithFeats(sa);
     }
 };

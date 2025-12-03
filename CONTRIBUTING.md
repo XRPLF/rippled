@@ -47,12 +47,17 @@ choose the next available standard number, and open a discussion with an
 appropriate title to propose your draft standard.
 
 When you submit a pull request, please link the corresponding XLS in the
-description. An XLS still in draft status is considered a
+description. An XLS still in `Draft` status is considered a
 work-in-progress and open for discussion. Please allow time for
 questions, suggestions, and changes to the XLS draft. It is the
 responsibility of the XLS author to update the draft to match the final
 implementation when its corresponding pull request is merged, unless the
 author delegates that responsibility to others.
+
+Any amendment or major RPC change requires either a new XLS or an update
+to an existing XLS. Neither change will be released (in an amendment's
+case, marked as `Supported::yes`) until the corresponding XLS's status
+is `Final`.
 
 ## Before making a pull request
 

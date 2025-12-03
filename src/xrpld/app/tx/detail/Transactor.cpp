@@ -204,13 +204,24 @@ Transactor::preflight2(PreflightContext const& ctx)
         // regardless of success or failure
         return *ret;
 
+    // Skip signature check on batch inner transactions
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+        return tesSUCCESS;
+    // Do not add any checks after this point that are relevant for
+    // batch inner transactions. They will be skipped.
+
     auto const sigValid = checkValidity(
         ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
     if (sigValid.first == Validity::SigBad)
-    {
+    {  // LCOV_EXCL_START
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
-        return temINVALID;  // LCOV_EXCL_LINE
+        return temINVALID;
+        // LCOV_EXCL_STOP
     }
+
+    // Do not add any checks after this point that are relevant for
+    // batch inner transactions. They will be skipped.
+
     return tesSUCCESS;
 }
 
@@ -642,13 +653,25 @@ NotTEC
 Transactor::checkSign(
     ReadView const& view,
     ApplyFlags flags,
+    std::optional<uint256 const> const& parentBatchId,
     AccountID const& idAccount,
     STObject const& sigObject,
     beast::Journal const j)
 {
+    {
+        auto const sle = view.read(keylet::account(idAccount));
+
+        if (view.rules().enabled(featureLendingProtocol) &&
+            isPseudoAccount(sle))
+            // Pseudo-accounts can't sign transactions. This check is gated on
+            // the Lending Protocol amendment because that's the project it was
+            // added under, and it doesn't justify another amendment
+            return tefBAD_AUTH;
+    }
+
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     // Ignore signature check on batch inner transactions
-    if (sigObject.isFlag(tfInnerBatchTxn) && view.rules().enabled(featureBatch))
+    if (parentBatchId && view.rules().enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
         if (sigObject.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
@@ -701,7 +724,8 @@ Transactor::checkSign(PreclaimContext const& ctx)
     auto const idAccount = ctx.tx.isFieldPresent(sfDelegate)
         ? ctx.tx.getAccountID(sfDelegate)
         : ctx.tx.getAccountID(sfAccount);
-    return checkSign(ctx.view, ctx.flags, idAccount, ctx.tx, ctx.j);
+    return checkSign(
+        ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
 }
 
 NotTEC
