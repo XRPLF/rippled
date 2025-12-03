@@ -291,7 +291,7 @@ public:
     operator[](std::string const& name) const;
 
     PrettyAmount
-    operator()(std::uint64_t amount) const;
+    operator()(std::int64_t amount) const;
 
     operator Asset() const;
 

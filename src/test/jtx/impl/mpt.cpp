@@ -663,7 +663,7 @@ MPTTester::operator[](std::string const& name) const
 }
 
 PrettyAmount
-MPTTester::operator()(std::uint64_t amount) const
+MPTTester::operator()(std::int64_t amount) const
 {
     return MPT("", issuanceID())(amount);
 }
