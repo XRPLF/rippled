@@ -305,7 +305,13 @@ LoanPay::doApply()
     // change will be discarded.
     if (loanSle->isFlag(lsfLoanImpaired))
     {
-        LoanManage::unimpairLoan(view, loanSle, vaultSle, j_);
+        if (auto const ret =
+                LoanManage::unimpairLoan(view, loanSle, vaultSle, j_);
+            ret != tesSUCCESS)
+        {
+            JLOG(j_.fatal()) << "Failed to unimpair loan before payment.";
+            return ret;  // LCOV_EXCL_LINE
+        }
     }
 
     LoanPaymentType const paymentType = [&tx]() {
