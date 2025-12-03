@@ -47,16 +47,18 @@ public:
     static int const cMaxOffset = 80;
 
     // Maximum native value supported by the code
-    static std::uint64_t const cMinValue = 1000000000000000ull;
-    static std::uint64_t const cMaxValue = 9999999999999999ull;
-    static std::uint64_t const cMaxNative = 9000000000000000000ull;
+    constexpr static std::uint64_t cMinValue = 1'000'000'000'000'000ull;
+    static_assert(isPowerOfTen(cMinValue));
+    constexpr static std::uint64_t cMaxValue = cMinValue * 10 - 1;
+    static_assert(cMaxValue == 9'999'999'999'999'999ull);
+    constexpr static std::uint64_t cMaxNative = 9'000'000'000'000'000'000ull;
 
     // Max native value on network.
-    static std::uint64_t const cMaxNativeN = 100000000000000000ull;
-    static std::uint64_t const cIssuedCurrency = 0x8000000000000000ull;
-    static std::uint64_t const cPositive = 0x4000000000000000ull;
-    static std::uint64_t const cMPToken = 0x2000000000000000ull;
-    static std::uint64_t const cValueMask = ~(cPositive | cMPToken);
+    constexpr static std::uint64_t cMaxNativeN = 100'000'000'000'000'000ull;
+    constexpr static std::uint64_t cIssuedCurrency = 0x8'000'000'000'000'000ull;
+    constexpr static std::uint64_t cPositive = 0x4'000'000'000'000'000ull;
+    constexpr static std::uint64_t cMPToken = 0x2'000'000'000'000'000ull;
+    constexpr static std::uint64_t cValueMask = ~(cPositive | cMPToken);
 
     static std::uint64_t const uRateOne;
 
@@ -154,6 +156,9 @@ public:
 
     int
     exponent() const noexcept;
+
+    bool
+    integral() const noexcept;
 
     bool
     native() const noexcept;
@@ -436,6 +441,12 @@ STAmount::exponent() const noexcept
 }
 
 inline bool
+STAmount::integral() const noexcept
+{
+    return mAsset.integral();
+}
+
+inline bool
 STAmount::native() const noexcept
 {
     return mAsset.native();
@@ -553,7 +564,7 @@ STAmount::clear()
 {
     // The -100 is used to allow 0 to sort less than a small positive values
     // which have a negative exponent.
-    mOffset = native() ? 0 : -100;
+    mOffset = integral() ? 0 : -100;
     mValue = 0;
     mIsNegative = false;
 }
@@ -675,6 +686,53 @@ divRoundStrict(
 // VFALCO TODO Return a Quality object
 std::uint64_t
 getRate(STAmount const& offerOut, STAmount const& offerIn);
+
+/** Round an arbitrary precision Amount to the precision of an STAmount that has
+ * a given exponent.
+ *
+ * This is used to ensure that calculations involving IOU amounts do not collect
+ * dust beyond the precision of the reference value.
+ *
+ * @param value The value to be rounded
+ * @param scale An exponent value to establish the precision limit of
+ *     `value`. Should be larger than `value.exponent()`.
+ * @param rounding Optional Number rounding mode
+ *
+ */
+STAmount
+roundToScale(
+    STAmount const& value,
+    std::int32_t scale,
+    Number::rounding_mode rounding = Number::getround());
+
+/** Round an arbitrary precision Number to the precision of a given Asset.
+ *
+ * This is used to ensure that calculations do not collect dust beyond the
+ * precision of the reference value for IOUs, or fractional amounts for the
+ * integral types XRP and MPT.
+ *
+ * @param asset The relevant asset
+ * @param value The value to be rounded
+ * @param scale Only relevant to IOU assets. An exponent value to establish the
+ *      precision limit of `value`. Should be larger than `value.exponent()`.
+ * @param rounding Optional Number rounding mode
+ */
+template <AssetType A>
+Number
+roundToAsset(
+    A const& asset,
+    Number const& value,
+    std::int32_t scale,
+    Number::rounding_mode rounding = Number::getround())
+{
+    NumberRoundModeGuard mg(rounding);
+    STAmount const ret{asset, value};
+    if (ret.integral())
+        return ret;
+    // Note that the ctor will round integral types (XRP, MPT) via canonicalize,
+    // so no extra work is needed for those.
+    return roundToScale(ret, scale);
+}
 
 //------------------------------------------------------------------------------
 
