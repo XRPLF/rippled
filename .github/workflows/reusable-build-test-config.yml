@@ -116,6 +116,12 @@ jobs:
             ${CMAKE_ARGS} \
             ..
 
+      - name: Restore build objects
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: "${{ inputs.build_dir }}/**/*.o"
+          key: ${{ inputs.config_name }}
+
       - name: Build the binary
         working-directory: ${{ inputs.build_dir }}
         env:
@@ -129,14 +135,18 @@ jobs:
             --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
 
+      - name: Save build objects
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: "${{ inputs.build_dir }}/**/*.o"
+          key: ${{ inputs.config_name }}
+
       - name: Upload rippled artifact (Linux)
         if: ${{ github.repository_owner == 'XRPLF' && runner.os == 'Linux' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        env:
-          BUILD_DIR: ${{ inputs.build_dir }}
         with:
           name: rippled-${{ inputs.config_name }}
-          path: ${{ env.BUILD_DIR }}/rippled
+          path: ${{ inputs.build_dir }}/rippled
           retention-days: 3
           if-no-files-found: error
 

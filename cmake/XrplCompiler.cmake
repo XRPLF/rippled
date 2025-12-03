@@ -2,6 +2,12 @@
    setup project-wide compiler settings
 #]===================================================================]
 
+find_program(CCACHE_PATH "ccache")
+if (CCACHE_PATH)
+  set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PATH}")
+  message(STATUS "Using ccache: ${CCACHE_PATH}")
+endif ()
+
 #[=========================================================[
    TODO some/most of these common settings belong in a
    toolchain file, especially the ABI-impacting ones
