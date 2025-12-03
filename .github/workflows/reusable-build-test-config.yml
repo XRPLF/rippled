@@ -122,6 +122,9 @@ jobs:
           path: "${{ inputs.build_dir }}/**/*.o"
           key: ${{ inputs.config_name }}
 
+      - name: Print out ccache statistics before building
+        run: ccache -s
+
       - name: Build the binary
         working-directory: ${{ inputs.build_dir }}
         env:
@@ -134,6 +137,9 @@ jobs:
             --config "${BUILD_TYPE}" \
             --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
+
+      - name: Print out ccache statistics after building
+        run: ccache -s
 
       - name: Save build objects
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
