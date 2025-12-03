@@ -540,8 +540,8 @@ tryOverpayment(
     // Calculate how the loan's value changed due to the overpayment.
     // This should be negative (value decreased) or zero. A principal
     // overpayment should never increase the loan's value.
-    auto const valueChange =
-        newRounded.valueOutstanding - hypotheticalValueOutstanding;
+    auto const valueChange = newRounded.valueOutstanding -
+        hypotheticalValueOutstanding - deltas.managementFee;
     if (valueChange > 0)
     {
         JLOG(j.warn()) << "Principal overpayment would increase the value of "
