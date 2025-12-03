@@ -99,7 +99,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(
                 result[jss::error_message] ==
-                "Invalid field 'ledger_hash', not string.");
+                "Invalid field 'ledger_hash', not hex string.");
         }
 
         {  // account not found

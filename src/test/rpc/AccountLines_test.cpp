@@ -89,7 +89,7 @@ public:
                 env.rpc("json", "account_lines", to_string(params));
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                "ledgerIndexMalformed");
+                "Invalid field 'ledger_index', not string or number.");
         }
         {
             // Specify a different ledger that doesn't exist.
@@ -842,7 +842,8 @@ public:
             request[jss::params] = params;
             auto const lines = env.rpc("json2", to_string(request));
             BEAST_EXPECT(
-                lines[jss::error][jss::message] == "ledgerIndexMalformed");
+                lines[jss::error][jss::message] ==
+                "Invalid field 'ledger_index', not string or number.");
             BEAST_EXPECT(
                 lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(
