@@ -190,8 +190,7 @@ public:
         testAccountLinesHistory(alice, ledger58Info, 52);
 
         {
-            // Surprisingly, it's valid to specify both index and hash, in
-            // which case the hash wins.
+            // Invalid to specify both index and hash
             Json::Value params;
             params[jss::account] = alice.human();
             params[jss::ledger_hash] = to_string(ledger4Info.hash);
@@ -203,6 +202,18 @@ public:
                 lines[jss::error_message] ==
                 "Exactly one of 'ledger_hash' or 'ledger_index' can be "
                 "specified.");
+        }
+        {
+            // Invalid index
+            Json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::ledger_index] = Json::objectValue;
+            auto const lines = env.rpc(
+                "json", "account_lines", to_string(params))[jss::result];
+            BEAST_EXPECT(lines[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                lines[jss::error_message] ==
+                "Invalid field 'ledger_index', not string or number.");
         }
         {
             // alice should have 52 trust lines in the current ledger.
