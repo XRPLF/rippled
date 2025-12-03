@@ -1403,7 +1403,6 @@ computeFullPaymentInterest(
     return accruedInterest + prepaymentPenalty;
 }
 
-
 /* Calculates the theoretical loan state at maximum precision for a given point
  * in the amortization schedule.
  *
