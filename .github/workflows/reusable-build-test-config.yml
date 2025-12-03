@@ -116,7 +116,7 @@ jobs:
             ${CMAKE_ARGS} \
             ..
 
-      - name: Restore build objects
+      - name: Restore build objects (Linux)
         if: ${{ runner.os == 'Linux' }}
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
@@ -142,7 +142,7 @@ jobs:
       - name: Print out ccache statistics after building
         run: ccache -s
 
-      - name: Save build objects
+      - name: Save build objects (Linux)
         if: ${{ runner.os == 'Linux' }}
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
