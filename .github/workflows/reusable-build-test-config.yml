@@ -116,16 +116,11 @@ jobs:
             ${CMAKE_ARGS} \
             ..
 
-      - name: Get ccache directory
-        if: ${{ runner.os == 'Linux' }}
-        id: ccache
-        run: echo "dir=$(ccache -k cache_dir)" >> $GITHUB_OUTPUT
-
       - name: Restore build objects
         if: ${{ runner.os == 'Linux' }}
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          path: ${{ steps.ccache.outputs.dir }}
+          path: ${{ env.CCACHE_DIR }}
           key: ${{ inputs.config_name }}
 
       - name: Print out ccache statistics before building
@@ -151,7 +146,7 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          path: ${{ steps.ccache.outputs.dir }}
+          path: ${{ env.CCACHE_DIR }}
           key: ${{ inputs.config_name }}
 
       - name: Upload rippled artifact (Linux)
