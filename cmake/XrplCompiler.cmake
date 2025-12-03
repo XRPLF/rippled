@@ -35,6 +35,9 @@ if (MSVC)
       CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
       CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE)
 
+    # also remove dynamic runtime
+    string (REGEX REPLACE "[-/]MD[d]*" " " ${var_} "${${var_}}")
+
     # /ZI (Edit & Continue debugging information) is incompatible with Gy-
     string (REPLACE "/ZI" "/Zi" ${var_} "${${var_}}")
 
@@ -69,6 +72,10 @@ if (MSVC)
         -GS
         -Zc:forScope
       >
+      # static runtime
+      $<$<CONFIG:Debug>:-MTd>
+      $<$<NOT:$<CONFIG:Debug>>:-MT>
+      $<$<BOOL:${werr}>:-WX>
       )
   target_compile_definitions (common
     INTERFACE
