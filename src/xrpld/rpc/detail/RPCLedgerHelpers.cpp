@@ -102,7 +102,7 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
                 rpcINVALID_PARAMS,
                 expected_field_message(jss::ledger, "string or number")};
         }
-        if (legacyLedger.isString())
+        if (legacyLedger.isString() && legacyLedger.asString().size() == 64)
             return ledgerFromHash(ledger, legacyLedger, context, jss::ledger);
         else
             return ledgerFromIndex(ledger, legacyLedger, context, jss::ledger);
@@ -398,7 +398,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
     auto& ledgerMaster = context.app.getLedgerMaster();
     LedgerHash ledgerHash;
 
-    if ((hasHash && hasIndex) || !(hasHash || hasIndex))
+    if ((hasHash + hasIndex) != 1)
     {
         return Unexpected(RPC::make_param_error(
             "Exactly one of ledger_hash and ledger_index can be set."));
@@ -409,14 +409,16 @@ getOrAcquireLedger(RPC::JsonContext const& context)
         auto const& jsonHash =
             context.params.get(jss::ledger_hash, Json::nullValue);
         if (!jsonHash.isString() || !ledgerHash.parseHex(jsonHash.asString()))
-            return Unexpected(RPC::invalid_field_error(jss::ledger_hash));
+            return Unexpected(
+                RPC::expected_field_error(jss::ledger_hash, "hex string"));
     }
     else
     {
         auto const& jsonIndex =
             context.params.get(jss::ledger_index, Json::nullValue);
         if (!jsonIndex.isInt() && !jsonIndex.isUInt())
-            return Unexpected(RPC::invalid_field_error(jss::ledger_index));
+            return Unexpected(
+                RPC::expected_field_error(jss::ledger_index, "number"));
 
         // We need a validated ledger to get the hash from the sequence
         if (ledgerMaster.getValidatedLedgerAge() >
