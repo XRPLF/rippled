@@ -148,7 +148,8 @@ git init
 git remote add origin git@github.com:XRPLF/conan-center-index.git
 git sparse-checkout init
 git sparse-checkout set recipes/ed25519
-git sparse-checkout set recipes/grpc
+git sparse-checkout add recipes/grpc
+git sparse-checkout add recipes/secp256k1
 git sparse-checkout add recipes/snappy
 git sparse-checkout add recipes/soci
 git fetch origin master
@@ -157,6 +158,7 @@ rm -rf .git
 cd ../..
 conan export --version 2015.03 external/conan-center-index/recipes/ed25519/all
 conan export --version 1.72.0 external/conan-center-index/recipes/grpc/all
+conan export --version 0.7.0 external/conan-center-index/recipes/secp256k1/all
 conan export --version 1.1.10 external/conan-center-index/recipes/snappy/all
 conan export --version 4.0.3 external/conan-center-index/recipes/soci/all
 ```
