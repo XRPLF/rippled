@@ -67,7 +67,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
             JLOG(ctx.j.warn()) << "LoanBrokerDelete: Debt total is "
                                << debtTotal << ", which rounds to " << rounded;
             return tecHAS_OBLIGATIONS;
-            // LCOV_EXCL_START
+            // LCOV_EXCL_STOP
         }
     }
 
