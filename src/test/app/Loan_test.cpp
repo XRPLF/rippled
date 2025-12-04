@@ -6147,15 +6147,16 @@ protected:
         // Accrued + prepayment-penalty interest based on current periodic
         // schedule
         auto const fullPaymentInterest = computeFullPaymentInterest(
-            after.periodicPayment,
+            detail::loanPrincipalFromPeriodicPayment(
+                after.periodicPayment, periodicRate2, after.paymentRemaining),
             periodicRate2,
-            after.paymentRemaining,
             env.current()->parentCloseTime(),
             after.paymentInterval,
             after.previousPaymentDate,
             static_cast<std::uint32_t>(
                 after.startDate.time_since_epoch().count()),
             closeInterestRate);
+
         // Round to asset scale and split interest/fee parts
         auto const roundedInterest =
             roundToAsset(asset.raw(), fullPaymentInterest, after.loanScale);
@@ -6183,9 +6184,9 @@ protected:
         // window by clamping prevPaymentDate to 'now' for the full-pay path.
         auto const prevClamped = std::min(after.previousPaymentDate, nowSecs);
         auto const fullPaymentInterestClamped = computeFullPaymentInterest(
-            after.periodicPayment,
+            detail::loanPrincipalFromPeriodicPayment(
+                after.periodicPayment, periodicRate2, after.paymentRemaining),
             periodicRate2,
-            after.paymentRemaining,
             env.current()->parentCloseTime(),
             after.paymentInterval,
             prevClamped,
