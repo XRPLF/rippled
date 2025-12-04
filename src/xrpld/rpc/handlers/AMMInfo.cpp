@@ -12,14 +12,6 @@
 
 namespace ripple {
 
-std::optional<AccountID>
-getAccount(Json::Value const& v)
-{
-    std::string strIdent(v.asString());
-
-    return parseBase58<AccountID>(v.asString());
-}
-
 Expected<Issue, error_code_i>
 getIssue(Json::Value const& v, beast::Journal j)
 {
