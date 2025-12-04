@@ -102,7 +102,7 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
                 rpcINVALID_PARAMS,
                 expected_field_message(jss::ledger, "string or number")};
         }
-        if (legacyLedger.asString().size() > 12)
+        if (legacyLedger.isString())
             return ledgerFromHash(ledger, legacyLedger, context, jss::ledger);
         else
             return ledgerFromIndex(ledger, legacyLedger, context, jss::ledger);
