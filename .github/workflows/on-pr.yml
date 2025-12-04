@@ -112,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows]
+        os: [linux, macos, windows]
     with:
       os: ${{ matrix.os }}
     secrets:
