@@ -14,7 +14,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -99,7 +99,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
         // fee (1) and amendment (numUpVotedAmendments())
         // pseudotransactions. The queue treats the fees on these
         // transactions as though they are ordinary transactions.
-        auto const flagPerLedger = 1 + ripple::detail::numUpVotedAmendments();
+        auto const flagPerLedger = 1 + xrpl::detail::numUpVotedAmendments();
         auto const flagMaxQueue = ledgersInQueue * flagPerLedger;
         checkMetrics(*this, env, 0, flagMaxQueue, 0, flagPerLedger);
 
@@ -726,7 +726,7 @@ public:
         env(noop(daria));
         checkMetrics(*this, env, 0, std::nullopt, 3, 2);
 
-        BEAST_EXPECT(env.current()->info().seq == 6);
+        BEAST_EXPECT(env.current()->header().seq == 6);
         // Fail to queue an item with a low LastLedgerSeq
         env(noop(alice), last_ledger_seq(7), ter(telCAN_NOT_QUEUE));
         // Queue an item with a sufficient LastLedgerSeq.
@@ -977,13 +977,13 @@ public:
 
             Env::ParsedResult parsed;
 
-            env.app().openLedger().modify(
-                [&](OpenView& view, beast::Journal j) {
-                    auto const result = ripple::apply(
-                        env.app(), view, *jt.stx, tapNONE, env.journal);
-                    parsed.ter = result.ter;
-                    return result.applied;
-                });
+            env.app().openLedger().modify([&](OpenView& view,
+                                              beast::Journal j) {
+                auto const result =
+                    xrpl::apply(env.app(), view, *jt.stx, tapNONE, env.journal);
+                parsed.ter = result.ter;
+                return result.applied;
+            });
             env.postconditions(jt, parsed);
         }
         checkMetrics(*this, env, 1, std::nullopt, 4, 2);
@@ -1075,7 +1075,7 @@ public:
         // Alice - fill up the queue
         std::int64_t aliceFee = 27;
         aliceSeq = env.seq(alice);
-        auto lastLedgerSeq = env.current()->info().seq + 2;
+        auto lastLedgerSeq = env.current()->header().seq + 2;
         for (auto i = 0; i < 7; i++)
         {
             env(noop(alice),
@@ -2683,7 +2683,7 @@ public:
         checkMetrics(*this, env, 0, std::nullopt, 2, 1);
 
         auto const aliceSeq = env.seq(alice);
-        BEAST_EXPECT(env.current()->info().seq == 3);
+        BEAST_EXPECT(env.current()->header().seq == 3);
         env(noop(alice), seq(aliceSeq), last_ledger_seq(5), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 1), last_ledger_seq(5), ter(terQUEUED));
         env(noop(alice),
@@ -2779,7 +2779,7 @@ public:
         checkMetrics(*this, env, 0, std::nullopt, 2, 1);
 
         auto const aliceSeq = env.seq(alice);
-        BEAST_EXPECT(env.current()->info().seq == 3);
+        BEAST_EXPECT(env.current()->header().seq == 3);
 
         // Start by procuring tickets for alice to use to keep her queue full
         // without affecting the sequence gap that will appear later.
@@ -2932,7 +2932,7 @@ public:
 
         // Queue up several transactions for alice sign-and-submit
         auto const aliceSeq = env.seq(alice);
-        auto const lastLedgerSeq = env.current()->info().seq + 2;
+        auto const lastLedgerSeq = env.current()->header().seq + 2;
 
         auto submitParams = Json::Value(Json::objectValue);
         for (int i = 0; i < 5; ++i)
@@ -3073,7 +3073,7 @@ public:
         prevLedgerWithQueue[jss::account] = alice.human();
         prevLedgerWithQueue[jss::queue] = true;
         prevLedgerWithQueue[jss::ledger_index] = 3;
-        BEAST_EXPECT(env.current()->info().seq > 3);
+        BEAST_EXPECT(env.current()->header().seq > 3);
 
         {
             // account_info without the "queue" argument.
@@ -3821,7 +3821,7 @@ public:
             return result;
         };
 
-        testcase("straightfoward positive case");
+        testcase("straightforward positive case");
         {
             // Queue up some transactions at a too-low fee.
             auto aliceSeq = env.seq(alice);
@@ -4191,7 +4191,7 @@ public:
             auto const tx =
                 env.jt(noop(alice), seq(aliceSeq), fee(openLedgerCost(env)));
             auto const result =
-                ripple::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
+                xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
             BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
             return result.applied;
         });
@@ -4263,7 +4263,7 @@ public:
                 ticket::use(tktSeq0 + 1),
                 fee(openLedgerCost(env)));
             auto const result =
-                ripple::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
+                xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
             BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
             return result.applied;
         });
@@ -4311,7 +4311,7 @@ public:
     }
 
     void
-    testReexecutePreflight()
+    testReExecutePreflight()
     {
         // The TxQ caches preflight results.  But there are situations where
         // that cache must become invalidated, like if amendments change.
@@ -4371,7 +4371,7 @@ public:
             if (!getMajorityAmendments(*env.closed()).empty())
                 break;
         }
-        auto expectedPerLedger = ripple::detail::numUpVotedAmendments() + 1;
+        auto expectedPerLedger = xrpl::detail::numUpVotedAmendments() + 1;
         checkMetrics(
             *this,
             env,
@@ -5036,7 +5036,7 @@ public:
         testScaling();
         testInLedgerSeq();
         testInLedgerTicket();
-        testReexecutePreflight();
+        testReExecutePreflight();
         testQueueFullDropPenalty();
         testCancelQueuedOffers();
         testZeroReferenceFee();
@@ -5052,8 +5052,8 @@ class TxQMetaInfo_test : public TxQPosNegFlows_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(TxQPosNegFlows, app, ripple, 1);
-BEAST_DEFINE_TESTSUITE_PRIO(TxQMetaInfo, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(TxQPosNegFlows, app, xrpl, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(TxQMetaInfo, app, xrpl, 1);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

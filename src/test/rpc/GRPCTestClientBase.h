@@ -7,7 +7,7 @@
 
 #include <grpcpp/grpcpp.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct GRPCTestClientBase
@@ -29,5 +29,5 @@ struct GRPCTestClientBase
 };
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 #endif  // XRPL_GRPCTESTCLIENTBASE_H

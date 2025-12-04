@@ -11,10 +11,11 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
@@ -230,7 +231,9 @@ VaultCreate::doApply()
             return err;
     }
 
+    associateAsset(*vault, asset);
+
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

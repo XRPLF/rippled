@@ -2,7 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 shouldCloseLedger(
@@ -122,7 +122,7 @@ checkConsensusReached(
 
     // We only get stalled when there are disputed transactions and all of them
     // unequivocally have 80% (minConsensusPct) agreement, either for or
-    // against. That is: either under 20% or over 80% consensus (repectively
+    // against. That is: either under 20% or over 80% consensus (respectively
     // "nay" or "yay"). This prevents manipulation by a minority of byzantine
     // peers of which transactions make the cut to get into the ledger.
     if (stalled)
@@ -250,4 +250,4 @@ checkConsensus(
     return ConsensusState::No;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

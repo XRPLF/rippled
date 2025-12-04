@@ -9,7 +9,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Book_test : public beast::unit_test::suite
@@ -1719,7 +1719,7 @@ public:
         BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(
             jrr[jss::offers].size() ==
-            (asAdmin ? RPC::Tuning::bookOffers.rdefault : 0u));
+            (asAdmin ? RPC::Tuning::bookOffers.rDefault : 0u));
     }
 
     void
@@ -2011,7 +2011,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Book, rpc, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(Book, rpc, xrpl, 1);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

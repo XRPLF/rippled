@@ -19,7 +19,7 @@
 #include <numeric>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -1646,7 +1646,7 @@ vp_base_squelch_max_selected_peers=2
                     boost::asio::ip::make_address("172.1.1.100");
 
                 setEnv(outboundEnable);
-                auto request = ripple::makeRequest(
+                auto request = xrpl::makeRequest(
                     true,
                     env_.app().config().COMPRESSION,
                     false,
@@ -1665,7 +1665,7 @@ vp_base_squelch_max_selected_peers=2
                 BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
 
                 setEnv(inboundEnable);
-                auto http_resp = ripple::makeResponse(
+                auto http_resp = xrpl::makeResponse(
                     true,
                     http_request,
                     addr,
@@ -1736,9 +1736,9 @@ class reduce_relay_simulate_test : public reduce_relay_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE(reduce_relay, overlay, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(reduce_relay_simulate, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(reduce_relay, overlay, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(reduce_relay_simulate, overlay, xrpl);
 
 }  // namespace test
 
-}  // namespace ripple
+}  // namespace xrpl

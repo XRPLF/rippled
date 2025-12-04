@@ -10,7 +10,7 @@
 #include <optional>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 enum class HashRouterFlags : std::uint16_t {
     // Public flags
@@ -193,7 +193,7 @@ public:
 
     virtual ~HashRouter() = default;
 
-    // VFALCO TODO Replace "Supression" terminology with something more
+    // VFALCO TODO Replace "Suppression" terminology with something more
     // semantically meaningful.
     void
     addSuppression(uint256 const& key);
@@ -270,6 +270,6 @@ private:
 HashRouter::Setup
 setup_HashRouter(Config const&);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

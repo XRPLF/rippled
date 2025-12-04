@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 namespace {
@@ -36,7 +36,7 @@ struct MultiApiJson_test : beast::unit_test::suite
     void
     run() override
     {
-        using ripple::detail::MultiApiJson;
+        using xrpl::detail::MultiApiJson;
 
         Json::Value const obj1 = makeJson("value", 1);
         Json::Value const obj2 = makeJson("value", 2);
@@ -1049,7 +1049,7 @@ struct MultiApiJson_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(MultiApiJson, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(MultiApiJson, protocol, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -2,7 +2,9 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
-namespace ripple {
+#include <xrpl/protocol/STTakesAsset.h>
+
+namespace xrpl {
 
 bool
 LoanBrokerCoverDeposit::checkExtraFeatures(PreflightContext const& ctx)
@@ -81,7 +83,8 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
             vaultAsset,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahZERO_IF_UNAUTHORIZED,
-            ctx.j) < amount)
+            ctx.j,
+            SpendableHandling::shFULL_BALANCE) < amount)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -99,6 +102,12 @@ LoanBrokerCoverDeposit::doApply()
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
+    auto const vault = view().read(keylet::vault(broker->at(sfVaultID)));
+    if (!vault)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const vaultAsset = vault->at(sfAsset);
+
     auto const brokerPseudoID = broker->at(sfAccount);
 
     // Transfer assets from depositor to pseudo-account.
@@ -115,9 +124,11 @@ LoanBrokerCoverDeposit::doApply()
     broker->at(sfCoverAvailable) += amount;
     view().update(broker);
 
+    associateAsset(*broker, vaultAsset);
+
     return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl

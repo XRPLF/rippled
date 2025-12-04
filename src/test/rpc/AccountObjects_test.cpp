@@ -14,7 +14,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 static char const* bobs_account_objects[] = {
@@ -667,7 +667,7 @@ public:
         env(deposit::auth(gw, alice));
         env.close();
         {
-            // Find the preauthorization.
+            // Find the pre-authorization.
             Json::Value const resp = acctObjs(gw, jss::deposit_preauth);
             BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
@@ -1427,7 +1427,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountObjects, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountObjects, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

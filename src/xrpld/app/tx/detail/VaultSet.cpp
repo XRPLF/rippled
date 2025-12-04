@@ -6,10 +6,11 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 VaultSet::checkExtraFeatures(PreflightContext const& ctx)
@@ -128,6 +129,8 @@ VaultSet::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
+    auto const vaultAsset = vault->at(sfAsset);
+
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
@@ -172,7 +175,9 @@ VaultSet::doApply()
     // to verify the operation.
     view().update(vault);
 
+    associateAsset(*vault, vaultAsset);
+
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 
 #include <xrpld/rpc/handlers/LedgerHandler.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doAccountCurrencies(RPC::JsonContext&);
@@ -149,6 +149,6 @@ Json::Value
 doValidatorInfo(RPC::JsonContext&);
 Json::Value
 doVaultInfo(RPC::JsonContext&);
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

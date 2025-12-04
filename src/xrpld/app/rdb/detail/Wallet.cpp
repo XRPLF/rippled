@@ -2,7 +2,7 @@
 
 #include <boost/format.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 std::unique_ptr<DatabaseCon>
 makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j)
@@ -284,4 +284,4 @@ voteAmendment(
     tr.commit();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

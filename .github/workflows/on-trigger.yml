@@ -1,9 +1,8 @@
-# This workflow runs all workflows to build the dependencies required for the
-# project on various Linux flavors, as well as on MacOS and Windows, on a
-# scheduled basis, on merge into the 'develop', 'release', or 'master' branches,
-# or manually. The missing commits check is only run when the code is merged
-# into the 'develop' or 'release' branches, and the documentation is built when
-# the code is merged into the 'develop' branch.
+# This workflow runs all workflows to build and test the code on various Linux
+# flavors, as well as on MacOS and Windows, on a scheduled basis, on merge into
+# the 'develop' or 'release*' branches, or when requested manually. Upon
+# successful completion, it also uploads the built libxrpl package to the Conan
+# remote.
 name: Trigger
 
 on:
@@ -11,7 +10,6 @@ on:
     branches:
       - "develop"
       - "release*"
-      - "master"
     paths:
       # These paths are unique to `on-trigger.yml`.
       - ".github/workflows/on-trigger.yml"
@@ -68,6 +66,12 @@ jobs:
       matrix:
         os: [linux, macos, windows]
     with:
+      # Enable ccache only for events targeting the XRPLF repository, since
+      # other accounts will not have access to our remote cache storage.
+      # However, we do not enable ccache for events targeting a release branch,
+      # to protect against the rare case that the output produced by ccache is
+      # not identical to a regular compilation.
+      ccache_enabled: ${{ github.repository_owner == 'XRPLF' && !startsWith(github.ref, 'refs/heads/release') }}
       os: ${{ matrix.os }}
       strategy_matrix: ${{ github.event_name == 'schedule' && 'all' || 'minimal' }}
     secrets:

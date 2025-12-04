@@ -5,7 +5,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TER.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 /** Status represents the results of an operation that might fail.
@@ -77,7 +77,7 @@ public:
     toTER() const
     {
         XRPL_ASSERT(
-            type_ == Type::TER, "ripple::RPC::Status::toTER : type is TER");
+            type_ == Type::TER, "xrpl::RPC::Status::toTER : type is TER");
         return TER::fromInt(code_);
     }
 
@@ -88,15 +88,14 @@ public:
     {
         XRPL_ASSERT(
             type_ == Type::error_code_i,
-            "ripple::RPC::Status::toTER : type is error code");
+            "xrpl::RPC::Status::toTER : type is error code");
         return error_code_i(code_);
     }
 
     /** Apply the Status to a JsonObject
      */
-    template <class Object>
     void
-    inject(Object& object) const
+    inject(Json::Value& object) const
     {
         if (auto ec = toErrorCode())
         {
@@ -139,6 +138,6 @@ private:
 };
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

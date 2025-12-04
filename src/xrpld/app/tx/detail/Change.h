@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Change : public Transactor
 {
@@ -43,6 +43,6 @@ using EnableAmendment = Change;
 using SetFee = Change;
 using UNLModify = Change;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

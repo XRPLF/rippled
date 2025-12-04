@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 Issue::getText() const
@@ -47,6 +47,12 @@ bool
 Issue::native() const
 {
     return *this == xrpIssue();
+}
+
+bool
+Issue::integral() const
+{
+    return native();
 }
 
 bool
@@ -132,4 +138,4 @@ operator<<(std::ostream& os, Issue const& x)
     return os;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

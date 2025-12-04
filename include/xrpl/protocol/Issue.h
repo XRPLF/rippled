@@ -5,7 +5,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** A currency issued by an account.
     @see Currency, AccountID, Issue, Book
@@ -36,6 +36,9 @@ public:
 
     bool
     native() const;
+
+    bool
+    integral() const;
 
     friend constexpr std::weak_ordering
     operator<=>(Issue const& lhs, Issue const& rhs);
@@ -113,6 +116,6 @@ isXRP(Issue const& issue)
     return issue.native();
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

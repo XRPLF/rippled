@@ -18,7 +18,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STXChainBridge::STXChainBridge() : STBase{sfXChainBridge}
 {
@@ -65,12 +65,12 @@ STXChainBridge::STXChainBridge(SField const& name, Json::Value const& v)
     }
 
     auto checkExtra = [](Json::Value const& v) {
-        static auto const jbridge =
-            ripple::STXChainBridge().getJson(ripple::JsonOptions::none);
+        static auto const bridgeJson =
+            xrpl::STXChainBridge().getJson(xrpl::JsonOptions::none);
         for (auto it = v.begin(); it != v.end(); ++it)
         {
             std::string const name = it.memberName();
-            if (!jbridge.isMember(name))
+            if (!bridgeJson.isMember(name))
             {
                 Throw<std::runtime_error>(
                     "STXChainBridge extra field detected: " + name);
@@ -207,4 +207,4 @@ STXChainBridge::move(std::size_t n, void* buf)
 {
     return emplace(n, buf, std::move(*this));
 }
-}  // namespace ripple
+}  // namespace xrpl

@@ -13,7 +13,7 @@
 #include <memory>
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 void
 registerSSLCerts(
@@ -49,11 +49,11 @@ registerSSLCerts(
         return;
     }
 
-    auto warn = [&](std::string const& mesg) {
+    auto warn = [&](std::string const& msg) {
         // Buffer based on asio recommended size
         char buf[256];
         ::ERR_error_string_n(ec.value(), buf, sizeof(buf));
-        JLOG(j.warn()) << mesg << " " << buf;
+        JLOG(j.warn()) << msg << " " << buf;
         ::ERR_clear_error();
     };
 
@@ -89,7 +89,7 @@ registerSSLCerts(
 #endif
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 // There is a very unpleasant interaction between <wincrypt> and
 // openssl x509 types (namely the former has macros that stomp

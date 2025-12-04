@@ -11,7 +11,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 TxConsequences
 Payment::makeTxConsequences(PreflightContext const& ctx)
@@ -316,7 +316,7 @@ Payment::preclaim(PreclaimContext const& ctx)
                 << "Delay transaction: Destination account does not exist. "
                 << "Insufficent payment to create account.";
 
-            // TODO: dedupe
+            // TODO: de-dupe
             // Another transaction could create the account and then this
             // transaction would succeed.
             return tecNO_DST_INSUF_XRP;
@@ -558,7 +558,7 @@ Payment::doApply()
 
             // If the actual amount delivered is different from the original
             // amount due to partial payment or transfer fee, we need to update
-            // DelieveredAmount using the actual delivered amount
+            // DeliveredAmount using the actual delivered amount
             if (view().rules().enabled(fixMPTDeliveredAmount) &&
                 amountDeliver != dstAmount)
                 ctx_.deliver(amountDeliver);
@@ -569,7 +569,7 @@ Payment::doApply()
         return res;
     }
 
-    XRPL_ASSERT(dstAmount.native(), "ripple::Payment::doApply : amount is XRP");
+    XRPL_ASSERT(dstAmount.native(), "xrpl::Payment::doApply : amount is XRP");
 
     // Direct XRP payment.
 
@@ -659,4 +659,4 @@ Payment::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

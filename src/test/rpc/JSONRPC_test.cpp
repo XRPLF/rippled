@@ -11,7 +11,7 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/ErrorCodes.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -54,7 +54,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Minimal payment, no Amount only DeliverMax",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -71,7 +71,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Pass in Fee with minimal payment, both Amount and DeliverMax.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -91,7 +91,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Pass in Sequence, no Amount only DeliverMax",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -111,7 +111,7 @@ static constexpr TxnTestData txnTestArray[] = {
      "DeliverMax.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -133,7 +133,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Add 'fee_mult_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 7,
@@ -153,7 +153,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Add 'fee_mult_max' and 'fee_div_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 7,
@@ -174,7 +174,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"fee_mult_max is ignored if 'Fee' is present.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 0,
@@ -196,7 +196,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"fee_div_max is ignored if 'Fee' is present.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 100,
@@ -219,7 +219,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid 'fee_mult_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": "NotAFeeMultiplier",
@@ -239,7 +239,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid 'fee_div_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 5,
@@ -260,7 +260,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid value for 'fee_mult_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 0,
@@ -280,7 +280,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid value for 'fee_div_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 4,
@@ -301,7 +301,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid zero value for 'fee_div_max' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 4,
@@ -322,7 +322,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Amount'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -339,7 +339,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid 'Amount'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -357,7 +357,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Destination'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -374,7 +374,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid 'Destination'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -392,7 +392,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Cannot create XRP to XRP paths.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "build_path": 1,
@@ -411,7 +411,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Successful 'build_path'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "build_path": 1,
@@ -434,7 +434,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Not valid to include both 'Paths' and 'build_path'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "build_path": 1,
@@ -458,7 +458,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Successful 'SendMax'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "build_path": 1,
@@ -486,7 +486,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'Amount' may not be XRP for pathfinding, but 'SendMax' may be XRP.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "build_path": 1,
@@ -510,7 +510,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'secret' must be present.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -527,7 +527,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'secret' must be non-empty.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "",
     "tx_json": {
@@ -545,7 +545,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Use 'seed' instead of 'secret'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
     "seed": "sh1yJfwoi98zCygwijUzuHmJDeVKd",
@@ -564,7 +564,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Malformed 'seed'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
     "seed": "not a seed",
@@ -583,7 +583,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'tx_json' must be present.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "rx_json": {
@@ -601,7 +601,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'TransactionType' must be present.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -618,7 +618,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"The 'TransactionType' must be a pre-established transaction type.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -636,7 +636,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"The 'TransactionType' may be represented with an integer.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -654,7 +654,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'Account' must be present.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -671,7 +671,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'Account' must be well formed.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -689,7 +689,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"The 'offline' tag may be added to the transaction.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "offline": 0,
@@ -708,7 +708,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"If 'offline' is true then a 'Sequence' field must be supplied.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "offline": 1,
@@ -728,7 +728,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"If 'offline' is true then a 'Fee' field must be supplied.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "offline": 1,
@@ -748,7 +748,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Valid transaction if 'offline' is true.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "offline": 1,
@@ -770,7 +770,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"'offline' and 'build_path' are mutually exclusive.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "offline": 1,
@@ -792,7 +792,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"A 'Flags' field may be specified.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -811,7 +811,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"The 'Flags' field must be numeric.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -830,7 +830,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"It's okay to add a 'debug_signing' field.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "debug_signing": 0,
@@ -849,7 +849,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Single-sign a multisigned transaction.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "a",
     "tx_json": {
@@ -879,7 +879,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Minimal sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -900,7 +900,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Minimal offline sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "offline": 1,
@@ -919,7 +919,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Offline sign_for using 'seed' instead of 'secret'.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
     "seed": "sh1yJfwoi98zCygwijUzuHmJDeVKd",
@@ -939,7 +939,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Malformed seed in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
     "seed": "sh1yJfwoi98zCygwjUzuHmJDeVKd",
@@ -962,7 +962,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Account' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -982,7 +982,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Amount' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1002,7 +1002,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Destination' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1022,7 +1022,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Destination' in sign_for, use DeliverMax",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1042,7 +1042,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Fee' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1062,7 +1062,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'Sequence' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1082,7 +1082,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'SigningPubKey' in sign_for is automatically filled in.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1102,7 +1102,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"In sign_for, an account may not sign for itself.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "a",
     "tx_json": {
@@ -1123,7 +1123,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Cannot put duplicate accounts in Signers array",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1154,7 +1154,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Correctly append to pre-established Signers array",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "c",
     "tx_json": {
@@ -1181,7 +1181,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Append to pre-established Signers array with bad signature",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "c",
     "tx_json": {
@@ -1211,7 +1211,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Non-empty 'SigningPubKey' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1232,7 +1232,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Missing 'TransactionType' in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -1252,7 +1252,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"TxnSignature in sign_for.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "c",
     "tx_json": {
@@ -1283,7 +1283,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid field 'tx_json': string instead of object",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": ""
@@ -1296,7 +1296,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid field 'tx_json': integer instead of object",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": 20160331
@@ -1309,7 +1309,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Invalid field 'tx_json': array instead of object",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": [ "hello", "world" ]
@@ -1322,7 +1322,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Pass in Fee with minimal payment, both Amount and DeliverMax.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "r9zN9x52FiCFAcicCLMQKbj1nxYhxJbbSy",
     "secret": "ssgN6zTvtM1q9XV8DvJpWm8LBYWiY",
     "tx_json": {
@@ -2003,7 +2003,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Payment cannot specify different DeliverMax and Amount.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "debug_signing": 0,
@@ -2025,7 +2025,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Payment cannot specify bad DomainID.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "debug_signing": 0,
@@ -2048,7 +2048,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Minimal delegated transaction.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "secret": "a",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -2066,7 +2066,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Delegate not well formed.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "secret": "a",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -2084,7 +2084,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Delegate not in ledger.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "secret": "a",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -2102,7 +2102,7 @@ static constexpr TxnTestData txnTestArray[] = {
     {"Delegate and secret not match.",
      __LINE__,
      R"({
-    "command": "doesnt_matter",
+    "command": "dummy_command",
     "secret": "aa",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -2917,7 +2917,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(JSONRPC, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(JSONRPC, rpc, xrpl);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

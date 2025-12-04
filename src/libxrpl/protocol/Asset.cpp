@@ -11,7 +11,7 @@
 #include <string>
 #include <variant>
 
-namespace ripple {
+namespace xrpl {
 
 AccountID const&
 Asset::getIssuer() const
@@ -66,4 +66,4 @@ assetFromJson(Json::Value const& v)
     return mptIssueFromJson(v);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

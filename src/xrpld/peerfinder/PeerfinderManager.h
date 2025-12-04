@@ -11,7 +11,7 @@
 
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
@@ -86,7 +86,7 @@ struct Config
      */
     static Config
     makeConfig(
-        ripple::Config const& config,
+        xrpl::Config const& config,
         std::uint16_t port,
         bool validationPublicKey,
         int ipLimit);
@@ -97,7 +97,7 @@ struct Config
 
 //------------------------------------------------------------------------------
 
-/** Describes a connectible peer address along with some metadata. */
+/** Describes a connectable peer address along with some metadata. */
 struct Endpoint
 {
     Endpoint() = default;
@@ -303,6 +303,6 @@ public:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

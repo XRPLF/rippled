@@ -10,7 +10,7 @@
 #include <array>
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 /** Convert a NodeObject from in-memory to database format.
@@ -64,7 +64,7 @@ public:
         : size_([&obj]() {
             XRPL_ASSERT(
                 obj,
-                "ripple::NodeStore::EncodedBlob::EncodedBlob : non-null input");
+                "xrpl::NodeStore::EncodedBlob::EncodedBlob : non-null input");
 
             if (!obj)
                 throw std::runtime_error(
@@ -87,7 +87,7 @@ public:
         XRPL_ASSERT(
             ((ptr_ == payload_.data()) && (size_ <= payload_.size())) ||
                 ((ptr_ != payload_.data()) && (size_ > payload_.size())),
-            "ripple::NodeStore::EncodedBlob::~EncodedBlob : valid payload "
+            "xrpl::NodeStore::EncodedBlob::~EncodedBlob : valid payload "
             "pointer");
 
         if (ptr_ != payload_.data())
@@ -114,6 +114,6 @@ public:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

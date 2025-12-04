@@ -13,7 +13,7 @@
 #include <functional>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 namespace tests {
 
 class FetchPack_test : public beast::unit_test::suite
@@ -72,7 +72,7 @@ public:
     {
         Serializer s;
         for (int d = 0; d < 3; ++d)
-            s.add32(ripple::rand_int<std::uint32_t>(r));
+            s.add32(xrpl::rand_int<std::uint32_t>(r));
         return make_shamapitem(s.getSHA512Half(), s.slice());
     }
 
@@ -151,7 +151,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FetchPack, shamap, ripple);
+BEAST_DEFINE_TESTSUITE(FetchPack, shamap, xrpl);
 
 }  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl

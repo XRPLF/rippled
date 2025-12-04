@@ -7,7 +7,7 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Apply_test : public beast::unit_test::suite
 {
@@ -15,7 +15,7 @@ public:
     void
     run() override
     {
-        testcase("Require Fully Canonicial Signature");
+        testcase("Require Fully Canonical Signature");
         testFullyCanonicalSigs();
     }
 
@@ -53,6 +53,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Apply, tx, ripple);
+BEAST_DEFINE_TESTSUITE(Apply, tx, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

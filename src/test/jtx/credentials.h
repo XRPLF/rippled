@@ -5,7 +5,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -91,6 +91,6 @@ ledgerEntry(jtx::Env& env, std::string const& credIdx);
 }  // namespace credentials
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

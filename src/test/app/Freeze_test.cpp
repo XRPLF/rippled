@@ -7,7 +7,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Freeze_test : public beast::unit_test::suite
 {
@@ -2088,5 +2088,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Freeze, app, ripple);
-}  // namespace ripple
+BEAST_DEFINE_TESTSUITE(Freeze, app, xrpl);
+}  // namespace xrpl

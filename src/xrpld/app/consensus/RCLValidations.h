@@ -11,7 +11,7 @@
 #include <optional>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 
@@ -26,8 +26,8 @@ class RCLValidation
     std::shared_ptr<STValidation> val_;
 
 public:
-    using NodeKey = ripple::PublicKey;
-    using NodeID = ripple::NodeID;
+    using NodeKey = xrpl::PublicKey;
+    using NodeID = xrpl::NodeID;
 
     /** Constructor
 
@@ -238,6 +238,6 @@ handleNewValidation(
     BypassAccept const bypassAccept = BypassAccept::no,
     std::optional<beast::Journal> j = std::nullopt);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

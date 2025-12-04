@@ -10,7 +10,7 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -105,14 +105,19 @@ AMMTestBase::testAMM(
 
     for (auto const& features : arg.features)
     {
+        // Use small Number mantissas for the life of this test.
+        NumberMantissaScaleGuard const sg{xrpl::MantissaRange::small};
+
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
         Env env{
             *this,
-            features,
+            features - featureSingleAssetVault - featureLendingProtocol,
             arg.noLog ? std::make_unique<CaptureLogs>(&logs) : nullptr};
 
         auto const [asset1, asset2] =
             arg.pool ? *arg.pool : std::make_pair(XRP(10000), USD(10000));
-        auto tofund = [&](STAmount const& a) -> STAmount {
+        auto toFund = [&](STAmount const& a) -> STAmount {
             if (a.native())
             {
                 auto const defXRP = XRP(30000);
@@ -125,8 +130,8 @@ AMMTestBase::testAMM(
                 return defIOU;
             return a + STAmount{a.issue(), 1000};
         };
-        auto const toFund1 = tofund(asset1);
-        auto const toFund2 = tofund(asset2);
+        auto const toFund1 = toFund(asset1);
+        auto const toFund2 = toFund(asset2);
         BEAST_EXPECT(asset1 <= toFund1 && asset2 <= toFund2);
 
         if (!asset1.native() && !asset2.native())
@@ -280,4 +285,4 @@ AMMTest::find_paths(
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

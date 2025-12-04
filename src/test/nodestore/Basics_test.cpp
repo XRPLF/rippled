@@ -3,7 +3,7 @@
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 // Tests predictable batches, and NodeObject blob encoding
@@ -66,7 +66,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NodeStoreBasic, nodestore, ripple);
+BEAST_DEFINE_TESTSUITE(NodeStoreBasic, nodestore, xrpl);
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

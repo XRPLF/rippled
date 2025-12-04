@@ -4,7 +4,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -15,7 +15,7 @@ namespace deposit {
 Json::Value
 auth(Account const& account, Account const& auth);
 
-/** Remove preauthorization for deposit.  Invoke as deposit::unauth. */
+/** Remove pre-authorization for deposit.  Invoke as deposit::unauth. */
 Json::Value
 unauth(Account const& account, Account const& unauth);
 
@@ -62,6 +62,6 @@ unauthCredentials(
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

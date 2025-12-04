@@ -7,7 +7,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/RPCErr.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 /*
@@ -88,7 +88,7 @@ insertDeliveredAmount(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
-    auto const info = ledger.info();
+    auto const info = ledger.header();
 
     if (canHaveDeliveredAmount(serializedTx, transactionMeta))
     {
@@ -186,4 +186,4 @@ insertDeliveredAmount(
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

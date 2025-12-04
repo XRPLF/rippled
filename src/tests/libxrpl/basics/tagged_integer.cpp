@@ -1,10 +1,10 @@
 #include <xrpl/basics/tagged_integer.h>
 
-#include <doctest/doctest.h>
+#include <gtest/gtest.h>
 
 #include <type_traits>
 
-using namespace ripple;
+using namespace xrpl;
 
 struct Tag1
 {
@@ -102,127 +102,123 @@ static_assert(
     !std::is_convertible<TagUInt2, TagUInt3>::value,
     "TagUInt2 should not be convertible to a TagUInt3");
 
-TEST_SUITE_BEGIN("tagged_integer");
-
 using TagInt = tagged_integer<std::int32_t, Tag1>;
 
-TEST_CASE("comparison operators")
+TEST(tagged_integer, comparison_operators)
 {
     TagInt const zero(0);
     TagInt const one(1);
 
-    CHECK(one == one);
-    CHECK(!(one == zero));
+    EXPECT_TRUE(one == one);
+    EXPECT_FALSE(one == zero);
 
-    CHECK(one != zero);
-    CHECK(!(one != one));
+    EXPECT_TRUE(one != zero);
+    EXPECT_FALSE(one != one);
 
-    CHECK(zero < one);
-    CHECK(!(one < zero));
+    EXPECT_TRUE(zero < one);
+    EXPECT_FALSE(one < zero);
 
-    CHECK(one > zero);
-    CHECK(!(zero > one));
+    EXPECT_TRUE(one > zero);
+    EXPECT_FALSE(zero > one);
 
-    CHECK(one >= one);
-    CHECK(one >= zero);
-    CHECK(!(zero >= one));
+    EXPECT_TRUE(one >= one);
+    EXPECT_TRUE(one >= zero);
+    EXPECT_FALSE(zero >= one);
 
-    CHECK(zero <= one);
-    CHECK(zero <= zero);
-    CHECK(!(one <= zero));
+    EXPECT_TRUE(zero <= one);
+    EXPECT_TRUE(zero <= zero);
+    EXPECT_FALSE(one <= zero);
 }
 
-TEST_CASE("increment / decrement operators")
+TEST(tagged_integer, increment_decrement_operators)
 {
     TagInt const zero(0);
     TagInt const one(1);
     TagInt a{0};
     ++a;
-    CHECK(a == one);
+    EXPECT_EQ(a, one);
     --a;
-    CHECK(a == zero);
+    EXPECT_EQ(a, zero);
     a++;
-    CHECK(a == one);
+    EXPECT_EQ(a, one);
     a--;
-    CHECK(a == zero);
+    EXPECT_EQ(a, zero);
 }
 
-TEST_CASE("arithmetic operators")
+TEST(tagged_integer, arithmetic_operators)
 {
     TagInt a{-2};
-    CHECK(+a == TagInt{-2});
-    CHECK(-a == TagInt{2});
-    CHECK(TagInt{-3} + TagInt{4} == TagInt{1});
-    CHECK(TagInt{-3} - TagInt{4} == TagInt{-7});
-    CHECK(TagInt{-3} * TagInt{4} == TagInt{-12});
-    CHECK(TagInt{8} / TagInt{4} == TagInt{2});
-    CHECK(TagInt{7} % TagInt{4} == TagInt{3});
+    EXPECT_EQ(+a, TagInt{-2});
+    EXPECT_EQ(-a, TagInt{2});
+    EXPECT_EQ(TagInt{-3} + TagInt{4}, TagInt{1});
+    EXPECT_EQ(TagInt{-3} - TagInt{4}, TagInt{-7});
+    EXPECT_EQ(TagInt{-3} * TagInt{4}, TagInt{-12});
+    EXPECT_EQ(TagInt{8} / TagInt{4}, TagInt{2});
+    EXPECT_EQ(TagInt{7} % TagInt{4}, TagInt{3});
 
-    CHECK(~TagInt{8} == TagInt{~TagInt::value_type{8}});
-    CHECK((TagInt{6} & TagInt{3}) == TagInt{2});
-    CHECK((TagInt{6} | TagInt{3}) == TagInt{7});
-    CHECK((TagInt{6} ^ TagInt{3}) == TagInt{5});
+    EXPECT_EQ(~TagInt{8}, TagInt{~TagInt::value_type{8}});
+    EXPECT_EQ((TagInt{6} & TagInt{3}), TagInt{2});
+    EXPECT_EQ((TagInt{6} | TagInt{3}), TagInt{7});
+    EXPECT_EQ((TagInt{6} ^ TagInt{3}), TagInt{5});
 
-    CHECK((TagInt{4} << TagInt{2}) == TagInt{16});
-    CHECK((TagInt{16} >> TagInt{2}) == TagInt{4});
+    EXPECT_EQ((TagInt{4} << TagInt{2}), TagInt{16});
+    EXPECT_EQ((TagInt{16} >> TagInt{2}), TagInt{4});
 }
 
-TEST_CASE("assignment operators")
+TEST(tagged_integer, assignment_operators)
 {
     TagInt a{-2};
     TagInt b{0};
     b = a;
-    CHECK(b == TagInt{-2});
+    EXPECT_EQ(b, TagInt{-2});
 
     // -3 + 4 == 1
     a = TagInt{-3};
     a += TagInt{4};
-    CHECK(a == TagInt{1});
+    EXPECT_EQ(a, TagInt{1});
 
     // -3 - 4 == -7
     a = TagInt{-3};
     a -= TagInt{4};
-    CHECK(a == TagInt{-7});
+    EXPECT_EQ(a, TagInt{-7});
 
     // -3 * 4 == -12
     a = TagInt{-3};
     a *= TagInt{4};
-    CHECK(a == TagInt{-12});
+    EXPECT_EQ(a, TagInt{-12});
 
     // 8/4 == 2
     a = TagInt{8};
     a /= TagInt{4};
-    CHECK(a == TagInt{2});
+    EXPECT_EQ(a, TagInt{2});
 
     // 7 % 4 == 3
     a = TagInt{7};
     a %= TagInt{4};
-    CHECK(a == TagInt{3});
+    EXPECT_EQ(a, TagInt{3});
 
     // 6 & 3 == 2
     a = TagInt{6};
     a /= TagInt{3};
-    CHECK(a == TagInt{2});
+    EXPECT_EQ(a, TagInt{2});
 
     // 6 | 3 == 7
     a = TagInt{6};
     a |= TagInt{3};
-    CHECK(a == TagInt{7});
+    EXPECT_EQ(a, TagInt{7});
 
     // 6 ^ 3 == 5
     a = TagInt{6};
     a ^= TagInt{3};
-    CHECK(a == TagInt{5});
+    EXPECT_EQ(a, TagInt{5});
 
     // 4 << 2 == 16
     a = TagInt{4};
     a <<= TagInt{2};
-    CHECK(a == TagInt{16});
+    EXPECT_EQ(a, TagInt{16});
 
     // 16 >> 2 == 4
     a = TagInt{16};
     a >>= TagInt{2};
-    CHECK(a == TagInt{4});
+    EXPECT_EQ(a, TagInt{4});
 }
-
-TEST_SUITE_END();

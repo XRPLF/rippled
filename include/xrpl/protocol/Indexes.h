@@ -15,10 +15,10 @@
 #include <cstdint>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 class SeqProxy;
-/** Keylet computation funclets.
+/** Keylet computation functions.
 
     Entries in the ledger are located using 256-bit locators. The locators are
     calculated using a wide range of parameters specific to the entry whose
@@ -203,7 +203,7 @@ inline Keylet
 page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
     XRPL_ASSERT(
-        root.type == ltDIR_NODE, "ripple::keylet::page : valid root type");
+        root.type == ltDIR_NODE, "xrpl::keylet::page : valid root type");
     return page(root.key, index);
 }
 /** @} */
@@ -393,6 +393,6 @@ std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
 MPTID
 makeMptID(std::uint32_t sequence, AccountID const& account);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
