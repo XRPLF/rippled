@@ -7038,6 +7038,141 @@ protected:
             paymentParams);
     }
 
+    void
+    testLoanPayBrokerOwnerMissingTrustline()
+    {
+        testcase << "LoanPay Broker Owner Missing Trustline (PoC)";
+        using namespace jtx;
+        using namespace loan;
+        Account const issuer("issuer");
+        Account const borrower("borrower");
+        Account const broker("broker");
+        auto const IOU = issuer["IOU"];
+        Env env(*this, all);
+        env.fund(XRP(20'000), issuer, broker, borrower);
+        env.close();
+        // Set up trustlines and fund accounts
+        env(trust(broker, IOU(20'000'000)));
+        env(trust(borrower, IOU(20'000'000)));
+        env(pay(issuer, broker, IOU(10'000'000)));
+        env(pay(issuer, borrower, IOU(1'000)));
+        env.close();
+        // Create vault and broker
+        auto const brokerInfo = createVaultAndBroker(env, IOU, broker);
+        // Create a loan first (this creates debt)
+        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        env(set(borrower, brokerInfo.brokerID, 10'000),
+            sig(sfCounterpartySignature, broker),
+            loanServiceFee(IOU(100).value()),
+            paymentInterval(100),
+            fee(XRP(100)));
+        env.close();
+        // Ensure broker has sufficient cover so brokerPayee == brokerOwner
+        // We need coverAvailable >= (debtTotal * coverRateMinimum)
+        // Deposit enough cover to ensure the fee goes to broker owner
+        // The default coverRateMinimum is 10%, so for a 10,000 loan we need
+        // at least 1,000 cover. Default cover is 1,000, so we add more to be
+        // safe.
+        auto const additionalCover = IOU(50'000).value();
+        env(loanBroker::coverDeposit(
+            broker, brokerInfo.brokerID, STAmount{IOU, additionalCover}));
+        env.close();
+        // Verify broker owner has a trustline
+        auto const brokerTrustline = keylet::line(broker, IOU);
+        BEAST_EXPECT(env.le(brokerTrustline) != nullptr);
+        // Broker owner deletes their trustline
+        // First, pay any positive balance to issuer to zero it out
+        auto const brokerBalance = env.balance(broker, IOU);
+        env(pay(broker, issuer, brokerBalance));
+        env.close();
+        // Remove the trustline by setting limit to 0
+        env(trust(broker, IOU(0)));
+        env.close();
+        // Verify trustline is deleted
+        BEAST_EXPECT(env.le(brokerTrustline) == nullptr);
+        // Now borrower tries to make a payment
+        // This should fail with tecNO_LINE
+        env(pay(borrower, keylet.key, IOU(10'100)),
+            fee(XRP(100)),
+            ter(tesSUCCESS));
+        env.close();
+    }
+
+    void
+    testLoanPayBrokerOwnerUnauthorizedMPT()
+    {
+        testcase << "LoanPay Broker Owner ";
+        using namespace jtx;
+        using namespace loan;
+
+        Account const issuer("issuer");
+        Account const borrower("borrower");
+        Account const broker("broker");
+
+        Env env(*this, all);
+        env.fund(XRP(20'000), issuer, broker, borrower);
+        env.close();
+
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create(
+            {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+
+        PrettyAsset const MPT{mptt.issuanceID()};
+
+        // Authorize broker and borrower
+        mptt.authorize({.account = broker});
+        mptt.authorize({.account = borrower});
+
+        env.close();
+
+        // Fund accounts
+        env(pay(issuer, broker, MPT(10'000'000)));
+        env(pay(issuer, borrower, MPT(1'000)));
+        env.close();
+
+        // Create vault and broker
+        auto const brokerInfo = createVaultAndBroker(env, MPT, broker);
+        // Create a loan first (this creates debt)
+        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        env(set(borrower, brokerInfo.brokerID, 10'000),
+            sig(sfCounterpartySignature, broker),
+            loanServiceFee(MPT(100).value()),
+            paymentInterval(100),
+            fee(XRP(100)));
+        env.close();
+        // Ensure broker has sufficient cover so brokerPayee == brokerOwner
+        // We need coverAvailable >= (debtTotal * coverRateMinimum)
+        // Deposit enough cover to ensure the fee goes to broker owner
+        // The default coverRateMinimum is 10%, so for a 10,000 loan we need
+        // at least 1,000 cover. Default cover is 1,000, so we add more to be
+        // safe.
+        auto const additionalCover = MPT(50'000).value();
+        env(loanBroker::coverDeposit(
+            broker, brokerInfo.brokerID, STAmount{MPT, additionalCover}));
+        env.close();
+        // Verify broker owner is authorized
+        auto const brokerMpt = keylet::mptoken(mptt.issuanceID(), broker);
+        BEAST_EXPECT(env.le(brokerMpt) != nullptr);
+        // Broker owner unauthorizes.
+        // First, pay any positive balance to issuer to zero it out
+        auto const brokerBalance = env.balance(broker, MPT);
+        env(pay(broker, issuer, brokerBalance));
+        env.close();
+        // Then, unauthorize the MPT.
+        mptt.authorize({.account = broker, .flags = tfMPTUnauthorize});
+        env.close();
+        // Verify the MPT is unauthorized.
+        BEAST_EXPECT(env.le(brokerMpt) == nullptr);
+        // Now borrower tries to make a payment
+        // This should fail with tecNO_LINE
+
+        auto const borrowerBalance = env.balance(borrower, MPT);
+        env(pay(borrower, keylet.key, MPT(10'100)),
+            fee(XRP(100)),
+            ter(tesSUCCESS));
+        env.close();
+    }
+
 public:
     void
     run() override
@@ -7086,6 +7221,8 @@ public:
         testBorrowerIsBroker();
         testIssuerIsBorrower();
         testLimitExceeded();
+        testLoanPayBrokerOwnerMissingTrustline();
+        testLoanPayBrokerOwnerUnauthorizedMPT();
     }
 };
 
