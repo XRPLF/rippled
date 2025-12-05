@@ -7091,7 +7091,7 @@ protected:
         // Verify trustline is deleted
         BEAST_EXPECT(env.le(brokerTrustline) == nullptr);
         // Now borrower tries to make a payment
-        // This should fail with tecNO_LINE
+        // We should get a tesSUCCESS instead of a tecNO_LINE.
         env(pay(borrower, keylet.key, IOU(10'100)),
             fee(XRP(100)),
             ter(tesSUCCESS));
@@ -7101,7 +7101,7 @@ protected:
     void
     testLoanPayBrokerOwnerUnauthorizedMPT()
     {
-        testcase << "LoanPay Broker Owner ";
+        testcase << "LoanPay Broker Owner MPT unauthorized";
         using namespace jtx;
         using namespace loan;
 
@@ -7164,8 +7164,7 @@ protected:
         // Verify the MPT is unauthorized.
         BEAST_EXPECT(env.le(brokerMpt) == nullptr);
         // Now borrower tries to make a payment
-        // This should fail with tecNO_LINE
-
+        // We should get a tesSUCCESS instead of a tecNO_AUTH.
         auto const borrowerBalance = env.balance(borrower, MPT);
         env(pay(borrower, keylet.key, MPT(10'100)),
             fee(XRP(100)),
