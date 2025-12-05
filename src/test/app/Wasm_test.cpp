@@ -23,6 +23,23 @@ Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     return nullptr;
 }
 
+std::optional<int32_t>
+runFinishFunction(std::string const& code)
+{
+    auto& engine = WasmEngine::instance();
+    auto const ws = boost::algorithm::unhex(code);
+    Bytes const wasm(ws.begin(), ws.end());
+    auto const re = engine.run(wasm, "finish");
+    if (re.has_value())
+    {
+        return std::optional<int32_t>(re->result);
+    }
+    else
+    {
+        return std::nullopt;
+    }
+}
+
 struct Wasm_test : public beast::unit_test::suite
 {
     void
@@ -719,116 +736,82 @@ struct Wasm_test : public beast::unit_test::suite
     testWasmMemory()
     {
         testcase("Wasm additional memory limit tests");
-        auto& engine = WasmEngine::instance();
-        {
-            auto const ws = boost::algorithm::unhex(memoryPointerAtLimitHex);
-            Bytes const wasm(ws.begin(), ws.end());
-            auto const re = engine.run(wasm, "finish");
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result == 1);
-            }
-        }
-        {
-            auto const ws = boost::algorithm::unhex(memoryPointerOverLimitHex);
-            Bytes const wasm(ws.begin(), ws.end());
-            auto const re = engine.run(wasm, "finish");
-            BEAST_EXPECT(!re.has_value());
-        }
-        {
-            auto const ws = boost::algorithm::unhex(memoryOffsetOverLimitHex);
-            Bytes const wasm(ws.begin(), ws.end());
-            auto const re = engine.run(wasm, "finish");
-            BEAST_EXPECT(!re.has_value());
-        }
-        {
-            auto const ws =
-                boost::algorithm::unhex(memoryEndOfWordOverLimitHex);
-            Bytes const wasm(ws.begin(), ws.end());
-            auto const re = engine.run(wasm, "finish");
-            BEAST_EXPECT(!re.has_value());
-        }
-        {
-            auto const ws = boost::algorithm::unhex(memoryGrow0To1PageHex);
-            Bytes const wasm(ws.begin(), ws.end());
-            auto const re = engine.run(wasm, "finish");
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result == 1);
-            }
-        }
-        {
-            auto const ws = boost::algorithm::unhex(memoryLastByteOf8MBHex);
-            Bytes const wasm(ws.begin(), ws.end());
-            auto const re = engine.run(wasm, "finish");
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result == 1);
-            }
-        }
-        {
-            auto const ws = boost::algorithm::unhex(memoryGrow1MoreThan8MBHex);
-            Bytes const wasm(ws.begin(), ws.end());
-            auto const re = engine.run(wasm, "finish");
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result == -1);
-            }
-        }
+        BEAST_EXPECT(runFinishFunction(memoryPointerAtLimitHex).value() == 1);
+        BEAST_EXPECT(
+            runFinishFunction(memoryPointerOverLimitHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(memoryOffsetOverLimitHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(memoryEndOfWordOverLimitHex).has_value() ==
+            false);
+        BEAST_EXPECT(runFinishFunction(memoryGrow0To1PageHex).value() == 1);
+        BEAST_EXPECT(runFinishFunction(memoryGrow1To0PageHex).value() == -1);
+        BEAST_EXPECT(runFinishFunction(memoryLastByteOf8MBHex).value() == 1);
+        BEAST_EXPECT(
+            runFinishFunction(memoryGrow1MoreThan8MBHex).value() == -1);
+        BEAST_EXPECT(runFinishFunction(memoryGrow0MoreThan8MBHex).value() == 1);
+        BEAST_EXPECT(
+            runFinishFunction(memoryInit1MoreThan8MBHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(memoryNegativeAddressHex).has_value() == false);
     }
 
     void
     testWasmTable()
     {
         testcase("Wasm table limit tests");
-        auto& engine = WasmEngine::instance();
-        {
-            auto const ws = boost::algorithm::unhex(table64ElementsHex);
-            Bytes const wasm(ws.begin(), ws.end());
-            auto const re = engine.run(wasm, "finish");
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result == 1);
-            }
-        }
-        {
-            auto const ws = boost::algorithm::unhex(table65ElementsHex);
-            Bytes const wasm(ws.begin(), ws.end());
-            auto const re = engine.run(wasm, "finish");
-            BEAST_EXPECT(!re.has_value());
-        }
-        {
-            auto const ws = boost::algorithm::unhex(table2TablesHex);
-            Bytes const wasm(ws.begin(), ws.end());
-            auto const re = engine.run(wasm, "finish");
-            BEAST_EXPECT(!re.has_value());
-        }
+        BEAST_EXPECT(runFinishFunction(table64ElementsHex).value() == 1);
+        BEAST_EXPECT(
+            runFinishFunction(table65ElementsHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(table2TablesHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(table0ElementsHex).value() == 1);
+        BEAST_EXPECT(runFinishFunction(tableUintMaxHex).has_value() == false);
     }
 
     void
     testWasmProposal()
     {
         testcase("Wasm disabled proposal tests");
-        auto& engine = WasmEngine::instance();
-        {
-            auto const ws = boost::algorithm::unhex(proposalMutableGlobalHex);
-            Bytes const wasm(ws.begin(), ws.end());
-            auto const re = engine.run(wasm, "finish");
-            BEAST_EXPECT(!re.has_value());
-        }
+        BEAST_EXPECT(
+            runFinishFunction(proposalMutableGlobalHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalGcStructNewHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalMultiValueHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalSignExtHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalFloatToIntHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalBulkMemoryHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalRefTypesHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalTailCallHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalExtendedConstHex).has_value() == false);
     }
 
     void
     testWasmTrap()
     {
         testcase("Wasm trap tests");
-        auto& engine = WasmEngine::instance();
-        {
-            auto const ws = boost::algorithm::unhex(divideBy0Hex);
-            Bytes const wasm(ws.begin(), ws.end());
-            auto const re = engine.run(wasm, "finish");
-            BEAST_EXPECT(!re.has_value());
-        }
+        BEAST_EXPECT(runFinishFunction(trapDivideBy0Hex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(trapIntOverflowHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(trapUnreachableHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(trapNullCallHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(trapFuncSigMismatchHex).has_value() == false);
+    }
+
+    void
+    testWasmWasi()
+    {
+        testcase("Wasm Wasi tests");
+        BEAST_EXPECT(runFinishFunction(wasiGetTimeHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(wasiPrintHex).has_value() == false);
     }
 
     void
@@ -856,7 +839,7 @@ struct Wasm_test : public beast::unit_test::suite
         testWasmTable();
         testWasmProposal();
         testWasmTrap();
-
+        testWasmWasi();
         // perfTest();
     }
 };
