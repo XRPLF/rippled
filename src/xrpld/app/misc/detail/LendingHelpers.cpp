@@ -430,7 +430,8 @@ tryOverpayment(
         paymentInterval,
         paymentRemaining,
         managementFeeRate,
-        loanScale);
+        loanScale,
+        j);
 
     JLOG(j.debug()) << "new periodic payment: "
                     << newLoanProperties.periodicPayment
@@ -1539,7 +1540,8 @@ computeLoanProperties(
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining,
     TenthBips32 managementFeeRate,
-    std::int32_t minimumScale)
+    std::int32_t minimumScale,
+    beast::Journal j)
 {
     auto const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
     XRPL_ASSERT(
@@ -1550,13 +1552,22 @@ computeLoanProperties(
         principalOutstanding, periodicRate, paymentsRemaining);
 
     auto const [totalValueOutstanding, loanScale] = [&]() {
-        NumberRoundModeGuard mg(Number::to_nearest);
+        // only round up if there should be interest
+        NumberRoundModeGuard mg(
+            periodicRate == 0 ? Number::to_nearest : Number::upward);
         // Use STAmount's internal rounding instead of roundToAsset, because
         // we're going to use this result to determine the scale for all the
         // other rounding.
 
         // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
         STAmount amount{asset, periodicPayment * paymentsRemaining};
+        JLOG(j.debug()) << "computeLoanProperties:" << " Principal requested: "
+                        << principalOutstanding
+                        << ". Periodic payment: " << periodicPayment
+                        << ". Payments remaining: " << paymentsRemaining
+                        << ". Raw total value: "
+                        << periodicPayment * paymentsRemaining
+                        << ". Candidate total value: " << amount << std::endl;
 
         // Base the loan scale on the total value, since that's going to be
         // the biggest number involved (barring unusual parameters for late,
@@ -1571,7 +1582,10 @@ computeLoanProperties(
 
         // We may need to truncate the total value because of the minimum
         // scale
-        amount = roundToAsset(asset, amount, loanScale, Number::to_nearest);
+        amount = roundToAsset(asset, amount, loanScale);
+
+        JLOG(j.debug()) << "computeLoanProperties: Loan scale:" << loanScale
+                        << ". Actual total value: " << amount << std::endl;
 
         return std::make_pair(amount, loanScale);
     }();

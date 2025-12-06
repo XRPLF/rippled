@@ -179,11 +179,12 @@ adjustImpreciseNumber(
 }
 
 inline int
-getVaultScale(SLE::const_ref vaultSle)
+getAssetsTotalScale(SLE::const_ref vaultSle)
 {
     if (!vaultSle)
         return Number::minExponent - 1;  // LCOV_EXCL_LINE
-    return vaultSle->at(sfAssetsTotal).exponent();
+    return STAmount{vaultSle->at(sfAsset), vaultSle->at(sfAssetsTotal)}
+        .exponent();
 }
 
 TER
@@ -451,7 +452,8 @@ computeLoanProperties(
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining,
     TenthBips32 managementFeeRate,
-    std::int32_t minimumScale);
+    std::int32_t minimumScale,
+    beast::Journal j);
 
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale);

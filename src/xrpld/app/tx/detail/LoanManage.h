@@ -44,6 +44,7 @@ public:
         ApplyView& view,
         SLE::ref loanSle,
         SLE::ref vaultSle,
+        Asset const& vaultAsset,
         beast::Journal j);
 
     /** Helper function that might be needed by other transactors
@@ -53,6 +54,7 @@ public:
         ApplyView& view,
         SLE::ref loanSle,
         SLE::ref vaultSle,
+        Asset const& vaultAsset,
         beast::Journal j);
 
     TER
