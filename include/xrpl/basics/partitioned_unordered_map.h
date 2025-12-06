@@ -258,6 +258,12 @@ public:
         return map_;
     }
 
+    partition_map_type const&
+    map() const
+    {
+        return map_;
+    }
+
     iterator
     begin()
     {
@@ -300,6 +306,12 @@ public:
     end() const
     {
         return cend();
+    }
+
+    std::size_t
+    partition_index(key_type const& key) const
+    {
+        return partitioner(key);
     }
 
 private:

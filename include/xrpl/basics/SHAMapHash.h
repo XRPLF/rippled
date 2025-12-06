@@ -2,7 +2,6 @@
 #define XRPL_BASICS_SHAMAP_HASH_H_INCLUDED
 
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/partitioned_unordered_map.h>
 
 #include <ostream>
 
