@@ -383,7 +383,7 @@ LoanSet::doApply()
 
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
-    auto const vaultScale = getVaultScale(vaultSle);
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
     if (vaultAvailableProxy < principalRequested)
     {
         JLOG(j_.warn())
@@ -404,7 +404,8 @@ LoanSet::doApply()
         paymentInterval,
         paymentTotal,
         TenthBips16{brokerSle->at(sfManagementFeeRate)},
-        vaultScale);
+        vaultScale,
+        j_);
 
     // Check that relevant values won't lose precision. This is mostly only
     // relevant for IOU assets.
@@ -440,7 +441,10 @@ LoanSet::doApply()
     {
         // LCOV_EXCL_START
         JLOG(j_.warn())
-            << "Computed loan properties are invalid. Does not compute.";
+            << "Computed loan properties are invalid. Does not compute."
+            << " Management fee: " << properties.managementFeeOwedToBroker
+            << ". Total Value: " << properties.totalValueOutstanding
+            << ". PeriodicPayment: " << properties.periodicPayment;
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
