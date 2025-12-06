@@ -305,7 +305,7 @@ LoanPay::doApply()
     // change will be discarded.
     if (loanSle->isFlag(lsfLoanImpaired))
     {
-        LoanManage::unimpairLoan(view, loanSle, vaultSle, j_);
+        LoanManage::unimpairLoan(view, loanSle, vaultSle, asset, j_);
     }
 
     LoanPaymentType const paymentType = [&tx]() {
@@ -379,7 +379,7 @@ LoanPay::doApply()
 
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the payment by rounding some of the values to that scale.
-    auto const vaultScale = assetsTotalProxy.value().exponent();
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     auto const totalPaidToVaultRaw =
         paymentParts->principalPaid + paymentParts->interestPaid;

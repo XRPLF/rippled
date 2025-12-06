@@ -179,11 +179,12 @@ adjustImpreciseNumber(
 }
 
 inline int
-getVaultScale(SLE::const_ref vaultSle)
+getAssetsTotalScale(SLE::const_ref vaultSle)
 {
     if (!vaultSle)
         return Number::minExponent - 1;  // LCOV_EXCL_LINE
-    return vaultSle->at(sfAssetsTotal).exponent();
+    return STAmount{vaultSle->at(sfAsset), vaultSle->at(sfAssetsTotal)}
+        .exponent();
 }
 
 TER
@@ -199,14 +200,6 @@ LoanState
 computeRawLoanState(
     Number const& periodicPayment,
     Number const& periodicRate,
-    std::uint32_t const paymentRemaining,
-    TenthBips32 const managementFeeRate);
-
-LoanState
-computeRawLoanState(
-    Number const& periodicPayment,
-    TenthBips32 interestRate,
-    std::uint32_t paymentInterval,
     std::uint32_t const paymentRemaining,
     TenthBips32 const managementFeeRate);
 
@@ -233,17 +226,6 @@ Number
 computeFullPaymentInterest(
     Number const& rawPrincipalOutstanding,
     Number const& periodicRate,
-    NetClock::time_point parentCloseTime,
-    std::uint32_t paymentInterval,
-    std::uint32_t prevPaymentDate,
-    std::uint32_t startDate,
-    TenthBips32 closeInterestRate);
-
-Number
-computeFullPaymentInterest(
-    Number const& periodicPayment,
-    Number const& periodicRate,
-    std::uint32_t paymentRemaining,
     NetClock::time_point parentCloseTime,
     std::uint32_t paymentInterval,
     std::uint32_t prevPaymentDate,
@@ -387,6 +369,58 @@ struct LoanStateDeltas
     nonNegative();
 };
 
+Number
+computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining);
+
+Number
+computePaymentFactor(
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining);
+
+std::pair<Number, Number>
+computeInterestAndFeeParts(
+    Asset const& asset,
+    Number const& interest,
+    TenthBips16 managementFeeRate,
+    std::int32_t loanScale);
+
+Number
+loanPeriodicPayment(
+    Number const& principalOutstanding,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining);
+
+Number
+loanPrincipalFromPeriodicPayment(
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining);
+
+Number
+loanLatePaymentInterest(
+    Number const& principalOutstanding,
+    TenthBips32 lateInterestRate,
+    NetClock::time_point parentCloseTime,
+    std::uint32_t nextPaymentDueDate);
+
+Number
+loanAccruedInterest(
+    Number const& principalOutstanding,
+    Number const& periodicRate,
+    NetClock::time_point parentCloseTime,
+    std::uint32_t startDate,
+    std::uint32_t prevPaymentDate,
+    std::uint32_t paymentInterval);
+
+ExtendedPaymentComponents
+computeOverpaymentComponents(
+    Asset const& asset,
+    int32_t const loanScale,
+    Number const& overpayment,
+    TenthBips32 const overpaymentInterestRate,
+    TenthBips32 const overpaymentFeeRate,
+    TenthBips16 const managementFeeRate);
+
 PaymentComponents
 computePaymentComponents(
     Asset const& asset,
@@ -418,7 +452,8 @@ computeLoanProperties(
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining,
     TenthBips32 managementFeeRate,
-    std::int32_t minimumScale);
+    std::int32_t minimumScale,
+    beast::Journal j);
 
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale);

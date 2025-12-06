@@ -56,7 +56,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         if (!vault)
             return tefINTERNAL;  // LCOV_EXCL_LINE
         auto const asset = vault->at(sfAsset);
-        auto const scale = getVaultScale(vault);
+        auto const scale = getAssetsTotalScale(vault);
 
         auto const rounded =
             roundToAsset(asset, debtTotal, scale, Number::towards_zero);
@@ -67,7 +67,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
             JLOG(ctx.j.warn()) << "LoanBrokerDelete: Debt total is "
                                << debtTotal << ", which rounds to " << rounded;
             return tecHAS_OBLIGATIONS;
-            // LCOV_EXCL_START
+            // LCOV_EXCL_STOP
         }
     }
 
