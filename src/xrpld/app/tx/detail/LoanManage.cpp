@@ -106,7 +106,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     if (loanBrokerSle->at(sfOwner) != account)
     {
         JLOG(ctx.j.warn())
-            << "LoanBroker for Loan does not belong to the account. LoanModify "
+            << "LoanBroker for Loan does not belong to the account. LoanManage "
                "can only be submitted by the Loan Broker.";
         return tecNO_PERMISSION;
     }
