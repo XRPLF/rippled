@@ -6493,10 +6493,8 @@ protected:
             // log << "loan after create: " << to_string(loan->getJson())
             //     << std::endl;
 
-            env.close(
-                tp{
-                    d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) +
-                      1}});
+            env.close(tp{d{
+                loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
 
         topUpBorrower(
