@@ -22,7 +22,6 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/nftPageMask.h>
 
-
 namespace ripple {
 
 /*
