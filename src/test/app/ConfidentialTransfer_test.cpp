@@ -2379,6 +2379,205 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testMutateNoConfidentialTransfer(FeatureBitset features)
+    {
+        testcase("mutate lsfMPTNoConfidentialTransfer");
+        using namespace test::jtx;
+
+        // can not create mpt issuance with tmfMPTCannotMutatePrivacy
+        // when featureDynamicMPT is disabled
+        {
+            Env env{*this, features - featureDynamicMPT};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 0,
+                 .mutableFlags = tmfMPTCannotMutatePrivacy,
+                 .err = temDISABLED});
+        }
+
+        // can not create mpt issuance with tmfMPTCannotMutatePrivacy when
+        // featureConfidentialTransfer is disabled
+        {
+            Env env{*this, features - featureConfidentialTransfer};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 0,
+                 .mutableFlags = tmfMPTCannotMutatePrivacy,
+                 .err = temDISABLED});
+        }
+
+        // if lsmfMPTCannotMutatePrivacy is set, can not set/clear
+        // lsfMPTNoConfidentialTransfer
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .flags = tfMPTCanTransfer,
+                 .mutableFlags = tmfMPTCannotMutatePrivacy});
+
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetNoConfidentialTransfer,
+                 .err = tecNO_PERMISSION});
+
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTClearNoConfidentialTransfer,
+                 .err = tecNO_PERMISSION});
+        }
+
+        // Toggle lsfMPTNoConfidentialTransfer
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .flags = tfMPTCanTransfer,
+                 .mutableFlags = tmfMPTCanMutateCanLock});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            auto holderPubKeySet = false;
+            auto verifyToggle = [&](TER expectedResult, uint64_t amt) {
+                if (!holderPubKeySet)
+                    mptAlice.convert(
+                        {.account = bob,
+                         .amt = amt,
+                         .proof = "123",
+                         .holderPubKey = mptAlice.getPubKey(bob),
+                         .err = expectedResult});
+                else
+                    mptAlice.convert({
+                        .account = bob,
+                        .amt = amt,
+                        .proof = "123",
+                        .err = expectedResult,
+                    });
+
+                if (expectedResult == tesSUCCESS)
+                {
+                    holderPubKeySet = true;
+                    mptAlice.mergeInbox({
+                        .account = bob,
+                    });
+
+                    // make sure there's no confidential outstanding balance
+                    // for the next toggle test
+                    mptAlice.convertBack(
+                        {.account = bob, .amt = amt, .proof = "123"});
+                }
+            };
+
+            // set lsfMPTNoConfidentialTransfer
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetNoConfidentialTransfer});
+
+            // bob can not convert
+            verifyToggle(tecNO_PERMISSION, 10);
+
+            // clear lsfMPTNoConfidentialTransfer
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTClearNoConfidentialTransfer});
+
+            // now bob can convert
+            verifyToggle(tesSUCCESS, 10);
+
+            // can clear lsfMPTNoConfidentialTransfer again but has no effect
+            // for privacy settings
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags =
+                     tmfMPTClearNoConfidentialTransfer | tmfMPTSetCanLock});
+            verifyToggle(tesSUCCESS, 20);
+
+            // set lsfMPTNoConfidentialTransfer again
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetNoConfidentialTransfer});
+            verifyToggle(tecNO_PERMISSION, 30);
+        }
+
+        // can not mutate lsfNoConfidentialTransfer when there's confidential
+        // outstanding amount
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            // lsmfMPTCannotMutatePrivacy is false by default,
+            // so that lsfMPTNoConfidentialTransfer can be mutated
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            // bob convert 50 to confidential
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 50,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob)});
+
+            // set lsfMPTNoConfidentialTransfer should fail because of
+            // confidential outstanding balance
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetNoConfidentialTransfer,
+                 .err = tecNO_PERMISSION});
+
+            // bob merge inbox
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+
+            // bob convert back all confidential balance
+            mptAlice.convertBack({.account = bob, .amt = 50, .proof = "123"});
+
+            // now setting lsfMPTNoConfidentialTransfer should succeed,
+            // because there's no confidential outstanding balance
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tmfMPTSetNoConfidentialTransfer});
+
+            // bob can not convert because lsfMPTNoConfidentialTransfer was set
+            // successfully
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .proof = "123",
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = tecNO_PERMISSION});
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testConvert(features);
@@ -2407,6 +2606,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testConvertBack(features);
         testConvertBackPreflight(features);
         testConvertBackPreclaim(features);
+
+        testMutateNoConfidentialTransfer(features);
     }
 
 public:

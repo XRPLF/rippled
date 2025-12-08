@@ -28,22 +28,41 @@ struct MPTMutabilityFlags
 {
     std::uint32_t setFlag;
     std::uint32_t clearFlag;
-    std::uint32_t canMutateFlag;
+    std::uint32_t mutabilityFlag;
+    std::uint32_t targetFlag;
+    bool isCannotMutate = false;  // if true, cannot mutate by default.
 };
 
-static constexpr std::array<MPTMutabilityFlags, 6> mptMutabilityFlags = {
-    {{tmfMPTSetCanLock, tmfMPTClearCanLock, lsmfMPTCanMutateCanLock},
+static constexpr std::array<MPTMutabilityFlags, 7> mptMutabilityFlags = {
+    {{tmfMPTSetCanLock,
+      tmfMPTClearCanLock,
+      lsmfMPTCanMutateCanLock,
+      lsfMPTCanLock},
      {tmfMPTSetRequireAuth,
       tmfMPTClearRequireAuth,
-      lsmfMPTCanMutateRequireAuth},
-     {tmfMPTSetCanEscrow, tmfMPTClearCanEscrow, lsmfMPTCanMutateCanEscrow},
-     {tmfMPTSetCanTrade, tmfMPTClearCanTrade, lsmfMPTCanMutateCanTrade},
+      lsmfMPTCanMutateRequireAuth,
+      lsfMPTRequireAuth},
+     {tmfMPTSetCanEscrow,
+      tmfMPTClearCanEscrow,
+      lsmfMPTCanMutateCanEscrow,
+      lsfMPTCanEscrow},
+     {tmfMPTSetCanTrade,
+      tmfMPTClearCanTrade,
+      lsmfMPTCanMutateCanTrade,
+      lsfMPTCanTrade},
      {tmfMPTSetCanTransfer,
       tmfMPTClearCanTransfer,
-      lsmfMPTCanMutateCanTransfer},
+      lsmfMPTCanMutateCanTransfer,
+      lsfMPTCanTransfer},
      {tmfMPTSetCanClawback,
       tmfMPTClearCanClawback,
-      lsmfMPTCanMutateCanClawback}}};
+      lsmfMPTCanMutateCanClawback,
+      lsfMPTCanClawback},
+     {tmfMPTSetNoConfidentialTransfer,
+      tmfMPTClearNoConfidentialTransfer,
+      lsmfMPTCannotMutatePrivacy,
+      lsfMPTNoConfidentialTransfer,
+      true}}};
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
@@ -52,26 +71,36 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const metadata = ctx.tx[~sfMPTokenMetadata];
     auto const transferFee = ctx.tx[~sfTransferFee];
     auto const isMutate = mutableFlags || metadata || transferFee;
+    auto const hasElGamalKey = ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey);
+    auto const txFlags = ctx.tx.getFlags();
+
+    auto const mutatePrivacy = mutableFlags &&
+        ((*mutableFlags &
+          (tmfMPTSetNoConfidentialTransfer |
+           tmfMPTClearNoConfidentialTransfer)));
+
+    auto const hasDomain = ctx.tx.isFieldPresent(sfDomainID);
+    auto const hasHolder = ctx.tx.isFieldPresent(sfHolder);
 
     if (isMutate && !ctx.rules.enabled(featureDynamicMPT))
         return temDISABLED;
 
-    if (ctx.tx.isFieldPresent(sfDomainID) && ctx.tx.isFieldPresent(sfHolder))
-        return temMALFORMED;
-
-    if (!ctx.rules.enabled(featureConfidentialTransfer) &&
-        ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey))
+    if ((hasElGamalKey || mutatePrivacy) &&
+        !ctx.rules.enabled(featureConfidentialTransfer))
         return temDISABLED;
 
-    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
-        ctx.tx.isFieldPresent(sfHolder))
+    if (hasDomain && hasHolder)
         return temMALFORMED;
 
-    if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
+    if (mutatePrivacy && hasHolder)
+        return temMALFORMED;
+
+    if (hasElGamalKey && hasHolder)
+        return temMALFORMED;
+
+    if (hasElGamalKey &&
         ctx.tx[sfIssuerElGamalPublicKey].length() != ecPubKeyLength)
         return temMALFORMED;
-
-    auto const txFlags = ctx.tx.getFlags();
 
     // fails if both flags are set
     if ((txFlags & tfMPTLock) && (txFlags & tfMPTUnlock))
@@ -87,8 +116,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         ctx.rules.enabled(featureConfidentialTransfer))
     {
         // Is this transaction actually changing anything ?
-        if (txFlags == 0 && !ctx.tx.isFieldPresent(sfDomainID) &&
-            !ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) && !isMutate)
+        if (txFlags == 0 && !hasDomain && !hasElGamalKey && !isMutate)
             return temMALFORMED;
     }
 
@@ -230,16 +258,32 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         return currentMutableFlags & mutableFlag;
     };
 
-    if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
+    auto const mutableFlags = ctx.tx[~sfMutableFlags];
+    if (mutableFlags)
     {
         if (std::any_of(
                 mptMutabilityFlags.begin(),
                 mptMutabilityFlags.end(),
                 [mutableFlags, &isMutableFlag](auto const& f) {
-                    return !isMutableFlag(f.canMutateFlag) &&
-                        ((*mutableFlags & (f.setFlag | f.clearFlag)));
+                    bool const canMutate = f.isCannotMutate
+                        ? isMutableFlag(f.mutabilityFlag)
+                        : !isMutableFlag(f.mutabilityFlag);
+                    return canMutate &&
+                        (*mutableFlags & (f.setFlag | f.clearFlag));
                 }))
             return tecNO_PERMISSION;
+
+        if ((*mutableFlags & tmfMPTSetNoConfidentialTransfer) ||
+            (*mutableFlags & tmfMPTClearNoConfidentialTransfer))
+        {
+            std::uint64_t const confidentialOA =
+                (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
+
+            // If there's any confidential outstanding amount, disallow toggling
+            // the lsfMPTNoConfidentialTransfer flag
+            if (confidentialOA > 0)
+                return tecNO_PERMISSION;
+        }
     }
 
     if (!isMutableFlag(lsmfMPTCanMutateMetadata) &&
@@ -267,7 +311,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     }
 
     if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
-        sleMptIssuance->isFlag(tfMPTNoConfidentialTransfer))
+        sleMptIssuance->isFlag(lsfMPTNoConfidentialTransfer))
     {
         return tecNO_PERMISSION;
     }
@@ -305,9 +349,9 @@ MPTokenIssuanceSet::doApply()
         for (auto const& f : mptMutabilityFlags)
         {
             if (mutableFlags & f.setFlag)
-                flagsOut |= f.canMutateFlag;
+                flagsOut |= f.targetFlag;
             else if (mutableFlags & f.clearFlag)
-                flagsOut &= ~f.canMutateFlag;
+                flagsOut &= ~f.targetFlag;
         }
 
         if (mutableFlags & tmfMPTClearCanTransfer)

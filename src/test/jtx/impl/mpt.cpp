@@ -443,6 +443,13 @@ MPTTester::set(MPTSet const& arg)
                             flags |= lsfMPTCanTransfer;
                         else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
                             flags &= ~lsfMPTCanTransfer;
+
+                        if (*arg.mutableFlags & tmfMPTSetNoConfidentialTransfer)
+                            flags |= lsfMPTNoConfidentialTransfer;
+                        else if (
+                            *arg.mutableFlags &
+                            tmfMPTClearNoConfidentialTransfer)
+                            flags &= ~lsfMPTNoConfidentialTransfer;
                     }
                 }
                 env_.require(mptflags(*this, flags, holder));

@@ -2931,6 +2931,8 @@ class MPToken_test : public beast::unit_test::suite
                 tmfMPTSetCanTrade | tmfMPTClearCanTrade,
                 tmfMPTSetCanTransfer | tmfMPTClearCanTransfer,
                 tmfMPTSetCanClawback | tmfMPTClearCanClawback,
+                tmfMPTSetNoConfidentialTransfer |
+                    tmfMPTClearNoConfidentialTransfer,
                 tmfMPTSetCanLock | tmfMPTClearCanLock | tmfMPTClearCanTrade,
                 tmfMPTSetCanTransfer | tmfMPTClearCanTransfer |
                     tmfMPTSetCanEscrow | tmfMPTClearCanClawback};

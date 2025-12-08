@@ -22,6 +22,12 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
         !ctx.rules.enabled(featureConfidentialTransfer))
         return false;
 
+    // can not set tmfMPTCannotMutatePrivacy without featureConfidentialTransfer
+    auto const mutableFlags = ctx.tx[~sfMutableFlags];
+    if (mutableFlags && (*mutableFlags & tmfMPTCannotMutatePrivacy) &&
+        !ctx.rules.enabled(featureConfidentialTransfer))
+        return false;
+
     return true;
 }
 
