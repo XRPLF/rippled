@@ -436,7 +436,7 @@ tryOverpayment(
     JLOG(j.debug()) << "new periodic payment: "
                     << newLoanProperties.periodicPayment
                     << ", new total value: "
-                    << newLoanProperties.totalValueOutstanding
+                    << newLoanProperties.loanState.valueOutstanding
                     << ", first payment principal: "
                     << newLoanProperties.firstPaymentPrincipal;
 
@@ -509,18 +509,18 @@ tryOverpayment(
     // Validate that all computed properties are reasonable. These checks should
     // never fail under normal circumstances, but we validate defensively.
     if (newLoanProperties.periodicPayment <= 0 ||
-        newLoanProperties.totalValueOutstanding <= 0 ||
-        newLoanProperties.managementFeeOwedToBroker < 0)
+        newLoanProperties.loanState.valueOutstanding <= 0 ||
+        newLoanProperties.loanState.managementFeeDue < 0)
     {
         // LCOV_EXCL_START
         JLOG(j.warn()) << "Overpayment not allowed: Computed loan "
                           "properties are invalid. Does "
                           "not compute. TotalValueOutstanding: "
-                       << newLoanProperties.totalValueOutstanding
+                       << newLoanProperties.loanState.valueOutstanding
                        << ", PeriodicPayment : "
                        << newLoanProperties.periodicPayment
                        << ", ManagementFeeOwedToBroker: "
-                       << newLoanProperties.managementFeeOwedToBroker;
+                       << newLoanProperties.loanState.managementFeeDue;
         return Unexpected(tesSUCCESS);
         // LCOV_EXCL_STOP
     }
@@ -1291,7 +1291,7 @@ checkLoanGuards(
     beast::Journal j)
 {
     auto const totalInterestOutstanding =
-        properties.totalValueOutstanding - principalRequested;
+        properties.loanState.valueOutstanding - principalRequested;
     // Guard 1: if there is no computed total interest over the life of the
     // loan for a non-zero interest rate, we cannot properly amortize the
     // loan
@@ -1346,13 +1346,13 @@ checkLoanGuards(
         NumberRoundModeGuard mg(Number::upward);
 
         if (std::int64_t const computedPayments{
-                properties.totalValueOutstanding / roundedPayment};
+                properties.loanState.valueOutstanding / roundedPayment};
             computedPayments != paymentTotal)
         {
             JLOG(j.warn()) << "Loan Periodic payment ("
                            << properties.periodicPayment << ") rounding ("
                            << roundedPayment << ") on a total value of "
-                           << properties.totalValueOutstanding
+                           << properties.loanState.valueOutstanding
                            << " can not complete the loan in the specified "
                               "number of payments ("
                            << computedPayments << " != " << paymentTotal << ")";
@@ -1628,10 +1628,13 @@ computeLoanProperties(
 
     return LoanProperties{
         .periodicPayment = periodicPayment,
-        .totalValueOutstanding = totalValueOutstanding,
-        .managementFeeOwedToBroker = feeOwedToBroker,
+        .loanState = constructLoanState(
+            totalValueOutstanding,
+            roundedPrincipalOutstanding,
+            feeOwedToBroker),
         .loanScale = loanScale,
-        .firstPaymentPrincipal = firstPaymentPrincipal};
+        .firstPaymentPrincipal = firstPaymentPrincipal,
+    };
 }
 
 /*

@@ -709,8 +709,9 @@ protected:
             << "\tManagement Fee Rate: " << feeRate << std::endl
             << "\tTotal Payments: " << total << std::endl
             << "\tPeriodic Payment: " << props.periodicPayment << std::endl
-            << "\tTotal Value: " << props.totalValueOutstanding << std::endl
-            << "\tManagement Fee: " << props.managementFeeOwedToBroker
+            << "\tTotal Value: " << props.loanState.valueOutstanding
+            << std::endl
+            << "\tManagement Fee: " << props.loanState.managementFeeDue
             << std::endl
             << "\tLoan Scale: " << props.loanScale << std::endl
             << "\tFirst payment principal: " << props.firstPaymentPrincipal
@@ -1490,9 +1491,9 @@ protected:
             startDate + *loanParams.payInterval,
             *loanParams.payTotal,
             state.loanScale,
-            loanProperties.totalValueOutstanding,
+            loanProperties.loanState.valueOutstanding,
             principalRequestAmount,
-            loanProperties.managementFeeOwedToBroker,
+            loanProperties.loanState.managementFeeDue,
             loanProperties.periodicPayment,
             loanFlags | 0);
 
@@ -1547,9 +1548,9 @@ protected:
             nextDueDate,
             *loanParams.payTotal,
             loanProperties.loanScale,
-            loanProperties.totalValueOutstanding,
+            loanProperties.loanState.valueOutstanding,
             principalRequestAmount,
-            loanProperties.managementFeeOwedToBroker,
+            loanProperties.loanState.managementFeeDue,
             loanProperties.periodicPayment,
             loanFlags | 0);
 
