@@ -287,6 +287,12 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     // Check if the vault asset issuer has the correct flags
     auto const sleIssuer =
         ctx.view.read(keylet::account(vaultAsset.getIssuer()));
+    if (!sleIssuer)
+    {
+        JLOG(ctx.j.fatal()) << "Issuer account does not exist.";
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    }
+
     return std::visit(
         [&]<typename T>(T const&) {
             return preclaimHelper<T>(ctx, *sleIssuer, clawAmount);
