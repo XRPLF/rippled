@@ -1436,6 +1436,79 @@ class LoanBroker_test : public beast::unit_test::suite
         });
     }
 
+    void
+    testRIPD4323()
+    {
+        testcase << "RIPD-4323";
+        using namespace jtx;
+        Account const issuer("issuer");
+        Account const holder("holder");
+        Account const& broker = issuer;
+
+        auto test = [&](auto&& getToken) {
+            Env env(*this);
+
+            env.fund(XRP(1'000), issuer, holder);
+            env.close();
+
+            auto const [token, deposit, err] = getToken(env);
+
+            Vault vault(env);
+            auto const [tx, keylet] =
+                vault.create({.owner = broker, .asset = token.asset()});
+            env(tx);
+            env.close();
+
+            env(vault.deposit(
+                    {.depositor = broker, .id = keylet.key, .amount = deposit}),
+                ter(err));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanbroker(broker, env.seq(broker));
+
+            env(loanBroker::set(broker, keylet.key));
+            env.close();
+
+            env(loanBroker::coverDeposit(broker, brokerKeylet.key, deposit),
+                ter(err));
+            env.close();
+        };
+
+        test([&](Env&) {
+            // issuer can issue any amount
+            auto const token = issuer["IOU"];
+            return std::make_tuple(token, token(1'000), tesSUCCESS);
+        });
+        // pay to holder, max amount, deposit amount, expected error
+        std::vector<
+            std::tuple<std::uint64_t, std::uint64_t, std::uint64_t, TER>>
+            mptTests = {
+                // issuer can issue up to 2'000 tokens
+                {2'000, 4'000, 1'000, tesSUCCESS},
+                // issuer can issue 500 tokens (250 VaultDeposit +
+                // 250 LoanBrokerCoverDeposit)
+                {2'000, 2'500, 250, tesSUCCESS},
+                // issuer can issue 500, and fails on depositing 1'000
+                {2'000, 2'500, 1'000, tecINSUFFICIENT_FUNDS},
+                // issuer has already issued MaximumAmount
+                {2'000, 2'000, 1'000, tecINSUFFICIENT_FUNDS},
+            };
+        for (auto const [pay, max, deposit, err] : mptTests)
+        {
+            test([&](Env& env) -> std::tuple<MPT, PrettyAmount, TER> {
+                MPT const token = MPTTester(
+                    {.env = env,
+                     .issuer = issuer,
+                     .holders = {holder},
+                     .pay = pay,
+                     .flags = MPTDEXFlags,
+                     .maxAmt = max});
+                return std::make_tuple(token, token(deposit), err);
+            });
+        }
+    }
+
 public:
     void
     run() override
@@ -1450,6 +1523,8 @@ public:
         testInvalidLoanBrokerDelete();
         testInvalidLoanBrokerSet();
         testRequireAuth();
+
+        testRIPD4323();
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.
