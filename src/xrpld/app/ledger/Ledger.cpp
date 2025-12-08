@@ -7,12 +7,12 @@
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/consensus/LedgerTiming.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/core/SociDB.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/detail/DatabaseNodeImp.h>

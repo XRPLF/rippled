@@ -4,8 +4,9 @@
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/PeerSet.h>
+
+#include <xrpl/core/JobQueue.h>
 
 namespace ripple {
 

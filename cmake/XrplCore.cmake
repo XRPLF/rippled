@@ -94,10 +94,22 @@ target_link_libraries(xrpl.libxrpl.protocol PUBLIC
 )
 
 # Level 05
+add_module(xrpl core)
+target_link_libraries(xrpl.libxrpl.core PUBLIC
+  xrpl.libxrpl.basics
+  xrpl.libxrpl.json
+  xrpl.libxrpl.protocol
+)
+# Core module needs access to xrpld headers (for PerfLog)
+target_include_directories(xrpl.libxrpl.core PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+
+# Level 06
 add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
-# Level 06
+# Level 07
 add_module(xrpl net)
 target_link_libraries(xrpl.libxrpl.net PUBLIC
   xrpl.libxrpl.basics
@@ -144,6 +156,7 @@ target_sources(xrpl.libxrpl PRIVATE ${sources})
 target_link_modules(xrpl PUBLIC
   basics
   beast
+  core
   crypto
   json
   protocol

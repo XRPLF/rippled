@@ -1,8 +1,8 @@
 #ifndef XRPL_CORE_JOBTYPES_H_INCLUDED
 #define XRPL_CORE_JOBTYPES_H_INCLUDED
 
-#include <xrpld/core/Job.h>
-#include <xrpld/core/JobTypeInfo.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobTypeInfo.h>
 
 #include <map>
 #include <string>

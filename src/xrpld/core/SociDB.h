@@ -14,9 +14,8 @@
 #pragma clang diagnostic ignored "-Wdeprecated"
 #endif
 
-#include <xrpld/core/JobQueue.h>
-
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobQueue.h>
 
 #define SOCI_USE_BOOST
 #include <soci/soci.h>

@@ -16,6 +16,7 @@ install (
     xrpl.libxrpl
     xrpl.libxrpl.basics
     xrpl.libxrpl.beast
+    xrpl.libxrpl.core
     xrpl.libxrpl.crypto
     xrpl.libxrpl.json
     xrpl.libxrpl.ledger

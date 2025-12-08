@@ -1,8 +1,9 @@
 #ifndef XRPL_NET_RPCSUB_H_INCLUDED
 #define XRPL_NET_RPCSUB_H_INCLUDED
 
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/InfoSub.h>
+
+#include <xrpl/core/JobQueue.h>
 
 #include <boost/asio/io_context.hpp>
 
