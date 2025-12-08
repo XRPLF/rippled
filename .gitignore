@@ -37,6 +37,9 @@ gmon.out
 /rippled.cfg
 /validators.txt
 
+# Locally patched Conan recipes
+external/conan-center-index/
+
 # XCode IDE.
 *.pbxuser
 !default.pbxuser
