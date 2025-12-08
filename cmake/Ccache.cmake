@@ -1,0 +1,5 @@
+find_program(CCACHE_PATH "ccache")
+if (CCACHE_PATH)
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PATH}")
+    message(STATUS "Using ccache: ${CCACHE_PATH}")
+endif ()
