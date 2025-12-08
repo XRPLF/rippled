@@ -1,5 +1,5 @@
-#ifndef XRPL_APP_PATHS_CREDIT_H_INCLUDED
-#define XRPL_APP_PATHS_CREDIT_H_INCLUDED
+#ifndef XRPL_LEDGER_CREDIT_H_INCLUDED
+#define XRPL_LEDGER_CREDIT_H_INCLUDED
 
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/IOUAmount.h>
