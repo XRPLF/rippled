@@ -417,8 +417,8 @@ LoanSet::doApply()
                 JLOG(j_.warn())
                     << field.f->getName() << " (" << *value
                     << ") has too much precision. Total loan value is "
-                    << properties.loanState.valueOutstanding << " with a scale of "
-                    << properties.loanScale;
+                    << properties.loanState.valueOutstanding
+                    << " with a scale of " << properties.loanScale;
                 return tecPRECISION_LOSS;
             }
         }
@@ -592,7 +592,8 @@ LoanSet::doApply()
     loan->at(sfPrincipalOutstanding) = principalRequested;
     loan->at(sfPeriodicPayment) = properties.periodicPayment;
     loan->at(sfTotalValueOutstanding) = properties.loanState.valueOutstanding;
-    loan->at(sfManagementFeeOutstanding) = properties.loanState.managementFeeDue;
+    loan->at(sfManagementFeeOutstanding) =
+        properties.loanState.managementFeeDue;
     loan->at(sfPreviousPaymentDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
