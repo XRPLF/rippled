@@ -79,11 +79,12 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     }
 
     auto const assetsTotal = vault->at(sfAssetsTotal);
+    auto const assetsAvailable = vault->at(sfAssetsAvailable);
     auto const sharesTotal = sleShareIssuance->at(sfOutstandingAmount);
     auto const owner = vault->at(sfOwner);
 
     // Allow clawback to burn shares in this special case.
-    if (sharesTotal > 0 && assetsTotal == 0 && account == owner)
+    if (sharesTotal > 0 && assetsTotal == 0 && assetsAvailable == 0 && account == owner)
     {
         // The VaultOwner must burn all shares
         if (ctx.tx[~sfAmount])
@@ -148,7 +149,7 @@ VaultClawback::burnShares(
     auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
     MPTIssue const share{mptIssuanceID};
 
-    // This  was validated in preclaim
+    // This was validated in preclaim
     XRPL_ASSERT(
         assetsTotal == 0 && assetsAvailable == 0 && sharesTotal > 0,
         "ripple::VaultClawback::doApply : vault is empty");
