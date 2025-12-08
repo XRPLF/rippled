@@ -193,6 +193,7 @@ JSS(converge_time);           // out: NetworkOPs
 JSS(converge_time_s);         // out: NetworkOPs
 JSS(cookie);                  // out: NetworkOPs
 JSS(count);                   // in: AccountTx*, ValidatorList
+JSS(counterparty);            // in/out: AccountTx
 JSS(counters);                // in/out: retrieve counters
 JSS(credentials);             // in: deposit_authorized
 JSS(credential_type);         // in: LedgerEntry DepositPreauth
@@ -275,6 +276,7 @@ JSS(freeze);                  // out: AccountLines
 JSS(freeze_peer);             // out: AccountLines
 JSS(deep_freeze);                  // out: AccountLines
 JSS(deep_freeze_peer);             // out: AccountLines
+JSS(delegate_filter);         // in/out: AccountTx
 JSS(frozen_balances);         // out: GatewayBalances
 JSS(full);                    // in: LedgerClearer, handlers/Ledger
 JSS(full_reply);              // out: PathFind

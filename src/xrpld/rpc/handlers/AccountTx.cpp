@@ -217,7 +217,8 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
         result.ledgerRange.max,
         result.marker,
         args.limit,
-        isUnlimited(context.role)};
+        isUnlimited(context.role),
+        args.delegate};
 
     auto const db =
         dynamic_cast<SQLiteDatabase*>(&context.app.getRelationalDatabase());
@@ -458,6 +459,46 @@ doAccountTxJson(RPC::JsonContext& context)
             return response;
         }
         args.marker = {token[jss::ledger].asUInt(), token[jss::seq].asUInt()};
+    }
+
+    if (params.isMember("delegate")) 
+    {
+        auto const& delegateNode = params["delegate"];
+
+        if (!delegateNode.isObject())
+            return RPC::invalid_field_error("delegate");
+
+        DelegateFilter filter;
+
+        if (delegateNode.isMember(jss::delegate_filter))
+        {
+            if (!delegateNode[jss::delegate_filter].isString())
+                return RPC::invalid_field_error(jss::delegate_filter);
+
+            auto const& delegateFilterStr = delegateNode[jss::delegate_filter].asString();
+
+            if (delegateFilterStr == "delegatee")
+                filter.type = DelegateType::Delegatee;
+            else if (delegateFilterStr == "delegator")
+                filter.type = DelegateType::Delegator;
+            else
+                return RPC::invalid_field_error(jss::delegate_filter);
+
+            if (delegateNode.isMember(jss::counterparty))
+            {
+                if (!delegateNode[jss::counterparty].isString())
+                    return RPC::invalid_field_error(jss::counterparty);
+
+                auto const counterparty =
+                    parseBase58<AccountID>(delegateNode[jss::counterparty].asString());
+                if (!counterparty)
+                    return rpcError(rpcACT_MALFORMED);
+
+                filter.counterparty = *counterparty;
+            }
+
+        args.delegate = filter;
+        }
     }
 
     auto res = doAccountTxHelp(context, args);

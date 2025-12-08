@@ -3811,7 +3811,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         auto db = static_cast<SQLiteDatabase*>(
                             &app_.getRelationalDatabase());
                         RelationalDatabase::AccountTxPageOptions options{
-                            accountId, minLedger, maxLedger, marker, 0, true};
+                            accountId, minLedger, maxLedger, marker, 0, true, std::nullopt};
                         return db->newestAccountTxPage(options);
                     }
                     // LCOV_EXCL_START

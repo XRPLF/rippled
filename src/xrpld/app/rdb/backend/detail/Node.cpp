@@ -1150,6 +1150,54 @@ accountTxPage(
                 convert(txnMeta, rawMeta);
             else
                 rawMeta.clear();
+            
+            if (options.delegate.has_value() && !rawData.empty())
+            {
+                SerialIter sit{makeSlice(rawData)};
+                STTx const tx{sit};
+
+                // The account in the TX (delegator)
+                AccountID const txOwner = tx.getAccountID(sfAccount);
+                
+                // The account that actually signed and submitted the TX (delegatee)
+                AccountID const txSigner = calcAccountID(PublicKey(makeSlice(tx.getSigningPubKey())));
+
+                bool keep = false;
+                auto const& filter = options.delegate.value();
+                auto const& contextAccount = options.account; 
+
+                if (filter.type == DelegateType::Delegatee)
+                {
+                    // Case: account_tx(A) delegatee(C)
+                    // We want TXs where Context(A) is the Owner, but Signer is NOT A (it's C)
+                    bool isDelegated = (txOwner == contextAccount) && (txSigner != contextAccount);
+                    
+                    if (isDelegated)
+                    {
+                        if (filter.counterparty)
+                            keep = (txSigner == *filter.counterparty);
+                        else
+                            keep = true;
+                    }
+                }
+                else if (filter.type == DelegateType::Delegator)
+                {
+                    // Case: account_tx(C) delegator(A)
+                    // We want TXs where Context(C) is the Signer, but Owner is NOT C (it's A)
+                    bool isActingAsDelegate = (txSigner == contextAccount) && (txOwner != contextAccount);
+
+                    if (isActingAsDelegate)
+                    {
+                         if (filter.counterparty)
+                            keep = (txOwner == *filter.counterparty);
+                         else
+                            keep = true;
+                    }
+                }
+                
+                if (!keep)
+                    continue; 
+            }
 
             // Work around a bug that could leave the metadata missing
             if (rawMeta.size() == 0)
