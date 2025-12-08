@@ -84,7 +84,8 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto const owner = vault->at(sfOwner);
 
     // Allow clawback to burn shares in this special case.
-    if (sharesTotal > 0 && assetsTotal == 0 && assetsAvailable == 0 && account == owner)
+    if (sharesTotal > 0 && assetsTotal == 0 && assetsAvailable == 0 &&
+        account == owner)
     {
         // The VaultOwner must burn all shares
         if (ctx.tx[~sfAmount])
