@@ -100,6 +100,9 @@ computePaymentFactor(
     Number const& periodicRate,
     std::uint32_t paymentsRemaining)
 {
+    if (paymentsRemaining == 0)
+        return numZero;
+
     // For zero interest, payment factor is simply 1/paymentsRemaining
     if (periodicRate == beast::zero)
         return Number{1} / paymentsRemaining;
@@ -132,27 +135,6 @@ loanPeriodicPayment(
         computePaymentFactor(periodicRate, paymentsRemaining);
 }
 
-/* Calculates the periodic payment amount from annualized interest rate.
- * Converts the annual rate to periodic rate before computing payment.
- *
- * Equation (7) from XLS-66 spec, Section A-2 Equation Glossary
- */
-Number
-loanPeriodicPayment(
-    Number const& principalOutstanding,
-    TenthBips32 interestRate,
-    std::uint32_t paymentInterval,
-    std::uint32_t paymentsRemaining)
-{
-    if (principalOutstanding == 0 || paymentsRemaining == 0)
-        return 0;
-
-    Number const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
-
-    return loanPeriodicPayment(
-        principalOutstanding, periodicRate, paymentsRemaining);
-}
-
 /* Reverse-calculates principal from periodic payment amount.
  * Used to determine theoretical principal at any point in the schedule.
  *
@@ -164,26 +146,14 @@ loanPrincipalFromPeriodicPayment(
     Number const& periodicRate,
     std::uint32_t paymentsRemaining)
 {
+    if (paymentsRemaining == 0)
+        return numZero;
+
     if (periodicRate == 0)
         return periodicPayment * paymentsRemaining;
 
     return periodicPayment /
         computePaymentFactor(periodicRate, paymentsRemaining);
-}
-
-/* Splits gross interest into net interest (to vault) and management fee (to
- * broker). Returns pair of (net interest, management fee).
- *
- * Equation (33) from XLS-66 spec, Section A-2 Equation Glossary
- */
-std::pair<Number, Number>
-computeInterestAndFeeParts(
-    Number const& interest,
-    TenthBips16 managementFeeRate)
-{
-    auto const fee = tenthBipsOfValue(interest, managementFeeRate);
-
-    return std::make_pair(interest - fee, fee);
 }
 
 /*
@@ -216,6 +186,12 @@ loanLatePaymentInterest(
     NetClock::time_point parentCloseTime,
     std::uint32_t nextPaymentDueDate)
 {
+    if (principalOutstanding == beast::zero)
+        return numZero;
+
+    if (lateInterestRate == TenthBips32{0})
+        return numZero;
+
     auto const now = parentCloseTime.time_since_epoch().count();
 
     // If the payment is not late by any amount of time, then there's no late
@@ -246,6 +222,9 @@ loanAccruedInterest(
     std::uint32_t paymentInterval)
 {
     if (periodicRate == beast::zero)
+        return numZero;
+
+    if (paymentInterval == 0)
         return numZero;
 
     auto const lastPaymentDate = std::max(prevPaymentDate, startDate);
@@ -451,7 +430,8 @@ tryOverpayment(
         paymentInterval,
         paymentRemaining,
         managementFeeRate,
-        loanScale);
+        loanScale,
+        j);
 
     JLOG(j.debug()) << "new periodic payment: "
                     << newLoanProperties.periodicPayment
@@ -561,8 +541,8 @@ tryOverpayment(
     // Calculate how the loan's value changed due to the overpayment.
     // This should be negative (value decreased) or zero. A principal
     // overpayment should never increase the loan's value.
-    auto const valueChange =
-        newRounded.valueOutstanding - hypotheticalValueOutstanding;
+    auto const valueChange = newRounded.valueOutstanding -
+        hypotheticalValueOutstanding - deltas.managementFee;
     if (valueChange > 0)
     {
         JLOG(j.warn()) << "Principal overpayment would increase the value of "
@@ -1225,17 +1205,12 @@ computeOverpaymentComponents(
     // This interest doesn't follow the normal amortization schedule - it's
     // a one-time charge for paying early.
     // Equation (20) and (21) from XLS-66 spec, Section A-2 Equation Glossary
-    auto const [rawOverpaymentInterest, _] = [&]() {
-        Number const interest =
-            tenthBipsOfValue(overpayment, overpaymentInterestRate);
-        return detail::computeInterestAndFeeParts(interest, managementFeeRate);
-    }();
-
-    // Round the penalty interest components to the loan scale
     auto const [roundedOverpaymentInterest, roundedOverpaymentManagementFee] =
         [&]() {
-            Number const interest =
-                roundToAsset(asset, rawOverpaymentInterest, loanScale);
+            auto const interest = roundToAsset(
+                asset,
+                tenthBipsOfValue(overpayment, overpaymentInterestRate),
+                loanScale);
             return detail::computeInterestAndFeeParts(
                 asset, interest, managementFeeRate, loanScale);
         }();
@@ -1429,31 +1404,6 @@ computeFullPaymentInterest(
     return accruedInterest + prepaymentPenalty;
 }
 
-Number
-computeFullPaymentInterest(
-    Number const& periodicPayment,
-    Number const& periodicRate,
-    std::uint32_t paymentRemaining,
-    NetClock::time_point parentCloseTime,
-    std::uint32_t paymentInterval,
-    std::uint32_t prevPaymentDate,
-    std::uint32_t startDate,
-    TenthBips32 closeInterestRate)
-{
-    Number const rawPrincipalOutstanding =
-        detail::loanPrincipalFromPeriodicPayment(
-            periodicPayment, periodicRate, paymentRemaining);
-
-    return computeFullPaymentInterest(
-        rawPrincipalOutstanding,
-        periodicRate,
-        parentCloseTime,
-        paymentInterval,
-        prevPaymentDate,
-        startDate,
-        closeInterestRate);
-}
-
 /* Calculates the theoretical loan state at maximum precision for a given point
  * in the amortization schedule.
  *
@@ -1514,21 +1464,6 @@ computeRawLoanState(
         .interestDue = rawInterestOutstandingNet,
         .managementFeeDue = rawManagementFeeOutstanding};
 };
-
-LoanState
-computeRawLoanState(
-    Number const& periodicPayment,
-    TenthBips32 interestRate,
-    std::uint32_t paymentInterval,
-    std::uint32_t const paymentRemaining,
-    TenthBips32 const managementFeeRate)
-{
-    return computeRawLoanState(
-        periodicPayment,
-        loanPeriodicRate(interestRate, paymentInterval),
-        paymentRemaining,
-        managementFeeRate);
-}
 
 /* Constructs a LoanState from rounded Loan ledger object values.
  *
@@ -1605,7 +1540,8 @@ computeLoanProperties(
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining,
     TenthBips32 managementFeeRate,
-    std::int32_t minimumScale)
+    std::int32_t minimumScale,
+    beast::Journal j)
 {
     auto const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
     XRPL_ASSERT(
@@ -1616,13 +1552,22 @@ computeLoanProperties(
         principalOutstanding, periodicRate, paymentsRemaining);
 
     auto const [totalValueOutstanding, loanScale] = [&]() {
-        NumberRoundModeGuard mg(Number::to_nearest);
+        // only round up if there should be interest
+        NumberRoundModeGuard mg(
+            periodicRate == 0 ? Number::to_nearest : Number::upward);
         // Use STAmount's internal rounding instead of roundToAsset, because
         // we're going to use this result to determine the scale for all the
         // other rounding.
 
         // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
         STAmount amount{asset, periodicPayment * paymentsRemaining};
+        JLOG(j.debug()) << "computeLoanProperties:" << " Principal requested: "
+                        << principalOutstanding
+                        << ". Periodic payment: " << periodicPayment
+                        << ". Payments remaining: " << paymentsRemaining
+                        << ". Raw total value: "
+                        << periodicPayment * paymentsRemaining
+                        << ". Candidate total value: " << amount << std::endl;
 
         // Base the loan scale on the total value, since that's going to be
         // the biggest number involved (barring unusual parameters for late,
@@ -1637,7 +1582,10 @@ computeLoanProperties(
 
         // We may need to truncate the total value because of the minimum
         // scale
-        amount = roundToAsset(asset, amount, loanScale, Number::to_nearest);
+        amount = roundToAsset(asset, amount, loanScale);
+
+        JLOG(j.debug()) << "computeLoanProperties: Loan scale:" << loanScale
+                        << ". Actual total value: " << amount << std::endl;
 
         return std::make_pair(amount, loanScale);
     }();

@@ -141,7 +141,7 @@ protected:
             using namespace jtx;
 
             auto const vaultSle = env.le(keylet::vault(vaultID));
-            return getVaultScale(vaultSle);
+            return getAssetsTotalScale(vaultSle);
         }
     };
 
@@ -551,12 +551,15 @@ protected:
                        broker.vaultScale(env),
                        state.principalOutstanding.exponent())));
         BEAST_EXPECT(state.paymentInterval == 600);
-        BEAST_EXPECT(
-            state.totalValue ==
-            roundToAsset(
-                broker.asset,
-                state.periodicPayment * state.paymentRemaining,
-                state.loanScale));
+        {
+            NumberRoundModeGuard mg(Number::upward);
+            BEAST_EXPECT(
+                state.totalValue ==
+                roundToAsset(
+                    broker.asset,
+                    state.periodicPayment * state.paymentRemaining,
+                    state.loanScale));
+        }
         BEAST_EXPECT(
             state.managementFeeOutstanding ==
             computeManagementFee(
@@ -697,7 +700,8 @@ protected:
             interval,
             total,
             feeRate,
-            asset(brokerParams.vaultDeposit).number().exponent());
+            asset(brokerParams.vaultDeposit).number().exponent(),
+            env.journal);
         log << "Loan properties:\n"
             << "\tPrincipal: " << principal << std::endl
             << "\tInterest rate: " << interest << std::endl
@@ -1478,7 +1482,8 @@ protected:
             state.paymentInterval,
             state.paymentRemaining,
             broker.params.managementFeeRate,
-            state.loanScale);
+            state.loanScale,
+            env.journal);
 
         verifyLoanStatus(
             0,
@@ -2449,13 +2454,18 @@ protected:
                 // Make all the payments in one transaction
                 // service fee is 2
                 auto const startingPayments = state.paymentRemaining;
-                auto const rawPayoff = startingPayments *
-                    (state.periodicPayment + broker.asset(2).value());
-                STAmount const payoffAmount{broker.asset, rawPayoff};
-                BEAST_EXPECT(
-                    payoffAmount ==
-                    broker.asset(Number(1024014840139457, -12)));
-                BEAST_EXPECT(payoffAmount > state.principalOutstanding);
+                STAmount const payoffAmount = [&]() {
+                    NumberRoundModeGuard mg(Number::upward);
+                    auto const rawPayoff = startingPayments *
+                        (state.periodicPayment + broker.asset(2).value());
+                    STAmount const payoffAmount{broker.asset, rawPayoff};
+                    BEAST_EXPECTS(
+                        payoffAmount ==
+                            broker.asset(Number(1024014840139457, -12)),
+                        to_string(payoffAmount));
+                    BEAST_EXPECT(payoffAmount > state.principalOutstanding);
+                    return payoffAmount;
+                }();
 
                 singlePayment(
                     loanKeylet,
@@ -4010,7 +4020,7 @@ protected:
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
         // Fails in preclaim because principal requested can't be
         // represented as XRP
-        env(createJson, ter(tecPRECISION_LOSS));
+        env(createJson, ter(tecPRECISION_LOSS), THISLINE);
         env.close();
 
         BEAST_EXPECT(!env.le(keylet));
@@ -4022,7 +4032,7 @@ protected:
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
         // Fails in doApply because the payment is too small to be
         // represented as XRP.
-        env(createJson, ter(tecPRECISION_LOSS));
+        env(createJson, ter(tecPRECISION_LOSS), THISLINE);
         env.close();
     }
 
@@ -4997,7 +5007,7 @@ protected:
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
-        env(createJson, ter(tecPRECISION_LOSS));
+        env(createJson, ter(tecPRECISION_LOSS), THISLINE);
         env.close(startDate);
 
         auto loanPayTx = env.json(
@@ -6145,15 +6155,16 @@ protected:
         // Accrued + prepayment-penalty interest based on current periodic
         // schedule
         auto const fullPaymentInterest = computeFullPaymentInterest(
-            after.periodicPayment,
+            detail::loanPrincipalFromPeriodicPayment(
+                after.periodicPayment, periodicRate2, after.paymentRemaining),
             periodicRate2,
-            after.paymentRemaining,
             env.current()->parentCloseTime(),
             after.paymentInterval,
             after.previousPaymentDate,
             static_cast<std::uint32_t>(
                 after.startDate.time_since_epoch().count()),
             closeInterestRate);
+
         // Round to asset scale and split interest/fee parts
         auto const roundedInterest =
             roundToAsset(asset.raw(), fullPaymentInterest, after.loanScale);
@@ -6181,9 +6192,9 @@ protected:
         // window by clamping prevPaymentDate to 'now' for the full-pay path.
         auto const prevClamped = std::min(after.previousPaymentDate, nowSecs);
         auto const fullPaymentInterestClamped = computeFullPaymentInterest(
-            after.periodicPayment,
+            detail::loanPrincipalFromPeriodicPayment(
+                after.periodicPayment, periodicRate2, after.paymentRemaining),
             periodicRate2,
-            after.paymentRemaining,
             env.current()->parentCloseTime(),
             after.paymentInterval,
             prevClamped,
