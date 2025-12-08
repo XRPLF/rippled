@@ -90,7 +90,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        if (auto const debtMax = tx[~sfDebtMaximum]; debtMax)
+        if (auto const debtMax = tx[~sfDebtMaximum])
         {
             // Can't reduce the debt maximum below the current total debt
             auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
