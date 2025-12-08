@@ -933,36 +933,37 @@ class AccountTx_test : public beast::unit_test::suite
         testcase("Delegation Filtering");
 
         using namespace test::jtx;
-        
+
         Env env(*this);
-        Account const alice{"alice"}; // Delegator (Owner)
-        Account const bob{"bob"};     // Delegatee (Signer)
-        Account const carol{"carol"}; // Receiver
+        Account const alice{"alice"};  // Delegator (Owner)
+        Account const bob{"bob"};      // Delegatee (Signer)
+        Account const carol{"carol"};  // Receiver
 
         env.fund(XRP(10000), alice, bob, carol);
         env.close();
 
-        env(regkey(alice, bob)); 
+        env(regkey(alice, bob));
         env.close();
 
         // Alice pays Carol (Signed by Alice - Self-signed)
-        env(pay(alice, carol, XRP(10))); 
+        env(pay(alice, carol, XRP(10)));
         env.close();
 
         // Alice pays Carol (Signed by Bob - DELEGATED)
-        env(pay(alice, carol, XRP(20)), sig(bob)); 
+        env(pay(alice, carol, XRP(20)), sig(bob));
         env.close();
 
         // Bob pays Carol (Signed by Bob - Self-signed)
-        env(pay(bob, carol, XRP(30))); 
+        env(pay(bob, carol, XRP(30)));
         env.close();
 
-        auto countTxs = [&](AccountID const& account, Json::Value const& delegateParams) -> int {
+        auto countTxs = [&](AccountID const& account,
+                            Json::Value const& delegateParams) -> int {
             Json::Value params;
             params[jss::account] = toBase58(account);
             params[jss::ledger_index_min] = -1;
             params[jss::ledger_index_max] = -1;
-            
+
             if (!delegateParams.isNull())
                 params["delegate"] = delegateParams;
 
@@ -972,7 +973,8 @@ class AccountTx_test : public beast::unit_test::suite
             return 0;
         };
 
-        auto const checkError = [&](Json::Value const& delegateParams, std::string const& errToken) {
+        auto const checkError = [&](Json::Value const& delegateParams,
+                                    std::string const& errToken) {
             Json::Value params;
             params[jss::account] = alice.human();
             params["delegate"] = delegateParams;
@@ -983,7 +985,7 @@ class AccountTx_test : public beast::unit_test::suite
         // Query Alice (Owner), Filter: Delegatee
         // Expect: TX B only (Bob signed for Alice)
         {
-            Json::Value p; 
+            Json::Value p;
             p["delegate_filter"] = "delegatee";
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
         }
@@ -991,7 +993,7 @@ class AccountTx_test : public beast::unit_test::suite
         // Query Alice (Owner), Filter: Delegatee, Counterparty: Bob
         // Expect: TX B (Signer is Bob)
         {
-            Json::Value p; 
+            Json::Value p;
             p["delegate_filter"] = "delegatee";
             p["counterparty"] = bob.human();
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
@@ -1000,18 +1002,18 @@ class AccountTx_test : public beast::unit_test::suite
         // Query Alice (Owner), Filter: Delegatee, Counterparty: Carol
         // Expect: None (Signer is Bob, not Carol)
         {
-            Json::Value p; 
+            Json::Value p;
             p["delegate_filter"] = "delegatee";
             p["counterparty"] = carol.human();
             BEAST_EXPECT(countTxs(alice.id(), p) == 0);
         }
 
         // Query Alice (Owner), Filter: Delegator
-        // Expect: None. Alice cannot be a delegator on her own account history 
+        // Expect: None. Alice cannot be a delegator on her own account history
         // (unless she signed for someone else, which she didn't here).
         // TX A is self-signed, not delegated.
         {
-            Json::Value p; 
+            Json::Value p;
             p["delegate_filter"] = "delegator";
             BEAST_EXPECT(countTxs(alice.id(), p) == 0);
         }
@@ -1019,7 +1021,7 @@ class AccountTx_test : public beast::unit_test::suite
         // Query Bob (Signer), Filter: Delegator
         // Expect: TX B only. (Bob signed, but Alice owns the funds).
         {
-            Json::Value p; 
+            Json::Value p;
             p["delegate_filter"] = "delegator";
             BEAST_EXPECT(countTxs(bob.id(), p) == 1);
         }
@@ -1027,7 +1029,7 @@ class AccountTx_test : public beast::unit_test::suite
         // Query Bob (Signer), Filter: Delegator, Counterparty: Alice
         // Expect: TX B (Alice is the Owner)
         {
-            Json::Value p; 
+            Json::Value p;
             p["delegate_filter"] = "delegator";
             p["counterparty"] = alice.human();
             BEAST_EXPECT(countTxs(bob.id(), p) == 1);
@@ -1036,7 +1038,7 @@ class AccountTx_test : public beast::unit_test::suite
         // Query Bob (Signer), Filter: Delegator, Counterparty: Carol
         // Expect: None (Alice is Owner, not Carol)
         {
-            Json::Value p; 
+            Json::Value p;
             p["delegate_filter"] = "delegator";
             p["counterparty"] = carol.human();
             BEAST_EXPECT(countTxs(bob.id(), p) == 0);
@@ -1045,51 +1047,52 @@ class AccountTx_test : public beast::unit_test::suite
         // Query Bob (Signer), Filter: Delegatee
         // Expect: None. Bob did not employ a delegatee for his own TXs (TX C).
         {
-            Json::Value p; 
+            Json::Value p;
             p["delegate_filter"] = "delegatee";
             BEAST_EXPECT(countTxs(bob.id(), p) == 0);
         }
 
         // "delegate" is not an object (e.g., string)
         {
-             Json::Value p = "not_an_object";
-             checkError(p, "invalidParams"); // invalid_field_error("delegate")
+            Json::Value p = "not_an_object";
+            checkError(p, "invalidParams");  // invalid_field_error("delegate")
         }
 
         // Missing "delegate_filter" inside object
         {
-             Json::Value p(Json::objectValue);
-             checkError(p, "invalidParams"); // missing_field_error("delegate_filter")
+            Json::Value p(Json::objectValue);
+            checkError(
+                p, "invalidParams");  // missing_field_error("delegate_filter")
         }
 
         // "delegate_filter" is not a string (e.g., int)
         {
-             Json::Value p;
-             p["delegate_filter"] = 123;
-             checkError(p, "invalidParams");
+            Json::Value p;
+            p["delegate_filter"] = 123;
+            checkError(p, "invalidParams");
         }
 
         // "delegate_filter" has invalid value
         {
-             Json::Value p;
-             p["delegate_filter"] = "random_string";
-             checkError(p, "invalidParams");
+            Json::Value p;
+            p["delegate_filter"] = "random_string";
+            checkError(p, "invalidParams");
         }
 
         // "counterparty" is not a string
         {
-             Json::Value p;
-             p["delegate_filter"] = "delegatee";
-             p["counterparty"] = 123;
-             checkError(p, "invalidParams");
+            Json::Value p;
+            p["delegate_filter"] = "delegatee";
+            p["counterparty"] = 123;
+            checkError(p, "invalidParams");
         }
 
         // "counterparty" is malformed base58
         {
-             Json::Value p;
-             p["delegate_filter"] = "delegatee";
-             p["counterparty"] = "not_an_account";
-             checkError(p, "actMalformed");
+            Json::Value p;
+            p["delegate_filter"] = "delegatee";
+            p["counterparty"] = "not_an_account";
+            checkError(p, "actMalformed");
         }
     }
 

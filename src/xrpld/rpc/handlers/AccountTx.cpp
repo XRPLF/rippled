@@ -461,7 +461,7 @@ doAccountTxJson(RPC::JsonContext& context)
         args.marker = {token[jss::ledger].asUInt(), token[jss::seq].asUInt()};
     }
 
-    if (params.isMember("delegate")) 
+    if (params.isMember("delegate"))
     {
         auto const& delegateNode = params["delegate"];
 
@@ -475,7 +475,8 @@ doAccountTxJson(RPC::JsonContext& context)
             if (!delegateNode[jss::delegate_filter].isString())
                 return RPC::invalid_field_error(jss::delegate_filter);
 
-            auto const& delegateFilterStr = delegateNode[jss::delegate_filter].asString();
+            auto const& delegateFilterStr =
+                delegateNode[jss::delegate_filter].asString();
 
             if (delegateFilterStr == "delegatee")
                 filter.type = DelegateType::Delegatee;
@@ -489,15 +490,15 @@ doAccountTxJson(RPC::JsonContext& context)
                 if (!delegateNode[jss::counterparty].isString())
                     return RPC::invalid_field_error(jss::counterparty);
 
-                auto const counterparty =
-                    parseBase58<AccountID>(delegateNode[jss::counterparty].asString());
+                auto const counterparty = parseBase58<AccountID>(
+                    delegateNode[jss::counterparty].asString());
                 if (!counterparty)
                     return rpcError(rpcACT_MALFORMED);
 
                 filter.counterparty = *counterparty;
             }
 
-        args.delegate = filter;
+            args.delegate = filter;
         }
     }
 
