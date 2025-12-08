@@ -465,41 +465,39 @@ doAccountTxJson(RPC::JsonContext& context)
     {
         auto const& delegateNode = params["delegate"];
 
-        if (!delegateNode.isObject())
+        if (!delegateNode.isObject() ||
+            !delegateNode.isMember(jss::delegate_filter))
             return RPC::invalid_field_error("delegate");
 
         DelegateFilter filter;
 
-        if (delegateNode.isMember(jss::delegate_filter))
+        if (!delegateNode[jss::delegate_filter].isString())
+            return RPC::invalid_field_error(jss::delegate_filter);
+
+        auto const& delegateFilterStr =
+            delegateNode[jss::delegate_filter].asString();
+
+        if (delegateFilterStr == "delegatee")
+            filter.type = DelegateType::Delegatee;
+        else if (delegateFilterStr == "delegator")
+            filter.type = DelegateType::Delegator;
+        else
+            return RPC::invalid_field_error(jss::delegate_filter);
+
+        if (delegateNode.isMember(jss::counterparty))
         {
-            if (!delegateNode[jss::delegate_filter].isString())
-                return RPC::invalid_field_error(jss::delegate_filter);
+            if (!delegateNode[jss::counterparty].isString())
+                return RPC::invalid_field_error(jss::counterparty);
 
-            auto const& delegateFilterStr =
-                delegateNode[jss::delegate_filter].asString();
+            auto const counterparty = parseBase58<AccountID>(
+                delegateNode[jss::counterparty].asString());
+            if (!counterparty)
+                return rpcError(rpcACT_MALFORMED);
 
-            if (delegateFilterStr == "delegatee")
-                filter.type = DelegateType::Delegatee;
-            else if (delegateFilterStr == "delegator")
-                filter.type = DelegateType::Delegator;
-            else
-                return RPC::invalid_field_error(jss::delegate_filter);
-
-            if (delegateNode.isMember(jss::counterparty))
-            {
-                if (!delegateNode[jss::counterparty].isString())
-                    return RPC::invalid_field_error(jss::counterparty);
-
-                auto const counterparty = parseBase58<AccountID>(
-                    delegateNode[jss::counterparty].asString());
-                if (!counterparty)
-                    return rpcError(rpcACT_MALFORMED);
-
-                filter.counterparty = *counterparty;
-            }
-
-            args.delegate = filter;
+            filter.counterparty = *counterparty;
         }
+
+        args.delegate = filter;
     }
 
     auto res = doAccountTxHelp(context, args);
