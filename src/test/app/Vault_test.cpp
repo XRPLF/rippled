@@ -228,8 +228,8 @@ class Vault_test : public beast::unit_test::suite
 
             {
                 testcase(prefix + " clawback some");
-                auto code =
-                    asset.raw().native() ? ter(temMALFORMED) : ter(tesSUCCESS);
+                auto code = asset.raw().native() ? ter(tecNO_PERMISSION)
+                                                 : ter(tesSUCCESS);
                 auto tx = vault.clawback(
                     {.issuer = issuer,
                      .id = keylet.key,
@@ -1196,15 +1196,6 @@ class Vault_test : public beast::unit_test::suite
             testcase("invalid clawback");
 
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-
-            {
-                auto tx = vault.clawback(
-                    {.issuer = owner,
-                     .id = keylet.key,
-                     .holder = issuer,
-                     .amount = asset(50)});
-                env(tx, ter(temMALFORMED));
-            }
 
             {
                 auto tx = vault.clawback(
@@ -5243,10 +5234,140 @@ class Vault_test : public beast::unit_test::suite
         });
     }
 
+    void
+    testVaultClawbackBurnShares()
+    {
+        testcase("testVaultClawbackBurnShares - vault owner burn shares");
+        using namespace test::jtx;
+        using namespace loanBroker;
+        using namespace loan;
+        Env env(*this, beast::severities::kWarning);
+        Account owner{"alice"};
+        Account depositor{"bob"};
+        Account issuer{"issuer"};
+
+        env.fund(XRP(10000), issuer);
+        env.fund(XRP(10000), owner);
+        env.fund(XRP(20000), depositor);
+
+        auto const testCase = [&](PrettyAsset asset) {
+            Vault vault{env};
+
+            auto const [tx, vaultKeylet] =
+                vault.create({.owner = owner, .asset = asset});
+            env(tx, ter(tesSUCCESS));
+            env.close();
+
+            auto const vaultAssetBalance = [&]() {
+                auto const sleVault = env.le(vaultKeylet);
+                BEAST_EXPECT(sleVault != nullptr);
+
+                return std::make_pair(
+                    sleVault->at(sfAssetsAvailable),
+                    sleVault->at(sfAssetsTotal));
+            };
+
+            auto const vaultShareBalance = [&]() {
+                auto const sleVault = env.le(vaultKeylet);
+                BEAST_EXPECT(sleVault != nullptr);
+
+                auto const sleIssuance =
+                    env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+                BEAST_EXPECT(sleIssuance != nullptr);
+
+                return sleIssuance->at(sfOutstandingAmount);
+            };
+
+            env(vault.deposit(
+                    {.depositor = depositor,
+                     .id = vaultKeylet.key,
+                     .amount = asset(100)}),
+                ter(tesSUCCESS));
+            env.close();
+
+            auto const [availablePreDefault, totalPreDefault] =
+                vaultAssetBalance();
+            BEAST_EXPECT(availablePreDefault == totalPreDefault);
+            BEAST_EXPECT(availablePreDefault == asset(100).value());
+
+            auto const brokerKeylet =
+                keylet::loanbroker(owner.id(), env.seq(owner));
+
+            env(set(owner, vaultKeylet.key));
+            env.close();
+
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+
+            // Create a simple Loan for the full amount of Vault assets
+            env(set(depositor,
+                    brokerKeylet.key,
+                    asset(availablePreDefault).value()),
+                loan::interestRate(TenthBips32(0)),
+                gracePeriod(10),
+                paymentInterval(120),
+                paymentTotal(10),
+                sig(sfCounterpartySignature, owner),
+                fee(env.current()->fees().base * 2),
+                ter(tesSUCCESS));
+            env.close();
+
+            env.close(std::chrono::seconds{120 + 10});
+
+            env(manage(owner, loanKeylet.key, tfLoanDefault), ter(tesSUCCESS));
+
+            auto const [availablePostDefault, totalPostDefault] =
+                vaultAssetBalance();
+            BEAST_EXPECT(availablePostDefault == totalPostDefault);
+            BEAST_EXPECT(availablePostDefault == asset(0).value());
+
+            // The owner cannot perform a non-zero share burn
+            env(vault.clawback({
+                    .issuer = owner,
+                    .id = vaultKeylet.key,
+                    .holder = depositor,
+                    .amount = asset(1).value(),
+                }),
+                ter(tecLIMIT_EXCEEDED));
+            env.close();
+
+            env(vault.clawback({
+                    .issuer = owner,
+                    .id = vaultKeylet.key,
+                    .holder = depositor,
+                }),
+                ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(vaultShareBalance() == 0);
+        };
+
+        PrettyAsset xrp = xrpIssue();
+        testCase(xrp);
+
+        PrettyAsset IOU = issuer["IOU"];
+        env.trust(IOU(1000), owner);
+        env.trust(IOU(1000), depositor);
+        env(pay(issuer, owner, IOU(100)));
+        env(pay(issuer, depositor, IOU(100)));
+        env.close();
+        testCase(IOU);
+
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create(
+            {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+        PrettyAsset MPT = mptt.issuanceID();
+        mptt.authorize({.account = owner});
+        mptt.authorize({.account = depositor});
+        env(pay(issuer, depositor, MPT(1000)));
+        env.close();
+        testCase(MPT);
+    }
+
 public:
     void
     run() override
     {
+        testVaultClawbackBurnShares();
         testSequences();
         testPreflight();
         testCreateFailXRP();

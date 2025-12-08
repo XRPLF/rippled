@@ -22,8 +22,6 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/nftPageMask.h>
 
-#include <cstdint>
-#include <optional>
 
 namespace ripple {
 
@@ -95,6 +93,7 @@ hasPrivilege(STTx const& tx, Privilege priv)
     switch (tx.getTxnType())
     {
 #include <xrpl/protocol/detail/transactions.macro>
+
         // Deprecated types
         default:
             return false;
@@ -2623,6 +2622,7 @@ ValidVault::Vault::make(SLE const& from)
     self.key = from.key();
     self.asset = from.at(sfAsset);
     self.pseudoId = from.getAccountID(sfAccount);
+    self.owner = from.at(sfOwner);
     self.shareMPTID = from.getFieldH192(sfShareMPTID);
     self.assetsTotal = from.at(sfAssetsTotal);
     self.assetsAvailable = from.at(sfAssetsAvailable);
@@ -3068,6 +3068,10 @@ ValidVault::finalize(
                                    : std::nullopt;
     };
 
+    auto const vaultHoldsNoAssets = [&](Vault const& vault) {
+        return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
+    };
+
     // Technically this does not need to be a lambda, but it's more
     // convenient thanks to early "return false"; the not-so-nice
     // alternatives are several layers of nested if/else or more complex
@@ -3450,22 +3454,35 @@ ValidVault::finalize(
                 if (vaultAsset.native() ||
                     vaultAsset.getIssuer() != tx[sfAccount])
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback may only be performed by "
-                        "the asset issuer";
-                    return false;  // That's all we can do
+                    // The owner can use clawback to force-burn shares when the
+                    // vault is empty but there are outstanding shares
+                    if (beforeShares && beforeShares->sharesTotal > 0 &&
+                        vaultHoldsNoAssets(beforeVault) &&
+                        beforeVault.owner == tx[sfAccount])
+                    {
+                        // do nothing
+                    }
+                    else
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback may only be performed "
+                            "by "
+                            "the asset issuer";
+                        return false;  // That's all we can do
+                    }
                 }
 
                 auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
 
-                if (!vaultDeltaAssets)
+                if (!vaultDeltaAssets && !vaultHoldsNoAssets(beforeVault))
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback must change vault balance";
                     return false;  // That's all we can do
                 }
 
-                if (*vaultDeltaAssets >= zero)
+                if (*vaultDeltaAssets >= zero &&
+                    !vaultHoldsNoAssets(beforeVault))
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback must decrease vault "
@@ -3505,8 +3522,9 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                if (beforeVault.assetsTotal + *vaultDeltaAssets !=
-                    afterVault.assetsTotal)
+                if (!vaultHoldsNoAssets(beforeVault) &&
+                    beforeVault.assetsTotal + *vaultDeltaAssets !=
+                        afterVault.assetsTotal)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback and assets outstanding "
@@ -3514,8 +3532,9 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
-                    afterVault.assetsAvailable)
+                if (!vaultHoldsNoAssets(beforeVault) &&
+                    beforeVault.assetsAvailable + *vaultDeltaAssets !=
+                        afterVault.assetsAvailable)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback and assets available must "

@@ -20,6 +20,19 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
+    std::pair<STAmount, STAmount>
+    burnShares(
+        std::shared_ptr<SLE> const& vault,
+        std::shared_ptr<SLE const> const& sleShareIssuance,
+        AccountID const& holder);
+
+    Expected<std::pair<STAmount, STAmount>, TER>
+    clawbackAssets(
+        std::shared_ptr<SLE> const& vault,
+        std::shared_ptr<SLE const> const& sleShareIssuance,
+        AccountID const& holder,
+        STAmount const& clawbackAmount);
+
     TER
     doApply() override;
 };
