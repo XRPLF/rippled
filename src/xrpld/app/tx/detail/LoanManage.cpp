@@ -223,11 +223,11 @@ LoanManage::defaultLoan(
         }
         if (*vaultAvailableProxy > *vaultTotalProxy)
         {
-            JLOG(j.warn()) << "Vault assets available must not be greater "
-                              "than assets outstanding. Available: "
-                           << *vaultAvailableProxy
-                           << ", Total: " << *vaultTotalProxy;
-            return tecLIMIT_EXCEEDED;
+            JLOG(j.fatal())
+                << "Vault assets available must not be greater "
+                   "than assets outstanding. Available: "
+                << *vaultAvailableProxy << ", Total: " << *vaultTotalProxy;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
         }
 
         // The loss has been realized
