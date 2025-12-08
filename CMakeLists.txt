@@ -148,3 +148,5 @@ if(tests)
   include(CTest)
   add_subdirectory(src/tests/libxrpl)
 endif()
+
+include(Ccache)
