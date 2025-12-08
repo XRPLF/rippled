@@ -440,13 +440,21 @@ operator+(LoanState const& lhs, detail::LoanStateDeltas const& rhs);
 LoanProperties
 computeLoanProperties(
     Asset const& asset,
-    Number principalOutstanding,
+    Number const& principalOutstanding,
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining,
     TenthBips32 managementFeeRate,
-    std::int32_t minimumScale,
-    beast::Journal j);
+    std::int32_t minimumScale);
+
+LoanProperties
+computeLoanProperties(
+    Asset const& asset,
+    Number const& principalOutstanding,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining,
+    TenthBips32 managementFeeRate,
+    std::int32_t minimumScale);
 
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale);

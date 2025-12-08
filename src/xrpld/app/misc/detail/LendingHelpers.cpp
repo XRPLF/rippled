@@ -426,12 +426,10 @@ tryOverpayment(
     auto newLoanProperties = computeLoanProperties(
         asset,
         newRawPrincipal,
-        interestRate,
-        paymentInterval,
+        periodicRate,
         paymentRemaining,
         managementFeeRate,
-        loanScale,
-        j);
+        loanScale);
 
     JLOG(j.debug()) << "new periodic payment: "
                     << newLoanProperties.periodicPayment
@@ -1535,19 +1533,35 @@ computeManagementFee(
 LoanProperties
 computeLoanProperties(
     Asset const& asset,
-    Number principalOutstanding,
+    Number const& principalOutstanding,
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining,
     TenthBips32 managementFeeRate,
-    std::int32_t minimumScale,
-    beast::Journal j)
+    std::int32_t minimumScale)
 {
     auto const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
     XRPL_ASSERT(
         interestRate == 0 || periodicRate > 0,
         "ripple::computeLoanProperties : valid rate");
+    return computeLoanProperties(
+        asset,
+        principalOutstanding,
+        periodicRate,
+        paymentsRemaining,
+        managementFeeRate,
+        minimumScale);
+}
 
+LoanProperties
+computeLoanProperties(
+    Asset const& asset,
+    Number const& principalOutstanding,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining,
+    TenthBips32 managementFeeRate,
+    std::int32_t minimumScale)
+{
     auto const periodicPayment = detail::loanPeriodicPayment(
         principalOutstanding, periodicRate, paymentsRemaining);
 
@@ -1561,13 +1575,6 @@ computeLoanProperties(
 
         // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
         STAmount amount{asset, periodicPayment * paymentsRemaining};
-        JLOG(j.debug()) << "computeLoanProperties:" << " Principal requested: "
-                        << principalOutstanding
-                        << ". Periodic payment: " << periodicPayment
-                        << ". Payments remaining: " << paymentsRemaining
-                        << ". Raw total value: "
-                        << periodicPayment * paymentsRemaining
-                        << ". Candidate total value: " << amount << std::endl;
 
         // Base the loan scale on the total value, since that's going to be
         // the biggest number involved (barring unusual parameters for late,
@@ -1584,21 +1591,18 @@ computeLoanProperties(
         // scale
         amount = roundToAsset(asset, amount, loanScale);
 
-        JLOG(j.debug()) << "computeLoanProperties: Loan scale:" << loanScale
-                        << ". Actual total value: " << amount << std::endl;
-
         return std::make_pair(amount, loanScale);
     }();
 
     // Since we just figured out the loan scale, we haven't been able to
     // validate that the principal fits in it, so to allow this function to
     // succeed, round it here, and let the caller do the validation.
-    principalOutstanding = roundToAsset(
+    auto const roundedPrincipalOutstanding = roundToAsset(
         asset, principalOutstanding, loanScale, Number::to_nearest);
 
     // E<quation (31) from XLS-66 spec, Section A-2 Equation Glossary
     auto const totalInterestOutstanding =
-        totalValueOutstanding - principalOutstanding;
+        totalValueOutstanding - roundedPrincipalOutstanding;
     auto const feeOwedToBroker = computeManagementFee(
         asset, totalInterestOutstanding, managementFeeRate, loanScale);
 

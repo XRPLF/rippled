@@ -404,8 +404,7 @@ LoanSet::doApply()
         paymentInterval,
         paymentTotal,
         TenthBips16{brokerSle->at(sfManagementFeeRate)},
-        vaultScale,
-        j_);
+        vaultScale);
 
     // Check that relevant values won't lose precision. This is mostly only
     // relevant for IOU assets.
@@ -442,8 +441,8 @@ LoanSet::doApply()
         // LCOV_EXCL_START
         JLOG(j_.warn())
             << "Computed loan properties are invalid. Does not compute."
-            << " Management fee: " << properties.managementFeeOwedToBroker
-            << ". Total Value: " << properties.totalValueOutstanding
+            << " Management fee: " << properties.loanState.managementFeeDue
+            << ". Total Value: " << properties.loanState.valueOutstanding
             << ". PeriodicPayment: " << properties.periodicPayment;
         return tecINTERNAL;
         // LCOV_EXCL_STOP
