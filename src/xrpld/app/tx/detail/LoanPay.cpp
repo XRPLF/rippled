@@ -312,7 +312,6 @@ LoanPay::doApply()
             JLOG(j_.fatal()) << "Failed to unimpair loan before payment.";
             return ret;  // LCOV_EXCL_LINE
         }
-
     }
 
     LoanPaymentType const paymentType = [&tx]() {
