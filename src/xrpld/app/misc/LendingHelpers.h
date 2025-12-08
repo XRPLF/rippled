@@ -362,6 +362,18 @@ struct LoanStateDeltas
     nonNegative();
 };
 
+Expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
+tryOverpayment(
+    Asset const& asset,
+    std::int32_t loanScale,
+    ExtendedPaymentComponents const& overpaymentComponents,
+    LoanState const& roundedLoanState,
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentRemaining,
+    TenthBips16 const managementFeeRate,
+    beast::Journal j);
+
 Number
 computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining);
 

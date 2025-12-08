@@ -700,8 +700,7 @@ protected:
             interval,
             total,
             feeRate,
-            asset(brokerParams.vaultDeposit).number().exponent(),
-            env.journal);
+            asset(brokerParams.vaultDeposit).number().exponent());
         log << "Loan properties:\n"
             << "\tPrincipal: " << principal << std::endl
             << "\tInterest rate: " << interest << std::endl
@@ -1483,8 +1482,7 @@ protected:
             state.paymentInterval,
             state.paymentRemaining,
             broker.params.managementFeeRate,
-            state.loanScale,
-            env.journal);
+            state.loanScale);
 
         verifyLoanStatus(
             0,
