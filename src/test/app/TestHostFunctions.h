@@ -386,6 +386,8 @@ public:
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
+        if (!getJournal().active(beast::severities::kTrace))
+            return 0;
         auto j = getJournal().trace();
 #endif
         if (!asHex)
@@ -416,6 +418,8 @@ public:
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
+        if (!getJournal().active(beast::severities::kTrace))
+            return 0;
         auto j = getJournal().trace();
 #endif
         j << "WASM TRACE NUM: " << msg << " " << data;
@@ -432,6 +436,8 @@ public:
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
+        if (!getJournal().active(beast::severities::kTrace))
+            return 0;
         auto j = getJournal().trace();
 #endif
         if (!account)
@@ -449,6 +455,8 @@ public:
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
+        if (!getJournal().active(beast::severities::kTrace))
+            return 0;
         auto j = getJournal().trace();
 #endif
         auto const s = floatToString(data);
@@ -466,6 +474,8 @@ public:
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
+        if (!getJournal().active(beast::severities::kTrace))
+            return 0;
         auto j = getJournal().trace();
 #endif
         auto const amountStr = amount.getFullText();

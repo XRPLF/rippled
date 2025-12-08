@@ -716,10 +716,13 @@ WasmHostFunctionsImpl::trace(
     bool asHex)
 {
 #ifdef DEBUG_OUTPUT
-    auto j = getJournal().error();
+    auto& j = std::cerr;
 #else
+    if (!getJournal().active(beast::severities::kTrace))
+        return 0;
     auto j = getJournal().trace();
 #endif
+
     if (!asHex)
     {
         j << "HF TRACE (" << leKey.key << "): " << msg << " "
@@ -735,6 +738,10 @@ WasmHostFunctionsImpl::trace(
         j << "HF DEV TRACE (" << leKey.key << "): " << msg << " " << hex;
     }
 
+#ifdef DEBUG_OUTPUT
+    j << std::endl;
+#endif
+
     return msg.size() + data.size() * (asHex ? 2 : 1);
 }
 
@@ -742,11 +749,19 @@ Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
 {
 #ifdef DEBUG_OUTPUT
-    auto j = getJournal().error();
+    auto& j = std::cerr;
 #else
+    if (!getJournal().active(beast::severities::kTrace))
+        return 0;
     auto j = getJournal().trace();
 #endif
+
     j << "HF TRACE NUM(" << leKey.key << "): " << msg << " " << data;
+
+#ifdef DEBUG_OUTPUT
+    j << std::endl;
+#endif
+
     return msg.size() + sizeof(data);
 }
 
@@ -756,14 +771,21 @@ WasmHostFunctionsImpl::traceAccount(
     AccountID const& account)
 {
 #ifdef DEBUG_OUTPUT
-    auto j = getJournal().error();
+    auto& j = std::cerr;
 #else
+    if (!getJournal().active(beast::severities::kTrace))
+        return 0;
     auto j = getJournal().trace();
 #endif
 
     auto const accountStr = toBase58(account);
 
     j << "HF TRACE ACCOUNT(" << leKey.key << "): " << msg << " " << accountStr;
+
+#ifdef DEBUG_OUTPUT
+    j << std::endl;
+#endif
+
     return msg.size() + accountStr.size();
 }
 
@@ -773,12 +795,19 @@ WasmHostFunctionsImpl::traceFloat(
     Slice const& data)
 {
 #ifdef DEBUG_OUTPUT
-    auto j = getJournal().error();
+    auto& j = std::cerr;
 #else
+    if (!getJournal().active(beast::severities::kTrace))
+        return 0;
     auto j = getJournal().trace();
 #endif
     auto const s = floatToString(data);
     j << "HF TRACE FLOAT(" << leKey.key << "): " << msg << " " << s;
+
+#ifdef DEBUG_OUTPUT
+    j << std::endl;
+#endif
+
     return msg.size() + s.size();
 }
 
@@ -788,12 +817,19 @@ WasmHostFunctionsImpl::traceAmount(
     STAmount const& amount)
 {
 #ifdef DEBUG_OUTPUT
-    auto j = getJournal().error();
+    auto& j = std::cerr;
 #else
+    if (!getJournal().active(beast::severities::kTrace))
+        return 0;
     auto j = getJournal().trace();
 #endif
     auto const amountStr = amount.getFullText();
     j << "HF TRACE AMOUNT(" << leKey.key << "): " << msg << " " << amountStr;
+
+#ifdef DEBUG_OUTPUT
+    j << std::endl;
+#endif
+
     return msg.size() + amountStr.size();
 }
 
