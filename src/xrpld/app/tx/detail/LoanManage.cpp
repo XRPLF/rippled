@@ -338,7 +338,7 @@ LoanManage::impairLoan(
     return tesSUCCESS;
 }
 
-TER
+[[nodiscard]] TER
 LoanManage::unimpairLoan(
     ApplyView& view,
     SLE::ref loanSle,
