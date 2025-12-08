@@ -88,7 +88,6 @@ WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
 static Expected<Bytes, HostFunctionError>
 getAnyFieldData(STBase const* obj)
 {
-    // auto const& fname = obj.getFName();
     if (!obj)
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
@@ -103,6 +102,7 @@ getAnyFieldData(STBase const* obj)
         // LCOV_EXCL_STOP
         case STI_OBJECT:
         case STI_ARRAY:
+        case STI_VECTOR256:
             return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
             break;
         case STI_ACCOUNT: {
@@ -235,6 +235,13 @@ locateField(STObject const& obj, Slice const& locator)
             auto const& fname(*it->second);
             field = o->peekAtPField(fname);
         }
+        else if (STI_VECTOR256 == field->getSType())
+        {
+            auto const* v = static_cast<STVector256 const*>(field);
+            if (sfieldCode >= v->size())
+                return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
+            field = &(v->operator[](sfieldCode));
+        }
         else  // simple field must be the last one
         {
             return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
@@ -290,24 +297,25 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getTxArrayLen(SField const& fname)
 {
-    if (fname.fieldType != STI_ARRAY)
+    if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
         return Unexpected(HostFunctionError::NO_ARRAY);
 
     auto const* field = ctx.tx.peekAtPField(fname);
     if (noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
-    if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
-    int32_t const sz = static_cast<STArray const*>(field)->size();
+    if (field->getSType() == STI_VECTOR256)
+        return static_cast<STVector256 const*>(field)->size();
+    if (field->getSType() == STI_ARRAY)
+        return static_cast<STArray const*>(field)->size();
 
-    return sz;
+    return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
 }
 
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
 {
-    if (fname.fieldType != STI_ARRAY)
+    if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
         return Unexpected(HostFunctionError::NO_ARRAY);
 
     auto const sle = getCurrentLedgerObj();
@@ -318,11 +326,12 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
     if (noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
-    if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
-    int32_t const sz = static_cast<STArray const*>(field)->size();
+    if (field->getSType() == STI_VECTOR256)
+        return static_cast<STVector256 const*>(field)->size();
+    if (field->getSType() == STI_ARRAY)
+        return static_cast<STArray const*>(field)->size();
 
-    return sz;
+    return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
 }
 
 Expected<int32_t, HostFunctionError>
@@ -330,7 +339,7 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
     int32_t cacheIdx,
     SField const& fname)
 {
-    if (fname.fieldType != STI_ARRAY)
+    if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
         return Unexpected(HostFunctionError::NO_ARRAY);
 
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
@@ -341,12 +350,12 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
     if (noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
-    if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
+    if (field->getSType() == STI_VECTOR256)
+        return static_cast<STVector256 const*>(field)->size();
+    if (field->getSType() == STI_ARRAY)
+        return static_cast<STArray const*>(field)->size();
 
-    int32_t const sz = static_cast<STArray const*>(field)->size();
-
-    return sz;
+    return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
 }
 
 Expected<int32_t, HostFunctionError>
@@ -357,11 +366,12 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
         return Unexpected(r.error());
 
     auto const* field = r.value();
-    if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
-    int32_t const sz = static_cast<STArray const*>(field)->size();
+    if (field->getSType() == STI_VECTOR256)
+        return static_cast<STVector256 const*>(field)->size();
+    if (field->getSType() == STI_ARRAY)
+        return static_cast<STArray const*>(field)->size();
 
-    return sz;
+    return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
 }
 
 Expected<int32_t, HostFunctionError>
@@ -375,11 +385,12 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
         return Unexpected(r.error());
 
     auto const* field = r.value();
-    if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
-    int32_t const sz = static_cast<STArray const*>(field)->size();
+    if (field->getSType() == STI_VECTOR256)
+        return static_cast<STVector256 const*>(field)->size();
+    if (field->getSType() == STI_ARRAY)
+        return static_cast<STArray const*>(field)->size();
 
-    return sz;
+    return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
 }
 
 Expected<int32_t, HostFunctionError>
@@ -396,11 +407,12 @@ WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
         return Unexpected(r.error());
 
     auto const* field = r.value();
-    if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
-    int32_t const sz = static_cast<STArray const*>(field)->size();
+    if (field->getSType() == STI_VECTOR256)
+        return static_cast<STVector256 const*>(field)->size();
+    if (field->getSType() == STI_ARRAY)
+        return static_cast<STArray const*>(field)->size();
 
-    return sz;
+    return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
 }
 
 Expected<int32_t, HostFunctionError>
