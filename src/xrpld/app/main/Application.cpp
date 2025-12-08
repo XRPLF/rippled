@@ -37,6 +37,7 @@
 #include <xrpld/shamap/NodeFamily.h>
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/MallocTrim.h>
 #include <xrpl/basics/ResolverAsio.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
@@ -1105,6 +1106,8 @@ public:
                 << "CachedSLEs sweep.  Size before: " << oldCachedSLEsSize
                 << "; size after: " << cachedSLEs_.size();
         }
+
+        mallocTrim(std::optional<std::string>("doSweep"), m_journal);
 
         // Set timer to do another sweep later.
         setSweepTimer();

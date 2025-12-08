@@ -347,6 +347,13 @@ public:
     void
     invariants() const;
 
+    /** Log tree structure statistics for debugging/monitoring
+        @param j Journal to log to
+        @param mapName Name to identify this map in logs
+    */
+    void
+    logTreeStats(beast::Journal j, std::string const& mapName) const;
+
 private:
     using SharedPtrNodeStack = std::stack<
         std::pair<intr_ptr::SharedPtr<SHAMapTreeNode>, SHAMapNodeID>>;

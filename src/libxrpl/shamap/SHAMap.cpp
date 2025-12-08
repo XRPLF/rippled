@@ -1240,4 +1240,72 @@ SHAMap::invariants() const
     node->invariants(true);
 }
 
+void
+SHAMap::logTreeStats(beast::Journal j, std::string const& mapName) const
+{
+    struct Stats
+    {
+        std::uint32_t totalNodes = 0;
+        std::uint32_t innerNodes = 0;
+        std::uint32_t leafNodes = 0;
+        std::uint32_t maxDepth = 0;
+        std::array<std::uint32_t, 65> depthCount;
+        Stats()
+        {
+            depthCount.fill(0);
+        }
+    } stats;
+
+    std::function<void(
+        intr_ptr::SharedPtr<SHAMapTreeNode> const&, std::uint32_t)>
+        traverse;
+    traverse = [&](intr_ptr::SharedPtr<SHAMapTreeNode> const& node,
+                   std::uint32_t depth) {
+        if (!node)
+            return;
+
+        stats.totalNodes++;
+        stats.depthCount[depth]++;
+        stats.maxDepth = std::max(stats.maxDepth, depth);
+
+        if (node->isInner())
+        {
+            stats.innerNodes++;
+            auto inner = dynamic_cast<SHAMapInnerNode*>(node.get());
+            if (inner)
+            {
+                for (int i = 0; i < branchFactor; ++i)
+                {
+                    if (auto child = inner->getChild(i))
+                    {
+                        traverse(child, depth + 1);
+                    }
+                }
+            }
+        }
+        else
+        {
+            stats.leafNodes++;
+        }
+    };
+
+    traverse(root_, 0);
+
+    JLOG(j.info()) << "SHAMap (" << mapName
+                   << ") stats: total_nodes=" << stats.totalNodes
+                   << ", inner_nodes=" << stats.innerNodes
+                   << ", leaf_nodes=" << stats.leafNodes
+                   << ", max_depth=" << stats.maxDepth;
+
+    std::ostringstream hist;
+    hist << "Depth histogram: { ";
+    for (std::uint32_t d = 0; d <= stats.maxDepth; ++d)
+    {
+        if (stats.depthCount[d] > 0)
+            hist << d << ": " << stats.depthCount[d] << ", ";
+    }
+    hist << "}";
+    JLOG(j.debug()) << "SHAMap (" << mapName << ") " << hist.str();
+}
+
 }  // namespace ripple

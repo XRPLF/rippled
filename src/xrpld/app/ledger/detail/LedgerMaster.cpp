@@ -261,6 +261,13 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     (void)max_ledger_difference_;
     mValidLedgerSeq = l->info().seq;
 
+    if (l->info().seq % 100 == 0)
+    {
+        beast::Journal statsJournal = app_.journal("SHAMapStats");
+        l->stateMap().logTreeStats(statsJournal, "AccountStateMap");
+        l->txMap().logTreeStats(statsJournal, "TransactionMap");
+    }
+
     app_.getOPs().updateLocalTx(*l);
     app_.getSHAMapStore().onLedgerClosed(getValidatedLedger());
     mLedgerHistory.validatedLedger(l, consensusHash);
