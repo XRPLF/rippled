@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2025 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
 #include <xrpld/app/tx/detail/VaultCreate.h>
@@ -41,8 +22,11 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1))
         return false;
 
-    return !ctx.tx.isFieldPresent(sfDomainID) ||
-        ctx.rules.enabled(featurePermissionedDomains);
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDomains))
+        return false;
+
+    return true;
 }
 
 std::uint32_t
@@ -96,13 +80,6 @@ VaultCreate::preflight(PreflightContext const& ctx)
     }
 
     return tesSUCCESS;
-}
-
-XRPAmount
-VaultCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
-{
-    // One reserve increment is typically much greater than one base fee.
-    return calculateOwnerReserveFee(view, tx);
 }
 
 TER
@@ -161,8 +138,9 @@ VaultCreate::doApply()
 
     if (auto ter = dirLink(view(), account_, vault))
         return ter;
-    adjustOwnerCount(view(), owner, 1, j_);
-    auto ownerCount = owner->at(sfOwnerCount);
+    // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
+    adjustOwnerCount(view(), owner, 2, j_);
+    auto const ownerCount = owner->at(sfOwnerCount);
     if (mPriorBalance < view().fees().accountReserve(ownerCount))
         return tecINSUFFICIENT_RESERVE;
 

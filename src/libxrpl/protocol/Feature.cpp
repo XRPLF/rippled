@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -430,8 +411,10 @@ featureToName(uint256 const& f)
 #undef XRPL_FEATURE
 #pragma push_macro("XRPL_FIX")
 #undef XRPL_FIX
-#pragma push_macro("XRPL_RETIRE")
-#undef XRPL_RETIRE
+#pragma push_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FEATURE
+#pragma push_macro("XRPL_RETIRE_FIX")
+#undef XRPL_RETIRE_FIX
 
 #define XRPL_FEATURE(name, supported, vote) \
     uint256 const feature##name = registerFeature(#name, supported, vote);
@@ -439,16 +422,23 @@ featureToName(uint256 const& f)
     uint256 const fix##name = registerFeature("fix" #name, supported, vote);
 
 // clang-format off
-#define XRPL_RETIRE(name)                                       \
-    [[deprecated("The referenced amendment has been retired")]] \
-    [[maybe_unused]]                                            \
-    uint256 const retired##name = retireFeature(#name);
+#define XRPL_RETIRE_FEATURE(name)                                       \
+    [[deprecated("The referenced feature amendment has been retired")]] \
+    [[maybe_unused]]                                                    \
+    uint256 const retiredFeature##name = retireFeature(#name);
+
+#define XRPL_RETIRE_FIX(name)                                           \
+    [[deprecated("The referenced fix amendment has been retired")]]     \
+    [[maybe_unused]]                                                    \
+    uint256 const retiredFix##name = retireFeature("fix" #name);
 // clang-format on
 
 #include <xrpl/protocol/detail/features.macro>
 
-#undef XRPL_RETIRE
-#pragma pop_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE_FEATURE
+#pragma pop_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FIX
+#pragma pop_macro("XRPL_RETIRE_FIX")
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE

@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
-#define RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
+#ifndef XRPL_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
+#define XRPL_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/paths/AMMContext.h>
@@ -452,7 +433,7 @@ public:
         // add the strands in `next_` to `cur_`, sorted by theoretical quality.
         // Best quality first.
         cur_.clear();
-        if (v.rules().enabled(featureFlowSortStrands) && !next_.empty())
+        if (!next_.empty())
         {
             std::vector<std::pair<Quality, Strand const*>> strandQuals;
             strandQuals.reserve(next_.size());
@@ -738,46 +719,16 @@ flow(
                 continue;
             }
 
-            if (baseView.rules().enabled(featureFlowSortStrands))
-            {
-                XRPL_ASSERT(!best, "ripple::flow : best is unset");
-                if (!f.inactive)
-                    activeStrands.push(strand);
-                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
-                activeStrands.pushRemainingCurToNext(strandIndex + 1);
-                break;
-            }
-
-            activeStrands.push(strand);
-
-            if (!best || best->quality < q ||
-                (best->quality == q && best->out < f.out))
-            {
-                // If this strand is inactive (because it consumed too many
-                // offers) and ends up having the best quality, remove it
-                // from the activeStrands. If it doesn't end up having the
-                // best quality, keep it active.
-
-                if (f.inactive)
-                {
-                    // This should be `nextSize`, not `size`. This issue is
-                    // fixed in featureFlowSortStrands.
-                    markInactiveOnUse = activeStrands.size() - 1;
-                }
-                else
-                {
-                    markInactiveOnUse.reset();
-                }
-
-                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
-            }
+            XRPL_ASSERT(!best, "ripple::flow : best is unset");
+            if (!f.inactive)
+                activeStrands.push(strand);
+            best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
+            activeStrands.pushRemainingCurToNext(strandIndex + 1);
+            break;
         }
 
-        bool const shouldBreak = [&] {
-            if (baseView.rules().enabled(featureFlowSortStrands))
-                return !best || offersConsidered >= maxOffersToConsider;
-            return !best;
-        }();
+        bool const shouldBreak =
+            !best || offersConsidered >= maxOffersToConsider;
 
         if (best)
         {

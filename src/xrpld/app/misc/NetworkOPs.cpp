@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/consensus/RCLConsensus.h>
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/AcceptedLedger.h>
@@ -1696,10 +1677,11 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     app_.getHashRouter().shouldRelay(e.transaction->getID());
                 if (auto const sttx = *(e.transaction->getSTransaction());
                     toSkip &&
-                    // Skip relaying if it's an inner batch txn and batch
-                    // feature is enabled
-                    !(sttx.isFlag(tfInnerBatchTxn) &&
-                      newOL->rules().enabled(featureBatch)))
+                    // Skip relaying if it's an inner batch txn. The flag should
+                    // only be set if the Batch feature is enabled. If Batch is
+                    // not enabled, the flag is always invalid, so don't relay
+                    // it regardless.
+                    !sttx.isFlag(tfInnerBatchTxn))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
@@ -2082,8 +2064,7 @@ NetworkOPsImp::beginConsensus(
         "ripple::NetworkOPsImp::beginConsensus : closedLedger parent matches "
         "hash");
 
-    if (prevLedger->rules().enabled(featureNegativeUNL))
-        app_.validators().setNegativeUNL(prevLedger->negativeUNL());
+    app_.validators().setNegativeUNL(prevLedger->negativeUNL());
     TrustChanges const changes = app_.validators().updateTrusted(
         app_.getValidations().getCurrentNodeIDs(),
         closingInfo.parentCloseTime,
@@ -3060,9 +3041,11 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
-    // never publish an inner txn inside a batch txn
-    if (transaction->isFlag(tfInnerBatchTxn) &&
-        ledger->rules().enabled(featureBatch))
+    // never publish an inner txn inside a batch txn. The flag should
+    // only be set if the Batch feature is enabled. If Batch is not
+    // enabled, the flag is always invalid, so don't publish it
+    // regardless.
+    if (transaction->isFlag(tfInnerBatchTxn))
         return;
 
     MultiApiJson jvObj =

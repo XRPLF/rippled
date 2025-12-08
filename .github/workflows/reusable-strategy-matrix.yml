@@ -18,6 +18,10 @@ on:
         description: "The generated strategy matrix."
         value: ${{ jobs.generate-matrix.outputs.matrix }}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   generate-matrix:
     runs-on: ubuntu-latest

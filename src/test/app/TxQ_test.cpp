@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/TestSuite.h>
@@ -1073,7 +1054,7 @@ public:
         // Charlie - queue a transaction, with a higher fee
         // than default
         env(noop(charlie), fee(15), queued);
-        checkMetrics(*this, env, 6, initQueueMax, 4, 3);
+        checkMetrics(*this, env, 6, initQueueMax, 4, 3, 257);
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
         BEAST_EXPECT(env.seq(bob) == bobSeq);
@@ -4349,9 +4330,10 @@ public:
         Account const ellie("ellie");
         Account const fiona("fiona");
 
+        constexpr int ledgersInQueue = 30;
         auto cfg = makeConfig(
             {{"minimum_txn_in_ledger_standalone", "1"},
-             {"ledgers_in_queue", "5"},
+             {"ledgers_in_queue", std::to_string(ledgersInQueue)},
              {"maximum_txn_per_account", "10"}},
             {{"account_reserve", "1000"}, {"owner_reserve", "50"}});
 
@@ -4377,7 +4359,9 @@ public:
         env.close();
         env.fund(XRP(10000), fiona);
         env.close();
-        checkMetrics(*this, env, 0, 10, 0, 2);
+
+        auto const metrics = env.app().getTxQ().getMetrics(*env.current());
+        checkMetrics(*this, env, 0, ledgersInQueue * metrics.txPerLedger, 0, 2);
 
         // Close ledgers until the amendments show up.
         int i = 0;
@@ -4389,7 +4373,12 @@ public:
         }
         auto expectedPerLedger = ripple::detail::numUpVotedAmendments() + 1;
         checkMetrics(
-            *this, env, 0, 5 * expectedPerLedger, 0, expectedPerLedger);
+            *this,
+            env,
+            0,
+            ledgersInQueue * expectedPerLedger,
+            0,
+            expectedPerLedger);
 
         // Now wait 2 weeks modulo 256 ledgers for the amendments to be
         // enabled.  Speed the process by closing ledgers every 80 minutes,
@@ -4408,7 +4397,7 @@ public:
             *this,
             env,
             0,
-            5 * expectedPerLedger,
+            ledgersInQueue * expectedPerLedger,
             expectedPerLedger + 1,
             expectedPerLedger);
 
@@ -4454,12 +4443,12 @@ public:
                 prepareFee(++multiplier),
                 ter(terQUEUED));
         }
-        std::size_t expectedInQueue = 60;
+        std::size_t expectedInQueue = multiplier;
         checkMetrics(
             *this,
             env,
             expectedInQueue,
-            5 * expectedPerLedger,
+            ledgersInQueue * expectedPerLedger,
             expectedPerLedger + 1,
             expectedPerLedger);
 
@@ -4486,7 +4475,7 @@ public:
                 *this,
                 env,
                 expectedInQueue,
-                5 * expectedPerLedger,
+                ledgersInQueue * expectedPerLedger,
                 expectedInLedger,
                 expectedPerLedger);
             {

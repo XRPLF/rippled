@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_ASSET_H_INCLUDED
-#define RIPPLE_PROTOCOL_ASSET_H_INCLUDED
+#ifndef XRPL_PROTOCOL_ASSET_H_INCLUDED
+#define XRPL_PROTOCOL_ASSET_H_INCLUDED
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -100,7 +81,27 @@ public:
     bool
     native() const
     {
-        return holds<Issue>() && get<Issue>().native();
+        return std::visit(
+            [&]<ValidIssueType TIss>(TIss const& issue) {
+                if constexpr (std::is_same_v<TIss, Issue>)
+                    return issue.native();
+                if constexpr (std::is_same_v<TIss, MPTIssue>)
+                    return false;
+            },
+            issue_);
+    }
+
+    bool
+    integral() const
+    {
+        return std::visit(
+            [&]<ValidIssueType TIss>(TIss const& issue) {
+                if constexpr (std::is_same_v<TIss, Issue>)
+                    return issue.native();
+                if constexpr (std::is_same_v<TIss, MPTIssue>)
+                    return true;
+            },
+            issue_);
     }
 
     friend constexpr bool
@@ -234,4 +235,4 @@ assetFromJson(Json::Value const& jv);
 
 }  // namespace ripple
 
-#endif  // RIPPLE_PROTOCOL_ASSET_H_INCLUDED
+#endif  // XRPL_PROTOCOL_ASSET_H_INCLUDED
