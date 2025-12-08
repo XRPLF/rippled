@@ -7172,6 +7172,103 @@ protected:
         env.close();
     }
 
+    void
+    testLoanPayBrokerOwnerNoPermissionedDomainMPT()
+    {
+        testcase
+            << "LoanPay Broker Owner without permissioned domain of the MPT";
+        using namespace jtx;
+        using namespace loan;
+
+        Account const issuer("issuer");
+        Account const borrower("borrower");
+        Account const broker("broker");
+
+        Env env(*this, all);
+        env.fund(XRP(20'000), issuer, broker, borrower);
+        env.close();
+
+        auto credType = "credential1";
+
+        pdomain::Credentials const credentials1{{issuer, credType}};
+        env(pdomain::setTx(issuer, credentials1));
+        env.close();
+
+        auto domainID = pdomain::getNewDomain(env.meta());
+
+        env(credentials::create(broker, issuer, credType));
+        env(credentials::accept(broker, issuer, credType));
+        env.close();
+
+        env(credentials::create(borrower, issuer, credType));
+        env(credentials::accept(borrower, issuer, credType));
+        env.close();
+
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create({
+            .flags = tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer |
+                tfMPTCanLock,
+            .domainID = domainID,
+        });
+
+        PrettyAsset const MPT{mptt.issuanceID()};
+
+        // Authorize broker and borrower
+        mptt.authorize({.account = broker});
+        mptt.authorize({.account = borrower});
+
+        env.close();
+
+        // Fund accounts
+        env(pay(issuer, broker, MPT(10'000'000)));
+        env(pay(issuer, borrower, MPT(1'000)));
+        env.close();
+
+        // Create vault and broker
+        auto const brokerInfo = createVaultAndBroker(env, MPT, broker);
+        // Create a loan first (this creates debt)
+        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        env(set(borrower, brokerInfo.brokerID, 10'000),
+            sig(sfCounterpartySignature, broker),
+            loanServiceFee(MPT(100).value()),
+            paymentInterval(100),
+            fee(XRP(100)));
+        env.close();
+        // Ensure broker has sufficient cover so brokerPayee == brokerOwner
+        // We need coverAvailable >= (debtTotal * coverRateMinimum)
+        // Deposit enough cover to ensure the fee goes to broker owner
+        // The default coverRateMinimum is 10%, so for a 10,000 loan we need
+        // at least 1,000 cover. Default cover is 1,000, so we add more to be
+        // safe.
+        auto const additionalCover = MPT(50'000).value();
+        env(loanBroker::coverDeposit(
+            broker, brokerInfo.brokerID, STAmount{MPT, additionalCover}));
+        env.close();
+        // Verify broker owner is authorized
+        auto const brokerMpt = keylet::mptoken(mptt.issuanceID(), broker);
+        BEAST_EXPECT(env.le(brokerMpt) != nullptr);
+        // Broker owner unauthorizes.
+        // First, pay any positive balance to issuer to zero it out
+        auto const brokerBalance = env.balance(broker, MPT);
+        env(pay(broker, issuer, brokerBalance));
+        env.close();
+
+        env(credentials::deleteCred(broker, broker, issuer, credType));
+        env.close();
+
+        // Make sure the broker is not authorized to hold the MPT after we
+        // deleted the credentials
+        env(pay(issuer, broker, MPT(1'000)), ter(tecNO_AUTH));
+
+        // Now borrower tries to make a payment
+        // We should get a tesSUCCESS instead of a tecNO_AUTH.
+        auto const borrowerBalance = env.balance(borrower, MPT);
+        env(pay(borrower, keylet.key, MPT(10'100)),
+            fee(XRP(100)),
+            ter(tesSUCCESS));
+        env.close();
+    }
+
 public:
     void
     run() override
@@ -7222,6 +7319,7 @@ public:
         testLimitExceeded();
         testLoanPayBrokerOwnerMissingTrustline();
         testLoanPayBrokerOwnerUnauthorizedMPT();
+        testLoanPayBrokerOwnerNoPermissionedDomainMPT();
     }
 };
 
