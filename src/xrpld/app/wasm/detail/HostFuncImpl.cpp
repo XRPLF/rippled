@@ -240,7 +240,11 @@ locateField(STObject const& obj, Slice const& locator)
             auto const* v = static_cast<STVector256 const*>(field);
             if (sfieldCode >= v->size())
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
-            field = &(v->operator[](sfieldCode));
+            // STVector256::operator[] returns uint256&, not STBase*
+            // We need to wrap it in an STUInt256 to get an STBase pointer
+            static thread_local STUInt256 tempUInt256;
+            tempUInt256 = STUInt256(v->operator[](sfieldCode));
+            field = &tempUInt256;
         }
         else  // simple field must be the last one
         {

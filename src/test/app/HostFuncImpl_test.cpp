@@ -336,6 +336,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     memos.error() == HostFunctionError::NOT_LEAF_FIELD);
 
+            auto const signer = hfs.getTxField(sfSigner);
+            if (BEAST_EXPECT(!signer.has_value()))
+                BEAST_EXPECT(
+                    signer.error() == HostFunctionError::NOT_LEAF_FIELD);
+
+            auto const credentialIds = hfs.getTxField(sfCredentialIDs);
+            if (BEAST_EXPECT(!credentialIds.has_value()))
+                BEAST_EXPECT(
+                    credentialIds.error() == HostFunctionError::NOT_LEAF_FIELD);
+
             auto const nonField = hfs.getTxField(sfInvalid);
             if (BEAST_EXPECT(!nonField.has_value()))
                 BEAST_EXPECT(
@@ -537,6 +547,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         Env env{*this};
         OpenView ov{*env.current()};
 
+        auto const credIdHex =
+            "DEBFD65377EB93B1F4FDAC4F8139B6E0F27D3365CF8BD6AFD340CCB2B7296154";
+
         // Create a transaction with a nested array field
         STTx const stx = STTx(ttESCROW_FINISH, [&](auto& obj) {
             obj.setAccountID(sfAccount, env.master.id());
@@ -545,6 +558,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             memoObj.setFieldVL(sfMemoData, Slice("hello", 5));
             memos.push_back(memoObj);
             obj.setFieldArray(sfMemos, memos);
+            uint256 credId;
+            credId.parseHex(credIdHex);
+            obj.setFieldArray(sfCredentialIDs, STVector256{credId});
         });
 
         ApplyContext ac = createApplyContext(env, ov, stx);
@@ -571,6 +587,24 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 std::string memoData(
                     result.value().begin(), result.value().end());
                 BEAST_EXPECT(memoData == "hello");
+            }
+        }
+
+        {
+            // Locator for sfCredentialIDs[0]
+            std::vector<int32_t> locatorVec = {sfCredentialIDs.fieldCode, 0};
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+
+            auto const result = hfs.getTxNestedField(locator);
+            if (BEAST_EXPECTS(
+                    result.has_value(),
+                    std::to_string(static_cast<int>(result.error()))))
+            {
+                std::string credIdResult(
+                    result.value().begin(), result.value().end());
+                BEAST_EXPECT(credIdResult == credIdHex);
             }
         }
 
@@ -638,6 +672,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Locator for STArray
         expectError({sfMemos.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
+
+        // Locator for STObject
+        expectError({sfMemo.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
+
+        // Locator for STVector256
+        expectError(
+            {sfCredentialIDs.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
 
         // Locator for nesting into non-array/object field
         expectError(
