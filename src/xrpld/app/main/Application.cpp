@@ -33,7 +33,6 @@
 #include <xrpld/overlay/PeerReservationTable.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/make_Overlay.h>
-#include <xrpld/perflog/PerfLog.h>
 #include <xrpld/shamap/NodeFamily.h>
 
 #include <xrpl/basics/ByteUtilities.h>
@@ -41,6 +40,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/core/PerfLog.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/nodestore/DummyScheduler.h>

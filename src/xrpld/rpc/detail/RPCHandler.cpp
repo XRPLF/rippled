@@ -4,7 +4,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/RPCHandler.h>
@@ -14,6 +13,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/core/PerfLog.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>

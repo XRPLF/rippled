@@ -4,7 +4,8 @@
 #include <xrpld/app/main/DBInit.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/SociDB.h>
-#include <xrpld/perflog/PerfLog.h>
+
+#include <xrpl/core/PerfLog.h>
 
 #include <boost/filesystem/path.hpp>
 

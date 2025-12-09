@@ -27,7 +27,6 @@
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
-#include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/DeliveredAmount.h>
@@ -39,6 +38,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/core/PerfLog.h>
 #include <xrpl/crypto/RFC1751.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/protocol/BuildInfo.h>

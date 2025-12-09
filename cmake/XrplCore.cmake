@@ -100,7 +100,7 @@ target_link_libraries(xrpl.libxrpl.core PUBLIC
   xrpl.libxrpl.json
   xrpl.libxrpl.protocol
 )
-# Core module needs access to xrpld headers (for PerfLog)
+# Core module needs access to xrpld headers (for PerfLogImp -> Handler.h)
 target_include_directories(xrpl.libxrpl.core PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
 )
