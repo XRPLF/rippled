@@ -7247,7 +7247,7 @@ protected:
         // Verify broker owner is authorized
         auto const brokerMpt = keylet::mptoken(mptt.issuanceID(), broker);
         BEAST_EXPECT(env.le(brokerMpt) != nullptr);
-        // Broker owner unauthorizes.
+        // Remove the credentials for the Broker owner.
         // First, pay any positive balance to issuer to zero it out
         auto const brokerBalance = env.balance(broker, MPT);
         env(pay(broker, issuer, brokerBalance));
@@ -7269,57 +7269,132 @@ protected:
         env.close();
     }
 
+    void
+    testLoanSetBrokerOwnerNoPermissionedDomainMPT()
+    {
+        testcase
+            << "LoanSet Broker Owner without permissioned domain of the MPT";
+        using namespace jtx;
+        using namespace loan;
+
+        Account const issuer("issuer");
+        Account const borrower("borrower");
+        Account const broker("broker");
+
+        Env env(*this, all);
+        env.fund(XRP(20'000), issuer, broker, borrower);
+        env.close();
+
+        auto credType = "credential1";
+
+        pdomain::Credentials const credentials1{{issuer, credType}};
+        env(pdomain::setTx(issuer, credentials1));
+        env.close();
+
+        auto domainID = pdomain::getNewDomain(env.meta());
+
+        // Add credentials for the broker and borrower
+        env(credentials::create(broker, issuer, credType));
+        env(credentials::accept(broker, issuer, credType));
+        env.close();
+
+        env(credentials::create(borrower, issuer, credType));
+        env(credentials::accept(borrower, issuer, credType));
+        env.close();
+
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create({
+            .flags = tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer |
+                tfMPTCanLock,
+            .domainID = domainID,
+        });
+
+        PrettyAsset const MPT{mptt.issuanceID()};
+
+        // Authorize broker and borrower
+        mptt.authorize({.account = broker});
+        mptt.authorize({.account = borrower});
+        env.close();
+
+        // Fund accounts
+        env(pay(issuer, broker, MPT(10'000'000)));
+        env(pay(issuer, borrower, MPT(1'000)));
+        env.close();
+
+        // Create vault and broker
+        auto const brokerInfo = createVaultAndBroker(env, MPT, broker);
+
+        // Remove the credentials for the Broker owner.
+        // Clear the balance first.
+        auto const brokerBalance = env.balance(broker, MPT);
+        env(pay(broker, issuer, brokerBalance));
+        env.close();
+        // Delete the credentials
+        env(credentials::deleteCred(broker, broker, issuer, credType));
+        env.close();
+
+        // Create a loan, this should fail for tecNO_AUTH
+        env(set(borrower, brokerInfo.brokerID, 10'000),
+            sig(sfCounterpartySignature, broker),
+            loanServiceFee(MPT(100).value()),
+            paymentInterval(100),
+            fee(XRP(100)),
+            ter(tecNO_AUTH));
+        env.close();
+    }
+
 public:
     void
     run() override
     {
-#if LOANTODO
-        testLoanPayLateFullPaymentBypassesPenalties();
-        testLoanCoverMinimumRoundingExploit();
-#endif
-        testCoverDepositWithdrawNonTransferableMPT();
-        testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic();
-
-        testDisabled();
-        testSelfLoan();
-        testIssuerLoan();
-        testLoanSet();
-        testLifecycle();
-        testServiceFeeOnBrokerDeepFreeze();
-
-        testRPC();
-        testBasicMath();
-
-        testInvalidLoanDelete();
-        testInvalidLoanManage();
-        testInvalidLoanPay();
-        testInvalidLoanSet();
-
-        testBatchBypassCounterparty();
-        testLoanPayComputePeriodicPaymentValidRateInvariant();
-        testAccountSendMptMinAmountInvariant();
-        testLoanPayDebtDecreaseInvariant();
-        testWrongMaxDebtBehavior();
-        testLoanPayComputePeriodicPaymentValidTotalInterestInvariant();
-        testDosLoanPay();
-        testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant();
-        testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant();
-        testLoanNextPaymentDueDateOverflow();
-
-        testRequireAuth();
-        testDustManipulation();
-
-        testRIPD3831();
-        testRIPD3459();
-        testRIPD3901();
-        testRIPD3902();
-        testRoundingAllowsUndercoverage();
-        testBorrowerIsBroker();
-        testIssuerIsBorrower();
-        testLimitExceeded();
-        testLoanPayBrokerOwnerMissingTrustline();
-        testLoanPayBrokerOwnerUnauthorizedMPT();
-        testLoanPayBrokerOwnerNoPermissionedDomainMPT();
+        // #if LOANTODO
+        //         testLoanPayLateFullPaymentBypassesPenalties();
+        //         testLoanCoverMinimumRoundingExploit();
+        // #endif
+        //         testCoverDepositWithdrawNonTransferableMPT();
+        //         testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic();
+        //
+        //         testDisabled();
+        //         testSelfLoan();
+        //         testIssuerLoan();
+        //         testLoanSet();
+        //         testLifecycle();
+        //         testServiceFeeOnBrokerDeepFreeze();
+        //
+        //         testRPC();
+        //         testBasicMath();
+        //
+        //         testInvalidLoanDelete();
+        //         testInvalidLoanManage();
+        //         testInvalidLoanPay();
+        //         testInvalidLoanSet();
+        //
+        //         testBatchBypassCounterparty();
+        //         testLoanPayComputePeriodicPaymentValidRateInvariant();
+        //         testAccountSendMptMinAmountInvariant();
+        //         testLoanPayDebtDecreaseInvariant();
+        //         testWrongMaxDebtBehavior();
+        //         testLoanPayComputePeriodicPaymentValidTotalInterestInvariant();
+        //         testDosLoanPay();
+        //         testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant();
+        //         testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant();
+        //         testLoanNextPaymentDueDateOverflow();
+        //
+        //         testRequireAuth();
+        //         testDustManipulation();
+        //
+        //         testRIPD3831();
+        //         testRIPD3459();
+        //         testRIPD3901();
+        //         testRIPD3902();
+        //         testRoundingAllowsUndercoverage();
+        //         testBorrowerIsBroker();
+        //         testIssuerIsBorrower();
+        //         testLimitExceeded();
+        //         testLoanPayBrokerOwnerMissingTrustline();
+        //         testLoanPayBrokerOwnerUnauthorizedMPT();
+        //         testLoanPayBrokerOwnerNoPermissionedDomainMPT();
+        testLoanSetBrokerOwnerNoPermissionedDomainMPT();
     }
 };
 

@@ -284,6 +284,9 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     Asset const asset = vault->at(sfAsset);
 
+    if (requireAuth(ctx.view, asset, brokerOwner) != tesSUCCESS)
+        return tecNO_AUTH;
+
     auto const vaultPseudo = vault->at(sfAccount);
 
     // Check that relevant values can be represented as the vault asset type.
