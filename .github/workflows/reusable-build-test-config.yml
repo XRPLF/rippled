@@ -117,7 +117,7 @@ jobs:
             ${CMAKE_ARGS} \
             ..
 
-      - name: Restore build objects
+      - name: Restore ccache
         if: ${{ env.CCACHE_ENABLED == 'true' }}
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
@@ -143,7 +143,7 @@ jobs:
           ccache --show-stats ${{ runner.debug && '-vv' || '' }}
           ccache --zero-stats
 
-      - name: Save build objects
+      - name: Save ccache
         if: ${{ env.CCACHE_ENABLED == 'true' }}
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
