@@ -14,7 +14,7 @@ if (CCACHE_PATH)
                     COMMAND ${CCACHE_PATH} --shimgen-noop
                     COMMAND Select-String "path to executable:"
                     COMMAND ForEach-Object { $_ -split " " | Select -Last 1 }
-                    OUTPUT_QUIET OUTPUT_VARIABLE CCACHE_PATH)
+                    OUTPUT_VARIABLE CCACHE_PATH)
         endif ()
 
         # Tell cmake to use ccache for compiling with Visual Studio.
