@@ -67,7 +67,6 @@ jobs:
     timeout-minutes: 60
     env:
       CCACHE_ENABLED: ${{ github.event_name == 'pull_request' }}
-      CCACHE_STATSLOG: ${{ github.workspace }}${{ runner.os == 'Windows' && '\' || '/' }}ccache-stats.log
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
     steps:
@@ -82,6 +81,13 @@ jobs:
         uses: XRPLF/actions/.github/actions/prepare-runner@99685816bb60a95a66852f212f382580e180df3a
         with:
           disable_ccache: ${{ env.CCACHE_ENABLED == 'false' }}
+
+      # TODO: Move into the prepare-runner script.
+      - name: Set ccache log stats file
+        if: ${{ env.CCACHE_ENABLED == 'true' }}
+        run: |
+          CCACHE_STATSLOG="${{ github.workspace }}${{ runner.os == 'Windows' && '\' || '/' }}ccache-stats.log"
+          echo "CCACHE_STATSLOG=${CCACHE_STATSLOG}" >> $GITHUB_ENV
 
       - name: Print build environment
         uses: ./.github/actions/print-env
