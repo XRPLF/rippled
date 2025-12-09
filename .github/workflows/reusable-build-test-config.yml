@@ -66,9 +66,10 @@ jobs:
     container: ${{ inputs.image != '' && inputs.image || null }}
     timeout-minutes: 60
     env:
-      ENABLED_VOIDSTAR: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
-      ENABLED_COVERAGE: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
-      ENABLED_CCACHE: ${{ github.event_name == 'pull_request' }}
+      CCACHE_ENABLED: ${{ github.event_name == 'pull_request' }}
+      CCACHE_STATSLOG: ${{ github.workspace }}${{ runner.os == 'Windows' && '\' || '/' }}ccache-stats.log
+      COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
+      VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
     steps:
       - name: Cleanup workspace (macOS and Windows)
         if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
@@ -80,7 +81,7 @@ jobs:
       - name: Prepare runner
         uses: XRPLF/actions/.github/actions/prepare-runner@99685816bb60a95a66852f212f382580e180df3a
         with:
-          disable_ccache: ${{ !env.ENABLED_CCACHE }}
+          disable_ccache: ${{ env.CCACHE_ENABLED == 'false' }}
 
       - name: Print build environment
         uses: ./.github/actions/print-env
@@ -118,15 +119,11 @@ jobs:
             ..
 
       - name: Restore build objects
-        if: ${{ env.ENABLED_CCACHE }}
+        if: ${{ env.CCACHE_ENABLED == 'true' }}
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ inputs.config_name }}
-
-      - name: Print out ccache statistics before building
-        if: ${{ env.ENABLED_CCACHE }}
-        run: ccache --show-stats
 
       - name: Build the binary
         working-directory: ${{ inputs.build_dir }}
@@ -141,12 +138,16 @@ jobs:
             --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
 
-      - name: Print out ccache statistics after building
-        if: ${{ env.ENABLED_CCACHE }}
-        run: ccache --show-stats
+      - name: Print out ccache statistics
+        if: ${{ env.CCACHE_ENABLED == 'true' }}
+        run: |
+          echo 'Global stats for all builds.'
+          ccache --show-stats ${{ runner.debug && '-vv' || '' }}
+          echo 'Local stats for current build.'
+          ccache --show-log-stats ${{ runner.debug && '-vv' || '' }}
 
       - name: Save build objects
-        if: ${{ env.ENABLED_CCACHE }}
+        if: ${{ env.CCACHE_ENABLED == 'true' }}
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -174,7 +175,7 @@ jobs:
           fi
 
       - name: Verify presence of instrumentation (Linux)
-        if: ${{ runner.os == 'Linux' && env.ENABLED_VOIDSTAR == 'true' }}
+        if: ${{ runner.os == 'Linux' && env.VOIDSTAR_ENABLED == 'true' }}
         working-directory: ${{ inputs.build_dir }}
         run: |
           ./rippled --version | grep libvoidstar
@@ -209,7 +210,7 @@ jobs:
           netstat -an
 
       - name: Prepare coverage report
-        if: ${{ !inputs.build_only && env.ENABLED_COVERAGE == 'true' }}
+        if: ${{ !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
         working-directory: ${{ inputs.build_dir }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
@@ -222,7 +223,7 @@ jobs:
             --target coverage
 
       - name: Upload coverage report
-        if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.ENABLED_COVERAGE == 'true' }}
+        if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
         uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
         with:
           disable_search: true
