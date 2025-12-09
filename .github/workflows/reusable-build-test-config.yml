@@ -82,13 +82,6 @@ jobs:
         with:
           disable_ccache: ${{ env.CCACHE_ENABLED == 'false' }}
 
-      # TODO: Move into the prepare-runner script.
-      - name: Set ccache log stats file
-        if: ${{ env.CCACHE_ENABLED == 'true' }}
-        run: |
-          CCACHE_STATSLOG="${{ github.workspace }}${{ runner.os == 'Windows' && '\' || '/' }}ccache-stats.log"
-          echo "CCACHE_STATSLOG=${CCACHE_STATSLOG}" >> $GITHUB_ENV
-
       - name: Print build environment
         uses: ./.github/actions/print-env
 
@@ -144,13 +137,11 @@ jobs:
             --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
 
-      - name: Print out ccache statistics
+      - name: Print out and reset ccache statistics
         if: ${{ env.CCACHE_ENABLED == 'true' }}
         run: |
-          echo 'Global stats for all builds.'
           ccache --show-stats ${{ runner.debug && '-vv' || '' }}
-          echo 'Local stats for current build.'
-          ccache --show-log-stats ${{ runner.debug && '-vv' || '' }}
+          ccache --zero-stats
 
       - name: Save build objects
         if: ${{ env.CCACHE_ENABLED == 'true' }}

@@ -10,7 +10,8 @@ if (CCACHE_PATH)
         # Chocolatey uses a shim executable that we cannot use directly, in
         # which case we have to find the executable it points to.
         if("${CCACHE_PATH}" MATCHES "chocolatey")
-            execute_process(COMMAND ${CCACHE_PATH} --shimgen-noop | Select-String 'path to executable:' | ForEach-Object { $_ -split ' ' | Select -Last 1 } OUTPUT_VARIABLE CCACHE_PATH)
+            set(CMD "${CCACHE_PATH} --shimgen-noop | Select-String 'path to executable:' | ForEach-Object { $_ -split ' ' | Select -Last 1 }")
+            execute_process(COMMAND ${CMD} OUTPUT_QUIET OUTPUT_VARIABLE CCACHE_PATH)
         endif ()
 
         # Tell cmake to use ccache for compiling with Visual Studio.
@@ -23,6 +24,6 @@ if (CCACHE_PATH)
     else ()
         # For Linux and macOS we can use the ccache binary directly.
         set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PATH}")
+        message(STATUS "Using ccache: ${CCACHE_PATH}")
     endif ()
-    message(STATUS "Using ccache: ${CCACHE_PATH}")
 endif ()
