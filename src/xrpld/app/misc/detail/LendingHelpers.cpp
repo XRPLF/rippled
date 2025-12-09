@@ -552,7 +552,8 @@ tryOverpayment(
             // and
             // any untracked fees on the overpayment itself
             .feePaid = deltas.managementFee +
-                overpaymentComponents.untrackedManagementFee,
+                overpaymentComponents.untrackedManagementFee +
+                overpaymentComponents.trackedManagementFeeDelta,
         },
         newLoanProperties);
 }

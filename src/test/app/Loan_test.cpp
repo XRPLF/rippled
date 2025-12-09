@@ -860,9 +860,6 @@ protected:
         using namespace std::chrono_literals;
         using d = NetClock::duration;
 
-        // Account const evan{"evan"};
-        // Account const alice{"alice"};
-
         bool const showStepBalances = paymentParams.showStepBalances;
 
         auto const currencyLabel = getCurrencyLabel(broker.asset);
@@ -4466,15 +4463,6 @@ protected:
     }
 
     void
-    testBasicMath()
-    {
-        // Test the functions defined in LendingHelpers.h
-        testcase("Basic Math");
-
-        pass();
-    }
-
-    void
     testIssuerLoan()
     {
         testcase << "Issuer Loan";
@@ -7018,11 +7006,8 @@ protected:
         env.close();
 
         PaymentParameters paymentParams{
-            //.overpaymentFactor = Number{15, -1},
-            //.overpaymentExtra = Number{1, -6},
-            //.flags = tfLoanOverpayment,
-            .showStepBalances = true,
-            //.validateBalances = false,
+            .showStepBalances = false,
+            .validateBalances = true,
         };
 
         makeLoanPayments(
@@ -7035,6 +7020,69 @@ protected:
             lender,
             borrower,
             paymentParams);
+    }
+
+    void
+    testOverpaymentManagementFee()
+    {
+        testcase("testOverpaymentManagementFee");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env(*this, all);
+
+        Account const lender{"lender"}, borrower{"borrower"};
+
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const asset{xrpIssue(), 1000};
+
+        auto const result = createVaultAndBroker(
+            env,
+            asset,
+            lender,
+            {
+                .vaultDeposit = asset(100'000).value(),
+                .managementFeeRate = TenthBips16(10'000),
+            });
+
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+
+        auto const loanKeylet = keylet::loan(
+            result.brokerKeylet().key,
+            (env.le(result.brokerKeylet()))->at(sfLoanSequence));
+        env(loan::set(
+                borrower,
+                result.brokerKeylet().key,
+                asset(10'000).value(),
+                tfLoanOverpayment),
+            sig(sfCounterpartySignature, lender),
+            loan::paymentInterval(86400 * 30),
+            loan::paymentTotal(3),
+            loan::overpaymentInterestRate(
+                TenthBips32(percentageToTenthBips(20))),
+            loanSetFee);
+
+        // From calculator
+        auto const expectedOverpaymentManagementFee = Number{33333, 0};
+        auto const loanBrokerBalanceBefore = env.balance(lender);
+
+        auto const loanPayFee = fee(env.current()->fees().base * 2);
+        env(pay(borrower,
+                loanKeylet.key,
+                asset(5'000).value(),
+                tfLoanOverpayment),
+            loanPayFee);
+        env.close();
+
+        BEAST_EXPECTS(
+            env.balance(lender) - loanBrokerBalanceBefore ==
+                expectedOverpaymentManagementFee,
+            "overpayment management fee missmatch; expected:" +
+                to_string(expectedOverpaymentManagementFee) + " got: " +
+                to_string(env.balance(lender) - loanBrokerBalanceBefore));
     }
 
 public:
@@ -7056,8 +7104,6 @@ public:
         testServiceFeeOnBrokerDeepFreeze();
 
         testRPC();
-        testBasicMath();
-
         testInvalidLoanDelete();
         testInvalidLoanManage();
         testInvalidLoanPay();
@@ -7085,6 +7131,7 @@ public:
         testBorrowerIsBroker();
         testIssuerIsBorrower();
         testLimitExceeded();
+        testOverpaymentManagementFee();
     }
 };
 

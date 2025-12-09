@@ -625,7 +625,7 @@ class LendingHelpers_test : public beast::unit_test::suite
     {
         // This test ensures that overpayment value change is computed
         // correctly. I am sorry, this unit test will be a pain in the ass.
-        testcase("tryOverpay - Value Change is the decrease in interest");
+        testcase("tryOverpayment - Value Change is the decrease in interest");
 
         using namespace jtx;
         using namespace ripple::detail;
