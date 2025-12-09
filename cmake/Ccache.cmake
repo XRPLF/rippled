@@ -3,21 +3,21 @@ if (CCACHE_PATH)
     if (MSVC)
         # Chocolatey uses a shim executable that we cannot use directly, in
         # which case we have to find the executable it points to.
-        message(DEBUG "Ccache path: ${CCACHE_PATH}")
+        message(STATUS "Ccache path: ${CCACHE_PATH}")
         if("${CCACHE_PATH}" MATCHES "chocolatey")
             execute_process(
                     COMMAND ${CCACHE_PATH} --shimgen-noop
                     COMMAND Select-String "path to executable:"
                     COMMAND ForEach-Object { $_ -split " " | Select -Last 1 }
                     OUTPUT_VARIABLE CCACHE_PATH)
-            message(DEBUG "Ccache exe: ${CCACHE_PATH}")
+            message(STATUS "Ccache target: ${CCACHE_PATH}")
         endif ()
 
         # Tell cmake to use ccache for compiling with Visual Studio.
         cmake_path(GET CCACHE_PATH FILENAME CCACHE_FILE)
-        message(DEBUG "Ccache file: ${CCACHE_FILE}")
+        message(STATUS "Ccache file: ${CCACHE_FILE}")
         cmake_path(GET CCACHE_PATH PARENT_PATH CCACHE_DIR)
-        message(DEBUG "Ccache dir: ${CCACHE_DIR}")
+        message(STATUS "Ccache dir: ${CCACHE_DIR}")
         set(CMAKE_VS_GLOBALS
                 "CLToolExe=${CCACHE_FILE}"
                 "CLToolPath=${CCACHE_DIR}"
