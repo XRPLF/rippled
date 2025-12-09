@@ -140,12 +140,19 @@ getAnyFieldData(STBase const* obj)
             auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
             return Bytes{b, e};
         }
+        break;
         case STI_UINT32: {
             auto const* num(static_cast<STInteger<std::uint32_t> const*>(obj));
             std::uint32_t const data = num->value();
             auto const* b = reinterpret_cast<uint8_t const*>(&data);
             auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
             return Bytes{b, e};
+        }
+        break;
+        case STI_UINT256: {
+            auto const* uint256Obj(static_cast<STUInt256 const*>(obj));
+            auto const& data = uint256Obj->value();
+            return Bytes{data.begin(), data.end()};
         }
         break;
         default:
@@ -242,6 +249,7 @@ locateField(STObject const& obj, Slice const& locator)
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
             // STVector256::operator[] returns uint256&, not STBase*
             // We need to wrap it in an STUInt256 to get an STBase pointer
+            // Use the value-only constructor to avoid field type mismatch
             static thread_local STUInt256 tempUInt256;
             tempUInt256 = STUInt256(v->operator[](sfieldCode));
             field = &tempUInt256;
