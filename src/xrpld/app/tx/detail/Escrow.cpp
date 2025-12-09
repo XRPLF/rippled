@@ -734,13 +734,15 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
-    if (auto const allowance = tx[~sfComputationAllowance]; allowance)
+    if (std::optional<uint64_t> const allowance = tx[~sfComputationAllowance];
+        allowance)
     {
         // The extra fee is the allowance in drops, rounded up to the nearest
         // whole drop.
         // Integer math rounds down by default, so we add 1 to round up.
-        extraFee +=
+        uint64_t const allowanceFee =
             ((*allowance) * view.fees().gasPrice) / MICRO_DROPS_PER_DROP + 1;
+        extraFee += allowanceFee;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }

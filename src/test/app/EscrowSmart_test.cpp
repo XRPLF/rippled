@@ -714,6 +714,98 @@ struct EscrowSmart_test : public beast::unit_test::suite
     }
 
     void
+    testFees(FeatureBitset features)
+    {
+        testcase("Fees");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+
+        // Tests whether the ledger index is >= 5
+        // getLedgerSqn() >= 5}
+        auto const& wasmHex = ledgerSqnWasmHex;
+        uint64_t const allowance = 65;
+        auto escrowCreate = escrow::create(alice, carol, XRP(1000));
+        auto createFee = [&]() {
+            Env env(*this, features);
+            auto createFee =
+                env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
+            return createFee;
+        }();
+
+        {
+            // ensure fees don't overflow
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.gas_price = 1'000'000;  // in gas
+                    return cfg;
+                }),
+                features);
+            // Run past the flag ledger so that a Fee change vote occurs and
+            // updates FeeSettings. (It also activates all supported
+            // amendments.)
+            for (auto i = env.current()->seq(); i <= 257; ++i)
+                env.close();
+
+            // create escrow
+            env.fund(XRP(5000), alice, carol);
+            auto const seq = env.seq(alice);
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+            env(escrowCreate,
+                escrow::finish_function(wasmHex),
+                escrow::cancel_time(env.now() + 100s),
+                fee(createFee));
+            env.close();
+
+            if (BEAST_EXPECT(env.ownerCount(alice) == 2))
+            {
+                env.require(balance(alice, XRP(4000) - createFee));
+                env.require(balance(carol, XRP(5000)));
+                env.close();
+
+                auto const bigAllowance = 996'433;
+                uint64_t partialFeeCalc =
+                    (static_cast<uint64_t>(bigAllowance) * 1'000'000) /
+                        MICRO_DROPS_PER_DROP +
+                    1;  // to avoid an overflow
+                auto finishFee = env.current()->fees().base + partialFeeCalc;
+                BEAST_EXPECT(finishFee.drops() > bigAllowance);
+
+                // Intentional overflow to test overflow handling
+                auto finishFeeOverflow = env.current()->fees().base +
+                    (bigAllowance * 1'000'000) / MICRO_DROPS_PER_DROP + 1;
+                BEAST_EXPECT(finishFeeOverflow.drops() < bigAllowance);
+
+                env(escrow::finish(alice, alice, seq),
+                    fee(finishFeeOverflow),  // enough if there's an overflow
+                    escrow::comp_allowance(bigAllowance),
+                    ter(telINSUF_FEE_P));
+
+                env(escrow::finish(alice, alice, seq),
+                    fee(finishFee),
+                    escrow::comp_allowance(bigAllowance),
+                    ter(tesSUCCESS));
+
+                auto const txMeta = env.meta();
+                if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
+                    BEAST_EXPECTS(
+                        txMeta->getFieldU32(sfGasUsed) == allowance,
+                        std::to_string(txMeta->getFieldU32(sfGasUsed)));
+                if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
+                    BEAST_EXPECTS(
+                        txMeta->getFieldI32(sfWasmReturnCode) == 260,
+                        std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
+
+                BEAST_EXPECT(env.ownerCount(alice) == 0);
+            }
+        }
+    }
+
+    void
     testAllHostFunctions(FeatureBitset features)
     {
         testcase("Test all host functions");
@@ -894,6 +986,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
         testFinishWasmFailures(features);
         testFinishFunction(features);
         testUpdateDataOnFailure(features);
+        testFees(features);
 
         // TODO: Update module with new host functions
         testAllHostFunctions(features);
