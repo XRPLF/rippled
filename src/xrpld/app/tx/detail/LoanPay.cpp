@@ -454,11 +454,13 @@ LoanPay::doApply()
 
         if (*assetsAvailableProxy > *assetsTotalProxy)
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal())
                 << "Vault assets available must not be greater "
                    "than assets outstanding. Available: "
                 << *assetsAvailableProxy << ", Total: " << *assetsTotalProxy;
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
     }
 

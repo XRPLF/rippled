@@ -289,8 +289,10 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         ctx.view.read(keylet::account(vaultAsset.getIssuer()));
     if (!sleIssuer)
     {
+        // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Issuer account does not exist.";
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     return std::visit(
