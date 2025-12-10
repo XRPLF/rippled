@@ -345,8 +345,7 @@ copyFrom(Json::Value& to, Json::Value const& from)
     {
         // TODO: figure out if there is a way to remove this clause
         // or check that it does/needs to do a deep copy
-        XRPL_ASSERT(
-            from.isObjectOrNull(), "copyFrom : invalid input type");
+        XRPL_ASSERT(from.isObjectOrNull(), "copyFrom : invalid input type");
         auto const members = from.getMemberNames();
         for (auto const& m : members)
             to[m] = from[m];
