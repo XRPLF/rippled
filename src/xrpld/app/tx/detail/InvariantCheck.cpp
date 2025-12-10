@@ -3455,18 +3455,13 @@ ValidVault::finalize(
                 {
                     // The owner can use clawback to force-burn shares when the
                     // vault is empty but there are outstanding shares
-                    if (beforeShares && beforeShares->sharesTotal > 0 &&
-                        vaultHoldsNoAssets(beforeVault) &&
-                        beforeVault.owner == tx[sfAccount])
-                    {
-                        // do nothing
-                    }
-                    else
+                    if (!(beforeShares && beforeShares->sharesTotal > 0 &&
+                          vaultHoldsNoAssets(beforeVault) &&
+                          beforeVault.owner == tx[sfAccount]))
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback may only be performed "
-                            "by "
-                            "the asset issuer";
+                            "by the asset issuer";
                         return false;  // That's all we can do
                     }
                 }
