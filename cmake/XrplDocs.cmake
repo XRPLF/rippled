@@ -2,9 +2,7 @@
    docs target (optional)
 #]===================================================================]
 
-option(with_docs "Include the docs target?" FALSE)
-
-if(NOT (with_docs OR only_docs))
+if(NOT only_docs)
   return()
 endif()
 
