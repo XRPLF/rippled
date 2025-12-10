@@ -60,7 +60,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         Env env{*this};
 
         env.close();
-        BEAST_EXPECT(env.current()->info().seq == 4);
+        BEAST_EXPECT(env.current()->header().seq == 4);
 
         {
             Json::Value jvParams;
@@ -87,9 +87,9 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::ledger][jss::closed] == false);
             BEAST_EXPECT(
                 jrr[jss::ledger][jss::ledger_index] ==
-                std::to_string(env.current()->info().seq));
+                std::to_string(env.current()->header().seq));
             BEAST_EXPECT(
-                jrr[jss::ledger_current_index] == env.current()->info().seq);
+                jrr[jss::ledger_current_index] == env.current()->header().seq);
         }
     }
 
@@ -182,12 +182,12 @@ class LedgerRPC_test : public beast::unit_test::suite
         Env env{*this};
 
         env.close();
-        BEAST_EXPECT(env.current()->info().seq == 4);
+        BEAST_EXPECT(env.current()->header().seq == 4);
 
         {
             auto const jrr = env.rpc("ledger_current")[jss::result];
             BEAST_EXPECT(
-                jrr[jss::ledger_current_index] == env.current()->info().seq);
+                jrr[jss::ledger_current_index] == env.current()->header().seq);
         }
     }
 
@@ -475,7 +475,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             env(noop(alice));
         }
 
-        BEAST_EXPECT(env.current()->info().seq == 5);
+        BEAST_EXPECT(env.current()->header().seq == 5);
         // Put some txs in the queue
         // Alice
         auto aliceSeq = env.seq(alice);
@@ -508,7 +508,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         env.close();
         env.close();
         env.close();
-        BEAST_EXPECT(env.current()->info().seq == 8);
+        BEAST_EXPECT(env.current()->header().seq == 8);
 
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
         BEAST_EXPECT(jrr[jss::queue_data].size() == 11);
@@ -517,7 +517,7 @@ class LedgerRPC_test : public beast::unit_test::suite
 
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
         std::string const txid0 = [&]() {
-            auto const& parentHash = env.current()->info().parentHash;
+            auto const& parentHash = env.current()->header().parentHash;
             if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
             {
                 std::string const txid1 = [&]() {
@@ -559,7 +559,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
         if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
         {
-            auto const& parentHash = env.current()->info().parentHash;
+            auto const& parentHash = env.current()->header().parentHash;
             auto const txid1 = [&]() {
                 auto const& txj = jrr[jss::queue_data][1u];
                 BEAST_EXPECT(txj[jss::account] == alice.human());

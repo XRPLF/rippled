@@ -76,15 +76,15 @@ OpenView::OpenView(
           boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(rules)
-    , info_(base->info())
+    , info_(base->header())
     , base_(base)
     , hold_(std::move(hold))
 {
     info_.validated = false;
     info_.accepted = false;
-    info_.seq = base_->info().seq + 1;
-    info_.parentCloseTime = base_->info().closeTime;
-    info_.parentHash = base_->info().hash;
+    info_.seq = base_->header().seq + 1;
+    info_.parentCloseTime = base_->header().closeTime;
+    info_.parentHash = base_->header().hash;
 }
 
 OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
@@ -92,7 +92,7 @@ OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
           boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(base->rules())
-    , info_(base->info())
+    , info_(base->header())
     , base_(base)
     , hold_(std::move(hold))
     , open_(base->open())
@@ -116,7 +116,7 @@ OpenView::apply(TxsRawView& to) const
 //---
 
 LedgerHeader const&
-OpenView::info() const
+OpenView::header() const
 {
     return info_;
 }

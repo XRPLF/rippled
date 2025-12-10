@@ -557,7 +557,7 @@ public:
             // check expired credentials
             char const credType2[] = "fghijk";
             std::uint32_t const x = env.current()
-                                        ->info()
+                                        ->header()
                                         .parentCloseTime.time_since_epoch()
                                         .count() +
                 40;

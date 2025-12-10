@@ -242,7 +242,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             auto jv = credentials::create(devin, domainOwner, credType);
             uint32_t const t = env.current()
-                                   ->info()
+                                   ->header()
                                    .parentCloseTime.time_since_epoch()
                                    .count();
             jv[sfExpiration.jsonName] = t + 20;
@@ -797,7 +797,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             auto jv = credentials::create(devin, domainOwner, credType);
             uint32_t const t = env.current()
-                                   ->info()
+                                   ->header()
                                    .parentCloseTime.time_since_epoch()
                                    .count();
             jv[sfExpiration.jsonName] = t + 20;

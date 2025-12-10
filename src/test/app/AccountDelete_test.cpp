@@ -922,7 +922,7 @@ public:
 
                 auto jv = credentials::create(john, carol, credType);
                 uint32_t const t = env.current()
-                                       ->info()
+                                       ->header()
                                        .parentCloseTime.time_since_epoch()
                                        .count() +
                     20;

@@ -184,12 +184,12 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
         parent->seq() + 1 == replayTemp_->seq(),
         "ripple::LedgerDeltaAcquire::tryBuild : parent sequence match");
     XRPL_ASSERT(
-        parent->info().hash == replayTemp_->info().parentHash,
+        parent->header().hash == replayTemp_->header().parentHash,
         "ripple::LedgerDeltaAcquire::tryBuild : parent hash match");
     // build ledger
     LedgerReplay replayData(parent, replayTemp_, std::move(orderedTxns_));
     fullLedger_ = buildLedger(replayData, tapNONE, app_, journal_);
-    if (fullLedger_ && fullLedger_->info().hash == hash_)
+    if (fullLedger_ && fullLedger_->header().hash == hash_)
     {
         JLOG(journal_.info()) << "Built " << hash_;
         onLedgerBuilt(sl);
@@ -200,7 +200,7 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
         failed_ = true;
         complete_ = false;
         JLOG(journal_.error()) << "tryBuild failed " << hash_ << " with parent "
-                               << parent->info().hash;
+                               << parent->header().hash;
         Throw<std::runtime_error>("Cannot replay ledger");
     }
 }

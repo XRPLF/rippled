@@ -189,7 +189,7 @@ public:
     // ReadView
 
     LedgerHeader const&
-    info() const override;
+    header() const override;
 
     Fees const&
     fees() const override;

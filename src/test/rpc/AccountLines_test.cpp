@@ -68,7 +68,7 @@ public:
         }
         env.fund(XRP(10000), alice);
         env.close();
-        LedgerHeader const ledger3Info = env.closed()->info();
+        LedgerHeader const ledger3Info = env.closed()->header();
         BEAST_EXPECT(ledger3Info.seq == 3);
 
         {
@@ -118,7 +118,7 @@ public:
             env(pay(gw1, alice, gw1Currency(50 + c)));
         }
         env.close();
-        LedgerHeader const ledger4Info = env.closed()->info();
+        LedgerHeader const ledger4Info = env.closed()->header();
         BEAST_EXPECT(ledger4Info.seq == 4);
 
         // Add another set of trust lines in another ledger so we can see
@@ -153,7 +153,7 @@ public:
                 tfSetNoRipple | tfSetFreeze | tfSetDeepFreeze));
         }
         env.close();
-        LedgerHeader const ledger58Info = env.closed()->info();
+        LedgerHeader const ledger58Info = env.closed()->header();
         BEAST_EXPECT(ledger58Info.seq == 58);
 
         // A re-usable test for historic ledgers.
@@ -817,7 +817,7 @@ public:
         }
         env.fund(XRP(10000), alice);
         env.close();
-        LedgerHeader const ledger3Info = env.closed()->info();
+        LedgerHeader const ledger3Info = env.closed()->header();
         BEAST_EXPECT(ledger3Info.seq == 3);
 
         {
@@ -899,7 +899,7 @@ public:
             env(pay(gw1, alice, gw1Currency(50 + c)));
         }
         env.close();
-        LedgerHeader const ledger4Info = env.closed()->info();
+        LedgerHeader const ledger4Info = env.closed()->header();
         BEAST_EXPECT(ledger4Info.seq == 4);
 
         // Add another set of trust lines in another ledger so we can see
@@ -934,7 +934,7 @@ public:
                 tfSetNoRipple | tfSetFreeze | tfSetDeepFreeze));
         }
         env.close();
-        LedgerHeader const ledger58Info = env.closed()->info();
+        LedgerHeader const ledger58Info = env.closed()->header();
         BEAST_EXPECT(ledger58Info.seq == 58);
 
         // A re-usable test for historic ledgers.

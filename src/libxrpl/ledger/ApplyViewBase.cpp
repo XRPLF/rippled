@@ -17,9 +17,9 @@ ApplyViewBase::open() const
 }
 
 LedgerHeader const&
-ApplyViewBase::info() const
+ApplyViewBase::header() const
 {
-    return base_->info();
+    return base_->header();
 }
 
 Fees const&

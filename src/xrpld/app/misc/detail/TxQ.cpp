@@ -82,7 +82,8 @@ TxQ::FeeMetrics::update(
         "ripple::TxQ::FeeMetrics::update : fee levels size");
 
     JLOG((timeLeap ? j_.warn() : j_.debug()))
-        << "Ledger " << view.info().seq << " has " << size << " transactions. "
+        << "Ledger " << view.header().seq << " has " << size
+        << " transactions. "
         << "Ledgers are processing " << (timeLeap ? "slowly" : "as expected")
         << ". Expected transactions is currently " << txnsExpected_
         << " and multiplier is " << escalationMultiplier_;
@@ -384,7 +385,7 @@ TxQ::canBeHeld(
         // a realistic chance of getting into a ledger.
         auto const lastValid = getLastLedgerSequence(tx);
         if (lastValid &&
-            *lastValid < view.info().seq + setup_.minimumLastLedgerBuffer)
+            *lastValid < view.header().seq + setup_.minimumLastLedgerBuffer)
             return telCAN_NOT_QUEUE;
     }
 
@@ -1349,7 +1350,7 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
     feeMetrics_.update(app, view, timeLeap, setup_);
     auto const& snapshot = feeMetrics_.getSnapshot();
 
-    auto ledgerSeq = view.info().seq;
+    auto ledgerSeq = view.header().seq;
 
     if (!timeLeap)
         maxSize_ = std::max(
@@ -1548,7 +1549,7 @@ TxQ::accept(Application& app, OpenView& view)
     // ledger have been. Rebuild the queue using the open ledger's
     // parent hash, so that transactions paying the same fee are
     // reordered.
-    LedgerHash const& parentHash = view.info().parentHash;
+    LedgerHash const& parentHash = view.header().parentHash;
     if (parentHash == parentHash_)
         JLOG(j_.warn()) << "Parent ledger hash unchanged from " << parentHash;
     else
@@ -1851,7 +1852,7 @@ TxQ::doRPC(Application& app) const
 
     auto& levels = ret[jss::levels] = Json::objectValue;
 
-    ret[jss::ledger_current_index] = view->info().seq;
+    ret[jss::ledger_current_index] = view->header().seq;
     ret[jss::expected_ledger_size] = std::to_string(metrics.txPerLedger);
     ret[jss::current_ledger_size] = std::to_string(metrics.txInLedger);
     ret[jss::current_queue_size] = std::to_string(metrics.txCount);

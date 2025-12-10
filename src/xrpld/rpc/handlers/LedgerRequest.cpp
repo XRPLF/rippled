@@ -24,7 +24,7 @@ doLedgerRequest(RPC::JsonContext& context)
     auto const& ledger = res.value();
 
     Json::Value jvResult;
-    jvResult[jss::ledger_index] = ledger->info().seq;
+    jvResult[jss::ledger_index] = ledger->header().seq;
     addJson(jvResult, {*ledger, &context, 0});
     return jvResult;
 }

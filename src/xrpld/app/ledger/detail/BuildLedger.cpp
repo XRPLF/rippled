@@ -58,7 +58,7 @@ buildLedgerImpl(
 
     // Accept ledger
     XRPL_ASSERT(
-        built->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        built->header().seq < XRP_LEDGER_EARLIEST_FEES ||
             built->read(keylet::fees()),
         "ripple::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
@@ -213,13 +213,13 @@ buildLedger(
 {
     auto const& replayLedger = replayData.replay();
 
-    JLOG(j.debug()) << "Report: Replay Ledger " << replayLedger->info().hash;
+    JLOG(j.debug()) << "Report: Replay Ledger " << replayLedger->header().hash;
 
     return buildLedgerImpl(
         replayData.parent(),
-        replayLedger->info().closeTime,
-        ((replayLedger->info().closeFlags & sLCF_NoConsensusTime) == 0),
-        replayLedger->info().closeTimeResolution,
+        replayLedger->header().closeTime,
+        ((replayLedger->header().closeFlags & sLCF_NoConsensusTime) == 0),
+        replayLedger->header().closeTimeResolution,
         app,
         j,
         [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {

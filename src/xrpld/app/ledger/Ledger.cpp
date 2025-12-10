@@ -265,13 +265,13 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
 {
     info_.seq = prevLedger.info_.seq + 1;
     info_.parentCloseTime = prevLedger.info_.closeTime;
-    info_.hash = prevLedger.info().hash + uint256(1);
-    info_.drops = prevLedger.info().drops;
+    info_.hash = prevLedger.header().hash + uint256(1);
+    info_.drops = prevLedger.header().drops;
     info_.closeTimeResolution = prevLedger.info_.closeTimeResolution;
-    info_.parentHash = prevLedger.info().hash;
+    info_.parentHash = prevLedger.header().hash;
     info_.closeTimeResolution = getNextLedgerTimeResolution(
         prevLedger.info_.closeTimeResolution,
-        getCloseAgree(prevLedger.info()),
+        getCloseAgree(prevLedger.header()),
         info_.seq);
 
     if (prevLedger.info_.closeTime == NetClock::time_point{})
@@ -951,7 +951,7 @@ saveValidatedLedger(
     bool current)
 {
     auto j = app.journal("Ledger");
-    auto seq = ledger->info().seq;
+    auto seq = ledger->header().seq;
     if (!app.pendingSaves().startWork(seq))
     {
         // The save was completed synchronously
@@ -982,13 +982,13 @@ pendSaveValidated(
     bool isCurrent)
 {
     if (!app.getHashRouter().setFlags(
-            ledger->info().hash, HashRouterFlags::SAVED))
+            ledger->header().hash, HashRouterFlags::SAVED))
     {
         // We have tried to save this ledger recently
         auto stream = app.journal("Ledger").debug();
-        JLOG(stream) << "Double pend save for " << ledger->info().seq;
+        JLOG(stream) << "Double pend save for " << ledger->header().seq;
 
-        if (!isSynchronous || !app.pendingSaves().pending(ledger->info().seq))
+        if (!isSynchronous || !app.pendingSaves().pending(ledger->header().seq))
         {
             // Either we don't need it to be finished
             // or it is finished
@@ -999,11 +999,11 @@ pendSaveValidated(
     XRPL_ASSERT(
         ledger->isImmutable(), "ripple::pendSaveValidated : immutable ledger");
 
-    if (!app.pendingSaves().shouldWork(ledger->info().seq, isSynchronous))
+    if (!app.pendingSaves().shouldWork(ledger->header().seq, isSynchronous))
     {
         auto stream = app.journal("Ledger").debug();
         JLOG(stream) << "Pend save with seq in pending saves "
-                     << ledger->info().seq;
+                     << ledger->header().seq;
 
         return true;
     }
@@ -1075,12 +1075,12 @@ finishLoadByIndexOrHash(
         return;
 
     XRPL_ASSERT(
-        ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        ledger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
             ledger->read(keylet::fees()),
         "ripple::finishLoadByIndexOrHash : valid ledger fees");
     ledger->setImmutable();
 
-    JLOG(j.trace()) << "Loaded ledger: " << to_string(ledger->info().hash);
+    JLOG(j.trace()) << "Loaded ledger: " << to_string(ledger->header().hash);
 
     ledger->setFull();
 }
@@ -1117,7 +1117,7 @@ loadByHash(uint256 const& ledgerHash, Application& app, bool acquire)
         std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, app, acquire);
         finishLoadByIndexOrHash(ledger, app.config(), app.journal("Ledger"));
         XRPL_ASSERT(
-            !ledger || ledger->info().hash == ledgerHash,
+            !ledger || ledger->header().hash == ledgerHash,
             "ripple::loadByHash : ledger hash match if loaded");
         return ledger;
     }

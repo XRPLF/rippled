@@ -130,7 +130,7 @@ public:
     }
 
     LedgerHeader const&
-    info() const override
+    header() const override
     {
         return info_;
     }

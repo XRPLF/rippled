@@ -48,9 +48,9 @@ public:
     }
 
     LedgerHeader const&
-    info() const override
+    header() const override
     {
-        return base_.info();
+        return base_.header();
     }
 
     Fees const&
