@@ -276,7 +276,7 @@ public:
             BEAST_EXPECT(result[jss::status] == "error");
             BEAST_EXPECT(
                 result[jss::error_message] ==
-                "Exactly one of ledger_hash and ledger_index can be "
+                "Exactly one of 'ledger_hash' or 'ledger_index' can be "
                 "specified.");
         }
 
