@@ -3464,6 +3464,14 @@ protected:
                     ter{tecNO_AUTH});
                 env.close();
 
+                // Cannot create loan, even without an origination fee
+                env(set(borrower, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_AUTH});
+                env.close();
+
                 // No MPToken for lender - no authorization and no payment
                 auto const sleMPT3 = env.le(mptoken);
                 BEAST_EXPECT(sleMPT3 == nullptr);
@@ -7089,6 +7097,19 @@ protected:
             fee(XRP(100)),
             ter(tesSUCCESS));
         env.close();
+        // Verify trustline is still deleted
+        BEAST_EXPECT(env.le(brokerTrustline) == nullptr);
+        // Verify the service fee went to the broker pseudo-account
+        if (auto const brokerSle =
+                env.le(keylet::loanbroker(brokerInfo.brokerID));
+            BEAST_EXPECT(brokerSle))
+        {
+            Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
+            auto const balance = env.balance(pseudo, IOU);
+            // 1,000 default + 50,000 extra + 100 service fee from LoanPay
+            BEAST_EXPECTS(
+                balance == IOU(51'100), to_string(Json::Value(balance)));
+        }
     }
 
     void
@@ -7163,6 +7184,19 @@ protected:
             fee(XRP(100)),
             ter(tesSUCCESS));
         env.close();
+        // Verify the MPT is still unauthorized.
+        BEAST_EXPECT(env.le(brokerMpt) == nullptr);
+        // Verify the service fee went to the broker pseudo-account
+        if (auto const brokerSle =
+                env.le(keylet::loanbroker(brokerInfo.brokerID));
+            BEAST_EXPECT(brokerSle))
+        {
+            Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
+            auto const balance = env.balance(pseudo, MPT);
+            // 1,000 default + 50,000 extra + 100 service fee from LoanPay
+            BEAST_EXPECTS(
+                balance == MPT(51'100), to_string(Json::Value(balance)));
+        }
     }
 
     void
