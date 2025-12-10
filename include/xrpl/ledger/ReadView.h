@@ -80,7 +80,7 @@ public:
     }
 
     /** Returns information about the ledger. */
-    virtual LedgerInfo const&
+    virtual LedgerHeader const&
     info() const = 0;
 
     /** Returns true if this reflects an open ledger. */

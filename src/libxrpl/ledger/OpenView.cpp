@@ -115,7 +115,7 @@ OpenView::apply(TxsRawView& to) const
 
 //---
 
-LedgerInfo const&
+LedgerHeader const&
 OpenView::info() const
 {
     return info_;

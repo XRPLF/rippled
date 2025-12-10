@@ -16,7 +16,7 @@ ApplyViewBase::open() const
     return base_->open();
 }
 
-LedgerInfo const&
+LedgerHeader const&
 ApplyViewBase::info() const
 {
     return base_->info();

@@ -1,7 +1,6 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/json/json_value.h>
@@ -12,22 +11,6 @@
 #include <grpcpp/support/status.h>
 
 namespace ripple {
-
-std::optional<AccountID>
-getAccount(Json::Value const& v, Json::Value& result)
-{
-    std::string strIdent(v.asString());
-    AccountID accountID;
-
-    if (auto jv = RPC::accountFromString(accountID, strIdent))
-    {
-        for (auto it = jv.begin(); it != jv.end(); ++it)
-            result[it.memberName()] = (*it);
-
-        return std::nullopt;
-    }
-    return std::optional<AccountID>(accountID);
-}
 
 Expected<Issue, error_code_i>
 getIssue(Json::Value const& v, beast::Journal j)
@@ -109,7 +92,8 @@ doAMMInfo(RPC::JsonContext& context)
 
         if (params.isMember(jss::amm_account))
         {
-            auto const id = getAccount(params[jss::amm_account], result);
+            auto const id =
+                parseBase58<AccountID>((params[jss::amm_account].asString()));
             if (!id)
                 return Unexpected(rpcACT_MALFORMED);
             auto const sle = ledger->read(keylet::account(*id));
@@ -122,7 +106,7 @@ doAMMInfo(RPC::JsonContext& context)
 
         if (params.isMember(jss::account))
         {
-            accountID = getAccount(params[jss::account], result);
+            accountID = parseBase58<AccountID>(params[jss::account].asString());
             if (!accountID || !ledger->read(keylet::account(*accountID)))
                 return Unexpected(rpcACT_MALFORMED);
         }

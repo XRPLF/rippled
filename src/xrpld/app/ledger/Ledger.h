@@ -88,14 +88,14 @@ public:
         std::vector<uint256> const& amendments,
         Family& family);
 
-    Ledger(LedgerInfo const& info, Config const& config, Family& family);
+    Ledger(LedgerHeader const& info, Config const& config, Family& family);
 
     /** Used for ledgers loaded from JSON files
 
         @param acquire If true, acquires the ledger if not found locally
     */
     Ledger(
-        LedgerInfo const& info,
+        LedgerHeader const& info,
         bool& loaded,
         bool acquire,
         Config const& config,
@@ -129,14 +129,14 @@ public:
         return false;
     }
 
-    LedgerInfo const&
+    LedgerHeader const&
     info() const override
     {
         return info_;
     }
 
     void
-    setLedgerInfo(LedgerInfo const& info)
+    setLedgerInfo(LedgerHeader const& info)
     {
         info_ = info;
     }
@@ -397,7 +397,7 @@ private:
 
     Fees fees_;
     Rules rules_;
-    LedgerInfo info_;
+    LedgerHeader info_;
     beast::Journal j_;
 };
 
@@ -423,7 +423,7 @@ pendSaveValidated(
     bool isCurrent);
 
 std::shared_ptr<Ledger>
-loadLedgerHelper(LedgerInfo const& sinfo, Application& app, bool acquire);
+loadLedgerHelper(LedgerHeader const& sinfo, Application& app, bool acquire);
 
 std::shared_ptr<Ledger>
 loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire = true);
@@ -457,7 +457,7 @@ std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
 deserializeTxPlusMeta(SHAMapItem const& item);
 
 uint256
-calculateLedgerHash(LedgerInfo const& info);
+calculateLedgerHash(LedgerHeader const& info);
 
 }  // namespace ripple
 

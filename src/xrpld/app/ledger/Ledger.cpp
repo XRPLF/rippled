@@ -32,7 +32,7 @@ namespace ripple {
 create_genesis_t const create_genesis{};
 
 uint256
-calculateLedgerHash(LedgerInfo const& info)
+calculateLedgerHash(LedgerHeader const& info)
 {
     // VFALCO This has to match addRaw in View.h.
     return sha512Half(
@@ -210,7 +210,7 @@ Ledger::Ledger(
 }
 
 Ledger::Ledger(
-    LedgerInfo const& info,
+    LedgerHeader const& info,
     bool& loaded,
     bool acquire,
     Config const& config,
@@ -285,7 +285,7 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     }
 }
 
-Ledger::Ledger(LedgerInfo const& info, Config const& config, Family& family)
+Ledger::Ledger(LedgerHeader const& info, Config const& config, Family& family)
     : mImmutable(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
@@ -1042,13 +1042,13 @@ Ledger::invariants() const
 /*
  * Make ledger using info loaded from database.
  *
- * @param LedgerInfo: Ledger information.
+ * @param LedgerHeader: Ledger information.
  * @param app: Link to the Application.
  * @param acquire: Acquire the ledger if not found locally.
  * @return Shared pointer to the ledger.
  */
 std::shared_ptr<Ledger>
-loadLedgerHelper(LedgerInfo const& info, Application& app, bool acquire)
+loadLedgerHelper(LedgerHeader const& info, Application& app, bool acquire)
 {
     bool loaded;
     auto ledger = std::make_shared<Ledger>(
@@ -1088,7 +1088,7 @@ finishLoadByIndexOrHash(
 std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
 getLatestLedger(Application& app)
 {
-    std::optional<LedgerInfo> const info =
+    std::optional<LedgerHeader> const info =
         app.getRelationalDatabase().getNewestLedgerInfo();
     if (!info)
         return {std::shared_ptr<Ledger>(), {}, {}};
@@ -1098,7 +1098,7 @@ getLatestLedger(Application& app)
 std::shared_ptr<Ledger>
 loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire)
 {
-    if (std::optional<LedgerInfo> info =
+    if (std::optional<LedgerHeader> info =
             app.getRelationalDatabase().getLedgerInfoByIndex(ledgerIndex))
     {
         std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, app, acquire);
@@ -1111,7 +1111,7 @@ loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire)
 std::shared_ptr<Ledger>
 loadByHash(uint256 const& ledgerHash, Application& app, bool acquire)
 {
-    if (std::optional<LedgerInfo> info =
+    if (std::optional<LedgerHeader> info =
             app.getRelationalDatabase().getLedgerInfoByHash(ledgerHash))
     {
         std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, app, acquire);

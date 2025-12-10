@@ -36,7 +36,7 @@ void
 fillJson(
     Json::Value& json,
     bool closed,
-    LedgerInfo const& info,
+    LedgerHeader const& info,
     bool bFull,
     unsigned apiVersion)
 {
@@ -78,7 +78,7 @@ fillJson(
 }
 
 void
-fillJsonBinary(Json::Value& json, bool closed, LedgerInfo const& info)
+fillJsonBinary(Json::Value& json, bool closed, LedgerHeader const& info)
 {
     if (!closed)
         json[jss::closed] = false;

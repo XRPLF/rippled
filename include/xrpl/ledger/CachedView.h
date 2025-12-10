@@ -47,7 +47,7 @@ public:
         return base_.open();
     }
 
-    LedgerInfo const&
+    LedgerHeader const&
     info() const override
     {
         return base_.info();

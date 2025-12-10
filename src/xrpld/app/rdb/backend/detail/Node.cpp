@@ -391,7 +391,7 @@ saveValidatedLedger(
  * @param j Journal.
  * @return Ledger info or no value if the ledger was not found.
  */
-static std::optional<LedgerInfo>
+static std::optional<LedgerHeader>
 getLedgerInfo(
     soci::session& session,
     std::string const& sqlSuffix,
@@ -425,7 +425,7 @@ getLedgerInfo(
     using time_point = NetClock::time_point;
     using duration = NetClock::duration;
 
-    LedgerInfo info;
+    LedgerHeader info;
 
     if (hash && !info.hash.parseHex(*hash))
     {
@@ -461,7 +461,7 @@ getLedgerInfo(
     return info;
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getLedgerInfoByIndex(
     soci::session& session,
     LedgerIndex ledgerSeq,
@@ -472,7 +472,7 @@ getLedgerInfoByIndex(
     return getLedgerInfo(session, s.str(), j);
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getNewestLedgerInfo(soci::session& session, beast::Journal j)
 {
     std::ostringstream s;
@@ -480,7 +480,7 @@ getNewestLedgerInfo(soci::session& session, beast::Journal j)
     return getLedgerInfo(session, s.str(), j);
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getLimitedOldestLedgerInfo(
     soci::session& session,
     LedgerIndex ledgerFirstIndex,
@@ -492,7 +492,7 @@ getLimitedOldestLedgerInfo(
     return getLedgerInfo(session, s.str(), j);
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getLimitedNewestLedgerInfo(
     soci::session& session,
     LedgerIndex ledgerFirstIndex,
@@ -504,7 +504,7 @@ getLimitedNewestLedgerInfo(
     return getLedgerInfo(session, s.str(), j);
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getLedgerInfoByHash(
     soci::session& session,
     uint256 const& ledgerHash,

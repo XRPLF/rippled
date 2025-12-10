@@ -141,26 +141,37 @@ Alternatively, you can pull the patched recipes into the repository and use them
 locally:
 
 ```bash
+# Extract the version number from the lockfile.
+function extract_version {
+  version=$(cat conan.lock | sed -nE "s@.+${1}/(.+)#.+@\1@p" | head -n1)
+  echo ${version}
+}
+
+# Define which recipes to export.
+recipes=(ed25519 grpc secp256k1 snappy soci)
+
+# Selectively check out the recipes from our CCI fork.
 cd external
 mkdir -p conan-center-index
 cd conan-center-index
 git init
 git remote add origin git@github.com:XRPLF/conan-center-index.git
 git sparse-checkout init
-git sparse-checkout set recipes/ed25519
-git sparse-checkout add recipes/grpc
-git sparse-checkout add recipes/secp256k1
-git sparse-checkout add recipes/snappy
-git sparse-checkout add recipes/soci
+for recipe in ${recipes[@]}; do
+  echo "Checking out ${recipe}..."
+  git sparse-checkout add recipes/${recipe}/all
+done
 git fetch origin master
 git checkout master
-rm -rf .git
 cd ../..
-conan export --version 2015.03 external/conan-center-index/recipes/ed25519/all
-conan export --version 1.72.0 external/conan-center-index/recipes/grpc/all
-conan export --version 0.7.0 external/conan-center-index/recipes/secp256k1/all
-conan export --version 1.1.10 external/conan-center-index/recipes/snappy/all
-conan export --version 4.0.3 external/conan-center-index/recipes/soci/all
+
+# Export the recipes into the local cache.
+for recipe in ${recipes[@]}; do
+  version=$(extract_version ${recipe})
+  echo "Exporting ${recipe}/${version}..."
+  conan export --version $(extract_version ${recipe}) \
+    external/conan-center-index/recipes/${recipe}/all
+done
 ```
 
 In the case we switch to a newer version of a dependency that still requires a

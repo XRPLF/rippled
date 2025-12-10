@@ -118,7 +118,7 @@ LedgerDeltaAcquire::pmDowncast()
 
 void
 LedgerDeltaAcquire::processData(
-    LedgerInfo const& info,
+    LedgerHeader const& info,
     std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns)
 {
     ScopedLockType sl(mtx_);
