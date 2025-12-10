@@ -224,7 +224,10 @@ public:
             Json::Value args{depositAuthArgs(alice, becky, "-1")};
             Json::Value const result{
                 env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "invalidParams", "ledgerIndexMalformed");
+            verifyErr(
+                result,
+                "invalidParams",
+                "Invalid field 'ledger_index', not string or number.");
         }
         {
             // Request a ledger that doesn't exist yet as a string.

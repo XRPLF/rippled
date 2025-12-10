@@ -97,7 +97,9 @@ class NoRippleCheck_test : public beast::unit_test::suite
             auto const result = env.rpc(
                 "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(result[jss::error_message] == "ledgerHashNotString");
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'ledger_hash', not hex string.");
         }
 
         {  // account not found
@@ -121,6 +123,36 @@ class NoRippleCheck_test : public beast::unit_test::suite
                 "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
+        }
+
+        {
+            // ledger and ledger_hash are included
+            Json::Value params;
+            params[jss::account] = Account{"nobody"}.human();
+            params[jss::role] = "user";
+            params[jss::ledger] = "current";
+            params[jss::ledger_hash] = "ABCDEF";
+            auto const result = env.rpc(
+                "json", "noripple_check", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Exactly one of 'ledger', 'ledger_hash', or 'ledger_index' can "
+                "be specified.");
+        }
+
+        {
+            // invalid ledger
+            Json::Value params;
+            params[jss::account] = Account{"nobody"}.human();
+            params[jss::role] = "user";
+            params[jss::ledger] = Json::objectValue;
+            auto const result = env.rpc(
+                "json", "noripple_check", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'ledger', not string or number.");
         }
     }
 
