@@ -477,10 +477,10 @@ class LedgerEntry_test : public beast::unit_test::suite
                         "json",
                         "ledger_entry",
                         to_string(jvParams))[jss::result];
-                    auto const expectedErrMsg = fieldValue.isString()
-                        ? "ledgerHashMalformed"
-                        : "Invalid field 'ledger_hash'.";
-                    checkErrorValue(jrr, "invalidParams", expectedErrMsg);
+                    checkErrorValue(
+                        jrr,
+                        "invalidParams",
+                        "Invalid field 'ledger_hash', not hex string.");
                 };
 
                 auto const& badValues = getBadValues(typeId);
@@ -1103,7 +1103,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedAuthorizedCredentials",
-                "Invalid field 'authorized_credentials', not array.");
+                "Invalid field 'authorized_credentials', array empty.");
         }
 
         {
@@ -1144,7 +1144,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedAuthorizedCredentials",
-                "Invalid field 'authorized_credentials', not array.");
+                "Invalid field 'authorized_credentials', array too long.");
         }
     }
 

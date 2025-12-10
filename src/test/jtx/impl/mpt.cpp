@@ -62,17 +62,67 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
             env_.require(owners(it.second, 0));
         }
     }
+    if (arg.create)
+        create(*arg.create);
 }
 
-void
-MPTTester::create(MPTCreate const& arg)
+MPTTester::MPTTester(
+    Env& env,
+    Account const& issuer,
+    MPTID const& id,
+    std::vector<Account> const& holders,
+    bool close)
+    : env_(env)
+    , issuer_(issuer)
+    , holders_(makeHolders(holders))
+    , id_(id)
+    , close_(close)
 {
-    if (id_)
-        Throw<std::runtime_error>("MPT can't be reused");
-    id_ = makeMptID(env_.seq(issuer_), issuer_);
+}
+
+static MPTCreate
+makeMPTCreate(MPTInitDef const& arg)
+{
+    if (arg.pay)
+        return {
+            .maxAmt = arg.maxAmt,
+            .transferFee = arg.transferFee,
+            .pay = {{arg.holders, *arg.pay}},
+            .flags = arg.flags,
+            .authHolder = arg.authHolder};
+    return {
+        .maxAmt = arg.maxAmt,
+        .transferFee = arg.transferFee,
+        .authorize = arg.holders,
+        .flags = arg.flags,
+        .authHolder = arg.authHolder};
+}
+
+MPTTester::MPTTester(MPTInitDef const& arg)
+    : MPTTester{
+          arg.env,
+          arg.issuer,
+          MPTInit{
+              .fund = arg.fund,
+              .close = arg.close,
+              .create = makeMPTCreate(arg)}}
+{
+}
+
+MPTTester::operator MPT() const
+{
+    if (!id_)
+        Throw<std::runtime_error>("MPT has not been created");
+    return MPT("", *id_);
+}
+
+Json::Value
+MPTTester::createjv(MPTCreate const& arg)
+{
+    if (!arg.issuer)
+        Throw<std::runtime_error>("MPTTester::createjv: issuer is not set");
     Json::Value jv;
-    jv[sfAccount] = issuer_.human();
-    jv[sfTransactionType] = jss::MPTokenIssuanceCreate;
+    jv[sfAccount] = arg.issuer->human();
     if (arg.assetScale)
         jv[sfAssetScale] = *arg.assetScale;
     if (arg.transferFee)
@@ -85,6 +135,25 @@ MPTTester::create(MPTCreate const& arg)
         jv[sfDomainID] = to_string(*arg.domainID);
     if (arg.mutableFlags)
         jv[sfMutableFlags] = *arg.mutableFlags;
+    jv[sfTransactionType] = jss::MPTokenIssuanceCreate;
+
+    return jv;
+}
+
+void
+MPTTester::create(MPTCreate const& arg)
+{
+    if (id_)
+        Throw<std::runtime_error>("MPT can't be reused");
+    id_ = makeMptID(env_.seq(issuer_), issuer_);
+    Json::Value jv = createjv(
+        {.issuer = issuer_,
+         .maxAmt = arg.maxAmt,
+         .assetScale = arg.assetScale,
+         .transferFee = arg.transferFee,
+         .metadata = arg.metadata,
+         .mutableFlags = arg.mutableFlags,
+         .domainID = arg.domainID});
     if (submit(arg, jv) != tesSUCCESS)
     {
         // Verify issuance doesn't exist
@@ -95,26 +164,62 @@ MPTTester::create(MPTCreate const& arg)
         id_.reset();
     }
     else
+    {
         env_.require(mptflags(*this, arg.flags.value_or(0)));
+        auto authAndPay = [&](auto const& accts, auto const&& getAcct) {
+            for (auto const& it : accts)
+            {
+                authorize({.account = getAcct(it)});
+                if ((arg.flags.value_or(0) & tfMPTRequireAuth) &&
+                    arg.authHolder)
+                    authorize({.account = issuer_, .holder = getAcct(it)});
+                if (arg.pay && arg.pay->first.empty())
+                    pay(issuer_, getAcct(it), arg.pay->second);
+            }
+            if (arg.pay)
+            {
+                for (auto const& p : arg.pay->first)
+                    pay(issuer_, p, arg.pay->second);
+            }
+        };
+        if (arg.authorize)
+        {
+            if (arg.authorize->empty())
+                authAndPay(holders_, [](auto const& it) { return it.second; });
+            else
+                authAndPay(*arg.authorize, [](auto const& it) { return it; });
+        }
+        else if (arg.pay)
+        {
+            if (arg.pay->first.empty())
+                authAndPay(holders_, [](auto const& it) { return it.second; });
+            else
+                authAndPay(arg.pay->first, [](auto const& it) { return it; });
+        }
+    }
+}
+
+Json::Value
+MPTTester::destroyjv(MPTDestroy const& arg)
+{
+    Json::Value jv;
+    if (!arg.issuer || !arg.id)
+        Throw<std::runtime_error>("MPTTester::destroyjv: issuer/id is not set");
+    jv[sfAccount] = arg.issuer->human();
+    jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    jv[sfTransactionType] = jss::MPTokenIssuanceDestroy;
+
+    return jv;
 }
 
 void
 MPTTester::destroy(MPTDestroy const& arg)
 {
-    Json::Value jv;
-    if (arg.issuer)
-        jv[sfAccount] = arg.issuer->human();
-    else
-        jv[sfAccount] = issuer_.human();
-    if (arg.id)
-        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
-    else
-    {
-        if (!id_)
-            Throw<std::runtime_error>("MPT has not been created");
-        jv[sfMPTokenIssuanceID] = to_string(*id_);
-    }
-    jv[sfTransactionType] = jss::MPTokenIssuanceDestroy;
+    if (!arg.id && !id_)
+        Throw<std::runtime_error>("MPT has not been created");
+    Json::Value jv = destroyjv(
+        {.issuer = arg.issuer ? arg.issuer : issuer_,
+         .id = arg.id ? arg.id : id_});
     submit(arg, jv);
 }
 
@@ -127,25 +232,32 @@ MPTTester::holder(std::string const& holder_) const
     return it->second;
 }
 
+Json::Value
+MPTTester::authorizejv(MPTAuthorize const& arg)
+{
+    Json::Value jv;
+    if (!arg.account || !arg.id)
+        Throw<std::runtime_error>(
+            "MPTTester::authorizejv: issuer/id is not set");
+    jv[sfAccount] = arg.account->human();
+    jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    if (arg.holder)
+        jv[sfHolder] = arg.holder->human();
+    jv[sfTransactionType] = jss::MPTokenAuthorize;
+
+    return jv;
+}
+
 void
 MPTTester::authorize(MPTAuthorize const& arg)
 {
-    Json::Value jv;
-    if (arg.account)
-        jv[sfAccount] = arg.account->human();
-    else
-        jv[sfAccount] = issuer_.human();
-    jv[sfTransactionType] = jss::MPTokenAuthorize;
-    if (arg.id)
-        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
-    else
-    {
-        if (!id_)
-            Throw<std::runtime_error>("MPT has not been created");
-        jv[sfMPTokenIssuanceID] = to_string(*id_);
-    }
-    if (arg.holder)
-        jv[sfHolder] = arg.holder->human();
+    if (!arg.id && !id_)
+        Throw<std::runtime_error>("MPT has not been created");
+    Json::Value jv = authorizejv({
+        .account = arg.account ? arg.account : issuer_,
+        .holder = arg.holder,
+        .id = arg.id ? arg.id : id_,
+    });
     if (auto const result = submit(arg, jv); result == tesSUCCESS)
     {
         // Issuer authorizes
@@ -201,24 +313,34 @@ MPTTester::authorize(MPTAuthorize const& arg)
 }
 
 void
-MPTTester::set(MPTSet const& arg)
+MPTTester::authorizeHolders(Holders const& holders)
+{
+    for (auto const& holder : holders)
+    {
+        authorize({.account = holder});
+    }
+}
+
+Json::Value
+MPTTester::setjv(MPTSet const& arg)
 {
     Json::Value jv;
-    if (arg.account)
-        jv[sfAccount] = arg.account->human();
-    else
-        jv[sfAccount] = issuer_.human();
-    jv[sfTransactionType] = jss::MPTokenIssuanceSet;
-    if (arg.id)
-        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
-    else
-    {
-        if (!id_)
-            Throw<std::runtime_error>("MPT has not been created");
-        jv[sfMPTokenIssuanceID] = to_string(*id_);
-    }
+    if (!arg.account || !arg.id)
+        Throw<std::runtime_error>("MPTTester::setjv: issuer/id is not set");
+    jv[sfAccount] = arg.account->human();
+    jv[sfMPTokenIssuanceID] = to_string(*arg.id);
     if (arg.holder)
-        jv[sfHolder] = arg.holder->human();
+    {
+        std::visit(
+            [&jv]<typename T>(T const& holder) {
+                if constexpr (std::is_same_v<T, Account>)
+                    jv[sfHolder] = holder.human();
+                else if constexpr (std::is_same_v<T, AccountID>)
+                    jv[sfHolder] = toBase58(holder);
+            },
+            *arg.holder);
+    }
+
     if (arg.delegate)
         jv[sfDelegate] = arg.delegate->human();
     if (arg.domainID)
@@ -229,7 +351,27 @@ MPTTester::set(MPTSet const& arg)
         jv[sfTransferFee] = *arg.transferFee;
     if (arg.metadata)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
-    if (submit(arg, jv) == tesSUCCESS && (arg.flags || arg.mutableFlags))
+    jv[sfTransactionType] = jss::MPTokenIssuanceSet;
+
+    return jv;
+}
+
+void
+MPTTester::set(MPTSet const& arg)
+{
+    if (!arg.id && !id_)
+        Throw<std::runtime_error>("MPT has not been created");
+    Json::Value jv = setjv(
+        {.account = arg.account ? arg.account : issuer_,
+         .holder = arg.holder,
+         .id = arg.id ? arg.id : id_,
+         .mutableFlags = arg.mutableFlags,
+         .transferFee = arg.transferFee,
+         .metadata = arg.metadata,
+         .delegate = arg.delegate,
+         .domainID = arg.domainID});
+    if (submit(arg, jv) == tesSUCCESS &&
+        (arg.flags.value_or(0) || arg.mutableFlags))
     {
         auto require = [&](std::optional<Account> const& holder,
                            bool unchanged) {
@@ -281,8 +423,9 @@ MPTTester::set(MPTSet const& arg)
         };
         if (arg.account)
             require(std::nullopt, arg.holder.has_value());
-        if (arg.holder)
-            require(*arg.holder, false);
+        if (auto const account =
+                (arg.holder ? std::get_if<Account>(&(*arg.holder)) : nullptr))
+            require(*account, false);
     }
 }
 
@@ -455,6 +598,13 @@ MPTTester::mpt(std::int64_t amount) const
     return ripple::test::jtx::MPT(issuer_.name(), *id_)(amount);
 }
 
+MPTTester::operator Asset() const
+{
+    if (!id_)
+        Throw<std::runtime_error>("MPT has not been created");
+    return Asset(*id_);
+}
+
 std::int64_t
 MPTTester::getBalance(Account const& account) const
 {
@@ -491,6 +641,12 @@ MPT
 MPTTester::operator[](std::string const& name) const
 {
     return MPT(name, issuanceID());
+}
+
+PrettyAmount
+MPTTester::operator()(std::uint64_t amount) const
+{
+    return MPT("", issuanceID())(amount);
 }
 
 }  // namespace jtx

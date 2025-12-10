@@ -11,9 +11,12 @@
 #error "undefined macro: XRPL_RETIRE_FIX"
 #endif
 
+// clang-format off
+
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
 
+XRPL_FEATURE(LendingProtocol,            Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionDelegationV1_1,   Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (DirectoryLimit,             Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (IncludeKeyletFields,        Supported::yes, VoteBehavior::DefaultNo)
@@ -63,13 +66,7 @@ XRPL_FEATURE(AMM,                        Supported::yes, VoteBehavior::DefaultNo
 XRPL_FEATURE(Clawback,                   Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (UniversalNumber,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(XRPFees,                    Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(DisallowIncoming,           Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(FlowSortStrands,            Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(RequireFullyCanonicalSig,   Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(DeletableAccounts,          Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(Checks,                     Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.
@@ -81,9 +78,9 @@ XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYe
 // enabled (added to the ledger).
 //
 // If a feature remains obsolete for long enough that no clients are able
-// to vote for it, the feature can be removed (entirely?) from the code.
-XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
-
+// to vote for it, the feature can be removed entirely from the code. Until
+// then the feature needs to be marked explicitly as obsolete, e.g.
+// XRPL_FEATURE(Example, Supported::yes, VoteBehavior::Obsolete)
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
 // All known amendments and amendments that may appear in a validated ledger
@@ -116,15 +113,21 @@ XRPL_RETIRE_FIX(STAmountCanonicalize)
 XRPL_RETIRE_FIX(TakerDryOfferRemoval)
 XRPL_RETIRE_FIX(TrustLinesToSelf)
 
+XRPL_RETIRE_FEATURE(Checks)
 XRPL_RETIRE_FEATURE(CheckCashMakesTrustLine)
 XRPL_RETIRE_FEATURE(CryptoConditions)
+XRPL_RETIRE_FEATURE(CryptoConditionsSuite)
+XRPL_RETIRE_FEATURE(DeletableAccounts)
 XRPL_RETIRE_FEATURE(DepositAuth)
 XRPL_RETIRE_FEATURE(DepositPreauth)
+XRPL_RETIRE_FEATURE(DisallowIncoming)
 XRPL_RETIRE_FEATURE(Escrow)
 XRPL_RETIRE_FEATURE(EnforceInvariants)
 XRPL_RETIRE_FEATURE(ExpandedSignerList)
 XRPL_RETIRE_FEATURE(FeeEscalation)
+XRPL_RETIRE_FEATURE(Flow)
 XRPL_RETIRE_FEATURE(FlowCross)
+XRPL_RETIRE_FEATURE(FlowSortStrands)
 XRPL_RETIRE_FEATURE(HardenedValidations)
 XRPL_RETIRE_FEATURE(ImmediateOfferKilled)
 XRPL_RETIRE_FEATURE(MultiSign)
@@ -132,7 +135,10 @@ XRPL_RETIRE_FEATURE(MultiSignReserve)
 XRPL_RETIRE_FEATURE(NegativeUNL)
 XRPL_RETIRE_FEATURE(NonFungibleTokensV1_1)
 XRPL_RETIRE_FEATURE(PayChan)
+XRPL_RETIRE_FEATURE(RequireFullyCanonicalSig)
 XRPL_RETIRE_FEATURE(SortedDirectories)
 XRPL_RETIRE_FEATURE(TicketBatch)
 XRPL_RETIRE_FEATURE(TickSize)
 XRPL_RETIRE_FEATURE(TrustSetAuth)
+
+// clang-format on

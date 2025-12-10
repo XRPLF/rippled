@@ -231,11 +231,7 @@ verifyDigest(
     SHA512-Half, and the resulting digest is signed.
 */
 [[nodiscard]] bool
-verify(
-    PublicKey const& publicKey,
-    Slice const& m,
-    Slice const& sig,
-    bool mustBeFullyCanonical = true) noexcept;
+verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept;
 
 /** Calculate the 160-bit node ID from a node public key. */
 NodeID
