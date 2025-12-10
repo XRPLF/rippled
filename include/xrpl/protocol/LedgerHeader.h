@@ -53,12 +53,6 @@ struct LedgerHeader
     NetClock::time_point closeTime = {};
 };
 
-// We call them "headers" in conversation
-// but "info" in code. Unintuitive.
-// This alias lets us give the "correct" name to the class
-// without yet disturbing existing uses.
-using LedgerInfo = LedgerHeader;
-
 // ledger close flags
 static std::uint32_t const sLCF_NoConsensusTime = 0x01;
 
