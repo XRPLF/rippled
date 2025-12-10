@@ -54,9 +54,13 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
       ${SED_COMMAND} -i -E 's/rippled(-example)?[ .]cfg/xrpld\1.cfg/g' "${FILE}"
   done
 done
+${SED_COMMAND} -i 's/rippled/xrpld/g' cfg/xrpld-example.cfg
 
 # Restore the old config file name in the code that maintains support for now.
 ${SED_COMMAND} -i 's/configLegacyName = "xrpld.cfg"/configLegacyName = "rippled.cfg"/g' src/xrpld/core/detail/Config.cpp
+
+# Restore an URL.
+${SED_COMMAND} -i 's/connect-your-xrpld-to-the-xrp-test-net.html/connect-your-rippled-to-the-xrp-test-net.html/g' cfg/xrpld-example.cfg
 
 popd
 echo "Renaming complete."
