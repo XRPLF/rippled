@@ -135,11 +135,11 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
         !built->open() && built->isImmutable(),
         "ripple::RCLConsensus::Adaptor::acquireLedger : valid ledger state");
     XRPL_ASSERT(
-        built->info().hash == hash,
+        built->header().hash == hash,
         "ripple::RCLConsensus::Adaptor::acquireLedger : ledger hash match");
 
     // Notify inbound transactions of the new ledger sequence number
-    inboundTransactions_.newRound(built->info().seq);
+    inboundTransactions_.newRound(built->header().seq);
 
     return RCLCxLedger(built);
 }
@@ -309,7 +309,7 @@ RCLConsensus::Adaptor::onClose(
 
     ledgerMaster_.applyHeldTransactions();
     // Tell the ledger master not to acquire the ledger we're probably building
-    ledgerMaster_.setBuildingLedger(prevLedger->info().seq + 1);
+    ledgerMaster_.setBuildingLedger(prevLedger->header().seq + 1);
 
     auto initialLedger = app_.openLedger().current();
 
@@ -338,7 +338,7 @@ RCLConsensus::Adaptor::onClose(
             // pseudo-transactions
             auto validations = app_.validators().negativeUNLFilter(
                 app_.getValidations().getTrustedForLedger(
-                    prevLedger->info().parentHash, prevLedger->seq() - 1));
+                    prevLedger->header().parentHash, prevLedger->seq() - 1));
             if (validations.size() >= app_.validators().quorum())
             {
                 feeVote_->doVoting(prevLedger, validations, initialSet);
@@ -364,7 +364,7 @@ RCLConsensus::Adaptor::onClose(
 
     if (!wrongLCL)
     {
-        LedgerIndex const seq = prevLedger->info().seq + 1;
+        LedgerIndex const seq = prevLedger->header().seq + 1;
         RCLCensorshipDetector<TxID, LedgerIndex>::TxIDSeqVec proposed;
 
         initialSet->visitLeaves(
@@ -382,7 +382,7 @@ RCLConsensus::Adaptor::onClose(
     return Result{
         std::move(initialSet),
         RCLCxPeerPos::Proposal{
-            initialLedger->info().parentHash,
+            initialLedger->header().parentHash,
             RCLCxPeerPos::Proposal::seqJoin,
             setHash,
             closeTime,
@@ -663,10 +663,10 @@ RCLConsensus::Adaptor::doAccept(
 
         // Do these need to exist?
         XRPL_ASSERT(
-            ledgerMaster_.getClosedLedger()->info().hash == built.id(),
+            ledgerMaster_.getClosedLedger()->header().hash == built.id(),
             "ripple::RCLConsensus::Adaptor::doAccept : ledger hash match");
         XRPL_ASSERT(
-            app_.openLedger().current()->info().parentHash == built.id(),
+            app_.openLedger().current()->header().parentHash == built.id(),
             "ripple::RCLConsensus::Adaptor::doAccept : parent hash match");
     }
 
@@ -764,7 +764,7 @@ RCLConsensus::Adaptor::buildLCL(
         if (auto const replayData = ledgerMaster_.releaseReplay())
         {
             XRPL_ASSERT(
-                replayData->parent()->info().hash == previousLedger.id(),
+                replayData->parent()->header().hash == previousLedger.id(),
                 "ripple::RCLConsensus::Adaptor::buildLCL : parent hash match");
             return buildLedger(*replayData, tapNONE, app_, j_);
         }
@@ -786,7 +786,7 @@ RCLConsensus::Adaptor::buildLCL(
     // And stash the ledger in the ledger master
     if (ledgerMaster_.storeLedger(built))
         JLOG(j_.debug()) << "Consensus built ledger we already had";
-    else if (app_.getInboundLedgers().find(built->info().hash))
+    else if (app_.getInboundLedgers().find(built->header().hash))
         JLOG(j_.debug()) << "Consensus built ledger we were acquiring";
     else
         JLOG(j_.debug()) << "Consensus built new ledger";
@@ -833,7 +833,7 @@ RCLConsensus::Adaptor::validate(
             // validated ledger. This may be the hash of the ledger we are
             // validating here, and that's fine.
             if (auto const vl = ledgerMaster_.getValidatedLedger())
-                v.setFieldH256(sfValidatedHash, vl->info().hash);
+                v.setFieldH256(sfValidatedHash, vl->header().hash);
 
             v.setFieldU64(sfCookie, valCookie_);
 

@@ -907,14 +907,14 @@ areCompatible(
 {
     bool ret = true;
 
-    if (validLedger.info().seq < testLedger.info().seq)
+    if (validLedger.header().seq < testLedger.header().seq)
     {
         // valid -> ... -> test
         auto hash = hashOfSeq(
             testLedger,
-            validLedger.info().seq,
+            validLedger.header().seq,
             beast::Journal{beast::Journal::getNullSink()});
-        if (hash && (*hash != validLedger.info().hash))
+        if (hash && (*hash != validLedger.header().hash))
         {
             JLOG(s) << reason << " incompatible with valid ledger";
 
@@ -923,14 +923,14 @@ areCompatible(
             ret = false;
         }
     }
-    else if (validLedger.info().seq > testLedger.info().seq)
+    else if (validLedger.header().seq > testLedger.header().seq)
     {
         // test -> ... -> valid
         auto hash = hashOfSeq(
             validLedger,
-            testLedger.info().seq,
+            testLedger.header().seq,
             beast::Journal{beast::Journal::getNullSink()});
-        if (hash && (*hash != testLedger.info().hash))
+        if (hash && (*hash != testLedger.header().hash))
         {
             JLOG(s) << reason << " incompatible preceding ledger";
 
@@ -940,8 +940,8 @@ areCompatible(
         }
     }
     else if (
-        (validLedger.info().seq == testLedger.info().seq) &&
-        (validLedger.info().hash != testLedger.info().hash))
+        (validLedger.header().seq == testLedger.header().seq) &&
+        (validLedger.header().hash != testLedger.header().hash))
     {
         // Same sequence number, different hash
         JLOG(s) << reason << " incompatible ledger";
@@ -951,11 +951,11 @@ areCompatible(
 
     if (!ret)
     {
-        JLOG(s) << "Val: " << validLedger.info().seq << " "
-                << to_string(validLedger.info().hash);
+        JLOG(s) << "Val: " << validLedger.header().seq << " "
+                << to_string(validLedger.header().hash);
 
-        JLOG(s) << "New: " << testLedger.info().seq << " "
-                << to_string(testLedger.info().hash);
+        JLOG(s) << "New: " << testLedger.header().seq << " "
+                << to_string(testLedger.header().hash);
     }
 
     return ret;
@@ -971,7 +971,7 @@ areCompatible(
 {
     bool ret = true;
 
-    if (testLedger.info().seq > validIndex)
+    if (testLedger.header().seq > validIndex)
     {
         // Ledger we are testing follows last valid ledger
         auto hash = hashOfSeq(
@@ -987,8 +987,8 @@ areCompatible(
         }
     }
     else if (
-        (validIndex == testLedger.info().seq) &&
-        (testLedger.info().hash != validHash))
+        (validIndex == testLedger.header().seq) &&
+        (testLedger.header().hash != validHash))
     {
         JLOG(s) << reason << " incompatible ledger";
 
@@ -999,8 +999,8 @@ areCompatible(
     {
         JLOG(s) << "Val: " << validIndex << " " << to_string(validHash);
 
-        JLOG(s) << "New: " << testLedger.info().seq << " "
-                << to_string(testLedger.info().hash);
+        JLOG(s) << "New: " << testLedger.header().seq << " "
+                << to_string(testLedger.header().hash);
     }
 
     return ret;
@@ -1071,9 +1071,9 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
         return std::nullopt;
     }
     if (seq == ledger.seq())
-        return ledger.info().hash;
+        return ledger.header().hash;
     if (seq == (ledger.seq() - 1))
-        return ledger.info().parentHash;
+        return ledger.header().parentHash;
 
     if (int diff = ledger.seq() - seq; diff <= 256)
     {
@@ -1095,7 +1095,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
         else
         {
             JLOG(journal.warn())
-                << "Ledger " << ledger.seq() << ":" << ledger.info().hash
+                << "Ledger " << ledger.seq() << ":" << ledger.header().hash
                 << " missing normal list";
         }
     }
@@ -1180,7 +1180,8 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
     for (std::uint16_t i = 0; i < maxAccountAttempts; ++i)
     {
         ripesha_hasher rsh;
-        auto const hash = sha512Half(i, view.info().parentHash, pseudoOwnerKey);
+        auto const hash =
+            sha512Half(i, view.header().parentHash, pseudoOwnerKey);
         rsh(hash.data(), hash.size());
         AccountID const ret{static_cast<ripesha_hasher::result_type>(rsh)};
         if (!view.read(keylet::account(ret)))

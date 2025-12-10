@@ -8,12 +8,12 @@ RippleLineCache::RippleLineCache(
     beast::Journal j)
     : ledger_(ledger), journal_(j)
 {
-    JLOG(journal_.debug()) << "created for ledger " << ledger_->info().seq;
+    JLOG(journal_.debug()) << "created for ledger " << ledger_->header().seq;
 }
 
 RippleLineCache::~RippleLineCache()
 {
-    JLOG(journal_.debug()) << "destroyed for ledger " << ledger_->info().seq
+    JLOG(journal_.debug()) << "destroyed for ledger " << ledger_->header().seq
                            << " with " << lines_.size() << " accounts and "
                            << totalLineCount_ << " distinct trust lines.";
 }
@@ -99,7 +99,7 @@ RippleLineCache::getRippleLines(
         "ripple::RippleLineCache::getRippleLines : null or nonempty lines");
     auto const size = it->second ? it->second->size() : 0;
     JLOG(journal_.trace()) << "getRippleLines for ledger "
-                           << ledger_->info().seq << " found " << size
+                           << ledger_->header().seq << " found " << size
                            << (key.direction_ == LineDirection::outgoing
                                    ? " outgoing"
                                    : " incoming")

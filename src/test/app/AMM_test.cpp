@@ -3646,7 +3646,7 @@ private:
             auto const pk = carol.pk();
             auto const settleDelay = 100s;
             NetClock::time_point const cancelAfter =
-                env.current()->info().parentCloseTime + 200s;
+                env.current()->header().parentCloseTime + 200s;
             env(paychan::create(
                     carol,
                     ammAlice.ammAccount(),

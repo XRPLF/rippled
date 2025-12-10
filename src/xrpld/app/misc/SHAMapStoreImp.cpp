@@ -278,7 +278,7 @@ SHAMapStoreImp::run()
                 continue;
         }
 
-        LedgerIndex const validatedSeq = validatedLedger->info().seq;
+        LedgerIndex const validatedSeq = validatedLedger->header().seq;
         if (!lastRotated)
         {
             lastRotated = validatedSeq;

@@ -336,7 +336,7 @@ struct Credentials_test : public beast::unit_test::suite
             auto const credKey = credentials::keylet(subject, issuer, credType);
             auto jv = credentials::create(subject, issuer, credType);
             uint32_t const t = env.current()
-                                   ->info()
+                                   ->header()
                                    .parentCloseTime.time_since_epoch()
                                    .count();
             jv[sfExpiration.jsonName] = t + 20;
@@ -498,7 +498,7 @@ struct Credentials_test : public beast::unit_test::suite
                 auto jv = credentials::create(subject, issuer, credType);
                 // current time in ripple epoch - 1s
                 uint32_t const t = env.current()
-                                       ->info()
+                                       ->header()
                                        .parentCloseTime.time_since_epoch()
                                        .count() -
                     1;
@@ -725,7 +725,7 @@ struct Credentials_test : public beast::unit_test::suite
                 testcase("CredentialsAccept fail, expired credentials.");
                 auto jv = credentials::create(subject, issuer, credType2);
                 uint32_t const t = env.current()
-                                       ->info()
+                                       ->header()
                                        .parentCloseTime.time_since_epoch()
                                        .count();
                 jv[sfExpiration.jsonName] = t;
@@ -870,7 +870,7 @@ struct Credentials_test : public beast::unit_test::suite
                 auto jv = credentials::create(subject, issuer, credType);
                 // current time in ripple epoch + 1000s
                 uint32_t const t = env.current()
-                                       ->info()
+                                       ->header()
                                        .parentCloseTime.time_since_epoch()
                                        .count() +
                     1000;

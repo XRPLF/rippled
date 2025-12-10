@@ -61,7 +61,7 @@ OpenView::OpenView(OpenView const& rhs)
           boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{rhs.txs_, monotonic_resource_.get()}
     , rules_{rhs.rules_}
-    , info_{rhs.info_}
+    , header_{rhs.header_}
     , base_{rhs.base_}
     , items_{rhs.items_}
     , hold_{rhs.hold_}
@@ -76,15 +76,15 @@ OpenView::OpenView(
           boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(rules)
-    , info_(base->info())
+    , header_(base->header())
     , base_(base)
     , hold_(std::move(hold))
 {
-    info_.validated = false;
-    info_.accepted = false;
-    info_.seq = base_->info().seq + 1;
-    info_.parentCloseTime = base_->info().closeTime;
-    info_.parentHash = base_->info().hash;
+    header_.validated = false;
+    header_.accepted = false;
+    header_.seq = base_->header().seq + 1;
+    header_.parentCloseTime = base_->header().closeTime;
+    header_.parentHash = base_->header().hash;
 }
 
 OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
@@ -92,7 +92,7 @@ OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
           boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(base->rules())
-    , info_(base->info())
+    , header_(base->header())
     , base_(base)
     , hold_(std::move(hold))
     , open_(base->open())
@@ -115,10 +115,10 @@ OpenView::apply(TxsRawView& to) const
 
 //---
 
-LedgerInfo const&
-OpenView::info() const
+LedgerHeader const&
+OpenView::header() const
 {
-    return info_;
+    return header_;
 }
 
 Fees const&
@@ -230,7 +230,7 @@ void
 OpenView::rawDestroyXRP(XRPAmount const& fee)
 {
     items_.destroyXRP(fee);
-    // VFALCO Deduct from info_.totalDrops ?
+    // VFALCO Deduct from header_.totalDrops ?
     //        What about child views?
 }
 

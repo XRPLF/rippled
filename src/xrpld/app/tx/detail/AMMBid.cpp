@@ -180,7 +180,7 @@ applyBid(
     auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auto const current =
         duration_cast<seconds>(
-            ctx_.view().info().parentCloseTime.time_since_epoch())
+            ctx_.view().header().parentCloseTime.time_since_epoch())
             .count();
     // Auction slot discounted fee
     auto const discountedFee =
