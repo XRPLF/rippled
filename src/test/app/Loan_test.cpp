@@ -3464,13 +3464,6 @@ protected:
                     ter{tecNO_AUTH});
                 env.close();
 
-                // Can create loan without origination fee
-                env(set(borrower, broker.brokerID, principalRequest),
-                    counterparty(lender),
-                    sig(sfCounterpartySignature, lender),
-                    fee(env.current()->fees().base * 5));
-                env.close();
-
                 // No MPToken for lender - no authorization and no payment
                 auto const sleMPT3 = env.le(mptoken);
                 BEAST_EXPECT(sleMPT3 == nullptr);

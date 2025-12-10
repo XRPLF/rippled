@@ -283,10 +283,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     Asset const asset = vault->at(sfAsset);
-
-    if (requireAuth(ctx.view, asset, brokerOwner) != tesSUCCESS)
-        return tecNO_AUTH;
-
     auto const vaultPseudo = vault->at(sfAccount);
 
     // Check that relevant values can be represented as the vault asset type.
@@ -541,11 +537,11 @@ LoanSet::doApply()
             // ignore tecDUPLICATE. That means the holding already exists,
             // and is fine here
             return ter;
-
-        if (auto const ter = requireAuth(
-                view, vaultAsset, brokerOwner, AuthType::StrongAuth))
-            return ter;
     }
+
+    if (auto const ter =
+            requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
+        return ter;
 
     if (auto const ter = accountSendMulti(
             view,
