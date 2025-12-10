@@ -4356,7 +4356,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Batch, app, ripple);
+BEAST_DEFINE_TESTSUITE(Batch, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

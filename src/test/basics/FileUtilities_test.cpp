@@ -60,6 +60,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FileUtilities, basics, ripple);
+BEAST_DEFINE_TESTSUITE(FileUtilities, basics, xrpl);
 
 }  // namespace xrpl

@@ -265,6 +265,6 @@ private:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(tx_reduce_relay, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(tx_reduce_relay, overlay, xrpl);
 }  // namespace test
 }  // namespace xrpl

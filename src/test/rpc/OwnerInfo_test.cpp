@@ -200,6 +200,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(OwnerInfo, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(OwnerInfo, rpc, xrpl);
 
 }  // namespace xrpl

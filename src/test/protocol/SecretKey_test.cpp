@@ -1494,6 +1494,6 @@ inline static TestKeyData const ed25519TestVectors[] = {
     // clang-format on
 };
 
-BEAST_DEFINE_TESTSUITE(SecretKey, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(SecretKey, protocol, xrpl);
 
 }  // namespace xrpl

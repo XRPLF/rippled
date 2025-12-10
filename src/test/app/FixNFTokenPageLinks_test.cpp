@@ -642,6 +642,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FixNFTokenPageLinks, app, ripple);
+BEAST_DEFINE_TESTSUITE(FixNFTokenPageLinks, app, xrpl);
 
 }  // namespace xrpl

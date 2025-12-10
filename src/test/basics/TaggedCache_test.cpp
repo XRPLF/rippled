@@ -132,6 +132,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TaggedCache, basics, ripple);
+BEAST_DEFINE_TESTSUITE(TaggedCache, basics, xrpl);
 
 }  // namespace xrpl

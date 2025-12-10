@@ -530,7 +530,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(import, nodestore, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(import, nodestore, xrpl);
 
 #endif
 

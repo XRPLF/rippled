@@ -2367,8 +2367,8 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerEntry, rpc, ripple);
-BEAST_DEFINE_TESTSUITE(LedgerEntry_XChain, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerEntry, rpc, xrpl);
+BEAST_DEFINE_TESTSUITE(LedgerEntry_XChain, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

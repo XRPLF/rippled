@@ -49,6 +49,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerClosed, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerClosed, rpc, xrpl);
 
 }  // namespace xrpl

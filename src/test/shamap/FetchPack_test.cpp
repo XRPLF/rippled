@@ -151,7 +151,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FetchPack, shamap, ripple);
+BEAST_DEFINE_TESTSUITE(FetchPack, shamap, xrpl);
 
 }  // namespace tests
 }  // namespace xrpl

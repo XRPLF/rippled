@@ -127,6 +127,6 @@ struct STAccount_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STAccount, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STAccount, protocol, xrpl);
 
 }  // namespace xrpl

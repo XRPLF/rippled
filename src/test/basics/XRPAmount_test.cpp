@@ -325,6 +325,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(XRPAmount, basics, ripple);
+BEAST_DEFINE_TESTSUITE(XRPAmount, basics, xrpl);
 
 }  // namespace xrpl

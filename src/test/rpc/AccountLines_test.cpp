@@ -1382,7 +1382,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountLines, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountLines, rpc, xrpl);
 
 }  // namespace RPC
 }  // namespace xrpl

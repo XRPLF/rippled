@@ -40,7 +40,7 @@ struct PendingSaves_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PendingSaves, ledger, ripple);
+BEAST_DEFINE_TESTSUITE(PendingSaves, ledger, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

@@ -5264,6 +5264,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Vault, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(Vault, app, xrpl, 1);
 
 }  // namespace xrpl

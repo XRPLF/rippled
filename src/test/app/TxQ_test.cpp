@@ -5052,8 +5052,8 @@ class TxQMetaInfo_test : public TxQPosNegFlows_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(TxQPosNegFlows, app, ripple, 1);
-BEAST_DEFINE_TESTSUITE_PRIO(TxQMetaInfo, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(TxQPosNegFlows, app, xrpl, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(TxQMetaInfo, app, xrpl, 1);
 
 }  // namespace test
 }  // namespace xrpl

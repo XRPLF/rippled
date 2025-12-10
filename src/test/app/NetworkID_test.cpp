@@ -142,7 +142,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NetworkID, app, ripple);
+BEAST_DEFINE_TESTSUITE(NetworkID, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

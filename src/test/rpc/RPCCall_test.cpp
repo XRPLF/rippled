@@ -5990,7 +5990,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RPCCall, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(RPCCall, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

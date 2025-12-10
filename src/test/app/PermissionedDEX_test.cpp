@@ -1552,7 +1552,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PermissionedDEX, app, ripple);
+BEAST_DEFINE_TESTSUITE(PermissionedDEX, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

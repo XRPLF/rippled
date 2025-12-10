@@ -64,7 +64,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Scheduler, csf, ripple);
+BEAST_DEFINE_TESTSUITE(Scheduler, csf, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

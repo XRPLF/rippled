@@ -404,7 +404,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(HashRouter, app, ripple);
+BEAST_DEFINE_TESTSUITE(HashRouter, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

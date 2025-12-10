@@ -938,6 +938,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Transaction, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Transaction, rpc, xrpl);
 
 }  // namespace xrpl

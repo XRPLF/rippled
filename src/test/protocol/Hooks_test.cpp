@@ -174,6 +174,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Hooks, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Hooks, protocol, xrpl);
 
 }  // namespace xrpl

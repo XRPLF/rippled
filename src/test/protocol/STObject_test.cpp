@@ -503,6 +503,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STObject, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STObject, protocol, xrpl);
 
 }  // namespace xrpl

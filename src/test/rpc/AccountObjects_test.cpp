@@ -1427,7 +1427,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountObjects, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountObjects, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

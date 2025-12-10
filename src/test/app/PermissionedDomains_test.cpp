@@ -560,7 +560,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PermissionedDomains, app, ripple);
+BEAST_DEFINE_TESTSUITE(PermissionedDomains, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

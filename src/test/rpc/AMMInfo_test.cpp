@@ -350,7 +350,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AMMInfo, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AMMInfo, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

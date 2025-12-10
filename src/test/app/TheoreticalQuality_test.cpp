@@ -533,7 +533,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(TheoreticalQuality, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(TheoreticalQuality, app, xrpl, 3);
 
 }  // namespace test
 }  // namespace xrpl

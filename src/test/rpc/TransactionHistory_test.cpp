@@ -151,6 +151,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TransactionHistory, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(TransactionHistory, rpc, xrpl);
 
 }  // namespace xrpl

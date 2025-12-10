@@ -1226,7 +1226,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ServerStatus, server, ripple);
+BEAST_DEFINE_TESTSUITE(ServerStatus, server, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

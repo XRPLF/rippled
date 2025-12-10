@@ -251,6 +251,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, xrpl);
 
 }  // namespace xrpl

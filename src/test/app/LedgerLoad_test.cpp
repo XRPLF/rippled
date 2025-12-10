@@ -370,6 +370,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerLoad, app, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerLoad, app, xrpl);
 
 }  // namespace xrpl

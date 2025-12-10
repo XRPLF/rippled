@@ -1107,7 +1107,7 @@ struct Credentials_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Credentials, app, ripple);
+BEAST_DEFINE_TESTSUITE(Credentials, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

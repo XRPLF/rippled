@@ -379,7 +379,7 @@ struct DID_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DID, app, ripple);
+BEAST_DEFINE_TESTSUITE(DID, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

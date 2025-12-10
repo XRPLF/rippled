@@ -91,7 +91,7 @@ struct BookDirs_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(BookDirs, ledger, ripple);
+BEAST_DEFINE_TESTSUITE(BookDirs, ledger, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

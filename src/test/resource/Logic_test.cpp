@@ -272,7 +272,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ResourceManager, resource, ripple);
+BEAST_DEFINE_TESTSUITE(ResourceManager, resource, xrpl);
 
 }  // namespace Resource
 }  // namespace xrpl

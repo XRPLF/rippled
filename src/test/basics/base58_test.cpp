@@ -451,7 +451,7 @@ class base58_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(base58, basics, ripple);
+BEAST_DEFINE_TESTSUITE(base58, basics, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

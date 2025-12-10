@@ -356,7 +356,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerRequestRPC, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerRequestRPC, rpc, xrpl);
 
 }  // namespace RPC
 }  // namespace xrpl

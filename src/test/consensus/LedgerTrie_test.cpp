@@ -659,6 +659,6 @@ class LedgerTrie_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerTrie, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerTrie, consensus, xrpl);
 }  // namespace test
 }  // namespace xrpl

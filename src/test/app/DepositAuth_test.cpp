@@ -1462,8 +1462,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DepositAuth, app, ripple);
-BEAST_DEFINE_TESTSUITE(DepositPreauth, app, ripple);
+BEAST_DEFINE_TESTSUITE(DepositAuth, app, xrpl);
+BEAST_DEFINE_TESTSUITE(DepositPreauth, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

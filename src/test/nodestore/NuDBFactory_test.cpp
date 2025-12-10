@@ -452,7 +452,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NuDBFactory, ripple_core, ripple);
+BEAST_DEFINE_TESTSUITE(NuDBFactory, ripple_core, xrpl);
 
 }  // namespace NodeStore
 }  // namespace xrpl

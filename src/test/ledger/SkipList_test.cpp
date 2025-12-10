@@ -84,7 +84,7 @@ class SkipList_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SkipList, ledger, ripple);
+BEAST_DEFINE_TESTSUITE(SkipList, ledger, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

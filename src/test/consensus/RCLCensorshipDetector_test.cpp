@@ -79,6 +79,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RCLCensorshipDetector, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(RCLCensorshipDetector, consensus, xrpl);
 }  // namespace test
 }  // namespace xrpl

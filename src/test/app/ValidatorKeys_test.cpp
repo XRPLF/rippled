@@ -171,7 +171,7 @@ public:
     }
 };  // namespace test
 
-BEAST_DEFINE_TESTSUITE(ValidatorKeys, app, ripple);
+BEAST_DEFINE_TESTSUITE(ValidatorKeys, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

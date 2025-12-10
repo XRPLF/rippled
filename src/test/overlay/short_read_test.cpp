@@ -638,6 +638,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(short_read, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(short_read, overlay, xrpl);
 
 }  // namespace xrpl

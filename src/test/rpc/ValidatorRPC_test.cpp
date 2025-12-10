@@ -575,7 +575,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ValidatorRPC, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(ValidatorRPC, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

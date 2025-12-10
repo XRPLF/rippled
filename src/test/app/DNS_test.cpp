@@ -110,7 +110,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DNS, app, ripple, 20);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DNS, app, xrpl, 20);
 
 }  // namespace test
 }  // namespace xrpl

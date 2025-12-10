@@ -1806,6 +1806,6 @@ class Delegate_test : public beast::unit_test::suite
         testTxReqireFeatures(all);
     }
 };
-BEAST_DEFINE_TESTSUITE(Delegate, app, ripple);
+BEAST_DEFINE_TESTSUITE(Delegate, app, xrpl);
 }  // namespace test
 }  // namespace xrpl

@@ -3930,7 +3930,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(EscrowToken, app, ripple);
+BEAST_DEFINE_TESTSUITE(EscrowToken, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

@@ -2585,6 +2585,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Check, app, ripple);
+BEAST_DEFINE_TESTSUITE(Check, app, xrpl);
 
 }  // namespace xrpl

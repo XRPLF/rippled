@@ -592,6 +592,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AccountSet, rpc, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(AccountSet, rpc, xrpl, 1);
 
 }  // namespace xrpl

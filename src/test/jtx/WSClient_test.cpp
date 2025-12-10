@@ -27,7 +27,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(WSClient, jtx, ripple);
+BEAST_DEFINE_TESTSUITE(WSClient, jtx, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

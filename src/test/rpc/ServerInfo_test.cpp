@@ -162,7 +162,7 @@ admin = 127.0.0.1
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ServerInfo, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(ServerInfo, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

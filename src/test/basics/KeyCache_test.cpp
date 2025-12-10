@@ -74,6 +74,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(KeyCache, basics, ripple);
+BEAST_DEFINE_TESTSUITE(KeyCache, basics, xrpl);
 
 }  // namespace xrpl

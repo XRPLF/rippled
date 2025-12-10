@@ -124,7 +124,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(BookChanges, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(BookChanges, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

@@ -105,6 +105,6 @@ class LedgerTiming_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerTiming, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerTiming, consensus, xrpl);
 }  // namespace test
 }  // namespace xrpl

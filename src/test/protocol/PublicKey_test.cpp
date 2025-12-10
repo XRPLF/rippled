@@ -450,6 +450,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PublicKey, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(PublicKey, protocol, xrpl);
 
 }  // namespace xrpl

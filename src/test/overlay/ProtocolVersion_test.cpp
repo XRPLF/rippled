@@ -79,6 +79,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ProtocolVersion, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(ProtocolVersion, overlay, xrpl);
 
 }  // namespace xrpl

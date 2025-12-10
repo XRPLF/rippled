@@ -52,7 +52,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(varint, nodestore, ripple);
+BEAST_DEFINE_TESTSUITE(varint, nodestore, xrpl);
 
 }  // namespace tests
 }  // namespace NodeStore

@@ -600,6 +600,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAuth, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAuth, app, xrpl, 2);
 
 }  // namespace xrpl

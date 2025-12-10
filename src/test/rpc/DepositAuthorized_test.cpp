@@ -619,7 +619,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DepositAuthorized, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(DepositAuthorized, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

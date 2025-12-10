@@ -116,7 +116,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerMaster, app, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerMaster, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

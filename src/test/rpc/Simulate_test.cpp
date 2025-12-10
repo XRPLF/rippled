@@ -1316,7 +1316,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Simulate, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Simulate, rpc, xrpl);
 
 }  // namespace test
 

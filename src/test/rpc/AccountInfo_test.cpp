@@ -700,7 +700,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountInfo, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountInfo, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

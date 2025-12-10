@@ -132,7 +132,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(traffic_count, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(traffic_count, overlay, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

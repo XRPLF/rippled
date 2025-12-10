@@ -327,7 +327,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(GetAggregatePrice, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(GetAggregatePrice, rpc, xrpl);
 
 }  // namespace oracle
 }  // namespace jtx

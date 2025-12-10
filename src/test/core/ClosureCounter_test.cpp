@@ -319,7 +319,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ClosureCounter, core, ripple);
+BEAST_DEFINE_TESTSUITE(ClosureCounter, core, xrpl);
 
 }  // namespace test
 }  // namespace xrpl
