@@ -46,6 +46,7 @@ ${SED_COMMAND} -i -E 's@rippled@xrpld@g' .github/ISSUE_TEMPLATE/bug_report.md
 # Restore and/or fix certain renames. The pre-commit hook will update the
 # formatting upon saving/committing.
 ${SED_COMMAND} -i -E 's@ripple/xrpld@XRPLF/rippled@g' BUILD.md
+${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' BUILD.md
 ${SED_COMMAND} -i -E 's@xrpld \(`xrpld`\)@xrpld@g' BUILD.md
 ${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' CONTRIBUTING.md
 
