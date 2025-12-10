@@ -1669,7 +1669,7 @@ ValidPermissionedDomain::visitEntry(
     if (before)
     {
         sleStatus_[0] = SleStatus();
-        check(*sleStatus_[0], after);
+        check(*sleStatus_[0], before);
     }
 
     if (after)
