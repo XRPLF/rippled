@@ -47,7 +47,8 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
-    auto account = ctx.tx[sfAccount];
+    auto const account = ctx.tx[sfAccount];
+    auto const holder = ctx.tx[sfHolder];
     auto const issuer = ctx.view.read(keylet::account(account));
     if (!issuer)
     {
@@ -82,13 +83,23 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto const assetsAvailable = vault->at(sfAssetsAvailable);
     auto const sharesTotal = sleShareIssuance->at(sfOutstandingAmount);
     auto const owner = vault->at(sfOwner);
+    auto const share = MPTIssue{mptIssuanceID};
 
     // Allow clawback to burn shares in this special case.
     if (sharesTotal > 0 && assetsTotal == 0 && assetsAvailable == 0 &&
         account == owner)
     {
+        Number const sharesHeld = accountHolds(
+            ctx.view,
+            holder,
+            share,
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            ctx.j);
+
         // The VaultOwner must burn all shares
-        if (ctx.tx[~sfAmount])
+        if (auto const amount = ctx.tx[~sfAmount];
+            amount && *amount != sharesHeld)
             return tecLIMIT_EXCEEDED;
 
         return tesSUCCESS;
@@ -138,43 +149,15 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-std::pair<STAmount, STAmount>
-VaultClawback::burnShares(
-    std::shared_ptr<SLE> const& vault,
-    std::shared_ptr<SLE const> const& sleShareIssuance,
-    AccountID const& holder)
-{
-    auto const assetsAvailable = vault->at(sfAssetsAvailable);
-    auto const assetsTotal = vault->at(sfAssetsTotal);
-    auto const sharesTotal = sleShareIssuance->at(sfOutstandingAmount);
-    auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
-    MPTIssue const share{mptIssuanceID};
-
-    // This was validated in preclaim
-    XRPL_ASSERT(
-        assetsTotal == 0 && assetsAvailable == 0 && sharesTotal > 0,
-        "ripple::VaultClawback::doApply : vault is empty");
-
-    auto const sharesDestroyed = accountHolds(
-        view(),
-        holder,
-        share,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
-        j_);
-
-    return std::make_pair(STAmount{}, sharesDestroyed);
-}
-
 Expected<std::pair<STAmount, STAmount>, TER>
-VaultClawback::clawbackAssets(
+VaultClawback::assetsToClawback(
     std::shared_ptr<SLE> const& vault,
     std::shared_ptr<SLE const> const& sleShareIssuance,
     AccountID const& holder,
     STAmount const& clawbackAmount)
 {
     auto const assetsAvailable = vault->at(sfAssetsAvailable);
-    auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
+    auto const mptIssuanceID = vault->getFieldH192(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
 
     if (clawbackAmount == beast::zero)
@@ -186,7 +169,6 @@ VaultClawback::clawbackAssets(
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_);
-
         auto const maybeAssets =
             sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
         if (!maybeAssets)
@@ -270,7 +252,7 @@ VaultClawback::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
+    auto const mptIssuanceID = vault->getFieldH192(sfShareMPTID);
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
@@ -301,23 +283,24 @@ VaultClawback::doApply()
     AccountID holder = tx[sfHolder];
     MPTIssue const share{mptIssuanceID};
     STAmount sharesDestroyed = {share};
-    STAmount assetsRecovered;
+    STAmount assetsRecovered = {vault->at(sfAsset)};
 
     // The Owner is burning shares
     if (account_ == vault->at(sfOwner))
     {
-        auto const [assets, shares] = burnShares(vault, sleIssuance, holder);
-        XRPL_ASSERT(
-            assets == STAmount{},
-            "ripple::VaultClawback::doApply : no assets recovered");
-
-        sharesDestroyed = shares;
-        assetsRecovered = assets;
+        sharesDestroyed = accountHolds(
+            view(),
+            holder,
+            share,
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j_);
+        assetsRecovered = STAmount{vault->at(sfAsset)};
     }
     else
     {
         auto const clawbackParts =
-            clawbackAssets(vault, sleIssuance, holder, amount);
+            assetsToClawback(vault, sleIssuance, holder, amount);
         if (!clawbackParts)
             return clawbackParts.error();
 
