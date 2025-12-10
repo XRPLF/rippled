@@ -3038,39 +3038,39 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     run() override
     {
-        // testGetLedgerSqn();
-        // testGetParentLedgerTime();
-        // testGetParentLedgerHash();
-        // testGetBaseFee();
-        // testIsAmendmentEnabled();
-        // testCacheLedgerObj();
-        // testGetTxField();
-        // testGetCurrentLedgerObjField();
-        // testGetLedgerObjField();
-        // testGetTxNestedField();
-        // testGetCurrentLedgerObjNestedField();
-        // testGetLedgerObjNestedField();
-        // testGetTxArrayLen();
-        // testGetCurrentLedgerObjArrayLen();
-        // testGetLedgerObjArrayLen();
-        // testGetTxNestedArrayLen();
-        // testGetCurrentLedgerObjNestedArrayLen();
-        // testGetLedgerObjNestedArrayLen();
-        // testUpdateData();
-        // testCheckSignature();
-        // testComputeSha512HalfHash();
-        // testKeyletFunctions();
-        // testGetNFT();
-        // testGetNFTIssuer();
-        // testGetNFTTaxon();
-        // testGetNFTFlags();
-        // testGetNFTTransferFee();
-        // testGetNFTSerial();
+        testGetLedgerSqn();
+        testGetParentLedgerTime();
+        testGetParentLedgerHash();
+        testGetBaseFee();
+        testIsAmendmentEnabled();
+        testCacheLedgerObj();
+        testGetTxField();
+        testGetCurrentLedgerObjField();
+        testGetLedgerObjField();
+        testGetTxNestedField();
+        testGetCurrentLedgerObjNestedField();
+        testGetLedgerObjNestedField();
+        testGetTxArrayLen();
+        testGetCurrentLedgerObjArrayLen();
+        testGetLedgerObjArrayLen();
+        testGetTxNestedArrayLen();
+        testGetCurrentLedgerObjNestedArrayLen();
+        testGetLedgerObjNestedArrayLen();
+        testUpdateData();
+        testCheckSignature();
+        testComputeSha512HalfHash();
+        testKeyletFunctions();
+        testGetNFT();
+        testGetNFTIssuer();
+        testGetNFTTaxon();
+        testGetNFTFlags();
+        testGetNFTTransferFee();
+        testGetNFTSerial();
         testTrace();
         testTraceNum();
         testTraceAccount();
         testTraceAmount();
-        // testFloats();
+        testFloats();
     }
 };
 
