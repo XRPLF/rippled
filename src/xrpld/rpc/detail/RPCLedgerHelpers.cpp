@@ -401,7 +401,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
     if ((hasHash + hasIndex) != 1)
     {
         return Unexpected(RPC::make_param_error(
-            "Exactly one of ledger_hash and ledger_index can be set."));
+            "Exactly one of ledger_hash and ledger_index can be specified."));
     }
 
     if (hasHash)
