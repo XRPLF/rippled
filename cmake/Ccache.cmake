@@ -12,12 +12,13 @@ if (CCACHE_PATH)
                 return()
             endif ()
             execute_process(
-                    COMMAND bash -c "export LC_ALL='en_US.UTF-8'; ${CCACHE_PATH} --shimgen-noop | grep -oP 'path to executable: \\K.+'"
+                    COMMAND bash -c "export LC_ALL='en_US.UTF-8'; ${CCACHE_PATH} --shimgen-noop | grep -oP 'path to executable: \\K.+' | head -c -1"
                     OUTPUT_VARIABLE CCACHE_PATH)
             if (NOT CCACHE_PATH)
                 message(WARNING "Could not find ccache target.")
                 return()
             endif ()
+            file(TO_CMAKE_PATH "${CCACHE_PATH}" CCACHE_PATH)
         endif ()
 
         # Tell cmake to use ccache for compiling with Visual Studio.
