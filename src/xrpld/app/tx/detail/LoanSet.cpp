@@ -283,6 +283,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     Asset const asset = vault->at(sfAsset);
+
     auto const vaultPseudo = vault->at(sfAccount);
 
     // Check that relevant values can be represented as the vault asset type.
