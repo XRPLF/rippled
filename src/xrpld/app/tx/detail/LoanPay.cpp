@@ -280,8 +280,7 @@ LoanPay::doApply()
                    tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum),
                    loanScale) &&
             !isDeepFrozen(view, brokerOwner, asset) &&
-            requireAuth(view, asset, brokerOwner, AuthType::StrongAuth) ==
-            tesSUCCESS;
+            !requireAuth(view, asset, brokerOwner, AuthType::StrongAuth);
     }();
 
     auto const brokerPayee =
