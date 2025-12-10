@@ -3520,7 +3520,7 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("private vault expired authorization");
             uint32_t const closeTime = env.current()
-                                           ->info()
+                                           ->header()
                                            .parentCloseTime.time_since_epoch()
                                            .count();
             {

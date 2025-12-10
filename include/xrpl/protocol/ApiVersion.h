@@ -95,7 +95,7 @@ setVersion(JsonObject& parent, unsigned int apiVersion, bool betaEnabled)
  * 3) the version number is unspecified and
  *    APIVersionIfUnspecified is out of the supported range
  *
- * @param jv a Json value that may or may not specifies
+ * @param jv a Json value that may or may not specify
  *        the api version number
  * @param betaEnabled if the beta API version is enabled
  * @return the api version number

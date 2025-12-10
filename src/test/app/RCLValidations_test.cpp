@@ -111,13 +111,13 @@ class RCLValidations_test : public beast::unit_test::suite
         {
             std::shared_ptr<Ledger const> ledger = history.back();
             RCLValidatedLedger a{ledger, env.journal};
-            BEAST_EXPECT(a.seq() == ledger->info().seq);
+            BEAST_EXPECT(a.seq() == ledger->header().seq);
             BEAST_EXPECT(a.minSeq() == a.seq() - maxAncestors);
             // Ensure the ancestral 256 ledgers have proper ID
             for (Seq s = a.seq(); s > 0; s--)
             {
                 if (s >= a.minSeq())
-                    BEAST_EXPECT(a[s] == history[s - 1]->info().hash);
+                    BEAST_EXPECT(a[s] == history[s - 1]->header().hash);
                 else
                     BEAST_EXPECT(a[s] == ID{0});
             }

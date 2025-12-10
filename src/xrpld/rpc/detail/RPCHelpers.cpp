@@ -1,6 +1,3 @@
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
@@ -20,60 +17,6 @@
 
 namespace ripple {
 namespace RPC {
-
-std::optional<AccountID>
-accountFromStringStrict(std::string const& account)
-{
-    std::optional<AccountID> result;
-
-    auto const publicKey =
-        parseBase58<PublicKey>(TokenType::AccountPublic, account);
-
-    if (publicKey)
-        result = calcAccountID(*publicKey);
-    else
-        result = parseBase58<AccountID>(account);
-
-    return result;
-}
-
-error_code_i
-accountFromStringWithCode(
-    AccountID& result,
-    std::string const& strIdent,
-    bool bStrict)
-{
-    if (auto accountID = accountFromStringStrict(strIdent))
-    {
-        result = *accountID;
-        return rpcSUCCESS;
-    }
-
-    if (bStrict)
-        return rpcACT_MALFORMED;
-
-    // We allow the use of the seeds which is poor practice
-    // and merely for debugging convenience.
-    auto const seed = parseGenericSeed(strIdent);
-
-    if (!seed)
-        return rpcBAD_SEED;
-
-    auto const keypair = generateKeyPair(KeyType::secp256k1, *seed);
-
-    result = calcAccountID(keypair.first);
-    return rpcSUCCESS;
-}
-
-Json::Value
-accountFromString(AccountID& result, std::string const& strIdent, bool bStrict)
-{
-    error_code_i code = accountFromStringWithCode(result, strIdent, bStrict);
-    if (code != rpcSUCCESS)
-        return rpcError(code);
-    else
-        return Json::objectValue;
-}
 
 std::uint64_t
 getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
@@ -144,31 +87,6 @@ parseAccountIds(Json::Value const& jvArray)
         result.insert(*id);
     }
     return result;
-}
-
-void
-injectSLE(Json::Value& jv, SLE const& sle)
-{
-    jv = sle.getJson(JsonOptions::none);
-    if (sle.getType() == ltACCOUNT_ROOT)
-    {
-        if (sle.isFieldPresent(sfEmailHash))
-        {
-            auto const& hash = sle.getFieldH128(sfEmailHash);
-            Blob const b(hash.begin(), hash.end());
-            std::string md5 = strHex(makeSlice(b));
-            boost::to_lower(md5);
-            // VFALCO TODO Give a name and move this constant
-            //             to a more visible location. Also
-            //             shouldn't this be https?
-            jv[jss::urlgravatar] =
-                str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
-        }
-    }
-    else
-    {
-        jv[jss::Invalid] = true;
-    }
 }
 
 std::optional<Json::Value>
