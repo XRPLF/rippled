@@ -58,10 +58,10 @@ static constexpr std::array<MPTMutabilityFlags, 7> mptMutabilityFlags = {
       tmfMPTClearCanClawback,
       lsmfMPTCanMutateCanClawback,
       lsfMPTCanClawback},
-     {tmfMPTSetNoConfidentialTransfer,
-      tmfMPTClearNoConfidentialTransfer,
+     {tmfMPTSetPrivacy,
+      tmfMPTClearPrivacy,
       lsmfMPTCannotMutatePrivacy,
-      lsfMPTNoConfidentialTransfer,
+      lsfMPTCanPrivacy,
       true}}};
 
 NotTEC
@@ -75,9 +75,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const txFlags = ctx.tx.getFlags();
 
     auto const mutatePrivacy = mutableFlags &&
-        ((*mutableFlags &
-          (tmfMPTSetNoConfidentialTransfer |
-           tmfMPTClearNoConfidentialTransfer)));
+        ((*mutableFlags & (tmfMPTSetPrivacy | tmfMPTClearPrivacy)));
 
     auto const hasDomain = ctx.tx.isFieldPresent(sfDomainID);
     auto const hasHolder = ctx.tx.isFieldPresent(sfHolder);
@@ -273,14 +271,14 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
                 }))
             return tecNO_PERMISSION;
 
-        if ((*mutableFlags & tmfMPTSetNoConfidentialTransfer) ||
-            (*mutableFlags & tmfMPTClearNoConfidentialTransfer))
+        if ((*mutableFlags & tmfMPTSetPrivacy) ||
+            (*mutableFlags & tmfMPTClearPrivacy))
         {
             std::uint64_t const confidentialOA =
                 (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
 
             // If there's any confidential outstanding amount, disallow toggling
-            // the lsfMPTNoConfidentialTransfer flag
+            // the lsfMPTCanPrivacy flag
             if (confidentialOA > 0)
                 return tecNO_PERMISSION;
         }
@@ -311,7 +309,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     }
 
     if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&
-        sleMptIssuance->isFlag(lsfMPTNoConfidentialTransfer))
+        !sleMptIssuance->isFlag(lsfMPTCanPrivacy))
     {
         return tecNO_PERMISSION;
     }

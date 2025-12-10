@@ -444,12 +444,10 @@ MPTTester::set(MPTSet const& arg)
                         else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
                             flags &= ~lsfMPTCanTransfer;
 
-                        if (*arg.mutableFlags & tmfMPTSetNoConfidentialTransfer)
-                            flags |= lsfMPTNoConfidentialTransfer;
-                        else if (
-                            *arg.mutableFlags &
-                            tmfMPTClearNoConfidentialTransfer)
-                            flags &= ~lsfMPTNoConfidentialTransfer;
+                        if (*arg.mutableFlags & tmfMPTSetPrivacy)
+                            flags |= lsfMPTCanPrivacy;
+                        else if (*arg.mutableFlags & tmfMPTClearPrivacy)
+                            flags &= ~lsfMPTCanPrivacy;
                     }
                 }
                 env_.require(mptflags(*this, flags, holder));

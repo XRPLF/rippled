@@ -18,7 +18,7 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
         !ctx.rules.enabled(featureDynamicMPT))
         return false;
 
-    if (ctx.tx.getFlags() & tfMPTNoConfidentialTransfer &&
+    if (ctx.tx.isFlag(tfMPTCanPrivacy) &&
         !ctx.rules.enabled(featureConfidentialTransfer))
         return false;
 

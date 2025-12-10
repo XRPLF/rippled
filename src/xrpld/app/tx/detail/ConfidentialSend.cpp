@@ -72,7 +72,7 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
         return tecNO_AUTH;
 
     // Check if issuance allows confidential transfer
-    if (sleIssuance->isFlag(lsfMPTNoConfidentialTransfer))
+    if (!sleIssuance->isFlag(lsfMPTCanPrivacy))
         return tecNO_PERMISSION;
 
     // Check if issuance has issuer ElGamal public key

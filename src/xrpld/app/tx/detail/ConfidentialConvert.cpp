@@ -52,7 +52,7 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (sleIssuance->isFlag(lsfMPTNoConfidentialTransfer))
+    if (!sleIssuance->isFlag(lsfMPTCanPrivacy))
         return tecNO_PERMISSION;
 
     // already checked in preflight, but should also check that issuer on the
