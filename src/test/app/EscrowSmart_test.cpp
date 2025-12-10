@@ -775,10 +775,8 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 auto finishFee = env.current()->fees().base + partialFeeCalc;
                 BEAST_EXPECT(finishFee.drops() > bigAllowance);
 
-                // Intentional overflow to test overflow handling
-                auto finishFeeOverflow = env.current()->fees().base +
-                    (bigAllowance * 1'000'000) / MICRO_DROPS_PER_DROP + 1;
-                BEAST_EXPECT(finishFeeOverflow.drops() < bigAllowance);
+                // Intentional low value to test overflow handling
+                auto finishFeeOverflow = drops(30);
 
                 env(escrow::finish(alice, alice, seq),
                     fee(finishFeeOverflow),  // enough if there's an overflow
