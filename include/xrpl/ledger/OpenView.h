@@ -82,7 +82,7 @@ private:
         monotonic_resource_;
     txs_map txs_;
     Rules rules_;
-    LedgerHeader info_;
+    LedgerHeader header_;
     ReadView const* base_;
     detail::RawStateTable items_;
     std::shared_ptr<void const> hold_;
