@@ -639,7 +639,7 @@ class Simulate_test : public beast::unit_test::suite
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
-                "Invalid field 'ledger_index'.");
+                "Invalid field 'ledger_index', not string or number.");
         }
         {
             // Invalid ledger_hash type
@@ -652,7 +652,7 @@ class Simulate_test : public beast::unit_test::suite
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
-                "Invalid field 'ledger_hash'.");
+                "Invalid field 'ledger_hash', not hex string.");
         }
         {
             // Invalid transactions array type

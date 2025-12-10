@@ -9,7 +9,7 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
@@ -468,7 +468,7 @@ checkIsCurrentLedger(Json::Value const params)
         auto const& ledgerIndex = params[jss::ledger_index];
         if (!ledgerIndex.isNull())
         {
-            return ledgerIndex == RPC::LedgerShortcut::CURRENT;
+            return ledgerIndex == jss::current;
         }
     }
     if (params.isMember(jss::ledger_hash))
