@@ -27,7 +27,7 @@ public:
     bool
     open() const override;
 
-    LedgerInfo const&
+    LedgerHeader const&
     info() const override;
 
     Fees const&

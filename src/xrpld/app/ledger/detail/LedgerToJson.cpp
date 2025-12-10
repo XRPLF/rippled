@@ -37,7 +37,7 @@ void
 fillJson(
     Object& json,
     bool closed,
-    LedgerInfo const& info,
+    LedgerHeader const& info,
     bool bFull,
     unsigned apiVersion)
 {
@@ -80,7 +80,7 @@ fillJson(
 
 template <class Object>
 void
-fillJsonBinary(Object& json, bool closed, LedgerInfo const& info)
+fillJsonBinary(Object& json, bool closed, LedgerHeader const& info)
 {
     if (!closed)
         json[jss::closed] = false;
