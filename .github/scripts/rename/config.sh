@@ -33,7 +33,7 @@ pushd ${DIRECTORY}
 # Add the xrpld.cfg to the .gitignore.
 if ! grep -q 'xrpld.cfg' .gitignore; then
   ${SED_COMMAND} -i '/rippled.cfg/a\
-xrpld.cfg' .gitignore
+/xrpld.cfg' .gitignore
 fi
 
 # Rename the files.

@@ -29,10 +29,11 @@ class Xrpl(ConanFile):
 
     requires = [
         "ed25519/2015.03",
-        "grpc/1.50.1",
+        "grpc/1.72.0",
         "libarchive/3.8.1",
         "nudb/2.0.9",
         "openssl/3.5.4",
+        "secp256k1/0.7.0",
         "soci/4.0.3",
         "zlib/1.3.1",
     ]
@@ -42,7 +43,7 @@ class Xrpl(ConanFile):
     ]
 
     tool_requires = [
-        "protobuf/3.21.12",
+        "protobuf/6.32.1",
     ]
 
     default_options = {
@@ -57,8 +58,19 @@ class Xrpl(ConanFile):
         "unity": False,
         "xrpld": False,
         "date/*:header_only": True,
+        "ed25519/*:shared": False,
         "grpc/*:shared": False,
         "grpc/*:secure": True,
+        "grpc/*:codegen": True,
+        "grpc/*:cpp_plugin": True,
+        "grpc/*:csharp_ext": False,
+        "grpc/*:csharp_plugin": False,
+        "grpc/*:node_plugin": False,
+        "grpc/*:objective_c_plugin": False,
+        "grpc/*:php_plugin": False,
+        "grpc/*:python_plugin": False,
+        "grpc/*:ruby_plugin": False,
+        "grpc/*:otel_plugin": False,
         "libarchive/*:shared": False,
         "libarchive/*:with_acl": False,
         "libarchive/*:with_bzip2": False,
@@ -85,6 +97,7 @@ class Xrpl(ConanFile):
         "rocksdb/*:with_jemalloc": False,
         "rocksdb/*:with_lz4": True,
         "rocksdb/*:with_snappy": True,
+        "secp256k1/*:shared": False,
         "snappy/*:shared": False,
         "soci/*:shared": False,
         "soci/*:with_sqlite3": True,
@@ -115,7 +128,7 @@ class Xrpl(ConanFile):
         self.requires("boost/1.88.0", force=True, **transitive_headers_opt)
         self.requires("date/3.0.4", **transitive_headers_opt)
         self.requires("lz4/1.10.0", force=True)
-        self.requires("protobuf/3.21.12", force=True)
+        self.requires("protobuf/6.32.1", force=True)
         self.requires("sqlite3/3.49.1", force=True)
         if self.options.jemalloc:
             self.requires("jemalloc/5.3.0")
@@ -197,6 +210,7 @@ class Xrpl(ConanFile):
             "openssl::crypto",
             "protobuf::libprotobuf",
             "soci::soci",
+            "secp256k1::secp256k1",
             "sqlite3::sqlite",
             "xxhash::xxhash",
             "zlib::zlib",
