@@ -2172,28 +2172,51 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testcase("FloatTrace");
         using namespace test::jtx;
 
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        std::string msg = "trace float";
-
         {
-            auto const result = hfs.traceFloat(msg, makeSlice(invalid));
-            BEAST_EXPECT(
-                result &&
-                *result ==
-                    msg.size() + 14 /* error msg size*/ + invalid.size() * 2);
+            Env env{*this};
+            OpenView ov{*env.current()};
+            ApplyContext ac = createApplyContext(env, ov);
+
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master));
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            std::string msg = "trace float";
+
+            {
+                auto const result = hfs.traceFloat(msg, makeSlice(invalid));
+                BEAST_EXPECT(
+                    result &&
+                    *result ==
+                        msg.size() + 14 /* error msg size*/ +
+                            invalid.size() * 2);
+            }
+
+            {
+                auto const result = hfs.traceFloat(msg, makeSlice(floatMaxExp));
+                BEAST_EXPECT(
+                    result &&
+                    *result == msg.size() + 19 /* string represenation*/);
+            }
         }
 
         {
-            auto const result = hfs.traceFloat(msg, makeSlice(floatMaxExp));
-            BEAST_EXPECT(
-                result && *result == msg.size() + 19 /* string represenation*/);
+            // logs disabled
+            auto logs = std::make_unique<SuiteLogs2>(*this);
+            Env env(*this, envconfig(), std::move(logs));
+            OpenView ov{*env.current()};
+            ApplyContext ac = createApplyContext(env, ov);
+
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master));
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            std::string msg = "trace float";
+
+            {
+                auto const result = hfs.traceFloat(msg, makeSlice(invalid));
+                BEAST_EXPECT(result && *result == 0);
+            }
         }
     }
 
