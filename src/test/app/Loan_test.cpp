@@ -7347,53 +7347,53 @@ public:
     void
     run() override
     {
-        // #if LOANTODO
-        //         testLoanPayLateFullPaymentBypassesPenalties();
-        //         testLoanCoverMinimumRoundingExploit();
-        // #endif
-        //         testCoverDepositWithdrawNonTransferableMPT();
-        //         testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic();
-        //
-        //         testDisabled();
-        //         testSelfLoan();
-        //         testIssuerLoan();
-        //         testLoanSet();
-        //         testLifecycle();
-        //         testServiceFeeOnBrokerDeepFreeze();
-        //
-        //         testRPC();
-        //         testBasicMath();
-        //
-        //         testInvalidLoanDelete();
-        //         testInvalidLoanManage();
-        //         testInvalidLoanPay();
-        //         testInvalidLoanSet();
-        //
-        //         testBatchBypassCounterparty();
-        //         testLoanPayComputePeriodicPaymentValidRateInvariant();
-        //         testAccountSendMptMinAmountInvariant();
-        //         testLoanPayDebtDecreaseInvariant();
-        //         testWrongMaxDebtBehavior();
-        //         testLoanPayComputePeriodicPaymentValidTotalInterestInvariant();
-        //         testDosLoanPay();
-        //         testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant();
-        //         testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant();
-        //         testLoanNextPaymentDueDateOverflow();
-        //
-        //         testRequireAuth();
-        //         testDustManipulation();
-        //
-        //         testRIPD3831();
-        //         testRIPD3459();
-        //         testRIPD3901();
-        //         testRIPD3902();
-        //         testRoundingAllowsUndercoverage();
-        //         testBorrowerIsBroker();
-        //         testIssuerIsBorrower();
-        //         testLimitExceeded();
-        //         testLoanPayBrokerOwnerMissingTrustline();
-        //         testLoanPayBrokerOwnerUnauthorizedMPT();
-        //         testLoanPayBrokerOwnerNoPermissionedDomainMPT();
+#if LOANTODO
+        testLoanPayLateFullPaymentBypassesPenalties();
+        testLoanCoverMinimumRoundingExploit();
+#endif
+        testCoverDepositWithdrawNonTransferableMPT();
+        testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic();
+
+        testDisabled();
+        testSelfLoan();
+        testIssuerLoan();
+        testLoanSet();
+        testLifecycle();
+        testServiceFeeOnBrokerDeepFreeze();
+
+        testRPC();
+        testBasicMath();
+
+        testInvalidLoanDelete();
+        testInvalidLoanManage();
+        testInvalidLoanPay();
+        testInvalidLoanSet();
+
+        testBatchBypassCounterparty();
+        testLoanPayComputePeriodicPaymentValidRateInvariant();
+        testAccountSendMptMinAmountInvariant();
+        testLoanPayDebtDecreaseInvariant();
+        testWrongMaxDebtBehavior();
+        testLoanPayComputePeriodicPaymentValidTotalInterestInvariant();
+        testDosLoanPay();
+        testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant();
+        testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant();
+        testLoanNextPaymentDueDateOverflow();
+
+        testRequireAuth();
+        testDustManipulation();
+
+        testRIPD3831();
+        testRIPD3459();
+        testRIPD3901();
+        testRIPD3902();
+        testRoundingAllowsUndercoverage();
+        testBorrowerIsBroker();
+        testIssuerIsBorrower();
+        testLimitExceeded();
+        testLoanPayBrokerOwnerMissingTrustline();
+        testLoanPayBrokerOwnerUnauthorizedMPT();
+        testLoanPayBrokerOwnerNoPermissionedDomainMPT();
         testLoanSetBrokerOwnerNoPermissionedDomainMPT();
     }
 };
