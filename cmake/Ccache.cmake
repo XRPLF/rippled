@@ -2,15 +2,23 @@ find_program(CCACHE_PATH "ccache")
 if (CCACHE_PATH)
     if (MSVC)
         # Chocolatey uses a shim executable that we cannot use directly, in
-        # which case we have to find the executable it points to.
+        # which case we have to find the executable it points to. If we cannot
+        # find the target executable then we cannot use ccache.
         message(STATUS "Ccache path: ${CCACHE_PATH}")
-        if("${CCACHE_PATH}" MATCHES "chocolatey")
+        if ("${CCACHE_PATH}" MATCHES "chocolatey")
+            find_program(BASH_PATH "bash")
+            if (NOT BASH_PATH)
+                message(WARNING "Could not find bash.")
+                return()
+            endif ()
             execute_process(
-                    COMMAND ${CCACHE_PATH} --shimgen-noop
-                    COMMAND Select-String "path to executable:"
-                    COMMAND ForEach-Object { $_ -split " " | Select -Last 1 }
+                    COMMAND bash -c "export LC_ALL='en_US.UTF-8'; ${CCACHE_PATH} --shimgen-noop | grep -oP 'path to executable: \\K.+'"
                     OUTPUT_VARIABLE CCACHE_PATH)
             message(STATUS "Ccache target: ${CCACHE_PATH}")
+            if ("${CCACHE_PATH}" STREQUAL "")
+                message(WARNING "Could not find ccache target.")
+                return()
+            endif ()
         endif ()
 
         # Tell cmake to use ccache for compiling with Visual Studio.

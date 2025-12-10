@@ -137,7 +137,7 @@ jobs:
             --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
 
-      - name: Print out and reset ccache statistics
+      - name: Print and reset ccache statistics
         if: ${{ env.CCACHE_ENABLED == 'true' }}
         run: |
           ccache --show-stats ${{ runner.debug && '-vv' || '' }}
