@@ -14,21 +14,19 @@ if (CCACHE_PATH)
             execute_process(
                     COMMAND bash -c "export LC_ALL='en_US.UTF-8'; ${CCACHE_PATH} --shimgen-noop | grep -oP 'path to executable: \\K.+'"
                     OUTPUT_VARIABLE CCACHE_PATH)
-            message(STATUS "Ccache target: ${CCACHE_PATH}")
-            if ("${CCACHE_PATH}" STREQUAL "")
+            if (NOT CCACHE_PATH)
                 message(WARNING "Could not find ccache target.")
                 return()
             endif ()
         endif ()
 
         # Tell cmake to use ccache for compiling with Visual Studio.
-        cmake_path(GET CCACHE_PATH FILENAME CCACHE_FILE)
-        message(STATUS "Ccache file: ${CCACHE_FILE}")
-        cmake_path(GET CCACHE_PATH PARENT_PATH CCACHE_DIR)
-        message(STATUS "Ccache dir: ${CCACHE_DIR}")
+        file(COPY_FILE
+                ${CCACHE_PATH} ${CMAKE_BINARY_DIR}/cl.exe
+                ONLY_IF_DIFFERENT)
         set(CMAKE_VS_GLOBALS
-                "CLToolExe=${CCACHE_FILE}"
-                "CLToolPath=${CCACHE_DIR}"
+                "CLToolExe=cl.exe"
+                "CLToolPath=${CMAKE_BINARY_DIR}"
                 "UseMultiToolTask=true")
 
         # By default Visual Studio generators will use /Zi, which is not
