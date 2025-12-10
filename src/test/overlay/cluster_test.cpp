@@ -248,7 +248,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(cluster, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(cluster, overlay, xrpl);
 
 }  // namespace tests
 }  // namespace xrpl

@@ -140,7 +140,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STIssue, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STIssue, protocol, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

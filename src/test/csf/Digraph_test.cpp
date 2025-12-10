@@ -73,7 +73,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Digraph, csf, ripple);
+BEAST_DEFINE_TESTSUITE(Digraph, csf, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

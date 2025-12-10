@@ -1245,6 +1245,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STAmount, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STAmount, protocol, xrpl);
 
 }  // namespace xrpl

@@ -277,6 +277,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Version, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Version, rpc, xrpl);
 
 }  // namespace xrpl

@@ -281,7 +281,7 @@ struct STNumber_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STNumber, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STNumber, protocol, xrpl);
 
 void
 testCompile(std::ostream& out)

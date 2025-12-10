@@ -95,5 +95,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(BuildInfo, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(BuildInfo, protocol, xrpl);
 }  // namespace xrpl

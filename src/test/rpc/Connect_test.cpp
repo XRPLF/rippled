@@ -36,6 +36,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Connect, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Connect, rpc, xrpl);
 
 }  // namespace xrpl

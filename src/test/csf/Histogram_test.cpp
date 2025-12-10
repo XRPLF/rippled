@@ -62,7 +62,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Histogram, csf, ripple);
+BEAST_DEFINE_TESTSUITE(Histogram, csf, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

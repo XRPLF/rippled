@@ -7207,9 +7207,9 @@ class LoanArbitrary_test : public LoanBatch_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Loan, tx, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(LoanBatch, tx, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(LoanArbitrary, tx, ripple);
+BEAST_DEFINE_TESTSUITE(Loan, tx, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(LoanBatch, tx, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(LoanArbitrary, tx, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

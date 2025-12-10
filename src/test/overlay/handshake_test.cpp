@@ -40,7 +40,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(handshake, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(handshake, overlay, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

@@ -1591,7 +1591,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Subscribe, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Subscribe, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

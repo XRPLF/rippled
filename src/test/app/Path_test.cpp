@@ -2114,7 +2114,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Path, app, ripple);
+BEAST_DEFINE_TESTSUITE(Path, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

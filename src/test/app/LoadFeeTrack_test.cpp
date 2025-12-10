@@ -68,6 +68,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LoadFeeTrack, app, ripple);
+BEAST_DEFINE_TESTSUITE(LoadFeeTrack, app, xrpl);
 
 }  // namespace xrpl

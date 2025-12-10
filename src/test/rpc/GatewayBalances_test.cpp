@@ -243,7 +243,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(GatewayBalances, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(GatewayBalances, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

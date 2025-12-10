@@ -375,6 +375,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TransactionEntry, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(TransactionEntry, rpc, xrpl);
 
 }  // namespace xrpl

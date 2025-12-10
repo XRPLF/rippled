@@ -1456,7 +1456,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LoanBroker, tx, ripple);
+BEAST_DEFINE_TESTSUITE(LoanBroker, tx, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

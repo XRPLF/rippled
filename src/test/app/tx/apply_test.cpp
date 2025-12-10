@@ -53,6 +53,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Apply, tx, ripple);
+BEAST_DEFINE_TESTSUITE(Apply, tx, xrpl);
 
 }  // namespace xrpl

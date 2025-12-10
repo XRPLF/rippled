@@ -109,6 +109,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(Handler, rpc, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(Handler, rpc, xrpl);
 
 }  // namespace xrpl::test

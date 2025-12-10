@@ -70,7 +70,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RPCHelpers, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(RPCHelpers, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

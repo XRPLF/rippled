@@ -524,7 +524,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PeerFinder, peerfinder, ripple);
+BEAST_DEFINE_TESTSUITE(PeerFinder, peerfinder, xrpl);
 
 }  // namespace PeerFinder
 }  // namespace xrpl

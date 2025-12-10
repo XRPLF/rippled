@@ -2447,6 +2447,6 @@ class AMMClawback_test : public beast::unit_test::suite
         }
     }
 };
-BEAST_DEFINE_TESTSUITE(AMMClawback, app, ripple);
+BEAST_DEFINE_TESTSUITE(AMMClawback, app, xrpl);
 }  // namespace test
 }  // namespace xrpl

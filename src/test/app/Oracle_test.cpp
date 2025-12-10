@@ -863,7 +863,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Oracle, app, ripple);
+BEAST_DEFINE_TESTSUITE(Oracle, app, xrpl);
 
 }  // namespace oracle
 

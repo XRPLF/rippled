@@ -17,7 +17,7 @@ fi
 # Specifically, it renames all occurrences of `namespace ripple` and `ripple::`
 # to `namespace xrpl` and `xrpl::`, respectively, by scanning all header and
 # source files in the specified directory and its subdirectories, as well as any
-# occurrences in the documentation.
+# occurrences in the documentation. It also renames them in the test suites.
 # Usage: .github/scripts/rename/namespace.sh <repository directory>
 
 if [ "$#" -ne 1 ]; then
@@ -41,8 +41,12 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
       echo "Processing file: ${FILE}"
       ${SED_COMMAND} -i 's/namespace ripple/namespace xrpl/g' "${FILE}"
       ${SED_COMMAND} -i 's/ripple::/xrpl::/g' "${FILE}"
+      ${SED_COMMAND} -i -E 's/(BEAST_DEFINE_TESTSUITE.+)ripple(.+)/\1xrpl\2/g' "${FILE}"
   done
 done
+
+# Special case for NuDBFactory that has ripple twice in the test suite name.
+${SED_COMMAND} -i -E 's/(BEAST_DEFINE_TESTSUITE.+)ripple(.+)/\1xrpl\2/g' src/test/nodestore/NuDBFactory_test.cpp
 
 DIRECTORY=$1
 find "${DIRECTORY}" -type f -name "*.md" | while read -r FILE; do

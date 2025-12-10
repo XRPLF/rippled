@@ -1049,7 +1049,7 @@ struct MultiApiJson_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(MultiApiJson, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(MultiApiJson, protocol, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

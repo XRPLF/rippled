@@ -80,7 +80,7 @@ struct join_test : beast::unit_test::suite
     }
 };  // namespace test
 
-BEAST_DEFINE_TESTSUITE(join, basics, ripple);
+BEAST_DEFINE_TESTSUITE(join, basics, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

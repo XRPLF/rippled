@@ -3914,7 +3914,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Invariants, app, ripple);
+BEAST_DEFINE_TESTSUITE(Invariants, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

@@ -320,7 +320,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

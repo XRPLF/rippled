@@ -101,7 +101,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Backend, nodestore, ripple);
+BEAST_DEFINE_TESTSUITE(Backend, nodestore, xrpl);
 
 }  // namespace NodeStore
 }  // namespace xrpl

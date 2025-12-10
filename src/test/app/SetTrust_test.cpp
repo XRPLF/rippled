@@ -618,6 +618,6 @@ public:
         testWithFeats(sa);
     }
 };
-BEAST_DEFINE_TESTSUITE(SetTrust, app, ripple);
+BEAST_DEFINE_TESTSUITE(SetTrust, app, xrpl);
 }  // namespace test
 }  // namespace xrpl

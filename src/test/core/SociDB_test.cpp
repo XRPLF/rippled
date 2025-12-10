@@ -351,6 +351,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SociDB, core, ripple);
+BEAST_DEFINE_TESTSUITE(SociDB, core, xrpl);
 
 }  // namespace xrpl

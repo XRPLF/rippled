@@ -20,6 +20,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(OfferStream, app, ripple);
+BEAST_DEFINE_TESTSUITE(OfferStream, app, xrpl);
 
 }  // namespace xrpl

@@ -2119,6 +2119,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PayChan, app, ripple);
+BEAST_DEFINE_TESTSUITE(PayChan, app, xrpl);
 }  // namespace test
 }  // namespace xrpl

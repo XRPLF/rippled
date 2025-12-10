@@ -127,7 +127,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(BasicNetwork, csf, ripple);
+BEAST_DEFINE_TESTSUITE(BasicNetwork, csf, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

@@ -167,7 +167,7 @@ class PreimageSha256_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PreimageSha256, conditions, ripple);
+BEAST_DEFINE_TESTSUITE(PreimageSha256, conditions, xrpl);
 
 }  // namespace cryptoconditions
 

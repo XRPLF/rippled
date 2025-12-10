@@ -303,6 +303,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(StringUtilities, basics, ripple);
+BEAST_DEFINE_TESTSUITE(StringUtilities, basics, xrpl);
 
 }  // namespace xrpl

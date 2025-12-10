@@ -406,7 +406,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PaymentSandbox, ledger, ripple);
+BEAST_DEFINE_TESTSUITE(PaymentSandbox, ledger, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

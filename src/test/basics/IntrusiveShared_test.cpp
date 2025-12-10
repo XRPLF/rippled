@@ -887,6 +887,6 @@ public:
     }
 };  // namespace tests
 
-BEAST_DEFINE_TESTSUITE(IntrusiveShared, basics, ripple);
+BEAST_DEFINE_TESTSUITE(IntrusiveShared, basics, xrpl);
 }  // namespace tests
 }  // namespace xrpl

@@ -5171,7 +5171,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(XChain, app, ripple);
-BEAST_DEFINE_TESTSUITE(XChainSim, app, ripple);
+BEAST_DEFINE_TESTSUITE(XChain, app, xrpl);
+BEAST_DEFINE_TESTSUITE(XChainSim, app, xrpl);
 
 }  // namespace xrpl::test

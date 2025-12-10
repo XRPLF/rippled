@@ -1104,7 +1104,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AccountDelete, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(AccountDelete, app, xrpl, 2);
 
 }  // namespace test
 }  // namespace xrpl

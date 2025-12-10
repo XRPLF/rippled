@@ -236,6 +236,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AmendmentBlocked, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AmendmentBlocked, rpc, xrpl);
 
 }  // namespace xrpl

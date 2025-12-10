@@ -1678,7 +1678,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Escrow, app, ripple);
+BEAST_DEFINE_TESTSUITE(Escrow, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

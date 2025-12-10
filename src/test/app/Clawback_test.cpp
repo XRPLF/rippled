@@ -937,5 +937,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Clawback, app, ripple);
+BEAST_DEFINE_TESTSUITE(Clawback, app, xrpl);
 }  // namespace xrpl

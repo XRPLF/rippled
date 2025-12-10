@@ -518,7 +518,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(compression, overlay, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(compression, overlay, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

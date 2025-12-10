@@ -207,6 +207,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountCurrencies, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountCurrencies, rpc, xrpl);
 
 }  // namespace xrpl

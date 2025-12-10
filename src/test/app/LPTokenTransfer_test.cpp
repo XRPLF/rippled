@@ -462,6 +462,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LPTokenTransfer, app, ripple);
+BEAST_DEFINE_TESTSUITE(LPTokenTransfer, app, xrpl);
 }  // namespace test
 }  // namespace xrpl

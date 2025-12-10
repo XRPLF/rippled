@@ -66,7 +66,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NodeStoreBasic, nodestore, ripple);
+BEAST_DEFINE_TESTSUITE(NodeStoreBasic, nodestore, xrpl);
 
 }  // namespace NodeStore
 }  // namespace xrpl

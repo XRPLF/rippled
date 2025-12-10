@@ -1259,6 +1259,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn, app, xrpl, 3);
 
 }  // namespace xrpl

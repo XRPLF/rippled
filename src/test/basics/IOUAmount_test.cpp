@@ -255,6 +255,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(IOUAmount, basics, ripple);
+BEAST_DEFINE_TESTSUITE(IOUAmount, basics, xrpl);
 
 }  // namespace xrpl

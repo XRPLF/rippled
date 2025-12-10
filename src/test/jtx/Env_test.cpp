@@ -928,7 +928,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Env, jtx, ripple);
+BEAST_DEFINE_TESTSUITE(Env, jtx, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

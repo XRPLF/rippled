@@ -2917,7 +2917,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(JSONRPC, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(JSONRPC, rpc, xrpl);
 
 }  // namespace RPC
 }  // namespace xrpl

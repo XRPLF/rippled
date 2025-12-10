@@ -859,6 +859,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Number, basics, ripple);
+BEAST_DEFINE_TESTSUITE(Number, basics, xrpl);
 
 }  // namespace xrpl

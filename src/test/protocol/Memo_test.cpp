@@ -116,6 +116,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Memo, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Memo, protocol, xrpl);
 
 }  // namespace xrpl

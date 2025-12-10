@@ -403,7 +403,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DeliveredAmount, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(DeliveredAmount, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

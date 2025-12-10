@@ -330,6 +330,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STValidation, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STValidation, protocol, xrpl);
 
 }  // namespace xrpl

@@ -1595,10 +1595,10 @@ struct LedgerReplayerLong_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerReplay, app, ripple);
-BEAST_DEFINE_TESTSUITE_PRIO(LedgerReplayer, app, ripple, 1);
-BEAST_DEFINE_TESTSUITE(LedgerReplayerTimeout, app, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(LedgerReplayerLong, app, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerReplay, app, xrpl);
+BEAST_DEFINE_TESTSUITE_PRIO(LedgerReplayer, app, xrpl, 1);
+BEAST_DEFINE_TESTSUITE(LedgerReplayerTimeout, app, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(LedgerReplayerLong, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

@@ -168,7 +168,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SHAMapSync, shamap, ripple);
+BEAST_DEFINE_TESTSUITE(SHAMapSync, shamap, xrpl);
 
 }  // namespace tests
 }  // namespace xrpl

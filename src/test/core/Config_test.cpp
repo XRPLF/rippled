@@ -1533,6 +1533,6 @@ r.ripple.com:51235
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Config, core, ripple);
+BEAST_DEFINE_TESTSUITE(Config, core, xrpl);
 
 }  // namespace xrpl

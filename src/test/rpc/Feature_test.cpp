@@ -607,6 +607,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Feature, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Feature, rpc, xrpl);
 
 }  // namespace xrpl

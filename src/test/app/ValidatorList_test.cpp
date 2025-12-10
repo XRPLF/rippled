@@ -4145,7 +4145,7 @@ public:
     }
 };  // namespace test
 
-BEAST_DEFINE_TESTSUITE(ValidatorList, app, ripple);
+BEAST_DEFINE_TESTSUITE(ValidatorList, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

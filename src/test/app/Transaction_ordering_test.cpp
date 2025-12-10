@@ -143,7 +143,7 @@ struct Transaction_ordering_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Transaction_ordering, app, ripple);
+BEAST_DEFINE_TESTSUITE(Transaction_ordering, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

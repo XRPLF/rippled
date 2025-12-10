@@ -55,7 +55,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NetworkOPs, app, ripple);
+BEAST_DEFINE_TESTSUITE(NetworkOPs, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

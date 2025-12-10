@@ -719,7 +719,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerRPC, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerRPC, rpc, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

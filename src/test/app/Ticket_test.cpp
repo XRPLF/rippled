@@ -908,6 +908,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Ticket, app, ripple);
+BEAST_DEFINE_TESTSUITE(Ticket, app, xrpl);
 
 }  // namespace xrpl

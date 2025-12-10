@@ -1066,7 +1066,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Manifest, app, ripple);
+BEAST_DEFINE_TESTSUITE(Manifest, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

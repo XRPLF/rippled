@@ -339,6 +339,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Seed, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Seed, protocol, xrpl);
 
 }  // namespace xrpl

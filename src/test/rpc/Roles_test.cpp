@@ -370,7 +370,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Roles, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Roles, rpc, xrpl);
 
 }  // namespace test
 

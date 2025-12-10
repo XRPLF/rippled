@@ -1060,7 +1060,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDir, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDir, app, xrpl, 1);
 
 }  // namespace xrpl
 
