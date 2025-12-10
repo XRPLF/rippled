@@ -7294,6 +7294,19 @@ protected:
             fee(XRP(100)),
             ter(tesSUCCESS));
         env.close();
+        // Verify broker is still not authorized
+        env(pay(issuer, broker, MPT(1'000)), ter(tecNO_AUTH));
+        // Verify the service fee went to the broker pseudo-account
+        if (auto const brokerSle =
+                env.le(keylet::loanbroker(brokerInfo.brokerID));
+            BEAST_EXPECT(brokerSle))
+        {
+            Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
+            auto const balance = env.balance(pseudo, MPT);
+            // 1,000 default + 50,000 extra + 100 service fee from LoanPay
+            BEAST_EXPECTS(
+                balance == MPT(51'100), to_string(Json::Value(balance)));
+        }
     }
 
     void
