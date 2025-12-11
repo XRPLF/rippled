@@ -82,7 +82,7 @@ private:
         monotonic_resource_;
     txs_map txs_;
     Rules rules_;
-    LedgerInfo info_;
+    LedgerHeader header_;
     ReadView const* base_;
     detail::RawStateTable items_;
     std::shared_ptr<void const> hold_;
@@ -158,7 +158,7 @@ public:
 
         Effects:
 
-            The LedgerInfo is copied from the base.
+            The LedgerHeader is copied from the base.
 
             The rules are inherited from the base.
 
@@ -188,8 +188,8 @@ public:
 
     // ReadView
 
-    LedgerInfo const&
-    info() const override;
+    LedgerHeader const&
+    header() const override;
 
     Fees const&
     fees() const override;

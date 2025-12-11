@@ -88,7 +88,7 @@ insertDeliveredAmount(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
-    auto const info = ledger.info();
+    auto const info = ledger.header();
 
     if (canHaveDeliveredAmount(serializedTx, transactionMeta))
     {

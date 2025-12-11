@@ -92,11 +92,11 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
             std::string ledgerStr = params[jss::ledger_index].asString();
 
             if (ledgerStr == "current" || ledgerStr.empty())
-                ledger = LedgerShortcut::CURRENT;
+                ledger = LedgerShortcut::Current;
             else if (ledgerStr == "closed")
-                ledger = LedgerShortcut::CLOSED;
+                ledger = LedgerShortcut::Closed;
             else if (ledgerStr == "validated")
-                ledger = LedgerShortcut::VALIDATED;
+                ledger = LedgerShortcut::Validated;
             else
             {
                 RPC::Status status{
@@ -176,12 +176,13 @@ getLedgerRange(
                     bool validated =
                         context.ledgerMaster.isValidated(*ledgerView);
 
-                    if (!validated || ledgerView->info().seq > uValidatedMax ||
-                        ledgerView->info().seq < uValidatedMin)
+                    if (!validated ||
+                        ledgerView->header().seq > uValidatedMax ||
+                        ledgerView->header().seq < uValidatedMin)
                     {
                         return rpcLGR_NOT_VALIDATED;
                     }
-                    uLedgerMin = uLedgerMax = ledgerView->info().seq;
+                    uLedgerMin = uLedgerMax = ledgerView->header().seq;
                 }
                 return RPC::Status::OK;
             },

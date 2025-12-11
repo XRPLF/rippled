@@ -3,6 +3,7 @@
 #include <xrpld/rpc/handlers/Version.h>
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/protocol/ApiVersion.h>
 
 #include <map>
 

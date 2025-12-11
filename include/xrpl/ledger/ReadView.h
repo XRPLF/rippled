@@ -80,8 +80,8 @@ public:
     }
 
     /** Returns information about the ledger. */
-    virtual LedgerInfo const&
-    info() const = 0;
+    virtual LedgerHeader const&
+    header() const = 0;
 
     /** Returns true if this reflects an open ledger. */
     virtual bool
@@ -91,14 +91,14 @@ public:
     NetClock::time_point
     parentCloseTime() const
     {
-        return info().parentCloseTime;
+        return header().parentCloseTime;
     }
 
     /** Returns the sequence number of the base ledger. */
     LedgerIndex
     seq() const
     {
-        return info().seq;
+        return header().seq;
     }
 
     /** Returns the fees for the base ledger. */

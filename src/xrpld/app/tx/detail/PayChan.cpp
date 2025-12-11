@@ -231,7 +231,7 @@ PayChanCreate::doApply()
 
     if (ctx_.view().rules().enabled(fixPayChanCancelAfter))
     {
-        auto const closeTime = ctx_.view().info().parentCloseTime;
+        auto const closeTime = ctx_.view().header().parentCloseTime;
         if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
             return tecEXPIRED;
     }
@@ -324,7 +324,7 @@ PayChanFund::doApply()
     {
         auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count();
+            ctx_.view().header().parentCloseTime.time_since_epoch().count();
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (expiration && closeTime >= *expiration))
             return closeChannel(
@@ -338,7 +338,7 @@ PayChanFund::doApply()
     if (auto extend = ctx_.tx[~sfExpiration])
     {
         auto minExpiration =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() +
+            ctx_.view().header().parentCloseTime.time_since_epoch().count() +
             (*slep)[sfSettleDelay];
         if (expiration && *expiration < minExpiration)
             minExpiration = *expiration;
@@ -481,7 +481,7 @@ PayChanClaim::doApply()
     {
         auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count();
+            ctx_.view().header().parentCloseTime.time_since_epoch().count();
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (curExpiration && closeTime >= *curExpiration))
             return closeChannel(
@@ -549,7 +549,7 @@ PayChanClaim::doApply()
                 slep, ctx_.view(), k.key, ctx_.app.journal("View"));
 
         auto const settleExpiration =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() +
+            ctx_.view().header().parentCloseTime.time_since_epoch().count() +
             (*slep)[sfSettleDelay];
 
         if (!curExpiration || *curExpiration > settleExpiration)

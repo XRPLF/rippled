@@ -216,7 +216,7 @@ Oracle::set(UpdateArg const& arg)
     else
         jv[jss::LastUpdateTime] = to_string(
             duration_cast<seconds>(
-                env_.current()->info().closeTime.time_since_epoch())
+                env_.current()->header().closeTime.time_since_epoch())
                 .count() +
             epoch_offset.count());
     Json::Value dataSeries(Json::arrayValue);

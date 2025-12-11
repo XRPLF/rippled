@@ -43,7 +43,7 @@ public:
                 env.app().getNodeFamily());
         }
         auto res = std::make_shared<Ledger>(
-            *prev, prev->info().closeTime + closeOffset);
+            *prev, prev->header().closeTime + closeOffset);
 
         if (stx)
         {
@@ -62,8 +62,8 @@ public:
 
         // Accept ledger
         res->setAccepted(
-            res->info().closeTime,
-            res->info().closeTimeResolution,
+            res->header().closeTime,
+            res->header().closeTimeResolution,
             true /* close time correct*/);
         lh.insert(res, false);
         return res;

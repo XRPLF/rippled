@@ -26,7 +26,7 @@ isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
     if (!ledgerMaster.haveLedger(seq))
         return false;
 
-    if (seq > ledgerMaster.getValidatedLedger()->info().seq)
+    if (seq > ledgerMaster.getValidatedLedger()->header().seq)
         return false;
 
     return ledgerMaster.getHashBySeq(seq) == hash;
@@ -130,7 +130,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
         context.ledgerMaster.getLedgerBySeq(txn->getLedger());
 
     if (ledger && !ledger->open())
-        result.ledgerHash = ledger->info().hash;
+        result.ledgerHash = ledger->header().hash;
 
     if (ledger && meta)
     {
@@ -143,7 +143,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
             result.meta = meta;
         }
         result.validated = isValidated(
-            context.ledgerMaster, ledger->info().seq, ledger->info().hash);
+            context.ledgerMaster, ledger->header().seq, ledger->header().hash);
         if (result.validated)
             result.closeTime =
                 context.ledgerMaster.getCloseTimeBySeq(txn->getLedger());
@@ -151,7 +151,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
         // compute outgoing CTID
         if (meta->getAsObject().isFieldPresent(sfTransactionIndex))
         {
-            uint32_t lgrSeq = ledger->info().seq;
+            uint32_t lgrSeq = ledger->header().seq;
             uint32_t txnIdx =
                 meta->getAsObject().getFieldU32(sfTransactionIndex);
             uint32_t netID = context.app.config().NETWORK_ID;

@@ -217,7 +217,7 @@ public:
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
                 BEAST_EXPECT(
                     jrr[jss::ledger][jss::ledger_hash] ==
-                    to_string(env.closed()->info().hash));
+                    to_string(env.closed()->header().hash));
         }
         {
             // Closed ledger with binary form

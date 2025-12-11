@@ -4,8 +4,7 @@
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
-
-#include <variant>
+#include <xrpl/resource/Fees.h>
 
 namespace ripple {
 
@@ -16,15 +15,16 @@ namespace ripple {
 Json::Value
 doLedgerRequest(RPC::JsonContext& context)
 {
-    auto res = getLedgerByContext(context);
+    context.loadType = Resource::feeHeavyBurdenRPC;
+    auto res = RPC::getOrAcquireLedger(context);
 
-    if (std::holds_alternative<Json::Value>(res))
-        return std::get<Json::Value>(res);
+    if (!res.has_value())
+        return res.error();
 
-    auto const& ledger = std::get<std::shared_ptr<Ledger const>>(res);
+    auto const& ledger = res.value();
 
     Json::Value jvResult;
-    jvResult[jss::ledger_index] = ledger->info().seq;
+    jvResult[jss::ledger_index] = ledger->header().seq;
     addJson(jvResult, {*ledger, &context, 0});
     return jvResult;
 }
