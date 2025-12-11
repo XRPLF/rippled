@@ -646,8 +646,8 @@ class LendingHelpers_test : public beast::unit_test::suite
             numZero,
         };
 
-        TenthBips16 managementFeeRate{20'000};  // 10%
-        TenthBips32 loanInterestRate{10'000};   // 20%
+        TenthBips16 managementFeeRate{20'000};  // 20%
+        TenthBips32 loanInterestRate{10'000};   // 10%
         Number loanPrincipal{1'000};
         std::uint32_t paymentInterval = 30 * 24 * 60 * 60;
         std::uint32_t paymentsRemaining = 10;
@@ -663,10 +663,6 @@ class LendingHelpers_test : public beast::unit_test::suite
             paymentsRemaining,
             managementFeeRate,
             loanScale);
-        std::cout << loanProperites.periodicPayment << std::endl;
-        std::cout << loanProperites.loanState.valueOutstanding << std::endl;
-        std::cout << loanProperites.loanState.interestOutstanding()
-                  << std::endl;
 
         Number periodicPayment = loanProperites.periodicPayment;
 
@@ -684,7 +680,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         BEAST_EXPECT(ret);
 
         auto const& [actualPaymentParts, newLoanProperties] = *ret;
-        auto const newState = newLoanProperties.loanState;
+        auto const& newState = newLoanProperties.loanState;
 
         // value change should be equal to interest decrease
         BEAST_EXPECTS(

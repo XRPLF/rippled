@@ -542,15 +542,12 @@ tryOverpayment(
             .interestPaid =
                 deltas.interest + overpaymentComponents.untrackedInterest,
             // Value change includes both the reduction from paying down
-            // principal
-            // (negative) and any untracked interest penalties (positive, e.g.,
-            // if
-            // the overpayment itself incurs a fee)
+            // principal (negative) and any untracked interest penalties
+            // (positive, e.g., if the overpayment itself incurs a fee)
             .valueChange =
                 valueChange + overpaymentComponents.trackedInterestPart(),
             // Fee paid includes both the reduction in tracked management fees
-            // and
-            // any untracked fees on the overpayment itself
+            // and any untracked fees on the overpayment itself
             .feePaid = deltas.managementFee +
                 overpaymentComponents.untrackedManagementFee +
                 overpaymentComponents.trackedManagementFeeDelta,
