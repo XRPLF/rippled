@@ -9,7 +9,7 @@
 
 #include <boost/container/flat_set.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -938,7 +938,7 @@ public:
         testMPT();
     }
 };
-BEAST_DEFINE_TESTSUITE(AccountTx, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountTx, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

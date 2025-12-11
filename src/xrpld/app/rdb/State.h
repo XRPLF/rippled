@@ -9,7 +9,7 @@
 
 #include <boost/filesystem.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 struct SavedState
 {
@@ -74,6 +74,6 @@ setSavedState(soci::session& session, SavedState const& state);
 void
 setLastRotated(soci::session& session, LedgerIndex seq);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

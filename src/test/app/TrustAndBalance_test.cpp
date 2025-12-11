@@ -6,7 +6,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class TrustAndBalance_test : public beast::unit_test::suite
 {
@@ -467,6 +467,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TrustAndBalance, app, ripple);
+BEAST_DEFINE_TESTSUITE(TrustAndBalance, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

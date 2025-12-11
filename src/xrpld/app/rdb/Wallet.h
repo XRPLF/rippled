@@ -6,7 +6,7 @@
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/overlay/PeerReservationTable.h>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * @brief makeWalletDB Opens the wallet database and returns it.
@@ -158,6 +158,6 @@ voteAmendment(
     std::string const& name,
     AmendmentVote vote);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -13,7 +13,7 @@
 #include <map>
 #include <thread>
 
-using namespace ripple;
+using namespace xrpl;
 
 namespace {
 

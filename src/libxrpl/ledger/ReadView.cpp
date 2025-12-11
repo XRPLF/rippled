@@ -1,6 +1,6 @@
 #include <xrpl/ledger/ReadView.h>
 
-namespace ripple {
+namespace xrpl {
 
 ReadView::sles_type::sles_type(ReadView const& view) : ReadViewFwdRange(view)
 {
@@ -68,4 +68,4 @@ makeRulesGivenLedger(
     return Rules(presets);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

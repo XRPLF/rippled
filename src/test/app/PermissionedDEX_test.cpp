@@ -28,7 +28,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 using namespace jtx;
@@ -1552,7 +1552,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PermissionedDEX, app, ripple);
+BEAST_DEFINE_TESTSUITE(PermissionedDEX, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

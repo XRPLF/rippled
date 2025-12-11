@@ -3,7 +3,7 @@
 
 #include <test/jtx/Env.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 namespace jtx {
@@ -41,6 +41,6 @@ public:
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -28,7 +28,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 class RPCParser;
 
@@ -102,7 +102,7 @@ private:
     jvParseCurrencyIssuer(std::string const& strCurrencyIssuer)
     {
         // Matches a sequence of 3 characters from
-        // `ripple::detail::isoCharSet` (the currency),
+        // `xrpl::detail::isoCharSet` (the currency),
         // optionally followed by a forward slash and some other characters
         // (the issuer).
         // https://www.boost.org/doc/libs/1_82_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
@@ -140,7 +140,7 @@ private:
         std::string const& strPk,
         TokenType type = TokenType::AccountPublic)
     {
-        if (parseBase58<ripple::PublicKey>(type, strPk))
+        if (parseBase58<xrpl::PublicKey>(type, strPk))
             return true;
 
         auto pkHex = strUnHex(strPk);
@@ -1033,7 +1033,7 @@ private:
         // Parameter count should have already been verified.
         XRPL_ASSERT(
             jvParams.size() == 2,
-            "ripple::RPCParser::parseTransactionEntry : valid parameter count");
+            "xrpl::RPCParser::parseTransactionEntry : valid parameter count");
 
         std::string const txHash = jvParams[0u].asString();
         if (txHash.length() != 64)
@@ -1516,7 +1516,7 @@ rpcClient(
         }
         else
         {
-            ripple::ServerHandler::Setup setup;
+            xrpl::ServerHandler::Setup setup;
             try
             {
                 setup = setup_ServerHandler(
@@ -1720,4 +1720,4 @@ fromNetwork(
 
 }  // namespace RPCCall
 
-}  // namespace ripple
+}  // namespace xrpl

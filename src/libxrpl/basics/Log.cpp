@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 Logs::Sink::Sink(
     std::string const& partition,
@@ -222,7 +222,7 @@ Logs::fromSeverity(beast::severities::Severity level)
 
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::fromSeverity : invalid severity");
+            UNREACHABLE("xrpl::Logs::fromSeverity : invalid severity");
             [[fallthrough]];
         // LCOV_EXCL_STOP
         case kFatal:
@@ -250,7 +250,7 @@ Logs::toSeverity(LogSeverity level)
             return kError;
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::toSeverity : invalid severity");
+            UNREACHABLE("xrpl::Logs::toSeverity : invalid severity");
             [[fallthrough]];
         // LCOV_EXCL_STOP
         case lsFATAL:
@@ -279,7 +279,7 @@ Logs::toString(LogSeverity s)
             return "Fatal";
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::toString : invalid severity");
+            UNREACHABLE("xrpl::Logs::toString : invalid severity");
             return "Unknown";
             // LCOV_EXCL_STOP
     }
@@ -345,7 +345,7 @@ Logs::format(
             break;
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::format : invalid severity");
+            UNREACHABLE("xrpl::Logs::format : invalid severity");
             [[fallthrough]];
         // LCOV_EXCL_STOP
         case kFatal:
@@ -459,4 +459,4 @@ debugLog()
     return beast::Journal(debugSink().get());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

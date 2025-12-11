@@ -11,7 +11,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 addChannel(Json::Value& jsonLines, SLE const& line)
@@ -149,7 +149,7 @@ doAccountChannels(RPC::JsonContext& context)
                 if (!sleCur)
                 {
                     // LCOV_EXCL_START
-                    UNREACHABLE("ripple::doAccountChannels : null SLE");
+                    UNREACHABLE("xrpl::doAccountChannels : null SLE");
                     return false;
                     // LCOV_EXCL_STOP
                 }
@@ -194,4 +194,4 @@ doAccountChannels(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

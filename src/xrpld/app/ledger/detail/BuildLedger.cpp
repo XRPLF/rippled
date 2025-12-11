@@ -7,7 +7,7 @@
 
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 
 /* Generic buildLedgerImpl that dispatches to ApplyTxs invocable with signature
     void(OpenView&, std::shared_ptr<Ledger> const&)
@@ -39,7 +39,7 @@ buildLedgerImpl(
     {
         OpenView accum(&*built);
         XRPL_ASSERT(
-            !accum.open(), "ripple::buildLedgerImpl : valid ledger state");
+            !accum.open(), "xrpl::buildLedgerImpl : valid ledger state");
         applyTxs(accum, built);
         accum.apply(*built);
     }
@@ -60,7 +60,7 @@ buildLedgerImpl(
     XRPL_ASSERT(
         built->header().seq < XRP_LEDGER_EARLIEST_FEES ||
             built->read(keylet::fees()),
-        "ripple::buildLedgerImpl : valid ledger fees");
+        "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
     return built;
@@ -154,7 +154,7 @@ applyTransactions(
     // tried them in at least one final pass
     XRPL_ASSERT(
         txns.empty() || !certainRetry,
-        "ripple::applyTransactions : retry transactions");
+        "xrpl::applyTransactions : retry transactions");
     return count;
 }
 
@@ -228,4 +228,4 @@ buildLedger(
         });
 }
 
-}  // namespace ripple
+}  // namespace xrpl

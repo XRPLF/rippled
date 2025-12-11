@@ -11,7 +11,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Get state nodes from a ledger
 //   Inputs:
@@ -192,4 +192,4 @@ doLedgerDataGrpc(
     return {response, status};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

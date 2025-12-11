@@ -6,7 +6,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 getFileContents(
@@ -20,6 +20,6 @@ writeFileContents(
     boost::filesystem::path const& destPath,
     std::string const& contents);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

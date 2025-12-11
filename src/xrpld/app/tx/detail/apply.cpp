@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 // These are the same flags defined as HashRouterFlags::PRIVATE1-4 in
 // HashRouter.h
@@ -274,4 +274,4 @@ applyTransaction(
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

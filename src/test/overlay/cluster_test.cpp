@@ -6,10 +6,10 @@
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/protocol/SecretKey.h>
 
-namespace ripple {
+namespace xrpl {
 namespace tests {
 
-class cluster_test : public ripple::TestSuite
+class cluster_test : public xrpl::TestSuite
 {
     test::SuiteJournal journal_;
 
@@ -248,7 +248,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(cluster, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(cluster, overlay, xrpl);
 
 }  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -51,7 +51,7 @@ rate(Env& env, Account const& account, std::uint32_t const& seq)
 {
     auto const sle = env.le(keylet::escrow(account.id(), seq));
     if (sle->isFieldPresent(sfTransferRate))
-        return ripple::Rate((*sle)[sfTransferRate]);
+        return xrpl::Rate((*sle)[sfTransferRate]);
     return Rate{0};
 }
 
@@ -60,4 +60,4 @@ rate(Env& env, Account const& account, std::uint32_t const& seq)
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

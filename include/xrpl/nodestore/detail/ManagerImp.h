@@ -3,7 +3,7 @@
 
 #include <xrpl/nodestore/Manager.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace NodeStore {
 
@@ -50,6 +50,6 @@ public:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

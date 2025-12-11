@@ -7,7 +7,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
 
-namespace ripple {
+namespace xrpl {
 namespace tests {
 
 class SHAMapSync_test : public beast::unit_test::suite
@@ -168,7 +168,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SHAMapSync, shamap, ripple);
+BEAST_DEFINE_TESTSUITE(SHAMapSync, shamap, xrpl);
 
 }  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl

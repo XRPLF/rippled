@@ -9,7 +9,7 @@
 #include <limits>
 #include <random>
 
-namespace ripple::test {
+namespace xrpl::test {
 
 // NOTE: there should be no need for this function;
 // `std::cout << some_duration` should just work if built with a compliant
@@ -82,7 +82,7 @@ class Handler_test : public beast::unit_test::suite
         std::ranlux48 prng(dev());
 
         std::vector<char const*> names =
-            test::jtx::make_vector(ripple::RPC::getHandlerNames());
+            test::jtx::make_vector(xrpl::RPC::getHandlerNames());
 
         std::uniform_int_distribution<std::size_t> distr{0, names.size() - 1};
 
@@ -109,6 +109,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(Handler, rpc, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(Handler, rpc, xrpl);
 
-}  // namespace ripple::test
+}  // namespace xrpl::test

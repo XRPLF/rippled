@@ -16,7 +16,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class WSClientImpl : public WSClient
@@ -311,4 +311,4 @@ makeWSClient(
 }
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

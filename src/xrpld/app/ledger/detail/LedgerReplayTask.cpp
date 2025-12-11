@@ -4,7 +4,7 @@
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
 
-namespace ripple {
+namespace xrpl {
 
 LedgerReplayTask::TaskParameter::TaskParameter(
     InboundLedger::Reason r,
@@ -14,7 +14,7 @@ LedgerReplayTask::TaskParameter::TaskParameter(
 {
     XRPL_ASSERT(
         finishLedgerHash.isNonZero() && totalNumLedgers > 0,
-        "ripple::LedgerReplayTask::TaskParameter::TaskParameter : valid "
+        "xrpl::LedgerReplayTask::TaskParameter::TaskParameter : valid "
         "inputs");
 }
 
@@ -33,7 +33,7 @@ LedgerReplayTask::TaskParameter::update(
     startHash_ = skipList_[skipList_.size() - totalLedgers_];
     XRPL_ASSERT(
         startHash_.isNonZero(),
-        "ripple::LedgerReplayTask::TaskParameter::update : nonzero start hash");
+        "xrpl::LedgerReplayTask::TaskParameter::update : nonzero start hash");
     startSeq_ = finishSeq_ - totalLedgers_ + 1;
     full_ = true;
     return true;
@@ -187,7 +187,7 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
             auto& delta = deltas_[deltaToBuild_];
             XRPL_ASSERT(
                 parent_->seq() + 1 == delta->ledgerSeq_,
-                "ripple::LedgerReplayTask::tryAdvance : consecutive sequence");
+                "xrpl::LedgerReplayTask::tryAdvance : consecutive sequence");
             if (auto l = delta->tryBuild(parent_); l)
             {
                 JLOG(journal_.debug())
@@ -279,7 +279,7 @@ LedgerReplayTask::addDelta(std::shared_ptr<LedgerDeltaAcquire> const& delta)
         XRPL_ASSERT(
             deltas_.empty() ||
                 deltas_.back()->ledgerSeq_ + 1 == delta->ledgerSeq_,
-            "ripple::LedgerReplayTask::addDelta : no deltas or consecutive "
+            "xrpl::LedgerReplayTask::addDelta : no deltas or consecutive "
             "sequence");
         deltas_.push_back(delta);
     }
@@ -292,4 +292,4 @@ LedgerReplayTask::finished() const
     return isDone();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

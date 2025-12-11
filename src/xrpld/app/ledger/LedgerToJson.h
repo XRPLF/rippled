@@ -10,7 +10,7 @@
 #include <xrpl/json/Object.h>
 #include <xrpl/protocol/serialize.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct LedgerFill
 {
@@ -53,6 +53,6 @@ addJson(Json::Value&, LedgerFill const&);
 Json::Value
 getJson(LedgerFill const&);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -18,7 +18,7 @@
 #include <optional>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
 PathRequest::PathRequest(
     Application& app,
@@ -139,8 +139,7 @@ PathRequest::updateComplete()
 {
     std::lock_guard sl(mIndexLock);
 
-    XRPL_ASSERT(
-        mInProgress, "ripple::PathRequest::updateComplete : in progress");
+    XRPL_ASSERT(mInProgress, "xrpl::PathRequest::updateComplete : in progress");
     mInProgress = false;
 
     if (fCompletion)
@@ -762,4 +761,4 @@ PathRequest::getSubscriber() const
     return wpSubscriber.lock();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

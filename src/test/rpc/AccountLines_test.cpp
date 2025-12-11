@@ -5,7 +5,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 class AccountLines_test : public beast::unit_test::suite
@@ -1400,7 +1400,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountLines, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountLines, rpc, xrpl);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

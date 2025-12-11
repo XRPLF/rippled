@@ -18,7 +18,7 @@
 
 #include <regex>
 
-namespace ripple {
+namespace xrpl {
 
 static bool
 isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
@@ -236,7 +236,7 @@ populateJsonResponse(
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
             XRPL_ASSERT(
-                args.binary, "ripple::populateJsonResponse : binary is set");
+                args.binary, "xrpl::populateJsonResponse : binary is set");
             auto json_meta =
                 (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
             response[json_meta] = strHex(makeSlice(*blob));
@@ -327,4 +327,4 @@ doTxJson(RPC::JsonContext& context)
     return populateJsonResponse(res, args, context);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

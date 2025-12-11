@@ -3,7 +3,7 @@
 
 #include <xrpld/app/misc/detail/WorkBase.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -60,6 +60,6 @@ WorkPlain::onConnect(error_code const& ec)
 
 }  // namespace detail
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

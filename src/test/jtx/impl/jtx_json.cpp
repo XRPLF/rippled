@@ -4,7 +4,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_reader.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -32,4 +32,4 @@ json::operator()(Env&, JTx& jt) const
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

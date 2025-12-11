@@ -7,7 +7,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -24,6 +24,6 @@ insertNFTSyntheticInJson(
 /** @} */
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

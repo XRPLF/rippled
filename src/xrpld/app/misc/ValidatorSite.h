@@ -14,7 +14,7 @@
 #include <mutex>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /**
     Validator Sites
@@ -242,6 +242,6 @@ private:
     missingSite(std::lock_guard<std::mutex> const&);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

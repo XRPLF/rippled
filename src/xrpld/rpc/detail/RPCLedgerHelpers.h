@@ -11,7 +11,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class ReadView;
 class Transaction;
@@ -176,6 +176,6 @@ getOrAcquireLedger(RPC::JsonContext const& context);
 
 }  // namespace RPC
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
