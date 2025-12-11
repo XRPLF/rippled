@@ -477,10 +477,10 @@ class LedgerEntry_test : public beast::unit_test::suite
                         "json",
                         "ledger_entry",
                         to_string(jvParams))[jss::result];
-                    auto const expectedErrMsg = fieldValue.isString()
-                        ? "ledgerHashMalformed"
-                        : "ledgerHashNotString";
-                    checkErrorValue(jrr, "invalidParams", expectedErrMsg);
+                    checkErrorValue(
+                        jrr,
+                        "invalidParams",
+                        "Invalid field 'ledger_hash', not hex string.");
                 };
 
                 auto const& badValues = getBadValues(typeId);
@@ -539,7 +539,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
         {
             // Exercise ledger_closed along the way.
             Json::Value const jrr = env.rpc("ledger_closed")[jss::result];
@@ -646,7 +646,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         env(check::create(env.master, alice, XRP(100)));
         env.close();
 
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
         {
             // Request a check.
             Json::Value jvParams;
@@ -765,7 +765,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         env.close();
         env(delegate::set(alice, bob, {"Payment", "CheckCreate"}));
         env.close();
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
         std::string delegateIndex;
         {
             // Request by account and authorize
@@ -823,7 +823,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         env(deposit::auth(alice, becky));
         env.close();
 
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
         std::string depositPreauthIndex;
         {
             // Request a depositPreauth by owner and authorized.
@@ -1171,7 +1171,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         }
         env.close();
 
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
         {
             // Exercise ledger_closed along the way.
             Json::Value const jrr = env.rpc("ledger_closed")[jss::result];
@@ -1331,7 +1331,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         env(escrowCreate(alice, alice, XRP(333), env.now() + 2s));
         env.close();
 
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
         std::string escrowIndex;
         {
             // Request the escrow using owner and sequence.
@@ -1379,7 +1379,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         env(offer(alice, USD(321), XRP(322)));
         env.close();
 
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
         std::string offerIndex;
         {
             // Request the offer using owner and sequence.
@@ -1443,7 +1443,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         env(payChanCreate(alice, env.master, XRP(57), 18s, alice.pk()));
         env.close();
 
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
 
         uint256 const payChanIndex{
             keylet::payChan(alice, env.master, env.seq(alice) - 1).key};
@@ -1495,7 +1495,8 @@ class LedgerEntry_test : public beast::unit_test::suite
         // check both aliases
         for (auto const& fieldName : {jss::ripple_state, jss::state})
         {
-            std::string const ledgerHash{to_string(env.closed()->info().hash)};
+            std::string const ledgerHash{
+                to_string(env.closed()->header().hash)};
             {
                 // Request the trust line using the accounts and currency.
                 Json::Value jvParams;
@@ -1637,7 +1638,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         env(ticket::create(env.master, 2));
         env.close();
 
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
         // Request four tickets: one before the first one we created, the
         // two created tickets, and the ticket that would come after the
         // last created ticket.
@@ -1734,7 +1735,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         env(didCreate(alice));
         env.close();
 
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
 
         {
             // Request the DID using its index.
@@ -1865,7 +1866,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                  tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback});
         mptAlice.authorize({.account = bob, .holderCount = 1});
 
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
 
         std::string const badMptID =
             "00000193B9DDCAF401B5B3B26875986043F82CD0D13B4315";
@@ -2024,7 +2025,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         env(check::create(env.master, alice, XRP(100)));
         env.close();
 
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
         {
             // Request a check.
             Json::Value const jrr =
@@ -2095,7 +2096,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
 
         createBridgeObjects(mcEnv, scEnv);
 
-        std::string const ledgerHash{to_string(mcEnv.closed()->info().hash)};
+        std::string const ledgerHash{to_string(mcEnv.closed()->header().hash)};
         std::string bridge_index;
         Json::Value mcBridge;
         {

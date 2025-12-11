@@ -16,10 +16,10 @@ ApplyViewBase::open() const
     return base_->open();
 }
 
-LedgerInfo const&
-ApplyViewBase::info() const
+LedgerHeader const&
+ApplyViewBase::header() const
 {
-    return base_->info();
+    return base_->header();
 }
 
 Fees const&

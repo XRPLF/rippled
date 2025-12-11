@@ -85,7 +85,7 @@ public:
      */
     void
     gotSkipList(
-        LedgerInfo const& info,
+        LedgerHeader const& info,
         boost::intrusive_ptr<SHAMapItem const> const& data);
 
     /**
@@ -96,7 +96,7 @@ public:
      */
     void
     gotReplayDelta(
-        LedgerInfo const& info,
+        LedgerHeader const& info,
         std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
 
     /** Remove completed tasks */

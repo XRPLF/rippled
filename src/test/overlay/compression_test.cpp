@@ -38,7 +38,7 @@ using namespace xrpl::test;
 using namespace xrpl::test::jtx;
 
 static uint256
-ledgerHash(LedgerInfo const& info)
+ledgerHash(LedgerHeader const& info)
 {
     return xrpl::sha512Half(
         HashPrefix::ledgerMaster,
@@ -252,7 +252,7 @@ public:
 
         for (int i = 0; i < n; i++)
         {
-            LedgerInfo info;
+            LedgerHeader info;
             info.seq = i;
             info.parentCloseTime = ct;
             info.hash = xrpl::sha512Half(i);

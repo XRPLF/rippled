@@ -123,7 +123,7 @@ saveValidatedLedger(
  * @param j Journal.
  * @return Ledger or none if ledger not found.
  */
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getLedgerInfoByIndex(
     soci::session& session,
     LedgerIndex ledgerSeq,
@@ -135,7 +135,7 @@ getLedgerInfoByIndex(
  * @param j Journal.
  * @return Ledger info or none if ledger not found.
  */
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getNewestLedgerInfo(soci::session& session, beast::Journal j);
 
 /**
@@ -146,7 +146,7 @@ getNewestLedgerInfo(soci::session& session, beast::Journal j);
  * @param j Journal.
  * @return Ledger info or none if ledger not found.
  */
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getLimitedOldestLedgerInfo(
     soci::session& session,
     LedgerIndex ledgerFirstIndex,
@@ -160,7 +160,7 @@ getLimitedOldestLedgerInfo(
  * @param j Journal.
  * @return Ledger info or none if ledger not found.
  */
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getLimitedNewestLedgerInfo(
     soci::session& session,
     LedgerIndex ledgerFirstIndex,
@@ -173,7 +173,7 @@ getLimitedNewestLedgerInfo(
  * @param j Journal.
  * @return Ledger or none if ledger not found.
  */
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getLedgerInfoByHash(
     soci::session& session,
     uint256 const& ledgerHash,

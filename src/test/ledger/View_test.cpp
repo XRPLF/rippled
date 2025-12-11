@@ -1019,8 +1019,8 @@ class View_test : public beast::unit_test::suite
 
         // Try the other interface.
         // Note that the different interface has different outcomes.
-        auto const& iA3 = rdViewA3->info();
-        auto const& iA4 = rdViewA4->info();
+        auto const& iA3 = rdViewA3->header();
+        auto const& iA4 = rdViewA4->header();
 
         BEAST_EXPECT(areCompatible(iA3.hash, iA3.seq, *rdViewA4, jStream, ""));
         BEAST_EXPECT(areCompatible(iA4.hash, iA4.seq, *rdViewA3, jStream, ""));

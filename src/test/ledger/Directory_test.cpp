@@ -436,7 +436,7 @@ struct Directory_test : public beast::unit_test::suite
         // exist
         env(offer(alice, XRP(1), USD(1)));
         auto const txID = to_string(env.tx()->getTransactionID());
-        auto const ledgerSeq = env.current()->info().seq;
+        auto const ledgerSeq = env.current()->header().seq;
         env.close();
         // Make sure the fields only exist if the object is touched
         env(noop(gw));

@@ -59,8 +59,8 @@ doLedgerData(RPC::JsonContext& context)
     if ((limit < 0) || ((limit > maxLimit) && (!isUnlimited(context.role))))
         limit = maxLimit;
 
-    jvResult[jss::ledger_hash] = to_string(lpLedger->info().hash);
-    jvResult[jss::ledger_index] = lpLedger->info().seq;
+    jvResult[jss::ledger_hash] = to_string(lpLedger->header().hash);
+    jvResult[jss::ledger_index] = lpLedger->header().seq;
 
     if (!isMarker)
     {

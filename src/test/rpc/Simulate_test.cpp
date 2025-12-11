@@ -1027,7 +1027,7 @@ class Simulate_test : public beast::unit_test::suite
 
         auto jv = credentials::create(subject, issuer, credType);
         uint32_t const t =
-            env.current()->info().parentCloseTime.time_since_epoch().count();
+            env.current()->header().parentCloseTime.time_since_epoch().count();
         jv[sfExpiration.jsonName] = t;
         env(jv);
         env.close();
