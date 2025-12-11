@@ -5340,7 +5340,7 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
             }
 
-            // // The owner can clawback all shares, burning them
+            // The owner can clawback all shares, burning them
             {
                 auto [vault, vaultKeylet] = setupVault(asset);
                 env(vault.clawback({
