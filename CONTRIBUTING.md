@@ -24,7 +24,7 @@ your verifying key. Please set up [signature verification][signing].
 
 In general, external contributions should be developed in your personal
 [fork][forking]. Contributions from developers with write permissions
-should be done in [the main repository][rippled] in a branch with
+should be done in [the main repository][xrpld] in a branch with
 a permitted prefix. Permitted prefixes are:
 
 - XLS-[a-zA-Z0-9]+/.+
@@ -73,7 +73,7 @@ Ensure that your code compiles according to the build instructions in
 
 Please write tests for your code.
 If your test can be run offline, in under 60 seconds, then it can be an
-automatic test run by `rippled --unittest`.
+automatic test run by `xrpld --unittest`.
 Otherwise, it must be a manual test.
 
 If you create new source files, they must be organized as follows:
@@ -256,13 +256,13 @@ pre-commit install
 We are using [Antithesis](https://antithesis.com/) for continuous fuzzing,
 and keep a copy of [Antithesis C++ SDK](https://github.com/antithesishq/antithesis-sdk-cpp/)
 in `external/antithesis-sdk`. One of the aims of fuzzing is to identify bugs
-by finding external conditions which cause contracts violations inside `rippled`.
+by finding external conditions which cause contracts violations inside `xrpld`.
 The contracts are expressed as `XRPL_ASSERT` or `UNREACHABLE` (defined in
 `include/xrpl/beast/utility/instrumentation.h`), which are effectively (outside
 of Antithesis) wrappers for `assert(...)` with added name. The purpose of name
 is to provide contracts with stable identity which does not rely on line numbers.
 
-When `rippled` is built with the Antithesis instrumentation enabled
+When `xrpld` is built with the Antithesis instrumentation enabled
 (using `voidstar` CMake option) and ran on the Antithesis platform, the
 contracts become
 [test properties](https://antithesis.com/docs/using_antithesis/properties.html);
@@ -318,7 +318,7 @@ For this reason:
 
 To execute all unit tests:
 
-`rippled --unittest --unittest-jobs=<number of cores>`
+`xrpld --unittest --unittest-jobs=<number of cores>`
 
 (Note: Using multiple cores on a Mac M1 can cause spurious test failures. The
 cause is still under investigation. If you observe this problem, try specifying fewer jobs.)
@@ -326,7 +326,7 @@ cause is still under investigation. If you observe this problem, try specifying 
 To run a specific set of test suites:
 
 ```
-rippled --unittest TestSuiteName
+xrpld --unittest TestSuiteName
 ```
 
 Note: In this example, all tests with prefix `TestSuiteName` will be run, so if
@@ -1075,7 +1075,7 @@ git fetch upstreams
 [contrib]: https://docs.github.com/en/get-started/quickstart/contributing-to-projects
 [squash]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#squash-and-merge-your-commits
 [forking]: https://github.com/XRPLF/rippled/fork
-[rippled]: https://github.com/XRPLF/rippled
+[xrpld]: https://github.com/XRPLF/rippled
 [signing]: https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification
 [setup-upstreams]: ./bin/git/setup-upstreams.sh
 [squash-branches]: ./bin/git/squash-branches.sh

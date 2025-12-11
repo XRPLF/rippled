@@ -232,6 +232,4 @@ if(xrpld)
       src/test/ledger/Invariants_test.cpp
       PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
   endif()
-  # For the time being, we will keep the name of the binary as it was.
-  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")
 endif()
