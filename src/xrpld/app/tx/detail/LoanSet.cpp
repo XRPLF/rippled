@@ -88,11 +88,12 @@ LoanSet::preflight(PreflightContext const& ctx)
     if (auto const paymentInterval = tx[~sfPaymentInterval];
         !validNumericMinimum(paymentInterval, LoanSet::minPaymentInterval))
         return temINVALID;
-
-    if (auto const gracePeriod = tx[~sfGracePeriod]; !validNumericRange(
-            gracePeriod,
-            tx[~sfPaymentInterval].value_or(LoanSet::defaultPaymentInterval),
-            defaultGracePeriod))
+    // Grace period is between min default value and payment interval
+    else if (auto const gracePeriod = tx[~sfGracePeriod];  //
+             !validNumericRange(
+                 gracePeriod,
+                 paymentInterval.value_or(LoanSet::defaultPaymentInterval),
+                 defaultGracePeriod))
         return temINVALID;
 
     // Copied from preflight2
