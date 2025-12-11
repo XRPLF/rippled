@@ -7,7 +7,7 @@
 
 #include <boost/endian/conversion.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 NFTokenCancelOffer::getFlagsMask(PreflightContext const& ctx)
@@ -93,4 +93,4 @@ NFTokenCancelOffer::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

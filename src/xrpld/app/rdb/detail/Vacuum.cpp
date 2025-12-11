@@ -2,7 +2,7 @@
 
 #include <boost/format.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
@@ -49,4 +49,4 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

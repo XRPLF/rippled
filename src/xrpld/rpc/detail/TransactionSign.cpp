@@ -24,7 +24,7 @@
 #include <iterator>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 namespace detail {
 
@@ -654,7 +654,7 @@ transactionPreProcessImpl(
     {
         Serializer s = buildMultiSigningData(*stTx, signingArgs.getSigner());
 
-        auto multisig = ripple::sign(pk, sk, s.slice());
+        auto multisig = xrpl::sign(pk, sk, s.slice());
 
         signingArgs.moveMultiSignature(std::move(multisig));
     }
@@ -1206,7 +1206,7 @@ transactionSignFor(
 
     XRPL_ASSERT(
         signForParams.validMultiSign(),
-        "ripple::RPC::transactionSignFor : valid multi-signature");
+        "xrpl::RPC::transactionSignFor : valid multi-signature");
 
     {
         std::shared_ptr<SLE const> account_state =
@@ -1452,4 +1452,4 @@ transactionSubmitMultiSigned(
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

@@ -7,7 +7,7 @@
 #include <boost/beast/core/type_traits.hpp>
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 // Before boost 1.70, get_lowest_layer required an explicit templat parameter
 template <class T>
@@ -21,6 +21,6 @@ get_lowest_layer(T& t) noexcept
 #endif
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -11,7 +11,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -31,7 +31,7 @@ sign(Json::Value& jv, Account const& account, Json::Value& sigObject)
     Serializer ss;
     ss.add32(HashPrefix::txSign);
     parse(jv).addWithoutSigningFields(ss);
-    auto const sig = ripple::sign(account.pk(), account.sk(), ss.slice());
+    auto const sig = xrpl::sign(account.pk(), account.sk(), ss.slice());
     sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
 }
 
@@ -97,4 +97,4 @@ cmdToJSONRPC(
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

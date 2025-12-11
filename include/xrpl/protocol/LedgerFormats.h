@@ -5,7 +5,7 @@
 
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 /** Identifiers for on-ledger objects.
 
@@ -278,6 +278,6 @@ public:
     getCommonFields();
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

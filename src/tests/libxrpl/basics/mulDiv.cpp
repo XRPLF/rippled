@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <limits>
 
-using namespace ripple;
+using namespace xrpl;
 
 TEST_CASE("mulDiv")
 {

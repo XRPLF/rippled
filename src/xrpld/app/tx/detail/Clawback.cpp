@@ -7,7 +7,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <ValidIssueType T>
 static NotTEC
@@ -270,4 +270,4 @@ Clawback::doApply()
         ctx_.tx[sfAmount].asset().value());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

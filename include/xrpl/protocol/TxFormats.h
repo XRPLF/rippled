@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/KnownFormats.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Transaction type identifiers.
 
@@ -79,6 +79,6 @@ public:
     getCommonFields();
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

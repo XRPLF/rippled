@@ -1,6 +1,6 @@
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 DatabaseRotatingImp::DatabaseRotatingImp(
@@ -192,4 +192,4 @@ DatabaseRotatingImp::for_each(
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

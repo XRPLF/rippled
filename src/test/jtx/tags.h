@@ -1,7 +1,7 @@
 #ifndef XRPL_TEST_JTX_TAGS_H_INCLUDED
 #define XRPL_TEST_JTX_TAGS_H_INCLUDED
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 namespace jtx {
@@ -43,6 +43,6 @@ static increment_t const increment;
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

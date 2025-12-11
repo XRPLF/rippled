@@ -6,6 +6,6 @@
 
 #define JSON_ASSERT_MESSAGE(condition, message) \
     if (!(condition))                           \
-        ripple::Throw<Json::error>(message);
+        xrpl::Throw<Json::error>(message);
 
 #endif

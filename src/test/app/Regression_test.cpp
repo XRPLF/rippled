@@ -11,7 +11,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct Regression_test : public beast::unit_test::suite
@@ -50,7 +50,7 @@ struct Regression_test : public beast::unit_test::suite
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto expectedDrops = INITIAL_XRP;
-        BEAST_EXPECT(closed->info().drops == expectedDrops);
+        BEAST_EXPECT(closed->header().drops == expectedDrops);
 
         auto const aliceXRP = 400;
         auto const aliceAmount = XRP(aliceXRP);
@@ -63,14 +63,14 @@ struct Regression_test : public beast::unit_test::suite
             OpenView accum(&*next);
 
             auto const result =
-                ripple::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
+                xrpl::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
             BEAST_EXPECT(result.ter == tesSUCCESS);
             BEAST_EXPECT(result.applied);
 
             accum.apply(*next);
         }
         expectedDrops -= next->fees().base;
-        BEAST_EXPECT(next->info().drops == expectedDrops);
+        BEAST_EXPECT(next->header().drops == expectedDrops);
         {
             auto const sle = next->read(keylet::account(Account("alice").id()));
             BEAST_EXPECT(sle);
@@ -87,7 +87,7 @@ struct Regression_test : public beast::unit_test::suite
             OpenView accum(&*next);
 
             auto const result =
-                ripple::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
+                xrpl::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
             BEAST_EXPECT(result.ter == tecINSUFF_FEE);
             BEAST_EXPECT(result.applied);
 
@@ -101,7 +101,7 @@ struct Regression_test : public beast::unit_test::suite
             BEAST_EXPECT(balance == XRP(0));
         }
         expectedDrops -= aliceXRP * dropsPerXRP;
-        BEAST_EXPECT(next->info().drops == expectedDrops);
+        BEAST_EXPECT(next->header().drops == expectedDrops);
     }
 
     void
@@ -323,7 +323,7 @@ struct Regression_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Regression, app, ripple);
+BEAST_DEFINE_TESTSUITE(Regression, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

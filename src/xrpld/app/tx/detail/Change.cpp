@@ -12,7 +12,7 @@
 
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 template <>
 NotTEC
@@ -133,7 +133,7 @@ Change::doApply()
             return applyUNLModify();
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Change::doApply : invalid transaction type");
+            UNREACHABLE("xrpl::Change::doApply : invalid transaction type");
             return tefFAILURE;
             // LCOV_EXCL_STOP
     }
@@ -143,7 +143,7 @@ void
 Change::preCompute()
 {
     XRPL_ASSERT(
-        account_ == beast::zero, "ripple::Change::preCompute : zero account");
+        account_ == beast::zero, "xrpl::Change::preCompute : zero account");
 }
 
 TER
@@ -409,4 +409,4 @@ Change::applyUNLModify()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

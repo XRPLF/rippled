@@ -4,7 +4,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 MPTokenIssuanceDestroy::getFlagsMask(PreflightContext const& ctx)
@@ -60,4 +60,4 @@ MPTokenIssuanceDestroy::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

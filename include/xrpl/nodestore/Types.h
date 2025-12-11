@@ -5,7 +5,7 @@
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 enum {
@@ -37,6 +37,6 @@ using Batch = std::vector<std::shared_ptr<NodeObject>>;
 
 }  // namespace NodeStore
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

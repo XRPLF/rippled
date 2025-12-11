@@ -5,7 +5,7 @@
 #include <cassert>
 #include <cstddef>
 
-namespace ripple {
+namespace xrpl {
 
 /** Calculate one number divided by another number in percentage.
  * The result is rounded up to the next integer, and capped in the range [0,100]
@@ -44,6 +44,6 @@ static_assert(calculatePercent(50'000'000, 100'000'000) == 50);
 static_assert(calculatePercent(50'000'001, 100'000'000) == 51);
 static_assert(calculatePercent(99'999'999, 100'000'000) == 100);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

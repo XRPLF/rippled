@@ -5,7 +5,7 @@
 
 #include <initializer_list>
 
-namespace ripple {
+namespace xrpl {
 
 std::initializer_list<SOElement> const&
 TxFormats::getCommonFields()
@@ -59,4 +59,4 @@ TxFormats::getInstance()
     return instance;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

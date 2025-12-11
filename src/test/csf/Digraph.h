@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 // Dummy class when no edge data needed for graph
 struct NoEdgeData
@@ -231,5 +231,5 @@ public:
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 #endif

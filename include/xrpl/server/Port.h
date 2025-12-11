@@ -24,7 +24,7 @@ class context;
 }  // namespace asio
 }  // namespace boost
 
-namespace ripple {
+namespace xrpl {
 
 /** Configuration information for a Server listening port. */
 struct Port
@@ -104,6 +104,6 @@ struct ParsedPort
 void
 parse_Port(ParsedPort& port, Section const& section, std::ostream& log);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

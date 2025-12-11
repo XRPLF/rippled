@@ -10,7 +10,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class TxMeta
 {
@@ -117,6 +117,6 @@ private:
     STArray nodes_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

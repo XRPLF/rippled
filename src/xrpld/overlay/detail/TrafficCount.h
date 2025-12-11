@@ -7,7 +7,7 @@
 #include <atomic>
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 /**
     TrafficCount is used to count ingress and egress wire bytes and number of
@@ -196,7 +196,7 @@ public:
     {
         XRPL_ASSERT(
             cat <= category::unknown,
-            "ripple::TrafficCount::addCount : valid category input");
+            "xrpl::TrafficCount::addCount : valid category input");
 
         auto it = counts_.find(cat);
 
@@ -355,5 +355,5 @@ protected:
     };
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 #endif

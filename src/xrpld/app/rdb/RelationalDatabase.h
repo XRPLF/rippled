@@ -13,7 +13,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/variant.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 struct LedgerHashPair
 {
@@ -127,14 +127,14 @@ public:
      * @param ledgerSeq Ledger sequence.
      * @return The ledger if found, otherwise no value.
      */
-    virtual std::optional<LedgerInfo>
+    virtual std::optional<LedgerHeader>
     getLedgerInfoByIndex(LedgerIndex ledgerSeq) = 0;
 
     /**
      * @brief getNewestLedgerInfo Returns the info of the newest saved ledger.
      * @return Ledger info if found, otherwise no value.
      */
-    virtual std::optional<LedgerInfo>
+    virtual std::optional<LedgerHeader>
     getNewestLedgerInfo() = 0;
 
     /**
@@ -143,7 +143,7 @@ public:
      * @param ledgerHash Hash of the ledger.
      * @return Ledger if found, otherwise no value.
      */
-    virtual std::optional<LedgerInfo>
+    virtual std::optional<LedgerHeader>
     getLedgerInfoByHash(uint256 const& ledgerHash) = 0;
 
     /**
@@ -218,7 +218,7 @@ rangeCheckedCast(C c)
     {
         // This should never happen
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::rangeCheckedCast : domain error");
+        UNREACHABLE("xrpl::rangeCheckedCast : domain error");
         JLOG(debugLog().error())
             << "rangeCheckedCast domain error:"
             << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
@@ -229,6 +229,6 @@ rangeCheckedCast(C c)
     return static_cast<T>(c);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

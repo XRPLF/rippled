@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 /** Transaction flags.
 
@@ -338,6 +338,6 @@ ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_VALUE)
 static std::map<std::string, int> const asfFlagMap = {
     ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_MAP)};
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

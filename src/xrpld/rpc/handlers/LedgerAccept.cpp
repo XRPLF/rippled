@@ -9,7 +9,7 @@
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doLedgerAccept(RPC::JsonContext& context)
@@ -31,4 +31,4 @@ doLedgerAccept(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
