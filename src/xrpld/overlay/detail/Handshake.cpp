@@ -199,8 +199,8 @@ buildHandshake(
 
     if (auto const cl = app.getLedgerMaster().getClosedLedger())
     {
-        h.insert("Closed-Ledger", strHex(cl->info().hash));
-        h.insert("Previous-Ledger", strHex(cl->info().parentHash));
+        h.insert("Closed-Ledger", strHex(cl->header().hash));
+        h.insert("Previous-Ledger", strHex(cl->header().parentHash));
     }
 }
 

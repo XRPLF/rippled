@@ -1384,7 +1384,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     // start first consensus round
     if (!m_networkOPs->beginConsensus(
-            m_ledgerMaster->getClosedLedger()->info().hash, {}))
+            m_ledgerMaster->getClosedLedger()->header().hash, {}))
     {
         JLOG(m_journal.fatal()) << "Unable to start consensus";
         return false;
@@ -1699,7 +1699,7 @@ ApplicationImp::startGenesisLedger()
         std::make_shared<Ledger>(*genesis, timeKeeper().closeTime());
     next->updateSkipList();
     XRPL_ASSERT(
-        next->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        next->header().seq < XRP_LEDGER_EARLIEST_FEES ||
             next->read(keylet::fees()),
         "ripple::ApplicationImp::startGenesisLedger : valid ledger fees");
     next->setImmutable();
@@ -1721,7 +1721,7 @@ ApplicationImp::getLastFullLedger()
             return ledger;
 
         XRPL_ASSERT(
-            ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+            ledger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
                 ledger->read(keylet::fees()),
             "ripple::ApplicationImp::getLastFullLedger : valid ledger fees");
         ledger->setImmutable();
@@ -1729,7 +1729,7 @@ ApplicationImp::getLastFullLedger()
         if (getLedgerMaster().haveLedger(seq))
             ledger->setValidated();
 
-        if (ledger->info().hash == hash)
+        if (ledger->header().hash == hash)
         {
             JLOG(j.trace()) << "Loaded ledger: " << hash;
             return ledger;
@@ -1876,7 +1876,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         loadLedger->stateMap().flushDirty(hotACCOUNT_NODE);
 
         XRPL_ASSERT(
-            loadLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+            loadLedger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
                 loadLedger->read(keylet::fees()),
             "ripple::ApplicationImp::loadLedgerFromFile : valid ledger fees");
         loadLedger->setAccepted(
@@ -1955,7 +1955,7 @@ ApplicationImp::loadOldLedger(
 
             JLOG(m_journal.info()) << "Loading parent ledger";
 
-            loadLedger = loadByHash(replayLedger->info().parentHash, *this);
+            loadLedger = loadByHash(replayLedger->header().parentHash, *this);
             if (!loadLedger)
             {
                 JLOG(m_journal.info())
@@ -1964,7 +1964,7 @@ ApplicationImp::loadOldLedger(
                 // Try to build the ledger from the back end
                 auto il = std::make_shared<InboundLedger>(
                     *this,
-                    replayLedger->info().parentHash,
+                    replayLedger->header().parentHash,
                     0,
                     InboundLedger::Reason::GENERIC,
                     stopwatch(),
@@ -1989,7 +1989,7 @@ ApplicationImp::loadOldLedger(
         using namespace date;
         static constexpr NetClock::time_point ledgerWarnTimePoint{
             sys_days{January / 1 / 2018} - sys_days{January / 1 / 2000}};
-        if (loadLedger->info().closeTime < ledgerWarnTimePoint)
+        if (loadLedger->header().closeTime < ledgerWarnTimePoint)
         {
             JLOG(m_journal.fatal())
                 << "\n\n***  WARNING   ***\n"
@@ -2003,10 +2003,10 @@ ApplicationImp::loadOldLedger(
                    "get the older rules.\n*** CONTINUING ***\n";
         }
 
-        JLOG(m_journal.info()) << "Loading ledger " << loadLedger->info().hash
-                               << " seq:" << loadLedger->info().seq;
+        JLOG(m_journal.info()) << "Loading ledger " << loadLedger->header().hash
+                               << " seq:" << loadLedger->header().seq;
 
-        if (loadLedger->info().accountHash.isZero())
+        if (loadLedger->header().accountHash.isZero())
         {
             // LCOV_EXCL_START
             JLOG(m_journal.fatal()) << "Ledger is empty.";
@@ -2039,7 +2039,7 @@ ApplicationImp::loadOldLedger(
         }
 
         m_ledgerMaster->setLedgerRangePresent(
-            loadLedger->info().seq, loadLedger->info().seq);
+            loadLedger->header().seq, loadLedger->header().seq);
 
         m_ledgerMaster->switchLCL(loadLedger);
         loadLedger->setValidated();
@@ -2081,7 +2081,7 @@ ApplicationImp::loadOldLedger(
             if (trapTxID && !trapTxID_)
             {
                 JLOG(m_journal.fatal())
-                    << "Ledger " << replayLedger->info().seq
+                    << "Ledger " << replayLedger->header().seq
                     << " does not contain the transaction hash " << *trapTxID;
                 return false;
             }

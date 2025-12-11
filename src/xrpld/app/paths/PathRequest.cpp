@@ -207,7 +207,7 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
             (sleDest->getFlags() & lsfRequireDestTag);
     }
 
-    jvStatus[jss::ledger_hash] = to_string(lrLedger->info().hash);
+    jvStatus[jss::ledger_hash] = to_string(lrLedger->header().hash);
     jvStatus[jss::ledger_index] = lrLedger->seq();
     return true;
 }

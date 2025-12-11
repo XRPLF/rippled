@@ -50,7 +50,7 @@ struct Regression_test : public beast::unit_test::suite
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto expectedDrops = INITIAL_XRP;
-        BEAST_EXPECT(closed->info().drops == expectedDrops);
+        BEAST_EXPECT(closed->header().drops == expectedDrops);
 
         auto const aliceXRP = 400;
         auto const aliceAmount = XRP(aliceXRP);
@@ -70,7 +70,7 @@ struct Regression_test : public beast::unit_test::suite
             accum.apply(*next);
         }
         expectedDrops -= next->fees().base;
-        BEAST_EXPECT(next->info().drops == expectedDrops);
+        BEAST_EXPECT(next->header().drops == expectedDrops);
         {
             auto const sle = next->read(keylet::account(Account("alice").id()));
             BEAST_EXPECT(sle);
@@ -101,7 +101,7 @@ struct Regression_test : public beast::unit_test::suite
             BEAST_EXPECT(balance == XRP(0));
         }
         expectedDrops -= aliceXRP * dropsPerXRP;
-        BEAST_EXPECT(next->info().drops == expectedDrops);
+        BEAST_EXPECT(next->header().drops == expectedDrops);
     }
 
     void

@@ -171,7 +171,7 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
         // Not expired
         if (auto const expiration = auctionSlot[~sfExpiration];
             duration_cast<seconds>(
-                view.info().parentCloseTime.time_since_epoch())
+                view.header().parentCloseTime.time_since_epoch())
                 .count() < expiration)
         {
             if (auctionSlot[~sfAccount] == account)
@@ -347,9 +347,10 @@ initializeFeeAuctionVote(
     STObject& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auctionSlot.setAccountID(sfAccount, account);
     // current + sec in 24h
-    auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
-                                view.info().parentCloseTime.time_since_epoch())
-                                .count() +
+    auto const expiration =
+        std::chrono::duration_cast<std::chrono::seconds>(
+            view.header().parentCloseTime.time_since_epoch())
+            .count() +
         TOTAL_TIME_SLOT_SECS;
     auctionSlot.setFieldU32(sfExpiration, expiration);
     auctionSlot.setFieldAmount(sfPrice, STAmount{lptIssue, 0});

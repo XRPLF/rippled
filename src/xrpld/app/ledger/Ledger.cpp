@@ -32,7 +32,7 @@ namespace ripple {
 create_genesis_t const create_genesis{};
 
 uint256
-calculateLedgerHash(LedgerInfo const& info)
+calculateLedgerHash(LedgerHeader const& info)
 {
     // VFALCO This has to match addRaw in View.h.
     return sha512Half(
@@ -157,9 +157,9 @@ Ledger::Ledger(
     , rules_{config.features}
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
-    info_.seq = 1;
-    info_.drops = INITIAL_XRP;
-    info_.closeTimeResolution = ledgerGenesisTimeResolution;
+    header_.seq = 1;
+    header_.drops = INITIAL_XRP;
+    header_.closeTimeResolution = ledgerGenesisTimeResolution;
 
     static auto const id = calcAccountID(
         generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase"))
@@ -168,7 +168,7 @@ Ledger::Ledger(
         auto const sle = std::make_shared<SLE>(keylet::account(id));
         sle->setFieldU32(sfSequence, 1);
         sle->setAccountID(sfAccount, id);
-        sle->setFieldAmount(sfBalance, info_.drops);
+        sle->setFieldAmount(sfBalance, header_.drops);
         rawInsert(sle);
     }
 
@@ -210,7 +210,7 @@ Ledger::Ledger(
 }
 
 Ledger::Ledger(
-    LedgerInfo const& info,
+    LedgerHeader const& info,
     bool& loaded,
     bool acquire,
     Config const& config,
@@ -220,23 +220,25 @@ Ledger::Ledger(
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , rules_(config.features)
-    , info_(info)
+    , header_(info)
     , j_(j)
 {
     loaded = true;
 
-    if (info_.txHash.isNonZero() &&
-        !txMap_.fetchRoot(SHAMapHash{info_.txHash}, nullptr))
+    if (header_.txHash.isNonZero() &&
+        !txMap_.fetchRoot(SHAMapHash{header_.txHash}, nullptr))
     {
         loaded = false;
-        JLOG(j.warn()) << "Don't have transaction root for ledger" << info_.seq;
+        JLOG(j.warn()) << "Don't have transaction root for ledger"
+                       << header_.seq;
     }
 
-    if (info_.accountHash.isNonZero() &&
-        !stateMap_.fetchRoot(SHAMapHash{info_.accountHash}, nullptr))
+    if (header_.accountHash.isNonZero() &&
+        !stateMap_.fetchRoot(SHAMapHash{header_.accountHash}, nullptr))
     {
         loaded = false;
-        JLOG(j.warn()) << "Don't have state data root for ledger" << info_.seq;
+        JLOG(j.warn()) << "Don't have state data root for ledger"
+                       << header_.seq;
     }
 
     txMap_.setImmutable();
@@ -248,9 +250,9 @@ Ledger::Ledger(
 
     if (!loaded)
     {
-        info_.hash = calculateLedgerHash(info_);
+        header_.hash = calculateLedgerHash(header_);
         if (acquire)
-            family.missingNodeAcquireByHash(info_.hash, info_.seq);
+            family.missingNodeAcquireByHash(header_.hash, header_.seq);
     }
 }
 
@@ -263,37 +265,38 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     , rules_(prevLedger.rules_)
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
-    info_.seq = prevLedger.info_.seq + 1;
-    info_.parentCloseTime = prevLedger.info_.closeTime;
-    info_.hash = prevLedger.info().hash + uint256(1);
-    info_.drops = prevLedger.info().drops;
-    info_.closeTimeResolution = prevLedger.info_.closeTimeResolution;
-    info_.parentHash = prevLedger.info().hash;
-    info_.closeTimeResolution = getNextLedgerTimeResolution(
-        prevLedger.info_.closeTimeResolution,
-        getCloseAgree(prevLedger.info()),
-        info_.seq);
+    header_.seq = prevLedger.header_.seq + 1;
+    header_.parentCloseTime = prevLedger.header_.closeTime;
+    header_.hash = prevLedger.header().hash + uint256(1);
+    header_.drops = prevLedger.header().drops;
+    header_.closeTimeResolution = prevLedger.header_.closeTimeResolution;
+    header_.parentHash = prevLedger.header().hash;
+    header_.closeTimeResolution = getNextLedgerTimeResolution(
+        prevLedger.header_.closeTimeResolution,
+        getCloseAgree(prevLedger.header()),
+        header_.seq);
 
-    if (prevLedger.info_.closeTime == NetClock::time_point{})
+    if (prevLedger.header_.closeTime == NetClock::time_point{})
     {
-        info_.closeTime = roundCloseTime(closeTime, info_.closeTimeResolution);
+        header_.closeTime =
+            roundCloseTime(closeTime, header_.closeTimeResolution);
     }
     else
     {
-        info_.closeTime =
-            prevLedger.info_.closeTime + info_.closeTimeResolution;
+        header_.closeTime =
+            prevLedger.header_.closeTime + header_.closeTimeResolution;
     }
 }
 
-Ledger::Ledger(LedgerInfo const& info, Config const& config, Family& family)
+Ledger::Ledger(LedgerHeader const& info, Config const& config, Family& family)
     : mImmutable(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , rules_{config.features}
-    , info_(info)
+    , header_(info)
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
-    info_.hash = calculateLedgerHash(info_);
+    header_.hash = calculateLedgerHash(header_);
 }
 
 Ledger::Ledger(
@@ -307,9 +310,9 @@ Ledger::Ledger(
     , rules_{config.features}
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
-    info_.seq = ledgerSeq;
-    info_.closeTime = closeTime;
-    info_.closeTimeResolution = ledgerDefaultTimeResolution;
+    header_.seq = ledgerSeq;
+    header_.closeTime = closeTime;
+    header_.closeTimeResolution = ledgerDefaultTimeResolution;
     defaultFees(config);
     setup();
 }
@@ -321,12 +324,12 @@ Ledger::setImmutable(bool rehash)
     // place the hash transitions to valid
     if (!mImmutable && rehash)
     {
-        info_.txHash = txMap_.getHash().as_uint256();
-        info_.accountHash = stateMap_.getHash().as_uint256();
+        header_.txHash = txMap_.getHash().as_uint256();
+        header_.accountHash = stateMap_.getHash().as_uint256();
     }
 
     if (rehash)
-        info_.hash = calculateLedgerHash(info_);
+        header_.hash = calculateLedgerHash(header_);
 
     mImmutable = true;
     txMap_.setImmutable();
@@ -343,9 +346,9 @@ Ledger::setAccepted(
     // Used when we witnessed the consensus.
     XRPL_ASSERT(!open(), "ripple::Ledger::setAccepted : valid ledger state");
 
-    info_.closeTime = closeTime;
-    info_.closeTimeResolution = closeResolution;
-    info_.closeFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
+    header_.closeTime = closeTime;
+    header_.closeTimeResolution = closeResolution;
+    header_.closeFlags = correctCloseTime ? 0 : sLCF_NoConsensusTime;
     setImmutable();
 }
 
@@ -788,11 +791,11 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
     std::vector<SHAMapMissingNode> missingNodes1;
     std::vector<SHAMapMissingNode> missingNodes2;
 
-    if (stateMap_.getHash().isZero() && !info_.accountHash.isZero() &&
-        !stateMap_.fetchRoot(SHAMapHash{info_.accountHash}, nullptr))
+    if (stateMap_.getHash().isZero() && !header_.accountHash.isZero() &&
+        !stateMap_.fetchRoot(SHAMapHash{header_.accountHash}, nullptr))
     {
         missingNodes1.emplace_back(
-            SHAMapType::STATE, SHAMapHash{info_.accountHash});
+            SHAMapType::STATE, SHAMapHash{header_.accountHash});
     }
     else
     {
@@ -811,11 +814,11 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
         }
     }
 
-    if (txMap_.getHash().isZero() && info_.txHash.isNonZero() &&
-        !txMap_.fetchRoot(SHAMapHash{info_.txHash}, nullptr))
+    if (txMap_.getHash().isZero() && header_.txHash.isNonZero() &&
+        !txMap_.fetchRoot(SHAMapHash{header_.txHash}, nullptr))
     {
         missingNodes2.emplace_back(
-            SHAMapType::TRANSACTION, SHAMapHash{info_.txHash});
+            SHAMapType::TRANSACTION, SHAMapHash{header_.txHash});
     }
     else
     {
@@ -836,9 +839,9 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
 bool
 Ledger::assertSensible(beast::Journal ledgerJ) const
 {
-    if (info_.hash.isNonZero() && info_.accountHash.isNonZero() &&
-        (info_.accountHash == stateMap_.getHash().as_uint256()) &&
-        (info_.txHash == txMap_.getHash().as_uint256()))
+    if (header_.hash.isNonZero() && header_.accountHash.isNonZero() &&
+        (header_.accountHash == stateMap_.getHash().as_uint256()) &&
+        (header_.txHash == txMap_.getHash().as_uint256()))
     {
         return true;
     }
@@ -846,8 +849,8 @@ Ledger::assertSensible(beast::Journal ledgerJ) const
     // LCOV_EXCL_START
     Json::Value j = getJson({*this, {}});
 
-    j[jss::accountTreeHash] = to_string(info_.accountHash);
-    j[jss::transTreeHash] = to_string(info_.txHash);
+    j[jss::accountTreeHash] = to_string(header_.accountHash);
+    j[jss::transTreeHash] = to_string(header_.txHash);
 
     JLOG(ledgerJ.fatal()) << "ledger is not sensible" << j;
 
@@ -862,10 +865,10 @@ Ledger::assertSensible(beast::Journal ledgerJ) const
 void
 Ledger::updateSkipList()
 {
-    if (info_.seq == 0)  // genesis ledger has no previous ledger
+    if (header_.seq == 0)  // genesis ledger has no previous ledger
         return;
 
-    std::uint32_t prevIndex = info_.seq - 1;
+    std::uint32_t prevIndex = header_.seq - 1;
 
     // update record of every 256th ledger
     if ((prevIndex & 0xff) == 0)
@@ -889,7 +892,7 @@ Ledger::updateSkipList()
         XRPL_ASSERT(
             hashes.size() <= 256,
             "ripple::Ledger::updateSkipList : first maximum hashes size");
-        hashes.push_back(info_.parentHash);
+        hashes.push_back(header_.parentHash);
         sle->setFieldV256(sfHashes, STVector256(hashes));
         sle->setFieldU32(sfLastLedgerSequence, prevIndex);
         if (created)
@@ -918,7 +921,7 @@ Ledger::updateSkipList()
         "ripple::Ledger::updateSkipList : second maximum hashes size");
     if (hashes.size() == 256)
         hashes.erase(hashes.begin());
-    hashes.push_back(info_.parentHash);
+    hashes.push_back(header_.parentHash);
     sle->setFieldV256(sfHashes, STVector256(hashes));
     sle->setFieldU32(sfLastLedgerSequence, prevIndex);
     if (created)
@@ -930,12 +933,12 @@ Ledger::updateSkipList()
 bool
 Ledger::isFlagLedger() const
 {
-    return info_.seq % FLAG_LEDGER_INTERVAL == 0;
+    return header_.seq % FLAG_LEDGER_INTERVAL == 0;
 }
 bool
 Ledger::isVotingLedger() const
 {
-    return (info_.seq + 1) % FLAG_LEDGER_INTERVAL == 0;
+    return (header_.seq + 1) % FLAG_LEDGER_INTERVAL == 0;
 }
 
 bool
@@ -951,7 +954,7 @@ saveValidatedLedger(
     bool current)
 {
     auto j = app.journal("Ledger");
-    auto seq = ledger->info().seq;
+    auto seq = ledger->header().seq;
     if (!app.pendingSaves().startWork(seq))
     {
         // The save was completed synchronously
@@ -982,13 +985,13 @@ pendSaveValidated(
     bool isCurrent)
 {
     if (!app.getHashRouter().setFlags(
-            ledger->info().hash, HashRouterFlags::SAVED))
+            ledger->header().hash, HashRouterFlags::SAVED))
     {
         // We have tried to save this ledger recently
         auto stream = app.journal("Ledger").debug();
-        JLOG(stream) << "Double pend save for " << ledger->info().seq;
+        JLOG(stream) << "Double pend save for " << ledger->header().seq;
 
-        if (!isSynchronous || !app.pendingSaves().pending(ledger->info().seq))
+        if (!isSynchronous || !app.pendingSaves().pending(ledger->header().seq))
         {
             // Either we don't need it to be finished
             // or it is finished
@@ -999,11 +1002,11 @@ pendSaveValidated(
     XRPL_ASSERT(
         ledger->isImmutable(), "ripple::pendSaveValidated : immutable ledger");
 
-    if (!app.pendingSaves().shouldWork(ledger->info().seq, isSynchronous))
+    if (!app.pendingSaves().shouldWork(ledger->header().seq, isSynchronous))
     {
         auto stream = app.journal("Ledger").debug();
         JLOG(stream) << "Pend save with seq in pending saves "
-                     << ledger->info().seq;
+                     << ledger->header().seq;
 
         return true;
     }
@@ -1042,13 +1045,13 @@ Ledger::invariants() const
 /*
  * Make ledger using info loaded from database.
  *
- * @param LedgerInfo: Ledger information.
+ * @param LedgerHeader: Ledger information.
  * @param app: Link to the Application.
  * @param acquire: Acquire the ledger if not found locally.
  * @return Shared pointer to the ledger.
  */
 std::shared_ptr<Ledger>
-loadLedgerHelper(LedgerInfo const& info, Application& app, bool acquire)
+loadLedgerHelper(LedgerHeader const& info, Application& app, bool acquire)
 {
     bool loaded;
     auto ledger = std::make_shared<Ledger>(
@@ -1075,12 +1078,12 @@ finishLoadByIndexOrHash(
         return;
 
     XRPL_ASSERT(
-        ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        ledger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
             ledger->read(keylet::fees()),
         "ripple::finishLoadByIndexOrHash : valid ledger fees");
     ledger->setImmutable();
 
-    JLOG(j.trace()) << "Loaded ledger: " << to_string(ledger->info().hash);
+    JLOG(j.trace()) << "Loaded ledger: " << to_string(ledger->header().hash);
 
     ledger->setFull();
 }
@@ -1088,7 +1091,7 @@ finishLoadByIndexOrHash(
 std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
 getLatestLedger(Application& app)
 {
-    std::optional<LedgerInfo> const info =
+    std::optional<LedgerHeader> const info =
         app.getRelationalDatabase().getNewestLedgerInfo();
     if (!info)
         return {std::shared_ptr<Ledger>(), {}, {}};
@@ -1098,7 +1101,7 @@ getLatestLedger(Application& app)
 std::shared_ptr<Ledger>
 loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire)
 {
-    if (std::optional<LedgerInfo> info =
+    if (std::optional<LedgerHeader> info =
             app.getRelationalDatabase().getLedgerInfoByIndex(ledgerIndex))
     {
         std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, app, acquire);
@@ -1111,13 +1114,13 @@ loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire)
 std::shared_ptr<Ledger>
 loadByHash(uint256 const& ledgerHash, Application& app, bool acquire)
 {
-    if (std::optional<LedgerInfo> info =
+    if (std::optional<LedgerHeader> info =
             app.getRelationalDatabase().getLedgerInfoByHash(ledgerHash))
     {
         std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, app, acquire);
         finishLoadByIndexOrHash(ledger, app.config(), app.journal("Ledger"));
         XRPL_ASSERT(
-            !ledger || ledger->info().hash == ledgerHash,
+            !ledger || ledger->header().hash == ledgerHash,
             "ripple::loadByHash : ledger hash match if loaded");
         return ledger;
     }
