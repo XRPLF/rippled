@@ -177,13 +177,13 @@ saveValidatedLedger(
     bool current)
 {
     auto j = app.journal("Ledger");
-    auto seq = ledger->info().seq;
+    auto seq = ledger->header().seq;
 
     // TODO(tom): Fix this hard-coded SQL!
     JLOG(j.trace()) << "saveValidatedLedger " << (current ? "" : "fromAcquire ")
                     << seq;
 
-    if (!ledger->info().accountHash.isNonZero())
+    if (!ledger->header().accountHash.isNonZero())
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "AH is zero: " << getJson({*ledger, {}});
@@ -191,10 +191,11 @@ saveValidatedLedger(
         // LCOV_EXCL_STOP
     }
 
-    if (ledger->info().accountHash != ledger->stateMap().getHash().as_uint256())
+    if (ledger->header().accountHash !=
+        ledger->stateMap().getHash().as_uint256())
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "sAL: " << ledger->info().accountHash
+        JLOG(j.fatal()) << "sAL: " << ledger->header().accountHash
                         << " != " << ledger->stateMap().getHash();
         JLOG(j.fatal()) << "saveAcceptedLedger: seq=" << seq
                         << ", current=" << current;
@@ -204,33 +205,33 @@ saveValidatedLedger(
     }
 
     XRPL_ASSERT(
-        ledger->info().txHash == ledger->txMap().getHash().as_uint256(),
+        ledger->header().txHash == ledger->txMap().getHash().as_uint256(),
         "ripple::detail::saveValidatedLedger : transaction hash match");
 
     // Save the ledger header in the hashed object store
     {
         Serializer s(128);
         s.add32(HashPrefix::ledgerMaster);
-        addRaw(ledger->info(), s);
+        addRaw(ledger->header(), s);
         app.getNodeStore().store(
-            hotLEDGER, std::move(s.modData()), ledger->info().hash, seq);
+            hotLEDGER, std::move(s.modData()), ledger->header().hash, seq);
     }
 
     std::shared_ptr<AcceptedLedger> aLedger;
     try
     {
-        aLedger = app.getAcceptedLedgerCache().fetch(ledger->info().hash);
+        aLedger = app.getAcceptedLedgerCache().fetch(ledger->header().hash);
         if (!aLedger)
         {
             aLedger = std::make_shared<AcceptedLedger>(ledger, app);
             app.getAcceptedLedgerCache().canonicalize_replace_client(
-                ledger->info().hash, aLedger);
+                ledger->header().hash, aLedger);
         }
     }
     catch (std::exception const&)
     {
         JLOG(j.warn()) << "An accepted ledger was missing nodes";
-        app.getLedgerMaster().failedSave(seq, ledger->info().hash);
+        app.getLedgerMaster().failedSave(seq, ledger->header().hash);
         // Clients can now trust the database for information about this
         // ledger sequence.
         app.pendingSaves().finishWork(seq);
@@ -357,18 +358,18 @@ saveValidatedLedger(
 
             soci::transaction tr(*db);
 
-            auto const hash = to_string(ledger->info().hash);
-            auto const parentHash = to_string(ledger->info().parentHash);
-            auto const drops = to_string(ledger->info().drops);
+            auto const hash = to_string(ledger->header().hash);
+            auto const parentHash = to_string(ledger->header().parentHash);
+            auto const drops = to_string(ledger->header().drops);
             auto const closeTime =
-                ledger->info().closeTime.time_since_epoch().count();
+                ledger->header().closeTime.time_since_epoch().count();
             auto const parentCloseTime =
-                ledger->info().parentCloseTime.time_since_epoch().count();
+                ledger->header().parentCloseTime.time_since_epoch().count();
             auto const closeTimeResolution =
-                ledger->info().closeTimeResolution.count();
-            auto const closeFlags = ledger->info().closeFlags;
-            auto const accountHash = to_string(ledger->info().accountHash);
-            auto const txHash = to_string(ledger->info().txHash);
+                ledger->header().closeTimeResolution.count();
+            auto const closeFlags = ledger->header().closeFlags;
+            auto const accountHash = to_string(ledger->header().accountHash);
+            auto const txHash = to_string(ledger->header().txHash);
 
             *db << addLedger, soci::use(hash), soci::use(seq),
                 soci::use(parentHash), soci::use(drops), soci::use(closeTime),
@@ -391,7 +392,7 @@ saveValidatedLedger(
  * @param j Journal.
  * @return Ledger info or no value if the ledger was not found.
  */
-static std::optional<LedgerInfo>
+static std::optional<LedgerHeader>
 getLedgerInfo(
     soci::session& session,
     std::string const& sqlSuffix,
@@ -425,7 +426,7 @@ getLedgerInfo(
     using time_point = NetClock::time_point;
     using duration = NetClock::duration;
 
-    LedgerInfo info;
+    LedgerHeader info;
 
     if (hash && !info.hash.parseHex(*hash))
     {
@@ -461,7 +462,7 @@ getLedgerInfo(
     return info;
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getLedgerInfoByIndex(
     soci::session& session,
     LedgerIndex ledgerSeq,
@@ -472,7 +473,7 @@ getLedgerInfoByIndex(
     return getLedgerInfo(session, s.str(), j);
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getNewestLedgerInfo(soci::session& session, beast::Journal j)
 {
     std::ostringstream s;
@@ -480,7 +481,7 @@ getNewestLedgerInfo(soci::session& session, beast::Journal j)
     return getLedgerInfo(session, s.str(), j);
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getLimitedOldestLedgerInfo(
     soci::session& session,
     LedgerIndex ledgerFirstIndex,
@@ -492,7 +493,7 @@ getLimitedOldestLedgerInfo(
     return getLedgerInfo(session, s.str(), j);
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getLimitedNewestLedgerInfo(
     soci::session& session,
     LedgerIndex ledgerFirstIndex,
@@ -504,7 +505,7 @@ getLimitedNewestLedgerInfo(
     return getLedgerInfo(session, s.str(), j);
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 getLedgerInfoByHash(
     soci::session& session,
     uint256 const& ledgerHash,

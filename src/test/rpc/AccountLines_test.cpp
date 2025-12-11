@@ -68,7 +68,7 @@ public:
         }
         env.fund(XRP(10000), alice);
         env.close();
-        LedgerInfo const ledger3Info = env.closed()->info();
+        LedgerHeader const ledger3Info = env.closed()->header();
         BEAST_EXPECT(ledger3Info.seq == 3);
 
         {
@@ -118,7 +118,7 @@ public:
             env(pay(gw1, alice, gw1Currency(50 + c)));
         }
         env.close();
-        LedgerInfo const ledger4Info = env.closed()->info();
+        LedgerHeader const ledger4Info = env.closed()->header();
         BEAST_EXPECT(ledger4Info.seq == 4);
 
         // Add another set of trust lines in another ledger so we can see
@@ -153,13 +153,13 @@ public:
                 tfSetNoRipple | tfSetFreeze | tfSetDeepFreeze));
         }
         env.close();
-        LedgerInfo const ledger58Info = env.closed()->info();
+        LedgerHeader const ledger58Info = env.closed()->header();
         BEAST_EXPECT(ledger58Info.seq == 58);
 
         // A re-usable test for historic ledgers.
         auto testAccountLinesHistory = [this, &env](
                                            Account const& account,
-                                           LedgerInfo const& info,
+                                           LedgerHeader const& info,
                                            int count) {
             // Get account_lines by ledger index.
             Json::Value paramsSeq;
@@ -817,7 +817,7 @@ public:
         }
         env.fund(XRP(10000), alice);
         env.close();
-        LedgerInfo const ledger3Info = env.closed()->info();
+        LedgerHeader const ledger3Info = env.closed()->header();
         BEAST_EXPECT(ledger3Info.seq == 3);
 
         {
@@ -899,7 +899,7 @@ public:
             env(pay(gw1, alice, gw1Currency(50 + c)));
         }
         env.close();
-        LedgerInfo const ledger4Info = env.closed()->info();
+        LedgerHeader const ledger4Info = env.closed()->header();
         BEAST_EXPECT(ledger4Info.seq == 4);
 
         // Add another set of trust lines in another ledger so we can see
@@ -934,13 +934,13 @@ public:
                 tfSetNoRipple | tfSetFreeze | tfSetDeepFreeze));
         }
         env.close();
-        LedgerInfo const ledger58Info = env.closed()->info();
+        LedgerHeader const ledger58Info = env.closed()->header();
         BEAST_EXPECT(ledger58Info.seq == 58);
 
         // A re-usable test for historic ledgers.
         auto testAccountLinesHistory = [this, &env](
                                            Account const& account,
-                                           LedgerInfo const& info,
+                                           LedgerHeader const& info,
                                            int count) {
             // Get account_lines by ledger index.
             Json::Value paramsSeq;

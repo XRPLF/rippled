@@ -3227,8 +3227,8 @@ PeerImp::sendLedgerBase(
 {
     JLOG(p_journal_.trace()) << "sendLedgerBase: Base data";
 
-    Serializer s(sizeof(LedgerInfo));
-    addRaw(ledger->info(), s);
+    Serializer s(sizeof(LedgerHeader));
+    addRaw(ledger->header(), s);
     ledgerData.add_nodes()->set_nodedata(s.getDataPtr(), s.getLength());
 
     auto const& stateMap{ledger->stateMap()};
@@ -3241,7 +3241,7 @@ PeerImp::sendLedgerBase(
         ledgerData.add_nodes()->set_nodedata(
             root.getDataPtr(), root.getLength());
 
-        if (ledger->info().txHash != beast::zero)
+        if (ledger->header().txHash != beast::zero)
         {
             auto const& txMap{ledger->txMap()};
             if (txMap.getHash() != beast::zero)
@@ -3326,7 +3326,7 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
     if (ledger)
     {
         // Validate retrieved ledger sequence
-        auto const ledgerSeq{ledger->info().seq};
+        auto const ledgerSeq{ledger->header().seq};
         if (m->has_ledgerseq())
         {
             if (ledgerSeq != m->ledgerseq())
@@ -3440,9 +3440,9 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
             return;
 
         // Fill out the reply
-        auto const ledgerHash{ledger->info().hash};
+        auto const ledgerHash{ledger->header().hash};
         ledgerData.set_ledgerhash(ledgerHash.begin(), ledgerHash.size());
-        ledgerData.set_ledgerseq(ledger->info().seq);
+        ledgerData.set_ledgerseq(ledger->header().seq);
         ledgerData.set_type(itype);
         if (m->has_requestcookie())
             ledgerData.set_requestcookie(m->requestcookie());

@@ -38,7 +38,7 @@ using namespace ripple::test;
 using namespace ripple::test::jtx;
 
 static uint256
-ledgerHash(LedgerInfo const& info)
+ledgerHash(LedgerHeader const& info)
 {
     return ripple::sha512Half(
         HashPrefix::ledgerMaster,
@@ -252,7 +252,7 @@ public:
 
         for (int i = 0; i < n; i++)
         {
-            LedgerInfo info;
+            LedgerHeader info;
             info.seq = i;
             info.parentCloseTime = ct;
             info.hash = ripple::sha512Half(i);

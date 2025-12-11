@@ -176,12 +176,13 @@ getLedgerRange(
                     bool validated =
                         context.ledgerMaster.isValidated(*ledgerView);
 
-                    if (!validated || ledgerView->info().seq > uValidatedMax ||
-                        ledgerView->info().seq < uValidatedMin)
+                    if (!validated ||
+                        ledgerView->header().seq > uValidatedMax ||
+                        ledgerView->header().seq < uValidatedMin)
                     {
                         return rpcLGR_NOT_VALIDATED;
                     }
-                    uLedgerMin = uLedgerMax = ledgerView->info().seq;
+                    uLedgerMin = uLedgerMax = ledgerView->header().seq;
                 }
                 return RPC::Status::OK;
             },

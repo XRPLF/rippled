@@ -234,7 +234,7 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context const& context)
     if (ledger == nullptr)
     {
         auto cur = context.ledgerMaster.getCurrentLedger();
-        if (cur->info().seq == ledgerIndex)
+        if (cur->header().seq == ledgerIndex)
         {
             ledger = cur;
         }
@@ -243,7 +243,7 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context const& context)
     if (ledger == nullptr)
         return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
 
-    if (ledger->info().seq > context.ledgerMaster.getValidLedgerIndex() &&
+    if (ledger->header().seq > context.ledgerMaster.getValidLedgerIndex() &&
         isValidatedOld(context.ledgerMaster, context.app.config().standalone()))
     {
         ledger.reset();
@@ -307,7 +307,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
 
         static auto const minSequenceGap = 10;
 
-        if (ledger->info().seq + minSequenceGap <
+        if (ledger->header().seq + minSequenceGap <
             context.ledgerMaster.getValidLedgerIndex())
         {
             ledger.reset();
@@ -360,7 +360,7 @@ lookupLedger(
     if (auto status = ledgerFromRequest(ledger, context))
         return status;
 
-    auto& info = ledger->info();
+    auto& info = ledger->header();
 
     if (!ledger->open())
     {
@@ -433,7 +433,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
         ledgerIndex = jsonIndex.asInt();
         auto ledger = ledgerMaster.getValidatedLedger();
 
-        if (ledgerIndex >= ledger->info().seq)
+        if (ledgerIndex >= ledger->header().seq)
             return Unexpected(RPC::make_param_error("Ledger index too large"));
         if (ledgerIndex <= 0)
             return Unexpected(RPC::make_param_error("Ledger index too small"));

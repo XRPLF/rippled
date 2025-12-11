@@ -194,7 +194,7 @@ doAMMInfo(RPC::JsonContext& context)
         {
             Json::Value auction;
             auto const timeSlot = ammAuctionTimeSlot(
-                ledger->info().parentCloseTime.time_since_epoch().count(),
+                ledger->header().parentCloseTime.time_since_epoch().count(),
                 auctionSlot);
             auction[jss::time_interval] =
                 timeSlot ? *timeSlot : AUCTION_SLOT_TIME_INTERVALS;
@@ -230,7 +230,7 @@ doAMMInfo(RPC::JsonContext& context)
     result[jss::amm] = std::move(ammResult);
     if (!result.isMember(jss::ledger_index) &&
         !result.isMember(jss::ledger_hash))
-        result[jss::ledger_current_index] = ledger->info().seq;
+        result[jss::ledger_current_index] = ledger->header().seq;
     result[jss::validated] = context.ledgerMaster.isValidated(*ledger);
 
     return result;
