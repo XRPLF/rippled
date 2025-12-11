@@ -5,7 +5,7 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Calculate the maximum amount of IOUs that an account can hold
     @param ledger the ledger to check against.
@@ -45,6 +45,6 @@ creditBalance(
     Currency const& currency);
 /** @} */
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

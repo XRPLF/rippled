@@ -19,7 +19,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 using TxnsData = RelationalDatabase::AccountTxs;
 using TxnsDataBinary = RelationalDatabase::MetaTxsList;
@@ -289,8 +289,7 @@ populateJsonResponse(
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
             XRPL_ASSERT(
-                !args.binary,
-                "ripple::populateJsonResponse : binary is not set");
+                !args.binary, "xrpl::populateJsonResponse : binary is not set");
 
             for (auto const& [txn, txnMeta] : *txnsData)
             {
@@ -340,7 +339,7 @@ populateJsonResponse(
                     {
                         // LCOV_EXCL_START
                         UNREACHABLE(
-                            "ripple::populateJsonResponse : missing "
+                            "xrpl::populateJsonResponse : missing "
                             "transaction medatata");
                         // LCOV_EXCL_STOP
                     }
@@ -350,7 +349,7 @@ populateJsonResponse(
         else
         {
             XRPL_ASSERT(
-                args.binary, "ripple::populateJsonResponse : binary is set");
+                args.binary, "xrpl::populateJsonResponse : binary is set");
 
             for (auto const& binaryData :
                  std::get<TxnsDataBinary>(result.transactions))
@@ -466,4 +465,4 @@ doAccountTxJson(RPC::JsonContext& context)
     return populateJsonResponse(res, args, context);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

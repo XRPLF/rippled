@@ -10,7 +10,7 @@
 #include <random>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 csprng_engine::csprng_engine()
 {
@@ -87,4 +87,4 @@ crypto_prng()
     return engine;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

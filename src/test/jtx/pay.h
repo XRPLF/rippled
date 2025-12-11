@@ -6,7 +6,7 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -18,6 +18,6 @@ pay(Account const& account, Account const& to, AnyAmount amount);
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -5,7 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/resource/detail/Kind.h>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 // The consumer key
@@ -47,6 +47,6 @@ struct Key
 };
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

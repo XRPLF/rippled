@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ValidatorInfo_test : public beast::unit_test::suite
@@ -104,6 +104,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ValidatorInfo, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(ValidatorInfo, rpc, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

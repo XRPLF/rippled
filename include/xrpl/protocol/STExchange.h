@@ -16,7 +16,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 /** Convert between serialized type U and C++ type T. */
 template <class U, class T>
@@ -155,6 +155,6 @@ erase(STObject& st, TypedField<U> const& f)
     st.makeFieldAbsent(f);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

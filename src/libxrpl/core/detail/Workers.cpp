@@ -1,10 +1,9 @@
-#include <xrpld/core/detail/Workers.h>
-#include <xrpld/perflog/PerfLog.h>
-
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/PerfLog.h>
+#include <xrpl/core/detail/Workers.h>
 
-namespace ripple {
+namespace xrpl {
 
 Workers::Workers(
     Callback& callback,
@@ -103,7 +102,7 @@ Workers::stop()
 
     XRPL_ASSERT(
         numberOfCurrentlyRunningTasks() == 0,
-        "ripple::Workers::stop : zero running tasks");
+        "xrpl::Workers::stop : zero running tasks");
 }
 
 void
@@ -261,4 +260,4 @@ Workers::Worker::run()
     } while (!shouldExit);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -10,7 +10,7 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 // an item stored in a SHAMap
 class SHAMapItem : public CountedObject<SHAMapItem>
@@ -143,7 +143,7 @@ make_shamapitem(uint256 const& tag, Slice data)
 {
     XRPL_ASSERT(
         data.size() <= megabytes<std::size_t>(16),
-        "ripple::make_shamapitem : maximum input size");
+        "xrpl::make_shamapitem : maximum input size");
 
     std::uint8_t* raw = detail::slabber.allocate(data.size());
 
@@ -168,6 +168,6 @@ make_shamapitem(SHAMapItem const& other)
     return make_shamapitem(other.key(), other.slice());
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

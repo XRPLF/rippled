@@ -8,7 +8,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Information about the notional ledger backing the view. */
 struct LedgerHeader
@@ -73,6 +73,6 @@ deserializeHeader(Slice data, bool hasHash = false);
 LedgerHeader
 deserializePrefixedHeader(Slice data, bool hasHash = false);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

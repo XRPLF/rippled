@@ -17,7 +17,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STIssue::STIssue(SField const& name) : STBase{name}
 {
@@ -139,4 +139,4 @@ issueFromJson(SField const& name, Json::Value const& v)
     return STIssue{name, assetFromJson(v)};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

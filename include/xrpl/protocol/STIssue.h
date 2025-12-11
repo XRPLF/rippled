@@ -7,7 +7,7 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STIssue final : public STBase, CountedObject<STIssue>
 {
@@ -150,6 +150,6 @@ operator<=>(STIssue const& lhs, Asset const& rhs)
     return lhs.asset_ <=> rhs;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

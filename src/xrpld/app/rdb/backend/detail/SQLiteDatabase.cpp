@@ -8,7 +8,7 @@
 
 #include <xrpl/basics/StringUtilities.h>
 
-namespace ripple {
+namespace xrpl {
 
 class SQLiteDatabaseImp final : public SQLiteDatabase
 {
@@ -789,7 +789,7 @@ SQLiteDatabaseImp::getKBUsedAll()
 {
     if (existsLedger())
     {
-        return ripple::getKBUsedAll(lgrdb_->getSession());
+        return xrpl::getKBUsedAll(lgrdb_->getSession());
     }
 
     return 0;
@@ -800,7 +800,7 @@ SQLiteDatabaseImp::getKBUsedLedger()
 {
     if (existsLedger())
     {
-        return ripple::getKBUsedDB(lgrdb_->getSession());
+        return xrpl::getKBUsedDB(lgrdb_->getSession());
     }
 
     return 0;
@@ -814,7 +814,7 @@ SQLiteDatabaseImp::getKBUsedTransaction()
 
     if (existsTransaction())
     {
-        return ripple::getKBUsedDB(txdb_->getSession());
+        return xrpl::getKBUsedDB(txdb_->getSession());
     }
 
     return 0;
@@ -838,4 +838,4 @@ getSQLiteDatabase(Application& app, Config const& config, JobQueue& jobQueue)
     return std::make_unique<SQLiteDatabaseImp>(app, config, jobQueue);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

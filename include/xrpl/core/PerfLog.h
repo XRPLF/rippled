@@ -1,9 +1,8 @@
-#ifndef XRPL_BASICS_PERFLOG_H
-#define XRPL_BASICS_PERFLOG_H
+#ifndef XRPL_CORE_PERFLOG_H
+#define XRPL_CORE_PERFLOG_H
 
-#include <xrpld/core/Config.h>
-#include <xrpld/core/JobTypes.h>
-
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/core/JobTypes.h>
 #include <xrpl/json/json_value.h>
 
 #include <boost/filesystem.hpp>
@@ -18,7 +17,7 @@ namespace beast {
 class Journal;
 }
 
-namespace ripple {
+namespace xrpl {
 class Application;
 namespace perf {
 
@@ -188,6 +187,6 @@ measureDurationAndLog(
 }
 
 }  // namespace perf
-}  // namespace ripple
+}  // namespace xrpl
 
-#endif  // XRPL_BASICS_PERFLOG_H
+#endif  // XRPL_CORE_PERFLOG_H

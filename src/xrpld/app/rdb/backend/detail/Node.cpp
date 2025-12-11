@@ -16,7 +16,7 @@
 
 #include <soci/sqlite3/soci-sqlite3.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 /**
@@ -41,7 +41,7 @@ to_string(TableType type)
             return "AccountTransactions";
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::detail::to_string : invalid TableType");
+            UNREACHABLE("xrpl::detail::to_string : invalid TableType");
             return "Unknown";
             // LCOV_EXCL_STOP
     }
@@ -187,7 +187,7 @@ saveValidatedLedger(
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "AH is zero: " << getJson({*ledger, {}});
-        UNREACHABLE("ripple::detail::saveValidatedLedger : zero account hash");
+        UNREACHABLE("xrpl::detail::saveValidatedLedger : zero account hash");
         // LCOV_EXCL_STOP
     }
 
@@ -200,13 +200,13 @@ saveValidatedLedger(
         JLOG(j.fatal()) << "saveAcceptedLedger: seq=" << seq
                         << ", current=" << current;
         UNREACHABLE(
-            "ripple::detail::saveValidatedLedger : mismatched account hash");
+            "xrpl::detail::saveValidatedLedger : mismatched account hash");
         // LCOV_EXCL_STOP
     }
 
     XRPL_ASSERT(
         ledger->header().txHash == ledger->txMap().getHash().as_uint256(),
-        "ripple::detail::saveValidatedLedger : transaction hash match");
+        "xrpl::detail::saveValidatedLedger : transaction hash match");
 
     // Save the ledger header in the hashed object store
     {
@@ -1354,4 +1354,4 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl

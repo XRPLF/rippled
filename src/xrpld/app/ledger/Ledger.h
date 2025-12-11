@@ -14,7 +14,7 @@
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/shamap/SHAMap.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class Job;
@@ -459,6 +459,6 @@ deserializeTxPlusMeta(SHAMapItem const& item);
 uint256
 calculateLedgerHash(LedgerHeader const& info);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

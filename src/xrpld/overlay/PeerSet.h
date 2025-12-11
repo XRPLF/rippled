@@ -5,7 +5,7 @@
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Supports data retrieval by managing a set of peers.
 
@@ -73,6 +73,6 @@ make_PeerSetBuilder(Application& app);
 std::unique_ptr<PeerSet>
 make_DummyPeerSet(Application& app);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

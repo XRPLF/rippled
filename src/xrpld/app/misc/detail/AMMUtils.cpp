@@ -6,7 +6,7 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/STObject.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::pair<STAmount, STAmount>
 ammPoolHolds(
@@ -163,7 +163,7 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
     XRPL_ASSERT(
         !view.rules().enabled(fixInnerObjTemplate) ||
             ammSle.isFieldPresent(sfAuctionSlot),
-        "ripple::getTradingFee : auction present");
+        "xrpl::getTradingFee : auction present");
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
@@ -475,4 +475,4 @@ verifyAndAdjustLPTokenBalance(
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

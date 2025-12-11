@@ -4,7 +4,7 @@
 #include <chrono>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class LoadMonitor;
 
@@ -65,6 +65,6 @@ private:
     std::chrono::steady_clock::duration timeRunning_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

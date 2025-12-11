@@ -20,7 +20,7 @@
 #include <unordered_set>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -335,6 +335,6 @@ multi_runner_child::run_multi(Pred pred)
 }
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -1,6 +1,6 @@
 #include <xrpld/app/ledger/OrderBookDB.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 BookListeners::addSubscriber(InfoSub::ref sub)
@@ -44,4 +44,4 @@ BookListeners::publish(
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

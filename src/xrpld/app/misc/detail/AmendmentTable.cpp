@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 static std::vector<std::pair<uint256, std::string>>
 parseSection(Section const& section)
@@ -211,7 +211,7 @@ public:
                 {
                     XRPL_ASSERT(
                         votes.second.upVotes.empty(),
-                        "ripple::TrustedVotes::recordVotes : received no "
+                        "xrpl::TrustedVotes::recordVotes : received no "
                         "upvotes");
                     JLOG(j.debug())
                         << "recordVotes: Have not received any "
@@ -230,7 +230,7 @@ public:
                 {
                     XRPL_ASSERT(
                         votes.second.timeout < newTimeout,
-                        "ripple::TrustedVotes::recordVotes : votes not "
+                        "xrpl::TrustedVotes::recordVotes : votes not "
                         "expired");
                     using namespace std::chrono;
                     auto const age = duration_cast<minutes>(
@@ -254,7 +254,7 @@ public:
             XRPL_ASSERT(
                 validatorVotes.second.timeout ||
                     validatorVotes.second.upVotes.empty(),
-                "ripple::TrustedVotes::getVotes : valid votes");
+                "xrpl::TrustedVotes::getVotes : valid votes");
             if (validatorVotes.second.timeout)
                 ++available;
             for (uint256 const& amendment : validatorVotes.second.upVotes)
@@ -688,7 +688,7 @@ AmendmentTableImpl::persistVote(
 {
     XRPL_ASSERT(
         vote != AmendmentVote::obsolete,
-        "ripple::AmendmentTableImpl::persistVote : valid vote input");
+        "xrpl::AmendmentTableImpl::persistVote : valid vote input");
     auto db = db_.checkoutDb();
     voteAmendment(*db, amendment, name, vote);
 }
@@ -1042,4 +1042,4 @@ make_AmendmentTable(
         app, majorityTime, supported, enabled, vetoed, journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

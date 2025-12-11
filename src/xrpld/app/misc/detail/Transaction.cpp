@@ -10,7 +10,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 Transaction::Transaction(
     std::shared_ptr<STTx const> const& stx,
@@ -71,7 +71,7 @@ Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
 
     XRPL_ASSERT(
         c == txnSqlUnknown,
-        "ripple::Transaction::sqlTransactionStatus : unknown transaction "
+        "xrpl::Transaction::sqlTransactionStatus : unknown transaction "
         "status");
     return INVALID;
 }
@@ -183,4 +183,4 @@ Transaction::getJson(JsonOptions options, bool binary) const
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,13 +1,13 @@
 #ifndef XRPL_CORE_JOBTYPES_H_INCLUDED
 #define XRPL_CORE_JOBTYPES_H_INCLUDED
 
-#include <xrpld/core/Job.h>
-#include <xrpld/core/JobTypeInfo.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobTypeInfo.h>
 
 #include <map>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class JobTypes
 {
@@ -35,7 +35,7 @@ private:
                        std::chrono::milliseconds peakLatency) {
             XRPL_ASSERT(
                 m_map.find(jt) == m_map.end(),
-                "ripple::JobTypes::JobTypes::add : unique job type input");
+                "xrpl::JobTypes::JobTypes::add : unique job type input");
 
             [[maybe_unused]] auto const inserted =
                 m_map
@@ -48,7 +48,7 @@ private:
 
             XRPL_ASSERT(
                 inserted == true,
-                "ripple::JobTypes::JobTypes::add : input is inserted");
+                "xrpl::JobTypes::JobTypes::add : input is inserted");
         };
 
         // clang-format off
@@ -122,7 +122,7 @@ public:
     get(JobType jt) const
     {
         Map::const_iterator const iter(m_map.find(jt));
-        XRPL_ASSERT(iter != m_map.end(), "ripple::JobTypes::get : valid input");
+        XRPL_ASSERT(iter != m_map.end(), "xrpl::JobTypes::get : valid input");
 
         if (iter != m_map.end())
             return iter->second;
@@ -170,6 +170,6 @@ public:
     Map m_map;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

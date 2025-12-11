@@ -8,7 +8,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 namespace {
@@ -277,7 +277,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
         }
 
         XRPL_ASSERT(
-            !ledger->open(), "ripple::RPC::getLedger : validated is not open");
+            !ledger->open(), "xrpl::RPC::getLedger : validated is not open");
     }
     else
     {
@@ -285,13 +285,13 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
         {
             ledger = context.ledgerMaster.getCurrentLedger();
             XRPL_ASSERT(
-                ledger->open(), "ripple::RPC::getLedger : current is open");
+                ledger->open(), "xrpl::RPC::getLedger : current is open");
         }
         else if (shortcut == LedgerShortcut::Closed)
         {
             ledger = context.ledgerMaster.getClosedLedger();
             XRPL_ASSERT(
-                !ledger->open(), "ripple::RPC::getLedger : closed is not open");
+                !ledger->open(), "xrpl::RPC::getLedger : closed is not open");
         }
         else
         {
@@ -449,8 +449,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
             auto const refIndex = getCandidateLedger(ledgerIndex);
             auto refHash = hashOfSeq(*ledger, refIndex, j);
             XRPL_ASSERT(
-                refHash,
-                "ripple::RPC::getOrAcquireLedger : nonzero ledger hash");
+                refHash, "xrpl::RPC::getOrAcquireLedger : nonzero ledger hash");
 
             ledger = ledgerMaster.getLedgerByHash(*refHash);
             if (!ledger)
@@ -485,8 +484,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         }
         XRPL_ASSERT(
-            neededHash,
-            "ripple::RPC::getOrAcquireLedger : nonzero needed hash");
+            neededHash, "xrpl::RPC::getOrAcquireLedger : nonzero needed hash");
         ledgerHash = neededHash ? *neededHash : beast::zero;  // kludge
     }
 
@@ -510,4 +508,4 @@ getOrAcquireLedger(RPC::JsonContext const& context)
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

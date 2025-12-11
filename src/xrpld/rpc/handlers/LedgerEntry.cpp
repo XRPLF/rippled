@@ -16,7 +16,7 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 using FunctionType = std::function<Expected<uint256, Json::Value>(
     Json::Value const&,
@@ -1049,4 +1049,4 @@ doLedgerEntryGrpc(
     *(response.mutable_ledger()) = request.ledger();
     return {response, status};
 }
-}  // namespace ripple
+}  // namespace xrpl

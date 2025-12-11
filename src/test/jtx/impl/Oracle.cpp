@@ -7,7 +7,7 @@
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 namespace oracle {
@@ -358,4 +358,4 @@ validDocumentID(AnyValue const& v)
 }  // namespace oracle
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
