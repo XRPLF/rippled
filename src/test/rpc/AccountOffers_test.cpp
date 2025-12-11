@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class AccountOffers_test : public beast::unit_test::suite
@@ -320,7 +320,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -5,7 +5,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   tx_json: <object>,
@@ -40,4 +40,4 @@ doSignFor(RPC::JsonContext& context)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

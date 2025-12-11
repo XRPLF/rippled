@@ -7,7 +7,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Indexes.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Batch : public Transactor
 {
@@ -55,6 +55,6 @@ public:
     });
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

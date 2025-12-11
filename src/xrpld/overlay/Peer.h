@@ -8,7 +8,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace Resource {
 class Charge;
@@ -127,6 +127,6 @@ public:
     releaseRequestCookies(uint256 const& requestHash) = 0;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

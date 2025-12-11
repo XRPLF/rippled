@@ -12,7 +12,7 @@
 #include <set>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 // A ledger we are trying to acquire
 class InboundLedger final : public TimeoutCounter,
@@ -185,6 +185,6 @@ private:
 std::string
 to_string(InboundLedger::Reason reason);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

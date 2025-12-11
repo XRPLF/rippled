@@ -10,7 +10,7 @@
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class SHAMapStore_test : public beast::unit_test::suite
@@ -49,11 +49,11 @@ class SHAMapStore_test : public beast::unit_test::suite
 
         auto const seq = json[jss::result][jss::ledger_index].asUInt();
 
-        std::optional<LedgerInfo> oinfo =
+        std::optional<LedgerHeader> oinfo =
             env.app().getRelationalDatabase().getLedgerInfoByIndex(seq);
         if (!oinfo)
             return false;
-        LedgerInfo const& info = oinfo.value();
+        LedgerHeader const& info = oinfo.value();
 
         std::string const outHash = to_string(info.hash);
         LedgerIndex const outSeq = info.seq;
@@ -637,7 +637,7 @@ public:
 };
 
 // VFALCO This test fails because of thread asynchronous issues
-BEAST_DEFINE_TESTSUITE(SHAMapStore, app, ripple);
+BEAST_DEFINE_TESTSUITE(SHAMapStore, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 STAmount
 creditLimit(
@@ -25,10 +25,10 @@ creditLimit(
 
     XRPL_ASSERT(
         result.getIssuer() == account,
-        "ripple::creditLimit : result issuer match");
+        "xrpl::creditLimit : result issuer match");
     XRPL_ASSERT(
         result.getCurrency() == currency,
-        "ripple::creditLimit : result currency match");
+        "xrpl::creditLimit : result currency match");
     return result;
 }
 
@@ -63,11 +63,11 @@ creditBalance(
 
     XRPL_ASSERT(
         result.getIssuer() == account,
-        "ripple::creditBalance : result issuer match");
+        "xrpl::creditBalance : result issuer match");
     XRPL_ASSERT(
         result.getCurrency() == currency,
-        "ripple::creditBalance : result currency match");
+        "xrpl::creditBalance : result currency match");
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

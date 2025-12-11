@@ -11,7 +11,7 @@
 #include <mutex>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class OrderBookDB
 {
@@ -81,6 +81,6 @@ private:
     beast::Journal const j_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

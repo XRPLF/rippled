@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class Rules;
 
@@ -362,6 +362,6 @@ public:
 FeeSetup
 setup_FeeVote(Section const& section);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

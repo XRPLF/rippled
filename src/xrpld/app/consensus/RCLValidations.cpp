@@ -4,16 +4,16 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/core/TimeKeeper.h>
-#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/core/PerfLog.h>
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 RCLValidatedLedger::RCLValidatedLedger(MakeGenesis)
     : ledgerID_{0}, ledgerSeq_{0}, j_{beast::Journal::getNullSink()}
@@ -23,14 +23,14 @@ RCLValidatedLedger::RCLValidatedLedger(MakeGenesis)
 RCLValidatedLedger::RCLValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     beast::Journal j)
-    : ledgerID_{ledger->info().hash}, ledgerSeq_{ledger->seq()}, j_{j}
+    : ledgerID_{ledger->header().hash}, ledgerSeq_{ledger->seq()}, j_{j}
 {
     auto const hashIndex = ledger->read(keylet::skip());
     if (hashIndex)
     {
         XRPL_ASSERT(
             hashIndex->getFieldU32(sfLastLedgerSequence) == (seq() - 1),
-            "ripple::RCLValidatedLedger::RCLValidatedLedger(Ledger) : valid "
+            "xrpl::RCLValidatedLedger::RCLValidatedLedger(Ledger) : valid "
             "last ledger sequence");
         ancestors_ = hashIndex->getFieldV256(sfHashes).value();
     }
@@ -134,10 +134,10 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 
     XRPL_ASSERT(
         !ledger->open() && ledger->isImmutable(),
-        "ripple::RCLValidationsAdaptor::acquire : valid ledger state");
+        "xrpl::RCLValidationsAdaptor::acquire : valid ledger state");
     XRPL_ASSERT(
-        ledger->info().hash == hash,
-        "ripple::RCLValidationsAdaptor::acquire : ledger hash match");
+        ledger->header().hash == hash,
+        "xrpl::RCLValidationsAdaptor::acquire : ledger hash match");
 
     return RCLValidatedLedger(std::move(ledger), j_);
 }
@@ -177,7 +177,7 @@ handleNewValidation(
             if (bypassAccept == BypassAccept::yes)
             {
                 XRPL_ASSERT(
-                    j, "ripple::handleNewValidation : journal is available");
+                    j, "xrpl::handleNewValidation : journal is available");
                 if (j.has_value())
                 {
                     JLOG(j->trace()) << "Bypassing checkAccept for validation "
@@ -228,4 +228,4 @@ handleNewValidation(
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

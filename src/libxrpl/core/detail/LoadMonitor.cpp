@@ -1,9 +1,8 @@
-#include <xrpld/core/LoadMonitor.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UptimeClock.h>
+#include <xrpl/core/LoadMonitor.h>
 
-namespace ripple {
+namespace xrpl {
 
 /*
 
@@ -183,4 +182,4 @@ LoadMonitor::getStats()
     return stats;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

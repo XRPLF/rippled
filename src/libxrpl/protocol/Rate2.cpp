@@ -7,7 +7,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 Rate const parityRate(QUALITY_ONE);
 
@@ -33,7 +33,7 @@ transferFeeAsRate(std::uint16_t fee)
 STAmount
 multiply(STAmount const& amount, Rate const& rate)
 {
-    XRPL_ASSERT(rate.value, "ripple::nft::multiply : nonzero rate input");
+    XRPL_ASSERT(rate.value, "xrpl::nft::multiply : nonzero rate input");
 
     if (rate == parityRate)
         return amount;
@@ -44,7 +44,7 @@ multiply(STAmount const& amount, Rate const& rate)
 STAmount
 multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
-    XRPL_ASSERT(rate.value, "ripple::nft::multiplyRound : nonzero rate input");
+    XRPL_ASSERT(rate.value, "xrpl::nft::multiplyRound : nonzero rate input");
 
     if (rate == parityRate)
         return amount;
@@ -60,7 +60,7 @@ multiplyRound(
     bool roundUp)
 {
     XRPL_ASSERT(
-        rate.value, "ripple::nft::multiplyRound(Issue) : nonzero rate input");
+        rate.value, "xrpl::nft::multiplyRound(Issue) : nonzero rate input");
 
     if (rate == parityRate)
     {
@@ -73,7 +73,7 @@ multiplyRound(
 STAmount
 divide(STAmount const& amount, Rate const& rate)
 {
-    XRPL_ASSERT(rate.value, "ripple::nft::divide : nonzero rate input");
+    XRPL_ASSERT(rate.value, "xrpl::nft::divide : nonzero rate input");
 
     if (rate == parityRate)
         return amount;
@@ -84,7 +84,7 @@ divide(STAmount const& amount, Rate const& rate)
 STAmount
 divideRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
-    XRPL_ASSERT(rate.value, "ripple::nft::divideRound : nonzero rate input");
+    XRPL_ASSERT(rate.value, "xrpl::nft::divideRound : nonzero rate input");
 
     if (rate == parityRate)
         return amount;
@@ -100,7 +100,7 @@ divideRound(
     bool roundUp)
 {
     XRPL_ASSERT(
-        rate.value, "ripple::nft::divideRound(Issue) : nonzero rate input");
+        rate.value, "xrpl::nft::divideRound(Issue) : nonzero rate input");
 
     if (rate == parityRate)
         return amount;
@@ -108,4 +108,4 @@ divideRound(
     return divRound(amount, detail::as_amount(rate), asset, roundUp);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

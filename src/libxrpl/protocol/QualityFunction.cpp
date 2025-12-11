@@ -7,7 +7,7 @@
 #include <optional>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 QualityFunction::QualityFunction(
     Quality const& quality,
@@ -42,4 +42,4 @@ QualityFunction::outFromAvgQ(Quality const& quality)
     return std::nullopt;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

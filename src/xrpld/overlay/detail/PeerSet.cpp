@@ -4,9 +4,10 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 class PeerSetImpl : public PeerSet
 {
@@ -31,7 +32,7 @@ public:
 
 private:
     // Used in this class for access to boost::asio::io_context and
-    // ripple::Overlay.
+    // xrpl::Overlay.
     Application& app_;
     beast::Journal journal_;
 
@@ -209,4 +210,4 @@ make_DummyPeerSet(Application& app)
     return std::make_unique<DummyPeerSet>(app);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

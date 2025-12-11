@@ -10,7 +10,7 @@
 #include <optional>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 enum class HashRouterFlags : std::uint16_t {
     // Public flags
@@ -310,6 +310,6 @@ private:
 HashRouter::Setup
 setup_HashRouter(Config const&);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

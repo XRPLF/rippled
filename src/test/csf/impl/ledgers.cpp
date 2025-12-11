@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -152,4 +152,4 @@ LedgerOracle::branches(std::set<Ledger> const& ledgers) const
 }
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

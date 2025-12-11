@@ -1,10 +1,9 @@
 #include <test/jtx/Env.h>
 
-#include <xrpld/core/JobQueue.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/core/JobQueue.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 //------------------------------------------------------------------------------
@@ -141,7 +140,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(JobQueue, core, ripple);
+BEAST_DEFINE_TESTSUITE(JobQueue, core, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

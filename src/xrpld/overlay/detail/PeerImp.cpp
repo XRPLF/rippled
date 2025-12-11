@@ -13,12 +13,12 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/core/PerfLog.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
@@ -34,7 +34,7 @@
 
 using namespace std::chrono_literals;
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 /** The threshold above which we treat a peer connection as high latency */
@@ -567,7 +567,7 @@ PeerImp::fail(std::string const& name, error_code ec)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::fail : strand in this thread");
+        "xrpl::PeerImp::fail : strand in this thread");
 
     if (!socket_.is_open())
         return;
@@ -606,7 +606,7 @@ PeerImp::tryAsyncShutdown()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::tryAsyncShutdown : strand in this thread");
+        "xrpl::PeerImp::tryAsyncShutdown : strand in this thread");
 
     if (!shutdown_ || shutdownStarted_)
         return;
@@ -630,7 +630,7 @@ PeerImp::shutdown()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::shutdown: strand in this thread");
+        "xrpl::PeerImp::shutdown: strand in this thread");
 
     if (!socket_.is_open() || shutdown_)
         return;
@@ -673,7 +673,7 @@ PeerImp::close()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::close : strand in this thread");
+        "xrpl::PeerImp::close : strand in this thread");
 
     if (!socket_.is_open())
         return;
@@ -728,7 +728,7 @@ PeerImp::onTimer(error_code const& ec)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::onTimer : strand in this thread");
+        "xrpl::PeerImp::onTimer : strand in this thread");
 
     if (!socket_.is_open())
         return;
@@ -809,7 +809,7 @@ PeerImp::doAccept()
 {
     XRPL_ASSERT(
         read_buffer_.size() == 0,
-        "ripple::PeerImp::doAccept : empty read buffer");
+        "xrpl::PeerImp::doAccept : empty read buffer");
 
     JLOG(journal_.debug()) << "doAccept";
 
@@ -938,7 +938,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::onReadMessage : strand in this thread");
+        "xrpl::PeerImp::onReadMessage : strand in this thread");
 
     readPending_ = false;
 
@@ -1010,7 +1010,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
     readPending_ = true;
 
     XRPL_ASSERT(
-        !shutdownStarted_, "ripple::PeerImp::onReadMessage : shutdown started");
+        !shutdownStarted_, "xrpl::PeerImp::onReadMessage : shutdown started");
 
     // Timeout on writes only
     stream_.async_read_some(
@@ -1029,7 +1029,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::onWriteMessage : strand in this thread");
+        "xrpl::PeerImp::onWriteMessage : strand in this thread");
 
     writePending_ = false;
 
@@ -1056,7 +1056,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 
     XRPL_ASSERT(
         !send_queue_.empty(),
-        "ripple::PeerImp::onWriteMessage : non-empty send buffer");
+        "xrpl::PeerImp::onWriteMessage : non-empty send buffer");
     send_queue_.pop();
 
     if (shutdown_)
@@ -1067,7 +1067,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
         writePending_ = true;
         XRPL_ASSERT(
             !shutdownStarted_,
-            "ripple::PeerImp::onWriteMessage : shutdown started");
+            "xrpl::PeerImp::onWriteMessage : shutdown started");
 
         // Timeout on writes only
         return boost::asio::async_write(
@@ -1348,7 +1348,7 @@ PeerImp::handleTransaction(
 {
     XRPL_ASSERT(
         eraseTxQueue != batch,
-        ("ripple::PeerImp::handleTransaction : valid inputs"));
+        ("xrpl::PeerImp::handleTransaction : valid inputs"));
     if (tracking_.load() == Tracking::diverged)
         return;
 
@@ -2331,7 +2331,7 @@ PeerImp::onValidatorListMessage(
 
             XRPL_ASSERT(
                 applyResult.publisherKey,
-                "ripple::PeerImp::onValidatorListMessage : publisher key is "
+                "xrpl::PeerImp::onValidatorListMessage : publisher key is "
                 "set");
             auto const& pubKey = *applyResult.publisherKey;
 #ifndef NDEBUG
@@ -2340,7 +2340,7 @@ PeerImp::onValidatorListMessage(
             {
                 XRPL_ASSERT(
                     iter->second < applyResult.sequence,
-                    "ripple::PeerImp::onValidatorListMessage : lower sequence");
+                    "xrpl::PeerImp::onValidatorListMessage : lower sequence");
             }
 #endif
             publisherListSequences_[pubKey] = applyResult.sequence;
@@ -2353,12 +2353,12 @@ PeerImp::onValidatorListMessage(
             std::lock_guard<std::mutex> sl(recentLock_);
             XRPL_ASSERT(
                 applyResult.sequence && applyResult.publisherKey,
-                "ripple::PeerImp::onValidatorListMessage : nonzero sequence "
+                "xrpl::PeerImp::onValidatorListMessage : nonzero sequence "
                 "and set publisher key");
             XRPL_ASSERT(
                 publisherListSequences_[*applyResult.publisherKey] <=
                     applyResult.sequence,
-                "ripple::PeerImp::onValidatorListMessage : maximum sequence");
+                "xrpl::PeerImp::onValidatorListMessage : maximum sequence");
         }
 #endif  // !NDEBUG
 
@@ -2371,7 +2371,7 @@ PeerImp::onValidatorListMessage(
         // LCOV_EXCL_START
         default:
             UNREACHABLE(
-                "ripple::PeerImp::onValidatorListMessage : invalid best list "
+                "xrpl::PeerImp::onValidatorListMessage : invalid best list "
                 "disposition");
             // LCOV_EXCL_STOP
     }
@@ -2417,7 +2417,7 @@ PeerImp::onValidatorListMessage(
         // LCOV_EXCL_START
         default:
             UNREACHABLE(
-                "ripple::PeerImp::onValidatorListMessage : invalid worst list "
+                "xrpl::PeerImp::onValidatorListMessage : invalid worst list "
                 "disposition");
             // LCOV_EXCL_STOP
     }
@@ -2472,7 +2472,7 @@ PeerImp::onValidatorListMessage(
             // LCOV_EXCL_START
             default:
                 UNREACHABLE(
-                    "ripple::PeerImp::onValidatorListMessage : invalid list "
+                    "xrpl::PeerImp::onValidatorListMessage : invalid list "
                     "disposition");
                 // LCOV_EXCL_STOP
         }
@@ -3131,7 +3131,7 @@ PeerImp::checkTransaction(
             auto tx = std::make_shared<Transaction>(stx, reason, app_);
             XRPL_ASSERT(
                 tx->getStatus() == NEW,
-                "ripple::PeerImp::checkTransaction Transaction created "
+                "xrpl::PeerImp::checkTransaction Transaction created "
                 "correctly");
             if (tx->getStatus() == NEW)
             {
@@ -3234,7 +3234,7 @@ PeerImp::checkPropose(
     JLOG(p_journal_.trace())
         << "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
 
-    XRPL_ASSERT(packet, "ripple::PeerImp::checkPropose : non-null packet");
+    XRPL_ASSERT(packet, "xrpl::PeerImp::checkPropose : non-null packet");
 
     if (!cluster() && !peerPos.checkSign())
     {
@@ -3382,8 +3382,8 @@ PeerImp::sendLedgerBase(
 {
     JLOG(p_journal_.trace()) << "sendLedgerBase: Base data";
 
-    Serializer s(sizeof(LedgerInfo));
-    addRaw(ledger->info(), s);
+    Serializer s(sizeof(LedgerHeader));
+    addRaw(ledger->header(), s);
     ledgerData.add_nodes()->set_nodedata(s.getDataPtr(), s.getLength());
 
     auto const& stateMap{ledger->stateMap()};
@@ -3396,7 +3396,7 @@ PeerImp::sendLedgerBase(
         ledgerData.add_nodes()->set_nodedata(
             root.getDataPtr(), root.getLength());
 
-        if (ledger->info().txHash != beast::zero)
+        if (ledger->header().txHash != beast::zero)
         {
             auto const& txMap{ledger->txMap()};
             if (txMap.getHash() != beast::zero)
@@ -3579,7 +3579,7 @@ PeerImp::getLedger(
     if (ledger)
     {
         // Validate retrieved ledger sequence
-        auto const ledgerSeq{ledger->info().seq};
+        auto const ledgerSeq{ledger->header().seq};
         if (m->has_ledgerseq())
         {
             if (ledgerSeq != m->ledgerseq())
@@ -3779,9 +3779,9 @@ PeerImp::processLedgerRequest(
             return;
 
         // Fill out the reply
-        auto const ledgerHash{ledger->info().hash};
+        auto const ledgerHash{ledger->header().hash};
         ledgerData.set_ledgerhash(ledgerHash.begin(), ledgerHash.size());
-        ledgerData.set_ledgerseq(ledger->info().seq);
+        ledgerData.set_ledgerseq(ledger->header().seq);
         ledgerData.set_type(itype);
 
         switch (itype)
@@ -4005,4 +4005,4 @@ PeerImp::Metrics::total_bytes() const
     return totalBytes_;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

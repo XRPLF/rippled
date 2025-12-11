@@ -4,7 +4,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 NFTokenModify::preflight(PreflightContext const& ctx)
@@ -59,4 +59,4 @@ NFTokenModify::doApply()
     return nft::changeTokenURI(view(), owner, nftokenID, ctx_.tx[~sfURI]);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

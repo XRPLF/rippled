@@ -8,7 +8,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doUnsubscribe(RPC::JsonContext& context)
@@ -244,4 +244,4 @@ doUnsubscribe(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

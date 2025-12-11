@@ -3,7 +3,7 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
+namespace xrpl {
 
 // VFALCO NOTE these are deprecated
 bool
@@ -11,6 +11,6 @@ isRpcError(Json::Value jvResult);
 Json::Value
 rpcError(int iError);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

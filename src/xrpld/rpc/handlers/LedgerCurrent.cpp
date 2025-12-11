@@ -5,7 +5,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doLedgerCurrent(RPC::JsonContext& context)
@@ -16,4 +16,4 @@ doLedgerCurrent(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

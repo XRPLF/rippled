@@ -3,7 +3,7 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 
 // Blog post explaining the rationale behind reduction of flooding gossip
 // protocol:
@@ -41,6 +41,6 @@ static constexpr std::size_t MAX_TX_QUEUE_SIZE = 10000;
 
 }  // namespace reduce_relay
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_REDUCERELAYCOMMON_H_INCLUDED

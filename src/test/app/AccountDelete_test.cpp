@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class AccountDelete_test : public beast::unit_test::suite
@@ -922,7 +922,7 @@ public:
 
                 auto jv = credentials::create(john, carol, credType);
                 uint32_t const t = env.current()
-                                       ->info()
+                                       ->header()
                                        .parentCloseTime.time_since_epoch()
                                        .count() +
                     20;
@@ -1104,7 +1104,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AccountDelete, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(AccountDelete, app, xrpl, 2);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

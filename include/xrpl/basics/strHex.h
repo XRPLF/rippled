@@ -4,7 +4,7 @@
 #include <boost/algorithm/hex.hpp>
 #include <boost/endian/conversion.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 template <class FwdIt>
 std::string
@@ -28,6 +28,6 @@ strHex(T const& from)
     return strHex(from.begin(), from.end());
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
