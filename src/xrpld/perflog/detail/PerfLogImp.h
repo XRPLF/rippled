@@ -1,10 +1,10 @@
 #ifndef XRPL_BASICS_PERFLOGIMP_H
 #define XRPL_BASICS_PERFLOGIMP_H
 
-#include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/PerfLog.h>
 
 #include <boost/asio/ip/host_name.hpp>
 
@@ -17,7 +17,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace perf {
 
 /** A box coupling data with a mutex for locking access to it. */
@@ -103,7 +103,7 @@ class PerfLogImp : public PerfLog
     Application& app_;
     beast::Journal const j_;
     std::function<void()> const signalStop_;
-    Counters counters_{ripple::RPC::getHandlerNames(), JobTypes::instance()};
+    Counters counters_{xrpl::RPC::getHandlerNames(), JobTypes::instance()};
     std::ofstream logFile_;
     std::thread thread_;
     std::mutex mutex_;
@@ -185,6 +185,6 @@ public:
 };
 
 }  // namespace perf
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_BASICS_PERFLOGIMP_H

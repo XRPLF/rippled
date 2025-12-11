@@ -4,7 +4,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class LoanBroker_test : public beast::unit_test::suite
@@ -638,7 +638,7 @@ class LoanBroker_test : public beast::unit_test::suite
             }
 
             using namespace loanBroker;
-            using namespace ripple::Lending;
+            using namespace xrpl::Lending;
 
             TenthBips32 const tenthBipsZero{0};
 
@@ -1456,7 +1456,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LoanBroker, tx, ripple);
+BEAST_DEFINE_TESTSUITE(LoanBroker, tx, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

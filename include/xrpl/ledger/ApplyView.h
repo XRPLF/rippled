@@ -6,7 +6,7 @@
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
 
-namespace ripple {
+namespace xrpl {
 
 enum ApplyFlags : std::uint32_t {
     tapNONE = 0x00,
@@ -267,7 +267,7 @@ public:
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::ApplyView::dirAppend : only Offers are appended to "
+                "xrpl::ApplyView::dirAppend : only Offers are appended to "
                 "book directories");
             // Only Offers are appended to book directories. Call dirInsert()
             // instead
@@ -407,6 +407,6 @@ insertPage(
     std::function<void(std::shared_ptr<SLE> const&)> const& describe);
 
 }  // namespace directory
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -8,7 +8,7 @@
 #include <string>
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 namespace BuildInfo {
 
@@ -159,4 +159,4 @@ isNewerVersion(std::uint64_t version)
 
 }  // namespace BuildInfo
 
-}  // namespace ripple
+}  // namespace xrpl

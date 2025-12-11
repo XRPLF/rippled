@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 class SetAccount : public Transactor
 {
@@ -37,6 +37,6 @@ public:
 
 using AccountSet = SetAccount;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

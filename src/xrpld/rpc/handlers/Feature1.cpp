@@ -7,7 +7,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   feature : <feature>
@@ -78,4 +78,4 @@ doFeature(RPC::JsonContext& context)
     return jvReply;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -4,7 +4,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/Journal.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // A Journal::Sink intended for use with the beast unit test framework.
@@ -140,6 +140,6 @@ public:
 };
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

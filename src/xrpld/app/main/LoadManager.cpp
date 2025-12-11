@@ -10,7 +10,7 @@
 #include <mutex>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 
 LoadManager::LoadManager(Application& app, beast::Journal journal)
     : app_(app), journal_(journal), lastHeartbeat_(), armed_(false)
@@ -56,8 +56,7 @@ LoadManager::start()
 {
     JLOG(journal_.debug()) << "Starting";
     XRPL_ASSERT(
-        !thread_.joinable(),
-        "ripple::LoadManager::start : thread not joinable");
+        !thread_.joinable(), "xrpl::LoadManager::start : thread not joinable");
 
     thread_ = std::thread{&LoadManager::run, this};
 }
@@ -182,4 +181,4 @@ make_LoadManager(Application& app, beast::Journal journal)
     return std::unique_ptr<LoadManager>{new LoadManager{app, journal}};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 // RAII scope helpers.  As specified in Library Fundamental, Version 3
 // Basic design of idea:  https://www.youtube.com/watch?v=WjTrfoiB0MQ
@@ -218,7 +218,7 @@ public:
     {
         XRPL_ASSERT(
             plock->owns_lock(),
-            "ripple::scope_unlock::scope_unlock : mutex must be locked");
+            "xrpl::scope_unlock::scope_unlock : mutex must be locked");
         plock->unlock();
     }
 
@@ -236,6 +236,6 @@ public:
 template <class Mutex>
 scope_unlock(std::unique_lock<Mutex>&) -> scope_unlock<Mutex>;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

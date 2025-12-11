@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <optional>
 
-using namespace ripple;
+using namespace xrpl;
 
 TEST_SUITE_BEGIN("RangeSet");
 

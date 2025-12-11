@@ -15,7 +15,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class Config;
@@ -854,6 +854,6 @@ toFeeLevel(XRPAmount const& drops, XRPAmount const& baseFee)
         .value_or(FeeLevel64(std::numeric_limits<std::uint64_t>::max()));
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

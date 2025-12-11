@@ -6,7 +6,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/to_string.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Consensus_test : public beast::unit_test::suite
@@ -1518,6 +1518,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Consensus, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(Consensus, consensus, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

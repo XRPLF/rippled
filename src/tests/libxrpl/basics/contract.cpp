@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 
-using namespace ripple;
+using namespace xrpl;
 
 TEST_CASE("contract")
 {

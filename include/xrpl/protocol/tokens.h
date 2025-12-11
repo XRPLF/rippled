@@ -11,7 +11,7 @@
 #include <string>
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 template <class T>
 using B58Result = Expected<T, std::error_code>;
@@ -111,6 +111,6 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out);
 
 }  // namespace b58_fast
 #endif  // _MSC_VER
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

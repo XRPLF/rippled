@@ -24,7 +24,7 @@
 #include <memory>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** The Logic for maintaining the list of Slot addresses.
@@ -288,7 +288,7 @@ public:
         // Remote address must not already exist
         XRPL_ASSERT(
             result.second,
-            "ripple::PeerFinder::Logic::new_inbound_slot : remote endpoint "
+            "xrpl::PeerFinder::Logic::new_inbound_slot : remote endpoint "
             "inserted");
         // Add to the connected address list
         connectedAddresses_.emplace(remote_endpoint.address());
@@ -326,7 +326,7 @@ public:
         // Remote address must not already exist
         XRPL_ASSERT(
             result.second,
-            "ripple::PeerFinder::Logic::new_outbound_slot : remote endpoint "
+            "xrpl::PeerFinder::Logic::new_outbound_slot : remote endpoint "
             "inserted");
 
         // Add to the connected address list
@@ -353,7 +353,7 @@ public:
         // The object must exist in our table
         XRPL_ASSERT(
             slots_.find(slot->remote_endpoint()) != slots_.end(),
-            "ripple::PeerFinder::Logic::onConnected : valid slot input");
+            "xrpl::PeerFinder::Logic::onConnected : valid slot input");
         // Assign the local endpoint now that it's known
         slot->local_endpoint(local_endpoint);
 
@@ -364,7 +364,7 @@ public:
             {
                 XRPL_ASSERT(
                     iter->second->local_endpoint() == slot->remote_endpoint(),
-                    "ripple::PeerFinder::Logic::onConnected : local and remote "
+                    "xrpl::PeerFinder::Logic::onConnected : local and remote "
                     "endpoints do match");
                 JLOG(journal.warn()) << "Logic dropping as self connect";
                 return false;
@@ -393,11 +393,11 @@ public:
         // The object must exist in our table
         XRPL_ASSERT(
             slots_.find(slot->remote_endpoint()) != slots_.end(),
-            "ripple::PeerFinder::Logic::activate : valid slot input");
+            "xrpl::PeerFinder::Logic::activate : valid slot input");
         // Must be accepted or connected
         XRPL_ASSERT(
             slot->state() == Slot::accept || slot->state() == Slot::connected,
-            "ripple::PeerFinder::Logic::activate : valid slot state");
+            "xrpl::PeerFinder::Logic::activate : valid slot state");
 
         // Check for duplicate connection by key
         if (keys_.find(key) != keys_.end())
@@ -427,7 +427,7 @@ public:
             // Public key must not already exist
             XRPL_ASSERT(
                 inserted,
-                "ripple::PeerFinder::Logic::activate : public key inserted");
+                "xrpl::PeerFinder::Logic::activate : public key inserted");
         }
 
         // Change state and update counts
@@ -792,12 +792,12 @@ public:
         // The object must exist in our table
         XRPL_ASSERT(
             slots_.find(slot->remote_endpoint()) != slots_.end(),
-            "ripple::PeerFinder::Logic::on_endpoints : valid slot input");
+            "xrpl::PeerFinder::Logic::on_endpoints : valid slot input");
 
         // Must be handshaked!
         XRPL_ASSERT(
             slot->state() == Slot::active,
-            "ripple::PeerFinder::Logic::on_endpoints : valid slot state");
+            "xrpl::PeerFinder::Logic::on_endpoints : valid slot state");
 
         clock_type::time_point const now(m_clock.now());
 
@@ -811,7 +811,7 @@ public:
         {
             XRPL_ASSERT(
                 ep.hops,
-                "ripple::PeerFinder::Logic::on_endpoints : nonzero hops");
+                "xrpl::PeerFinder::Logic::on_endpoints : nonzero hops");
 
             slot->recent.insert(ep.address, ep.hops);
 
@@ -964,7 +964,7 @@ public:
             // LCOV_EXCL_START
             default:
                 UNREACHABLE(
-                    "ripple::PeerFinder::Logic::on_closed : invalid slot "
+                    "xrpl::PeerFinder::Logic::on_closed : invalid slot "
                     "state");
                 break;
                 // LCOV_EXCL_STOP
@@ -1264,6 +1264,6 @@ Logic<Checker>::onRedirects(
 }
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

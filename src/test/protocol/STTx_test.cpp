@@ -11,7 +11,7 @@
 
 #include <regex>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * Return true if the string loosely matches the regex.
@@ -1398,7 +1398,7 @@ public:
                 SerialIter tenSit{tenDeep.slice()};
                 try
                 {
-                    auto stx = std::make_shared<ripple::STTx const>(tenSit);
+                    auto stx = std::make_shared<xrpl::STTx const>(tenSit);
                     fail("STTx construction should have thrown.");
                 }
                 catch (std::runtime_error const& ex)
@@ -1417,7 +1417,7 @@ public:
             SerialIter tooDeepSit{tooDeep.slice()};
             try
             {
-                auto stx = std::make_shared<ripple::STTx const>(tooDeepSit);
+                auto stx = std::make_shared<xrpl::STTx const>(tooDeepSit);
                 fail("STTx construction should have thrown.");
             }
             catch (std::runtime_error const& ex)
@@ -1463,7 +1463,7 @@ public:
                 SerialIter nineSit{nineDeep.slice()};
                 try
                 {
-                    auto stx = std::make_shared<ripple::STTx const>(nineSit);
+                    auto stx = std::make_shared<xrpl::STTx const>(nineSit);
                     fail("STTx construction should have thrown.");
                 }
                 catch (std::runtime_error const& ex)
@@ -1483,7 +1483,7 @@ public:
             SerialIter tooDeepSit{tooDeep.slice()};
             try
             {
-                auto stx = std::make_shared<ripple::STTx const>(tooDeepSit);
+                auto stx = std::make_shared<xrpl::STTx const>(tooDeepSit);
                 fail("STTx construction should have thrown.");
             }
             catch (std::runtime_error const& ex)
@@ -1512,7 +1512,7 @@ public:
             {
                 // Verify we have a valid transaction.
                 SerialIter sit{serialized.slice()};
-                auto stx = std::make_shared<ripple::STTx const>(sit);
+                auto stx = std::make_shared<xrpl::STTx const>(sit);
             }
 
             // Tweak the serialized data to change the ClearFlag to
@@ -1524,7 +1524,7 @@ public:
             SerialIter sit{serialized.slice()};
             try
             {
-                auto stx = std::make_shared<ripple::STTx const>(sit);
+                auto stx = std::make_shared<xrpl::STTx const>(sit);
                 fail("An exception should have been thrown");
             }
             catch (std::exception const& ex)
@@ -1551,9 +1551,9 @@ public:
             // vary.
             BEAST_EXPECT(!tx2.ParseFromArray(payload1, sizeof(payload1)));
 
-            ripple::SerialIter sit(ripple::makeSlice(tx2.rawtransaction()));
+            xrpl::SerialIter sit(xrpl::makeSlice(tx2.rawtransaction()));
 
-            auto stx = std::make_shared<ripple::STTx const>(sit);
+            auto stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
         catch (std::exception const&)
@@ -1563,8 +1563,8 @@ public:
 
         try
         {
-            ripple::SerialIter sit{payload2};
-            auto stx = std::make_shared<ripple::STTx const>(sit);
+            xrpl::SerialIter sit{payload2};
+            auto stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -1574,8 +1574,8 @@ public:
 
         try
         {
-            ripple::SerialIter sit{payload3};
-            auto stx = std::make_shared<ripple::STTx const>(sit);
+            xrpl::SerialIter sit{payload3};
+            auto stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -1586,8 +1586,8 @@ public:
 
         try
         {
-            ripple::SerialIter sit{payload4};
-            auto stx = std::make_shared<ripple::STTx const>(sit);
+            xrpl::SerialIter sit{payload4};
+            auto stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
         catch (std::exception const& ex)
@@ -1837,7 +1837,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STTx, protocol, ripple);
-BEAST_DEFINE_TESTSUITE(InnerObjectFormatsSerializer, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STTx, protocol, xrpl);
+BEAST_DEFINE_TESTSUITE(InnerObjectFormatsSerializer, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

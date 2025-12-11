@@ -4,7 +4,7 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/STObject.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STArray final : public STBase, public CountedObject<STArray>
 {
@@ -291,6 +291,6 @@ STArray::erase(const_iterator first, const_iterator last)
     return v_.erase(first, last);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

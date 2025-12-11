@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/XChainAttestations.h>
 
-namespace ripple {
+namespace xrpl {
 
 constexpr size_t xbridgeMaxAccountCreateClaims = 128;
 
@@ -239,6 +239,6 @@ using XChainAccountCreateCommit = XChainCreateAccountCommit;
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

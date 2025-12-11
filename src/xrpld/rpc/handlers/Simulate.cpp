@@ -16,7 +16,7 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 static Expected<std::uint32_t, Json::Value>
 getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
@@ -369,4 +369,4 @@ doSimulate(RPC::JsonContext& context)
     // LCOV_EXCL_STOP
 }
 
-}  // namespace ripple
+}  // namespace xrpl

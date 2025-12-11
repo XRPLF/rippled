@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 class Sandbox;
 class AMMClawback : public Transactor
 {
@@ -54,6 +54,6 @@ private:
         STAmount const& amount);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

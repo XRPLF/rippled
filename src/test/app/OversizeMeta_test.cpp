@@ -2,7 +2,7 @@
 
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // Make sure "plump" order books don't have problems
@@ -42,7 +42,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PlumpBook, app, ripple, 5);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PlumpBook, app, xrpl, 5);
 
 //------------------------------------------------------------------------------
 
@@ -57,7 +57,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ThinBook, app, ripple);
+BEAST_DEFINE_TESTSUITE(ThinBook, app, xrpl);
 
 //------------------------------------------------------------------------------
 
@@ -100,7 +100,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta, app, xrpl, 3);
 
 //------------------------------------------------------------------------------
 
@@ -166,7 +166,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, app, ripple, 50);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, app, xrpl, 50);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
