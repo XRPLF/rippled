@@ -28,6 +28,7 @@ if (CCACHE_PATH)
         set(CMAKE_VS_GLOBALS
                 "CLToolExe=cl.exe"
                 "CLToolPath=${CMAKE_BINARY_DIR}"
+                "TrackFileAccess=false"
                 "UseMultiToolTask=true")
 
         # By default Visual Studio generators will use /Zi, which is not
@@ -37,6 +38,7 @@ if (CCACHE_PATH)
         set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
     else ()
         # For Linux and macOS we can use the ccache binary directly.
+        set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PATH}")
         set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PATH}")
     endif ()
     message(STATUS "Using ccache: ${CCACHE_PATH}")
