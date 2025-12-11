@@ -306,8 +306,7 @@ LoanPay::doApply()
     if (loanSle->isFlag(lsfLoanImpaired))
     {
         if (auto const ret =
-                LoanManage::unimpairLoan(view, loanSle, vaultSle, asset, j_);
-            ret != tesSUCCESS)
+                LoanManage::unimpairLoan(view, loanSle, vaultSle, asset, j_))
         {
             JLOG(j_.fatal()) << "Failed to unimpair loan before payment.";
             return ret;  // LCOV_EXCL_LINE

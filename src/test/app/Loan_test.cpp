@@ -592,7 +592,7 @@ protected:
                 auto const unrealizedLoss = vaultSle->at(sfLossUnrealized) +
                     state.totalValue - state.managementFeeOutstanding;
 
-                if (unrealizedLoss > assetsUnavailable)
+                if (!BEAST_EXPECT(unrealizedLoss <= assetsUnavailable))
                 {
                     return false;
                 }
