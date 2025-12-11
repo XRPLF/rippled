@@ -98,7 +98,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             ctx.j);
 
         // The VaultOwner must burn all shares
-        if (auto const amount = ctx.tx[~sfAmount];
+        if (std::optional<Number> const amount = ctx.tx[~sfAmount];
             amount && *amount != sharesHeld)
             return tecLIMIT_EXCEEDED;
 
