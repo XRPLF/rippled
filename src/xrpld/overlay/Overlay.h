@@ -23,7 +23,7 @@ class context;
 }  // namespace asio
 }  // namespace boost
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages the set of connected peers. */
 class Overlay : public beast::PropertyStream::Source
@@ -215,6 +215,6 @@ public:
     txMetrics() const = 0;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

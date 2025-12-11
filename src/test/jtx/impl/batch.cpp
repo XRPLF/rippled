@@ -9,7 +9,7 @@
 #include <optional>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -81,7 +81,7 @@ sig::operator()(Env& env, JTx& jt) const
 
         Serializer msg;
         serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
-        auto const sig = ripple::sign(
+        auto const sig = xrpl::sign(
             *publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
         jo[sfTxnSignature.getJsonName()] =
             strHex(Slice{sig.data(), sig.size()});
@@ -121,7 +121,7 @@ msig::operator()(Env& env, JTx& jt) const
         Serializer msg;
         serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
         finishMultiSigningData(e.acct.id(), msg);
-        auto const sig = ripple::sign(
+        auto const sig = xrpl::sign(
             *publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
         iso[sfTxnSignature.getJsonName()] =
             strHex(Slice{sig.data(), sig.size()});
@@ -132,4 +132,4 @@ msig::operator()(Env& env, JTx& jt) const
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

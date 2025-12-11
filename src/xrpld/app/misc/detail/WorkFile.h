@@ -11,7 +11,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -78,7 +78,7 @@ WorkFile::run()
     error_code ec;
     auto const fileContents = getFileContents(ec, path_, megabytes(1));
 
-    XRPL_ASSERT(cb_, "ripple::detail::WorkFile::run : callback is set");
+    XRPL_ASSERT(cb_, "xrpl::detail::WorkFile::run : callback is set");
     cb_(ec, fileContents);
     cb_ = nullptr;
 }
@@ -91,6 +91,6 @@ WorkFile::cancel()
 
 }  // namespace detail
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

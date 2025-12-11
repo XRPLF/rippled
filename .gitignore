@@ -1,69 +1,46 @@
 # .gitignore
 
-bin/boostbook_catalog.xml
-bin/config.log
-bin/project-cache.jam
-
-# Ignore vim swap files.
-*.swp
-
-# Ignore SCons support files.
-.sconsign.dblite
-
-# Ignore python compiled files.
-*.pyc
-
-# Ignore Macintosh Desktop Services Store files.
+# Macintosh Desktop Services Store files.
 .DS_Store
 
-# Ignore backup/temps
+# Build, intermediate, and temporary artifacts.
 *~
-
-# Ignore object files.
 *.o
-.nih_c
-tags
-TAGS
-GTAGS
-GRTAGS
-GPATH
-bin/rippled
-Debug/*.*
-Release/*.*
+*.pdb
+*.swp
+/.clangd
+Debug/
+Release/
+/.build/
+/build/
+/db/
+/out.txt
+/Testing/
+/tmp/
+CMakeSettings.json
+CMakeUserPresets.json
 
-# Ignore coverage files.
+# Coverage files.
 *.gcno
 *.gcda
 *.gcov
 
-# Levelization checking
+# Profiling data.
+gmon.out
+
+# Levelization data.
 .github/scripts/levelization/results/*
 !.github/scripts/levelization/results/loops.txt
 !.github/scripts/levelization/results/ordering.txt
 
-# Ignore tmp directory.
-tmp
+# Customized configs.
+/rippled.cfg
+/validators.txt
 
-# Ignore database directory.
-db/
-db/*.db
-db/*.db-*
+# Locally patched Conan recipes
+external/conan-center-index/
 
-# Ignore debug logs
-debug_log.txt
-
-# Ignore customized configs
-rippled.cfg
-validators.txt
-
-# Doxygen generated documentation output
-HtmlDocumentation
-docs/html_doc
-
-# Xcode user-specific project settings
-# Xcode
-.DS_Store
-/build/
+# XCode IDE.
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -76,41 +53,16 @@ xcuserdata
 profile
 *.moved-aside
 DerivedData
-.idea/
 *.hmap
 
-# Intel Parallel Studio 2013 XE
-My Amplifier XE Results - RippleD
+# JetBrains IDE.
+/.idea/
 
-# Compiler intermediate output
-/out.txt
+# Microsoft Visual Studio IDE.
+/.vs/
+/.vscode/
 
-# Build Log
-rippled-build.log
-
-# Profiling data
-gmon.out
-
-Builds/VisualStudio2015/*.db
-Builds/VisualStudio2015/*.user
-Builds/VisualStudio2015/*.opendb
-Builds/VisualStudio2015/*.sdf
-
-# MSVC
-*.pdb
-.vs/
-CMakeSettings.json
-compile_commands.json
-.clangd
-packages
-pkg_out
-pkg
-CMakeUserPresets.json
-bld.rippled/
-.vscode
-
-# Suggested in-tree build directory
-/.build*/
-
-# Locally patched Conan recipes
-external/conan-center-index/
+# AI tools.
+/.augment
+/.claude
+/CLAUDE.md

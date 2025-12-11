@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class PayChanCreate : public Transactor
 {
@@ -81,6 +81,6 @@ public:
 
 using PaymentChannelClaim = PayChanClaim;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

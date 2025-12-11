@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** AMMCreate implements Automatic Market Maker(AMM) creation Transactor.
  *  It creates a new AMM instance with two tokens. Any trader, or Liquidity
@@ -61,6 +61,6 @@ public:
     doApply() override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_TX_AMMCREATE_H_INCLUDED

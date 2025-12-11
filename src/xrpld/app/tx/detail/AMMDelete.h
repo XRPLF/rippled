@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** AMMDelete implements AMM delete transactor. This is a mechanism to
  * delete AMM in an empty state when the number of LP tokens is 0.
@@ -33,6 +33,6 @@ public:
     doApply() override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_TX_AMMDELETE_H_INCLUDED

@@ -1,6 +1,6 @@
 #include <xrpld/app/ledger/AccountStateSF.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 AccountStateSF::gotNode(
@@ -20,4 +20,4 @@ AccountStateSF::getNode(SHAMapHash const& nodeHash) const
     return fp_.getFetchPack(nodeHash.as_uint256());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

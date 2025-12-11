@@ -6,7 +6,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Sign an STObject
 
@@ -67,6 +67,6 @@ finishMultiSigningData(AccountID const& signingID, Serializer& s)
     s.addBitString(signingID);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

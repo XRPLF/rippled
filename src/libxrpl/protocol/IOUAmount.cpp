@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -303,4 +303,4 @@ mulRatio(
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -5,7 +5,7 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/shamap/SHAMap.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Manager to process fee votes. */
 class FeeVote
@@ -44,6 +44,6 @@ struct FeeSetup;
 std::unique_ptr<FeeVote>
 make_FeeVote(FeeSetup const& setup, beast::Journal journal);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

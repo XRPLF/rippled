@@ -4,7 +4,7 @@
 
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 LoanManage::checkExtraFeatures(PreflightContext const& ctx)
@@ -417,4 +417,4 @@ LoanManage::doApply()
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl

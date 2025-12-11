@@ -3,7 +3,7 @@
 
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 // safe_cast adds compile-time checks to a static_cast to ensure that
 // the destination can hold all values of the source.  This is particularly
@@ -80,6 +80,6 @@ inline constexpr std::
     return unsafe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

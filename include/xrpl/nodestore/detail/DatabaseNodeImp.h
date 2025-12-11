@@ -5,7 +5,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/nodestore/Database.h>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 class DatabaseNodeImp : public Database
@@ -59,7 +59,7 @@ public:
 
         XRPL_ASSERT(
             backend_,
-            "ripple::NodeStore::DatabaseNodeImp::DatabaseNodeImp : non-null "
+            "xrpl::NodeStore::DatabaseNodeImp::DatabaseNodeImp : non-null "
             "backend");
     }
 
@@ -138,6 +138,6 @@ private:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

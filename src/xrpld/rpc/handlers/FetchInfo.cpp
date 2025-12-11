@@ -5,7 +5,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doFetchInfo(RPC::JsonContext& context)
@@ -24,4 +24,4 @@ doFetchInfo(RPC::JsonContext& context)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

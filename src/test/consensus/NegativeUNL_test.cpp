@@ -9,7 +9,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/ledger/View.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /*
@@ -621,7 +621,7 @@ struct NetworkHistory
             keyPair.second,
             v,
             [&](STValidation& v) {
-                v.setFieldH256(sfLedgerHash, ledger->info().hash);
+                v.setFieldH256(sfLedgerHash, ledger->header().hash);
                 v.setFieldU32(sfLedgerSequence, ledger->seq());
                 v.setFlag(vfFullValidation);
             });
@@ -1773,7 +1773,7 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
                 keys.second,
                 calcNodeID(keys.first),
                 [&](STValidation& v) {
-                    v.setFieldH256(sfLedgerHash, l->info().hash);
+                    v.setFieldH256(sfLedgerHash, l->header().hash);
                     v.setFieldU32(sfLedgerSequence, l->seq());
                     v.setFlag(vfFullValidation);
                 });
@@ -1826,20 +1826,20 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NegativeUNL, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(NegativeUNL, consensus, xrpl);
 
-BEAST_DEFINE_TESTSUITE(NegativeUNLVoteInternal, consensus, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(NegativeUNLVoteScoreTable, consensus, ripple);
-BEAST_DEFINE_TESTSUITE_PRIO(NegativeUNLVoteGoodScore, consensus, ripple, 1);
-BEAST_DEFINE_TESTSUITE(NegativeUNLVoteOffline, consensus, ripple);
-BEAST_DEFINE_TESTSUITE(NegativeUNLVoteMaxListed, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(NegativeUNLVoteInternal, consensus, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(NegativeUNLVoteScoreTable, consensus, xrpl);
+BEAST_DEFINE_TESTSUITE_PRIO(NegativeUNLVoteGoodScore, consensus, xrpl, 1);
+BEAST_DEFINE_TESTSUITE(NegativeUNLVoteOffline, consensus, xrpl);
+BEAST_DEFINE_TESTSUITE(NegativeUNLVoteMaxListed, consensus, xrpl);
 BEAST_DEFINE_TESTSUITE_PRIO(
     NegativeUNLVoteRetiredValidator,
     consensus,
     ripple,
     1);
-BEAST_DEFINE_TESTSUITE(NegativeUNLVoteNewValidator, consensus, ripple);
-BEAST_DEFINE_TESTSUITE(NegativeUNLVoteFilterValidations, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(NegativeUNLVoteNewValidator, consensus, xrpl);
+BEAST_DEFINE_TESTSUITE(NegativeUNLVoteFilterValidations, consensus, xrpl);
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -1947,4 +1947,4 @@ createTx(bool disabling, LedgerIndex seq, PublicKey const& txKey)
 }
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -6,7 +6,7 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STInteger.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STVector256 : public STBase, public CountedObject<STVector256>
 {
@@ -237,6 +237,6 @@ STVector256::clear() noexcept
     return mValue.clear();
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

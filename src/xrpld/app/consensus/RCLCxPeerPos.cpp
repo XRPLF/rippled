@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Used to construct received proposals
 RCLCxPeerPos::RCLCxPeerPos(
@@ -19,7 +19,7 @@ RCLCxPeerPos::RCLCxPeerPos(
     // this elsewhere, but we want to be extra careful here:
     XRPL_ASSERT(
         signature.size() != 0 && signature.size() <= signature_.capacity(),
-        "ripple::RCLCxPeerPos::RCLCxPeerPos : valid signature size");
+        "xrpl::RCLCxPeerPos::RCLCxPeerPos : valid signature size");
 
     if (signature.size() != 0 && signature.size() <= signature_.capacity())
         signature_.assign(signature.begin(), signature.end());
@@ -63,4 +63,4 @@ proposalUniqueId(
     return s.getSHA512Half();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

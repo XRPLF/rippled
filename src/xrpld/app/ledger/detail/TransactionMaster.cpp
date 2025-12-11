@@ -6,7 +6,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/STTx.h>
 
-namespace ripple {
+namespace xrpl {
 
 TransactionMaster::TransactionMaster(Application& app)
     : mApp(app)
@@ -151,4 +151,4 @@ TransactionMaster::getCache()
     return mCache;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

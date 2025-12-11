@@ -10,7 +10,7 @@
 #include <shared_mutex>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /*
     Validator key manifests
@@ -443,6 +443,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

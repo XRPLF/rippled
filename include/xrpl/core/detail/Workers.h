@@ -1,9 +1,8 @@
 #ifndef XRPL_CORE_WORKERS_H_INCLUDED
 #define XRPL_CORE_WORKERS_H_INCLUDED
 
-#include <xrpld/core/detail/semaphore.h>
-
 #include <xrpl/beast/core/LockFreeStack.h>
+#include <xrpl/core/detail/semaphore.h>
 
 #include <atomic>
 #include <condition_variable>
@@ -11,7 +10,7 @@
 #include <string>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 
 namespace perf {
 class PerfLog;
@@ -215,6 +214,6 @@ private:
         m_paused;  // holds just paused workers
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

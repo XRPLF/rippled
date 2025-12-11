@@ -3,7 +3,7 @@
 
 #include <xrpl/basics/base_uint.h>
 
-namespace ripple {
+namespace xrpl {
 
 using LedgerHash = uint256;
 

@@ -5,7 +5,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** Holds the serialized result of parsing an input JSON object.
     This does validation and checking on the provided JSON.
@@ -35,6 +35,6 @@ public:
     Json::Value error;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
