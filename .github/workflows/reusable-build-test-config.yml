@@ -124,6 +124,10 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ inputs.config_name }}
 
+      - name: Show ccache statistics before building
+        if: ${{ env.CCACHE_ENABLED == 'true' }}
+        run: ccache --show-stats ${{ runner.debug && '-vv' || '' }}
+
       - name: Build the binary
         working-directory: ${{ inputs.build_dir }}
         env:
@@ -137,7 +141,7 @@ jobs:
             --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
 
-      - name: Print and reset ccache statistics
+      - name: Show and reset ccache statistics after building
         if: ${{ env.CCACHE_ENABLED == 'true' }}
         run: |
           ccache --show-stats ${{ runner.debug && '-vv' || '' }}
