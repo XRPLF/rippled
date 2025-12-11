@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * API version numbers used in later API versions
@@ -64,7 +64,7 @@ setVersion(JsonObject& parent, unsigned int apiVersion, bool betaEnabled)
 {
     XRPL_ASSERT(
         apiVersion != apiInvalidVersion,
-        "ripple::RPC::setVersion : input is valid");
+        "xrpl::RPC::setVersion : input is valid");
     auto& retObj = addObject(parent, jss::version);
 
     if (apiVersion == apiVersionIfUnspecified)
@@ -167,6 +167,6 @@ forAllApiVersions(Fn const& fn, Args&&... args)
         RPC::apiMaximumValidVersion>(fn, std::forward<Args>(args)...);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

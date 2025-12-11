@@ -15,7 +15,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
@@ -141,7 +141,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 
     if (auto const cb = ctx.tx[~sfCondition])
     {
-        using namespace ripple::cryptoconditions;
+        using namespace xrpl::cryptoconditions;
 
         std::error_code ec;
 
@@ -546,7 +546,7 @@ EscrowCreate::doApply()
 static bool
 checkCondition(Slice f, Slice c)
 {
-    using namespace ripple::cryptoconditions;
+    using namespace xrpl::cryptoconditions;
 
     std::error_code ec;
 
@@ -1072,7 +1072,7 @@ EscrowFinish::doApply()
             return temDISABLED;  // LCOV_EXCL_LINE
 
         Rate lockedRate = slep->isFieldPresent(sfTransferRate)
-            ? ripple::Rate(slep->getFieldU32(sfTransferRate))
+            ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
             : parityRate;
         auto const issuer = amount.getIssuer();
         bool const createAsset = destID == account_;
@@ -1321,4 +1321,4 @@ EscrowCancel::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

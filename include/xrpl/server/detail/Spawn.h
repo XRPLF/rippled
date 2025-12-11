@@ -9,7 +9,7 @@
 #include <concepts>
 #include <type_traits>
 
-namespace ripple::util {
+namespace xrpl::util {
 namespace impl {
 
 template <typename T>
@@ -84,6 +84,6 @@ spawn(Ctx&& ctx, F&& func)
     }
 }
 
-}  // namespace ripple::util
+}  // namespace xrpl::util
 
 #endif

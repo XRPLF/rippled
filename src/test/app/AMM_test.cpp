@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /**
@@ -7481,7 +7481,7 @@ private:
             for (int i = 0; i < 256; ++i)
             {
                 AccountID const accountId =
-                    ripple::pseudoAccountAddress(*env.current(), keylet.key);
+                    xrpl::pseudoAccountAddress(*env.current(), keylet.key);
 
                 env(pay(env.master.id(), accountId, XRP(1000)),
                     seq(autofill),
@@ -7952,7 +7952,7 @@ private:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AMM, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(AMM, app, xrpl, 1);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

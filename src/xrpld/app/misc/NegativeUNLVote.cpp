@@ -4,7 +4,7 @@
 
 #include <xrpl/shamap/SHAMapItem.h>
 
-namespace ripple {
+namespace xrpl {
 
 NegativeUNLVote::NegativeUNLVote(NodeID const& myId, beast::Journal j)
     : myId_(myId), j_(j)
@@ -73,7 +73,7 @@ NegativeUNLVote::doVoting(
                 prevLedger->header().hash, candidates.toDisableCandidates);
             XRPL_ASSERT(
                 nidToKeyMap.contains(n),
-                "ripple::NegativeUNLVote::doVoting : found node to disable");
+                "xrpl::NegativeUNLVote::doVoting : found node to disable");
             addTx(seq, nidToKeyMap.at(n), ToDisable, initialSet);
         }
 
@@ -83,7 +83,7 @@ NegativeUNLVote::doVoting(
                 prevLedger->header().hash, candidates.toReEnableCandidates);
             XRPL_ASSERT(
                 nidToKeyMap.contains(n),
-                "ripple::NegativeUNLVote::doVoting : found node to enable");
+                "xrpl::NegativeUNLVote::doVoting : found node to enable");
             addTx(seq, nidToKeyMap.at(n), ToReEnable, initialSet);
         }
     }
@@ -127,8 +127,7 @@ NegativeUNLVote::choose(
     std::vector<NodeID> const& candidates)
 {
     XRPL_ASSERT(
-        !candidates.empty(),
-        "ripple::NegativeUNLVote::choose : non-empty input");
+        !candidates.empty(), "xrpl::NegativeUNLVote::choose : non-empty input");
     static_assert(NodeID::bytes <= uint256::bytes);
     NodeID randomPad = NodeID::fromVoid(randomPadData.data());
     NodeID txNodeID = candidates[0];
@@ -336,4 +335,4 @@ NegativeUNLVote::purgeNewValidators(LedgerIndex seq)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -5,7 +5,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STAmount_test : public beast::unit_test::suite
 {
@@ -1245,6 +1245,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STAmount, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STAmount, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

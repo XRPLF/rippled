@@ -1,6 +1,6 @@
 #include <test/jtx/account_txn_id.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -13,4 +13,4 @@ account_txn_id::operator()(Env&, JTx& jt) const
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

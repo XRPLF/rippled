@@ -10,7 +10,7 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 
 /*
     Credentials
@@ -353,4 +353,4 @@ CredentialAccept::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

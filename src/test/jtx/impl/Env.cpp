@@ -28,7 +28,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -673,4 +673,4 @@ Env::disableFeature(uint256 const feature)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

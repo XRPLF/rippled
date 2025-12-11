@@ -4,10 +4,10 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/Overlay.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <random>
 
-namespace ripple {
+namespace xrpl {
 
 using namespace std::chrono_literals;
 
@@ -104,7 +104,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     XRPL_ASSERT(
         mLedger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
             mLedger->read(keylet::fees()),
-        "ripple::InboundLedger::init : valid ledger fees");
+        "xrpl::InboundLedger::init : valid ledger fees");
     mLedger->setImmutable();
 
     if (mReason == Reason::HISTORY)
@@ -337,7 +337,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
         XRPL_ASSERT(
             mLedger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
                 mLedger->read(keylet::fees()),
-            "ripple::InboundLedger::tryDB : valid ledger fees");
+            "xrpl::InboundLedger::tryDB : valid ledger fees");
         mLedger->setImmutable();
     }
 }
@@ -432,15 +432,14 @@ InboundLedger::done()
                            << mStats.get();
 
     XRPL_ASSERT(
-        complete_ || failed_,
-        "ripple::InboundLedger::done : complete or failed");
+        complete_ || failed_, "xrpl::InboundLedger::done : complete or failed");
 
     if (complete_ && !failed_ && mLedger)
     {
         XRPL_ASSERT(
             mLedger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
                 mLedger->read(keylet::fees()),
-            "ripple::InboundLedger::done : valid ledger fees");
+            "xrpl::InboundLedger::done : valid ledger fees");
         mLedger->setImmutable();
         switch (mReason)
         {
@@ -604,7 +603,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     {
         XRPL_ASSERT(
             mLedger,
-            "ripple::InboundLedger::trigger : non-null ledger to read state "
+            "xrpl::InboundLedger::trigger : non-null ledger to read state "
             "from");
 
         if (!mLedger->stateMap().isValid())
@@ -679,7 +678,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     {
         XRPL_ASSERT(
             mLedger,
-            "ripple::InboundLedger::trigger : non-null ledger to read "
+            "xrpl::InboundLedger::trigger : non-null ledger to read "
             "transactions from");
 
         if (!mLedger->txMap().isValid())
@@ -946,7 +945,7 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
     if (!mHaveHeader)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::InboundLedger::takeAsRootNode : no ledger header");
+        UNREACHABLE("xrpl::InboundLedger::takeAsRootNode : no ledger header");
         return false;
         // LCOV_EXCL_STOP
     }
@@ -973,7 +972,7 @@ InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
     if (!mHaveHeader)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::InboundLedger::takeTxRootNode : no ledger header");
+        UNREACHABLE("xrpl::InboundLedger::takeTxRootNode : no ledger header");
         return false;
         // LCOV_EXCL_STOP
     }
@@ -1335,4 +1334,4 @@ InboundLedger::getJson(int)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

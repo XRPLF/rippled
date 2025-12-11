@@ -14,7 +14,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct DirectStepInfo
@@ -86,7 +86,7 @@ equal(std::unique_ptr<Step> const& s1, XRPEndpointStepInfo const& xrpsi)
 }
 
 bool
-equal(std::unique_ptr<Step> const& s1, ripple::Book const& bsi)
+equal(std::unique_ptr<Step> const& s1, xrpl::Book const& bsi)
 {
     if (!s1)
         return false;
@@ -300,7 +300,7 @@ public:
 struct ExistingElementPool
 {
     std::vector<jtx::Account> accounts;
-    std::vector<ripple::Currency> currencies;
+    std::vector<xrpl::Currency> currencies;
     std::vector<std::string> currencyNames;
 
     jtx::Account
@@ -310,7 +310,7 @@ struct ExistingElementPool
         return accounts[id];
     }
 
-    ripple::Currency
+    xrpl::Currency
     getCurrency(size_t id)
     {
         assert(id < currencies.size());
@@ -484,13 +484,13 @@ struct ExistingElementPool
     {
         std::vector<std::tuple<STAmount, STAmount, AccountID, AccountID>> diffs;
 
-        auto xrpBalance = [](ReadView const& v, ripple::Keylet const& k) {
+        auto xrpBalance = [](ReadView const& v, xrpl::Keylet const& k) {
             auto const sle = v.read(k);
             if (!sle)
                 return STAmount{};
             return (*sle)[sfBalance];
         };
-        auto lineBalance = [](ReadView const& v, ripple::Keylet const& k) {
+        auto lineBalance = [](ReadView const& v, xrpl::Keylet const& k) {
             auto const sle = v.read(k);
             if (!sle)
                 return STAmount{};
@@ -534,7 +534,7 @@ struct ExistingElementPool
         return getAccount(nextAvailAccount++);
     }
 
-    ripple::Currency
+    xrpl::Currency
     getAvailCurrency()
     {
         return getCurrency(nextAvailCurrency++);
@@ -619,7 +619,7 @@ struct PayStrand_test : public beast::unit_test::suite
         auto const usdC = USD.currency;
 
         using D = DirectStepInfo;
-        using B = ripple::Book;
+        using B = xrpl::Book;
         using XRPS = XRPEndpointStepInfo;
 
         AMMContext ammContext(alice, false);
@@ -1182,13 +1182,13 @@ struct PayStrand_test : public beast::unit_test::suite
         AccountID const srcAcc = alice.id();
         AccountID dstAcc = bob.id();
         STPathSet pathSet;
-        ::ripple::path::RippleCalc::Input inputs;
+        ::xrpl::path::RippleCalc::Input inputs;
         inputs.defaultPathsAllowed = true;
         try
         {
             PaymentSandbox sb{env.current().get(), tapNONE};
             {
-                auto const r = ::ripple::path::RippleCalc::rippleCalculate(
+                auto const r = ::xrpl::path::RippleCalc::rippleCalculate(
                     sb,
                     sendMax,
                     deliver,
@@ -1201,7 +1201,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
             {
-                auto const r = ::ripple::path::RippleCalc::rippleCalculate(
+                auto const r = ::xrpl::path::RippleCalc::rippleCalculate(
                     sb,
                     sendMax,
                     deliver,
@@ -1214,7 +1214,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
             {
-                auto const r = ::ripple::path::RippleCalc::rippleCalculate(
+                auto const r = ::xrpl::path::RippleCalc::rippleCalculate(
                     sb,
                     noAccountAmount,
                     deliver,
@@ -1227,7 +1227,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
             {
-                auto const r = ::ripple::path::RippleCalc::rippleCalculate(
+                auto const r = ::xrpl::path::RippleCalc::rippleCalculate(
                     sb,
                     sendMax,
                     noAccountAmount,
@@ -1264,7 +1264,7 @@ struct PayStrand_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PayStrand, app, ripple);
+BEAST_DEFINE_TESTSUITE(PayStrand, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

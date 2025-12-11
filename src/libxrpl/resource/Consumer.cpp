@@ -10,7 +10,7 @@
 #include <ostream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 Consumer::Consumer(Logic& logic, Entry& entry)
@@ -97,7 +97,7 @@ Consumer::charge(Charge const& what, std::string const& context)
 bool
 Consumer::warn()
 {
-    XRPL_ASSERT(m_entry, "ripple::Resource::Consumer::warn : non-null entry");
+    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::warn : non-null entry");
     return m_logic->warn(*m_entry);
 }
 
@@ -105,7 +105,7 @@ bool
 Consumer::disconnect(beast::Journal const& j)
 {
     XRPL_ASSERT(
-        m_entry, "ripple::Resource::Consumer::disconnect : non-null entry");
+        m_entry, "xrpl::Resource::Consumer::disconnect : non-null entry");
     bool const d = m_logic->disconnect(*m_entry);
     if (d)
     {
@@ -117,15 +117,14 @@ Consumer::disconnect(beast::Journal const& j)
 int
 Consumer::balance()
 {
-    XRPL_ASSERT(
-        m_entry, "ripple::Resource::Consumer::balance : non-null entry");
+    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::balance : non-null entry");
     return m_logic->balance(*m_entry);
 }
 
 Entry&
 Consumer::entry()
 {
-    XRPL_ASSERT(m_entry, "ripple::Resource::Consumer::entry : non-null entry");
+    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::entry : non-null entry");
     return *m_entry;
 }
 
@@ -143,4 +142,4 @@ operator<<(std::ostream& os, Consumer const& v)
 }
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl

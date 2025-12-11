@@ -11,7 +11,7 @@
 
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct Credentials_test : public beast::unit_test::suite
@@ -926,8 +926,7 @@ struct Credentials_test : public beast::unit_test::suite
                 testcase("deleteSLE fail, bad SLE.");
                 auto view = std::make_shared<ApplyViewImpl>(
                     env.current().get(), ApplyFlags::tapNONE);
-                auto ter =
-                    ripple::credentials::deleteSLE(*view, {}, env.journal);
+                auto ter = xrpl::credentials::deleteSLE(*view, {}, env.journal);
                 BEAST_EXPECT(ter == tecNO_ENTRY);
             }
         }
@@ -1108,7 +1107,7 @@ struct Credentials_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Credentials, app, ripple);
+BEAST_DEFINE_TESTSUITE(Credentials, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

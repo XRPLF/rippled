@@ -17,7 +17,7 @@
 #include <chrono>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct LedgerReplay_test : public beast::unit_test::suite
@@ -1084,8 +1084,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     {
         testcase("handshake test");
         auto handshake = [&](bool client, bool server, bool expecting) -> bool {
-            auto request =
-                ripple::makeRequest(true, false, client, false, false);
+            auto request = xrpl::makeRequest(true, false, client, false, false);
             http_request_type http_request;
             http_request.version(request.version());
             http_request.base() = request.base();
@@ -1098,7 +1097,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
                 boost::asio::ip::make_address("172.1.1.100");
             jtx::Env serverEnv(*this);
             serverEnv.app().config().LEDGER_REPLAY = server;
-            auto http_resp = ripple::makeResponse(
+            auto http_resp = xrpl::makeResponse(
                 true,
                 http_request,
                 addr,
@@ -1596,10 +1595,10 @@ struct LedgerReplayerLong_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerReplay, app, ripple);
-BEAST_DEFINE_TESTSUITE_PRIO(LedgerReplayer, app, ripple, 1);
-BEAST_DEFINE_TESTSUITE(LedgerReplayerTimeout, app, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(LedgerReplayerLong, app, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerReplay, app, xrpl);
+BEAST_DEFINE_TESTSUITE_PRIO(LedgerReplayer, app, xrpl, 1);
+BEAST_DEFINE_TESTSUITE(LedgerReplayerTimeout, app, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(LedgerReplayerLong, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -2,7 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 shouldCloseLedger(
@@ -250,4 +250,4 @@ checkConsensus(
     return ConsensusState::No;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

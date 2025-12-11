@@ -52,9 +52,9 @@ void
 Collection::checkWritable(std::string const& label)
 {
     if (!enabled_)
-        ripple::Throw<std::logic_error>(label + ": not enabled");
+        xrpl::Throw<std::logic_error>(label + ": not enabled");
     if (!writer_)
-        ripple::Throw<std::logic_error>(label + ": not writable");
+        xrpl::Throw<std::logic_error>(label + ": not writable");
 }
 
 //------------------------------------------------------------------------------

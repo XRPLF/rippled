@@ -1,11 +1,11 @@
 #include <test/jtx.h>
 
-#include <xrpld/core/JobQueue.h>
+#include <xrpl/core/JobQueue.h>
 
 #include <chrono>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Coroutine_test : public beast::unit_test::suite
@@ -165,7 +165,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Coroutine, core, ripple);
+BEAST_DEFINE_TESTSUITE(Coroutine, core, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

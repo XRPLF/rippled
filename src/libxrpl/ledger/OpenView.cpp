@@ -1,7 +1,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/OpenView.h>
 
-namespace ripple {
+namespace xrpl {
 
 class OpenView::txs_iter_impl : public txs_type::iter_base
 {
@@ -250,4 +250,4 @@ OpenView::rawTxInsert(
         LogicError("rawTxInsert: duplicate TX id: " + to_string(key));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

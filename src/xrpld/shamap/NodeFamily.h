@@ -3,7 +3,7 @@
 
 #include <xrpl/shamap/Family.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 
@@ -83,6 +83,6 @@ private:
     acquire(uint256 const& hash, std::uint32_t seq);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

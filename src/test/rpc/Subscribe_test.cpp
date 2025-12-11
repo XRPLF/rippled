@@ -14,7 +14,7 @@
 
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Subscribe_test : public beast::unit_test::suite
@@ -1591,7 +1591,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Subscribe, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Subscribe, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

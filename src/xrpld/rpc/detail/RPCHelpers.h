@@ -13,7 +13,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class ReadView;
 
@@ -160,6 +160,6 @@ keypairForSignature(
 
 }  // namespace RPC
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

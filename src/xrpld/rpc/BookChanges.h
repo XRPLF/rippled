@@ -14,7 +14,7 @@ namespace Json {
 class Value;
 }
 
-namespace ripple {
+namespace xrpl {
 
 class ReadView;
 class Transaction;
@@ -205,6 +205,6 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

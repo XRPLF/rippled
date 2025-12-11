@@ -11,7 +11,7 @@
 
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class View_test : public beast::unit_test::suite
@@ -1145,8 +1145,8 @@ class GetAmendments_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(View, ledger, ripple);
-BEAST_DEFINE_TESTSUITE(GetAmendments, ledger, ripple);
+BEAST_DEFINE_TESTSUITE(View, ledger, xrpl);
+BEAST_DEFINE_TESTSUITE(GetAmendments, ledger, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

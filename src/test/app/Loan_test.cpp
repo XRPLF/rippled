@@ -11,7 +11,7 @@
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/SField.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Loan_test : public beast::unit_test::suite
@@ -964,7 +964,7 @@ protected:
         Number totalFeesPaid = 0;
         std::size_t totalPaymentsMade = 0;
 
-        ripple::LoanState currentTrueState = computeRawLoanState(
+        xrpl::LoanState currentTrueState = computeRawLoanState(
             state.periodicPayment,
             periodicRate,
             state.paymentRemaining,
@@ -1019,7 +1019,7 @@ protected:
                     paymentComponents.trackedInterestPart() +
                     paymentComponents.trackedManagementFeeDelta);
 
-            ripple::LoanState const nextTrueState = computeRawLoanState(
+            xrpl::LoanState const nextTrueState = computeRawLoanState(
                 state.periodicPayment,
                 periodicRate,
                 state.paymentRemaining - 1,
@@ -2705,7 +2705,7 @@ protected:
                 Number totalInterestPaid = 0;
                 std::size_t totalPaymentsMade = 0;
 
-                ripple::LoanState currentTrueState = computeRawLoanState(
+                xrpl::LoanState currentTrueState = computeRawLoanState(
                     state.periodicPayment,
                     periodicRate,
                     state.paymentRemaining,
@@ -2730,7 +2730,7 @@ protected:
                         paymentComponents.trackedValueDelta <=
                         roundedPeriodicPayment);
 
-                    ripple::LoanState const nextTrueState = computeRawLoanState(
+                    xrpl::LoanState const nextTrueState = computeRawLoanState(
                         state.periodicPayment,
                         periodicRate,
                         state.paymentRemaining - 1,
@@ -3873,7 +3873,7 @@ protected:
         Serializer ss;
         ss.add32(HashPrefix::txSign);
         parse(randomData).addWithoutSigningFields(ss);
-        auto const sig = ripple::sign(borrower.pk(), borrower.sk(), ss.slice());
+        auto const sig = xrpl::sign(borrower.pk(), borrower.sk(), ss.slice());
         sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
 
         forgedLoanSet[Json::StaticString{"CounterpartySignature"}] = sigObject;
@@ -3957,7 +3957,7 @@ protected:
     testLoanPayComputePeriodicPaymentValidRateInvariant()
     {
         // From FIND-012
-        testcase << "LoanPay ripple::detail::computePeriodicPayment : "
+        testcase << "LoanPay xrpl::detail::computePeriodicPayment : "
                     "valid rate";
 
         using namespace jtx;
@@ -4773,7 +4773,7 @@ protected:
     testAccountSendMptMinAmountInvariant()
     {
         // (From FIND-006)
-        testcase << "LoanSet trigger ripple::accountSendMPT : minimum amount "
+        testcase << "LoanSet trigger xrpl::accountSendMPT : minimum amount "
                     "and MPT";
 
         using namespace jtx;
@@ -4835,7 +4835,7 @@ protected:
     testLoanPayDebtDecreaseInvariant()
     {
         // From FIND-007
-        testcase << "LoanPay ripple::LoanPay::doApply : debtDecrease "
+        testcase << "LoanPay xrpl::LoanPay::doApply : debtDecrease "
                     "rounding good";
 
         using namespace jtx;
@@ -4940,7 +4940,7 @@ protected:
     testLoanPayComputePeriodicPaymentValidTotalInterestInvariant()
     {
         // From FIND-010
-        testcase << "ripple::loanComputePaymentParts : valid total interest";
+        testcase << "xrpl::loanComputePaymentParts : valid total interest";
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -5093,7 +5093,7 @@ protected:
     testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant()
     {
         // From FIND-009
-        testcase << "ripple::loanComputePaymentParts : totalPrincipalPaid "
+        testcase << "xrpl::loanComputePaymentParts : totalPrincipalPaid "
                     "rounded";
 
         using namespace jtx;
@@ -5207,7 +5207,7 @@ protected:
     testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant()
     {
         // From FIND-008
-        testcase << "ripple::loanComputePaymentParts : loanValueChange rounded";
+        testcase << "xrpl::loanComputePaymentParts : loanValueChange rounded";
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -7207,9 +7207,9 @@ class LoanArbitrary_test : public LoanBatch_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Loan, tx, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(LoanBatch, tx, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(LoanArbitrary, tx, ripple);
+BEAST_DEFINE_TESTSUITE(Loan, tx, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(LoanBatch, tx, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(LoanArbitrary, tx, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

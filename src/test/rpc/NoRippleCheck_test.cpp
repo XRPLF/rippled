@@ -12,7 +12,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 class NoRippleCheck_test : public beast::unit_test::suite
 {
@@ -289,7 +289,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
             // be better if we could add this functionality to Env somehow
             // or otherwise disable endpoint charging for certain test
             // cases.
-            using namespace ripple::Resource;
+            using namespace xrpl::Resource;
             using namespace std::chrono;
             using namespace beast::IP;
             auto c = env.app().getResourceManager().newInboundEndpoint(
@@ -304,7 +304,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
             }
         };
 
-        for (auto i = 0; i < ripple::RPC::Tuning::noRippleCheck.rmax + 5; ++i)
+        for (auto i = 0; i < xrpl::RPC::Tuning::noRippleCheck.rmax + 5; ++i)
         {
             if (!admin)
                 checkBalance();
@@ -379,12 +379,12 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NoRippleCheck, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(NoRippleCheck, rpc, xrpl);
 
 // These tests that deal with limit amounts are slow because of the
 // offer/account setup, so making them manual -- the additional coverage
 // provided by them is minimal
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(NoRippleCheckLimits, rpc, ripple, 1);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(NoRippleCheckLimits, rpc, xrpl, 1);
 
-}  // namespace ripple
+}  // namespace xrpl

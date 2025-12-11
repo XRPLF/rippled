@@ -154,12 +154,12 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ inputs.config_name }}
 
-      - name: Upload rippled artifact (Linux)
+      - name: Upload the binary (Linux)
         if: ${{ github.repository_owner == 'XRPLF' && runner.os == 'Linux' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: rippled-${{ inputs.config_name }}
-          path: ${{ inputs.build_dir }}/rippled
+          name: xrpld-${{ inputs.config_name }}
+          path: ${{ inputs.build_dir }}/xrpld
           retention-days: 3
           if-no-files-found: error
 
@@ -167,8 +167,8 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
         working-directory: ${{ inputs.build_dir }}
         run: |
-          ldd ./rippled
-          if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+          ldd ./xrpld
+          if [ "$(ldd ./xrpld | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
             echo 'The binary is statically linked.'
           else
             echo 'The binary is dynamically linked.'
@@ -179,7 +179,7 @@ jobs:
         if: ${{ runner.os == 'Linux' && env.VOIDSTAR_ENABLED == 'true' }}
         working-directory: ${{ inputs.build_dir }}
         run: |
-          ./rippled --version | grep libvoidstar
+          ./xrpld --version | grep libvoidstar
 
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
@@ -200,7 +200,7 @@ jobs:
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
-          ./rippled --unittest --unittest-jobs "${BUILD_NPROC}"
+          ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}"
 
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}

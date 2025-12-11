@@ -4,7 +4,7 @@
 #include <xrpld/app/main/Tuning.h>
 #include <xrpld/shamap/NodeFamily.h>
 
-namespace ripple {
+namespace xrpl {
 
 NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
     : app_(app)
@@ -87,4 +87,4 @@ NodeFamily::acquire(uint256 const& hash, std::uint32_t seq)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl
