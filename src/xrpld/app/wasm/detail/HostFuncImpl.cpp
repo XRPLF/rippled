@@ -715,11 +715,12 @@ WasmHostFunctionsImpl::trace(
     Slice const& data,
     bool asHex)
 {
+    auto const ret = msg.size() + data.size() * (asHex ? 2 : 1);
 #ifdef DEBUG_OUTPUT
     auto& j = std::cerr;
 #else
     if (!getJournal().active(beast::severities::kTrace))
-        return 0;
+        return ret;
     auto j = getJournal().trace();
 #endif
 
@@ -742,17 +743,18 @@ WasmHostFunctionsImpl::trace(
     j << std::endl;
 #endif
 
-    return msg.size() + data.size() * (asHex ? 2 : 1);
+    return ret;
 }
 
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
 {
+    auto const ret = msg.size() + sizeof(data);
 #ifdef DEBUG_OUTPUT
     auto& j = std::cerr;
 #else
     if (!getJournal().active(beast::severities::kTrace))
-        return 0;
+        return ret;
     auto j = getJournal().trace();
 #endif
 
@@ -762,7 +764,7 @@ WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
     j << std::endl;
 #endif
 
-    return msg.size() + sizeof(data);
+    return ret;
 }
 
 Expected<int32_t, HostFunctionError>
@@ -770,11 +772,12 @@ WasmHostFunctionsImpl::traceAccount(
     std::string_view const& msg,
     AccountID const& account)
 {
+    auto const ret = msg.size() + account.size();
 #ifdef DEBUG_OUTPUT
     auto& j = std::cerr;
 #else
     if (!getJournal().active(beast::severities::kTrace))
-        return 0;
+        return ret;
     auto j = getJournal().trace();
 #endif
 
@@ -786,7 +789,7 @@ WasmHostFunctionsImpl::traceAccount(
     j << std::endl;
 #endif
 
-    return msg.size() + accountStr.size();
+    return ret;
 }
 
 Expected<int32_t, HostFunctionError>
@@ -794,11 +797,12 @@ WasmHostFunctionsImpl::traceFloat(
     std::string_view const& msg,
     Slice const& data)
 {
+    auto const ret = msg.size() + data.size();
 #ifdef DEBUG_OUTPUT
     auto& j = std::cerr;
 #else
     if (!getJournal().active(beast::severities::kTrace))
-        return 0;
+        return ret;
     auto j = getJournal().trace();
 #endif
     auto const s = floatToString(data);
@@ -808,7 +812,7 @@ WasmHostFunctionsImpl::traceFloat(
     j << std::endl;
 #endif
 
-    return msg.size() + s.size();
+    return ret;
 }
 
 Expected<int32_t, HostFunctionError>
@@ -816,11 +820,12 @@ WasmHostFunctionsImpl::traceAmount(
     std::string_view const& msg,
     STAmount const& amount)
 {
+    auto const ret = msg.size();
 #ifdef DEBUG_OUTPUT
     auto& j = std::cerr;
 #else
     if (!getJournal().active(beast::severities::kTrace))
-        return 0;
+        return ret;
     auto j = getJournal().trace();
 #endif
     auto const amountStr = amount.getFullText();
@@ -830,7 +835,7 @@ WasmHostFunctionsImpl::traceAmount(
     j << std::endl;
 #endif
 
-    return msg.size() + amountStr.size();
+    return ret;
 }
 
 Expected<Bytes, HostFunctionError>
