@@ -15,9 +15,8 @@ SponsorshipSet::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 SponsorshipSet::preflight(PreflightContext const& ctx)
 {
-    // check Flags
+    auto const flags = ctx.tx.getFlags();
     {
-        auto const flags = ctx.tx.getFlags();
         if ((flags & tfSponsorshipSetRequireSignForFee) &&
             (flags & tfSponsorshipClearRequireSignForFee))
             return temINVALID_FLAG;
@@ -39,8 +38,8 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     }
 
     auto const account = ctx.tx.getAccountID(sfAccount);
-    bool hasSponsor = ctx.tx.isFieldPresent(sfSponsorAccount);
-    bool hasSponsee = ctx.tx.isFieldPresent(sfSponsee);
+    bool const hasSponsor = ctx.tx.isFieldPresent(sfSponsorAccount);
+    bool const hasSponsee = ctx.tx.isFieldPresent(sfSponsee);
 
     //  The transaction must specify either Sponsor or Sponsee, but not both.
     if (hasSponsor == hasSponsee)
@@ -52,7 +51,6 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     if (sponsor == sponsee)
         return temMALFORMED;
 
-    auto const flags = ctx.tx.getFlags();
     if (flags & tfDeleteObject)
     {
         // can not combine with any modification flags when deleting
@@ -139,14 +137,21 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
 
+    auto const txFlags = tx.getFlags();
+
+    // this is added in case more flags will be added for SponsorshipSet
+    // in the future. Currently unreachable.
+    if (txFlags & tfSponsorshipSetPermissionMask)
+        return terNO_DELEGATE_PERMISSION;
+
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttSPONSORSHIP_SET, granularPermissions);
 
     auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) ||
         tx.isFieldPresent(sfMaxFee) ||
-        tx.isFlag(tfSponsorshipSetRequireSignForFee);
+        txFlags & tfSponsorshipSetRequireSignForFee;
     auto const sponsoringReserve = tx.isFieldPresent(sfReserveCount) ||
-        tx.isFlag(tfSponsorshipSetRequireSignForReserve);
+        txFlags & tfSponsorshipSetRequireSignForReserve;
 
     if (sponsoringFee && !granularPermissions.contains(SponsorFee))
         return terNO_DELEGATE_PERMISSION;
@@ -160,15 +165,15 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
 TER
 SponsorshipSet::preclaim(PreclaimContext const& ctx)
 {
-    auto const sponsor = ctx.tx.isFieldPresent(sfSponsorAccount)
-        ? ctx.tx.getAccountID(sfSponsorAccount)
-        : ctx.tx.getAccountID(sfAccount);
-    auto const sponsee = ctx.tx.isFieldPresent(sfSponsee)
-        ? ctx.tx.getAccountID(sfSponsee)
-        : ctx.tx.getAccountID(sfAccount);
+    auto const sponsor = ctx.tx[~sfSponsorAccount].value_or(ctx.tx[sfAccount]);
+    auto const sponsee = ctx.tx[~sfSponsee].value_or(ctx.tx[sfAccount]);
 
     if (sponsee == sponsor)
         return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    // check Sponsor
+    if (!ctx.view.exists(keylet::account(sponsor)))
+        return tecNO_DST;
 
     // check Sponsee
     auto const sponseeSle = ctx.view.read(keylet::account(sponsee));
@@ -191,24 +196,21 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
 TER
 SponsorshipSet::doApply()
 {
-    auto const sponseeAcc = ctx_.tx.isFieldPresent(sfSponsee)
-        ? ctx_.tx.getAccountID(sfSponsee)
-        : ctx_.tx.getAccountID(sfAccount);
-
-    auto const sponsorAcc = ctx_.tx.isFieldPresent(sfSponsorAccount)
-        ? ctx_.tx.getAccountID(sfSponsorAccount)
-        : account_;
+    auto const sponsorAcc = ctx_.tx[~sfSponsorAccount].value_or(account_);
+    auto const sponseeAcc = ctx_.tx[~sfSponsee].value_or(account_);
 
     if (sponseeAcc == sponsorAcc)
         return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const keylet = keylet::sponsor(sponsorAcc, sponseeAcc);
 
     auto const sponsorAccSle = ctx_.view().peek(keylet::account(sponsorAcc));
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorObjSle = ctx_.view().peek(keylet);
+    if (!ctx_.view().exists(keylet::account(sponseeAcc)))
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const sponsorKeylet = keylet::sponsor(sponsorAcc, sponseeAcc);
+    auto const sponsorObjSle = ctx_.view().peek(sponsorKeylet);
 
     if (ctx_.tx.isFlag(tfDeleteObject))
     {
@@ -249,7 +251,7 @@ SponsorshipSet::doApply()
     if (!sponsorObjSle)
     {
         // Create
-        auto newSle = std::make_shared<SLE>(keylet);
+        auto newSle = std::make_shared<SLE>(sponsorKeylet);
 
         if (auto const ret = checkInsufficientReserve(
                 ctx_.view(),
@@ -287,11 +289,15 @@ SponsorshipSet::doApply()
         (*newSle)[sfFlags] = flags;
 
         auto const sponsorPage = view().dirInsert(
-            keylet::ownerDir(sponsorAcc), keylet, describeOwnerDir(sponsorAcc));
+            keylet::ownerDir(sponsorAcc),
+            sponsorKeylet,
+            describeOwnerDir(sponsorAcc));
         (*newSle)[sfOwnerNode] = *sponsorPage;
 
         auto const sponseePage = view().dirInsert(
-            keylet::ownerDir(sponseeAcc), keylet, describeOwnerDir(sponseeAcc));
+            keylet::ownerDir(sponseeAcc),
+            sponsorKeylet,
+            describeOwnerDir(sponseeAcc));
         (*newSle)[sfSponseeNode] = *sponseePage;
 
         auto viewJ = ctx_.app.journal("View");

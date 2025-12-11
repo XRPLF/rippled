@@ -1222,54 +1222,51 @@ adjustOwnerCount(
 
     if (sponsorSle)
     {
-        XRPL_ASSERT(sponsorSle, "ripple::adjustOwnerCount : sponsor not found");
+        XRPL_ASSERT(sponsorSle, "ripple::adjustOwnerCount : sponsor exists");
+        auto const account = accountSle->getAccountID(sfAccount);
+        auto const sponsorAcc = (*sponsorSle)->getAccountID(sfAccount);
         {
             // modify sponsor's SponsoringOwnerCount
             std::uint32_t const current{
                 (*sponsorSle)->getFieldU32(sfSponsoringOwnerCount)};
-            AccountID const id = (*sponsorSle)->getAccountID(sfAccount);
             std::uint32_t const adjusted =
-                confineOwnerCount(current, amount, id, j);
-            view.adjustOwnerCountHook(id, current, adjusted);
+                confineOwnerCount(current, amount, sponsorAcc, j);
+            view.adjustOwnerCountHook(sponsorAcc, current, adjusted);
             if (adjusted == 0)
                 (*sponsorSle)->makeFieldAbsent(sfSponsoringOwnerCount);
             else
-                (*sponsorSle)->at(sfSponsoringOwnerCount) = adjusted;
+                (*sponsorSle)->setFieldU32(sfSponsoringOwnerCount, adjusted);
             view.update(*sponsorSle);
         }
         {
             // modify account's SponsoredOwnerCount
             std::uint32_t const current{
                 accountSle->getFieldU32(sfSponsoredOwnerCount)};
-            AccountID const id = (*accountSle)[sfAccount];
             std::uint32_t const adjusted =
-                confineOwnerCount(current, amount, id, j);
-            view.adjustOwnerCountHook(id, current, adjusted);
+                confineOwnerCount(current, amount, account, j);
+            view.adjustOwnerCountHook(account, current, adjusted);
             if (adjusted == 0)
                 accountSle->makeFieldAbsent(sfSponsoredOwnerCount);
             else
-                accountSle->at(sfSponsoredOwnerCount) = adjusted;
+                accountSle->setFieldU32(sfSponsoredOwnerCount, adjusted);
             view.update(accountSle);
         }
 
-        auto sle = view.peek(keylet::sponsor(
-            (*sponsorSle)->getAccountID(sfAccount),
-            accountSle->getAccountID(sfAccount)));
+        auto sle = view.peek(keylet::sponsor(sponsorAcc, account));
 
         if (sle && amount > 0)
         {
             // pre funded
-            // modify sponsor's ReserveCount
-
+            // update the pre-funded ReserveCount on Sponsorship ledger object
             XRPL_ASSERT(
-                sle, "ripple::adjustOwnerCount : co-signing sponsor not found");
+                sle, "ripple::adjustOwnerCount : co-signing sponsor exists");
 
             auto const currentReserveCount = sle->getFieldU32(sfReserveCount);
             XRPL_ASSERT(
                 currentReserveCount >= amount,
-                "ripple::adjustOwnerCount : reserve count not enough");
+                "ripple::adjustOwnerCount : enough reserve count");
 
-            sle->at(sfReserveCount) = currentReserveCount - amount;
+            sle->setFieldU32(sfReserveCount, currentReserveCount - amount);
             view.update(sle);
         }
     }

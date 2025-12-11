@@ -183,6 +183,11 @@ public:
             sponsor::sponseeAcc(noFunded),
             ter(tecNO_DST));
 
+        // Invalid Sponsor
+        env(sponsor::set(sponsor, tfDeleteObject),
+            sponsor::sponsorAcc(noFunded),
+            ter(tecNO_DST));
+
         // Invalid Delete operation (sponsorship not found)
         env(sponsor::set(sponsor, tfDeleteObject),
             sponsor::sponseeAcc(alice),

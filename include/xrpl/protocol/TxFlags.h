@@ -280,6 +280,7 @@ constexpr std::uint32_t tfSponsorshipSetRequireSignForReserve                = 0
 constexpr std::uint32_t tfSponsorshipClearRequireSignForReserve              = 0x00080000;
 constexpr std::uint32_t tfDeleteObject                                       = 0x00100000;
 constexpr std::uint32_t tfSponsorshipSetMask = ~(tfUniversal | tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee | tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve | tfDeleteObject);
+constexpr std::uint32_t tfSponsorshipSetPermissionMask = ~(tfUniversal | tfSponsorshipSetRequireSignForFee | tfSponsorshipSetRequireSignForReserve );
 
 // clang-format on
 
