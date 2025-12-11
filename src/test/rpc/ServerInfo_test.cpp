@@ -260,7 +260,7 @@ admin = 127.0.0.1
                     result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
                 Json::Value const& leFlags =
                     result[jss::result][jss::LEDGER_ENTRY_FLAGS];
-                BEAST_EXPECT(leFlags.size() == 43);
+                BEAST_EXPECT(leFlags.size() == 54);
 
                 // test the mapped value of a few arbitrarily chosen flags
                 BEAST_EXPECT(leFlags["lsfDisallowXRP"] == 0x00080000);

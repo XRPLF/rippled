@@ -117,96 +117,99 @@ enum LedgerEntryType : std::uint16_t
 };
 // clang-format off
 
+// define an X-MACRO format for the ledger-specific-flags.
+// This common definition can be used to define both an enum and a std::unordered_map for these flags
+#define LIST_OF_LSF_FLAGS(X) \
+    /* ltACCOUNT_ROOT */ \
+    X(lsfPasswordSpent, 0x00010000) /* True, if password set fee is spent. */ \
+    X(lsfRequireDestTag, 0x00020000) /* True, to require a DestinationTag for payments. */ \
+    X(lsfRequireAuth, 0x00040000) /* True, to require a authorization to hold IOUs. */ \
+    X(lsfDisallowXRP, 0x00080000) /* True, to disallow sending XRP. */ \
+    X(lsfDisableMaster, 0x00100000) /* True, force regular key */ \
+    X(lsfNoFreeze, 0x00200000) /* True, cannot freeze ripple states */ \
+    X(lsfGlobalFreeze, 0x00400000) /* True, all assets frozen */ \
+    X(lsfDefaultRipple, 0x00800000) /* True, incoming trust lines allow rippling by default */ \
+    X(lsfDepositAuth, 0x01000000) /* True, all deposits require authorization */ \
+/*  // reserved for Hooks amendment
+X(lsfTshCollect = 0x02000000)     // True, allow TSH collect-calls to acc hooks
+*/ \
+    X(lsfDisallowIncomingNFTokenOffer, 0x04000000) /* True, reject new incoming NFT offers */ \
+    X(lsfDisallowIncomingCheck, 0x08000000) /* True, reject new checks */ \
+    X(lsfDisallowIncomingPayChan, 0x10000000) /* True, reject new paychans */ \
+    X(lsfDisallowIncomingTrustline, 0x20000000) /* True, reject new trustlines (only if no issued assets) */ \
+    X(lsfAllowTrustLineLocking, 0x40000000) /* True, enable trustline locking */ \
+    X(lsfAllowTrustLineClawback, 0x80000000) /* True, enable clawback */ \
+    \
+    /* OFFER */ \
+    X(lsfPassive, 0x00010000) \
+    X(lsfSell, 0x00020000) /* True, offer was placed as a sell. */ \
+    X(lsfHybrid, 0x00040000) /* True, offer is hybrid. */ \
+    \
+    /* ltRIPPLE_STATE */ \
+    X(lsfLowReserve, 0x00010000) /* True, if entry counts toward reserve. */ \
+    X(lsfHighReserve, 0x00020000) \
+    X(lsfLowAuth, 0x00040000) \
+    X(lsfHighAuth, 0x00080000) \
+    X(lsfLowNoRipple, 0x00100000) \
+    X(lsfHighNoRipple, 0x00200000) \
+    X(lsfLowFreeze, 0x00400000) /* True, low side has set freeze flag */ \
+    X(lsfHighFreeze, 0x00800000) /* True, high side has set freeze flag */ \
+    X(lsfLowDeepFreeze, 0x02000000) /* True, low side has set deep freeze flag */ \
+    X(lsfHighDeepFreeze, 0x04000000) /* True, high side has set deep freeze flag */ \
+    X(lsfAMMNode, 0x01000000) /* True, trust line to AMM. Used by client apps to identify payments via AMM. */ \
+    \
+    /* ltSIGNER_LIST */ \
+    X(lsfOneOwnerCount, 0x00010000) /* True, uses only one OwnerCount */ \
+    \
+    /* ltDIR_NODE */ \
+    X(lsfNFTokenBuyOffers, 0x00000001) \
+    X(lsfNFTokenSellOffers, 0x00000002) \
+    \
+    /* ltNFTOKEN_OFFER */ \
+    X(lsfSellNFToken, 0x00000001) \
+    \
+    /* ltMPTOKEN_ISSUANCE */ \
+    X(lsfMPTLocked, 0x00000001) /* Also used in ltMPTOKEN */ \
+    X(lsfMPTCanLock, 0x00000002) \
+    X(lsfMPTRequireAuth, 0x00000004) \
+    X(lsfMPTCanEscrow, 0x00000008) \
+    X(lsfMPTCanTrade, 0x00000010) \
+    X(lsfMPTCanTransfer, 0x00000020) \
+    X(lsfMPTCanClawback, 0x00000040) \
+    \
+    X(lsmfMPTCanMutateCanLock, 0x00000002) \
+    X(lsmfMPTCanMutateRequireAuth, 0x00000004) \
+    X(lsmfMPTCanMutateCanEscrow, 0x00000008) \
+    X(lsmfMPTCanMutateCanTrade, 0x00000010) \
+    X(lsmfMPTCanMutateCanTransfer, 0x00000020) \
+    X(lsmfMPTCanMutateCanClawback, 0x00000040) \
+    X(lsmfMPTCanMutateMetadata, 0x00010000) \
+    X(lsmfMPTCanMutateTransferFee, 0x00020000) \
+    \
+    /* ltMPTOKEN */ \
+    X(lsfMPTAuthorized, 0x00000002) \
+    \
+    /* ltCREDENTIAL */ \
+    X(lsfAccepted, 0x00010000) \
+    \
+    /* ltVAULT */ \
+    X(lsfVaultPrivate, 0x00010000) \
+    \
+    /* ltLOAN */ \
+    X(lsfLoanDefault, 0x00010000) \
+    X(lsfLoanImpaired, 0x00020000) \
+    X(lsfLoanOverpayment, 0x00040000) /* True, loan allows overpayments */ \
+
+#define LSF_MAP_DEFINTIION(flagName, flagValue) {#flagName, flagValue},
+std::unordered_map<std::string, unsigned int> const LSFlags = { LIST_OF_LSF_FLAGS(LSF_MAP_DEFINTIION) };
+
 /**
     @ingroup protocol
-    Note: If there are additions to the LedgerSpecificFlags enum, please update
-    the std::unordered_map LSFlags inside ServerInfo.cpp file.
 */
-enum LedgerSpecificFlags {
-    // ltACCOUNT_ROOT
-    lsfPasswordSpent = 0x00010000,  // True, if password set fee is spent.
-    lsfRequireDestTag =
-        0x00020000,  // True, to require a DestinationTag for payments.
-    lsfRequireAuth =
-        0x00040000,  // True, to require a authorization to hold IOUs.
-    lsfDisallowXRP = 0x00080000,    // True, to disallow sending XRP.
-    lsfDisableMaster = 0x00100000,  // True, force regular key
-    lsfNoFreeze = 0x00200000,       // True, cannot freeze ripple states
-    lsfGlobalFreeze = 0x00400000,   // True, all assets frozen
-    lsfDefaultRipple =
-        0x00800000,               // True, incoming trust lines allow rippling by default
-    lsfDepositAuth = 0x01000000,  // True, all deposits require authorization
-/*  // reserved for Hooks amendment
-    lsfTshCollect = 0x02000000,     // True, allow TSH collect-calls to acc hooks
-*/
-    lsfDisallowIncomingNFTokenOffer =
-        0x04000000,               // True, reject new incoming NFT offers
-    lsfDisallowIncomingCheck =
-        0x08000000,               // True, reject new checks
-    lsfDisallowIncomingPayChan =
-        0x10000000,               // True, reject new paychans
-    lsfDisallowIncomingTrustline =
-        0x20000000,               // True, reject new trustlines (only if no issued assets)
-    lsfAllowTrustLineLocking =
-        0x40000000,               // True, enable trustline locking
-    lsfAllowTrustLineClawback =
-        0x80000000,               // True, enable clawback
-
-    // ltOFFER
-    lsfPassive = 0x00010000,
-    lsfSell = 0x00020000,  // True, offer was placed as a sell.
-    lsfHybrid = 0x00040000,  // True, offer is hybrid.
-
-    // ltRIPPLE_STATE
-    lsfLowReserve = 0x00010000,  // True, if entry counts toward reserve.
-    lsfHighReserve = 0x00020000,
-    lsfLowAuth = 0x00040000,
-    lsfHighAuth = 0x00080000,
-    lsfLowNoRipple = 0x00100000,
-    lsfHighNoRipple = 0x00200000,
-    lsfLowFreeze = 0x00400000,      // True, low side has set freeze flag
-    lsfHighFreeze = 0x00800000,     // True, high side has set freeze flag
-    lsfLowDeepFreeze = 0x02000000,  // True, low side has set deep freeze flag
-    lsfHighDeepFreeze = 0x04000000, // True, high side has set deep freeze flag
-    lsfAMMNode = 0x01000000,        // True, trust line to AMM. Used by client
-                                    // apps to identify payments via AMM.
-
-    // ltSIGNER_LIST
-    lsfOneOwnerCount = 0x00010000,  // True, uses only one OwnerCount
-
-    // ltDIR_NODE
-    lsfNFTokenBuyOffers = 0x00000001,
-    lsfNFTokenSellOffers = 0x00000002,
-
-    // ltNFTOKEN_OFFER
-    lsfSellNFToken = 0x00000001,
-
-    // ltMPTOKEN_ISSUANCE
-    lsfMPTLocked = 0x00000001, // Also used in ltMPTOKEN
-    lsfMPTCanLock = 0x00000002,
-    lsfMPTRequireAuth = 0x00000004,
-    lsfMPTCanEscrow = 0x00000008,
-    lsfMPTCanTrade = 0x00000010,
-    lsfMPTCanTransfer = 0x00000020,
-    lsfMPTCanClawback = 0x00000040,
-
-    lsmfMPTCanMutateCanLock = 0x00000002,
-    lsmfMPTCanMutateRequireAuth = 0x00000004,
-    lsmfMPTCanMutateCanEscrow = 0x00000008,
-    lsmfMPTCanMutateCanTrade = 0x00000010,
-    lsmfMPTCanMutateCanTransfer = 0x00000020,
-    lsmfMPTCanMutateCanClawback = 0x00000040,
-    lsmfMPTCanMutateMetadata = 0x00010000,
-    lsmfMPTCanMutateTransferFee = 0x00020000,
-
-    // ltMPTOKEN
-    lsfMPTAuthorized = 0x00000002,
-
-    // ltCREDENTIAL
-    lsfAccepted = 0x00010000,
-
-    // ltVAULT
-    lsfVaultPrivate = 0x00010000,
+#define FLAG_ENUM_DEFINITION(flagName, flagValue) flagName = flagValue,
+enum LedgerSpecificFlags
+{
+    LIST_OF_LSF_FLAGS(FLAG_ENUM_DEFINITION)
 };
 
 //------------------------------------------------------------------------------
