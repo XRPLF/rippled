@@ -89,18 +89,20 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     if (sharesTotal > 0 && assetsTotal == 0 && assetsAvailable == 0 &&
         account == owner)
     {
-        Number const sharesHeld = accountHolds(
-            ctx.view,
-            holder,
-            share,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            ctx.j);
+        if (auto const amount = ctx.tx[~sfAmount]; amount)
+        {
+            Number const sharesHeld = accountHolds(
+                ctx.view,
+                holder,
+                share,
+                FreezeHandling::fhIGNORE_FREEZE,
+                AuthHandling::ahIGNORE_AUTH,
+                ctx.j);
 
-        // The VaultOwner must burn all shares
-        if (std::optional<Number> const amount = ctx.tx[~sfAmount];
-            amount && *amount != sharesHeld)
-            return tecLIMIT_EXCEEDED;
+            // The VaultOwner must burn all shares
+            if (*amount != sharesHeld)
+                return tecLIMIT_EXCEEDED;
+        }
 
         return tesSUCCESS;
     }

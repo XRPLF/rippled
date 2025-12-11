@@ -3467,21 +3467,40 @@ ValidVault::finalize(
                 }
 
                 auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+                if (vaultDeltaAssets)
+                {
+                    if (*vaultDeltaAssets >= zero)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must decrease vault "
+                            "balance";
+                        result = false;
+                    }
 
-                if (!vaultDeltaAssets && !vaultHoldsNoAssets(beforeVault))
+                    if (beforeVault.assetsTotal + *vaultDeltaAssets !=
+                        afterVault.assetsTotal)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback and assets outstanding "
+                            "must add up";
+                        result = false;
+                    }
+
+                    if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
+                        afterVault.assetsAvailable)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback and assets available "
+                            "must "
+                            "add up";
+                        result = false;
+                    }
+                }
+                else if (!vaultHoldsNoAssets(beforeVault))
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback must change vault balance";
                     return false;  // That's all we can do
-                }
-
-                if (*vaultDeltaAssets >= zero &&
-                    !vaultHoldsNoAssets(beforeVault))
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must decrease vault "
-                        "balance";
-                    result = false;
                 }
 
                 auto const accountDeltaShares = deltaShares(tx[sfHolder]);
@@ -3513,26 +3532,6 @@ ValidVault::finalize(
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback must change holder and "
                         "vault shares by equal amount";
-                    result = false;
-                }
-
-                if (!vaultHoldsNoAssets(beforeVault) &&
-                    beforeVault.assetsTotal + *vaultDeltaAssets !=
-                        afterVault.assetsTotal)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback and assets outstanding "
-                        "must add up";
-                    result = false;
-                }
-
-                if (!vaultHoldsNoAssets(beforeVault) &&
-                    beforeVault.assetsAvailable + *vaultDeltaAssets !=
-                        afterVault.assetsAvailable)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback and assets available must "
-                        "add up";
                     result = false;
                 }
 
