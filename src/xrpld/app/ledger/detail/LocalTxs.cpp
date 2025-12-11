@@ -126,7 +126,7 @@ public:
         std::lock_guard lock(m_lock);
 
         m_txns.remove_if([&view](auto const& txn) {
-            if (txn.isExpired(view.info().seq))
+            if (txn.isExpired(view.header().seq))
                 return true;
             if (view.txExists(txn.getID()))
                 return true;

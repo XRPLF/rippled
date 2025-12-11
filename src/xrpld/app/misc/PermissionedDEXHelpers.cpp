@@ -29,7 +29,7 @@ accountInDomain(
                 return false;
 
             return !credentials::checkExpired(
-                sleCred, view.info().parentCloseTime);
+                sleCred, view.header().parentCloseTime);
         });
 
     return inDomain;

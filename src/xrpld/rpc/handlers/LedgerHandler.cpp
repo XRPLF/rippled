@@ -103,7 +103,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     }
 
     Serializer s;
-    addRaw(ledger->info(), s, true);
+    addRaw(ledger->header(), s, true);
 
     response.set_ledger_header(s.peekData().data(), s.getLength());
 
@@ -139,7 +139,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
         {
             JLOG(context.j.error())
                 << __func__ << " - Error deserializing transaction in ledger "
-                << ledger->info().seq
+                << ledger->header().seq
                 << " . skipping transaction and following transactions. You "
                    "should look into this further";
         }

@@ -173,7 +173,7 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
                                                 : ", waiting to fill parameter")
                            << ", deltaIndex=" << deltaToBuild_
                            << ", totalDeltas=" << deltas_.size() << ", parent "
-                           << (parent_ ? parent_->info().hash : uint256());
+                           << (parent_ ? parent_->header().hash : uint256());
 
     bool shouldTry = parent_ && parameter_.full_ &&
         parameter_.totalLedgers_ - 1 == deltas_.size();
@@ -191,7 +191,7 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
             if (auto l = delta->tryBuild(parent_); l)
             {
                 JLOG(journal_.debug())
-                    << "Task " << hash_ << " got ledger " << l->info().hash
+                    << "Task " << hash_ << " got ledger " << l->header().hash
                     << " deltaIndex=" << deltaToBuild_
                     << " totalDeltas=" << deltas_.size();
                 parent_ = l;

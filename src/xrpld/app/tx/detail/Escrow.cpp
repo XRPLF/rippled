@@ -416,7 +416,7 @@ escrowLockApplyHelper<MPTIssue>(
 TER
 EscrowCreate::doApply()
 {
-    auto const closeTime = ctx_.view().info().parentCloseTime;
+    auto const closeTime = ctx_.view().header().parentCloseTime;
 
     if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
         return tecNO_PERMISSION;
@@ -964,7 +964,7 @@ EscrowFinish::doApply()
 
     // If a cancel time is present, a finish operation should only succeed prior
     // to that time.
-    auto const now = ctx_.view().info().parentCloseTime;
+    auto const now = ctx_.view().header().parentCloseTime;
 
     // Too soon: can't execute before the finish time
     if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
@@ -1226,7 +1226,7 @@ EscrowCancel::doApply()
         return tecNO_TARGET;
     }
 
-    auto const now = ctx_.view().info().parentCloseTime;
+    auto const now = ctx_.view().header().parentCloseTime;
 
     // No cancel time specified: can't execute at all.
     if (!(*slep)[~sfCancelAfter])

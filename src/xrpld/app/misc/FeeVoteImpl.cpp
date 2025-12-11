@@ -266,7 +266,7 @@ FeeVoteImpl::doVoting(
     auto const baseReserve = baseReserveVote.getVotes();
     auto const incReserve = incReserveVote.getVotes();
 
-    auto const seq = lastClosedLedger->info().seq + 1;
+    auto const seq = lastClosedLedger->header().seq + 1;
 
     // add transactions to our position
     if (baseFee.second || baseReserve.second || incReserve.second)

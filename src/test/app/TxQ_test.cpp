@@ -726,7 +726,7 @@ public:
         env(noop(daria));
         checkMetrics(*this, env, 0, std::nullopt, 3, 2);
 
-        BEAST_EXPECT(env.current()->info().seq == 6);
+        BEAST_EXPECT(env.current()->header().seq == 6);
         // Fail to queue an item with a low LastLedgerSeq
         env(noop(alice), last_ledger_seq(7), ter(telCAN_NOT_QUEUE));
         // Queue an item with a sufficient LastLedgerSeq.
@@ -1075,7 +1075,7 @@ public:
         // Alice - fill up the queue
         std::int64_t aliceFee = 27;
         aliceSeq = env.seq(alice);
-        auto lastLedgerSeq = env.current()->info().seq + 2;
+        auto lastLedgerSeq = env.current()->header().seq + 2;
         for (auto i = 0; i < 7; i++)
         {
             env(noop(alice),
@@ -2683,7 +2683,7 @@ public:
         checkMetrics(*this, env, 0, std::nullopt, 2, 1);
 
         auto const aliceSeq = env.seq(alice);
-        BEAST_EXPECT(env.current()->info().seq == 3);
+        BEAST_EXPECT(env.current()->header().seq == 3);
         env(noop(alice), seq(aliceSeq), last_ledger_seq(5), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 1), last_ledger_seq(5), ter(terQUEUED));
         env(noop(alice),
@@ -2779,7 +2779,7 @@ public:
         checkMetrics(*this, env, 0, std::nullopt, 2, 1);
 
         auto const aliceSeq = env.seq(alice);
-        BEAST_EXPECT(env.current()->info().seq == 3);
+        BEAST_EXPECT(env.current()->header().seq == 3);
 
         // Start by procuring tickets for alice to use to keep her queue full
         // without affecting the sequence gap that will appear later.
@@ -2932,7 +2932,7 @@ public:
 
         // Queue up several transactions for alice sign-and-submit
         auto const aliceSeq = env.seq(alice);
-        auto const lastLedgerSeq = env.current()->info().seq + 2;
+        auto const lastLedgerSeq = env.current()->header().seq + 2;
 
         auto submitParams = Json::Value(Json::objectValue);
         for (int i = 0; i < 5; ++i)
@@ -3073,7 +3073,7 @@ public:
         prevLedgerWithQueue[jss::account] = alice.human();
         prevLedgerWithQueue[jss::queue] = true;
         prevLedgerWithQueue[jss::ledger_index] = 3;
-        BEAST_EXPECT(env.current()->info().seq > 3);
+        BEAST_EXPECT(env.current()->header().seq > 3);
 
         {
             // account_info without the "queue" argument.

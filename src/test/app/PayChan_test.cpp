@@ -322,7 +322,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const pk = alice.pk();
             auto const settleDelay = 100s;
             NetClock::time_point const cancelAfter =
-                env.current()->info().parentCloseTime + 3600s;
+                env.current()->header().parentCloseTime + 3600s;
             auto const channelFunds = XRP(1000);
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
@@ -354,7 +354,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const pk = alice.pk();
             auto const settleDelay = 100s;
             NetClock::time_point const cancelAfter =
-                env.current()->info().parentCloseTime + 3600s;
+                env.current()->header().parentCloseTime + 3600s;
             auto const channelFunds = XRP(1000);
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
@@ -385,7 +385,7 @@ struct PayChan_test : public beast::unit_test::suite
                 auto const settleDelay = 100s;
                 auto const channelFunds = XRP(1000);
                 NetClock::time_point const cancelAfter =
-                    env.current()->info().parentCloseTime - 1s;
+                    env.current()->header().parentCloseTime - 1s;
                 auto const txResult =
                     withFixPayChan ? ter(tecEXPIRED) : ter(tesSUCCESS);
                 env(create(
@@ -409,7 +409,7 @@ struct PayChan_test : public beast::unit_test::suite
                 auto const settleDelay = 100s;
                 auto const channelFunds = XRP(1000);
                 NetClock::time_point const cancelAfter =
-                    env.current()->info().parentCloseTime;
+                    env.current()->header().parentCloseTime;
                 env(create(
                         alice, bob, channelFunds, settleDelay, pk, cancelAfter),
                     ter(tesSUCCESS));
@@ -430,7 +430,7 @@ struct PayChan_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice, bob, carol);
         auto const pk = alice.pk();
         auto const settleDelay = 3600s;
-        auto const closeTime = env.current()->info().parentCloseTime;
+        auto const closeTime = env.current()->header().parentCloseTime;
         auto const minExpiration = closeTime + settleDelay;
         NetClock::time_point const cancelAfter = closeTime + 7200s;
         auto const channelFunds = XRP(1000);
@@ -496,7 +496,7 @@ struct PayChan_test : public beast::unit_test::suite
         auto const pk = alice.pk();
         auto const settleDelay = 3600s;
         NetClock::time_point const settleTimepoint =
-            env.current()->info().parentCloseTime + settleDelay;
+            env.current()->header().parentCloseTime + settleDelay;
         auto const channelFunds = XRP(1000);
         auto const chan = channel(alice, bob, env.seq(alice));
         env(create(alice, bob, channelFunds, settleDelay, pk));
@@ -861,7 +861,7 @@ struct PayChan_test : public beast::unit_test::suite
             {  // create credentials
                 auto jv = credentials::create(alice, carol, credType);
                 uint32_t const t = env.current()
-                                       ->info()
+                                       ->header()
                                        .parentCloseTime.time_since_epoch()
                                        .count() +
                     100;
@@ -1910,7 +1910,7 @@ struct PayChan_test : public beast::unit_test::suite
                 env.close();
                 // settle delay hasn't elapsed. Channels should exist.
                 BEAST_EXPECT(channelExists(*env.current(), chan));
-                auto const closeTime = env.current()->info().parentCloseTime;
+                auto const closeTime = env.current()->header().parentCloseTime;
                 auto const minExpiration = closeTime + settleDelay;
                 env.close(minExpiration);
                 env(claim(alice, chan), txflags(tfClose));

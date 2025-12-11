@@ -159,6 +159,15 @@ doAccountNFTs(RPC::JsonContext& context)
     return result;
 }
 
+/** Gathers all objects for an account in a ledger.
+    @param ledger Ledger to search account objects.
+    @param account AccountID to find objects for.
+    @param typeFilter Gathers objects of these types. empty gathers all types.
+    @param dirIndex Begin gathering account objects from this directory.
+    @param entryIndex Begin gathering objects from this directory node.
+    @param limit Maximum number of objects to find.
+    @param jvResult A JSON result that holds the request objects.
+*/
 bool
 getAccountObjects(
     ReadView const& ledger,

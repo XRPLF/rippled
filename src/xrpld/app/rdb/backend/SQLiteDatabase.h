@@ -100,7 +100,7 @@ public:
      * @param ledgerFirstIndex Minimum ledger sequence.
      * @return Ledger info if found, otherwise no value.
      */
-    virtual std::optional<LedgerInfo>
+    virtual std::optional<LedgerHeader>
     getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex) = 0;
 
     /**
@@ -110,7 +110,7 @@ public:
      * @param ledgerFirstIndex Minimum ledger sequence.
      * @return Ledger info if found, otherwise no value.
      */
-    virtual std::optional<LedgerInfo>
+    virtual std::optional<LedgerHeader>
     getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex) = 0;
 
     /**

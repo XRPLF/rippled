@@ -57,7 +57,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     std::uint32_t
     lastClose(test::jtx::Env& env)
     {
-        return env.current()->info().parentCloseTime.time_since_epoch().count();
+        return env.current()
+            ->header()
+            .parentCloseTime.time_since_epoch()
+            .count();
     }
 
     void

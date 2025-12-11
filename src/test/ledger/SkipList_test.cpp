@@ -35,32 +35,35 @@ class SkipList_test : public beast::unit_test::suite
 
         {
             auto l = *(std::next(std::begin(history)));
-            BEAST_EXPECT((*std::begin(history))->info().seq < l->info().seq);
             BEAST_EXPECT(
-                !hashOfSeq(*l, l->info().seq + 1, env.journal).has_value());
+                (*std::begin(history))->header().seq < l->header().seq);
             BEAST_EXPECT(
-                hashOfSeq(*l, l->info().seq, env.journal) == l->info().hash);
+                !hashOfSeq(*l, l->header().seq + 1, env.journal).has_value());
             BEAST_EXPECT(
-                hashOfSeq(*l, l->info().seq - 1, env.journal) ==
-                l->info().parentHash);
-            BEAST_EXPECT(!hashOfSeq(*history.back(), l->info().seq, env.journal)
-                              .has_value());
+                hashOfSeq(*l, l->header().seq, env.journal) ==
+                l->header().hash);
+            BEAST_EXPECT(
+                hashOfSeq(*l, l->header().seq - 1, env.journal) ==
+                l->header().parentHash);
+            BEAST_EXPECT(
+                !hashOfSeq(*history.back(), l->header().seq, env.journal)
+                     .has_value());
         }
 
         // ledger skip lists store up to the previous 256 hashes
         for (auto i = history.crbegin(); i != history.crend(); i += 256)
         {
             for (auto n = i;
-                 n != std::next(i, (*i)->info().seq - 256 > 1 ? 257 : 256);
+                 n != std::next(i, (*i)->header().seq - 256 > 1 ? 257 : 256);
                  ++n)
             {
                 BEAST_EXPECT(
-                    hashOfSeq(**i, (*n)->info().seq, env.journal) ==
-                    (*n)->info().hash);
+                    hashOfSeq(**i, (*n)->header().seq, env.journal) ==
+                    (*n)->header().hash);
             }
 
             // edge case accessing beyond 256
-            BEAST_EXPECT(!hashOfSeq(**i, (*i)->info().seq - 258, env.journal)
+            BEAST_EXPECT(!hashOfSeq(**i, (*i)->header().seq - 258, env.journal)
                               .has_value());
         }
 
@@ -71,8 +74,8 @@ class SkipList_test : public beast::unit_test::suite
             for (auto n = std::next(i, 512); n != history.crend(); n += 256)
             {
                 BEAST_EXPECT(
-                    hashOfSeq(**i, (*n)->info().seq, env.journal) ==
-                    (*n)->info().hash);
+                    hashOfSeq(**i, (*n)->header().seq, env.journal) ==
+                    (*n)->header().hash);
             }
         }
     }

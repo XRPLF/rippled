@@ -4,12 +4,12 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/core/TimeKeeper.h>
-#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/core/PerfLog.h>
 
 #include <memory>
 
@@ -23,7 +23,7 @@ RCLValidatedLedger::RCLValidatedLedger(MakeGenesis)
 RCLValidatedLedger::RCLValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     beast::Journal j)
-    : ledgerID_{ledger->info().hash}, ledgerSeq_{ledger->seq()}, j_{j}
+    : ledgerID_{ledger->header().hash}, ledgerSeq_{ledger->seq()}, j_{j}
 {
     auto const hashIndex = ledger->read(keylet::skip());
     if (hashIndex)
@@ -136,7 +136,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
         !ledger->open() && ledger->isImmutable(),
         "xrpl::RCLValidationsAdaptor::acquire : valid ledger state");
     XRPL_ASSERT(
-        ledger->info().hash == hash,
+        ledger->header().hash == hash,
         "xrpl::RCLValidationsAdaptor::acquire : ledger hash match");
 
     return RCLValidatedLedger(std::move(ledger), j_);

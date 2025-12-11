@@ -1,6 +1,6 @@
 #include <test/jtx.h>
 
-#include <xrpld/core/JobQueue.h>
+#include <xrpl/core/JobQueue.h>
 
 #include <chrono>
 #include <mutex>

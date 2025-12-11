@@ -233,10 +233,10 @@ private:
         catch (SHAMapMissingNode const& mn)
         {
             JLOG(j_.warn())
-                << "Ledger #" << ledger->info().seq << ": " << mn.what();
+                << "Ledger #" << ledger->header().seq << ": " << mn.what();
             app_.getInboundLedgers().acquire(
-                ledger->info().hash,
-                ledger->info().seq,
+                ledger->header().hash,
+                ledger->header().seq,
                 InboundLedger::Reason::GENERIC);
         }
         return hash ? *hash : beast::zero;  // kludge
@@ -268,8 +268,8 @@ private:
         }
 
         auto dbLedger = loadByIndex(ledgerIndex, app_);
-        if (!dbLedger || (dbLedger->info().hash != ledgerHash) ||
-            (dbLedger->info().parentHash != nodeLedger->info().parentHash))
+        if (!dbLedger || (dbLedger->header().hash != ledgerHash) ||
+            (dbLedger->header().parentHash != nodeLedger->header().parentHash))
         {
             // Ideally we'd also check for more than one ledger with that index
             JLOG(j_.debug())
@@ -314,7 +314,7 @@ private:
     {
         LedgerHash ledgerHash;
 
-        if (!referenceLedger || (referenceLedger->info().seq < ledgerIndex))
+        if (!referenceLedger || (referenceLedger->header().seq < ledgerIndex))
         {
             referenceLedger = app_.getLedgerMaster().getValidatedLedger();
             if (!referenceLedger)
@@ -324,7 +324,7 @@ private:
             }
         }
 
-        if (referenceLedger->info().seq >= ledgerIndex)
+        if (referenceLedger->header().seq >= ledgerIndex)
         {
             // See if the hash for the ledger we need is in the reference ledger
             ledgerHash = getLedgerHash(referenceLedger, ledgerIndex);

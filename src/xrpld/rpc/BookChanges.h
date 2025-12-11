@@ -166,11 +166,11 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     jvObj[jss::type] = "bookChanges";
 
     // retrieve validated information from LedgerHeader class
-    jvObj[jss::validated] = lpAccepted->info().validated;
-    jvObj[jss::ledger_index] = lpAccepted->info().seq;
-    jvObj[jss::ledger_hash] = to_string(lpAccepted->info().hash);
+    jvObj[jss::validated] = lpAccepted->header().validated;
+    jvObj[jss::ledger_index] = lpAccepted->header().seq;
+    jvObj[jss::ledger_hash] = to_string(lpAccepted->header().hash);
     jvObj[jss::ledger_time] = Json::Value::UInt(
-        lpAccepted->info().closeTime.time_since_epoch().count());
+        lpAccepted->header().closeTime.time_since_epoch().count());
 
     jvObj[jss::changes] = Json::arrayValue;
 

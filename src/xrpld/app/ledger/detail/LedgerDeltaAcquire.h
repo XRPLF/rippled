@@ -69,7 +69,7 @@ public:
      */
     void
     processData(
-        LedgerInfo const& info,
+        LedgerHeader const& info,
         std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns);
 
     /**

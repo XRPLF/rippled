@@ -73,19 +73,19 @@ public:
         std::shared_ptr<Ledger const> const& ledger,
         bool current) override;
 
-    std::optional<LedgerInfo>
+    std::optional<LedgerHeader>
     getLedgerInfoByIndex(LedgerIndex ledgerSeq) override;
 
-    std::optional<LedgerInfo>
+    std::optional<LedgerHeader>
     getNewestLedgerInfo() override;
 
-    std::optional<LedgerInfo>
+    std::optional<LedgerHeader>
     getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex) override;
 
-    std::optional<LedgerInfo>
+    std::optional<LedgerHeader>
     getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex) override;
 
-    std::optional<LedgerInfo>
+    std::optional<LedgerHeader>
     getLedgerInfoByHash(uint256 const& ledgerHash) override;
 
     uint256
@@ -399,7 +399,7 @@ SQLiteDatabaseImp::saveValidatedLedger(
     return true;
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 SQLiteDatabaseImp::getLedgerInfoByIndex(LedgerIndex ledgerSeq)
 {
     if (existsLedger())
@@ -414,7 +414,7 @@ SQLiteDatabaseImp::getLedgerInfoByIndex(LedgerIndex ledgerSeq)
     return {};
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 SQLiteDatabaseImp::getNewestLedgerInfo()
 {
     if (existsLedger())
@@ -429,7 +429,7 @@ SQLiteDatabaseImp::getNewestLedgerInfo()
     return {};
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 SQLiteDatabaseImp::getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex)
 {
     if (existsLedger())
@@ -445,7 +445,7 @@ SQLiteDatabaseImp::getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex)
     return {};
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 SQLiteDatabaseImp::getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex)
 {
     if (existsLedger())
@@ -461,7 +461,7 @@ SQLiteDatabaseImp::getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex)
     return {};
 }
 
-std::optional<LedgerInfo>
+std::optional<LedgerHeader>
 SQLiteDatabaseImp::getLedgerInfoByHash(uint256 const& ledgerHash)
 {
     if (existsLedger())

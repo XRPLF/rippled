@@ -621,7 +621,7 @@ struct NetworkHistory
             keyPair.second,
             v,
             [&](STValidation& v) {
-                v.setFieldH256(sfLedgerHash, ledger->info().hash);
+                v.setFieldH256(sfLedgerHash, ledger->header().hash);
                 v.setFieldU32(sfLedgerSequence, ledger->seq());
                 v.setFlag(vfFullValidation);
             });
@@ -1773,7 +1773,7 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
                 keys.second,
                 calcNodeID(keys.first),
                 [&](STValidation& v) {
-                    v.setFieldH256(sfLedgerHash, l->info().hash);
+                    v.setFieldH256(sfLedgerHash, l->header().hash);
                     v.setFieldU32(sfLedgerSequence, l->seq());
                     v.setFlag(vfFullValidation);
                 });

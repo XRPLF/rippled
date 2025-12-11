@@ -1398,7 +1398,7 @@ protected:
         env.close();
 
         auto const startDate =
-            env.current()->info().parentCloseTime.time_since_epoch().count();
+            env.current()->header().parentCloseTime.time_since_epoch().count();
 
         if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             BEAST_EXPECT(brokerSle))
@@ -3761,7 +3761,7 @@ protected:
 
         env.close();
 
-        auto const startDate = env.current()->info().parentCloseTime;
+        auto const startDate = env.current()->header().parentCloseTime;
 
         // Loan is successfully created
         {

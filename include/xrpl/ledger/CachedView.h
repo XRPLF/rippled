@@ -47,10 +47,10 @@ public:
         return base_.open();
     }
 
-    LedgerInfo const&
-    info() const override
+    LedgerHeader const&
+    header() const override
     {
-        return base_.info();
+        return base_.header();
     }
 
     Fees const&
