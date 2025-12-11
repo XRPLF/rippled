@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/Quality.h>
 
-namespace ripple {
+namespace xrpl {
 
 class PaymentSandbox;
 class Sandbox;
@@ -78,6 +78,6 @@ private:
 
 using OfferCreate = CreateOffer;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

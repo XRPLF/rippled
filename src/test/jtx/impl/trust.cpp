@@ -5,7 +5,7 @@
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -65,4 +65,4 @@ claw(
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

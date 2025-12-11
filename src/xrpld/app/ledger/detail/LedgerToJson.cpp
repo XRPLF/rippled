@@ -10,7 +10,7 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -145,7 +145,7 @@ fillJsonTx(
         }
 
         if (!fill.ledger.open())
-            txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
+            txJson[jss::ledger_hash] = to_string(fill.ledger.header().hash);
 
         bool const validated =
             fill.context->ledgerMaster.isValidated(fill.ledger);
@@ -299,12 +299,12 @@ fillJson(Json::Value& json, LedgerFill const& fill)
     // Is there a way to report this back?
     auto bFull = isFull(fill);
     if (isBinary(fill))
-        fillJsonBinary(json, !fill.ledger.open(), fill.ledger.info());
+        fillJsonBinary(json, !fill.ledger.open(), fill.ledger.header());
     else
         fillJson(
             json,
             !fill.ledger.open(),
-            fill.ledger.info(),
+            fill.ledger.header(),
             bFull,
             (fill.context ? fill.context->apiVersion
                           : RPC::apiMaximumSupportedVersion));
@@ -352,4 +352,4 @@ copyFrom(Json::Value& to, Json::Value const& from)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -14,7 +14,7 @@
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/shamap/SHAMap.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class Job;
@@ -130,15 +130,15 @@ public:
     }
 
     LedgerHeader const&
-    info() const override
+    header() const override
     {
-        return info_;
+        return header_;
     }
 
     void
     setLedgerInfo(LedgerHeader const& info)
     {
-        info_ = info;
+        header_ = info;
     }
 
     Fees const&
@@ -213,7 +213,7 @@ public:
     void
     rawDestroyXRP(XRPAmount const& fee) override
     {
-        info_.drops -= fee;
+        header_.drops -= fee;
     }
 
     //
@@ -244,7 +244,7 @@ public:
     void
     setValidated() const
     {
-        info_.validated = true;
+        header_.validated = true;
     }
 
     void
@@ -276,15 +276,15 @@ public:
     setFull() const
     {
         txMap_.setFull();
-        txMap_.setLedgerSeq(info_.seq);
+        txMap_.setLedgerSeq(header_.seq);
         stateMap_.setFull();
-        stateMap_.setLedgerSeq(info_.seq);
+        stateMap_.setLedgerSeq(header_.seq);
     }
 
     void
     setTotalDrops(std::uint64_t totDrops)
     {
-        info_.drops = totDrops;
+        header_.drops = totDrops;
     }
 
     SHAMap const&
@@ -397,7 +397,7 @@ private:
 
     Fees fees_;
     Rules rules_;
-    LedgerHeader info_;
+    LedgerHeader header_;
     beast::Journal j_;
 };
 
@@ -459,6 +459,6 @@ deserializeTxPlusMeta(SHAMapItem const& item);
 uint256
 calculateLedgerHash(LedgerHeader const& info);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

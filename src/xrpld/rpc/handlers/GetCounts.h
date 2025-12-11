@@ -3,7 +3,7 @@
 
 #include <xrpld/app/main/Application.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 getCountsJson(Application& app, int minObjectCount);

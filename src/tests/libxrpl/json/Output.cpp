@@ -6,7 +6,7 @@
 
 #include <string>
 
-using namespace ripple;
+using namespace xrpl;
 using namespace Json;
 
 TEST_SUITE_BEGIN("JsonOutput");

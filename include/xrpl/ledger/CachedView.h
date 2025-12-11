@@ -8,7 +8,7 @@
 #include <mutex>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -48,9 +48,9 @@ public:
     }
 
     LedgerHeader const&
-    info() const override
+    header() const override
     {
-        return base_.info();
+        return base_.header();
     }
 
     Fees const&
@@ -164,6 +164,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

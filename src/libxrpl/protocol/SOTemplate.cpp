@@ -6,7 +6,7 @@
 #include <initializer_list>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 SOTemplate::SOTemplate(
     std::initializer_list<SOElement> uniqueFields,
@@ -50,4 +50,4 @@ SOTemplate::getIndex(SField const& sField) const
     return indices_[sField.getNum()];
 }
 
-}  // namespace ripple
+}  // namespace xrpl

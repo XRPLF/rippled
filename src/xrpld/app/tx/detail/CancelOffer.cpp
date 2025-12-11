@@ -4,7 +4,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 CancelOffer::preflight(PreflightContext const& ctx)
@@ -61,4 +61,4 @@ CancelOffer::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

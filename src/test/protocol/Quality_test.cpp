@@ -3,7 +3,7 @@
 
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 class Quality_test : public beast::unit_test::suite
 {
@@ -396,6 +396,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Quality, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Quality, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

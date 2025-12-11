@@ -7,7 +7,7 @@
 
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 namespace {
 
@@ -21,7 +21,7 @@ byRef(Function const& f)
         if (result.type() != Json::objectValue)
         {
             // LCOV_EXCL_START
-            UNREACHABLE("ripple::RPC::byRef : result is object");
+            UNREACHABLE("xrpl::RPC::byRef : result is object");
             result = RPC::makeObjectValue(result);
             // LCOV_EXCL_STOP
         }
@@ -37,7 +37,7 @@ handle(JsonContext& context, Object& object)
     XRPL_ASSERT(
         context.apiVersion >= HandlerImpl::minApiVer &&
             context.apiVersion <= HandlerImpl::maxApiVer,
-        "ripple::RPC::handle : valid API version");
+        "xrpl::RPC::handle : valid API version");
     HandlerImpl handler(context);
 
     auto status = handler.check();
@@ -193,10 +193,10 @@ private:
     {
         XRPL_ASSERT(
             minVer <= maxVer,
-            "ripple::RPC::HandlerTable : valid API version range");
+            "xrpl::RPC::HandlerTable : valid API version range");
         XRPL_ASSERT(
             maxVer <= RPC::apiMaximumValidVersion,
-            "ripple::RPC::HandlerTable : valid max API version");
+            "xrpl::RPC::HandlerTable : valid max API version");
 
         return std::any_of(
             range.first,
@@ -304,4 +304,4 @@ getHandlerNames()
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

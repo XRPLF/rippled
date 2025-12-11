@@ -9,7 +9,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/serialize.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct LedgerFill
 {
@@ -55,6 +55,6 @@ getJson(LedgerFill const&);
 void
 copyFrom(Json::Value& to, Json::Value const& from);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

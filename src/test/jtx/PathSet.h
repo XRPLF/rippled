@@ -6,7 +6,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /** Count offer
@@ -182,6 +182,6 @@ private:
 };
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

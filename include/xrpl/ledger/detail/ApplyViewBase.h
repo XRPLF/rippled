@@ -6,7 +6,7 @@
 #include <xrpl/ledger/detail/ApplyStateTable.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 class ApplyViewBase : public ApplyView, public RawView
@@ -28,7 +28,7 @@ public:
     open() const override;
 
     LedgerHeader const&
-    info() const override;
+    header() const override;
 
     Fees const&
     fees() const override;
@@ -106,6 +106,6 @@ protected:
 };
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

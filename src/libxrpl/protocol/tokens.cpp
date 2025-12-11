@@ -119,7 +119,7 @@ of another base), and doing the multi-precision computations with larger
 coefficients sizes greatly speeds up the multi-precision computations.
 */
 
-namespace ripple {
+namespace xrpl {
 
 static constexpr char const* alphabetForward =
     "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
@@ -235,7 +235,7 @@ encodeBase58(
             carry /= 58;
         }
         XRPL_ASSERT(
-            carry == 0, "ripple::b58_ref::detail::encodeBase58 : zero carry");
+            carry == 0, "xrpl::b58_ref::detail::encodeBase58 : zero carry");
         pbegin++;
     }
 
@@ -286,7 +286,7 @@ decodeBase58(std::string const& s)
             carry /= 256;
         }
         XRPL_ASSERT(
-            carry == 0, "ripple::b58_ref::detail::decodeBase58 : zero carry");
+            carry == 0, "xrpl::b58_ref::detail::decodeBase58 : zero carry");
         ++psz;
         --remain;
     }
@@ -430,7 +430,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
     while (cur_2_64_end > 0)
     {
         base_58_10_coeff[num_58_10_coeffs] =
-            ripple::b58_fast::detail::inplace_bigint_div_rem(
+            xrpl::b58_fast::detail::inplace_bigint_div_rem(
                 base_2_64_coeff.subspan(0, cur_2_64_end), B_58_10);
         num_58_10_coeffs += 1;
         if (base_2_64_coeff[cur_2_64_end - 1] == 0)
@@ -442,7 +442,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
     // Translate the result into the alphabet
     // Put all the zeros at the beginning, then all the values from the output
     std::fill(
-        out.begin(), out.begin() + input_zeros, ::ripple::alphabetForward[0]);
+        out.begin(), out.begin() + input_zeros, ::xrpl::alphabetForward[0]);
 
     // iterate through the base 58^10 coeff
     // convert to base 58 big endian then
@@ -461,7 +461,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
             return Unexpected(TokenCodecErrc::inputTooLarge);
         }
         std::array<std::uint8_t, 10> const b58_be =
-            ripple::b58_fast::detail::b58_10_to_b58_be(base_58_10_coeff[i]);
+            xrpl::b58_fast::detail::b58_10_to_b58_be(base_58_10_coeff[i]);
         std::size_t to_skip = 0;
         std::span<std::uint8_t const> b58_be_s{b58_be.data(), b58_be.size()};
         if (skip_zeros)
@@ -475,7 +475,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         }
         for (auto b58_coeff : b58_be_s.subspan(to_skip))
         {
-            out[out_index] = ::ripple::alphabetForward[b58_coeff];
+            out[out_index] = ::xrpl::alphabetForward[b58_coeff];
             out_index += 1;
         }
     }
@@ -504,7 +504,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         std::size_t count = 0;
         for (auto const& c : col)
         {
-            if (c != ::ripple::alphabetForward[0])
+            if (c != ::xrpl::alphabetForward[0])
             {
                 return count;
             }
@@ -520,15 +520,15 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     // log(2^(38*8),58^10)) ~= 5.18. So 6 coeff are enough
     std::array<std::uint64_t, 6> b_58_10_coeff{};
     auto [num_full_coeffs, partial_coeff_len] =
-        ripple::b58_fast::detail::div_rem(input.size(), 10);
+        xrpl::b58_fast::detail::div_rem(input.size(), 10);
     auto const num_partial_coeffs = partial_coeff_len ? 1 : 0;
     auto const num_b_58_10_coeffs = num_full_coeffs + num_partial_coeffs;
     XRPL_ASSERT(
         num_b_58_10_coeffs <= b_58_10_coeff.size(),
-        "ripple::b58_fast::detail::b58_to_b256_be : maximum coeff");
+        "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
     for (unsigned char c : input.substr(0, partial_coeff_len))
     {
-        auto cur_val = ::ripple::alphabetReverse[c];
+        auto cur_val = ::xrpl::alphabetReverse[c];
         if (cur_val < 0)
         {
             return Unexpected(TokenCodecErrc::invalidEncodingChar);
@@ -541,7 +541,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         for (int j = 0; j < num_full_coeffs; ++j)
         {
             unsigned char c = input[partial_coeff_len + j * 10 + i];
-            auto cur_val = ::ripple::alphabetReverse[c];
+            auto cur_val = ::xrpl::alphabetReverse[c];
             if (cur_val < 0)
             {
                 return Unexpected(TokenCodecErrc::invalidEncodingChar);
@@ -562,7 +562,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         std::uint64_t const c = b_58_10_coeff[i];
 
         {
-            auto code = ripple::b58_fast::detail::inplace_bigint_mul(
+            auto code = xrpl::b58_fast::detail::inplace_bigint_mul(
                 std::span(&result[0], cur_result_size + 1), B_58_10);
             if (code != TokenCodecErrc::success)
             {
@@ -570,7 +570,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
             }
         }
         {
-            auto code = ripple::b58_fast::detail::inplace_bigint_add(
+            auto code = xrpl::b58_fast::detail::inplace_bigint_add(
                 std::span(&result[0], cur_result_size + 1), c);
             if (code != TokenCodecErrc::success)
             {
@@ -732,4 +732,4 @@ decodeBase58Token(std::string const& s, TokenType type)
 
 }  // namespace b58_fast
 #endif  // _MSC_VER
-}  // namespace ripple
+}  // namespace xrpl

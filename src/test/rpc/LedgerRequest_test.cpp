@@ -8,7 +8,7 @@
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -32,7 +32,7 @@ public:
 
         env.close();
         env.close();
-        BEAST_EXPECT(env.current()->info().seq == 5);
+        BEAST_EXPECT(env.current()->header().seq == 5);
 
         {
             // arbitrary text is converted to 0.
@@ -377,7 +377,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerRequest, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerRequest, rpc, xrpl);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

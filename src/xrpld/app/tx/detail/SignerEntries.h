@@ -11,7 +11,7 @@
 #include <optional>
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 // Forward declarations
 class STObject;
@@ -69,6 +69,6 @@ public:
         std::string_view annotation);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED

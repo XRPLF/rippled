@@ -1,6 +1,6 @@
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags)
@@ -17,9 +17,9 @@ ApplyViewBase::open() const
 }
 
 LedgerHeader const&
-ApplyViewBase::info() const
+ApplyViewBase::header() const
 {
-    return base_->info();
+    return base_->header();
 }
 
 Fees const&
@@ -155,4 +155,4 @@ ApplyViewBase::rawDestroyXRP(XRPAmount const& fee)
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl

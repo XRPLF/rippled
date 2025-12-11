@@ -5,7 +5,7 @@
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/core/Config.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 /* Need to change TableTypeCount if TableType is modified. */
@@ -436,6 +436,6 @@ bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j);
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

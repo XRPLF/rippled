@@ -10,7 +10,7 @@
 #include <xrpl/shamap/SHAMapTxLeafNode.h>
 #include <xrpl/shamap/SHAMapTxPlusMetaLeafNode.h>
 
-namespace ripple {
+namespace xrpl {
 
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapTreeNode::makeTransaction(
@@ -164,4 +164,4 @@ SHAMapTreeNode::getString(SHAMapNodeID const& id) const
     return to_string(id);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

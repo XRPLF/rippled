@@ -17,7 +17,7 @@ namespace Json {
 class Object;
 }
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 struct JsonContext;
@@ -58,6 +58,6 @@ private:
 };
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
