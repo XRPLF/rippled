@@ -594,7 +594,7 @@ class ValidPermissionedDomain
         std::size_t credentialsSize_{0};
         bool isSorted_ = false, isUnique_ = false;
     };
-    std::optional<SleStatus> sleStatus_[2];
+    std::vector<SleStatus> sleStatus_;
 
 public:
     void

@@ -1253,6 +1253,8 @@ class Invariants_test : public beast::unit_test::suite
         sle->setAccountID(sfOwner, A1);
         sle->setFieldU32(sfSequence, 10);
 
+        // This array is sorted naturally, but if you willing to change this
+        // behavior don't forget to use credentials::makeSorted
         STArray credentials(sfAcceptedCredentials, 2);
         for (std::size_t n = 0; n < 2; ++n)
         {

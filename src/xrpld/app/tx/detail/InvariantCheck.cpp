@@ -1642,41 +1642,31 @@ ValidPermissionedDomain::visitEntry(
     if (after && after->getType() != ltPERMISSIONED_DOMAIN)
         return;
 
-    auto check = [](SleStatus& sleStatus,
+    auto check = [](std::vector<SleStatus>& sleStatus,
                     std::shared_ptr<SLE const> const& sle) {
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
-        sleStatus.credentialsSize_ = credentials.size();
         auto const sorted = credentials::makeSorted(credentials);
-        sleStatus.isUnique_ = !sorted.empty();
+
+        SleStatus ss{credentials.size(), false, !sorted.empty()};
 
         // If array have duplicates then all the other checks are invalid
-        sleStatus.isSorted_ = false;
-
-        if (sleStatus.isUnique_)
+        if (ss.isUnique_)
         {
             unsigned i = 0;
             for (auto const& cred : sorted)
             {
                 auto const& credTx = credentials[i++];
-                sleStatus.isSorted_ = (cred.first == credTx[sfIssuer]) &&
+                ss.isSorted_ = (cred.first == credTx[sfIssuer]) &&
                     (cred.second == credTx[sfCredentialType]);
-                if (!sleStatus.isSorted_)
+                if (!ss.isSorted_)
                     break;
             }
         }
+        sleStatus.emplace_back(std::move(ss));
     };
 
-    if (before)
-    {
-        sleStatus_[0] = SleStatus();
-        check(*sleStatus_[0], before);
-    }
-
     if (after)
-    {
-        sleStatus_[1] = SleStatus();
-        check(*sleStatus_[1], after);
-    }
+        check(sleStatus_, after);
 }
 
 bool
@@ -1689,6 +1679,13 @@ ValidPermissionedDomain::finalize(
 {
     if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET || result != tesSUCCESS)
         return true;
+
+    if (sleStatus_.size() > 1)
+    {
+        JLOG(j.fatal()) << "Invariant failed: transaction modified more than 1 "
+                           "entry.";  // LCOV_EXCL_LINE
+        return false;                 // LCOV_EXCL_LINE
+    }
 
     auto check = [](SleStatus const& sleStatus, beast::Journal const& j) {
         if (!sleStatus.credentialsSize_)
@@ -1726,8 +1723,7 @@ ValidPermissionedDomain::finalize(
         return true;
     };
 
-    return (sleStatus_[0] ? check(*sleStatus_[0], j) : true) &&
-        (sleStatus_[1] ? check(*sleStatus_[1], j) : true);
+    return !sleStatus_.empty() ? check(sleStatus_[0], j) : true;
 }
 
 //------------------------------------------------------------------------------
