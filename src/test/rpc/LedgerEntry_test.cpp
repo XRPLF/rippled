@@ -2253,7 +2253,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                         bool good,
                         int expectedCount = 0) {
             testcase << "ledger_entry LedgerHashes: seq: "
-                     << env.current()->info().seq
+                     << env.current()->header().seq
                      << " \"hashes\":" << to_string(ledger)
                      << (good ? "" : " not") << " found";
 
