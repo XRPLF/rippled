@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class LendingHelpers_test : public beast::unit_test::suite
@@ -25,7 +25,7 @@ class LendingHelpers_test : public beast::unit_test::suite
     testComputeRaisedRate()
     {
         using namespace jtx;
-        using namespace ripple::detail;
+        using namespace xrpl::detail;
         struct TestCase
         {
             std::string name;
@@ -78,7 +78,7 @@ class LendingHelpers_test : public beast::unit_test::suite
     testComputePaymentFactor()
     {
         using namespace jtx;
-        using namespace ripple::detail;
+        using namespace xrpl::detail;
         struct TestCase
         {
             std::string name;
@@ -132,7 +132,7 @@ class LendingHelpers_test : public beast::unit_test::suite
     testLoanPeriodicPayment()
     {
         using namespace jtx;
-        using namespace ripple::detail;
+        using namespace xrpl::detail;
 
         struct TestCase
         {
@@ -194,7 +194,7 @@ class LendingHelpers_test : public beast::unit_test::suite
     testLoanPrincipalFromPeriodicPayment()
     {
         using namespace jtx;
-        using namespace ripple::detail;
+        using namespace xrpl::detail;
 
         struct TestCase
         {
@@ -257,7 +257,7 @@ class LendingHelpers_test : public beast::unit_test::suite
     {
         testcase("computeOverpaymentComponents");
         using namespace jtx;
-        using namespace ripple::detail;
+        using namespace xrpl::detail;
 
         Account const issuer{"issuer"};
         PrettyAsset const IOU = issuer["IOU"];
@@ -310,7 +310,7 @@ class LendingHelpers_test : public beast::unit_test::suite
     testComputeInterestAndFeeParts()
     {
         using namespace jtx;
-        using namespace ripple::detail;
+        using namespace xrpl::detail;
 
         struct TestCase
         {
@@ -366,7 +366,7 @@ class LendingHelpers_test : public beast::unit_test::suite
     testLoanLatePaymentInterest()
     {
         using namespace jtx;
-        using namespace ripple::detail;
+        using namespace xrpl::detail;
         struct TestCase
         {
             std::string name;
@@ -447,7 +447,7 @@ class LendingHelpers_test : public beast::unit_test::suite
     testLoanAccruedInterest()
     {
         using namespace jtx;
-        using namespace ripple::detail;
+        using namespace xrpl::detail;
         struct TestCase
         {
             std::string name;
@@ -544,7 +544,7 @@ class LendingHelpers_test : public beast::unit_test::suite
     testComputeFullPaymentInterest()
     {
         using namespace jtx;
-        using namespace ripple::detail;
+        using namespace xrpl::detail;
 
         struct TestCase
         {
@@ -636,7 +636,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LendingHelpers, app, ripple);
+BEAST_DEFINE_TESTSUITE(LendingHelpers, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

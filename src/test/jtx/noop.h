@@ -3,7 +3,7 @@
 
 #include <test/jtx/flags.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -16,6 +16,6 @@ noop(Account const& account)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

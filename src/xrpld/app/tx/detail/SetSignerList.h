@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /**
 See the README.md for an overview of the SetSignerList transaction that
@@ -79,6 +79,6 @@ private:
 
 using SignerListSet = SetSignerList;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

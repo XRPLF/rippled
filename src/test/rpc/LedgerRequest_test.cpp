@@ -8,11 +8,11 @@
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
-class LedgerRequestRPC_test : public beast::unit_test::suite
+class LedgerRequest_test : public beast::unit_test::suite
 {
     static constexpr char const* hash1 =
         "3020EB9E7BE24EF7D7A060CB051583EC117384636D1781AFB5B87F3E348DA489";
@@ -32,7 +32,7 @@ public:
 
         env.close();
         env.close();
-        BEAST_EXPECT(env.current()->info().seq == 5);
+        BEAST_EXPECT(env.current()->header().seq == 5);
 
         {
             // arbitrary text is converted to 0.
@@ -115,7 +115,7 @@ public:
             BEAST_EXPECT(
                 RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::error_message] ==
-                    "Invalid field 'ledger_hash'.");
+                    "Invalid field 'ledger_hash', not hex string.");
         }
 
         {
@@ -262,22 +262,43 @@ public:
         env.fund(XRP(100000), gw);
         env.close();
 
-        Json::Value jvParams;
-        jvParams[jss::ledger_hash] =
-            "AB868A6CFEEC779C2FF845C0AF00A642259986AF40C01976A7F842B6918936C7";
-        jvParams[jss::ledger_index] = "1";
-        auto result = env.rpc(
-            "json", "ledger_request", jvParams.toStyledString())[jss::result];
-        BEAST_EXPECT(result[jss::error] == "invalidParams");
-        BEAST_EXPECT(result[jss::status] == "error");
-        BEAST_EXPECT(
-            result[jss::error_message] ==
-            "Exactly one of ledger_hash and ledger_index can be set.");
+        {
+            Json::Value jvParams;
+            jvParams[jss::ledger_hash] =
+                "AB868A6CFEEC779C2FF845C0AF00A642259986AF40C01976A7F842B6918936"
+                "C7";
+            jvParams[jss::ledger_index] = "1";
+            auto const result = env.rpc(
+                "json",
+                "ledger_request",
+                jvParams.toStyledString())[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Exactly one of 'ledger_hash' or 'ledger_index' can be "
+                "specified.");
+        }
+
+        {
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "index";
+            auto const result = env.rpc(
+                "json",
+                "ledger_request",
+                jvParams.toStyledString())[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'ledger_index', not number.");
+        }
 
         // the purpose in this test is to force the ledger expiration/out of
         // date check to trigger
         env.timeKeeper().adjustCloseTime(weeks{3});
-        result = env.rpc(apiVersion, "ledger_request", "1")[jss::result];
+        auto const result =
+            env.rpc(apiVersion, "ledger_request", "1")[jss::result];
         BEAST_EXPECT(result[jss::status] == "error");
         if (apiVersion == 1)
         {
@@ -350,13 +371,13 @@ public:
         testLedgerRequest();
         testEvolution();
         forAllApiVersions(
-            std::bind_front(&LedgerRequestRPC_test::testBadInput, this));
+            std::bind_front(&LedgerRequest_test::testBadInput, this));
         testMoreThan256Closed();
         testNonAdmin();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerRequestRPC, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerRequest, rpc, xrpl);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

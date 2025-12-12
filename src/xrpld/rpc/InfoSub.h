@@ -9,7 +9,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/resource/Consumer.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -237,6 +237,6 @@ private:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

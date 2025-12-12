@@ -6,7 +6,7 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STIssue.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Serializer;
 class STObject;
@@ -212,6 +212,6 @@ STXChainBridge::dstChain(bool wasLockingChainSend)
     return ChainType::locking;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

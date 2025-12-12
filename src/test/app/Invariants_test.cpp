@@ -20,7 +20,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Invariants_test : public beast::unit_test::suite
@@ -1991,7 +1991,7 @@ class Invariants_test : public beast::unit_test::suite
                 {
                     // Create the directory
                     BEAST_EXPECT(
-                        ::ripple::directory::createRoot(
+                        ::xrpl::directory::createRoot(
                             ac.view(),
                             dirKeylet,
                             loanBrokerKeylet.key,
@@ -2018,7 +2018,7 @@ class Invariants_test : public beast::unit_test::suite
                         describeOwnerDir(slePseudo->at(sfAccount));
 
                     BEAST_EXPECT(
-                        ::ripple::directory::insertPage(
+                        ::xrpl::directory::insertPage(
                             ac.view(),
                             0,
                             sleDir,
@@ -2051,7 +2051,7 @@ class Invariants_test : public beast::unit_test::suite
                     // Put some extra garbage into the directory
                     for (auto const& key : {slePseudo->key(), sleDir->key()})
                     {
-                        ::ripple::directory::insertKey(
+                        ::xrpl::directory::insertKey(
                             ac.view(), sleDir, 0, false, indexes, key);
                     }
 
@@ -2082,7 +2082,7 @@ class Invariants_test : public beast::unit_test::suite
                     // Put one meaningless key into the directory
                     auto const key =
                         keylet::account(Account("random").id()).key;
-                    ::ripple::directory::insertKey(
+                    ::xrpl::directory::insertKey(
                         ac.view(), sleDir, 0, false, indexes, key);
 
                     return true;
@@ -2108,7 +2108,7 @@ class Invariants_test : public beast::unit_test::suite
                     // failure.
                     STVector256 indexes;
 
-                    ::ripple::directory::insertKey(
+                    ::xrpl::directory::insertKey(
                         ac.view(), sleDir, 0, false, indexes, slePseudo->key());
 
                     return true;
@@ -2165,7 +2165,7 @@ class Invariants_test : public beast::unit_test::suite
             std::optional<AccountAmount> accountShares = {};
         };
         auto constexpr adjust = [&](ApplyView& ac,
-                                    ripple::Keylet keylet,
+                                    xrpl::Keylet keylet,
                                     Adjustments args) {
             auto sleVault = ac.peek(keylet);
             if (!sleVault)
@@ -3914,7 +3914,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Invariants, app, ripple);
+BEAST_DEFINE_TESTSUITE(Invariants, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

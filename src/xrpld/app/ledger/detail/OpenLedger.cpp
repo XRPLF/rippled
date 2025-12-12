@@ -11,7 +11,7 @@
 
 #include <boost/range/adaptor/transformed.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 OpenLedger::OpenLedger(
     std::shared_ptr<Ledger const> const& ledger,
@@ -163,7 +163,7 @@ OpenLedger::apply_one(
     if (retry)
         flags = flags | tapRETRY;
     // If it's in anybody's proposed set, try to keep it in the ledger
-    auto const result = ripple::apply(app, view, *tx, flags, j);
+    auto const result = xrpl::apply(app, view, *tx, flags, j);
     if (result.applied || result.ter == terQUEUED)
         return Result::success;
     if (isTefFailure(result.ter) || isTemMalformed(result.ter) ||
@@ -220,4 +220,4 @@ debugTostr(std::shared_ptr<ReadView const> const& view)
     return ss.str();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

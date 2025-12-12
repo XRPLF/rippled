@@ -3,7 +3,7 @@
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Serializer.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 addRaw(LedgerHeader const& info, Serializer& s, bool includeHash)
@@ -52,4 +52,4 @@ deserializePrefixedHeader(Slice data, bool hasHash)
     return deserializeHeader(data + 4, hasHash);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

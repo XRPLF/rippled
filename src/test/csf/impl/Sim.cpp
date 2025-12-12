@@ -1,6 +1,6 @@
 #include <test/csf/Sim.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -63,4 +63,4 @@ Sim::branches(PeerGroup const& g) const
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

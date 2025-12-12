@@ -1,10 +1,9 @@
 #ifndef XRPL_PROTOCOL_SECP256K1_H_INCLUDED
 #define XRPL_PROTOCOL_SECP256K1_H_INCLUDED
 
-#define SECP256K1_STATIC
 #include <secp256k1.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <class = void>
 secp256k1_context const*
@@ -28,6 +27,6 @@ secp256k1Context()
     return h.impl;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

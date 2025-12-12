@@ -1,12 +1,11 @@
 #ifndef XRPL_CORE_JOBTYPEDATA_H_INCLUDED
 #define XRPL_CORE_JOBTYPEDATA_H_INCLUDED
 
-#include <xrpld/core/JobTypeInfo.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/core/JobTypeInfo.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct JobTypeData
 {
@@ -84,6 +83,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

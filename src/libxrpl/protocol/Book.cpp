@@ -4,7 +4,7 @@
 #include <ostream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 isConsistent(Book const& book)
@@ -32,4 +32,4 @@ reversed(Book const& book)
     return Book(book.out, book.in, book.domain);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
