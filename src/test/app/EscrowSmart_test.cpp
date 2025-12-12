@@ -784,6 +784,11 @@ struct EscrowSmart_test : public beast::unit_test::suite
                     ter(telINSUF_FEE_P));
 
                 env(escrow::finish(alice, alice, seq),
+                    fee(finishFeeOverflow - 1),
+                    escrow::comp_allowance(bigAllowance),
+                    ter(telINSUF_FEE_P));
+
+                env(escrow::finish(alice, alice, seq),
                     fee(finishFee),
                     escrow::comp_allowance(bigAllowance),
                     ter(tesSUCCESS));
