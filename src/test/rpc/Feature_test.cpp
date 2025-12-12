@@ -187,9 +187,9 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
-        BEAST_EXPECT(jrr.isMember(
-            "740352F2412A9909880C23A559FCECEDA3BE2126FED62FC7660D6"
-            "28A06927F11"));
+        BEAST_EXPECT(
+            jrr.isMember("740352F2412A9909880C23A559FCECEDA3BE2126FED62FC7660D6"
+                         "28A06927F11"));
         auto feature = *(jrr.begin());
 
         BEAST_EXPECTS(feature[jss::name] == "fixAMMOverflowOffer", "name");
