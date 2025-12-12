@@ -54,6 +54,9 @@ on:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
         required: true
+      REDIS_ENDPOINT:
+        description: "The Redis endpoint to use by ccache as remote storage."
+        required: true
 
 defaults:
   run:
@@ -66,7 +69,10 @@ jobs:
     container: ${{ inputs.image != '' && inputs.image || null }}
     timeout-minutes: 60
     env:
-      CCACHE_ENABLED: ${{ github.event_name == 'pull_request' }}
+      CCACHE_ENABLED: ${{ github.repository_owner == 'XRPLF' && github.event_name == 'pull_request' && runner.os == 'Windows' }}
+      CCACHE_NAMESPACE: ${{ inputs.config_name }}
+      CCACHE_REMOTE_ONLY: true
+      CCACHE_REMOTE_STORAGE: ${{ secrets.REDIS_ENDPOINT }}
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
     steps:
@@ -78,7 +84,7 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/.github/actions/prepare-runner@99685816bb60a95a66852f212f382580e180df3a
+        uses: XRPLF/actions/.github/actions/prepare-runner@2ece4ec6ab7de266859a6f053571425b2bd684b6
         with:
           disable_ccache: ${{ env.CCACHE_ENABLED == 'false' }}
 
@@ -117,17 +123,6 @@ jobs:
             ${CMAKE_ARGS} \
             ..
 
-      - name: Restore ccache
-        if: ${{ env.CCACHE_ENABLED == 'true' }}
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ inputs.config_name }}
-
-      - name: Show ccache statistics before building
-        if: ${{ env.CCACHE_ENABLED == 'true' }}
-        run: ccache --show-stats ${{ runner.debug && '-vv' || '' }}
-
       - name: Build the binary
         working-directory: ${{ inputs.build_dir }}
         env:
@@ -141,18 +136,11 @@ jobs:
             --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
 
-      - name: Show and reset ccache statistics after building
+      - name: Show and reset ccache statistics
         if: ${{ env.CCACHE_ENABLED == 'true' }}
         run: |
           ccache --show-stats ${{ runner.debug && '-vv' || '' }}
           ccache --zero-stats
-
-      - name: Save ccache
-        if: ${{ env.CCACHE_ENABLED == 'true' }}
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ inputs.config_name }}
 
       - name: Upload the binary (Linux)
         if: ${{ github.repository_owner == 'XRPLF' && runner.os == 'Linux' }}
