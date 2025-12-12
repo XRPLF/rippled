@@ -14,7 +14,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STAccount::STAccount() : STBase(), value_(beast::zero), default_(true)
 {
@@ -74,10 +74,10 @@ void
 STAccount::add(Serializer& s) const
 {
     XRPL_ASSERT(
-        getFName().isBinary(), "ripple::STAccount::add : field is binary");
+        getFName().isBinary(), "xrpl::STAccount::add : field is binary");
     XRPL_ASSERT(
         getFName().fieldType == STI_ACCOUNT,
-        "ripple::STAccount::add : valid field type");
+        "xrpl::STAccount::add : valid field type");
 
     // Preserve the serialization behavior of an STBlob:
     //  o If we are default (all zeros) serialize as an empty blob.
@@ -107,4 +107,4 @@ STAccount::getText() const
     return toBase58(value());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

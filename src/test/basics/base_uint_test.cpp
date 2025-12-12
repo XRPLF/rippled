@@ -8,7 +8,7 @@
 #include <complex>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // a non-hashing Hasher that just copies the bytes.
@@ -59,7 +59,7 @@ struct base_uint_test : beast::unit_test::suite
 
             for (auto const& arg : test_args)
             {
-                ripple::base_uint<64> const u{arg.first}, v{arg.second};
+                xrpl::base_uint<64> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -92,7 +92,7 @@ struct base_uint_test : beast::unit_test::suite
 
             for (auto const& arg : test_args)
             {
-                ripple::base_uint<96> const u{arg.first}, v{arg.second};
+                xrpl::base_uint<96> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -352,7 +352,7 @@ struct base_uint_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(base_uint, basics, ripple);
+BEAST_DEFINE_TESTSUITE(base_uint, basics, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,6 +1,6 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -56,4 +56,4 @@ insertMPTokenIssuanceID(
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

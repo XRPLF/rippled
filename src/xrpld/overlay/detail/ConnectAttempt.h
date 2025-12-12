@@ -5,7 +5,7 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * @class ConnectAttempt
@@ -273,6 +273,6 @@ private:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

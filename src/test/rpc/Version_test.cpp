@@ -3,7 +3,7 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Version_test : public beast::unit_test::suite
 {
@@ -277,6 +277,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Version, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Version, rpc, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,7 +1,7 @@
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-namespace ripple {
+namespace xrpl {
 std::pair<org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status>
 doLedgerDiffGrpc(
     RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& context)
@@ -75,7 +75,7 @@ doLedgerDiffGrpc(
         {
             XRPL_ASSERT(
                 inDesired->size() > 0,
-                "ripple::doLedgerDiffGrpc : non-empty desired");
+                "xrpl::doLedgerDiffGrpc : non-empty desired");
             diff->set_key(k.data(), k.size());
             if (request.include_blobs())
             {
@@ -86,4 +86,4 @@ doLedgerDiffGrpc(
     return {response, status};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

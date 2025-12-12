@@ -30,7 +30,7 @@
 #include <iomanip>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 RCLConsensus::RCLConsensus(
     Application& app,
@@ -77,7 +77,7 @@ RCLConsensus::Adaptor::Adaptor(
     , nUnlVote_(validatorKeys_.nodeID, j_)
 {
     XRPL_ASSERT(
-        valCookie_, "ripple::RCLConsensus::Adaptor::Adaptor : nonzero cookie");
+        valCookie_, "xrpl::RCLConsensus::Adaptor::Adaptor : nonzero cookie");
 
     JLOG(j_.info()) << "Consensus engine started (cookie: " +
             std::to_string(valCookie_) + ")";
@@ -133,13 +133,13 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
 
     XRPL_ASSERT(
         !built->open() && built->isImmutable(),
-        "ripple::RCLConsensus::Adaptor::acquireLedger : valid ledger state");
+        "xrpl::RCLConsensus::Adaptor::acquireLedger : valid ledger state");
     XRPL_ASSERT(
-        built->info().hash == hash,
-        "ripple::RCLConsensus::Adaptor::acquireLedger : ledger hash match");
+        built->header().hash == hash,
+        "xrpl::RCLConsensus::Adaptor::acquireLedger : ledger hash match");
 
     // Notify inbound transactions of the new ledger sequence number
-    inboundTransactions_.newRound(built->info().seq);
+    inboundTransactions_.newRound(built->header().seq);
 
     return RCLCxLedger(built);
 }
@@ -193,8 +193,8 @@ void
 RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 {
     JLOG(j_.trace()) << (proposal.isBowOut() ? "We bow out: " : "We propose: ")
-                     << ripple::to_string(proposal.prevLedger()) << " -> "
-                     << ripple::to_string(proposal.position());
+                     << xrpl::to_string(proposal.prevLedger()) << " -> "
+                     << xrpl::to_string(proposal.position());
 
     protocol::TMProposeSet prop;
 
@@ -309,7 +309,7 @@ RCLConsensus::Adaptor::onClose(
 
     ledgerMaster_.applyHeldTransactions();
     // Tell the ledger master not to acquire the ledger we're probably building
-    ledgerMaster_.setBuildingLedger(prevLedger->info().seq + 1);
+    ledgerMaster_.setBuildingLedger(prevLedger->header().seq + 1);
 
     auto initialLedger = app_.openLedger().current();
 
@@ -338,7 +338,7 @@ RCLConsensus::Adaptor::onClose(
             // pseudo-transactions
             auto validations = app_.validators().negativeUNLFilter(
                 app_.getValidations().getTrustedForLedger(
-                    prevLedger->info().parentHash, prevLedger->seq() - 1));
+                    prevLedger->header().parentHash, prevLedger->seq() - 1));
             if (validations.size() >= app_.validators().quorum())
             {
                 feeVote_->doVoting(prevLedger, validations, initialSet);
@@ -364,7 +364,7 @@ RCLConsensus::Adaptor::onClose(
 
     if (!wrongLCL)
     {
-        LedgerIndex const seq = prevLedger->info().seq + 1;
+        LedgerIndex const seq = prevLedger->header().seq + 1;
         RCLCensorshipDetector<TxID, LedgerIndex>::TxIDSeqVec proposed;
 
         initialSet->visitLeaves(
@@ -382,7 +382,7 @@ RCLConsensus::Adaptor::onClose(
     return Result{
         std::move(initialSet),
         RCLCxPeerPos::Proposal{
-            initialLedger->info().parentHash,
+            initialLedger->header().parentHash,
             RCLCxPeerPos::Proposal::seqJoin,
             setHash,
             closeTime,
@@ -663,11 +663,11 @@ RCLConsensus::Adaptor::doAccept(
 
         // Do these need to exist?
         XRPL_ASSERT(
-            ledgerMaster_.getClosedLedger()->info().hash == built.id(),
-            "ripple::RCLConsensus::Adaptor::doAccept : ledger hash match");
+            ledgerMaster_.getClosedLedger()->header().hash == built.id(),
+            "xrpl::RCLConsensus::Adaptor::doAccept : ledger hash match");
         XRPL_ASSERT(
-            app_.openLedger().current()->info().parentHash == built.id(),
-            "ripple::RCLConsensus::Adaptor::doAccept : parent hash match");
+            app_.openLedger().current()->header().parentHash == built.id(),
+            "xrpl::RCLConsensus::Adaptor::doAccept : parent hash match");
     }
 
     //-------------------------------------------------------------------------
@@ -764,8 +764,8 @@ RCLConsensus::Adaptor::buildLCL(
         if (auto const replayData = ledgerMaster_.releaseReplay())
         {
             XRPL_ASSERT(
-                replayData->parent()->info().hash == previousLedger.id(),
-                "ripple::RCLConsensus::Adaptor::buildLCL : parent hash match");
+                replayData->parent()->header().hash == previousLedger.id(),
+                "xrpl::RCLConsensus::Adaptor::buildLCL : parent hash match");
             return buildLedger(*replayData, tapNONE, app_, j_);
         }
         return buildLedger(
@@ -786,7 +786,7 @@ RCLConsensus::Adaptor::buildLCL(
     // And stash the ledger in the ledger master
     if (ledgerMaster_.storeLedger(built))
         JLOG(j_.debug()) << "Consensus built ledger we already had";
-    else if (app_.getInboundLedgers().find(built->info().hash))
+    else if (app_.getInboundLedgers().find(built->header().hash))
         JLOG(j_.debug()) << "Consensus built ledger we were acquiring";
     else
         JLOG(j_.debug()) << "Consensus built new ledger";
@@ -833,7 +833,7 @@ RCLConsensus::Adaptor::validate(
             // validated ledger. This may be the hash of the ledger we are
             // validating here, and that's fine.
             if (auto const vl = ledgerMaster_.getValidatedLedger())
-                v.setFieldH256(sfValidatedHash, vl->info().hash);
+                v.setFieldH256(sfValidatedHash, vl->header().hash);
 
             v.setFieldU64(sfCookie, valCookie_);
 
@@ -1106,4 +1106,4 @@ RclConsensusLogger::~RclConsensusLogger()
     j_.sink().writeAlways(beast::severities::kInfo, outSs.str());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

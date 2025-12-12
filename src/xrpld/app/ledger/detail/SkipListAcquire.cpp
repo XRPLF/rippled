@@ -4,7 +4,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 
-namespace ripple {
+namespace xrpl {
 
 SkipListAcquire::SkipListAcquire(
     Application& app,
@@ -121,7 +121,7 @@ SkipListAcquire::processData(
 {
     XRPL_ASSERT(
         ledgerSeq != 0 && item,
-        "ripple::SkipListAcquire::processData : valid inputs");
+        "xrpl::SkipListAcquire::processData : valid inputs");
     ScopedLockType sl(mtx_);
     if (isDone())
         return;
@@ -206,7 +206,7 @@ SkipListAcquire::onSkipListAcquired(
 void
 SkipListAcquire::notify(ScopedLockType& sl)
 {
-    XRPL_ASSERT(isDone(), "ripple::SkipListAcquire::notify : is done");
+    XRPL_ASSERT(isDone(), "xrpl::SkipListAcquire::notify : is done");
     std::vector<OnSkipListDataCB> toCall;
     std::swap(toCall, dataReadyCallbacks_);
     auto const good = !failed_;
@@ -220,4 +220,4 @@ SkipListAcquire::notify(ScopedLockType& sl)
     sl.lock();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

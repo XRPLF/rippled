@@ -8,7 +8,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 // Check equal with tolerance
 bool
@@ -80,7 +80,7 @@ toStep(
         // should already be taken care of
         JLOG(j.error())
             << "Found offer/account payment step. Aborting payment strand.";
-        UNREACHABLE("ripple::toStep : offer/account payment payment strand");
+        UNREACHABLE("xrpl::toStep : offer/account payment payment strand");
         return {temBAD_PATH, std::unique_ptr<Step>{}};
         // LCOV_EXCL_STOP
     }
@@ -88,7 +88,7 @@ toStep(
     XRPL_ASSERT(
         (e2->getNodeType() & STPathElement::typeCurrency) ||
             (e2->getNodeType() & STPathElement::typeIssuer),
-        "ripple::toStep : currency or issuer");
+        "xrpl::toStep : currency or issuer");
     auto const outCurrency = e2->getNodeType() & STPathElement::typeCurrency
         ? e2->getCurrency()
         : curIssue.currency;
@@ -102,7 +102,7 @@ toStep(
         return {temBAD_PATH, std::unique_ptr<Step>{}};
     }
 
-    XRPL_ASSERT(e2->isOffer(), "ripple::toStep : is offer");
+    XRPL_ASSERT(e2->isOffer(), "xrpl::toStep : is offer");
 
     if (isXRP(outCurrency))
         return make_BookStepIX(ctx, curIssue);
@@ -376,7 +376,7 @@ toStrand(
         {
             // Should never happen
             // LCOV_EXCL_START
-            UNREACHABLE("ripple::toStrand : offer currency mismatch");
+            UNREACHABLE("xrpl::toStrand : offer currency mismatch");
             return {temBAD_PATH, Strand{}};
             // LCOV_EXCL_STOP
         }
@@ -444,7 +444,7 @@ toStrand(
     {
         // LCOV_EXCL_START
         JLOG(j.warn()) << "Flow check strand failed";
-        UNREACHABLE("ripple::toStrand : invalid strand");
+        UNREACHABLE("xrpl::toStrand : invalid strand");
         return {temBAD_PATH, Strand{}};
         // LCOV_EXCL_STOP
     }
@@ -627,4 +627,4 @@ isDirectXrpToXrp<IOUAmount, XRPAmount>(Strand const& strand);
 template bool
 isDirectXrpToXrp<IOUAmount, IOUAmount>(Strand const& strand);
 
-}  // namespace ripple
+}  // namespace xrpl

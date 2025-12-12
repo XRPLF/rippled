@@ -1,7 +1,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/detail/RawStateTable.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 class RawStateTable::sles_iter_impl : public ReadView::sles_type::iter_base
@@ -46,7 +46,7 @@ public:
         {
             XRPL_ASSERT(
                 end1_ == p->end1_ && end0_ == p->end0_,
-                "ripple::detail::RawStateTable::equal : matching end "
+                "xrpl::detail::RawStateTable::equal : matching end "
                 "iterators");
             return iter1_ == p->iter1_ && iter0_ == p->iter0_;
         }
@@ -59,7 +59,7 @@ public:
     {
         XRPL_ASSERT(
             sle1_ || sle0_,
-            "ripple::detail::RawStateTable::increment : either SLE is "
+            "xrpl::detail::RawStateTable::increment : either SLE is "
             "non-null");
 
         if (sle1_ && !sle0_)
@@ -167,8 +167,7 @@ bool
 RawStateTable::exists(ReadView const& base, Keylet const& k) const
 {
     XRPL_ASSERT(
-        k.key.isNonZero(),
-        "ripple::detail::RawStateTable::exists : nonzero key");
+        k.key.isNonZero(), "xrpl::detail::RawStateTable::exists : nonzero key");
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.exists(k);
@@ -339,4 +338,4 @@ RawStateTable::slesUpperBound(ReadView const& base, uint256 const& key) const
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl

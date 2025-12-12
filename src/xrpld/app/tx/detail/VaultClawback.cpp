@@ -11,7 +11,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 VaultClawback::preflight(PreflightContext const& ctx)
@@ -144,14 +144,14 @@ VaultClawback::doApply()
     }();
     XRPL_ASSERT(
         amount.asset() == vaultAsset,
-        "ripple::VaultClawback::doApply : matching asset");
+        "xrpl::VaultClawback::doApply : matching asset");
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
     [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
     XRPL_ASSERT(
         lossUnrealized <= (assetsTotal - assetsAvailable),
-        "ripple::VaultClawback::doApply : loss and assets do balance");
+        "xrpl::VaultClawback::doApply : loss and assets do balance");
 
     AccountID holder = tx[sfHolder];
     MPTIssue const share{mptIssuanceID};
@@ -311,4 +311,4 @@ VaultClawback::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
