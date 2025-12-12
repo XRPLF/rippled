@@ -10,7 +10,7 @@
 
 #include <limits>
 
-namespace ripple {
+namespace xrpl {
 namespace cryptoconditions {
 
 // A collection of functions to decode binary blobs
@@ -208,6 +208,6 @@ parseInteger(Slice& s, std::size_t count, std::error_code& ec)
 
 }  // namespace der
 }  // namespace cryptoconditions
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

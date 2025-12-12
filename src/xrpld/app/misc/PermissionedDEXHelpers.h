@@ -1,7 +1,7 @@
 #pragma once
 #include <xrpl/ledger/View.h>
 
-namespace ripple {
+namespace xrpl {
 namespace permissioned_dex {
 
 // Check if an account is in a permissioned domain
@@ -21,4 +21,4 @@ offerInDomain(
 
 }  // namespace permissioned_dex
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -6,7 +6,7 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 
-namespace ripple {
+namespace xrpl {
 namespace cryptoconditions {
 
 struct Fulfillment
@@ -122,6 +122,6 @@ bool
 validate(Fulfillment const& f, Condition const& c);
 
 }  // namespace cryptoconditions
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

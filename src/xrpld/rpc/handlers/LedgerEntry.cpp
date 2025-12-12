@@ -16,7 +16,7 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 static Expected<uint256, Json::Value>
 parseObjectID(
@@ -393,6 +393,46 @@ static Expected<uint256, Json::Value>
 parseLedgerHashes(Json::Value const& params, Json::StaticString const fieldName)
 {
     return parseObjectID(params, fieldName, "hex string");
+}
+
+static Expected<uint256, Json::Value>
+parseLoanBroker(Json::Value const& params, Json::StaticString const fieldName)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName, "hex string");
+    }
+
+    auto const id = LedgerEntryHelpers::requiredAccountID(
+        params, jss::owner, "malformedOwner");
+    if (!id)
+        return Unexpected(id.error());
+    auto const seq =
+        LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedSeq");
+    if (!seq)
+        return Unexpected(seq.error());
+
+    return keylet::loanbroker(*id, *seq).key;
+}
+
+static Expected<uint256, Json::Value>
+parseLoan(Json::Value const& params, Json::StaticString const fieldName)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName, "hex string");
+    }
+
+    auto const id = LedgerEntryHelpers::requiredUInt256(
+        params, jss::loan_broker_id, "malformedOwner");
+    if (!id)
+        return Unexpected(id.error());
+    auto const seq = LedgerEntryHelpers::requiredUInt32(
+        params, jss::loan_seq, "malformedSeq");
+    if (!seq)
+        return Unexpected(seq.error());
+
+    return keylet::loan(*id, *seq).key;
 }
 
 static Expected<uint256, Json::Value>
@@ -878,4 +918,4 @@ doLedgerEntryGrpc(
     *(response.mutable_ledger()) = request.ledger();
     return {response, status};
 }
-}  // namespace ripple
+}  // namespace xrpl

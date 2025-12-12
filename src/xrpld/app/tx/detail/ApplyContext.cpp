@@ -5,7 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
 
-namespace ripple {
+namespace xrpl {
 
 ApplyContext::ApplyContext(
     Application& app_,
@@ -133,7 +133,7 @@ ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
 {
     XRPL_ASSERT(
         isTesSuccess(result) || isTecClaim(result),
-        "ripple::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM");
+        "xrpl::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM");
 
     return checkInvariantsHelper(
         result,
@@ -141,4 +141,4 @@ ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
         std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
 }
 
-}  // namespace ripple
+}  // namespace xrpl

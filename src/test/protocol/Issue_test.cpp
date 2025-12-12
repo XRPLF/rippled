@@ -25,7 +25,7 @@
 #endif
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 class Issue_test : public beast::unit_test::suite
 {
@@ -959,6 +959,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Issue, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Issue, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -15,7 +15,7 @@
 #include <string>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 class XRPAmount : private boost::totally_ordered<XRPAmount>,
                   private boost::additive<XRPAmount>,
@@ -287,6 +287,6 @@ mulRatio(
     return XRPAmount(r.convert_to<XRPAmount::value_type>());
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_BASICS_XRPAMOUNT_H_INCLUDED

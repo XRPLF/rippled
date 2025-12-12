@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 //------------------------------------------------------------------------------
 
@@ -40,4 +40,4 @@ NodeObject::getData() const
     return mData;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

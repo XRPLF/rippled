@@ -925,6 +925,139 @@ TRANSACTION(ttBATCH, 71, Batch,
     {sfBatchSigners, soeOPTIONAL},
 }))
 
+/** Reserve 72-73 for future Vault-related transactions */
+
+/** This transaction creates and updates a Loan Broker */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/LoanBrokerSet.h>
+#endif
+TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
+    Delegation::delegatable,
+    featureLendingProtocol,
+    createPseudoAcct | mayAuthorizeMPT, ({
+    {sfVaultID, soeREQUIRED},
+    {sfLoanBrokerID, soeOPTIONAL},
+    {sfData, soeOPTIONAL},
+    {sfManagementFeeRate, soeOPTIONAL},
+    {sfDebtMaximum, soeOPTIONAL},
+    {sfCoverRateMinimum, soeOPTIONAL},
+    {sfCoverRateLiquidation, soeOPTIONAL},
+}))
+
+/** This transaction deletes a Loan Broker */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/LoanBrokerDelete.h>
+#endif
+TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
+    Delegation::delegatable,
+    featureLendingProtocol,
+    mustDeleteAcct | mayAuthorizeMPT, ({
+    {sfLoanBrokerID, soeREQUIRED},
+}))
+
+/** This transaction deposits First Loss Capital into a Loan Broker */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/LoanBrokerCoverDeposit.h>
+#endif
+TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit,
+    Delegation::delegatable,
+    featureLendingProtocol,
+    noPriv, ({
+    {sfLoanBrokerID, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
+}))
+
+/** This transaction withdraws First Loss Capital from a Loan Broker */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/LoanBrokerCoverWithdraw.h>
+#endif
+TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
+    Delegation::delegatable,
+    featureLendingProtocol,
+    mayAuthorizeMPT, ({
+    {sfLoanBrokerID, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfDestination, soeOPTIONAL},
+    {sfDestinationTag, soeOPTIONAL},
+}))
+
+/** This transaction claws back First Loss Capital from a Loan Broker to
+    the issuer of the capital */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/LoanBrokerCoverClawback.h>
+#endif
+TRANSACTION(ttLOAN_BROKER_COVER_CLAWBACK, 78, LoanBrokerCoverClawback,
+    Delegation::delegatable,
+    featureLendingProtocol,
+    noPriv, ({
+    {sfLoanBrokerID, soeOPTIONAL},
+    {sfAmount, soeOPTIONAL, soeMPTSupported},
+}))
+
+/** This transaction creates a Loan */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/LoanSet.h>
+#endif
+TRANSACTION(ttLOAN_SET, 80, LoanSet,
+    Delegation::delegatable,
+    featureLendingProtocol,
+    mayAuthorizeMPT | mustModifyVault, ({
+    {sfLoanBrokerID, soeREQUIRED},
+    {sfData, soeOPTIONAL},
+    {sfCounterparty, soeOPTIONAL},
+    {sfCounterpartySignature, soeOPTIONAL},
+    {sfLoanOriginationFee, soeOPTIONAL},
+    {sfLoanServiceFee, soeOPTIONAL},
+    {sfLatePaymentFee, soeOPTIONAL},
+    {sfClosePaymentFee, soeOPTIONAL},
+    {sfOverpaymentFee, soeOPTIONAL},
+    {sfInterestRate, soeOPTIONAL},
+    {sfLateInterestRate, soeOPTIONAL},
+    {sfCloseInterestRate, soeOPTIONAL},
+    {sfOverpaymentInterestRate, soeOPTIONAL},
+    {sfPrincipalRequested, soeREQUIRED},
+    {sfPaymentTotal, soeOPTIONAL},
+    {sfPaymentInterval, soeOPTIONAL},
+    {sfGracePeriod, soeOPTIONAL},
+}))
+
+/** This transaction deletes an existing Loan */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/LoanDelete.h>
+#endif
+TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
+    Delegation::delegatable,
+    featureLendingProtocol,
+    noPriv, ({
+    {sfLoanID, soeREQUIRED},
+}))
+
+/** This transaction is used to change the delinquency status of an existing Loan */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/LoanManage.h>
+#endif
+TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
+    Delegation::delegatable,
+    featureLendingProtocol,
+    // All of the LoanManage options will modify the vault, but the
+    // transaction can succeed without options, essentially making it
+    // a noop.
+    mayModifyVault, ({
+    {sfLoanID, soeREQUIRED},
+}))
+
+/** The Borrower uses this transaction to make a Payment on the Loan. */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/LoanPay.h>
+#endif
+TRANSACTION(ttLOAN_PAY, 84, LoanPay,
+    Delegation::delegatable,
+    featureLendingProtocol,
+    mayAuthorizeMPT | mustModifyVault, ({
+    {sfLoanID, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html

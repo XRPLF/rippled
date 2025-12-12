@@ -7,7 +7,7 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 Database::Database(
@@ -24,7 +24,7 @@ Database::Database(
 {
     XRPL_ASSERT(
         readThreads,
-        "ripple::NodeStore::Database::Database : nonzero threads input");
+        "xrpl::NodeStore::Database::Database : nonzero threads input");
 
     if (earliestLedgerSeq_ < 1)
         Throw<std::runtime_error>("Invalid earliest_seq");
@@ -73,7 +73,7 @@ Database::Database(
                     {
                         XRPL_ASSERT(
                             !it->second.empty(),
-                            "ripple::NodeStore::Database::Database : non-empty "
+                            "xrpl::NodeStore::Database::Database : non-empty "
                             "data");
 
                         auto const& hash = it->first;
@@ -150,7 +150,7 @@ Database::stop()
     {
         XRPL_ASSERT(
             steady_clock::now() - start < 30s,
-            "ripple::NodeStore::Database::stop : maximum stop duration");
+            "xrpl::NodeStore::Database::stop : maximum stop duration");
         std::this_thread::yield();
     }
 
@@ -203,7 +203,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
     srcDB.for_each([&](std::shared_ptr<NodeObject> nodeObject) {
         XRPL_ASSERT(
             nodeObject,
-            "ripple::NodeStore::Database::importInternal : non-null node");
+            "xrpl::NodeStore::Database::importInternal : non-null node");
         if (!nodeObject)  // This should never happen
             return;
 
@@ -249,7 +249,7 @@ Database::getCountsJson(Json::Value& obj)
 {
     XRPL_ASSERT(
         obj.isObject(),
-        "ripple::NodeStore::Database::getCountsJson : valid input type");
+        "xrpl::NodeStore::Database::getCountsJson : valid input type");
 
     {
         std::unique_lock<std::mutex> lock(readLock_);
@@ -269,4 +269,4 @@ Database::getCountsJson(Json::Value& obj)
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

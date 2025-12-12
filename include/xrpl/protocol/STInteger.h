@@ -4,7 +4,7 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/STBase.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <typename Integer>
 class STInteger : public STBase, public CountedObject<STInteger<Integer>>
@@ -54,7 +54,7 @@ private:
     STBase*
     move(std::size_t n, void* buf) override;
 
-    friend class ripple::detail::STVar;
+    friend class xrpl::detail::STVar;
 };
 
 using STUInt8 = STInteger<unsigned char>;
@@ -94,10 +94,10 @@ inline void
 STInteger<Integer>::add(Serializer& s) const
 {
     XRPL_ASSERT(
-        getFName().isBinary(), "ripple::STInteger::add : field is binary");
+        getFName().isBinary(), "xrpl::STInteger::add : field is binary");
     XRPL_ASSERT(
         getFName().fieldType == getSType(),
-        "ripple::STInteger::add : field type match");
+        "xrpl::STInteger::add : field type match");
     s.addInteger(value_);
 }
 
@@ -144,6 +144,6 @@ inline STInteger<Integer>::operator Integer() const
     return value_;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

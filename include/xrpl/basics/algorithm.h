@@ -3,7 +3,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 // Requires: [first1, last1) and [first2, last2) are ordered ranges according to
 // comp.
@@ -95,6 +95,6 @@ remove_if_intersect_or_match(
     return first1;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

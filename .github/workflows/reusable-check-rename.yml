@@ -25,6 +25,10 @@ jobs:
         run: .github/scripts/rename/copyright.sh .
       - name: Check CMake configs
         run: .github/scripts/rename/cmake.sh .
+      - name: Check binary name
+        run: .github/scripts/rename/binary.sh .
+      - name: Check namespaces
+        run: .github/scripts/rename/namespace.sh .
       - name: Check for differences
         env:
           MESSAGE: |

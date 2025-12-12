@@ -5,7 +5,7 @@
 
 #include <cstddef>
 
-namespace ripple {
+namespace xrpl {
 
 openssl_ripemd160_hasher::openssl_ripemd160_hasher()
 {
@@ -86,4 +86,4 @@ openssl_sha256_hasher::operator result_type() noexcept
     return digest;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

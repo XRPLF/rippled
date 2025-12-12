@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class MPTAmount : private boost::totally_ordered<MPTAmount>,
                   private boost::additive<MPTAmount>,
@@ -150,6 +150,6 @@ mulRatio(
     return MPTAmount(r.convert_to<MPTAmount::value_type>());
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_BASICS_MPTAMOUNT_H_INCLUDED

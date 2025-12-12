@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 /*
 
@@ -120,8 +120,8 @@ field_code(int id, int index)
     SFields are created at compile time.
 
     Each SField, once constructed, lives until program termination, and there
-    is only one instance per fieldType/fieldValue pair which serves the entire
-    application.
+    is only one instance per fieldType/fieldValue pair which serves the
+    entire application.
 */
 class SField
 {
@@ -374,6 +374,6 @@ extern SField const sfGeneric;
 #undef UNTYPED_SFIELD
 #pragma pop_macro("UNTYPED_SFIELD")
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -1,7 +1,7 @@
 #ifndef XRPL_LEDGER_READVIEWFWDRANGEINL_H_INCLUDED
 #define XRPL_LEDGER_READVIEWFWDRANGEINL_H_INCLUDED
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 template <class ValueType>
@@ -63,7 +63,7 @@ ReadViewFwdRange<ValueType>::iterator::operator==(iterator const& other) const
 {
     XRPL_ASSERT(
         view_ == other.view_,
-        "ripple::detail::ReadViewFwdRange::iterator::operator==(iterator) "
+        "xrpl::detail::ReadViewFwdRange::iterator::operator==(iterator) "
         "const : input view match");
 
     if (impl_ != nullptr && other.impl_ != nullptr)
@@ -115,6 +115,6 @@ ReadViewFwdRange<ValueType>::iterator::operator++(int) -> iterator
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -24,21 +24,19 @@ computeFreezeFlags(
 {
     if (bSetFreeze && !bClearFreeze && !bNoFreeze)
     {
-        uFlags |= (bHigh ? ripple::lsfHighFreeze : ripple::lsfLowFreeze);
+        uFlags |= (bHigh ? xrpl::lsfHighFreeze : xrpl::lsfLowFreeze);
     }
     else if (bClearFreeze && !bSetFreeze)
     {
-        uFlags &= ~(bHigh ? ripple::lsfHighFreeze : ripple::lsfLowFreeze);
+        uFlags &= ~(bHigh ? xrpl::lsfHighFreeze : xrpl::lsfLowFreeze);
     }
     if (bSetDeepFreeze && !bClearDeepFreeze && !bNoFreeze)
     {
-        uFlags |=
-            (bHigh ? ripple::lsfHighDeepFreeze : ripple::lsfLowDeepFreeze);
+        uFlags |= (bHigh ? xrpl::lsfHighDeepFreeze : xrpl::lsfLowDeepFreeze);
     }
     else if (bClearDeepFreeze && !bSetDeepFreeze)
     {
-        uFlags &=
-            ~(bHigh ? ripple::lsfHighDeepFreeze : ripple::lsfLowDeepFreeze);
+        uFlags &= ~(bHigh ? xrpl::lsfHighDeepFreeze : xrpl::lsfLowDeepFreeze);
     }
 
     return uFlags;
@@ -46,7 +44,7 @@ computeFreezeFlags(
 
 }  // namespace
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 SetTrust::getFlagsMask(PreflightContext const& ctx)
@@ -251,7 +249,9 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             else
                 return tecINTERNAL;  // LCOV_EXCL_LINE
         }
-        else if (sleDst->isFieldPresent(sfVaultID))
+        else if (
+            sleDst->isFieldPresent(sfVaultID) ||
+            sleDst->isFieldPresent(sfLoanBrokerID))
         {
             if (!ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
                 return tecNO_PERMISSION;
@@ -687,4 +687,4 @@ SetTrust::doApply()
     return terResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
