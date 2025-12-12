@@ -628,7 +628,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         testcase("tryOverpayment - Value Change is the decrease in interest");
 
         using namespace jtx;
-        using namespace ripple::detail;
+        using namespace xrpl::detail;
 
         Env env{*this};
         Account const issuer{"issuer"};
