@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class PublicKey;
 class SecretKey;
@@ -43,6 +43,6 @@ sign_create_account_attestation(
     AccountID const& dst);
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

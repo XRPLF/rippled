@@ -5,7 +5,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Protocol.h>
 
-namespace ripple {
+namespace xrpl {
 
 class KeyCache_test : public beast::unit_test::suite
 {
@@ -74,6 +74,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(KeyCache, basics, ripple);
+BEAST_DEFINE_TESTSUITE(KeyCache, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

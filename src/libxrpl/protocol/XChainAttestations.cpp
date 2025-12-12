@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace Attestations {
 
 AttestationBase::AttestationBase(
@@ -83,7 +83,7 @@ bool
 AttestationBase::verify(STXChainBridge const& bridge) const
 {
     std::vector<std::uint8_t> msg = message(bridge);
-    return ripple::verify(publicKey, makeSlice(msg), signature);
+    return xrpl::verify(publicKey, makeSlice(msg), signature);
 }
 
 AttestationBase::AttestationBase(STObject const& o)
@@ -742,4 +742,4 @@ XChainAttestationsBase<TAttestation>::toSTArray() const
 template class XChainAttestationsBase<XChainClaimAttestation>;
 template class XChainAttestationsBase<XChainCreateAccountAttestation>;
 
-}  // namespace ripple
+}  // namespace xrpl

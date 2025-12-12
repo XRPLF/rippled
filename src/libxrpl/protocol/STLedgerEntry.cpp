@@ -26,7 +26,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STLedgerEntry::STLedgerEntry(Keylet const& k)
     : STObject(sfLedgerEntry), key_(k.key), type_(k.type)
@@ -157,7 +157,7 @@ STLedgerEntry::thread(
         // this transaction is already threaded
         XRPL_ASSERT(
             getFieldU32(sfPreviousTxnLgrSeq) == ledgerSeq,
-            "ripple::STLedgerEntry::thread : ledger sequence match");
+            "xrpl::STLedgerEntry::thread : ledger sequence match");
         return false;
     }
 
@@ -168,4 +168,4 @@ STLedgerEntry::thread(
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

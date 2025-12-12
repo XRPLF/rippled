@@ -5,7 +5,7 @@
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
-namespace ripple {
+namespace xrpl {
 
 using TreeNodeCache = TaggedCache<
     uint256,
@@ -13,6 +13,6 @@ using TreeNodeCache = TaggedCache<
     /*IsKeyCache*/ false,
     intr_ptr::SharedWeakUnionPtr<SHAMapTreeNode>,
     intr_ptr::SharedPtr<SHAMapTreeNode>>;
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

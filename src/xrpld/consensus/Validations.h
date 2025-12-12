@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Timing parameters to control validation staleness and expiration.
 
@@ -418,7 +418,7 @@ private:
     {
         XRPL_ASSERT(
             val.trusted(),
-            "ripple::Validations::updateTrie : trusted input validation");
+            "xrpl::Validations::updateTrie : trusted input validation");
 
         // Clear any prior acquiring ledger for this node
         if (prior)
@@ -698,7 +698,7 @@ public:
     {
         std::lock_guard lock{mutex_};
         XRPL_ASSERT(
-            low < high, "ripple::Validations::setSeqToKeep : valid inputs");
+            low < high, "xrpl::Validations::setSeqToKeep : valid inputs");
         toKeep_ = {low, high};
     }
 
@@ -1156,5 +1156,5 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 #endif

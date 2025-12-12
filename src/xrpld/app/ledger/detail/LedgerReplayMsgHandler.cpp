@@ -7,7 +7,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 LedgerReplayMsgHandler::LedgerReplayMsgHandler(
     Application& app,
     LedgerReplayer& replayer)
@@ -72,7 +72,7 @@ LedgerReplayMsgHandler::processProofPathRequest(
 
     // pack header
     Serializer nData(128);
-    addRaw(ledger->info(), nData);
+    addRaw(ledger->header(), nData);
     reply.set_ledgerheader(nData.getDataPtr(), nData.getLength());
     // pack path
     for (auto const& b : *path)
@@ -185,7 +185,7 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
 
     // pack header
     Serializer nData(128);
-    addRaw(ledger->info(), nData);
+    addRaw(ledger->header(), nData);
     reply.set_ledgerheader(nData.getDataPtr(), nData.getLength());
     // pack transactions
     auto const& txMap = ledger->txMap();
@@ -273,4 +273,4 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

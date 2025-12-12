@@ -6,7 +6,7 @@
 #include <stack>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 // This code is used to compare another node's transaction tree
 // to our own. It returns a map containing all items that are different
@@ -112,7 +112,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
 
     XRPL_ASSERT(
         isValid() && otherMap.isValid(),
-        "ripple::SHAMap::compare : valid state and valid input");
+        "xrpl::SHAMap::compare : valid state and valid input");
 
     if (getHash() == otherMap.getHash())
         return true;
@@ -130,7 +130,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
         if (!ourNode || !otherNode)
         {
             // LCOV_EXCL_START
-            UNREACHABLE("ripple::SHAMap::compare : missing a node");
+            UNREACHABLE("xrpl::SHAMap::compare : missing a node");
             Throw<SHAMapMissingNode>(type_, uint256());
             // LCOV_EXCL_STOP
         }
@@ -214,7 +214,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
         else
         {
             // LCOV_EXCL_START
-            UNREACHABLE("ripple::SHAMap::compare : invalid node");
+            UNREACHABLE("xrpl::SHAMap::compare : invalid node");
             // LCOV_EXCL_STOP
         }
     }
@@ -315,7 +315,7 @@ SHAMap::walkMapParallel(
                             std::move(nodeStack.top());
                         XRPL_ASSERT(
                             node,
-                            "ripple::SHAMap::walkMapParallel : non-null node");
+                            "xrpl::SHAMap::walkMapParallel : non-null node");
                         nodeStack.pop();
 
                         for (int i = 0; i < 16; ++i)
@@ -366,4 +366,4 @@ SHAMap::walkMapParallel(
     return false;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

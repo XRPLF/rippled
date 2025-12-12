@@ -5,7 +5,7 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Quality.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Average quality of a path as a function of `out`: q(out) = m * out + b,
  * where m = -1 / poolGets, b = poolPays / poolGets. If CLOB offer then
@@ -83,6 +83,6 @@ QualityFunction::QualityFunction(
     b_ = amounts.out * cfee / amounts.in;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_PROTOCOL_QUALITYFUNCTION_H_INCLUDED

@@ -4,7 +4,7 @@
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Discardable, editable view to a ledger.
 
@@ -39,6 +39,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

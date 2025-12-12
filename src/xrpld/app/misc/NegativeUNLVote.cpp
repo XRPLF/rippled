@@ -4,7 +4,7 @@
 
 #include <xrpl/shamap/SHAMapItem.h>
 
-namespace ripple {
+namespace xrpl {
 
 NegativeUNLVote::NegativeUNLVote(NodeID const& myId, beast::Journal j)
     : myId_(myId), j_(j)
@@ -59,7 +59,7 @@ NegativeUNLVote::doVoting(
             }
         }
 
-        auto const seq = prevLedger->info().seq + 1;
+        auto const seq = prevLedger->header().seq + 1;
         purgeNewValidators(seq);
 
         // Process the table and find all candidates to disable or to re-enable
@@ -69,21 +69,21 @@ NegativeUNLVote::doVoting(
         // Pick one to disable and one to re-enable if any, add ttUNL_MODIFY Tx
         if (!candidates.toDisableCandidates.empty())
         {
-            auto n =
-                choose(prevLedger->info().hash, candidates.toDisableCandidates);
+            auto n = choose(
+                prevLedger->header().hash, candidates.toDisableCandidates);
             XRPL_ASSERT(
                 nidToKeyMap.contains(n),
-                "ripple::NegativeUNLVote::doVoting : found node to disable");
+                "xrpl::NegativeUNLVote::doVoting : found node to disable");
             addTx(seq, nidToKeyMap.at(n), ToDisable, initialSet);
         }
 
         if (!candidates.toReEnableCandidates.empty())
         {
             auto n = choose(
-                prevLedger->info().hash, candidates.toReEnableCandidates);
+                prevLedger->header().hash, candidates.toReEnableCandidates);
             XRPL_ASSERT(
                 nidToKeyMap.contains(n),
-                "ripple::NegativeUNLVote::doVoting : found node to enable");
+                "xrpl::NegativeUNLVote::doVoting : found node to enable");
             addTx(seq, nidToKeyMap.at(n), ToReEnable, initialSet);
         }
     }
@@ -127,8 +127,7 @@ NegativeUNLVote::choose(
     std::vector<NodeID> const& candidates)
 {
     XRPL_ASSERT(
-        !candidates.empty(),
-        "ripple::NegativeUNLVote::choose : non-empty input");
+        !candidates.empty(), "xrpl::NegativeUNLVote::choose : non-empty input");
     static_assert(NodeID::bytes <= uint256::bytes);
     NodeID randomPad = NodeID::fromVoid(randomPadData.data());
     NodeID txNodeID = candidates[0];
@@ -154,7 +153,7 @@ NegativeUNLVote::buildScoreTable(
 
     // Ask the validation container to keep enough validation message history
     // for next time.
-    auto const seq = prevLedger->info().seq + 1;
+    auto const seq = prevLedger->header().seq + 1;
     validations.setSeqToKeep(seq - 1, seq + FLAG_LEDGER_INTERVAL);
 
     // Find FLAG_LEDGER_INTERVAL (i.e. 256) previous ledger hashes
@@ -336,4 +335,4 @@ NegativeUNLVote::purgeNewValidators(LedgerIndex seq)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 
 #include <xrpld/app/rdb/RelationalDatabase.h>
 
-namespace ripple {
+namespace xrpl {
 
 class SQLiteDatabase : public RelationalDatabase
 {
@@ -100,7 +100,7 @@ public:
      * @param ledgerFirstIndex Minimum ledger sequence.
      * @return Ledger info if found, otherwise no value.
      */
-    virtual std::optional<LedgerInfo>
+    virtual std::optional<LedgerHeader>
     getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex) = 0;
 
     /**
@@ -110,7 +110,7 @@ public:
      * @param ledgerFirstIndex Minimum ledger sequence.
      * @return Ledger info if found, otherwise no value.
      */
-    virtual std::optional<LedgerInfo>
+    virtual std::optional<LedgerHeader>
     getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex) = 0;
 
     /**
@@ -289,6 +289,6 @@ public:
     closeTransactionDB() = 0;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

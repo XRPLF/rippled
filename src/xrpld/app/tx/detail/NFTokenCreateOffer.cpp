@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 NFTokenCreateOffer::getFlagsMask(PreflightContext const& ctx)
@@ -82,4 +82,4 @@ NFTokenCreateOffer::doApply()
         ctx_.tx.getFlags());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

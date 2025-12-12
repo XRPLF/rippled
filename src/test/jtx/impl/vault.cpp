@@ -7,7 +7,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -81,4 +81,4 @@ Vault::clawback(ClawbackArgs const& args)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

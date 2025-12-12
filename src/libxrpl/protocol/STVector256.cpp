@@ -12,7 +12,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
 {
@@ -59,10 +59,10 @@ void
 STVector256::add(Serializer& s) const
 {
     XRPL_ASSERT(
-        getFName().isBinary(), "ripple::STVector256::add : field is binary");
+        getFName().isBinary(), "xrpl::STVector256::add : field is binary");
     XRPL_ASSERT(
         getFName().fieldType == STI_VECTOR256,
-        "ripple::STVector256::add : valid field type");
+        "xrpl::STVector256::add : valid field type");
     s.addVL(mValue.begin(), mValue.end(), mValue.size() * (256 / 8));
 }
 
@@ -84,4 +84,4 @@ STVector256::getJson(JsonOptions) const
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

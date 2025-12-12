@@ -14,9 +14,8 @@
 #pragma clang diagnostic ignored "-Wdeprecated"
 #endif
 
-#include <xrpld/core/JobQueue.h>
-
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobQueue.h>
 
 #define SOCI_USE_BOOST
 #include <soci/soci.h>
@@ -29,7 +28,7 @@ namespace sqlite_api {
 struct sqlite3;
 }
 
-namespace ripple {
+namespace xrpl {
 
 class BasicConfig;
 
@@ -122,7 +121,7 @@ makeCheckpointer(
     JobQueue&,
     Logs&);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #if defined(__clang__)
 #pragma clang diagnostic pop

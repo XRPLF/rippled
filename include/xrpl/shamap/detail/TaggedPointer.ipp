@@ -6,7 +6,7 @@
 
 #include <array>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 // Sparse array size boundaries.
@@ -61,7 +61,7 @@ numAllocatedChildren(std::uint8_t n)
 {
     XRPL_ASSERT(
         n <= SHAMapInnerNode::branchFactor,
-        "ripple::numAllocatedChildren : valid input");
+        "xrpl::numAllocatedChildren : valid input");
     return *std::lower_bound(boundaries.begin(), boundaries.end(), n);
 }
 
@@ -70,7 +70,7 @@ boundariesIndex(std::uint8_t numChildren)
 {
     XRPL_ASSERT(
         numChildren <= SHAMapInnerNode::branchFactor,
-        "ripple::boundariesIndex : valid input");
+        "xrpl::boundariesIndex : valid input");
     return std::distance(
         boundaries.begin(),
         std::lower_bound(boundaries.begin(), boundaries.end(), numChildren));
@@ -142,7 +142,7 @@ deallocateArrays(std::uint8_t boundaryIndex, void* p)
 {
     XRPL_ASSERT(
         isFromArrayFuns[boundaryIndex](p),
-        "ripple::deallocateArrays : valid inputs");
+        "xrpl::deallocateArrays : valid inputs");
     freeArrayFuns[boundaryIndex](p);
 }
 
@@ -258,12 +258,12 @@ inline TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t numChildren)
     auto [tag, p] = allocateArrays(numChildren);
     XRPL_ASSERT(
         tag < boundaries.size(),
-        "ripple::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
+        "xrpl::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
         "maximum tag");
     XRPL_ASSERT(
         (reinterpret_cast<std::uintptr_t>(p) & ptrMask) ==
             reinterpret_cast<std::uintptr_t>(p),
-        "ripple::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
+        "xrpl::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
         "valid pointer");
     tp_ = reinterpret_cast<std::uintptr_t>(p) + tag;
 }
@@ -276,7 +276,7 @@ inline TaggedPointer::TaggedPointer(
 {
     XRPL_ASSERT(
         toAllocate >= popcnt16(dstBranches),
-        "ripple::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : minimum "
+        "xrpl::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : minimum "
         "toAllocate input");
 
     if (other.capacity() == numAllocatedChildren(toAllocate))
@@ -427,7 +427,7 @@ inline TaggedPointer::TaggedPointer(
         // If sparse, may need to run additional constructors
         XRPL_ASSERT(
             !dstIsDense || dstIndex == dstNumAllocated,
-            "ripple::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : "
+            "xrpl::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : "
             "non-sparse or valid sparse");
         for (int i = dstIndex; i < dstNumAllocated; ++i)
         {
@@ -575,4 +575,4 @@ inline TaggedPointer::~TaggedPointer()
     destroyHashesAndChildren();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

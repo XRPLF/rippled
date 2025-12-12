@@ -18,7 +18,7 @@
 #include <thread>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 /*
 
 Findings from the test:
@@ -638,6 +638,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(short_read, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(short_read, overlay, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

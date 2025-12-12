@@ -13,7 +13,7 @@
 #include <functional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // Common part of all peers
 template <class Handler, class Impl>
@@ -85,9 +85,9 @@ BasePeer<Handler, Impl>::close()
         return post(
             strand_, std::bind(&BasePeer::close, impl().shared_from_this()));
     error_code ec;
-    ripple::get_lowest_layer(impl().ws_).socket().close(ec);
+    xrpl::get_lowest_layer(impl().ws_).socket().close(ec);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class MultiSign_test : public beast::unit_test::suite
@@ -1481,8 +1481,8 @@ public:
         uint8_t tag2[] =
             "hello world some ascii 32b long";  // including 1 byte for NUL
 
-        uint256 bogie_tag = ripple::base_uint<256>::fromVoid(tag1);
-        uint256 demon_tag = ripple::base_uint<256>::fromVoid(tag2);
+        uint256 bogie_tag = xrpl::base_uint<256>::fromVoid(tag1);
+        uint256 demon_tag = xrpl::base_uint<256>::fromVoid(tag2);
 
         // Attach phantom signers to alice and use them for a transaction.
         env(signers(alice, 1, {{bogie, 1, bogie_tag}, {demon, 1, demon_tag}}));
@@ -1632,7 +1632,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(MultiSign, app, ripple);
+BEAST_DEFINE_TESTSUITE(MultiSign, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

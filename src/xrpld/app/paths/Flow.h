@@ -6,7 +6,7 @@
 
 #include <xrpl/protocol/Quality.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace path {
 namespace detail {
@@ -51,6 +51,6 @@ flow(
     beast::Journal j,
     path::detail::FlowDebugInfo* flowDebugInfo = nullptr);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
