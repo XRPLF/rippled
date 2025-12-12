@@ -16,7 +16,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 inline protocol::MessageType
 protocolMessageType(protocol::TMGetLedger const&)
@@ -152,13 +152,13 @@ parseMessageHeader(
     BufferSequence const& bufs,
     std::size_t size)
 {
-    using namespace ripple::compression;
+    using namespace xrpl::compression;
 
     MessageHeader hdr;
     auto iter = buffersBegin(bufs);
     XRPL_ASSERT(
         iter != buffersEnd(bufs),
-        "ripple::detail::parseMessageHeader : non-empty buffer");
+        "xrpl::detail::parseMessageHeader : non-empty buffer");
 
     // Check valid header compressed message:
     // - 4 bits are the compression algorithm, 1st bit is always set to 1
@@ -256,7 +256,7 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
         std::vector<std::uint8_t> payload;
         payload.resize(header.uncompressed_size);
 
-        auto const payloadSize = ripple::compression::decompress(
+        auto const payloadSize = xrpl::compression::decompress(
             stream,
             header.payload_wire_size,
             payload.data(),
@@ -285,7 +285,7 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
     if (!m)
         return false;
 
-    using namespace ripple::compression;
+    using namespace xrpl::compression;
     handler.onMessageBegin(
         header.message_type,
         m,
@@ -465,6 +465,6 @@ invokeProtocolMessage(
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

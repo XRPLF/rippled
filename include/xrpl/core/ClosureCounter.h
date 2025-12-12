@@ -8,7 +8,7 @@
 #include <mutex>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * The role of a `ClosureCounter` is to assist in shutdown by letting callers
@@ -202,6 +202,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_CORE_CLOSURE_COUNTER_H_INCLUDED

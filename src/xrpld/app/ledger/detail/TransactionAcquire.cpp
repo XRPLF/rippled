@@ -7,7 +7,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 using namespace std::chrono_literals;
 
@@ -244,4 +244,4 @@ TransactionAcquire::stillNeed()
     failed_ = false;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

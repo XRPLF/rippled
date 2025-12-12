@@ -2,7 +2,7 @@
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/core/ConfigSections.h>
 
-namespace ripple {
+namespace xrpl {
 
 extern std::unique_ptr<RelationalDatabase>
 getSQLiteDatabase(Application& app, Config const& config, JobQueue& jobQueue);
@@ -42,4 +42,4 @@ RelationalDatabase::init(
     return std::unique_ptr<RelationalDatabase>();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

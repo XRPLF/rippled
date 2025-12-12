@@ -5,7 +5,7 @@
 #include <limits>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 auto constexpr muldiv_max = std::numeric_limits<std::uint64_t>::max();
 
 /** Return value*mul/div accurately.
@@ -21,6 +21,6 @@ auto constexpr muldiv_max = std::numeric_limits<std::uint64_t>::max();
 std::optional<std::uint64_t>
 mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

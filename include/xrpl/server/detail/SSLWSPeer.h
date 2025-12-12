@@ -13,7 +13,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Handler>
 class SSLWSPeer : public BaseWSPeer<Handler, SSLWSPeer<Handler>>,
@@ -67,6 +67,6 @@ SSLWSPeer<Handler>::SSLWSPeer(
 {
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -1,6 +1,6 @@
 #include <xrpl/protocol/MPTAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 MPTAmount&
 MPTAmount::operator+=(MPTAmount const& other)
@@ -46,4 +46,4 @@ MPTAmount::minPositiveAmount()
     return MPTAmount{1};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

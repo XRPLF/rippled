@@ -8,7 +8,7 @@
 
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -109,6 +109,6 @@ makeSubmitter(
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

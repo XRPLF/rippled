@@ -9,7 +9,7 @@
 
 #include <initializer_list>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -227,6 +227,6 @@ modify(jtx::Account const& account, uint256 const& nftokenID);
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_TEST_JTX_NFT_H_INCLUDED

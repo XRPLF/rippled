@@ -9,7 +9,7 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -59,7 +59,7 @@ AMM::AMM(
     , msig_(ms)
     , fee_(fee)
     , ammAccount_(create(tfee, flags, seq, ter))
-    , lptIssue_(ripple::ammLPTIssue(
+    , lptIssue_(xrpl::ammLPTIssue(
           asset1_.issue().currency,
           asset2_.issue().currency,
           ammAccount_))
@@ -832,4 +832,4 @@ ammClawback(
 }  // namespace amm
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Stream, class Iter>
 Stream&
@@ -85,6 +85,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

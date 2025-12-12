@@ -4,7 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/messages.h>
 
-namespace ripple {
+namespace xrpl {
 class Application;
 class LedgerReplayer;
 
@@ -54,6 +54,6 @@ private:
     beast::Journal journal_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

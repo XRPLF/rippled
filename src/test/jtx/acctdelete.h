@@ -6,7 +6,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -26,6 +26,6 @@ incLgrSeqForAccDel(
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

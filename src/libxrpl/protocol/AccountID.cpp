@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -68,7 +68,7 @@ public:
 
         XRPL_ASSERT(
             ret.size() <= 38,
-            "ripple::detail::AccountIdCache : maximum result size");
+            "xrpl::detail::AccountIdCache : maximum result size");
 
         {
             std::lock_guard lock(sl);
@@ -181,4 +181,4 @@ to_issuer(AccountID& issuer, std::string const& s)
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
