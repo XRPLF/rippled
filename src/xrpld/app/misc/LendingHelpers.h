@@ -4,7 +4,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct PreflightContext;
 
@@ -115,7 +115,7 @@ struct LoanState
         XRPL_ASSERT_PARTS(
             interestDue + managementFeeDue ==
                 valueOutstanding - principalOutstanding,
-            "ripple::LoanState::interestOutstanding",
+            "xrpl::LoanState::interestOutstanding",
             "other values add up correctly");
         return interestDue + managementFeeDue;
     }
@@ -487,6 +487,6 @@ loanMakePayment(
     LoanPaymentType const paymentType,
     beast::Journal j);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_APP_MISC_LENDINGHELPERS_H_INCLUDED

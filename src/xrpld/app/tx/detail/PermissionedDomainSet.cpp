@@ -7,7 +7,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 PermissionedDomainSet::checkExtraFeatures(PreflightContext const& ctx)
@@ -123,4 +123,4 @@ PermissionedDomainSet::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

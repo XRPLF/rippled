@@ -16,7 +16,7 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 static Expected<uint256, Json::Value>
 parseObjectID(
@@ -918,4 +918,4 @@ doLedgerEntryGrpc(
     *(response.mutable_ledger()) = request.ledger();
     return {response, status};
 }
-}  // namespace ripple
+}  // namespace xrpl

@@ -27,7 +27,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 /*
    Bridges connect two independent ledgers: a "locking chain" and an "issuing
@@ -206,8 +206,8 @@ claimHelper(
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::claimHelper : invalid inputs");  // should have already
-                                                          // been checked
+                "xrpl::claimHelper : invalid inputs");  // should have already
+                                                        // been checked
             continue;
             // LCOV_EXCL_STOP
         }
@@ -423,7 +423,7 @@ transferHelper(
     if (amt.native())
     {
         auto const sleSrc = psb.peek(keylet::account(src));
-        XRPL_ASSERT(sleSrc, "ripple::transferHelper : non-null source account");
+        XRPL_ASSERT(sleSrc, "xrpl::transferHelper : non-null source account");
         if (!sleSrc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -2238,4 +2238,4 @@ XChainCreateAccountCommit::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

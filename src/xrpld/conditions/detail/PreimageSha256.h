@@ -11,7 +11,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace cryptoconditions {
 
 class PreimageSha256 final : public Fulfillment
@@ -130,6 +130,6 @@ public:
 };
 
 }  // namespace cryptoconditions
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

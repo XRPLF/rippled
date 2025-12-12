@@ -10,7 +10,7 @@
 
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 class InboundLedgers;
 class PeerSet;
 namespace test {
@@ -69,7 +69,7 @@ public:
      */
     void
     processData(
-        LedgerInfo const& info,
+        LedgerHeader const& info,
         std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns);
 
     /**
@@ -142,6 +142,6 @@ private:
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

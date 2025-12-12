@@ -12,7 +12,7 @@
 #include <mutex>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 class Cluster
 {
@@ -94,6 +94,6 @@ public:
     load(Section const& nodes);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

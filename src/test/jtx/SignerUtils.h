@@ -5,7 +5,7 @@
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -51,6 +51,6 @@ sortSigners(std::vector<Reg>& signers)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

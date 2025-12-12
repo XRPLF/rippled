@@ -12,7 +12,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 static std::optional<HTTPClientSSLContext> httpClientSSLContext;
 
@@ -605,4 +605,4 @@ HTTPClient::request(
     client->request(bSSL, deqSites, setRequest, timeout, complete);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

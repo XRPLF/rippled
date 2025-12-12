@@ -13,7 +13,7 @@
 #include <limits>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace unit {
 
@@ -388,11 +388,10 @@ mulDivU(Source1 value, Dest mul, Source2 div)
         // split the asserts so if one hits, the user can tell which
         // without a debugger.
         XRPL_ASSERT(
-            value.value() >= 0, "ripple::unit::mulDivU : minimum value input");
+            value.value() >= 0, "xrpl::unit::mulDivU : minimum value input");
         XRPL_ASSERT(
-            mul.value() >= 0, "ripple::unit::mulDivU : minimum mul input");
-        XRPL_ASSERT(
-            div.value() > 0, "ripple::unit::mulDivU : minimum div input");
+            mul.value() >= 0, "xrpl::unit::mulDivU : minimum mul input");
+        XRPL_ASSERT(div.value() > 0, "xrpl::unit::mulDivU : minimum div input");
         return std::nullopt;
     }
 
@@ -532,6 +531,6 @@ unsafe_cast(Src s) noexcept
     return Dest{unsafe_cast<typename Dest::value_type>(s)};
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // PROTOCOL_UNITS_H_INCLUDED

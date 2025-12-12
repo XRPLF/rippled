@@ -1,19 +1,19 @@
 #include <xrpld/app/paths/RippleLineCache.h>
 #include <xrpld/app/paths/TrustLine.h>
 
-namespace ripple {
+namespace xrpl {
 
 RippleLineCache::RippleLineCache(
     std::shared_ptr<ReadView const> const& ledger,
     beast::Journal j)
     : ledger_(ledger), journal_(j)
 {
-    JLOG(journal_.debug()) << "created for ledger " << ledger_->info().seq;
+    JLOG(journal_.debug()) << "created for ledger " << ledger_->header().seq;
 }
 
 RippleLineCache::~RippleLineCache()
 {
-    JLOG(journal_.debug()) << "destroyed for ledger " << ledger_->info().seq
+    JLOG(journal_.debug()) << "destroyed for ledger " << ledger_->header().seq
                            << " with " << lines_.size() << " accounts and "
                            << totalLineCount_ << " distinct trust lines.";
 }
@@ -61,7 +61,7 @@ RippleLineCache::getRippleLines(
                 // for either value of outgoing.
                 XRPL_ASSERT(
                     size <= totalLineCount_,
-                    "ripple::RippleLineCache::getRippleLines : maximum lines");
+                    "xrpl::RippleLineCache::getRippleLines : maximum lines");
                 totalLineCount_ -= size;
                 lines_.erase(otheriter);
             }
@@ -83,7 +83,7 @@ RippleLineCache::getRippleLines(
     {
         XRPL_ASSERT(
             it->second == nullptr,
-            "ripple::RippleLineCache::getRippleLines : null lines");
+            "xrpl::RippleLineCache::getRippleLines : null lines");
         auto lines =
             PathFindTrustLine::getItems(accountID, *ledger_, direction);
         if (lines.size())
@@ -96,10 +96,10 @@ RippleLineCache::getRippleLines(
 
     XRPL_ASSERT(
         !it->second || (it->second->size() > 0),
-        "ripple::RippleLineCache::getRippleLines : null or nonempty lines");
+        "xrpl::RippleLineCache::getRippleLines : null or nonempty lines");
     auto const size = it->second ? it->second->size() : 0;
     JLOG(journal_.trace()) << "getRippleLines for ledger "
-                           << ledger_->info().seq << " found " << size
+                           << ledger_->header().seq << " found " << size
                            << (key.direction_ == LineDirection::outgoing
                                    ? " outgoing"
                                    : " incoming")
@@ -111,4 +111,4 @@ RippleLineCache::getRippleLines(
     return it->second;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

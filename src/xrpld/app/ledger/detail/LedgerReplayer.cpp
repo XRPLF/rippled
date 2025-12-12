@@ -2,7 +2,7 @@
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
 
-namespace ripple {
+namespace xrpl {
 
 LedgerReplayer::LedgerReplayer(
     Application& app,
@@ -30,7 +30,7 @@ LedgerReplayer::replay(
     XRPL_ASSERT(
         finishLedgerHash.isNonZero() && totalNumLedgers > 0 &&
             totalNumLedgers <= LedgerReplayParameters::MAX_TASK_SIZE,
-        "ripple::LedgerReplayer::replay : valid inputs");
+        "xrpl::LedgerReplayer::replay : valid inputs");
 
     LedgerReplayTask::TaskParameter parameter(
         r, finishLedgerHash, totalNumLedgers);
@@ -152,7 +152,7 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
 
 void
 LedgerReplayer::gotSkipList(
-    LedgerInfo const& info,
+    LedgerHeader const& info,
     boost::intrusive_ptr<SHAMapItem const> const& item)
 {
     std::shared_ptr<SkipListAcquire> skipList = {};
@@ -175,7 +175,7 @@ LedgerReplayer::gotSkipList(
 
 void
 LedgerReplayer::gotReplayDelta(
-    LedgerInfo const& info,
+    LedgerHeader const& info,
     std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns)
 {
     std::shared_ptr<LedgerDeltaAcquire> delta = {};
@@ -266,4 +266,4 @@ LedgerReplayer::stop()
     JLOG(j_.info()) << "Stopped";
 }
 
-}  // namespace ripple
+}  // namespace xrpl

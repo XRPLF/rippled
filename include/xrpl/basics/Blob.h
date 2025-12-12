@@ -3,13 +3,13 @@
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Storage for linear binary data.
     Blocks of binary data appear often in various idioms and structures.
 */
 using Blob = std::vector<unsigned char>;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

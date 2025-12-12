@@ -3,16 +3,16 @@
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
-#include <xrpld/core/JobQueue.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/resource/Fees.h>
 
 #include <memory>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 enum {
     // Ideal number of peers to start with
@@ -258,4 +258,4 @@ make_InboundTransactions(
         app, collector, std::move(gotSet), make_PeerSetBuilder(app));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

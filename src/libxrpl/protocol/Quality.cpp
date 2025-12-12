@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <limits>
 
-namespace ripple {
+namespace xrpl {
 
 Quality::Quality(std::uint64_t value) : m_value(value)
 {
@@ -21,7 +21,7 @@ Quality::Quality(Amounts const& amount)
 Quality&
 Quality::operator++()
 {
-    XRPL_ASSERT(m_value > 0, "ripple::Quality::operator++() : minimum value");
+    XRPL_ASSERT(m_value > 0, "xrpl::Quality::operator++() : minimum value");
     --m_value;
     return *this;
 }
@@ -39,7 +39,7 @@ Quality::operator--()
 {
     XRPL_ASSERT(
         m_value < std::numeric_limits<value_type>::max(),
-        "ripple::Quality::operator--() : maximum value");
+        "xrpl::Quality::operator--() : maximum value");
     ++m_value;
     return *this;
 }
@@ -70,11 +70,10 @@ ceil_in_impl(
         if (result.out > amount.out)
             result.out = amount.out;
         XRPL_ASSERT(
-            result.in == limit, "ripple::ceil_in_impl : result matches limit");
+            result.in == limit, "xrpl::ceil_in_impl : result matches limit");
         return result;
     }
-    XRPL_ASSERT(
-        amount.in <= limit, "ripple::ceil_in_impl : result inside limit");
+    XRPL_ASSERT(amount.in <= limit, "xrpl::ceil_in_impl : result inside limit");
     return amount;
 }
 
@@ -111,12 +110,11 @@ ceil_out_impl(
         if (result.in > amount.in)
             result.in = amount.in;
         XRPL_ASSERT(
-            result.out == limit,
-            "ripple::ceil_out_impl : result matches limit");
+            result.out == limit, "xrpl::ceil_out_impl : result matches limit");
         return result;
     }
     XRPL_ASSERT(
-        amount.out <= limit, "ripple::ceil_out_impl : result inside limit");
+        amount.out <= limit, "xrpl::ceil_out_impl : result inside limit");
     return amount;
 }
 
@@ -140,13 +138,12 @@ composed_quality(Quality const& lhs, Quality const& rhs)
 {
     STAmount const lhs_rate(lhs.rate());
     XRPL_ASSERT(
-        lhs_rate != beast::zero,
-        "ripple::composed_quality : nonzero left input");
+        lhs_rate != beast::zero, "xrpl::composed_quality : nonzero left input");
 
     STAmount const rhs_rate(rhs.rate());
     XRPL_ASSERT(
         rhs_rate != beast::zero,
-        "ripple::composed_quality : nonzero right input");
+        "xrpl::composed_quality : nonzero right input");
 
     STAmount const rate(mulRound(lhs_rate, rhs_rate, lhs_rate.asset(), true));
 
@@ -155,7 +152,7 @@ composed_quality(Quality const& lhs, Quality const& rhs)
 
     XRPL_ASSERT(
         (stored_exponent > 0) && (stored_exponent <= 255),
-        "ripple::composed_quality : valid exponent");
+        "xrpl::composed_quality : valid exponent");
 
     return Quality((stored_exponent << (64 - 8)) | stored_mantissa);
 }
@@ -192,4 +189,4 @@ Quality::round(int digits) const
     return Quality{(exponent << (64 - 8)) | mantissa};
 }
 
-}  // namespace ripple
+}  // namespace xrpl
