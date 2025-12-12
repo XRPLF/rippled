@@ -69,7 +69,7 @@ jobs:
     container: ${{ inputs.image != '' && inputs.image || null }}
     timeout-minutes: 60
     env:
-      CCACHE_ENABLED: ${{ github.repository_owner == 'XRPLF' && github.event_name == 'pull_request' && runner.os == 'Windows' }}
+      CCACHE_ENABLED: ${{ github.repository_owner == 'XRPLF' && github.event_name == 'pull_request' }}
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
       CCACHE_REMOTE_ONLY: true
       CCACHE_REMOTE_STORAGE: ${{ secrets.REDIS_ENDPOINT }}
