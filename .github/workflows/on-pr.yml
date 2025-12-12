@@ -117,6 +117,7 @@ jobs:
       os: ${{ matrix.os }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      REDIS_ENDPOINT: ${{ secrets.REDIS_ENDPOINT }}
 
   notify-clio:
     needs:

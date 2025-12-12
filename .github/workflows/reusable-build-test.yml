@@ -27,6 +27,9 @@ on:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
         required: true
+      REDIS_ENDPOINT:
+        description: "The Redis endpoint to use by ccache as remote storage."
+        required: true
 
 jobs:
   # Generate the strategy matrix to be used by the following job.
@@ -56,3 +59,4 @@ jobs:
       config_name: ${{ matrix.config_name }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      REDIS_ENDPOINT: ${{ secrets.REDIS_ENDPOINT }}
