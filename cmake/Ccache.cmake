@@ -7,7 +7,7 @@ endif ()
 if (NOT MSVC)
     set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PATH}")
     set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PATH}")
-    message(STATUS "Using ccache: ${CCACHE_PATH}")
+    message(STATUS "Found ccache: ${CCACHE_PATH}")
     return()
 endif ()
 
@@ -34,7 +34,7 @@ if ("${CCACHE_PATH}" MATCHES "chocolatey")
     endif ()
     file(TO_CMAKE_PATH "${CCACHE_PATH}" CCACHE_PATH)
 endif ()
-message(STATUS "Using ccache: ${CCACHE_PATH}")
+message(STATUS "Found ccache: ${CCACHE_PATH}")
 
 # Tell cmake to use ccache for compiling with Visual Studio.
 file(COPY_FILE
