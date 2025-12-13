@@ -260,14 +260,31 @@ admin = 127.0.0.1
                     result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
                 Json::Value const& leFlags =
                     result[jss::result][jss::LEDGER_ENTRY_FLAGS];
-                BEAST_EXPECT(leFlags.size() == 54);
+                // at present time, there are a total of 11 ledger objects with flags
+                BEAST_EXPECT(leFlags.size() == 11);
 
-                // test the mapped value of a few arbitrarily chosen flags
-                BEAST_EXPECT(leFlags["lsfDisallowXRP"] == 0x00080000);
-                BEAST_EXPECT(leFlags["lsfDepositAuth"] == 0x01000000);
+                unsigned int totalCountLedgerSpecificFlags = 0;
+                for(auto const& ledgerObjectFlags: leFlags)
+                {
+                    totalCountLedgerSpecificFlags += ledgerObjectFlags.size();
+                }
+                BEAST_EXPECT(totalCountLedgerSpecificFlags == 54);
+
+                // sanity test the mapped value of a few arbitrarily chosen flags
+                BEAST_EXPECT(leFlags["ltACCOUNT_ROOT"]["lsfDisallowXRP"] == 0x00080000);
+                BEAST_EXPECT(leFlags["ltACCOUNT_ROOT"]["lsfDepositAuth"] == 0x01000000);
                 BEAST_EXPECT(
-                    leFlags["lsfAllowTrustLineClawback"] == 0x80000000);
-                BEAST_EXPECT(leFlags["lsfHighFreeze"] == 0x00800000);
+                    leFlags["ltACCOUNT_ROOT"]["lsfAllowTrustLineClawback"] == 0x80000000);
+
+                BEAST_EXPECT(leFlags["ltRIPPLE_STATE"]["lsfHighFreeze"] == 0x00800000);
+                BEAST_EXPECT(leFlags["ltRIPPLE_STATE"]["lsfAMMNode"] == 0x01000000);
+
+                BEAST_EXPECT(leFlags["ltDIR_NODE"]["lsfNFTokenBuyOffers"] == 0x00000001);
+                BEAST_EXPECT(leFlags["ltMPTOKEN_ISSUANCE"]["lsfMPTCanTrade"] == 0x00000010);
+                BEAST_EXPECT(leFlags["ltCREDENTIAL"]["lsfAccepted"] == 0x00010000);
+                BEAST_EXPECT(leFlags["ltLOAN"]["lsfLoanImpaired"] == 0x00020000);
+                BEAST_EXPECT(leFlags["ltVAULT"]["lsfVaultPrivate"] == 0x00010000);
+                BEAST_EXPECT(leFlags["ltMPTOKEN"]["lsfMPTAuthorized"] == 0x00000002);
             }
 
             // test the response fields of the TRANSACTION_FORMATS section

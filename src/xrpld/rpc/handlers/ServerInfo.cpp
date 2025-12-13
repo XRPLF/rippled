@@ -67,80 +67,12 @@ public:
     parseLedgerSpecificFlags()
     {
         Json::Value solution;
-        // TODO: For purposes of improving software maintainability, please
-        // migrate the LedgerSpecificFlags enum into a std::unordered_map (or)
-        // use X-Macro to perform the enum -> map translation
-        // std::unordered_map<std::string, unsigned int> const LSFlags = {
-        //     // ltACCOUNT_ROOT
-        //     {"lsfPasswordSpent", 0x00010000},
-        //     {"lsfRequireDestTag", 0x00020000},
-        //     {"lsfRequireAuth", 0x00040000},
-        //     {"lsfDisallowXRP", 0x00080000},
-        //     {"lsfDisableMaster", 0x00100000},
-        //     {"lsfNoFreeze", 0x00200000},
-        //     {"lsfGlobalFreeze", 0x00400000},
-        //     {"lsfDefaultRipple", 0x00800000},
-        //     {"lsfDepositAuth", 0x01000000},
-        //
-        //     {"lsfDisallowIncomingNFTokenOffer", 0x04000000},
-        //     {"lsfDisallowIncomingCheck", 0x08000000},
-        //     {"lsfDisallowIncomingPayChan", 0x10000000},
-        //     {"lsfDisallowIncomingTrustline", 0x20000000},
-        //     {"lsfAllowTrustLineLocking", 0x40000000},
-        //     {"lsfAllowTrustLineClawback", 0x80000000},
-        //
-        //     // ltOFFER
-        //     {"lsfPassive", 0x00010000},
-        //     {"lsfSell", 0x00020000},
-        //     {"lsfHybrid", 0x00040000},
-        //
-        //     // ltRIPPLE_STATE
-        //     {"lsfLowReserve", 0x00010000},
-        //     {"lsfHighReserve", 0x00020000},
-        //     {"lsfLowAuth", 0x00040000},
-        //     {"lsfHighAuth", 0x00080000},
-        //     {"lsfLowNoRipple", 0x00100000},
-        //     {"lsfHighNoRipple", 0x00200000},
-        //     {"lsfLowFreeze", 0x00400000},
-        //     {"lsfHighFreeze", 0x00800000},
-        //     {"lsfLowDeepFreeze", 0x02000000},
-        //     {"lsfHighDeepFreeze", 0x04000000},
-        //     {"lsfAMMNode", 0x01000000},
-        //
-        //     // ltSIGNER_LIST
-        //     {"lsfOneOwnerCount", 0x00010000},
-        //
-        //     // ltDIR_NODE
-        //     {"lsfNFTokenBuyOffers", 0x00000001},
-        //     {"lsfNFTokenSellOffers", 0x00000002},
-        //
-        //     // ltNFTOKEN_OFFER
-        //     {"lsfSellNFToken", 0x00000001},
-        //
-        //     // ltMPTOKEN_ISSUANCE
-        //     {"lsfMPTLocked", 0x00000001},
-        //     {"lsfMPTCanLock", 0x00000002},
-        //     {"lsfMPTRequireAuth", 0x00000004},
-        //     {"lsfMPTCanEscrow", 0x00000008},
-        //     {"lsfMPTCanTrade", 0x00000010},
-        //     {"lsfMPTCanTransfer", 0x00000020},
-        //     {"lsfMPTCanClawback", 0x00000040},
-        //
-        //     // ltMPTOKEN
-        //     {"lsfMPTAuthorized", 0x00000002},
-        //
-        //     // ltCREDENTIAL
-        //     {"lsfAccepted", 0x00010000},
-        //
-        //     // ltVAULT
-        //     {"lsfVaultPrivate", 0x00010000},
-        // };
-
-
-        for (auto const& f : LSFlags)
+        for (auto const& ledgerEntrySection : LSFlags)
         {
-            std::cerr << f.first << " " << f.second << std::endl;
-            solution[std::string{f.first}] = f.second;
+            solution[std::string{ledgerEntrySection.first}] = Json::objectValue;
+
+            for(auto const& flag: ledgerEntrySection.second)
+                solution[std::string{ledgerEntrySection.first}][flag.first] = flag.second;
         }
 
         return solution;
