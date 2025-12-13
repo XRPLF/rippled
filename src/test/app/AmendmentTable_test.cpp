@@ -16,7 +16,7 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class AmendmentTable_test final : public beast::unit_test::suite
 {
@@ -534,7 +534,7 @@ public:
             }
 
             auto v = std::make_shared<STValidation>(
-                ripple::NetClock::time_point{},
+                xrpl::NetClock::time_point{},
                 pub,
                 sec,
                 calcNodeID(pub),
@@ -1271,6 +1271,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AmendmentTable, app, ripple);
+BEAST_DEFINE_TESTSUITE(AmendmentTable, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

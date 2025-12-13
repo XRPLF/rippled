@@ -11,7 +11,7 @@
 #include <functional>
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 namespace nft {
 
@@ -167,7 +167,7 @@ getPageForToken(
     auto np = std::make_shared<SLE>(keylet::nftpage(base, tokenIDForNewPage));
     XRPL_ASSERT(
         np->key() > base.key,
-        "ripple::nft::getPageForToken : valid NFT page index");
+        "xrpl::nft::getPageForToken : valid NFT page index");
     np->setFieldArray(sfNFTokens, narr);
     np->setFieldH256(sfNextPageMin, cp->key());
 
@@ -213,7 +213,7 @@ changeTokenURI(
     ApplyView& view,
     AccountID const& owner,
     uint256 const& nftokenID,
-    std::optional<ripple::Slice> const& uri)
+    std::optional<xrpl::Slice> const& uri)
 {
     std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
 
@@ -247,7 +247,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
 {
     XRPL_ASSERT(
         nft.isFieldPresent(sfNFTokenID),
-        "ripple::nft::insertToken : has NFT token");
+        "xrpl::nft::insertToken : has NFT token");
 
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
@@ -789,7 +789,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
 
     XRPL_ASSERT(
         nextPage,
-        "ripple::nft::repairNFTokenDirectoryLinks : next page is available");
+        "xrpl::nft::repairNFTokenDirectoryLinks : next page is available");
     if (nextPage->isFieldPresent(sfNextPageMin))
     {
         didRepair = true;
@@ -887,7 +887,7 @@ tokenOfferCreatePreclaim(
     {
         auto const root = view.read(keylet::account(nftIssuer));
         XRPL_ASSERT(
-            root, "ripple::nft::tokenOfferCreatePreclaim : non-null account");
+            root, "xrpl::nft::tokenOfferCreatePreclaim : non-null account");
 
         if (auto minter = (*root)[~sfNFTokenMinter]; minter != acctID)
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
@@ -1035,14 +1035,14 @@ checkTrustlineAuthorized(
     // Only valid for custom currencies
     XRPL_ASSERT(
         !isXRP(issue.currency),
-        "ripple::nft::checkTrustlineAuthorized : valid to check.");
+        "xrpl::nft::checkTrustlineAuthorized : valid to check.");
 
     if (view.rules().enabled(fixEnforceNFTokenTrustlineV2))
     {
         auto const issuerAccount = view.read(keylet::account(issue.account));
         if (!issuerAccount)
         {
-            JLOG(j.debug()) << "ripple::nft::checkTrustlineAuthorized: can't "
+            JLOG(j.debug()) << "xrpl::nft::checkTrustlineAuthorized: can't "
                                "receive IOUs from non-existent issuer: "
                             << to_string(issue.account);
 
@@ -1091,14 +1091,14 @@ checkTrustlineDeepFrozen(
     // Only valid for custom currencies
     XRPL_ASSERT(
         !isXRP(issue.currency),
-        "ripple::nft::checkTrustlineDeepFrozen : valid to check.");
+        "xrpl::nft::checkTrustlineDeepFrozen : valid to check.");
 
     if (view.rules().enabled(featureDeepFreeze))
     {
         auto const issuerAccount = view.read(keylet::account(issue.account));
         if (!issuerAccount)
         {
-            JLOG(j.debug()) << "ripple::nft::checkTrustlineDeepFrozen: can't "
+            JLOG(j.debug()) << "xrpl::nft::checkTrustlineDeepFrozen: can't "
                                "receive IOUs from non-existent issuer: "
                             << to_string(issue.account);
 
@@ -1136,4 +1136,4 @@ checkTrustlineDeepFrozen(
 }
 
 }  // namespace nft
-}  // namespace ripple
+}  // namespace xrpl

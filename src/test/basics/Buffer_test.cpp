@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct Buffer_test : beast::unit_test::suite
@@ -261,7 +261,7 @@ struct Buffer_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Buffer, basics, ripple);
+BEAST_DEFINE_TESTSUITE(Buffer, basics, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -7,7 +7,7 @@
 #include <regex>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -113,6 +113,6 @@ decodeCTID(T const ctid) noexcept
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

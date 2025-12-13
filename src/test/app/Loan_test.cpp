@@ -11,7 +11,7 @@
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/SField.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Loan_test : public beast::unit_test::suite
@@ -141,7 +141,7 @@ protected:
             using namespace jtx;
 
             auto const vaultSle = env.le(keylet::vault(vaultID));
-            return getVaultScale(vaultSle);
+            return getAssetsTotalScale(vaultSle);
         }
     };
 
@@ -551,12 +551,15 @@ protected:
                        broker.vaultScale(env),
                        state.principalOutstanding.exponent())));
         BEAST_EXPECT(state.paymentInterval == 600);
-        BEAST_EXPECT(
-            state.totalValue ==
-            roundToAsset(
-                broker.asset,
-                state.periodicPayment * state.paymentRemaining,
-                state.loanScale));
+        {
+            NumberRoundModeGuard mg(Number::upward);
+            BEAST_EXPECT(
+                state.totalValue ==
+                roundToAsset(
+                    broker.asset,
+                    state.periodicPayment * state.paymentRemaining,
+                    state.loanScale));
+        }
         BEAST_EXPECT(
             state.managementFeeOutstanding ==
             computeManagementFee(
@@ -697,7 +700,8 @@ protected:
             interval,
             total,
             feeRate,
-            asset(brokerParams.vaultDeposit).number().exponent());
+            asset(brokerParams.vaultDeposit).number().exponent(),
+            env.journal);
         log << "Loan properties:\n"
             << "\tPrincipal: " << principal << std::endl
             << "\tInterest rate: " << interest << std::endl
@@ -964,7 +968,7 @@ protected:
         Number totalFeesPaid = 0;
         std::size_t totalPaymentsMade = 0;
 
-        ripple::LoanState currentTrueState = computeRawLoanState(
+        xrpl::LoanState currentTrueState = computeRawLoanState(
             state.periodicPayment,
             periodicRate,
             state.paymentRemaining,
@@ -1019,7 +1023,7 @@ protected:
                     paymentComponents.trackedInterestPart() +
                     paymentComponents.trackedManagementFeeDelta);
 
-            ripple::LoanState const nextTrueState = computeRawLoanState(
+            xrpl::LoanState const nextTrueState = computeRawLoanState(
                 state.periodicPayment,
                 periodicRate,
                 state.paymentRemaining - 1,
@@ -1399,7 +1403,7 @@ protected:
         env.close();
 
         auto const startDate =
-            env.current()->info().parentCloseTime.time_since_epoch().count();
+            env.current()->header().parentCloseTime.time_since_epoch().count();
 
         if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             BEAST_EXPECT(brokerSle))
@@ -1478,7 +1482,8 @@ protected:
             state.paymentInterval,
             state.paymentRemaining,
             broker.params.managementFeeRate,
-            state.loanScale);
+            state.loanScale,
+            env.journal);
 
         verifyLoanStatus(
             0,
@@ -2449,13 +2454,18 @@ protected:
                 // Make all the payments in one transaction
                 // service fee is 2
                 auto const startingPayments = state.paymentRemaining;
-                auto const rawPayoff = startingPayments *
-                    (state.periodicPayment + broker.asset(2).value());
-                STAmount const payoffAmount{broker.asset, rawPayoff};
-                BEAST_EXPECT(
-                    payoffAmount ==
-                    broker.asset(Number(1024014840139457, -12)));
-                BEAST_EXPECT(payoffAmount > state.principalOutstanding);
+                STAmount const payoffAmount = [&]() {
+                    NumberRoundModeGuard mg(Number::upward);
+                    auto const rawPayoff = startingPayments *
+                        (state.periodicPayment + broker.asset(2).value());
+                    STAmount const payoffAmount{broker.asset, rawPayoff};
+                    BEAST_EXPECTS(
+                        payoffAmount ==
+                            broker.asset(Number(1024014840139457, -12)),
+                        to_string(payoffAmount));
+                    BEAST_EXPECT(payoffAmount > state.principalOutstanding);
+                    return payoffAmount;
+                }();
 
                 singlePayment(
                     loanKeylet,
@@ -2706,7 +2716,7 @@ protected:
                 Number totalInterestPaid = 0;
                 std::size_t totalPaymentsMade = 0;
 
-                ripple::LoanState currentTrueState = computeRawLoanState(
+                xrpl::LoanState currentTrueState = computeRawLoanState(
                     state.periodicPayment,
                     periodicRate,
                     state.paymentRemaining,
@@ -2731,7 +2741,7 @@ protected:
                         paymentComponents.trackedValueDelta <=
                         roundedPeriodicPayment);
 
-                    ripple::LoanState const nextTrueState = computeRawLoanState(
+                    xrpl::LoanState const nextTrueState = computeRawLoanState(
                         state.periodicPayment,
                         periodicRate,
                         state.paymentRemaining - 1,
@@ -3762,7 +3772,7 @@ protected:
 
         env.close();
 
-        auto const startDate = env.current()->info().parentCloseTime;
+        auto const startDate = env.current()->header().parentCloseTime;
 
         // Loan is successfully created
         {
@@ -3874,7 +3884,7 @@ protected:
         Serializer ss;
         ss.add32(HashPrefix::txSign);
         parse(randomData).addWithoutSigningFields(ss);
-        auto const sig = ripple::sign(borrower.pk(), borrower.sk(), ss.slice());
+        auto const sig = xrpl::sign(borrower.pk(), borrower.sk(), ss.slice());
         sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
 
         forgedLoanSet[Json::StaticString{"CounterpartySignature"}] = sigObject;
@@ -3958,7 +3968,7 @@ protected:
     testLoanPayComputePeriodicPaymentValidRateInvariant()
     {
         // From FIND-012
-        testcase << "LoanPay ripple::detail::computePeriodicPayment : "
+        testcase << "LoanPay xrpl::detail::computePeriodicPayment : "
                     "valid rate";
 
         using namespace jtx;
@@ -4010,7 +4020,7 @@ protected:
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
         // Fails in preclaim because principal requested can't be
         // represented as XRP
-        env(createJson, ter(tecPRECISION_LOSS));
+        env(createJson, ter(tecPRECISION_LOSS), THISLINE);
         env.close();
 
         BEAST_EXPECT(!env.le(keylet));
@@ -4022,7 +4032,7 @@ protected:
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
         // Fails in doApply because the payment is too small to be
         // represented as XRP.
-        env(createJson, ter(tecPRECISION_LOSS));
+        env(createJson, ter(tecPRECISION_LOSS), THISLINE);
         env.close();
     }
 
@@ -4774,7 +4784,7 @@ protected:
     testAccountSendMptMinAmountInvariant()
     {
         // (From FIND-006)
-        testcase << "LoanSet trigger ripple::accountSendMPT : minimum amount "
+        testcase << "LoanSet trigger xrpl::accountSendMPT : minimum amount "
                     "and MPT";
 
         using namespace jtx;
@@ -4836,7 +4846,7 @@ protected:
     testLoanPayDebtDecreaseInvariant()
     {
         // From FIND-007
-        testcase << "LoanPay ripple::LoanPay::doApply : debtDecrease "
+        testcase << "LoanPay xrpl::LoanPay::doApply : debtDecrease "
                     "rounding good";
 
         using namespace jtx;
@@ -4941,7 +4951,7 @@ protected:
     testLoanPayComputePeriodicPaymentValidTotalInterestInvariant()
     {
         // From FIND-010
-        testcase << "ripple::loanComputePaymentParts : valid total interest";
+        testcase << "xrpl::loanComputePaymentParts : valid total interest";
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -4997,7 +5007,7 @@ protected:
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
         createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
-        env(createJson, ter(tecPRECISION_LOSS));
+        env(createJson, ter(tecPRECISION_LOSS), THISLINE);
         env.close(startDate);
 
         auto loanPayTx = env.json(
@@ -5094,7 +5104,7 @@ protected:
     testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant()
     {
         // From FIND-009
-        testcase << "ripple::loanComputePaymentParts : totalPrincipalPaid "
+        testcase << "xrpl::loanComputePaymentParts : totalPrincipalPaid "
                     "rounded";
 
         using namespace jtx;
@@ -5208,7 +5218,7 @@ protected:
     testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant()
     {
         // From FIND-008
-        testcase << "ripple::loanComputePaymentParts : loanValueChange rounded";
+        testcase << "xrpl::loanComputePaymentParts : loanValueChange rounded";
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -6145,15 +6155,16 @@ protected:
         // Accrued + prepayment-penalty interest based on current periodic
         // schedule
         auto const fullPaymentInterest = computeFullPaymentInterest(
-            after.periodicPayment,
+            detail::loanPrincipalFromPeriodicPayment(
+                after.periodicPayment, periodicRate2, after.paymentRemaining),
             periodicRate2,
-            after.paymentRemaining,
             env.current()->parentCloseTime(),
             after.paymentInterval,
             after.previousPaymentDate,
             static_cast<std::uint32_t>(
                 after.startDate.time_since_epoch().count()),
             closeInterestRate);
+
         // Round to asset scale and split interest/fee parts
         auto const roundedInterest =
             roundToAsset(asset.raw(), fullPaymentInterest, after.loanScale);
@@ -6181,9 +6192,9 @@ protected:
         // window by clamping prevPaymentDate to 'now' for the full-pay path.
         auto const prevClamped = std::min(after.previousPaymentDate, nowSecs);
         auto const fullPaymentInterestClamped = computeFullPaymentInterest(
-            after.periodicPayment,
+            detail::loanPrincipalFromPeriodicPayment(
+                after.periodicPayment, periodicRate2, after.paymentRemaining),
             periodicRate2,
-            after.paymentRemaining,
             env.current()->parentCloseTime(),
             after.paymentInterval,
             prevClamped,
@@ -7208,9 +7219,9 @@ class LoanArbitrary_test : public LoanBatch_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Loan, tx, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(LoanBatch, tx, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(LoanArbitrary, tx, ripple);
+BEAST_DEFINE_TESTSUITE(Loan, tx, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(LoanBatch, tx, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(LoanArbitrary, tx, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

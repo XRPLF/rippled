@@ -6,7 +6,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Forward declarations
 class Application;
@@ -126,6 +126,6 @@ transactionSubmitMultiSigned(
     ProcessTransactionFn const& processTransaction);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

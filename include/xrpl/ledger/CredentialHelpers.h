@@ -11,7 +11,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
-namespace ripple {
+namespace xrpl {
 namespace credentials {
 
 // These function will be used by the code that use DepositPreauth / Credentials
@@ -93,6 +93,6 @@ verifyDepositPreauth(
     std::shared_ptr<SLE> const& sleDst,
     beast::Journal j);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

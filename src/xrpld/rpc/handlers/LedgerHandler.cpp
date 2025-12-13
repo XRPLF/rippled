@@ -10,7 +10,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 LedgerHandler::LedgerHandler(JsonContext& context) : context_(context)
@@ -103,7 +103,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     }
 
     Serializer s;
-    addRaw(ledger->info(), s, true);
+    addRaw(ledger->header(), s, true);
 
     response.set_ledger_header(s.peekData().data(), s.getLength());
 
@@ -114,7 +114,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
             for (auto& i : ledger->txs)
             {
                 XRPL_ASSERT(
-                    i.first, "ripple::doLedgerGrpc : non-null transaction");
+                    i.first, "xrpl::doLedgerGrpc : non-null transaction");
                 if (request.expand())
                 {
                     auto txn = response.mutable_transactions_list()
@@ -139,7 +139,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
         {
             JLOG(context.j.error())
                 << __func__ << " - Error deserializing transaction in ledger "
-                << ledger->info().seq
+                << ledger->header().seq
                 << " . skipping transaction and following transactions. You "
                    "should look into this further";
         }
@@ -192,7 +192,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
             {
                 XRPL_ASSERT(
                     inDesired->size() > 0,
-                    "ripple::doLedgerGrpc : non-empty desired");
+                    "xrpl::doLedgerGrpc : non-empty desired");
                 obj->set_data(inDesired->data(), inDesired->size());
             }
             if (inBase && inDesired)
@@ -298,4 +298,4 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 
     return {response, status};
 }
-}  // namespace ripple
+}  // namespace xrpl

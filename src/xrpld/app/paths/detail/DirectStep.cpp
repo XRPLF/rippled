@@ -13,7 +13,7 @@
 #include <numeric>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 template <class TDerived>
 class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI<TDerived>>
@@ -499,7 +499,7 @@ DirectStepI<TDerived>::revImp(
         qualities(sb, srcDebtDir, StrandDirection::reverse);
     XRPL_ASSERT(
         static_cast<TDerived const*>(this)->verifyDstQualityIn(dstQIn),
-        "ripple::DirectStepI : valid destination quality");
+        "xrpl::DirectStepI : valid destination quality");
 
     Issue const srcToDstIss(currency_, redeems(srcDebtDir) ? dst_ : src_);
 
@@ -618,7 +618,7 @@ DirectStepI<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& /*ofrsToRm*/,
     IOUAmount const& in)
 {
-    XRPL_ASSERT(cache_, "ripple::DirectStepI::fwdImp : cache is set");
+    XRPL_ASSERT(cache_, "xrpl::DirectStepI::fwdImp : cache is set");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -705,7 +705,7 @@ DirectStepI<TDerived>::validFwd(
 
     auto const savCache = *cache_;
 
-    XRPL_ASSERT(!in.native, "ripple::DirectStepI::validFwd : input is not XRP");
+    XRPL_ASSERT(!in.native, "xrpl::DirectStepI::validFwd : input is not XRP");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -772,7 +772,7 @@ DirectStepI<TDerived>::qualitiesSrcIssues(
     XRPL_ASSERT(
         static_cast<TDerived const*>(this)->verifyPrevStepDebtDirection(
             prevStepDebtDirection),
-        "ripple::DirectStepI::qualitiesSrcIssues : will prevStepDebtDirection "
+        "xrpl::DirectStepI::qualitiesSrcIssues : will prevStepDebtDirection "
         "issue");
 
     std::uint32_t const srcQOut = redeems(prevStepDebtDirection)
@@ -896,7 +896,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
             {
                 // LCOV_EXCL_START
                 UNREACHABLE(
-                    "ripple::DirectStepI::check : prev seen book without a "
+                    "xrpl::DirectStepI::check : prev seen book without a "
                     "prev step");
                 return temBAD_PATH_LOOP;
                 // LCOV_EXCL_STOP
@@ -975,4 +975,4 @@ make_DirectStepI(
     return {tesSUCCESS, std::move(r)};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

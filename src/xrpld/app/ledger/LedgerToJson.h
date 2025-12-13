@@ -10,13 +10,13 @@
 #include <xrpl/json/Object.h>
 #include <xrpl/protocol/serialize.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct LedgerFill
 {
     LedgerFill(
         ReadView const& l,
-        RPC::Context* ctx,
+        RPC::Context const* ctx,
         int o = 0,
         std::vector<TxQ::TxDetails> q = {})
         : ledger(l), options(o), txQueue(std::move(q)), context(ctx)
@@ -38,7 +38,7 @@ struct LedgerFill
     ReadView const& ledger;
     int options;
     std::vector<TxQ::TxDetails> txQueue;
-    RPC::Context* context;
+    RPC::Context const* context;
     std::optional<NetClock::time_point> closeTime;
 };
 
@@ -53,6 +53,6 @@ addJson(Json::Value&, LedgerFill const&);
 Json::Value
 getJson(LedgerFill const&);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

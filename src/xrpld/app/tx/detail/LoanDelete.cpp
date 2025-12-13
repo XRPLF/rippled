@@ -2,7 +2,7 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 LoanDelete::checkExtraFeatures(PreflightContext const& ctx)
@@ -115,9 +115,9 @@ LoanDelete::doApply()
                 roundToAsset(
                     vaultSle->at(sfAsset),
                     debtTotalProxy,
-                    getVaultScale(vaultSle),
+                    getAssetsTotalScale(vaultSle),
                     Number::towards_zero) == beast::zero,
-                "ripple::LoanDelete::doApply",
+                "xrpl::LoanDelete::doApply",
                 "last loan, remaining debt rounds to zero");
             debtTotalProxy = 0;
         }
@@ -130,4 +130,4 @@ LoanDelete::doApply()
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl

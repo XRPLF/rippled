@@ -11,7 +11,7 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/ErrorCodes.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -2917,7 +2917,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(JSONRPC, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(JSONRPC, rpc, xrpl);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

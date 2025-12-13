@@ -27,7 +27,7 @@
 #define NODESTORE_TIMING_DO_VERIFY 0
 #endif
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 std::unique_ptr<Backend>
@@ -759,7 +759,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, nodestore, ripple, 1);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, nodestore, xrpl, 1);
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

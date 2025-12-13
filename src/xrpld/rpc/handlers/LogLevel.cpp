@@ -9,7 +9,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doLogLevel(RPC::JsonContext& context)
@@ -64,4 +64,4 @@ doLogLevel(RPC::JsonContext& context)
     return rpcError(rpcINVALID_PARAMS);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

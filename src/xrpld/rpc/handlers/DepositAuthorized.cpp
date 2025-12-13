@@ -8,7 +8,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   source_account : <ident>
@@ -135,7 +135,7 @@ doDepositAuthorized(RPC::JsonContext& context)
             }
 
             if (credentials::checkExpired(
-                    sleCred, ledger->info().parentCloseTime))
+                    sleCred, ledger->header().parentCloseTime))
             {
                 RPC::inject_error(
                     rpcBAD_CREDENTIALS, "credentials are expired", result);
@@ -182,4 +182,4 @@ doDepositAuthorized(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

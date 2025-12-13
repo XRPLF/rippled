@@ -3,7 +3,7 @@
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 /** A cryptographically secure random number engine
 
@@ -70,6 +70,6 @@ public:
 csprng_engine&
 crypto_prng();
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
