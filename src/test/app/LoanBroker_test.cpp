@@ -1488,6 +1488,8 @@ class LoanBroker_test : public beast::unit_test::suite
                     case NoTrustLine:
                         // don't create a trustline
                         break;
+                    default:
+                        BEAST_EXPECT(false);
                 }
                 env.close();
             };
@@ -1598,7 +1600,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env.fund(XRP(1'000), issuer, broker, dest);
             env.close();
 
-            auto token = [&]() -> MPT {
+            auto const maybeToken = [&]() -> std::optional<MPT> {
                 switch (MPTState)
                 {
                     case RequireAuth: {
@@ -1638,8 +1640,14 @@ class LoanBroker_test : public beast::unit_test::suite
                              .flags = MPTDEXFlags,
                              .maxAmt = 4'000});
                     }
+                    default:
+                        return std::nullopt;
                 }
             }();
+            if (!BEAST_EXPECT(maybeToken))
+                return;
+
+            auto const& token = *maybeToken;
 
             Vault vault(env);
             auto const [tx, keylet] =

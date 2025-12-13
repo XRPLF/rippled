@@ -1354,6 +1354,10 @@ checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag)
  * MPT: The limit check is effectively skipped (returns true). This is
  * because MPT MaximumAmount relates to token supply, and withdrawal does not
  * involve minting new tokens that could exceed the global cap.
+ * On withdrawal, tokens are simply transferred from the vault's pseudo-account
+ * to the destination account. Since no new MPT tokens are minted during this
+ * transfer, the withdrawal cannot violate the MPT MaximumAmount/supply cap
+ * even if `from` is the issuer.
  */
 static TER
 withdrawToDestExceedsLimit(
