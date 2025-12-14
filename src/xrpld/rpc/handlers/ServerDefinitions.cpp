@@ -413,5 +413,5 @@ doServerDefinitions(RPC::JsonContext& context)
         return jv;
     }
     return defs.get();
-    }
-    }  // namespace xrpl
+}
+}  // namespace xrpl
