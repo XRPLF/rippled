@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/Oracle.h>
 #include <test/jtx/attester.h>
@@ -31,7 +12,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -54,7 +35,10 @@ class LedgerRPC_test : public beast::unit_test::suite
                 jv[jss::error_message] == "");
         }
         else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
-            BEAST_EXPECT(jv[jss::error_message] == msg);
+            BEAST_EXPECTS(
+                jv[jss::error_message] == msg,
+                "Expected error message \"" + msg + "\", received \"" +
+                    jv[jss::error_message].asString() + "\"");
     }
 
     // Corrupt a valid address by replacing the 10th character with '!'.
@@ -76,7 +60,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         Env env{*this};
 
         env.close();
-        BEAST_EXPECT(env.current()->info().seq == 4);
+        BEAST_EXPECT(env.current()->header().seq == 4);
 
         {
             Json::Value jvParams;
@@ -103,9 +87,9 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::ledger][jss::closed] == false);
             BEAST_EXPECT(
                 jrr[jss::ledger][jss::ledger_index] ==
-                std::to_string(env.current()->info().seq));
+                std::to_string(env.current()->header().seq));
             BEAST_EXPECT(
-                jrr[jss::ledger_current_index] == env.current()->info().seq);
+                jrr[jss::ledger_current_index] == env.current()->header().seq);
         }
     }
 
@@ -130,7 +114,10 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_index] = "potato";
             auto const jrr =
                 env.rpc("json", "ledger", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "invalidParams", "ledgerIndexMalformed");
+            checkErrorValue(
+                jrr,
+                "invalidParams",
+                "Invalid field 'ledger_index', not string or number.");
         }
 
         {
@@ -139,7 +126,10 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_index] = -1;
             auto const jrr =
                 env.rpc("json", "ledger", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "invalidParams", "ledgerIndexMalformed");
+            checkErrorValue(
+                jrr,
+                "invalidParams",
+                "Invalid field 'ledger_index', not string or number.");
         }
 
         {
@@ -192,12 +182,12 @@ class LedgerRPC_test : public beast::unit_test::suite
         Env env{*this};
 
         env.close();
-        BEAST_EXPECT(env.current()->info().seq == 4);
+        BEAST_EXPECT(env.current()->header().seq == 4);
 
         {
             auto const jrr = env.rpc("ledger_current")[jss::result];
             BEAST_EXPECT(
-                jrr[jss::ledger_current_index] == env.current()->info().seq);
+                jrr[jss::ledger_current_index] == env.current()->header().seq);
         }
     }
 
@@ -308,7 +298,9 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger] = "invalid";
             jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(jrr[jss::error_message] == "ledgerIndexMalformed");
+            BEAST_EXPECT(
+                jrr[jss::error_message] ==
+                "Invalid field 'ledger', not string or number.");
 
             // numeric index
             jvParams[jss::ledger] = 4;
@@ -326,8 +318,8 @@ class LedgerRPC_test : public beast::unit_test::suite
 
         {
             std::string const hash3{
-                "E86DE7F3D7A4D9CE17EF7C8BA08A8F4D"
-                "8F643B9552F0D895A31CDA78F541DE4E"};
+                "0F1A9E0C109ADEF6DA2BDE19217C12BBEC57174CBDBD212B0EBDC1CEDB8531"
+                "85"};
             // access via the ledger_hash field
             Json::Value jvParams;
             jvParams[jss::ledger_hash] = hash3;
@@ -341,13 +333,17 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_hash] = "DEADBEEF" + hash3;
             jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(jrr[jss::error_message] == "ledgerHashMalformed");
+            BEAST_EXPECT(
+                jrr[jss::error_message] ==
+                "Invalid field 'ledger_hash', not hex string.");
 
             // request with non-string ledger_hash
             jvParams[jss::ledger_hash] = 2;
             jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(jrr[jss::error_message] == "ledgerHashNotString");
+            BEAST_EXPECT(
+                jrr[jss::error_message] ==
+                "Invalid field 'ledger_hash', not hex string.");
 
             // malformed (non hex) hash
             jvParams[jss::ledger_hash] =
@@ -355,7 +351,9 @@ class LedgerRPC_test : public beast::unit_test::suite
                 "7F2775F2F7485BB37307984C3C0F2340";
             jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(jrr[jss::error_message] == "ledgerHashMalformed");
+            BEAST_EXPECT(
+                jrr[jss::error_message] ==
+                "Invalid field 'ledger_hash', not hex string.");
 
             // properly formed, but just doesn't exist
             jvParams[jss::ledger_hash] =
@@ -393,7 +391,9 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_index] = "invalid";
             jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(jrr[jss::error_message] == "ledgerIndexMalformed");
+            BEAST_EXPECT(
+                jrr[jss::error_message] ==
+                "Invalid field 'ledger_index', not string or number.");
 
             // numeric index
             for (auto i : {1, 2, 3, 4, 5, 6})
@@ -475,7 +475,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             env(noop(alice));
         }
 
-        BEAST_EXPECT(env.current()->info().seq == 5);
+        BEAST_EXPECT(env.current()->header().seq == 5);
         // Put some txs in the queue
         // Alice
         auto aliceSeq = env.seq(alice);
@@ -508,7 +508,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         env.close();
         env.close();
         env.close();
-        BEAST_EXPECT(env.current()->info().seq == 8);
+        BEAST_EXPECT(env.current()->header().seq == 8);
 
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
         BEAST_EXPECT(jrr[jss::queue_data].size() == 11);
@@ -517,7 +517,7 @@ class LedgerRPC_test : public beast::unit_test::suite
 
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
         std::string const txid0 = [&]() {
-            auto const& parentHash = env.current()->info().parentHash;
+            auto const& parentHash = env.current()->header().parentHash;
             if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
             {
                 std::string const txid1 = [&]() {
@@ -559,7 +559,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
         if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
         {
-            auto const& parentHash = env.current()->info().parentHash;
+            auto const& parentHash = env.current()->header().parentHash;
             auto const txid1 = [&]() {
                 auto const& txj = jrr[jss::queue_data][1u];
                 BEAST_EXPECT(txj[jss::account] == alice.human());
@@ -738,7 +738,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerRPC, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerRPC, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

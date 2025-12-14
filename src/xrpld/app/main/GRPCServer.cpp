@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/main/GRPCServer.h>
 #include <xrpld/core/ConfigSections.h>
 
@@ -24,7 +5,7 @@
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -268,7 +249,7 @@ template <class Request, class Response>
 std::optional<boost::asio::ip::tcp::endpoint>
 GRPCServerImpl::CallData<Request, Response>::getClientEndpoint()
 {
-    return ripple::getEndpoint(ctx_.peer());
+    return xrpl::getEndpoint(ctx_.peer());
 }
 
 template <class Request, class Response>
@@ -620,7 +601,7 @@ GRPCServer::stop()
 
 GRPCServer::~GRPCServer()
 {
-    XRPL_ASSERT(!running_, "ripple::GRPCServer::~GRPCServer : is not running");
+    XRPL_ASSERT(!running_, "xrpl::GRPCServer::~GRPCServer : is not running");
 }
 
 boost::asio::ip::tcp::endpoint
@@ -629,4 +610,4 @@ GRPCServer::getEndpoint() const
     return impl_.getEndpoint();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

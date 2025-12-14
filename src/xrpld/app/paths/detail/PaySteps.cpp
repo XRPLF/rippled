@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/paths/detail/Steps.h>
 
 #include <xrpl/basics/contract.h>
@@ -27,7 +8,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 // Check equal with tolerance
 bool
@@ -99,7 +80,7 @@ toStep(
         // should already be taken care of
         JLOG(j.error())
             << "Found offer/account payment step. Aborting payment strand.";
-        UNREACHABLE("ripple::toStep : offer/account payment payment strand");
+        UNREACHABLE("xrpl::toStep : offer/account payment payment strand");
         return {temBAD_PATH, std::unique_ptr<Step>{}};
         // LCOV_EXCL_STOP
     }
@@ -107,7 +88,7 @@ toStep(
     XRPL_ASSERT(
         (e2->getNodeType() & STPathElement::typeCurrency) ||
             (e2->getNodeType() & STPathElement::typeIssuer),
-        "ripple::toStep : currency or issuer");
+        "xrpl::toStep : currency or issuer");
     auto const outCurrency = e2->getNodeType() & STPathElement::typeCurrency
         ? e2->getCurrency()
         : curIssue.currency;
@@ -121,7 +102,7 @@ toStep(
         return {temBAD_PATH, std::unique_ptr<Step>{}};
     }
 
-    XRPL_ASSERT(e2->isOffer(), "ripple::toStep : is offer");
+    XRPL_ASSERT(e2->isOffer(), "xrpl::toStep : is offer");
 
     if (isXRP(outCurrency))
         return make_BookStepIX(ctx, curIssue);
@@ -395,7 +376,7 @@ toStrand(
         {
             // Should never happen
             // LCOV_EXCL_START
-            UNREACHABLE("ripple::toStrand : offer currency mismatch");
+            UNREACHABLE("xrpl::toStrand : offer currency mismatch");
             return {temBAD_PATH, Strand{}};
             // LCOV_EXCL_STOP
         }
@@ -463,7 +444,7 @@ toStrand(
     {
         // LCOV_EXCL_START
         JLOG(j.warn()) << "Flow check strand failed";
-        UNREACHABLE("ripple::toStrand : invalid strand");
+        UNREACHABLE("xrpl::toStrand : invalid strand");
         return {temBAD_PATH, Strand{}};
         // LCOV_EXCL_STOP
     }
@@ -646,4 +627,4 @@ isDirectXrpToXrp<IOUAmount, XRPAmount>(Strand const& strand);
 template bool
 isDirectXrpToXrp<IOUAmount, IOUAmount>(Strand const& strand);
 
-}  // namespace ripple
+}  // namespace xrpl

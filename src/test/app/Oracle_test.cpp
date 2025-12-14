@@ -1,27 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/Oracle.h>
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 namespace oracle {
@@ -271,7 +252,9 @@ private:
                 static_cast<int>(env.current()->fees().base.drops());
             auto closeTime = [&]() {
                 return duration_cast<seconds>(
-                           env.current()->info().closeTime.time_since_epoch() -
+                           env.current()
+                               ->header()
+                               .closeTime.time_since_epoch() -
                            10'000s)
                     .count();
             };
@@ -578,7 +561,7 @@ private:
             BEAST_EXPECT(oracle.exists());
             BEAST_EXPECT(oracle1.exists());
             auto const index = env.closed()->seq();
-            auto const hash = env.closed()->info().hash;
+            auto const hash = env.closed()->header().hash;
             for (int i = 0; i < 256; ++i)
                 env.close();
             env(acctdelete(owner, alice), fee(acctDelFee));
@@ -746,13 +729,13 @@ private:
     }
 
     void
-    testMultisig(FeatureBitset features)
+    testMultisig()
     {
         testcase("Multisig");
         using namespace jtx;
         Oracle::setFee(100'000);
 
-        Env env(*this, features);
+        Env env(*this);
         auto const baseFee =
             static_cast<int>(env.current()->fees().base.drops());
 
@@ -772,9 +755,8 @@ private:
         // Attach signers to alice.
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}, {ed, 2}}), sig(alie));
         env.close();
-        // if multiSignReserve disabled then its 2 + 1 per signer
-        int const signerListOwners{features[featureMultiSignReserve] ? 1 : 5};
-        env.require(owners(alice, signerListOwners));
+
+        env.require(owners(alice, 1));
 
         // Create
         // Force close (true) and time advancement because the close time
@@ -879,15 +861,11 @@ public:
         testDelete();
         testUpdate();
         testAmendment();
-        for (auto const& features :
-             {all,
-              all - featureMultiSignReserve - featureExpandedSignerList,
-              all - featureExpandedSignerList})
-            testMultisig(features);
+        testMultisig();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Oracle, app, ripple);
+BEAST_DEFINE_TESTSUITE(Oracle, app, xrpl);
 
 }  // namespace oracle
 
@@ -895,4 +873,4 @@ BEAST_DEFINE_TESTSUITE(Oracle, app, ripple);
 
 }  // namespace test
 
-}  // namespace ripple
+}  // namespace xrpl

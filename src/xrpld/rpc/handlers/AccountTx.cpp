@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
@@ -26,6 +7,8 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
@@ -36,7 +19,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 using TxnsData = RelationalDatabase::AccountTxs;
 using TxnsDataBinary = RelationalDatabase::MetaTxsList;
@@ -109,11 +92,11 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
             std::string ledgerStr = params[jss::ledger_index].asString();
 
             if (ledgerStr == "current" || ledgerStr.empty())
-                ledger = LedgerShortcut::CURRENT;
+                ledger = LedgerShortcut::Current;
             else if (ledgerStr == "closed")
-                ledger = LedgerShortcut::CLOSED;
+                ledger = LedgerShortcut::Closed;
             else if (ledgerStr == "validated")
-                ledger = LedgerShortcut::VALIDATED;
+                ledger = LedgerShortcut::Validated;
             else
             {
                 RPC::Status status{
@@ -193,12 +176,13 @@ getLedgerRange(
                     bool validated =
                         context.ledgerMaster.isValidated(*ledgerView);
 
-                    if (!validated || ledgerView->info().seq > uValidatedMax ||
-                        ledgerView->info().seq < uValidatedMin)
+                    if (!validated ||
+                        ledgerView->header().seq > uValidatedMax ||
+                        ledgerView->header().seq < uValidatedMin)
                     {
                         return rpcLGR_NOT_VALIDATED;
                     }
-                    uLedgerMin = uLedgerMax = ledgerView->info().seq;
+                    uLedgerMin = uLedgerMax = ledgerView->header().seq;
                 }
                 return RPC::Status::OK;
             },
@@ -305,8 +289,7 @@ populateJsonResponse(
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
             XRPL_ASSERT(
-                !args.binary,
-                "ripple::populateJsonResponse : binary is not set");
+                !args.binary, "xrpl::populateJsonResponse : binary is not set");
 
             for (auto const& [txn, txnMeta] : *txnsData)
             {
@@ -356,7 +339,7 @@ populateJsonResponse(
                     {
                         // LCOV_EXCL_START
                         UNREACHABLE(
-                            "ripple::populateJsonResponse : missing "
+                            "xrpl::populateJsonResponse : missing "
                             "transaction medatata");
                         // LCOV_EXCL_STOP
                     }
@@ -366,7 +349,7 @@ populateJsonResponse(
         else
         {
             XRPL_ASSERT(
-                args.binary, "ripple::populateJsonResponse : binary is set");
+                args.binary, "xrpl::populateJsonResponse : binary is set");
 
             for (auto const& binaryData :
                  std::get<TxnsDataBinary>(result.transactions))
@@ -429,7 +412,10 @@ doAccountTxJson(RPC::JsonContext& context)
         return RPC::invalid_field_error(jss::forward);
     }
 
-    args.limit = params.isMember(jss::limit) ? params[jss::limit].asUInt() : 0;
+    if (auto const err =
+            RPC::readLimitField(args.limit, RPC::Tuning::accountTx, context))
+        return *err;
+
     args.binary = params.isMember(jss::binary) && params[jss::binary].asBool();
     args.forward =
         params.isMember(jss::forward) && params[jss::forward].asBool();
@@ -479,4 +465,4 @@ doAccountTxJson(RPC::JsonContext& context)
     return populateJsonResponse(res, args, context);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

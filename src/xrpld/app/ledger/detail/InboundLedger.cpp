@@ -1,43 +1,24 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/AccountStateSF.h>
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/Overlay.h>
-#include <xrpld/shamap/SHAMapNodeID.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
 
 #include <algorithm>
 #include <random>
 
-namespace ripple {
+namespace xrpl {
 
 using namespace std::chrono_literals;
 
@@ -121,9 +102,9 @@ InboundLedger::init(ScopedLockType& collectionLock)
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
     XRPL_ASSERT(
-        mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        mLedger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
             mLedger->read(keylet::fees()),
-        "ripple::InboundLedger::init : valid ledger fees");
+        "xrpl::InboundLedger::init : valid ledger fees");
     mLedger->setImmutable();
 
     if (mReason == Reason::HISTORY)
@@ -225,14 +206,15 @@ neededHashes(
 std::vector<uint256>
 InboundLedger::neededTxHashes(int max, SHAMapSyncFilter* filter) const
 {
-    return neededHashes(mLedger->info().txHash, mLedger->txMap(), max, filter);
+    return neededHashes(
+        mLedger->header().txHash, mLedger->txMap(), max, filter);
 }
 
 std::vector<uint256>
 InboundLedger::neededStateHashes(int max, SHAMapSyncFilter* filter) const
 {
     return neededHashes(
-        mLedger->info().accountHash, mLedger->stateMap(), max, filter);
+        mLedger->header().accountHash, mLedger->stateMap(), max, filter);
 }
 
 // See how much of the ledger data is stored locally
@@ -248,8 +230,8 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
                 deserializePrefixedHeader(makeSlice(data)),
                 app_.config(),
                 app_.getNodeFamily());
-            if (mLedger->info().hash != hash_ ||
-                (mSeq != 0 && mSeq != mLedger->info().seq))
+            if (mLedger->header().hash != hash_ ||
+                (mSeq != 0 && mSeq != mLedger->header().seq))
             {
                 // We know for a fact the ledger can never be acquired
                 JLOG(journal_.warn())
@@ -275,7 +257,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
             {
                 Blob blob{nodeObject->getData()};
                 dstDB.store(
-                    hotLEDGER, std::move(blob), hash_, mLedger->info().seq);
+                    hotLEDGER, std::move(blob), hash_, mLedger->header().seq);
             }
         }
         else
@@ -293,11 +275,11 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
 
             // Store the ledger header in the ledger's database
             mLedger->stateMap().family().db().store(
-                hotLEDGER, std::move(*data), hash_, mLedger->info().seq);
+                hotLEDGER, std::move(*data), hash_, mLedger->header().seq);
         }
 
         if (mSeq == 0)
-            mSeq = mLedger->info().seq;
+            mSeq = mLedger->header().seq;
         mLedger->stateMap().setLedgerSeq(mSeq);
         mLedger->txMap().setLedgerSeq(mSeq);
         mHaveHeader = true;
@@ -305,7 +287,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
 
     if (!mHaveTransactions)
     {
-        if (mLedger->info().txHash.isZero())
+        if (mLedger->header().txHash.isZero())
         {
             JLOG(journal_.trace()) << "No TXNs to fetch";
             mHaveTransactions = true;
@@ -315,7 +297,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
             TransactionStateSF filter(
                 mLedger->txMap().family().db(), app_.getLedgerMaster());
             if (mLedger->txMap().fetchRoot(
-                    SHAMapHash{mLedger->info().txHash}, &filter))
+                    SHAMapHash{mLedger->header().txHash}, &filter))
             {
                 if (neededTxHashes(1, &filter).empty())
                 {
@@ -328,7 +310,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
 
     if (!mHaveState)
     {
-        if (mLedger->info().accountHash.isZero())
+        if (mLedger->header().accountHash.isZero())
         {
             JLOG(journal_.fatal())
                 << "We are acquiring a ledger with a zero account hash";
@@ -338,7 +320,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
         AccountStateSF filter(
             mLedger->stateMap().family().db(), app_.getLedgerMaster());
         if (mLedger->stateMap().fetchRoot(
-                SHAMapHash{mLedger->info().accountHash}, &filter))
+                SHAMapHash{mLedger->header().accountHash}, &filter))
         {
             if (neededStateHashes(1, &filter).empty())
             {
@@ -353,9 +335,9 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
         JLOG(journal_.debug()) << "Had everything locally";
         complete_ = true;
         XRPL_ASSERT(
-            mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+            mLedger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
                 mLedger->read(keylet::fees()),
-            "ripple::InboundLedger::tryDB : valid ledger fees");
+            "xrpl::InboundLedger::tryDB : valid ledger fees");
         mLedger->setImmutable();
     }
 }
@@ -450,15 +432,14 @@ InboundLedger::done()
                            << mStats.get();
 
     XRPL_ASSERT(
-        complete_ || failed_,
-        "ripple::InboundLedger::done : complete or failed");
+        complete_ || failed_, "xrpl::InboundLedger::done : complete or failed");
 
     if (complete_ && !failed_ && mLedger)
     {
         XRPL_ASSERT(
-            mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+            mLedger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
                 mLedger->read(keylet::fees()),
-            "ripple::InboundLedger::done : valid ledger fees");
+            "xrpl::InboundLedger::done : valid ledger fees");
         mLedger->setImmutable();
         switch (mReason)
         {
@@ -601,7 +582,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     }
 
     if (mLedger)
-        tmGL.set_ledgerseq(mLedger->info().seq);
+        tmGL.set_ledgerseq(mLedger->header().seq);
 
     if (reason != TriggerReason::reply)
     {
@@ -622,7 +603,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     {
         XRPL_ASSERT(
             mLedger,
-            "ripple::InboundLedger::trigger : non-null ledger to read state "
+            "xrpl::InboundLedger::trigger : non-null ledger to read state "
             "from");
 
         if (!mLedger->stateMap().isValid())
@@ -697,7 +678,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     {
         XRPL_ASSERT(
             mLedger,
-            "ripple::InboundLedger::trigger : non-null ledger to read "
+            "xrpl::InboundLedger::trigger : non-null ledger to read "
             "transactions from");
 
         if (!mLedger->txMap().isValid())
@@ -763,7 +744,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     {
         JLOG(journal_.debug())
             << "Done:" << (complete_ ? " complete" : "")
-            << (failed_ ? " failed " : " ") << mLedger->info().seq;
+            << (failed_ ? " failed " : " ") << mLedger->header().seq;
         sl.unlock();
         done();
     }
@@ -827,17 +808,17 @@ InboundLedger::takeHeader(std::string const& data)
     auto* f = &app_.getNodeFamily();
     mLedger = std::make_shared<Ledger>(
         deserializeHeader(makeSlice(data)), app_.config(), *f);
-    if (mLedger->info().hash != hash_ ||
-        (mSeq != 0 && mSeq != mLedger->info().seq))
+    if (mLedger->header().hash != hash_ ||
+        (mSeq != 0 && mSeq != mLedger->header().seq))
     {
         JLOG(journal_.warn())
-            << "Acquire hash mismatch: " << mLedger->info().hash
+            << "Acquire hash mismatch: " << mLedger->header().hash
             << "!=" << hash_;
         mLedger.reset();
         return false;
     }
     if (mSeq == 0)
-        mSeq = mLedger->info().seq;
+        mSeq = mLedger->header().seq;
     mLedger->stateMap().setLedgerSeq(mSeq);
     mLedger->txMap().setLedgerSeq(mSeq);
     mHaveHeader = true;
@@ -847,10 +828,10 @@ InboundLedger::takeHeader(std::string const& data)
     s.addRaw(data.data(), data.size());
     f->db().store(hotLEDGER, std::move(s.modData()), hash_, mSeq);
 
-    if (mLedger->info().txHash.isZero())
+    if (mLedger->header().txHash.isZero())
         mHaveTransactions = true;
 
-    if (mLedger->info().accountHash.isZero())
+    if (mLedger->header().accountHash.isZero())
         mHaveState = true;
 
     mLedger->txMap().setSynching();
@@ -890,12 +871,12 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
         if (packet.type() == protocol::liTX_NODE)
             return {
                 mLedger->txMap(),
-                SHAMapHash{mLedger->info().txHash},
+                SHAMapHash{mLedger->header().txHash},
                 std::make_unique<TransactionStateSF>(
                     mLedger->txMap().family().db(), app_.getLedgerMaster())};
         return {
             mLedger->stateMap(),
-            SHAMapHash{mLedger->info().accountHash},
+            SHAMapHash{mLedger->header().accountHash},
             std::make_unique<AccountStateSF>(
                 mLedger->stateMap().family().db(), app_.getLedgerMaster())};
     }();
@@ -964,7 +945,7 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
     if (!mHaveHeader)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::InboundLedger::takeAsRootNode : no ledger header");
+        UNREACHABLE("xrpl::InboundLedger::takeAsRootNode : no ledger header");
         return false;
         // LCOV_EXCL_STOP
     }
@@ -972,7 +953,7 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
     AccountStateSF filter(
         mLedger->stateMap().family().db(), app_.getLedgerMaster());
     san += mLedger->stateMap().addRootNode(
-        SHAMapHash{mLedger->info().accountHash}, data, &filter);
+        SHAMapHash{mLedger->header().accountHash}, data, &filter);
     return san.isGood();
 }
 
@@ -991,7 +972,7 @@ InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
     if (!mHaveHeader)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::InboundLedger::takeTxRootNode : no ledger header");
+        UNREACHABLE("xrpl::InboundLedger::takeTxRootNode : no ledger header");
         return false;
         // LCOV_EXCL_STOP
     }
@@ -999,7 +980,7 @@ InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
     TransactionStateSF filter(
         mLedger->txMap().family().db(), app_.getLedgerMaster());
     san += mLedger->txMap().addRootNode(
-        SHAMapHash{mLedger->info().txHash}, data, &filter);
+        SHAMapHash{mLedger->header().txHash}, data, &filter);
     return san.isGood();
 }
 
@@ -1353,4 +1334,4 @@ InboundLedger::getJson(int)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

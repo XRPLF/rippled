@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 #include <xrpld/overlay/detail/PeerImp.h>
@@ -26,7 +7,7 @@
 
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 ConnectAttempt::ConnectAttempt(
     Application& app,
@@ -111,7 +92,7 @@ ConnectAttempt::shutdown()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::ConnectAttempt::shutdown: strand in this thread");
+        "xrpl::ConnectAttempt::shutdown: strand in this thread");
 
     if (!socket_.is_open())
         return;
@@ -127,7 +108,7 @@ ConnectAttempt::tryAsyncShutdown()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::ConnectAttempt::tryAsyncShutdown : strand in this thread");
+        "xrpl::ConnectAttempt::tryAsyncShutdown : strand in this thread");
 
     if (!shutdown_ || currentStep_ == ConnectionStep::ShutdownStarted)
         return;
@@ -184,7 +165,7 @@ ConnectAttempt::close()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::ConnectAttempt::close : strand in this thread");
+        "xrpl::ConnectAttempt::close : strand in this thread");
     if (!socket_.is_open())
         return;
 
@@ -589,6 +570,8 @@ ConnectAttempt::processResponse()
             remote_endpoint_.address(),
             app_);
 
+        usage_.setPublicKey(publicKey);
+
         JLOG(journal_.debug())
             << "Protocol: " << to_string(*negotiatedProtocol);
         JLOG(journal_.info())
@@ -636,4 +619,4 @@ ConnectAttempt::processResponse()
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/app/misc/detail/WorkFile.h>
@@ -29,7 +10,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 auto constexpr default_refresh_interval = std::chrono::minutes{5};
 auto constexpr error_retry_interval = std::chrono::seconds{30};
@@ -413,7 +394,7 @@ ValidatorSite::parseJsonResponse(
     auto const manifest = body[jss::manifest].asString();
     XRPL_ASSERT(
         version == body[jss::version].asUInt(),
-        "ripple::ValidatorSite::parseJsonResponse : version match");
+        "xrpl::ValidatorSite::parseJsonResponse : version match");
     auto const& uri = sites_[siteIdx].activeResource->uri;
     auto const hash = sha512Half(manifest, blobs, version);
     auto const applyResult = app_.validators().applyListsAndBroadcast(
@@ -590,7 +571,7 @@ ValidatorSite::onSiteFetch(
                             processRedirect(res, siteIdx, lock_sites);
                         XRPL_ASSERT(
                             newLocation,
-                            "ripple::ValidatorSite::onSiteFetch : non-null "
+                            "xrpl::ValidatorSite::onSiteFetch : non-null "
                             "validator");
                         // for perm redirects, also update our starting URI
                         if (res.result() == status::moved_permanently ||
@@ -703,4 +684,4 @@ ValidatorSite::getJson() const
     }
     return jrr;
 }
-}  // namespace ripple
+}  // namespace xrpl

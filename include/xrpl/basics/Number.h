@@ -1,36 +1,26 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_NUMBER_H_INCLUDED
-#define RIPPLE_BASICS_NUMBER_H_INCLUDED
+#ifndef XRPL_BASICS_NUMBER_H_INCLUDED
+#define XRPL_BASICS_NUMBER_H_INCLUDED
 
 #include <cstdint>
 #include <limits>
 #include <ostream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class Number;
 
 std::string
 to_string(Number const& amount);
+
+template <typename T>
+constexpr bool
+isPowerOfTen(T value)
+{
+    while (value >= 10 && value % 10 == 0)
+        value /= 10;
+    return value == 1;
+}
 
 class Number
 {
@@ -41,7 +31,9 @@ class Number
 public:
     // The range for the mantissa when normalized
     constexpr static std::int64_t minMantissa = 1'000'000'000'000'000LL;
-    constexpr static std::int64_t maxMantissa = 9'999'999'999'999'999LL;
+    static_assert(isPowerOfTen(minMantissa));
+    constexpr static std::int64_t maxMantissa = minMantissa * 10 - 1;
+    static_assert(maxMantissa == 9'999'999'999'999'999LL);
 
     // The range for the exponent when normalized
     constexpr static int minExponent = -32768;
@@ -151,22 +143,7 @@ public:
     }
 
     Number
-    truncate() const noexcept
-    {
-        if (exponent_ >= 0 || mantissa_ == 0)
-            return *this;
-
-        Number ret = *this;
-        while (ret.exponent_ < 0 && ret.mantissa_ != 0)
-        {
-            ret.exponent_ += 1;
-            ret.mantissa_ /= rep(10);
-        }
-        // We are guaranteed that normalize() will never throw an exception
-        // because exponent is either negative or zero at this point.
-        ret.normalize();
-        return ret;
-    }
+    truncate() const noexcept;
 
     friend constexpr bool
     operator>(Number const& x, Number const& y) noexcept
@@ -210,6 +187,8 @@ private:
 
     class Guard;
 };
+
+constexpr static Number numZero{};
 
 inline constexpr Number::Number(rep mantissa, int exponent, unchecked) noexcept
     : mantissa_{mantissa}, exponent_{exponent}
@@ -423,6 +402,6 @@ public:
     operator=(NumberRoundModeGuard const&) = delete;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
-#endif  // RIPPLE_BASICS_NUMBER_H_INCLUDED
+#endif  // XRPL_BASICS_NUMBER_H_INCLUDED

@@ -1,28 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
-#define RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
+#ifndef XRPL_APP_LEDGER_LEDGER_H_INCLUDED
+#define XRPL_APP_LEDGER_LEDGER_H_INCLUDED
 
 #include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
-#include <xrpld/shamap/SHAMap.h>
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -32,8 +12,9 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxMeta.h>
+#include <xrpl/shamap/SHAMap.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class Job;
@@ -107,14 +88,14 @@ public:
         std::vector<uint256> const& amendments,
         Family& family);
 
-    Ledger(LedgerInfo const& info, Config const& config, Family& family);
+    Ledger(LedgerHeader const& info, Config const& config, Family& family);
 
     /** Used for ledgers loaded from JSON files
 
         @param acquire If true, acquires the ledger if not found locally
     */
     Ledger(
-        LedgerInfo const& info,
+        LedgerHeader const& info,
         bool& loaded,
         bool acquire,
         Config const& config,
@@ -148,16 +129,16 @@ public:
         return false;
     }
 
-    LedgerInfo const&
-    info() const override
+    LedgerHeader const&
+    header() const override
     {
-        return info_;
+        return header_;
     }
 
     void
-    setLedgerInfo(LedgerInfo const& info)
+    setLedgerInfo(LedgerHeader const& info)
     {
-        info_ = info;
+        header_ = info;
     }
 
     Fees const&
@@ -232,7 +213,7 @@ public:
     void
     rawDestroyXRP(XRPAmount const& fee) override
     {
-        info_.drops -= fee;
+        header_.drops -= fee;
     }
 
     //
@@ -263,7 +244,7 @@ public:
     void
     setValidated() const
     {
-        info_.validated = true;
+        header_.validated = true;
     }
 
     void
@@ -295,15 +276,15 @@ public:
     setFull() const
     {
         txMap_.setFull();
-        txMap_.setLedgerSeq(info_.seq);
+        txMap_.setLedgerSeq(header_.seq);
         stateMap_.setFull();
-        stateMap_.setLedgerSeq(info_.seq);
+        stateMap_.setLedgerSeq(header_.seq);
     }
 
     void
     setTotalDrops(std::uint64_t totDrops)
     {
-        info_.drops = totDrops;
+        header_.drops = totDrops;
     }
 
     SHAMap const&
@@ -416,7 +397,7 @@ private:
 
     Fees fees_;
     Rules rules_;
-    LedgerInfo info_;
+    LedgerHeader header_;
     beast::Journal j_;
 };
 
@@ -442,7 +423,7 @@ pendSaveValidated(
     bool isCurrent);
 
 std::shared_ptr<Ledger>
-loadLedgerHelper(LedgerInfo const& sinfo, Application& app, bool acquire);
+loadLedgerHelper(LedgerHeader const& sinfo, Application& app, bool acquire);
 
 std::shared_ptr<Ledger>
 loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire = true);
@@ -476,8 +457,8 @@ std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
 deserializeTxPlusMeta(SHAMapItem const& item);
 
 uint256
-calculateLedgerHash(LedgerInfo const& info);
+calculateLedgerHash(LedgerHeader const& info);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

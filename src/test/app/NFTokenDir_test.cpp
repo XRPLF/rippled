@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2022 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
@@ -27,7 +8,7 @@
 
 #include <initializer_list>
 
-namespace ripple {
+namespace xrpl {
 
 class NFTokenDir_test : public beast::unit_test::suite
 {
@@ -191,11 +172,10 @@ class NFTokenDir_test : public beast::unit_test::suite
                         Account::base58Seed, std::string(seed));
                     env.fund(XRP(10000), account);
 
-                    // Do not close the ledger inside the loop.  If
-                    // fixNFTokenRemint is enabled and accounts are initialized
-                    // at different ledgers, they will have different account
-                    // sequences.  That would cause the accounts to have
-                    // different NFTokenID sequence numbers.
+                    // Do not close the ledger inside the loop.  If accounts are
+                    // initialized at different ledgers, they will have
+                    // different account sequences.  That would cause the
+                    // accounts to have different NFTokenID sequence numbers.
                 }
                 env.close();
 
@@ -377,11 +357,9 @@ class NFTokenDir_test : public beast::unit_test::suite
     }
 
     void
-    testFixNFTokenDirV1(FeatureBitset features)
+    testNFTokenDir(FeatureBitset features)
     {
-        // Exercise a fix for an off-by-one in the creation of an NFTokenPage
-        // index.
-        testcase("fixNFTokenDirV1");
+        testcase("NFTokenDir");
 
         using namespace test::jtx;
 
@@ -391,7 +369,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         // the index for the new page.  This test recreates the problem.
 
         // Lambda that exercises the split.
-        auto exerciseFixNFTokenDirV1 =
+        auto exercise =
             [this,
              &features](std::initializer_list<std::string_view const> seeds) {
                 Env env{
@@ -415,11 +393,10 @@ class NFTokenDir_test : public beast::unit_test::suite
                         Account::base58Seed, std::string(seed));
                     env.fund(XRP(10000), account);
 
-                    // Do not close the ledger inside the loop.  If
-                    // fixNFTokenRemint is enabled and accounts are initialized
-                    // at different ledgers, they will have different account
-                    // sequences.  That would cause the accounts to have
-                    // different NFTokenID sequence numbers.
+                    // Do not close the ledger inside the loop.  If accounts are
+                    // initialized at different ledgers, they will have
+                    // different account sequences.  That would cause the
+                    // accounts to have different NFTokenID sequence numbers.
                 }
                 env.close();
 
@@ -453,16 +430,6 @@ class NFTokenDir_test : public beast::unit_test::suite
                     env.close();
                 }
 
-                // Here is the last offer.  Without the fix accepting this
-                // offer causes tecINVARIANT_FAILED.  With the fix the offer
-                // accept succeeds.
-                if (!features[fixNFTokenDirV1])
-                {
-                    env(token::acceptSellOffer(buyer, offers.back()),
-                        ter(tecINVARIANT_FAILED));
-                    env.close();
-                    return;
-                }
                 env(token::acceptSellOffer(buyer, offers.back()));
                 env.close();
 
@@ -598,8 +565,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         };
 
         // Run the test cases.
-        exerciseFixNFTokenDirV1(seventeenHi);
-        exerciseFixNFTokenDirV1(seventeenLo);
+        exercise(seventeenHi);
+        exercise(seventeenLo);
     }
 
     void
@@ -665,10 +632,9 @@ class NFTokenDir_test : public beast::unit_test::suite
                 accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
-            // Do not close the ledger inside the loop.  If
-            // fixNFTokenRemint is enabled and accounts are initialized
-            // at different ledgers, they will have different account
-            // sequences.  That would cause the accounts to have
+            // Do not close the ledger inside the loop.  If accounts are
+            // initialized at different ledgers, they will have different
+            // account sequences.  That would cause the accounts to have
             // different NFTokenID sequence numbers.
         }
         env.close();
@@ -760,11 +726,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         // All NFTs should now be accounted for, so nftIDs should be empty.
         BEAST_EXPECT(nftIDs.empty());
 
-        // Show that Without fixNFTokenDirV1 no more NFTs can be added to
-        // buyer.  Also show that fixNFTokenDirV1 fixes the problem.
-        TER const expect = features[fixNFTokenDirV1]
-            ? static_cast<TER>(tesSUCCESS)
-            : static_cast<TER>(tecNO_SUITABLE_NFTOKEN_PAGE);
+        TER const expect = tesSUCCESS;
         env(token::mint(buyer, 0), txflags(tfTransferable), ter(expect));
         env.close();
     }
@@ -782,11 +744,6 @@ class NFTokenDir_test : public beast::unit_test::suite
         //
         // Lastly, none of the remaining NFTs should be acquirable by the
         // buyer.  They would cause page overflow.
-
-        // This test collapses in a heap if fixNFTokenDirV1 is not enabled.
-        // If it is enabled just return so we skip the test.
-        if (!features[fixNFTokenDirV1])
-            return;
 
         testcase("NFToken consecutive packing");
 
@@ -846,10 +803,9 @@ class NFTokenDir_test : public beast::unit_test::suite
                 accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
-            // Do not close the ledger inside the loop.  If
-            // fixNFTokenRemint is enabled and accounts are initialized
-            // at different ledgers, they will have different account
-            // sequences.  That would cause the accounts to have
+            // Do not close the ledger inside the loop.  If accounts are
+            // initialized at different ledgers, they will have different
+            // account sequences.  That would cause the accounts to have
             // different NFTokenID sequence numbers.
         }
         env.close();
@@ -1088,7 +1044,7 @@ class NFTokenDir_test : public beast::unit_test::suite
     {
         testConsecutiveNFTs(features);
         testLopsidedSplits(features);
-        testFixNFTokenDirV1(features);
+        testNFTokenDir(features);
         testTooManyEquivalent(features);
         testConsecutivePacking(features);
     }
@@ -1099,18 +1055,14 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{testable_amendments()};
-        FeatureBitset const fixNFTDir{
-            fixNFTokenDirV1, featureNonFungibleTokensV1_1};
 
-        testWithFeats(all - fixNFTDir - fixNFTokenRemint);
-        testWithFeats(all - fixNFTokenRemint);
         testWithFeats(all);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDir, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDir, app, xrpl, 1);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 // Seed that produces an account with the low-32 bits == 0xFFFFFFFF in
 // case it is needed for future testing:

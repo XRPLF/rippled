@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/paths/AMMLiquidity.h>
 #include <xrpld/app/paths/AMMOffer.h>
@@ -39,7 +20,7 @@
 #include <numeric>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 template <class TIn, class TOut, class TDerived>
 class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
@@ -47,7 +28,7 @@ class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 protected:
     enum class OfferType { AMM, CLOB };
 
-    uint32_t const maxOffersToConsume_;
+    static constexpr uint32_t MaxOffersToConsume{1000};
     Book book_;
     AccountID strandSrc_;
     AccountID strandDst_;
@@ -82,18 +63,9 @@ protected:
 
     std::optional<Cache> cache_;
 
-    static uint32_t
-    getMaxOffersToConsume(StrandContext const& ctx)
-    {
-        if (ctx.view.rules().enabled(fix1515))
-            return 1000;
-        return 2000;
-    }
-
 public:
     BookStep(StrandContext const& ctx, Issue const& in, Issue const& out)
-        : maxOffersToConsume_(getMaxOffersToConsume(ctx))
-        , book_(in, out, ctx.domainID)
+        : book_(in, out, ctx.domainID)
         , strandSrc_(ctx.strandSrc)
         , strandDst_(ctx.strandDst)
         , prevStep_(ctx.prevStep)
@@ -384,7 +356,7 @@ private:
         // It's really a programming error if the quality is missing.
         XRPL_ASSERT(
             limitQuality,
-            "ripple::BookOfferCrossingStep::getQuality : nonzero quality");
+            "xrpl::BookOfferCrossingStep::getQuality : nonzero quality");
         if (!limitQuality)
             Throw<FlowException>(tefINTERNAL, "Offer requires quality.");
         return *limitQuality;
@@ -738,7 +710,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         ownerPaysTransferFee_ ? rate(book_.out.account) : QUALITY_ONE;
 
     typename FlowOfferStream<TIn, TOut>::StepCounter counter(
-        maxOffersToConsume_, j_);
+        MaxOffersToConsume, j_);
 
     FlowOfferStream<TIn, TOut> offers(
         sb, afView, book_, sb.parentCloseTime(), counter, j_);
@@ -1093,18 +1065,9 @@ BookStep<TIn, TOut, TDerived>::revImp(
         offersUsed_ = offersConsumed;
         SetUnion(ofrsToRm, toRm);
 
-        if (offersConsumed >= maxOffersToConsume_)
+        // Too many iterations, mark this strand as inactive
+        if (offersConsumed >= MaxOffersToConsume)
         {
-            // Too many iterations, mark this strand as inactive
-            if (!afView.rules().enabled(fix1515))
-            {
-                // Don't use the liquidity
-                cache_.emplace(beast::zero, beast::zero);
-                return {beast::zero, beast::zero};
-            }
-
-            // Use the liquidity, but use this to mark the strand as inactive so
-            // it's not used further
             inactive_ = true;
         }
     }
@@ -1116,7 +1079,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
             // LCOV_EXCL_START
             JLOG(j_.error())
                 << "BookStep remainingOut < 0 " << to_string(remainingOut);
-            UNREACHABLE("ripple::BookStep::revImp : remaining less than zero");
+            UNREACHABLE("xrpl::BookStep::revImp : remaining less than zero");
             cache_.emplace(beast::zero, beast::zero);
             return {beast::zero, beast::zero};
             // LCOV_EXCL_STOP
@@ -1140,7 +1103,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
     boost::container::flat_set<uint256>& ofrsToRm,
     TIn const& in)
 {
-    XRPL_ASSERT(cache_, "ripple::BookStep::fwdImp : cache is set");
+    XRPL_ASSERT(cache_, "xrpl::BookStep::fwdImp : cache is set");
 
     TAmounts<TIn, TOut> result(beast::zero, beast::zero);
 
@@ -1159,8 +1122,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                          TOut const& ownerGives,
                          std::uint32_t transferRateIn,
                          std::uint32_t transferRateOut) mutable -> bool {
-        XRPL_ASSERT(
-            cache_, "ripple::BookStep::fwdImp::eachOffer : cache is set");
+        XRPL_ASSERT(cache_, "xrpl::BookStep::fwdImp::eachOffer : cache is set");
 
         if (remainingIn <= beast::zero)
             return false;
@@ -1266,18 +1228,9 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         offersUsed_ = offersConsumed;
         SetUnion(ofrsToRm, toRm);
 
-        if (offersConsumed >= maxOffersToConsume_)
+        // Too many iterations, mark this strand as inactive (dry)
+        if (offersConsumed >= MaxOffersToConsume)
         {
-            // Too many iterations, mark this strand as inactive (dry)
-            if (!afView.rules().enabled(fix1515))
-            {
-                // Don't use the liquidity
-                cache_.emplace(beast::zero, beast::zero);
-                return {beast::zero, beast::zero};
-            }
-
-            // Use the liquidity, but use this to mark the strand as inactive so
-            // it's not used further
             inactive_ = true;
         }
     }
@@ -1289,7 +1242,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             // something went very wrong
             JLOG(j_.error())
                 << "BookStep remainingIn < 0 " << to_string(remainingIn);
-            UNREACHABLE("ripple::BookStep::fwdImp : remaining less than zero");
+            UNREACHABLE("xrpl::BookStep::fwdImp : remaining less than zero");
             cache_.emplace(beast::zero, beast::zero);
             return {beast::zero, beast::zero};
             // LCOV_EXCL_STOP
@@ -1411,7 +1364,7 @@ namespace test {
 
 template <class TIn, class TOut, class TDerived>
 static bool
-equalHelper(Step const& step, ripple::Book const& book)
+equalHelper(Step const& step, xrpl::Book const& book)
 {
     if (auto bs = dynamic_cast<BookStep<TIn, TOut, TDerived> const*>(&step))
         return book == bs->book();
@@ -1419,14 +1372,14 @@ equalHelper(Step const& step, ripple::Book const& book)
 }
 
 bool
-bookStepEqual(Step const& step, ripple::Book const& book)
+bookStepEqual(Step const& step, xrpl::Book const& book)
 {
     bool const inXRP = isXRP(book.in.currency);
     bool const outXRP = isXRP(book.out.currency);
     if (inXRP && outXRP)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::test::bookStepEqual : no XRP to XRP book step");
+        UNREACHABLE("xrpl::test::bookStepEqual : no XRP to XRP book step");
         return false;  // no such thing as xrp/xrp book step
         // LCOV_EXCL_STOP
     }
@@ -1495,4 +1448,4 @@ make_BookStepXI(StrandContext const& ctx, Issue const& out)
     return make_BookStepHelper<XRPAmount, IOUAmount>(ctx, xrpIssue(), out);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

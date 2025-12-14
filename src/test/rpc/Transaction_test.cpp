@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
@@ -33,7 +14,7 @@
 #include <optional>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
 class Transaction_test : public beast::unit_test::suite
 {
@@ -69,7 +50,7 @@ class Transaction_test : public beast::unit_test::suite
 
         std::vector<std::shared_ptr<STTx const>> txns;
         std::vector<std::shared_ptr<STObject const>> metas;
-        auto const startLegSeq = env.current()->info().seq;
+        auto const startLegSeq = env.current()->header().seq;
         for (int i = 0; i < 750; ++i)
         {
             env(noop(alice));
@@ -78,7 +59,7 @@ class Transaction_test : public beast::unit_test::suite
             metas.emplace_back(
                 env.closed()->txRead(env.tx()->getTransactionID()).second);
         }
-        auto const endLegSeq = env.closed()->info().seq;
+        auto const endLegSeq = env.closed()->header().seq;
 
         // Find the existing transactions
         for (size_t i = 0; i < txns.size(); ++i)
@@ -321,7 +302,7 @@ class Transaction_test : public beast::unit_test::suite
 
         std::vector<std::shared_ptr<STTx const>> txns;
         std::vector<std::shared_ptr<STObject const>> metas;
-        auto const startLegSeq = env.current()->info().seq;
+        auto const startLegSeq = env.current()->header().seq;
         for (int i = 0; i < 750; ++i)
         {
             env(noop(alice));
@@ -330,7 +311,7 @@ class Transaction_test : public beast::unit_test::suite
             metas.emplace_back(
                 env.closed()->txRead(env.tx()->getTransactionID()).second);
         }
-        auto const endLegSeq = env.closed()->info().seq;
+        auto const endLegSeq = env.closed()->header().seq;
 
         // Find the existing transactions
         for (size_t i = 0; i < txns.size(); ++i)
@@ -649,7 +630,7 @@ class Transaction_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
 
-            auto const startLegSeq = env.current()->info().seq;
+            auto const startLegSeq = env.current()->header().seq;
             env.fund(XRP(10000), alice, bob);
             env(pay(alice, bob, XRP(10)));
             env.close();
@@ -680,7 +661,7 @@ class Transaction_test : public beast::unit_test::suite
             Account const alice = Account("alice");
             Account const bob = Account("bob");
 
-            std::uint32_t const startLegSeq = env.current()->info().seq;
+            std::uint32_t const startLegSeq = env.current()->header().seq;
             env.fund(XRP(10000), alice, bob);
             env(pay(alice, bob, XRP(10)));
             env.close();
@@ -728,7 +709,7 @@ class Transaction_test : public beast::unit_test::suite
             env(pay(alice, bob, XRP(10)));
             env.close();
 
-            auto const ledgerSeq = env.current()->info().seq;
+            auto const ledgerSeq = env.current()->header().seq;
 
             env(noop(alice), ter(tesSUCCESS));
             env.close();
@@ -757,7 +738,7 @@ class Transaction_test : public beast::unit_test::suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
 
-            auto const startLegSeq = env.current()->info().seq;
+            auto const startLegSeq = env.current()->header().seq;
             env.fund(XRP(10000), alice, bob);
             env(pay(alice, bob, XRP(10)));
             env.close();
@@ -957,6 +938,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Transaction, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Transaction, rpc, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

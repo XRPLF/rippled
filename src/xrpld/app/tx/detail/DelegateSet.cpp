@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/DelegateSet.h>
 
 #include <xrpl/basics/Log.h>
@@ -25,7 +6,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
@@ -45,8 +26,7 @@ DelegateSet::preflight(PreflightContext const& ctx)
         if (!permissionSet.insert(permission[sfPermissionValue]).second)
             return temMALFORMED;
 
-        if (ctx.rules.enabled(fixDelegateV1_1) &&
-            !Permission::getInstance().isDelegatable(
+        if (!Permission::getInstance().isDelegatable(
                 permission[sfPermissionValue], ctx.rules))
             return temMALFORMED;
     }
@@ -62,26 +42,6 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize])))
         return tecNO_TARGET;
-
-    auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
-    for (auto const& permission : permissions)
-    {
-        if (!ctx.view.rules().enabled(fixDelegateV1_1) &&
-            !Permission::getInstance().isDelegatable(
-                permission[sfPermissionValue], ctx.view.rules()))
-        {
-            // Before fixDelegateV1_1:
-            //   - The check was performed during preclaim.
-            //   - Transactions from amendments not yet enabled could still be
-            //   delegated.
-            //
-            // After fixDelegateV1_1:
-            //   - The check is performed during preflight.
-            //   - Transactions from amendments not yet enabled can no longer be
-            //   delegated.
-            return tecNO_PERMISSION;
-        }
-    }
 
     return tesSUCCESS;
 }
@@ -169,4 +129,4 @@ DelegateSet::deleteDelegate(
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,26 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/detail/RawStateTable.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 class RawStateTable::sles_iter_impl : public ReadView::sles_type::iter_base
@@ -65,7 +46,7 @@ public:
         {
             XRPL_ASSERT(
                 end1_ == p->end1_ && end0_ == p->end0_,
-                "ripple::detail::RawStateTable::equal : matching end "
+                "xrpl::detail::RawStateTable::equal : matching end "
                 "iterators");
             return iter1_ == p->iter1_ && iter0_ == p->iter0_;
         }
@@ -78,7 +59,7 @@ public:
     {
         XRPL_ASSERT(
             sle1_ || sle0_,
-            "ripple::detail::RawStateTable::increment : either SLE is "
+            "xrpl::detail::RawStateTable::increment : either SLE is "
             "non-null");
 
         if (sle1_ && !sle0_)
@@ -186,8 +167,7 @@ bool
 RawStateTable::exists(ReadView const& base, Keylet const& k) const
 {
     XRPL_ASSERT(
-        k.key.isNonZero(),
-        "ripple::detail::RawStateTable::exists : nonzero key");
+        k.key.isNonZero(), "xrpl::detail::RawStateTable::exists : nonzero key");
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.exists(k);
@@ -358,4 +338,4 @@ RawStateTable::slesUpperBound(ReadView const& base, uint256 const& key) const
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2024 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/permissioned_domains.h>
@@ -30,7 +11,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class MPToken_test : public beast::unit_test::suite
@@ -1171,7 +1152,7 @@ class MPToken_test : public beast::unit_test::suite
                 env(credentials::accept(bob, credIssuer1, credType));
                 env.close();
 
-                MPTTester mptAlice(env, alice, {});
+                MPTTester mptAlice(env, alice);
                 env.close();
 
                 mptAlice.create({
@@ -1213,7 +1194,7 @@ class MPToken_test : public beast::unit_test::suite
                 env(credentials::accept(bob, credIssuer1, credType));
                 env.close();
 
-                MPTTester mptAlice(env, alice, {});
+                MPTTester mptAlice(env, alice);
                 env.close();
 
                 mptAlice.create({
@@ -1293,7 +1274,7 @@ class MPToken_test : public beast::unit_test::suite
                 env(credentials::accept(carol, credIssuer2, credType));
                 env.close();
 
-                MPTTester mptAlice(env, alice, {});
+                MPTTester mptAlice(env, alice);
                 env.close();
 
                 mptAlice.create({
@@ -2368,7 +2349,7 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
 
             auto const USD = alice["USD"];
-            auto const mpt = ripple::test::jtx::MPT(
+            auto const mpt = xrpl::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             env(claw(alice, bob["USD"](5), bob), ter(temMALFORMED));
@@ -2391,7 +2372,7 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
 
             auto const USD = alice["USD"];
-            auto const mpt = ripple::test::jtx::MPT(
+            auto const mpt = xrpl::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             // clawing back IOU from a MPT holder fails
@@ -2450,7 +2431,7 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            auto const fakeMpt = ripple::test::jtx::MPT(
+            auto const fakeMpt = xrpl::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             // issuer tries to clawback MPT where issuance doesn't exist
@@ -2489,7 +2470,7 @@ class MPToken_test : public beast::unit_test::suite
             env.fund(XRP(1000), alice, bob);
             env.close();
 
-            auto const mpt = ripple::test::jtx::MPT(
+            auto const mpt = xrpl::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             Json::Value jv = claw(alice, mpt(1), bob);
@@ -3694,7 +3675,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(MPToken, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(MPToken, app, xrpl, 2);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

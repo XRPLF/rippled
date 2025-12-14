@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/VaultDelete.h>
 
 #include <xrpl/ledger/View.h>
@@ -26,7 +7,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 VaultDelete::preflight(PreflightContext const& ctx)
@@ -165,7 +146,35 @@ VaultDelete::doApply()
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     // Destroy the pseudo-account.
-    view().erase(view().peek(keylet::account(pseudoID)));
+    auto vaultPseudoSLE = view().peek(keylet::account(pseudoID));
+    if (!vaultPseudoSLE || vaultPseudoSLE->at(~sfVaultID) != vault->key())
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    // Making the payment and removing the empty holding should have deleted any
+    // obligations associated with the vault or vault pseudo-account.
+    if (*vaultPseudoSLE->at(sfBalance))
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultDelete: pseudo-account has a balance";
+        return tecHAS_OBLIGATIONS;
+        // LCOV_EXCL_STOP
+    }
+    if (vaultPseudoSLE->at(sfOwnerCount) != 0)
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultDelete: pseudo-account still owns objects";
+        return tecHAS_OBLIGATIONS;
+        // LCOV_EXCL_STOP
+    }
+    if (view().exists(keylet::ownerDir(pseudoID)))
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultDelete: pseudo-account has a directory";
+        return tecHAS_OBLIGATIONS;
+        // LCOV_EXCL_STOP
+    }
+
+    view().erase(vaultPseudoSLE);
 
     // Remove the vault from its owner's directory.
     auto const ownerID = vault->at(sfOwner);
@@ -189,7 +198,9 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    adjustOwnerCount(view(), owner, -1, j_);
+
+    // We are destroying Vault and PseudoAccount, hence decrease by 2
+    adjustOwnerCount(view(), owner, -2, j_);
 
     // Destroy the vault.
     view().erase(vault);
@@ -197,4 +208,4 @@ VaultDelete::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 
@@ -25,7 +6,7 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/STObject.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::pair<STAmount, STAmount>
 ammPoolHolds(
@@ -182,7 +163,7 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
     XRPL_ASSERT(
         !view.rules().enabled(fixInnerObjTemplate) ||
             ammSle.isFieldPresent(sfAuctionSlot),
-        "ripple::getTradingFee : auction present");
+        "xrpl::getTradingFee : auction present");
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
@@ -190,7 +171,7 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
         // Not expired
         if (auto const expiration = auctionSlot[~sfExpiration];
             duration_cast<seconds>(
-                view.info().parentCloseTime.time_since_epoch())
+                view.header().parentCloseTime.time_since_epoch())
                 .count() < expiration)
         {
             if (auctionSlot[~sfAccount] == account)
@@ -366,9 +347,10 @@ initializeFeeAuctionVote(
     STObject& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auctionSlot.setAccountID(sfAccount, account);
     // current + sec in 24h
-    auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
-                                view.info().parentCloseTime.time_since_epoch())
-                                .count() +
+    auto const expiration =
+        std::chrono::duration_cast<std::chrono::seconds>(
+            view.header().parentCloseTime.time_since_epoch())
+            .count() +
         TOTAL_TIME_SLOT_SECS;
     auctionSlot.setFieldU32(sfExpiration, expiration);
     auctionSlot.setFieldAmount(sfPrice, STAmount{lptIssue, 0});
@@ -493,4 +475,4 @@ verifyAndAdjustLPTokenBalance(
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

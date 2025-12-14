@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
@@ -25,7 +6,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class RCLValidations_test : public beast::unit_test::suite
@@ -36,7 +17,7 @@ class RCLValidations_test : public beast::unit_test::suite
         testcase("Change validation trusted status");
         auto keys = randomKeyPair(KeyType::secp256k1);
         auto v = std::make_shared<STValidation>(
-            ripple::NetClock::time_point{},
+            xrpl::NetClock::time_point{},
             keys.first,
             keys.second,
             calcNodeID(keys.first),
@@ -130,13 +111,13 @@ class RCLValidations_test : public beast::unit_test::suite
         {
             std::shared_ptr<Ledger const> ledger = history.back();
             RCLValidatedLedger a{ledger, env.journal};
-            BEAST_EXPECT(a.seq() == ledger->info().seq);
+            BEAST_EXPECT(a.seq() == ledger->header().seq);
             BEAST_EXPECT(a.minSeq() == a.seq() - maxAncestors);
             // Ensure the ancestral 256 ledgers have proper ID
             for (Seq s = a.seq(); s > 0; s--)
             {
                 if (s >= a.minSeq())
-                    BEAST_EXPECT(a[s] == history[s - 1]->info().hash);
+                    BEAST_EXPECT(a[s] == history[s - 1]->header().hash);
                 else
                     BEAST_EXPECT(a[s] == ID{0});
             }
@@ -273,7 +254,7 @@ class RCLValidations_test : public beast::unit_test::suite
         BEAST_EXPECT(trie.branchSupport(ledg_258) == 4);
 
         // Move three of the s258 ledgers to s259, which splits the trie
-        // due to the 256 ancestory limit
+        // due to the 256 ancestry limit
         BEAST_EXPECT(trie.remove(ledg_258, 3));
         trie.insert(ledg_259, 3);
         trie.getPreferred(1);
@@ -294,7 +275,7 @@ class RCLValidations_test : public beast::unit_test::suite
         // then verify the remove call works
         // past bug: remove had assumed the first child of a node in the trie
         //      which matches is the *only* child in the trie which matches.
-        //      This is **NOT** true with the limited 256 ledger ancestory
+        //      This is **NOT** true with the limited 256 ledger ancestry
         //      quirk of RCLValidation and prevents deleting the old support
         //      for ledger 257
 
@@ -327,7 +308,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RCLValidations, app, ripple);
+BEAST_DEFINE_TESTSUITE(RCLValidations, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

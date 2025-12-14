@@ -1,28 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/SField.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -47,10 +28,10 @@ DeferredCredits::credit(
 {
     XRPL_ASSERT(
         sender != receiver,
-        "ripple::detail::DeferredCredits::credit : sender is not receiver");
+        "xrpl::detail::DeferredCredits::credit : sender is not receiver");
     XRPL_ASSERT(
         !amount.negative(),
-        "ripple::detail::DeferredCredits::credit : positive amount");
+        "xrpl::detail::DeferredCredits::credit : positive amount");
 
     auto const k = makeKey(sender, receiver, amount.getCurrency());
     auto i = credits_.find(k);
@@ -253,14 +234,14 @@ PaymentSandbox::adjustOwnerCountHook(
 void
 PaymentSandbox::apply(RawView& to)
 {
-    XRPL_ASSERT(!ps_, "ripple::PaymentSandbox::apply : non-null sandbox");
+    XRPL_ASSERT(!ps_, "xrpl::PaymentSandbox::apply : non-null sandbox");
     items_.apply(to);
 }
 
 void
 PaymentSandbox::apply(PaymentSandbox& to)
 {
-    XRPL_ASSERT(ps_ == &to, "ripple::PaymentSandbox::apply : matching sandbox");
+    XRPL_ASSERT(ps_ == &to, "xrpl::PaymentSandbox::apply : matching sandbox");
     items_.apply(to);
     tab_.apply(to.tab_);
 }
@@ -346,7 +327,7 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
             auto const at = after->getType();
             XRPL_ASSERT(
                 at == before->getType(),
-                "ripple::PaymentSandbox::balanceChanges : after and before "
+                "xrpl::PaymentSandbox::balanceChanges : after and before "
                 "types matching");
             switch (at)
             {
@@ -396,4 +377,4 @@ PaymentSandbox::xrpDestroyed() const
     return items_.dropsDestroyed();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/multisign.h>
 #include <test/jtx/utility.h>
 
@@ -26,7 +7,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -69,8 +50,15 @@ void
 msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
-    jt.signer = [mySigners, &env](Env&, JTx& jtx) {
-        jtx[sfSigningPubKey.getJsonName()] = "";
+    auto callback = [subField = subField, mySigners, &env](Env&, JTx& jtx) {
+        // Where to put the signature. Supports sfCounterPartySignature.
+        auto& sigObject = subField ? jtx[*subField] : jtx.jv;
+
+        // The signing pub key is only required at the top level.
+        if (!subField)
+            sigObject[sfSigningPubKey] = "";
+        else if (sigObject.isNull())
+            sigObject = Json::Value(Json::objectValue);
         std::optional<STObject> st;
         try
         {
@@ -81,7 +69,7 @@ msig::operator()(Env& env, JTx& jt) const
             env.test.log << pretty(jtx.jv) << std::endl;
             Rethrow();
         }
-        auto& js = jtx[sfSigners.getJsonName()];
+        auto& js = sigObject[sfSigners];
         for (std::size_t i = 0; i < mySigners.size(); ++i)
         {
             auto const& e = mySigners[i];
@@ -90,14 +78,18 @@ msig::operator()(Env& env, JTx& jt) const
             jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
             Serializer ss{buildMultiSigningData(*st, e.acct.id())};
-            auto const sig = ripple::sign(
+            auto const sig = xrpl::sign(
                 *publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
             jo[sfTxnSignature.getJsonName()] =
                 strHex(Slice{sig.data(), sig.size()});
         }
     };
+    if (!subField)
+        jt.mainSigners.emplace_back(callback);
+    else
+        jt.postSigners.emplace_back(callback);
 }
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

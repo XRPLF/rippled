@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/misc/DeliverMax.h>
@@ -29,7 +10,7 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -56,7 +37,7 @@ void
 fillJson(
     Object& json,
     bool closed,
-    LedgerInfo const& info,
+    LedgerHeader const& info,
     bool bFull,
     unsigned apiVersion)
 {
@@ -99,7 +80,7 @@ fillJson(
 
 template <class Object>
 void
-fillJsonBinary(Object& json, bool closed, LedgerInfo const& info)
+fillJsonBinary(Object& json, bool closed, LedgerHeader const& info)
 {
     if (!closed)
         json[jss::closed] = false;
@@ -166,7 +147,7 @@ fillJsonTx(
         }
 
         if (!fill.ledger.open())
-            txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
+            txJson[jss::ledger_hash] = to_string(fill.ledger.header().hash);
 
         bool const validated =
             fill.context->ledgerMaster.isValidated(fill.ledger);
@@ -324,12 +305,12 @@ fillJson(Object& json, LedgerFill const& fill)
     // Is there a way to report this back?
     auto bFull = isFull(fill);
     if (isBinary(fill))
-        fillJsonBinary(json, !fill.ledger.open(), fill.ledger.info());
+        fillJsonBinary(json, !fill.ledger.open(), fill.ledger.header());
     else
         fillJson(
             json,
             !fill.ledger.open(),
-            fill.ledger.info(),
+            fill.ledger.header(),
             bFull,
             (fill.context ? fill.context->apiVersion
                           : RPC::apiMaximumSupportedVersion));
@@ -361,4 +342,4 @@ getJson(LedgerFill const& fill)
     return json;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

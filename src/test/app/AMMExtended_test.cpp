@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
@@ -37,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /**
@@ -198,109 +179,100 @@ private:
         // Fill or Kill - unless we fully cross, just charge a fee and don't
         // place the offer on the books.  But also clean up expired offers
         // that are discovered along the way.
-        //
-        // fix1578 changes the return code.  Verify expected behavior
-        // without and with fix1578.
-        for (auto const& tweakedFeatures :
-             {features - fix1578, features | fix1578})
-        {
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    // Order that can't be filled
-                    TER const killedCode{
-                        tweakedFeatures[fix1578] ? TER{tecKILLED}
-                                                 : TER{tesSUCCESS}};
-                    env(offer(carol, USD(100), XRP(100)),
-                        txflags(tfFillOrKill),
-                        ter(killedCode));
-                    env.close();
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'100), USD(10'000), ammAlice.tokens()));
-                    // fee = AMM
-                    BEAST_EXPECT(expectLedgerEntryRoot(
-                        env, carol, XRP(30'000) - (txfee(env, 1))));
-                    BEAST_EXPECT(expectOffers(env, carol, 0));
-                    BEAST_EXPECT(expectHolding(env, carol, USD(30'000)));
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Order that can't be filled
+                TER const killedCode{TER{tecKILLED}};
+                env(offer(carol, USD(100), XRP(100)),
+                    txflags(tfFillOrKill),
+                    ter(killedCode));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'100), USD(10'000), ammAlice.tokens()));
+                // fee = AMM
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env, carol, XRP(30'000) - (txfee(env, 1))));
+                BEAST_EXPECT(expectOffers(env, carol, 0));
+                BEAST_EXPECT(expectHolding(env, carol, USD(30'000)));
 
-                    // Order that can be filled
-                    env(offer(carol, XRP(100), USD(100)),
-                        txflags(tfFillOrKill),
-                        ter(tesSUCCESS));
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'000), USD(10'100), ammAlice.tokens()));
-                    BEAST_EXPECT(expectLedgerEntryRoot(
-                        env, carol, XRP(30'000) + XRP(100) - txfee(env, 2)));
-                    BEAST_EXPECT(expectHolding(env, carol, USD(29'900)));
-                    BEAST_EXPECT(expectOffers(env, carol, 0));
-                },
-                {{XRP(10'100), USD(10'000)}},
-                0,
-                std::nullopt,
-                {tweakedFeatures});
+                // Order that can be filled
+                env(offer(carol, XRP(100), USD(100)),
+                    txflags(tfFillOrKill),
+                    ter(tesSUCCESS));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), USD(10'100), ammAlice.tokens()));
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env, carol, XRP(30'000) + XRP(100) - txfee(env, 2)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(29'900)));
+                BEAST_EXPECT(expectOffers(env, carol, 0));
+            },
+            {{XRP(10'100), USD(10'000)}},
+            0,
+            std::nullopt,
+            {features});
 
-            // Immediate or Cancel - cross as much as possible
-            // and add nothing on the books.
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    env(offer(carol, XRP(200), USD(200)),
-                        txflags(tfImmediateOrCancel),
-                        ter(tesSUCCESS));
+        // Immediate or Cancel - cross as much as possible
+        // and add nothing on the books.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env(offer(carol, XRP(200), USD(200)),
+                    txflags(tfImmediateOrCancel),
+                    ter(tesSUCCESS));
 
-                    // AMM generates a synthetic offer of 100USD/100XRP
-                    // to match the CLOB offer quality.
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'000), USD(10'100), ammAlice.tokens()));
-                    // +AMM - offer * fee
-                    BEAST_EXPECT(expectLedgerEntryRoot(
-                        env, carol, XRP(30'000) + XRP(100) - txfee(env, 1)));
-                    // AMM
-                    BEAST_EXPECT(expectHolding(env, carol, USD(29'900)));
-                    BEAST_EXPECT(expectOffers(env, carol, 0));
-                },
-                {{XRP(10'100), USD(10'000)}},
-                0,
-                std::nullopt,
-                {tweakedFeatures});
+                // AMM generates a synthetic offer of 100USD/100XRP
+                // to match the CLOB offer quality.
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), USD(10'100), ammAlice.tokens()));
+                // +AMM - offer * fee
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env, carol, XRP(30'000) + XRP(100) - txfee(env, 1)));
+                // AMM
+                BEAST_EXPECT(expectHolding(env, carol, USD(29'900)));
+                BEAST_EXPECT(expectOffers(env, carol, 0));
+            },
+            {{XRP(10'100), USD(10'000)}},
+            0,
+            std::nullopt,
+            {features});
 
-            // tfPassive -- place the offer without crossing it.
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    // Carol creates a passive offer that could cross AMM.
-                    // Carol's offer should stay in the ledger.
-                    env(offer(carol, XRP(100), USD(100), tfPassive));
-                    env.close();
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
-                    BEAST_EXPECT(expectOffers(
-                        env, carol, 1, {{{XRP(100), STAmount{USD, 100}}}}));
-                },
-                {{XRP(10'100), USD(10'000)}},
-                0,
-                std::nullopt,
-                {tweakedFeatures});
+        // tfPassive -- place the offer without crossing it.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Carol creates a passive offer that could cross AMM.
+                // Carol's offer should stay in the ledger.
+                env(offer(carol, XRP(100), USD(100), tfPassive));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env, carol, 1, {{{XRP(100), STAmount{USD, 100}}}}));
+            },
+            {{XRP(10'100), USD(10'000)}},
+            0,
+            std::nullopt,
+            {features});
 
-            // tfPassive -- cross only offers of better quality.
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    env(offer(alice, USD(110), XRP(100)));
-                    env.close();
+        // tfPassive -- cross only offers of better quality.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env(offer(alice, USD(110), XRP(100)));
+                env.close();
 
-                    // Carol creates a passive offer.  That offer should cross
-                    // AMM and leave Alice's offer untouched.
-                    env(offer(carol, XRP(100), USD(100), tfPassive));
-                    env.close();
-                    BEAST_EXPECT(ammAlice.expectBalances(
-                        XRP(10'900),
-                        STAmount{USD, UINT64_C(9'082'56880733945), -11},
-                        ammAlice.tokens()));
-                    BEAST_EXPECT(expectOffers(env, carol, 0));
-                    BEAST_EXPECT(expectOffers(env, alice, 1));
-                },
-                {{XRP(11'000), USD(9'000)}},
-                0,
-                std::nullopt,
-                {tweakedFeatures});
-        }
+                // Carol creates a passive offer.  That offer should cross
+                // AMM and leave Alice's offer untouched.
+                env(offer(carol, XRP(100), USD(100), tfPassive));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'900),
+                    STAmount{USD, UINT64_C(9'082'56880733945), -11},
+                    ammAlice.tokens()));
+                BEAST_EXPECT(expectOffers(env, carol, 0));
+                BEAST_EXPECT(expectOffers(env, alice, 1));
+            },
+            {{XRP(11'000), USD(9'000)}},
+            0,
+            std::nullopt,
+            {features});
     }
 
     void
@@ -867,8 +839,7 @@ private:
         using namespace jtx;
 
         // Code returned if an offer is killed.
-        TER const killedCode{
-            features[fix1578] ? TER{tecKILLED} : TER{tesSUCCESS}};
+        TER const killedCode{TER{tecKILLED}};
 
         {
             Env env{*this, features};
@@ -2819,15 +2790,9 @@ private:
         testcase("Circular XRP");
 
         using namespace jtx;
-
-        for (auto const withFix : {true, false})
         {
-            auto const feats = withFix
-                ? testable_amendments()
-                : testable_amendments() - FeatureBitset{fix1781};
-
             // Payment path starting with XRP
-            Env env(*this, feats);
+            Env env(*this, testable_amendments());
             // Note, if alice doesn't have default ripple, then pay
             // fails with tecPATH_DRY.
             fund(
@@ -2842,8 +2807,7 @@ private:
             AMM ammAliceXRP_EUR(env, alice, XRP(100), EUR(101));
             env.close();
 
-            TER const expectedTer =
-                withFix ? TER{temBAD_PATH_LOOP} : TER{tesSUCCESS};
+            TER const expectedTer = TER{temBAD_PATH_LOOP};
             env(pay(alice, bob, EUR(1)),
                 path(~USD, ~XRP, ~EUR),
                 sendmax(XRP(1)),
@@ -3075,8 +3039,6 @@ private:
         using namespace jtx;
         Account const becky{"becky"};
 
-        bool const supportsPreauth = {features[featureDepositPreauth]};
-
         // The initial implementation of DepositAuth had a bug where an
         // account with the DepositAuth flag set could not make a payment
         // to itself.  That bug was fixed in the DepositPreauth amendment.
@@ -3104,15 +3066,11 @@ private:
         env(fset(becky, asfDepositAuth));
         env.close();
 
-        // becky pays herself again.  Whether it succeeds depends on
-        // whether featureDepositPreauth is enabled.
-        TER const expect{
-            supportsPreauth ? TER{tesSUCCESS} : TER{tecNO_PERMISSION}};
-
+        // becky pays herself again.
         env(pay(becky, becky, USD(10)),
             path(~USD),
             sendmax(XRP(10)),
-            ter(expect));
+            ter(tesSUCCESS));
 
         env.close();
     }
@@ -3576,8 +3534,7 @@ private:
         // Attach signers to alice.
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}}), sig(alie));
         env.close();
-        int const signerListOwners{features[featureMultiSignReserve] ? 2 : 5};
-        env.require(owners(alice, signerListOwners + 0));
+        env.require(owners(alice, 2));
 
         msig const ms{becky, bogie};
 
@@ -3820,9 +3777,7 @@ private:
     void
     testDepositAuth()
     {
-        auto const supported{jtx::testable_amendments()};
-        testPayment(supported - featureDepositPreauth);
-        testPayment(supported);
+        testPayment(jtx::testable_amendments());
         testPayIOU();
     }
 
@@ -3839,20 +3794,13 @@ private:
     void
     testMultisign()
     {
-        using namespace jtx;
-        auto const all = testable_amendments();
-
-        testTxMultisign(
-            all - featureMultiSignReserve - featureExpandedSignerList);
-        testTxMultisign(all - featureExpandedSignerList);
-        testTxMultisign(all);
+        testTxMultisign(jtx::testable_amendments());
     }
 
     void
     testPayStrand()
     {
-        using namespace jtx;
-        auto const all = testable_amendments();
+        auto const all = jtx::testable_amendments();
 
         testToStrand(all);
         testRIPD1373(all);
@@ -3874,7 +3822,7 @@ private:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AMMExtended, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(AMMExtended, app, xrpl, 1);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

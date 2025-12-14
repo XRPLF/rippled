@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LocalTxs.h>
 
@@ -46,7 +27,7 @@ test-applied to all new open ledgers until seen in a fully-
 validated ledger
 */
 
-namespace ripple {
+namespace xrpl {
 
 // This class wraps a pointer to a transaction along with
 // its expiration ledger. It also caches the issuing account.
@@ -145,7 +126,7 @@ public:
         std::lock_guard lock(m_lock);
 
         m_txns.remove_if([&view](auto const& txn) {
-            if (txn.isExpired(view.info().seq))
+            if (txn.isExpired(view.header().seq))
                 return true;
             if (view.txExists(txn.getID()))
                 return true;
@@ -194,4 +175,4 @@ make_LocalTxs()
     return std::make_unique<LocalTxsImp>();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/ValidatorList.h>
@@ -39,7 +20,7 @@
 #include <numeric>
 #include <shared_mutex>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 to_string(ListDisposition disposition)
@@ -200,7 +181,7 @@ ValidatorList::load(
         // This should be enforced by Config class
         XRPL_ASSERT(
             listThreshold_ > 0 && listThreshold_ <= publisherLists_.size(),
-            "ripple::ValidatorList::load : list threshold inside range");
+            "xrpl::ValidatorList::load : list threshold inside range");
         JLOG(j_.debug()) << "Validator list threshold set in configuration to "
                          << listThreshold_;
     }
@@ -312,7 +293,7 @@ ValidatorList::buildFileData(
 
     XRPL_ASSERT(
         pubCollection.rawVersion == 2 || pubCollection.remaining.empty(),
-        "ripple::ValidatorList::buildFileData : valid publisher list input");
+        "xrpl::ValidatorList::buildFileData : valid publisher list input");
     auto const effectiveVersion =
         forceVersion ? *forceVersion : pubCollection.rawVersion;
 
@@ -414,7 +395,7 @@ ValidatorList::parseBlobs(std::uint32_t version, Json::Value const& body)
             info.signature = body[jss::signature].asString();
             XRPL_ASSERT(
                 result.size() == 1,
-                "ripple::ValidatorList::parseBlobs : single element result");
+                "xrpl::ValidatorList::parseBlobs : single element result");
             return result;
         }
             // Treat unknown versions as if they're the latest version. This
@@ -451,7 +432,7 @@ ValidatorList::parseBlobs(std::uint32_t version, Json::Value const& body)
             }
             XRPL_ASSERT(
                 result.size() == blobs.size(),
-                "ripple::ValidatorList::parseBlobs(version, Jason::Value) : "
+                "xrpl::ValidatorList::parseBlobs(version, Jason::Value) : "
                 "result size matches");
             return result;
         }
@@ -485,7 +466,7 @@ ValidatorList::parseBlobs(protocol::TMValidatorListCollection const& body)
     }
     XRPL_ASSERT(
         result.size() == body.blobs_size(),
-        "ripple::ValidatorList::parseBlobs(TMValidatorList) : result size "
+        "xrpl::ValidatorList::parseBlobs(TMValidatorList) : result size "
         "match");
     return result;
 }
@@ -508,7 +489,7 @@ splitMessage(
 {
     if (begin == 0 && end == 0)
         end = largeMsg.blobs_size();
-    XRPL_ASSERT(begin < end, "ripple::splitMessage : valid inputs");
+    XRPL_ASSERT(begin < end, "xrpl::splitMessage : valid inputs");
     if (end <= begin)
         return 0;
 
@@ -544,7 +525,7 @@ splitMessageParts(
 
         XRPL_ASSERT(
             Message::totalSize(smallMsg) <= maximiumMessageSize,
-            "ripple::splitMessageParts : maximum message size");
+            "xrpl::splitMessageParts : maximum message size");
 
         messages.emplace_back(
             std::make_shared<Message>(smallMsg, protocol::mtVALIDATORLIST),
@@ -594,7 +575,7 @@ buildValidatorListMessage(
 {
     XRPL_ASSERT(
         messages.empty(),
-        "ripple::buildValidatorListMessage(ValidatorBlobInfo) : empty messages "
+        "xrpl::buildValidatorListMessage(ValidatorBlobInfo) : empty messages "
         "input");
     protocol::TMValidatorList msg;
     auto const manifest =
@@ -608,7 +589,7 @@ buildValidatorListMessage(
 
     XRPL_ASSERT(
         Message::totalSize(msg) <= maximiumMessageSize,
-        "ripple::buildValidatorListMessage(ValidatorBlobInfo) : maximum "
+        "xrpl::buildValidatorListMessage(ValidatorBlobInfo) : maximum "
         "message size");
     messages.emplace_back(
         std::make_shared<Message>(msg, protocol::mtVALIDATORLIST),
@@ -630,7 +611,7 @@ buildValidatorListMessage(
 {
     XRPL_ASSERT(
         messages.empty(),
-        "ripple::buildValidatorListMessage(std::map<std::size_t, "
+        "xrpl::buildValidatorListMessage(std::map<std::size_t, "
         "ValidatorBlobInfo>) : empty messages input");
     protocol::TMValidatorListCollection msg;
     auto const version = rawVersion < 2 ? 2 : rawVersion;
@@ -649,7 +630,7 @@ buildValidatorListMessage(
     }
     XRPL_ASSERT(
         msg.blobs_size() > 0,
-        "ripple::buildValidatorListMessage(std::map<std::size_t, "
+        "xrpl::buildValidatorListMessage(std::map<std::size_t, "
         "ValidatorBlobInfo>) : minimum message blobs");
     if (Message::totalSize(msg) > maxSize)
     {
@@ -681,7 +662,7 @@ ValidatorList::buildValidatorListMessages(
 {
     XRPL_ASSERT(
         !blobInfos.empty(),
-        "ripple::ValidatorList::buildValidatorListMessages : empty messages "
+        "xrpl::ValidatorList::buildValidatorListMessages : empty messages "
         "input");
     auto const& [currentSeq, currentBlob] = *blobInfos.begin();
     auto numVLs = std::accumulate(
@@ -767,7 +748,7 @@ ValidatorList::sendValidatorList(
     {
         XRPL_ASSERT(
             !messages.empty(),
-            "ripple::ValidatorList::sendValidatorList : non-empty messages "
+            "xrpl::ValidatorList::sendValidatorList : non-empty messages "
             "input");
         // Don't send it next time.
         peer.setPublisherListSequence(publisherKey, newPeerSequence);
@@ -786,7 +767,7 @@ ValidatorList::sendValidatorList(
         // thus there will only be one entry without a message
         XRPL_ASSERT(
             sent || messages.size() == 1,
-            "ripple::ValidatorList::sendValidatorList : sent or one message");
+            "xrpl::ValidatorList::sendValidatorList : sent or one message");
         if (sent)
         {
             if (messageVersion > 1)
@@ -795,20 +776,17 @@ ValidatorList::sendValidatorList(
                     << " validator list collection(s) containing " << numVLs
                     << " validator list(s) for " << strHex(publisherKey)
                     << " with sequence range " << peerSequence << ", "
-                    << newPeerSequence << " to "
-                    << peer.getRemoteAddress().to_string() << " [" << peer.id()
-                    << "]";
+                    << newPeerSequence << " to " << peer.fingerprint();
             else
             {
                 XRPL_ASSERT(
                     numVLs == 1,
-                    "ripple::ValidatorList::sendValidatorList : one validator "
+                    "xrpl::ValidatorList::sendValidatorList : one validator "
                     "list");
                 JLOG(j.debug())
                     << "Sent validator list for " << strHex(publisherKey)
                     << " with sequence " << newPeerSequence << " to "
-                    << peer.getRemoteAddress().to_string() << " [" << peer.id()
-                    << "]";
+                    << peer.fingerprint();
             }
         }
     }
@@ -901,7 +879,7 @@ ValidatorList::broadcastBlobs(
         XRPL_ASSERT(
             lists.current.sequence == maxSequence ||
                 lists.remaining.count(maxSequence) == 1,
-            "ripple::ValidatorList::broadcastBlobs : valid sequence");
+            "xrpl::ValidatorList::broadcastBlobs : valid sequence");
         // Can't use overlay.foreach here because we need to modify
         // the peer, and foreach provides a const&
         for (auto& peer : overlay.getActivePeers())
@@ -1047,7 +1025,7 @@ ValidatorList::applyLists(
             auto next = std::next(iter);
             XRPL_ASSERT(
                 next == remaining.end() || next->first > iter->first,
-                "ripple::ValidatorList::applyLists : next is valid");
+                "xrpl::ValidatorList::applyLists : next is valid");
             if (iter->first <= current.sequence ||
                 (next != remaining.end() &&
                  next->second.validFrom <= iter->second.validFrom))
@@ -1173,8 +1151,7 @@ ValidatorList::applyList(
         // we can only arrive here if the key used by the manifest matched one
         // of the loaded keys
         // LCOV_EXCL_START
-        UNREACHABLE(
-            "ripple::ValidatorList::applyList : invalid public key type");
+        UNREACHABLE("xrpl::ValidatorList::applyList : invalid public key type");
         return PublisherListStats{result};
         // LCOV_EXCL_STOP
     }
@@ -1235,7 +1212,7 @@ ValidatorList::applyList(
         // Done
         XRPL_ASSERT(
             publisher.sequence == sequence,
-            "ripple::ValidatorList::applyList : publisher sequence match");
+            "xrpl::ValidatorList::applyList : publisher sequence match");
     }
     else
     {
@@ -1396,7 +1373,7 @@ ValidatorList::verify(
 
     auto const sig = strUnHex(signature);
     auto const data = base64_decode(blob);
-    if (!sig || !ripple::verify(*signingKey, makeSlice(data), makeSlice(*sig)))
+    if (!sig || !xrpl::verify(*signingKey, makeSlice(data), makeSlice(*sig)))
         return {ListDisposition::invalid, masterPubKey};
 
     Json::Reader r;
@@ -1530,7 +1507,7 @@ ValidatorList::removePublisherList(
     XRPL_ASSERT(
         reason != PublisherStatus::available &&
             reason != PublisherStatus::unavailable,
-        "ripple::ValidatorList::removePublisherList : valid reason input");
+        "xrpl::ValidatorList::removePublisherList : valid reason input");
     auto const iList = publisherLists_.find(publisherKey);
     if (iList == publisherLists_.end())
         return false;
@@ -1719,7 +1696,7 @@ ValidatorList::getJson() const
             // Race conditions can happen, so make this check "fuzzy"
             XRPL_ASSERT(
                 future.validFrom > timeKeeper_.now() + 600s,
-                "ripple::ValidatorList::getJson : minimum valid from");
+                "xrpl::ValidatorList::getJson : minimum valid from");
         }
         if (remaining.size())
             curr[jss::remaining] = std::move(remaining);
@@ -1786,7 +1763,7 @@ ValidatorList::for_each_available(
             continue;
         XRPL_ASSERT(
             plCollection.maxSequence != 0,
-            "ripple::ValidatorList::for_each_available : nonzero maxSequence");
+            "xrpl::ValidatorList::for_each_available : nonzero maxSequence");
         func(
             plCollection.rawManifest,
             plCollection.rawVersion,
@@ -1876,7 +1853,7 @@ ValidatorList::calculateQuorum(
             publisherLists_.size() - listThreshold_ + 1);
         XRPL_ASSERT(
             errorThreshold > 0,
-            "ripple::ValidatorList::calculateQuorum : nonzero error threshold");
+            "xrpl::ValidatorList::calculateQuorum : nonzero error threshold");
         if (unavailable >= errorThreshold)
             return std::numeric_limits<std::size_t>::max();
     }
@@ -1953,12 +1930,12 @@ ValidatorList::updateTrusted(
                 {
                     XRPL_ASSERT(
                         std::next(iter) == next,
-                        "ripple::ValidatorList::updateTrusted : sequential "
+                        "xrpl::ValidatorList::updateTrusted : sequential "
                         "remaining");
                 }
                 XRPL_ASSERT(
                     iter != remaining.end(),
-                    "ripple::ValidatorList::updateTrusted : non-end of "
+                    "xrpl::ValidatorList::updateTrusted : non-end of "
                     "remaining");
 
                 // Rotate the pending list in to current
@@ -1967,7 +1944,7 @@ ValidatorList::updateTrusted(
                 auto& current = collection.current;
                 XRPL_ASSERT(
                     candidate.validFrom <= closeTime,
-                    "ripple::ValidatorList::updateTrusted : maximum time");
+                    "xrpl::ValidatorList::updateTrusted : maximum time");
 
                 auto const oldList = current.list;
                 current = std::move(candidate);
@@ -1975,7 +1952,7 @@ ValidatorList::updateTrusted(
                     collection.status = PublisherStatus::available;
                 XRPL_ASSERT(
                     current.sequence == sequence,
-                    "ripple::ValidatorList::updateTrusted : sequence match");
+                    "xrpl::ValidatorList::updateTrusted : sequence match");
                 // If the list is expired, remove the validators so they don't
                 // get processed in. The expiration check below will do the rest
                 // of the work
@@ -2034,7 +2011,7 @@ ValidatorList::updateTrusted(
         {
             XRPL_ASSERT(
                 kit->second >= listThreshold_,
-                "ripple::ValidatorList::updateTrusted : count meets threshold");
+                "xrpl::ValidatorList::updateTrusted : count meets threshold");
             ++it;
         }
     }
@@ -2061,7 +2038,7 @@ ValidatorList::updateTrusted(
                 validatorManifests_.getSigningKey(k);
             XRPL_ASSERT(
                 signingKey,
-                "ripple::ValidatorList::updateTrusted : found signing key");
+                "xrpl::ValidatorList::updateTrusted : found signing key");
             trustedSigningKeys_.insert(*signingKey);
         }
     }
@@ -2175,4 +2152,4 @@ ValidatorList::negativeUNLFilter(
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

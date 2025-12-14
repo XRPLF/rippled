@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/hardened_hash.h>
@@ -27,7 +8,7 @@
 #include <complex>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // a non-hashing Hasher that just copies the bytes.
@@ -78,7 +59,7 @@ struct base_uint_test : beast::unit_test::suite
 
             for (auto const& arg : test_args)
             {
-                ripple::base_uint<64> const u{arg.first}, v{arg.second};
+                xrpl::base_uint<64> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -111,7 +92,7 @@ struct base_uint_test : beast::unit_test::suite
 
             for (auto const& arg : test_args)
             {
-                ripple::base_uint<96> const u{arg.first}, v{arg.second};
+                xrpl::base_uint<96> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -371,7 +352,7 @@ struct base_uint_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(base_uint, basics, ripple);
+BEAST_DEFINE_TESTSUITE(base_uint, basics, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,34 +1,16 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/handlers/LedgerHandler.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 LedgerHandler::LedgerHandler(JsonContext& context) : context_(context)
@@ -121,7 +103,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     }
 
     Serializer s;
-    addRaw(ledger->info(), s, true);
+    addRaw(ledger->header(), s, true);
 
     response.set_ledger_header(s.peekData().data(), s.getLength());
 
@@ -132,7 +114,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
             for (auto& i : ledger->txs)
             {
                 XRPL_ASSERT(
-                    i.first, "ripple::doLedgerGrpc : non-null transaction");
+                    i.first, "xrpl::doLedgerGrpc : non-null transaction");
                 if (request.expand())
                 {
                     auto txn = response.mutable_transactions_list()
@@ -157,7 +139,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
         {
             JLOG(context.j.error())
                 << __func__ << " - Error deserializing transaction in ledger "
-                << ledger->info().seq
+                << ledger->header().seq
                 << " . skipping transaction and following transactions. You "
                    "should look into this further";
         }
@@ -210,7 +192,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
             {
                 XRPL_ASSERT(
                     inDesired->size() > 0,
-                    "ripple::doLedgerGrpc : non-empty desired");
+                    "xrpl::doLedgerGrpc : non-empty desired");
                 obj->set_data(inDesired->data(), inDesired->size());
             }
             if (inBase && inDesired)
@@ -316,4 +298,4 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 
     return {response, status};
 }
-}  // namespace ripple
+}  // namespace xrpl

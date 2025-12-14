@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/XRPLF/rippled/
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/MultiApiJson.h>
 
@@ -26,7 +7,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 namespace {
@@ -55,7 +36,7 @@ struct MultiApiJson_test : beast::unit_test::suite
     void
     run() override
     {
-        using ripple::detail::MultiApiJson;
+        using xrpl::detail::MultiApiJson;
 
         Json::Value const obj1 = makeJson("value", 1);
         Json::Value const obj2 = makeJson("value", 2);
@@ -1068,7 +1049,7 @@ struct MultiApiJson_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(MultiApiJson, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(MultiApiJson, protocol, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpld/app/tx/applySteps.h>
@@ -30,7 +11,7 @@
 #include <algorithm>
 #include <iterator>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct Escrow_test : public beast::unit_test::suite
@@ -272,16 +253,6 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         {
-            // Respect the "asfDisallowXRP" account flag:
-            Env env(*this, features - featureDepositAuth);
-
-            env.fund(XRP(5000), "bob", "george");
-            env(fset("george", asfDisallowXRP));
-            env(escrow::create("bob", "george", XRP(10)),
-                escrow::finish_time(env.now() + 1s),
-                ter(tecNO_TARGET));
-        }
-        {
             // Ignore the "asfDisallowXRP" account flag, which we should
             // have been doing before.
             Env env(*this, features);
@@ -294,74 +265,51 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    test1571(FeatureBitset features)
+    testRequiresConditionOrFinishAfter(FeatureBitset features)
     {
         using namespace jtx;
         using namespace std::chrono;
 
-        {
-            testcase("Implied Finish Time (without fix1571)");
+        testcase("RequiresConditionOrFinishAfter");
 
-            Env env(*this, testable_amendments() - fix1571);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob", "carol");
-            env.close();
+        Env env(*this, features);
+        auto const baseFee = env.current()->fees().base;
+        env.fund(XRP(5000), "alice", "bob", "carol");
+        env.close();
 
-            // Creating an escrow without a finish time and finishing it
-            // is allowed without fix1571:
-            auto const seq1 = env.seq("alice");
-            env(escrow::create("alice", "bob", XRP(100)),
-                escrow::cancel_time(env.now() + 1s),
-                fee(baseFee * 150));
-            env.close();
-            env(escrow::finish("carol", "alice", seq1), fee(baseFee * 150));
-            BEAST_EXPECT(env.balance("bob") == XRP(5100));
+        // Creating an escrow with only a cancel time is not allowed:
+        env(escrow::create("alice", "bob", XRP(100)),
+            escrow::cancel_time(env.now() + 90s),
+            fee(baseFee * 150),
+            ter(temMALFORMED));
 
-            env.close();
+        // Creating an escrow with only a cancel time and a condition is
+        // allowed:
+        auto const seq = env.seq("alice");
+        env(escrow::create("alice", "bob", XRP(100)),
+            escrow::cancel_time(env.now() + 90s),
+            escrow::condition(escrow::cb1),
+            fee(baseFee * 150));
+        env.close();
+        env(escrow::finish("carol", "alice", seq),
+            escrow::condition(escrow::cb1),
+            escrow::fulfillment(escrow::fb1),
+            fee(baseFee * 150));
+        BEAST_EXPECT(env.balance("bob") == XRP(5100));
 
-            // Creating an escrow without a finish time and a condition is
-            // also allowed without fix1571:
-            auto const seq2 = env.seq("alice");
-            env(escrow::create("alice", "bob", XRP(100)),
-                escrow::cancel_time(env.now() + 1s),
-                escrow::condition(escrow::cb1),
-                fee(baseFee * 150));
-            env.close();
-            env(escrow::finish("carol", "alice", seq2),
-                escrow::condition(escrow::cb1),
-                escrow::fulfillment(escrow::fb1),
-                fee(baseFee * 150));
-            BEAST_EXPECT(env.balance("bob") == XRP(5200));
-        }
-
-        {
-            testcase("Implied Finish Time (with fix1571)");
-
-            Env env(*this, features);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob", "carol");
-            env.close();
-
-            // Creating an escrow with only a cancel time is not allowed:
-            env(escrow::create("alice", "bob", XRP(100)),
-                escrow::cancel_time(env.now() + 90s),
-                fee(baseFee * 150),
-                ter(temMALFORMED));
-
-            // Creating an escrow with only a cancel time and a condition is
-            // allowed:
-            auto const seq = env.seq("alice");
-            env(escrow::create("alice", "bob", XRP(100)),
-                escrow::cancel_time(env.now() + 90s),
-                escrow::condition(escrow::cb1),
-                fee(baseFee * 150));
-            env.close();
-            env(escrow::finish("carol", "alice", seq),
-                escrow::condition(escrow::cb1),
-                escrow::fulfillment(escrow::fb1),
-                fee(baseFee * 150));
-            BEAST_EXPECT(env.balance("bob") == XRP(5100));
-        }
+        // Creating an escrow with only a cancel time and a finish time is
+        // allowed:
+        auto const seqFt = env.seq("alice");
+        env(escrow::create("alice", "bob", XRP(100)),
+            escrow::finish_time(env.now()),  // Set finish time to now so that
+                                             // we can call finish immediately.
+            escrow::cancel_time(env.now() + 50s),
+            fee(baseFee * 150));
+        env.close();
+        env(escrow::finish("carol", "alice", seqFt), fee(150 * baseFee));
+        BEAST_EXPECT(
+            env.balance("bob") ==
+            XRP(5200));  // 5100 (from last transaction) + 100
     }
 
     void
@@ -1196,7 +1144,7 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT(aa);
 
             {
-                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
                     std::find(aod.begin(), aod.end(), aa) != aod.end());
@@ -1213,7 +1161,7 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT(bb);
 
             {
-                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                xrpl::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
                     std::find(bod.begin(), bod.end(), bb) != bod.end());
@@ -1227,12 +1175,12 @@ struct Escrow_test : public beast::unit_test::suite
                     (*env.meta())[sfTransactionResult] ==
                     static_cast<std::uint8_t>(tesSUCCESS));
 
-                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
                 BEAST_EXPECT(
                     std::find(aod.begin(), aod.end(), aa) == aod.end());
 
-                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                xrpl::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
                     std::find(bod.begin(), bod.end(), bb) != bod.end());
@@ -1246,7 +1194,7 @@ struct Escrow_test : public beast::unit_test::suite
                     (*env.meta())[sfTransactionResult] ==
                     static_cast<std::uint8_t>(tesSUCCESS));
 
-                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                xrpl::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 0);
                 BEAST_EXPECT(
                     std::find(bod.begin(), bod.end(), bb) == bod.end());
@@ -1281,19 +1229,19 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT(bc);
 
             {
-                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
                     std::find(aod.begin(), aod.end(), ab) != aod.end());
 
-                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                xrpl::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
                     std::find(bod.begin(), bod.end(), ab) != bod.end());
                 BEAST_EXPECT(
                     std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                ripple::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
                 BEAST_EXPECT(
                     std::find(cod.begin(), cod.end(), bc) != cod.end());
@@ -1305,19 +1253,19 @@ struct Escrow_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
                 BEAST_EXPECT(env.le(keylet::escrow(bruce.id(), bseq)));
 
-                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
                 BEAST_EXPECT(
                     std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                xrpl::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
                     std::find(bod.begin(), bod.end(), ab) == bod.end());
                 BEAST_EXPECT(
                     std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                ripple::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
             }
 
@@ -1327,19 +1275,19 @@ struct Escrow_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
                 BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), bseq)));
 
-                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
                 BEAST_EXPECT(
                     std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                xrpl::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 0);
                 BEAST_EXPECT(
                     std::find(bod.begin(), bod.end(), ab) == bod.end());
                 BEAST_EXPECT(
                     std::find(bod.begin(), bod.end(), bc) == bod.end());
 
-                ripple::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 0);
             }
         }
@@ -1708,7 +1656,7 @@ struct Escrow_test : public beast::unit_test::suite
         testTiming(features);
         testTags(features);
         testDisallowXRP(features);
-        test1571(features);
+        testRequiresConditionOrFinishAfter(features);
         testFails(features);
         testLockup(features);
         testEscrowConditions(features);
@@ -1730,7 +1678,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Escrow, app, ripple);
+BEAST_DEFINE_TESTSUITE(Escrow, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

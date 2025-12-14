@@ -1,28 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_LEDGERFORMATS_H_INCLUDED
-#define RIPPLE_PROTOCOL_LEDGERFORMATS_H_INCLUDED
+#ifndef XRPL_PROTOCOL_LEDGERFORMATS_H_INCLUDED
+#define XRPL_PROTOCOL_LEDGERFORMATS_H_INCLUDED
 
 #include <xrpl/protocol/KnownFormats.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Identifiers for on-ledger objects.
 
@@ -131,9 +112,8 @@ enum LedgerEntryType : std::uint16_t
         X(lsfGlobalFreeze, 0x00400000) /* True, all assets frozen */ \
         X(lsfDefaultRipple, 0x00800000) /* True, incoming trust lines allow rippling by default */ \
         X(lsfDepositAuth, 0x01000000) /* True, all deposits require authorization */ \
-        /*  // reserved for Hooks amendment
-        X(lsfTshCollect = 0x02000000)     // True, allow TSH collect-calls to acc hooks
-        */ \
+        /*  reserved for Hooks amendment */ \
+        /* X(lsfTshCollect = 0x02000000)     // True, allow TSH collect-calls to acc hooks */ \
         X(lsfDisallowIncomingNFTokenOffer, 0x04000000) /* True, reject new incoming NFT offers */ \
         X(lsfDisallowIncomingCheck, 0x08000000) /* True, reject new checks */ \
         X(lsfDisallowIncomingPayChan, 0x10000000) /* True, reject new paychans */ \
@@ -262,6 +242,6 @@ public:
     getInstance();
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

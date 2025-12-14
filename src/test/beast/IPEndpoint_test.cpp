@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 // MODULES: ../impl/IPEndpoint.cpp ../impl/IPAddressV4.cpp
 // ../impl/IPAddressV6.cpp
 
@@ -399,7 +380,7 @@ public:
         float max_lf{0};
         for (auto i = 0; i < items; ++i)
         {
-            eps.insert(randomEP(ripple::rand_int(0, 1) == 1));
+            eps.insert(randomEP(xrpl::rand_int(0, 1) == 1));
             max_lf = std::max(max_lf, eps.load_factor());
         }
         BEAST_EXPECT(eps.bucket_count() >= items);

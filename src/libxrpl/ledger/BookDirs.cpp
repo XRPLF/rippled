@@ -1,28 +1,8 @@
-//------------
-//------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/ledger/BookDirs.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Indexes.h>
 
-namespace ripple {
+namespace xrpl {
 
 BookDirs::BookDirs(ReadView const& view, Book const& book)
     : view_(&view)
@@ -31,13 +11,13 @@ BookDirs::BookDirs(ReadView const& view, Book const& book)
     , key_(view_->succ(root_, next_quality_).value_or(beast::zero))
 {
     XRPL_ASSERT(
-        root_ != beast::zero, "ripple::BookDirs::BookDirs : nonzero root");
+        root_ != beast::zero, "xrpl::BookDirs::BookDirs : nonzero root");
     if (key_ != beast::zero)
     {
         if (!cdirFirst(*view_, key_, sle_, entry_, index_))
         {
             // LCOV_EXCL_START
-            UNREACHABLE("ripple::BookDirs::BookDirs : directory is empty");
+            UNREACHABLE("xrpl::BookDirs::BookDirs : directory is empty");
             // LCOV_EXCL_STOP
         }
     }
@@ -75,7 +55,7 @@ BookDirs::const_iterator::operator==(
 
     XRPL_ASSERT(
         view_ == other.view_ && root_ == other.root_,
-        "ripple::BookDirs::const_iterator::operator== : views and roots are "
+        "xrpl::BookDirs::const_iterator::operator== : views and roots are "
         "matching");
     return entry_ == other.entry_ && cur_key_ == other.cur_key_ &&
         index_ == other.index_;
@@ -86,7 +66,7 @@ BookDirs::const_iterator::operator*() const
 {
     XRPL_ASSERT(
         index_ != beast::zero,
-        "ripple::BookDirs::const_iterator::operator* : nonzero index");
+        "xrpl::BookDirs::const_iterator::operator* : nonzero index");
     if (!cache_)
         cache_ = view_->read(keylet::offer(index_));
     return *cache_;
@@ -99,7 +79,7 @@ BookDirs::const_iterator::operator++()
 
     XRPL_ASSERT(
         index_ != zero,
-        "ripple::BookDirs::const_iterator::operator++ : nonzero index");
+        "xrpl::BookDirs::const_iterator::operator++ : nonzero index");
     if (!cdirNext(*view_, cur_key_, sle_, entry_, index_))
     {
         if (index_ != 0 ||
@@ -114,7 +94,7 @@ BookDirs::const_iterator::operator++()
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::BookDirs::const_iterator::operator++ : directory is "
+                "xrpl::BookDirs::const_iterator::operator++ : directory is "
                 "empty");
             // LCOV_EXCL_STOP
         }
@@ -129,10 +109,10 @@ BookDirs::const_iterator::operator++(int)
 {
     XRPL_ASSERT(
         index_ != beast::zero,
-        "ripple::BookDirs::const_iterator::operator++(int) : nonzero index");
+        "xrpl::BookDirs::const_iterator::operator++(int) : nonzero index");
     const_iterator tmp(*this);
     ++(*this);
     return tmp;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

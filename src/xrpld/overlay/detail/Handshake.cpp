@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/detail/Handshake.h>
@@ -33,7 +14,7 @@
 // VFALCO Shouldn't we have to include the OpenSSL
 // headers or something for SSL_get_finished?
 
-namespace ripple {
+namespace xrpl {
 
 std::optional<std::string>
 getFeatureValue(
@@ -177,7 +158,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
 void
 buildHandshake(
     boost::beast::http::fields& h,
-    ripple::uint256 const& sharedValue,
+    xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
@@ -218,15 +199,15 @@ buildHandshake(
 
     if (auto const cl = app.getLedgerMaster().getClosedLedger())
     {
-        h.insert("Closed-Ledger", strHex(cl->info().hash));
-        h.insert("Previous-Ledger", strHex(cl->info().parentHash));
+        h.insert("Closed-Ledger", strHex(cl->header().hash));
+        h.insert("Previous-Ledger", strHex(cl->header().parentHash));
     }
 }
 
 PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
-    ripple::uint256 const& sharedValue,
+    xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote,
@@ -421,4 +402,4 @@ makeResponse(
     return resp;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
@@ -40,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /**
@@ -3665,7 +3646,7 @@ private:
             auto const pk = carol.pk();
             auto const settleDelay = 100s;
             NetClock::time_point const cancelAfter =
-                env.current()->info().parentCloseTime + 200s;
+                env.current()->header().parentCloseTime + 200s;
             env(paychan::create(
                     carol,
                     ammAlice.ammAccount(),
@@ -7500,7 +7481,7 @@ private:
             for (int i = 0; i < 256; ++i)
             {
                 AccountID const accountId =
-                    ripple::pseudoAccountAddress(*env.current(), keylet.key);
+                    xrpl::pseudoAccountAddress(*env.current(), keylet.key);
 
                 env(pay(env.master.id(), accountId, XRP(1000)),
                     seq(autofill),
@@ -7971,7 +7952,7 @@ private:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AMM, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(AMM, app, xrpl, 1);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

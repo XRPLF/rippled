@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/Credentials.h>
 
 #include <xrpl/basics/Log.h>
@@ -29,7 +10,7 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 
 /*
     Credentials
@@ -123,7 +104,7 @@ CredentialCreate::doApply()
     if (optExp)
     {
         std::uint32_t const closeTime =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count();
+            ctx_.view().header().parentCloseTime.time_since_epoch().count();
 
         if (closeTime > *optExp)
         {
@@ -162,7 +143,7 @@ CredentialCreate::doApply()
                          << to_string(credentialKey.key) << ": "
                          << (page ? "success" : "failure");
         if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
+            return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
         adjustOwnerCount(view(), sleIssuer, 1, j_);
@@ -182,7 +163,7 @@ CredentialCreate::doApply()
                          << to_string(credentialKey.key) << ": "
                          << (page ? "success" : "failure");
         if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
+            return tecDIR_FULL;
         sleCred->setFieldU64(sfSubjectNode, *page);
         view().update(view().peek(keylet::account(subject)));
     }
@@ -261,7 +242,7 @@ CredentialDelete::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if ((subject != account_) && (issuer != account_) &&
-        !checkExpired(sleCred, ctx_.view().info().parentCloseTime))
+        !checkExpired(sleCred, ctx_.view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Can't delete non-expired credential.";
         return tecNO_PERMISSION;
@@ -355,7 +336,7 @@ CredentialAccept::doApply()
     Keylet const credentialKey = keylet::credential(account_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
 
-    if (checkExpired(sleCred, view().info().parentCloseTime))
+    if (checkExpired(sleCred, view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed
@@ -372,4 +353,4 @@ CredentialAccept::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

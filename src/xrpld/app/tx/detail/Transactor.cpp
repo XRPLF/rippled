@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
@@ -37,7 +18,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Performs early sanity checks on the txid */
 NotTEC
@@ -162,17 +143,9 @@ preflightCheckSimulateKeys(
 NotTEC
 Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 {
-    // This is inappropriate in preflight0, because only Change transactions
-    // skip this function, and those do not allow an sfTicketSequence field.
-    if (ctx.tx.isFieldPresent(sfTicketSequence) &&
-        !ctx.rules.enabled(featureTicketBatch))
-    {
-        return temMALFORMED;
-    }
-
     if (ctx.tx.isFieldPresent(sfDelegate))
     {
-        if (!ctx.rules.enabled(featurePermissionDelegation))
+        if (!ctx.rules.enabled(featurePermissionDelegationV1_1))
             return temDISABLED;
 
         if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
@@ -231,13 +204,24 @@ Transactor::preflight2(PreflightContext const& ctx)
         // regardless of success or failure
         return *ret;
 
+    // Skip signature check on batch inner transactions
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+        return tesSUCCESS;
+    // Do not add any checks after this point that are relevant for
+    // batch inner transactions. They will be skipped.
+
     auto const sigValid = checkValidity(
         ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
     if (sigValid.first == Validity::SigBad)
-    {
+    {  // LCOV_EXCL_START
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
-        return temINVALID;  // LCOV_EXCL_LINE
+        return temINVALID;
+        // LCOV_EXCL_STOP
     }
+
+    // Do not add any checks after this point that are relevant for
+    // batch inner transactions. They will be skipped.
+
     return tesSUCCESS;
 }
 
@@ -273,7 +257,7 @@ Transactor::preflightSigValidated(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+NotTEC
 Transactor::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -284,7 +268,7 @@ Transactor::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     return checkTxPermission(sle, tx);
 }
@@ -323,7 +307,7 @@ Transactor::calculateOwnerReserveFee(ReadView const& view, STTx const& tx)
     // condition.
     XRPL_ASSERT(
         view.fees().increment > view.fees().base * 100,
-        "ripple::Transactor::calculateOwnerReserveFee : Owner reserve is "
+        "xrpl::Transactor::calculateOwnerReserveFee : Owner reserve is "
         "reasonable");
     return view.fees().increment;
 }
@@ -461,8 +445,7 @@ Transactor::checkSeqProxy(
 
     if (t_seqProx.isSeq())
     {
-        if (tx.isFieldPresent(sfTicketSequence) &&
-            view.rules().enabled(featureTicketBatch))
+        if (tx.isFieldPresent(sfTicketSequence))
         {
             JLOG(j.trace()) << "applyTransaction: has both a TicketSequence "
                                "and a non-zero Sequence number";
@@ -544,7 +527,7 @@ TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
     XRPL_ASSERT(
-        sleAccount, "ripple::Transactor::consumeSeqProxy : non-null account");
+        sleAccount, "xrpl::Transactor::consumeSeqProxy : non-null account");
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {
@@ -626,7 +609,7 @@ Transactor::preCompute()
 {
     XRPL_ASSERT(
         account_ != beast::zero,
-        "ripple::Transactor::preCompute : nonzero account");
+        "xrpl::Transactor::preCompute : nonzero account");
 }
 
 TER
@@ -642,7 +625,7 @@ Transactor::apply()
     // that allow zero account.
     XRPL_ASSERT(
         sle != nullptr || account_ == beast::zero,
-        "ripple::Transactor::apply : non-null SLE or zero account");
+        "xrpl::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
     {
@@ -670,13 +653,25 @@ NotTEC
 Transactor::checkSign(
     ReadView const& view,
     ApplyFlags flags,
+    std::optional<uint256 const> const& parentBatchId,
     AccountID const& idAccount,
     STObject const& sigObject,
     beast::Journal const j)
 {
+    {
+        auto const sle = view.read(keylet::account(idAccount));
+
+        if (view.rules().enabled(featureLendingProtocol) &&
+            isPseudoAccount(sle))
+            // Pseudo-accounts can't sign transactions. This check is gated on
+            // the Lending Protocol amendment because that's the project it was
+            // added under, and it doesn't justify another amendment
+            return tefBAD_AUTH;
+    }
+
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     // Ignore signature check on batch inner transactions
-    if (sigObject.isFlag(tfInnerBatchTxn) && view.rules().enabled(featureBatch))
+    if (parentBatchId && view.rules().enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
         if (sigObject.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
@@ -704,7 +699,7 @@ Transactor::checkSign(
 
     // Check Single Sign
     XRPL_ASSERT(
-        !pkSigner.empty(), "ripple::Transactor::checkSign : non-empty signer");
+        !pkSigner.empty(), "xrpl::Transactor::checkSign : non-empty signer");
 
     if (!publicKeyType(makeSlice(pkSigner)))
     {
@@ -729,7 +724,8 @@ Transactor::checkSign(PreclaimContext const& ctx)
     auto const idAccount = ctx.tx.isFieldPresent(sfDelegate)
         ? ctx.tx.getAccountID(sfDelegate)
         : ctx.tx.getAccountID(sfAccount);
-    return checkSign(ctx.view, ctx.flags, idAccount, ctx.tx, ctx.j);
+    return checkSign(
+        ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
 }
 
 NotTEC
@@ -788,55 +784,26 @@ Transactor::checkSingleSign(
 {
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
-    if (view.rules().enabled(fixMasterKeyAsRegularKey))
+    // Signed with regular key.
+    if ((*sleAccount)[~sfRegularKey] == idSigner)
     {
-        // Signed with regular key.
-        if ((*sleAccount)[~sfRegularKey] == idSigner)
-        {
-            return tesSUCCESS;
-        }
-
-        // Signed with enabled mater key.
-        if (!isMasterDisabled && idAccount == idSigner)
-        {
-            return tesSUCCESS;
-        }
-
-        // Signed with disabled master key.
-        if (isMasterDisabled && idAccount == idSigner)
-        {
-            return tefMASTER_DISABLED;
-        }
-
-        // Signed with any other key.
-        return tefBAD_AUTH;
+        return tesSUCCESS;
     }
 
-    if (idSigner == idAccount)
+    // Signed with enabled master key.
+    if (!isMasterDisabled && idAccount == idSigner)
     {
-        // Signing with the master key. Continue if it is not disabled.
-        if (isMasterDisabled)
-            return tefMASTER_DISABLED;
-    }
-    else if ((*sleAccount)[~sfRegularKey] == idSigner)
-    {
-        // Signing with the regular key. Continue.
-    }
-    else if (sleAccount->isFieldPresent(sfRegularKey))
-    {
-        // Signing key does not match master or regular key.
-        JLOG(j.trace()) << "checkSingleSign: Not authorized to use account.";
-        return tefBAD_AUTH;
-    }
-    else
-    {
-        // No regular key on account and signing key does not match master key.
-        // FIXME: Why differentiate this case from tefBAD_AUTH?
-        JLOG(j.trace()) << "checkSingleSign: Not authorized to use account.";
-        return tefBAD_AUTH_MASTER;
+        return tesSUCCESS;
     }
 
-    return tesSUCCESS;
+    // Signed with disabled master key.
+    if (isMasterDisabled && idAccount == idSigner)
+    {
+        return tefMASTER_DISABLED;
+    }
+
+    // Signed with any other key.
+    return tefBAD_AUTH;
 }
 
 NotTEC
@@ -862,10 +829,10 @@ Transactor::checkMultiSign(
     // presence and defaulted value of the SignerListID field will enable that.
     XRPL_ASSERT(
         sleAccountSigners->isFieldPresent(sfSignerListID),
-        "ripple::Transactor::checkMultiSign : has signer list ID");
+        "xrpl::Transactor::checkMultiSign : has signer list ID");
     XRPL_ASSERT(
         sleAccountSigners->getFieldU32(sfSignerListID) == 0,
-        "ripple::Transactor::checkMultiSign : signer list ID is 0");
+        "xrpl::Transactor::checkMultiSign : signer list ID is 0");
 
     auto accountSigners =
         SignerEntries::deserialize(*sleAccountSigners, j, "ledger");
@@ -921,7 +888,7 @@ Transactor::checkMultiSign(
 
         XRPL_ASSERT(
             (flags & tapDRY_RUN) || !spk.empty(),
-            "ripple::Transactor::checkMultiSign : non-empty signer or "
+            "xrpl::Transactor::checkMultiSign : non-empty signer or "
             "simulation");
         AccountID const signingAcctIDFromPubKey = spk.empty()
             ? txSignerAcctID
@@ -1120,7 +1087,7 @@ Transactor::reset(XRPAmount fee)
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
         balance != beast::zero && (!view().open() || balance >= fee),
-        "ripple::Transactor::reset : valid balance");
+        "xrpl::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or
     // we're applying against an open ledger and the balance is less than
@@ -1137,7 +1104,7 @@ Transactor::reset(XRPAmount fee)
     payerSle->setFieldAmount(sfBalance, balance - fee);
     TER const ter{consumeSeqProxy(txnAcct)};
     XRPL_ASSERT(
-        isTesSuccess(ter), "ripple::Transactor::reset : result is tesSUCCESS");
+        isTesSuccess(ter), "xrpl::Transactor::reset : result is tesSUCCESS");
 
     if (isTesSuccess(ter))
     {
@@ -1163,9 +1130,8 @@ Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
-    // raii classes for the current ledger rules. fixSTAmountCanonicalize and
-    // fixSTAmountCanonicalize predate the rulesGuard and should be replaced.
-    STAmountSO stAmountSO{view().rules().enabled(fixSTAmountCanonicalize)};
+    // raii classes for the current ledger rules.
+    // fixUniversalNumber predate the rulesGuard and should be replaced.
     NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
     CurrentTransactionRulesGuard currentTransctionRulesGuard(view().rules());
 
@@ -1183,7 +1149,7 @@ Transactor::operator()()
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
             JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
             UNREACHABLE(
-                "ripple::Transactor::operator() : transaction serdes mismatch");
+                "xrpl::Transactor::operator() : transaction serdes mismatch");
             // LCOV_EXCL_STOP
         }
     }
@@ -1203,7 +1169,7 @@ Transactor::operator()()
     // and it can't be passed in from a preclaim.
     XRPL_ASSERT(
         result != temUNKNOWN,
-        "ripple::Transactor::operator() : result is not temUNKNOWN");
+        "xrpl::Transactor::operator() : result is not temUNKNOWN");
 
     if (auto stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
@@ -1260,7 +1226,7 @@ Transactor::operator()()
                 {
                     XRPL_ASSERT(
                         before && after,
-                        "ripple::Transactor::operator()::visit : non-null SLE "
+                        "xrpl::Transactor::operator()::visit : non-null SLE "
                         "inputs");
                     if (doOffers && before && after &&
                         (before->getType() == ltOFFER) &&
@@ -1380,4 +1346,4 @@ Transactor::operator()()
     return {result, applied, metadata};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

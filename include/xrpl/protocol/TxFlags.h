@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-#pragma once
-#ifndef RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
-#define RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
+#ifndef XRPL_PROTOCOL_TXFLAGS_H_INCLUDED
+#define XRPL_PROTOCOL_TXFLAGS_H_INCLUDED
 
 #include <xrpl/protocol/LedgerFormats.h>
 
@@ -337,9 +318,42 @@
         ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure |          \
           tfIndependent) |                                                     \
             tfInnerBatchTxn)                                                   \
+    END_TX_FLAGS_XMACRO                                                        \
+    /* LoanSet and LoanPay flags: */                                           \
+    /* LoanSet: True, indicates the loan supports overpayments */              \
+    /* LoanPay: True, indicates any excess in this payment can be used */      \
+    /* as an overpayment. False, no overpayments will be taken. */             \
+    START_TX_FLAGS_XMACRO(LoanSet)                                             \
+    X_CONST_TYPE_DECL(tfLoanOverpayment, 0x00010000)                           \
+    X_CONST_TYPE_DECL(tfLoanSetMask, ~(tfUniversal | tfLoanOverpayment))       \
+    END_TX_FLAGS_XMACRO                                                        \
+    START_TX_FLAGS_XMACRO(LoanPay)                                             \
+    /* LoanPay exclusive flags: */                                             \
+    /* tfLoanFullPayment: True, indicates that the payment is an early */      \
+    /* full payment. It must pay the entire loan including close */            \
+    /* interest and fees, or it will fail. False: Not a full payment. */       \
+    X_CONST_TYPE_DECL(tfLoanFullPayment, 0x00020000)                           \
+    /* tfLoanLatePayment: True, indicates that the payment is late, */         \
+    /* and includes late iterest and fees. If the loan is not late, */         \
+    /* it will fail. False: not a late payment. If the current payment */      \
+    /* is overdue, the transaction will fail. */                              \
+    X_CONST_TYPE_DECL(tfLoanLatePayment, 0x00040000)                           \
+    X_CONST_TYPE_DECL(                                                         \
+        tfLoanPayMask,                                                         \
+        ~(tfUniversal | tfLoanOverpayment | tfLoanFullPayment |                \
+          tfLoanLatePayment))                                                  \
+    END_TX_FLAGS_XMACRO                                                        \
+    /* LoanManage flags: */                                                    \
+    START_TX_FLAGS_XMACRO(LoanManage)                                          \
+    X_CONST_TYPE_DECL(tfLoanDefault, 0x00010000)                               \
+    X_CONST_TYPE_DECL(tfLoanImpair, 0x00020000)                                \
+    X_CONST_TYPE_DECL(tfLoanUnimpair, 0x00040000)                              \
+    X_CONST_TYPE_DECL(                                                         \
+        tfLoanManageMask,                                                      \
+        ~(tfUniversal | tfLoanDefault | tfLoanImpair | tfLoanUnimpair))        \
     END_TX_FLAGS_XMACRO
 
-namespace ripple {
+namespace xrpl {
 
 // cpp type and value declarations for transaction flags
 // For the purpose of flag initialization, the transaction-name information is
@@ -405,6 +419,6 @@ std::unordered_map<
 #undef EXPAND_TX_FLAGS
 #undef START_TX_SECTION
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

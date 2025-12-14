@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
-#define RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
+#ifndef XRPL_PROTOCOL_STOBJECT_H_INCLUDED
+#define XRPL_PROTOCOL_STOBJECT_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Slice.h>
@@ -43,7 +24,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 class STArray;
 
@@ -244,6 +225,9 @@ public:
     getFieldPathSet(SField const& field) const;
     STVector256 const&
     getFieldV256(SField const& field) const;
+    // If not found, returns an object constructed with the given field
+    STObject
+    getFieldObject(SField const& field) const;
     STArray const&
     getFieldArray(SField const& field) const;
     STCurrency const&
@@ -390,6 +374,8 @@ public:
     setFieldV256(SField const& field, STVector256 const& v);
     void
     setFieldArray(SField const& field, STArray const& v);
+    void
+    setFieldObject(SField const& field, STObject const& v);
 
     template <class Tag>
     void
@@ -496,6 +482,8 @@ public:
     value_type
     operator*() const;
 
+    /// Do not use operator->() unless the field is required, or you've checked
+    /// that it's set.
     T const*
     operator->() const;
 
@@ -519,7 +507,26 @@ protected:
 // Constraint += and -= ValueProxy operators
 // to value types that support arithmetic operations
 template <typename U>
-concept IsArithmetic = std::is_arithmetic_v<U> || std::is_same_v<U, STAmount>;
+concept IsArithmeticNumber = std::is_arithmetic_v<U> ||
+    std::is_same_v<U, Number> || std::is_same_v<U, STAmount>;
+template <
+    typename U,
+    typename Value = typename U::value_type,
+    typename Unit = typename U::unit_type>
+concept IsArithmeticValueUnit =
+    std::is_same_v<U, unit::ValueUnit<Unit, Value>> &&
+    IsArithmeticNumber<Value> && std::is_class_v<Unit>;
+template <typename U, typename Value = typename U::value_type>
+concept IsArithmeticST = !IsArithmeticValueUnit<U> && IsArithmeticNumber<Value>;
+template <typename U>
+concept IsArithmetic =
+    IsArithmeticNumber<U> || IsArithmeticST<U> || IsArithmeticValueUnit<U>;
+
+template <class T, class U>
+concept Addable = requires(T t, U u) { t = t + u; };
+template <typename T, typename U>
+concept IsArithmeticCompatible =
+    IsArithmetic<typename T::value_type> && Addable<typename T::value_type, U>;
 
 template <class T>
 class STObject::ValueProxy : public Proxy<T>
@@ -539,10 +546,12 @@ public:
     // Convenience operators for value types supporting
     // arithmetic operations
     template <IsArithmetic U>
+        requires IsArithmeticCompatible<T, U>
     ValueProxy&
     operator+=(U const& u);
 
     template <IsArithmetic U>
+        requires IsArithmeticCompatible<T, U>
     ValueProxy&
     operator-=(U const& u);
 
@@ -732,6 +741,8 @@ STObject::Proxy<T>::operator*() const -> value_type
     return this->value();
 }
 
+/// Do not use operator->() unless the field is required, or you've checked that
+/// it's set.
 template <class T>
 T const*
 STObject::Proxy<T>::operator->() const
@@ -761,7 +772,7 @@ STObject::Proxy<T>::assign(U&& u)
         t = dynamic_cast<T*>(st_->getPField(*f_, true));
     else
         t = dynamic_cast<T*>(st_->makeFieldPresent(*f_));
-    XRPL_ASSERT(t, "ripple::STObject::Proxy::assign : type cast succeeded");
+    XRPL_ASSERT(t, "xrpl::STObject::Proxy::assign : type cast succeeded");
     *t = std::forward<U>(u);
 }
 
@@ -778,6 +789,7 @@ STObject::ValueProxy<T>::operator=(U&& u)
 
 template <typename T>
 template <IsArithmetic U>
+    requires IsArithmeticCompatible<T, U>
 STObject::ValueProxy<T>&
 STObject::ValueProxy<T>::operator+=(U const& u)
 {
@@ -787,6 +799,7 @@ STObject::ValueProxy<T>::operator+=(U const& u)
 
 template <class T>
 template <IsArithmetic U>
+    requires IsArithmeticCompatible<T, U>
 STObject::ValueProxy<T>&
 STObject::ValueProxy<T>::operator-=(U const& u)
 {
@@ -1051,18 +1064,17 @@ STObject::at(TypedField<T> const& f) const
         return u->value();
 
     XRPL_ASSERT(
-        mType,
-        "ripple::STObject::at(TypedField auto) : field template non-null");
+        mType, "xrpl::STObject::at(TypedField auto) : field template non-null");
     XRPL_ASSERT(
         b->getSType() == STI_NOTPRESENT,
-        "ripple::STObject::at(TypedField auto) : type not present");
+        "xrpl::STObject::at(TypedField auto) : type not present");
 
     if (mType->style(f) == soeOPTIONAL)
         Throw<STObject::FieldErr>("Missing optional field: " + f.getName());
 
     XRPL_ASSERT(
         mType->style(f) == soeDEFAULT,
-        "ripple::STObject::at(TypedField auto) : template style is default");
+        "xrpl::STObject::at(TypedField auto) : template style is default");
 
     // Used to help handle the case where value_type is a const reference,
     // otherwise we would return the address of a temporary.
@@ -1082,16 +1094,16 @@ STObject::at(OptionaledField<T> const& of) const
     {
         XRPL_ASSERT(
             mType,
-            "ripple::STObject::at(OptionaledField auto) : field template "
+            "xrpl::STObject::at(OptionaledField auto) : field template "
             "non-null");
         XRPL_ASSERT(
             b->getSType() == STI_NOTPRESENT,
-            "ripple::STObject::at(OptionaledField auto) : type not present");
+            "xrpl::STObject::at(OptionaledField auto) : type not present");
         if (mType->style(*of.f) == soeOPTIONAL)
             return std::nullopt;
         XRPL_ASSERT(
             mType->style(*of.f) == soeDEFAULT,
-            "ripple::STObject::at(OptionaledField auto) : template style is "
+            "xrpl::STObject::at(OptionaledField auto) : template style is "
             "default");
         return typename T::value_type{};
     }
@@ -1251,6 +1263,6 @@ STObject::peekField(SField const& field)
     return *cf;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

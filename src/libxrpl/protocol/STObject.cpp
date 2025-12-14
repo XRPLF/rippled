@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
@@ -58,7 +39,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 STObject::STObject(STObject&& other)
     : STBase(other.getFName()), v_(std::move(other.v_)), mType(other.mType)
@@ -688,6 +669,16 @@ STObject::getFieldV256(SField const& field) const
     return getFieldByConstRef<STVector256>(field, empty);
 }
 
+STObject
+STObject::getFieldObject(SField const& field) const
+{
+    STObject const empty{field};
+    auto ret = getFieldByConstRef<STObject>(field, empty);
+    if (ret != empty)
+        ret.applyTemplateFromSField(field);
+    return ret;
+}
+
 STArray const&
 STObject::getFieldArray(SField const& field) const
 {
@@ -833,6 +824,12 @@ STObject::setFieldArray(SField const& field, STArray const& v)
     setFieldUsingAssignment(field, v);
 }
 
+void
+STObject::setFieldObject(SField const& field, STObject const& v)
+{
+    setFieldUsingAssignment(field, v);
+}
+
 Json::Value
 STObject::getJson(JsonOptions options) const
 {
@@ -907,7 +904,7 @@ STObject::add(Serializer& s, WhichFields whichFields) const
         XRPL_ASSERT(
             (sType != STI_OBJECT) ||
                 (field->getFName().fieldType == STI_OBJECT),
-            "ripple::STObject::add : valid field type");
+            "xrpl::STObject::add : valid field type");
         field->addFieldID(s);
         field->add(s);
         if (sType == STI_ARRAY || sType == STI_OBJECT)
@@ -940,4 +937,4 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
     return sf;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

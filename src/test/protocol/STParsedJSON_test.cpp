@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/beast/unit_test.h>
@@ -26,7 +7,7 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STParsedJSON_test : public beast::unit_test::suite
 {
@@ -743,63 +724,63 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             int const minInt32 = -2147483648;
-            j[sfDummyInt32] = minInt32;
+            j[sfLoanScale] = minInt32;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
-            if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
-                BEAST_EXPECT(obj.object->getFieldI32(sfDummyInt32) == minInt32);
+            if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+                BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == minInt32);
         }
 
         // max value
         {
             Json::Value j;
             int const maxInt32 = 2147483647;
-            j[sfDummyInt32] = maxInt32;
+            j[sfLoanScale] = maxInt32;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
-            if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
-                BEAST_EXPECT(obj.object->getFieldI32(sfDummyInt32) == maxInt32);
+            if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+                BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == maxInt32);
         }
 
         // max uint value
         {
             Json::Value j;
             unsigned int const maxUInt32 = 2147483647u;
-            j[sfDummyInt32] = maxUInt32;
+            j[sfLoanScale] = maxUInt32;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
-            if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
+            if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
                 BEAST_EXPECT(
-                    obj.object->getFieldI32(sfDummyInt32) ==
+                    obj.object->getFieldI32(sfLoanScale) ==
                     static_cast<int32_t>(maxUInt32));
         }
 
         // Test with string value
         {
             Json::Value j;
-            j[sfDummyInt32] = "2147483647";
+            j[sfLoanScale] = "2147483647";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
-            if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
+            if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
                 BEAST_EXPECT(
-                    obj.object->getFieldI32(sfDummyInt32) == 2147483647u);
+                    obj.object->getFieldI32(sfLoanScale) == 2147483647u);
         }
 
         // Test with string negative value
         {
             Json::Value j;
             int value = -2147483648;
-            j[sfDummyInt32] = std::to_string(value);
+            j[sfLoanScale] = std::to_string(value);
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
-            if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
-                BEAST_EXPECT(obj.object->getFieldI32(sfDummyInt32) == value);
+            if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+                BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == value);
         }
 
         // Test out of range value for int32 (negative)
         {
             Json::Value j;
-            j[sfDummyInt32] = "-2147483649";
+            j[sfLoanScale] = "-2147483649";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -807,7 +788,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         // Test out of range value for int32 (positive)
         {
             Json::Value j;
-            j[sfDummyInt32] = 2147483648u;
+            j[sfLoanScale] = 2147483648u;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -815,7 +796,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         // Test string value out of range
         {
             Json::Value j;
-            j[sfDummyInt32] = "2147483648";
+            j[sfLoanScale] = "2147483648";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -823,7 +804,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         // Test bad_type (arrayValue)
         {
             Json::Value j;
-            j[sfDummyInt32] = Json::Value(Json::arrayValue);
+            j[sfLoanScale] = Json::Value(Json::arrayValue);
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -831,7 +812,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         // Test bad_type (objectValue)
         {
             Json::Value j;
-            j[sfDummyInt32] = Json::Value(Json::objectValue);
+            j[sfLoanScale] = Json::Value(Json::objectValue);
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -2351,6 +2332,6 @@ class STParsedJSON_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STParsedJSON, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STParsedJSON, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
-#define RIPPLE_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
+#ifndef XRPL_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
+#define XRPL_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
 
 #include <xrpld/app/paths/detail/AmountSpec.h>
 
@@ -32,7 +13,7 @@
 #include <optional>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 namespace path {
 namespace detail {
 // Track performance information of a single payment
@@ -92,7 +73,7 @@ struct FlowDebugInfo
         {
             XRPL_ASSERT(
                 !liquiditySrcIn.empty(),
-                "ripple::path::detail::FlowDebugInfo::pushLiquiditySrc : "
+                "xrpl::path::detail::FlowDebugInfo::pushLiquiditySrc : "
                 "non-empty liquidity source");
             liquiditySrcIn.back().push_back(eIn);
             liquiditySrcOut.back().push_back(eOut);
@@ -128,7 +109,7 @@ struct FlowDebugInfo
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::path::detail::FlowDebugInfo::duration : timepoint not "
+                "xrpl::path::detail::FlowDebugInfo::duration : timepoint not "
                 "found");
             return std::chrono::duration<double>(0);
             // LCOV_EXCL_STOP
@@ -241,7 +222,7 @@ struct FlowDebugInfo
                                        std::vector<EitherAmount> const& amts,
                                        char delim = ';') {
                 auto get_val = [](EitherAmount const& a) -> std::string {
-                    return ripple::to_string(a.xrp);
+                    return xrpl::to_string(a.xrp);
                 };
                 write_list(amts, get_val, delim);
             };
@@ -249,7 +230,7 @@ struct FlowDebugInfo
                                        std::vector<EitherAmount> const& amts,
                                        char delim = ';') {
                 auto get_val = [](EitherAmount const& a) -> std::string {
-                    return ripple::to_string(a.iou);
+                    return xrpl::to_string(a.iou);
                 };
                 write_list(amts, get_val, delim);
             };
@@ -380,5 +361,5 @@ balanceDiffsToString(std::optional<BalanceDiffs> const& bd)
 
 }  // namespace detail
 }  // namespace path
-}  // namespace ripple
+}  // namespace xrpl
 #endif

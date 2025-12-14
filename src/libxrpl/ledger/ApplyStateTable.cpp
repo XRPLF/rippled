@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
@@ -24,7 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 void
@@ -126,10 +107,10 @@ ApplyStateTable::apply(
     std::optional<TxMeta> metadata;
     if (!to.open() || isDryRun)
     {
-        TxMeta meta(tx.getTransactionID(), to.seq(), parentBatchId);
+        TxMeta meta(tx.getTransactionID(), to.seq());
 
-        if (deliver)
-            meta.setDeliveredAmount(*deliver);
+        meta.setDeliveredAmount(deliver);
+        meta.setParentBatchID(parentBatchId);
 
         Mods newMod;
         for (auto& item : items_)
@@ -162,7 +143,7 @@ ApplyStateTable::apply(
             {
                 XRPL_ASSERT(
                     origNode && curNode,
-                    "ripple::detail::ApplyStateTable::apply : valid nodes for "
+                    "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "deletion");
                 threadOwners(to, meta, origNode, newMod, j);
 
@@ -197,7 +178,7 @@ ApplyStateTable::apply(
             {
                 XRPL_ASSERT(
                     curNode && origNode,
-                    "ripple::detail::ApplyStateTable::apply : valid nodes for "
+                    "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "modification");
 
                 if (curNode->isThreadedType(
@@ -235,7 +216,7 @@ ApplyStateTable::apply(
             {
                 XRPL_ASSERT(
                     curNode && !origNode,
-                    "ripple::detail::ApplyStateTable::apply : valid nodes for "
+                    "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "creation");
                 threadOwners(to, meta, curNode, newMod, j);
 
@@ -261,7 +242,7 @@ ApplyStateTable::apply(
             {
                 // LCOV_EXCL_START
                 UNREACHABLE(
-                    "ripple::detail::ApplyStateTable::apply : unsupported "
+                    "xrpl::detail::ApplyStateTable::apply : unsupported "
                     "operation type");
                 // LCOV_EXCL_STOP
             }
@@ -566,7 +547,7 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
         {
             XRPL_ASSERT(
                 node.getFieldIndex(sfPreviousTxnLgrSeq) == -1,
-                "ripple::ApplyStateTable::threadItem : previous ledger is not "
+                "xrpl::ApplyStateTable::threadItem : previous ledger is not "
                 "set");
             node.setFieldH256(sfPreviousTxnID, prevTxID);
             node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
@@ -574,11 +555,11 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 
         XRPL_ASSERT(
             node.getFieldH256(sfPreviousTxnID) == prevTxID,
-            "ripple::ApplyStateTable::threadItem : previous transaction is a "
+            "xrpl::ApplyStateTable::threadItem : previous transaction is a "
             "match");
         XRPL_ASSERT(
             node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID,
-            "ripple::ApplyStateTable::threadItem : previous ledger is a match");
+            "xrpl::ApplyStateTable::threadItem : previous ledger is a match");
     }
 }
 
@@ -595,7 +576,7 @@ ApplyStateTable::getForMod(
         {
             XRPL_ASSERT(
                 miter->second,
-                "ripple::ApplyStateTable::getForMod : non-null result");
+                "xrpl::ApplyStateTable::getForMod : non-null result");
             return miter->second;
         }
     }
@@ -653,7 +634,7 @@ ApplyStateTable::threadTx(
     // threadItem only applied to AccountRoot
     XRPL_ASSERT(
         sle->isThreadedType(base.rules()),
-        "ripple::ApplyStateTable::threadTx : SLE is threaded");
+        "xrpl::ApplyStateTable::threadTx : SLE is threaded");
     threadItem(meta, sle);
 }
 
@@ -682,12 +663,6 @@ ApplyStateTable::threadOwners(
             if (auto const optSleAcct{(*sle)[~sfAccount]})
                 threadTx(base, meta, *optSleAcct, mods, j);
 
-            // Don't thread a check's sfDestination unless the amendment is
-            // enabled
-            if (ledgerType == ltCHECK &&
-                !base.rules().enabled(fixCheckThreading))
-                break;
-
             // If sfDestination is present, thread to that account
             if (auto const optSleDest{(*sle)[~sfDestination]})
                 threadTx(base, meta, *optSleDest, mods, j);
@@ -696,4 +671,4 @@ ApplyStateTable::threadOwners(
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl

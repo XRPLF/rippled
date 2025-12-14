@@ -1,26 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class CrossingLimits_test : public beast::unit_test::suite
@@ -284,9 +267,8 @@ public:
         // strand dry until the liquidity is actually used)
 
         // The implementation allows any single step to consume at most 1000
-        // offers. With the `FlowSortStrands` feature enabled, if the total
-        // number of offers consumed by all the steps combined exceeds 1500, the
-        // payment stops.
+        // offers.If the total number of offers consumed by all the steps
+        // combined exceeds 1500, the payment stops.
         {
             Env env(*this, features);
 
@@ -321,7 +303,7 @@ public:
             //     offers unfunded.
             //     b. Carol's remaining 800 offers are consumed as unfunded.
             //     c. 199 of alice's XRP(1) to USD(3) offers are consumed.
-            //        A book step is allowed to consume a maxium of 1000 offers
+            //        A book step is allowed to consume a maximum of 1000 offers
             //        at a given quality, and that limit is now reached.
             //     d. Now the strand is dry, even though there are still funded
             //     XRP(1) to USD(3) offers available.
@@ -402,7 +384,7 @@ public:
             //     offers unfunded.
             //     b. Carol's remaining 800 offers are consumed as unfunded.
             //     c. 199 of alice's XRP(1) to USD(3) offers are consumed.
-            //        A book step is allowed to consume a maxium of 1000 offers
+            //        A book step is allowed to consume a maximum of 1000 offers
             //        at a given quality, and that limit is now reached.
             //     d. Now the strand is dry, even though there are still funded
             //     XRP(1) to USD(3) offers available. Bob has spent 400 EUR and
@@ -474,16 +456,12 @@ public:
         // below the limit. However, if all the offers are consumed it would
         // create a tecOVERSIZE error.
 
-        // The featureFlowSortStrands introduces a way of tracking the total
-        // number of consumed offers; with this feature the transaction no
-        // longer fails with a tecOVERSIZE error.
         // The implementation allows any single step to consume at most 1000
-        // offers. With the `FlowSortStrands` feature enabled, if the total
-        // number of offers consumed by all the steps combined exceeds 1500, the
-        // payment stops. Since the first set of offers consumes 998 offers, the
-        // second set will consume 998, which is not over the limit and the
-        // payment stops. So 2*998, or 1996 is the expected value when
-        // `FlowSortStrands` is enabled.
+        // offers. If the total number of offers consumed by all the steps
+        // combined exceeds 1500, the payment stops. Since the first set of
+        // offers consumes 998 offers, the second set will consume 998, which is
+        // not over the limit and the payment stops. So 2*998, or 1996 is the
+        // expected value.
         n_offers(env, 998, alice, XRP(1.00), USD(1));
         n_offers(env, 998, alice, XRP(0.99), USD(1));
         n_offers(env, 998, alice, XRP(0.98), USD(1));
@@ -491,24 +469,10 @@ public:
         n_offers(env, 998, alice, XRP(0.96), USD(1));
         n_offers(env, 998, alice, XRP(0.95), USD(1));
 
-        bool const withSortStrands = features[featureFlowSortStrands];
-
-        auto const expectedTER = [&]() -> TER {
-            if (!withSortStrands)
-                return TER{tecOVERSIZE};
-            return tesSUCCESS;
-        }();
-
-        env(offer(bob, USD(8000), XRP(8000)), ter(expectedTER));
+        env(offer(bob, USD(8000), XRP(8000)), ter(tesSUCCESS));
         env.close();
 
-        auto const expectedUSD = [&] {
-            if (!withSortStrands)
-                return USD(0);
-            return USD(1996);
-        }();
-
-        env.require(balance(bob, expectedUSD));
+        env.require(balance(bob, USD(1996)));
     }
 
     void
@@ -524,13 +488,11 @@ public:
         using namespace jtx;
         auto const sa = testable_amendments();
         testAll(sa);
-        testAll(sa - featureFlowSortStrands);
         testAll(sa - featurePermissionedDEX);
-        testAll(sa - featureFlowSortStrands - featurePermissionedDEX);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimits, app, ripple, 10);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimits, app, xrpl, 10);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

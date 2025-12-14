@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
-#define RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
+#ifndef XRPL_APP_TX_TRANSACTOR_H_INCLUDED
+#define XRPL_APP_TX_TRANSACTOR_H_INCLUDED
 
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
@@ -28,7 +9,7 @@
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** State information when preflighting a tx. */
 struct PreflightContext
@@ -237,7 +218,7 @@ public:
         return tesSUCCESS;
     }
 
-    static TER
+    static NotTEC
     checkPermission(ReadView const& view, STTx const& tx);
     /////////////////////////////////////////////////////
 
@@ -266,7 +247,7 @@ protected:
 
         @param app The application hosting the server
         @param baseFee The base fee of a candidate transaction
-            @see ripple::calculateBaseFee
+            @see xrpl::calculateBaseFee
         @param fees Fee settings from the current ledger
         @param flags Transaction processing fees
      */
@@ -285,6 +266,7 @@ protected:
     checkSign(
         ReadView const& view,
         ApplyFlags flags,
+        std::optional<uint256 const> const& parentBatchId,
         AccountID const& idAccount,
         STObject const& sigObject,
         beast::Journal const j);
@@ -306,14 +288,26 @@ protected:
 
     template <class T>
     static bool
-    validNumericRange(std::optional<T> value, T max, T min = {});
+    validNumericRange(std::optional<T> value, T max, T min = T{});
 
     template <class T, class Unit>
     static bool
     validNumericRange(
         std::optional<T> value,
         unit::ValueUnit<Unit, T> max,
-        unit::ValueUnit<Unit, T> min = {});
+        unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
+
+    /// Minimum will usually be zero.
+    template <class T>
+    static bool
+    validNumericMinimum(std::optional<T> value, T min = T{});
+
+    /// Minimum will usually be zero.
+    template <class T, class Unit>
+    static bool
+    validNumericMinimum(
+        std::optional<T> value,
+        unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
 private:
     std::pair<TER, XRPAmount>
@@ -440,6 +434,24 @@ Transactor::validNumericRange(
     return validNumericRange(value, max.value(), min.value());
 }
 
-}  // namespace ripple
+template <class T>
+bool
+Transactor::validNumericMinimum(std::optional<T> value, T min)
+{
+    if (!value)
+        return true;
+    return value >= min;
+}
+
+template <class T, class Unit>
+bool
+Transactor::validNumericMinimum(
+    std::optional<T> value,
+    unit::ValueUnit<Unit, T> min)
+{
+    return validNumericMinimum(value, min.value());
+}
+
+}  // namespace xrpl
 
 #endif

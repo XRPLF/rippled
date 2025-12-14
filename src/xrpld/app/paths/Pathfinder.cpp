@@ -1,32 +1,13 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/paths/RippleLineCache.h>
 #include <xrpld/app/paths/detail/PathfinderUtils.h>
-#include <xrpld/core/JobQueue.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/join.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 
@@ -64,7 +45,7 @@ same path request (particularly if the search depth may change).
 
 */
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -193,7 +174,7 @@ Pathfinder::Pathfinder(
 {
     XRPL_ASSERT(
         !uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.value()),
-        "ripple::Pathfinder::Pathfinder : valid inputs");
+        "xrpl::Pathfinder::Pathfinder : valid inputs");
 }
 
 bool
@@ -587,7 +568,7 @@ Pathfinder::getBestPaths(
 
     XRPL_ASSERT(
         fullLiquidityPath.empty(),
-        "ripple::Pathfinder::getBestPaths : first empty path result");
+        "xrpl::Pathfinder::getBestPaths : first empty path result");
     bool const issuerIsSender =
         isXRP(mSrcCurrency) || (srcIssuer == mSrcAccount);
 
@@ -649,7 +630,7 @@ Pathfinder::getBestPaths(
         if (path.empty())
         {
             // LCOV_EXCL_START
-            UNREACHABLE("ripple::Pathfinder::getBestPaths : path not found");
+            UNREACHABLE("xrpl::Pathfinder::getBestPaths : path not found");
             continue;
             // LCOV_EXCL_STOP
         }
@@ -695,7 +676,7 @@ Pathfinder::getBestPaths(
     {
         XRPL_ASSERT(
             fullLiquidityPath.empty(),
-            "ripple::Pathfinder::getBestPaths : second empty path result");
+            "xrpl::Pathfinder::getBestPaths : second empty path result");
         JLOG(j_.info()) << "Paths could not send " << remaining << " of "
                         << mDstAmount;
     }
@@ -846,7 +827,7 @@ Pathfinder::addPathsForType(
             // Source must always be at the start, so pathsOut has to be empty.
             XRPL_ASSERT(
                 pathsOut.empty(),
-                "ripple::Pathfinder::addPathsForType : empty paths");
+                "xrpl::Pathfinder::addPathsForType : empty paths");
             pathsOut.push_back(STPath());
             break;
 
@@ -1299,7 +1280,7 @@ void
 fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 {
     auto& list = mPathTable[type];
-    XRPL_ASSERT(list.empty(), "ripple::fillPaths : empty paths");
+    XRPL_ASSERT(list.empty(), "xrpl::fillPaths : empty paths");
     for (auto& cost : costs)
         list.push_back({cost.cost, makePath(cost.path)});
 }
@@ -1378,4 +1359,4 @@ Pathfinder::initPathTable()
         });
 }
 
-}  // namespace ripple
+}  // namespace xrpl

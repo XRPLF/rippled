@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/SetOracle.h>
 
 #include <xrpl/ledger/Sandbox.h>
@@ -26,7 +7,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 static inline std::pair<Currency, Currency>
 tokenPairKey(STObject const& pair)
@@ -70,7 +51,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
     // of the last closed ledger
     using namespace std::chrono;
     std::size_t const closeTime =
-        duration_cast<seconds>(ctx.view.info().closeTime.time_since_epoch())
+        duration_cast<seconds>(ctx.view.header().closeTime.time_since_epoch())
             .count();
     std::size_t const lastUpdateTime = ctx.tx[sfLastUpdateTime];
     if (lastUpdateTime < epoch_offset.count())
@@ -329,4 +310,4 @@ SetOracle::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

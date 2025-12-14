@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/AmendmentTable.h>
@@ -31,14 +12,18 @@
 
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 template <>
 NotTEC
 Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 {
     // 0 means "Allow any flags"
-    if (auto const ret = preflight0(ctx, 0))
+    // The check for tfChangeMask is gated by LendingProtocol because that
+    // feature introduced this parameter, and it's not worth adding another
+    // amendment just for this.
+    if (auto const ret = preflight0(
+            ctx, ctx.rules.enabled(featureLendingProtocol) ? tfChangeMask : 0))
         return ret;
 
     auto account = ctx.tx.getAccountID(sfAccount);
@@ -68,13 +53,6 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
     {
         JLOG(ctx.j.warn()) << "Change: Bad sequence";
         return temBAD_SEQUENCE;
-    }
-
-    if (ctx.tx.getTxnType() == ttUNL_MODIFY &&
-        !ctx.rules.enabled(featureNegativeUNL))
-    {
-        JLOG(ctx.j.warn()) << "Change: NegativeUNL not enabled";
-        return temDISABLED;
     }
 
     return tesSUCCESS;
@@ -153,7 +131,7 @@ Change::doApply()
             return applyUNLModify();
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Change::doApply : invalid transaction type");
+            UNREACHABLE("xrpl::Change::doApply : invalid transaction type");
             return tefFAILURE;
             // LCOV_EXCL_STOP
     }
@@ -163,89 +141,7 @@ void
 Change::preCompute()
 {
     XRPL_ASSERT(
-        account_ == beast::zero, "ripple::Change::preCompute : zero account");
-}
-
-void
-Change::activateTrustLinesToSelfFix()
-{
-    JLOG(j_.warn()) << "fixTrustLinesToSelf amendment activation code starting";
-
-    auto removeTrustLineToSelf = [this](Sandbox& sb, uint256 id) {
-        auto tl = sb.peek(keylet::child(id));
-
-        if (tl == nullptr)
-        {
-            JLOG(j_.warn()) << id << ": Unable to locate trustline";
-            return true;
-        }
-
-        if (tl->getType() != ltRIPPLE_STATE)
-        {
-            JLOG(j_.warn()) << id << ": Unexpected type "
-                            << static_cast<std::uint16_t>(tl->getType());
-            return true;
-        }
-
-        auto const& lo = tl->getFieldAmount(sfLowLimit);
-        auto const& hi = tl->getFieldAmount(sfHighLimit);
-
-        if (lo != hi)
-        {
-            JLOG(j_.warn()) << id << ": Trustline doesn't meet requirements";
-            return true;
-        }
-
-        if (auto const page = tl->getFieldU64(sfLowNode); !sb.dirRemove(
-                keylet::ownerDir(lo.getIssuer()), page, tl->key(), false))
-        {
-            JLOG(j_.error()) << id << ": failed to remove low entry from "
-                             << toBase58(lo.getIssuer()) << ":" << page
-                             << " owner directory";
-            return false;
-        }
-
-        if (auto const page = tl->getFieldU64(sfHighNode); !sb.dirRemove(
-                keylet::ownerDir(hi.getIssuer()), page, tl->key(), false))
-        {
-            JLOG(j_.error()) << id << ": failed to remove high entry from "
-                             << toBase58(hi.getIssuer()) << ":" << page
-                             << " owner directory";
-            return false;
-        }
-
-        if (tl->getFlags() & lsfLowReserve)
-            adjustOwnerCount(
-                sb, sb.peek(keylet::account(lo.getIssuer())), -1, j_);
-
-        if (tl->getFlags() & lsfHighReserve)
-            adjustOwnerCount(
-                sb, sb.peek(keylet::account(hi.getIssuer())), -1, j_);
-
-        sb.erase(tl);
-
-        JLOG(j_.warn()) << "Successfully deleted trustline " << id;
-
-        return true;
-    };
-
-    using namespace std::literals;
-
-    Sandbox sb(&view());
-
-    if (removeTrustLineToSelf(
-            sb,
-            uint256{
-                "2F8F21EFCAFD7ACFB07D5BB04F0D2E18587820C7611305BB674A64EAB0FA71E1"sv}) &&
-        removeTrustLineToSelf(
-            sb,
-            uint256{
-                "326035D5C0560A9DA8636545DD5A1B0DFCFF63E68D491B5522B767BB00564B1A"sv}))
-    {
-        JLOG(j_.warn()) << "fixTrustLinesToSelf amendment activation code "
-                           "executed successfully";
-        sb.apply(ctx_.rawView());
-    }
+        account_ == beast::zero, "xrpl::Change::preCompute : zero account");
 }
 
 TER
@@ -323,9 +219,6 @@ Change::applyAmendment()
         // No flags, enable amendment
         amendments.push_back(amendment);
         amendmentObject->setFieldV256(sfAmendments, amendments);
-
-        if (amendment == fixTrustLinesToSelf)
-            activateTrustLinesToSelfFix();
 
         ctx_.app.getAmendmentTable().enable(amendment);
 
@@ -514,4 +407,4 @@ Change::applyUNLModify()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/ResolverAsio.h>
@@ -45,7 +26,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Mix-in to track when all pending I/O is complete.
     Derived classes must be callable with this signature:
@@ -65,7 +46,7 @@ public:
         // Destroying the object with I/O pending? Not a clean exit!
         XRPL_ASSERT(
             m_pending.load() == 0,
-            "ripple::AsyncObject::~AsyncObject : nothing pending");
+            "xrpl::AsyncObject::~AsyncObject : nothing pending");
     }
 
     /** RAII container that maintains the count of pending I/O.
@@ -172,9 +153,9 @@ public:
     {
         XRPL_ASSERT(
             m_work.empty(),
-            "ripple::ResolverAsioImpl::~ResolverAsioImpl : no pending work");
+            "xrpl::ResolverAsioImpl::~ResolverAsioImpl : no pending work");
         XRPL_ASSERT(
-            m_stopped, "ripple::ResolverAsioImpl::~ResolverAsioImpl : stopped");
+            m_stopped, "xrpl::ResolverAsioImpl::~ResolverAsioImpl : stopped");
     }
 
     //-------------------------------------------------------------------------
@@ -197,10 +178,10 @@ public:
     start() override
     {
         XRPL_ASSERT(
-            m_stopped == true, "ripple::ResolverAsioImpl::start : stopped");
+            m_stopped == true, "xrpl::ResolverAsioImpl::start : stopped");
         XRPL_ASSERT(
             m_stop_called == false,
-            "ripple::ResolverAsioImpl::start : not stopping");
+            "xrpl::ResolverAsioImpl::start : not stopping");
 
         if (m_stopped.exchange(false) == true)
         {
@@ -248,10 +229,10 @@ public:
     {
         XRPL_ASSERT(
             m_stop_called == false,
-            "ripple::ResolverAsioImpl::resolve : not stopping");
+            "xrpl::ResolverAsioImpl::resolve : not stopping");
         XRPL_ASSERT(
             !names.empty(),
-            "ripple::ResolverAsioImpl::resolve : names non-empty");
+            "xrpl::ResolverAsioImpl::resolve : names non-empty");
 
         // TODO NIKB use rvalue references to construct and move
         //           reducing cost.
@@ -274,7 +255,7 @@ public:
     {
         XRPL_ASSERT(
             m_stop_called == true,
-            "ripple::ResolverAsioImpl::do_stop : stopping");
+            "xrpl::ResolverAsioImpl::do_stop : stopping");
 
         if (m_stopped.exchange(true) == false)
         {
@@ -434,7 +415,7 @@ public:
     {
         XRPL_ASSERT(
             !names.empty(),
-            "ripple::ResolverAsioImpl::do_resolve : names non-empty");
+            "xrpl::ResolverAsioImpl::do_resolve : names non-empty");
 
         if (m_stop_called == false)
         {
@@ -469,4 +450,4 @@ ResolverAsio::New(boost::asio::io_context& io_context, beast::Journal journal)
 
 //-----------------------------------------------------------------------------
 Resolver::~Resolver() = default;
-}  // namespace ripple
+}  // namespace xrpl

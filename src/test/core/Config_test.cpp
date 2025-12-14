@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/TestSuite.h>
 #include <test/unit_test/FileDirGuard.h>
 
@@ -32,7 +13,7 @@
 #include <fstream>
 #include <regex>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 std::string
 configContents(std::string const& dbPath, std::string const& validatorsFile)
@@ -128,7 +109,7 @@ backend=sqlite
 /**
    Write a rippled config file and remove when done.
  */
-class RippledCfgGuard : public ripple::detail::FileDirGuard
+class RippledCfgGuard : public xrpl::detail::FileDirGuard
 {
 private:
     path dataDir_;
@@ -345,7 +326,7 @@ port_wss_admin
         {
             // read from file absolute path
             auto const cwd = current_path();
-            ripple::detail::DirGuard const g0(*this, "test_db");
+            xrpl::detail::DirGuard const g0(*this, "test_db");
             path const dataDirRel("test_data_dir");
             path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
             detail::RippledCfgGuard const g(
@@ -1202,7 +1183,7 @@ r.ripple.com:51235
         BEAST_EXPECT(cfg.IPS_FIXED[6] == "12.34.12.123 12345");
         BEAST_EXPECT(cfg.IPS_FIXED[7] == "12.34.12.123 12345");
 
-        // all ipv6 should be ignored by colon replacer, howsoever formated
+        // all ipv6 should be ignored by colon replacer, howsoever formatted
         BEAST_EXPECT(cfg.IPS_FIXED[8] == "::");
         BEAST_EXPECT(cfg.IPS_FIXED[9] == "2001:db8::");
         BEAST_EXPECT(cfg.IPS_FIXED[10] == "::1");
@@ -1516,6 +1497,6 @@ r.ripple.com:51235
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Config, core, ripple);
+BEAST_DEFINE_TESTSUITE(Config, core, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

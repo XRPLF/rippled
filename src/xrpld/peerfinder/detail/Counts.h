@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
-#define RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
+#ifndef XRPL_PEERFINDER_COUNTS_H_INCLUDED
+#define XRPL_PEERFINDER_COUNTS_H_INCLUDED
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
@@ -26,7 +7,7 @@
 
 #include <xrpl/basics/random.h>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Manages the count of available connections for the various slots. */
@@ -72,7 +53,7 @@ public:
         // Must be handshaked and in the right state
         XRPL_ASSERT(
             s.state() == Slot::connected || s.state() == Slot::accept,
-            "ripple::PeerFinder::Counts::can_activate : valid input state");
+            "xrpl::PeerFinder::Counts::can_activate : valid input state");
 
         if (s.fixed() || s.reserved())
             return true;
@@ -265,7 +246,7 @@ private:
             case Slot::accept:
                 XRPL_ASSERT(
                     s.inbound(),
-                    "ripple::PeerFinder::Counts::adjust : input is inbound");
+                    "xrpl::PeerFinder::Counts::adjust : input is inbound");
                 m_acceptCount += n;
                 break;
 
@@ -273,7 +254,7 @@ private:
             case Slot::connected:
                 XRPL_ASSERT(
                     !s.inbound(),
-                    "ripple::PeerFinder::Counts::adjust : input is not "
+                    "xrpl::PeerFinder::Counts::adjust : input is not "
                     "inbound");
                 m_attempts += n;
                 break;
@@ -298,7 +279,7 @@ private:
             // LCOV_EXCL_START
             default:
                 UNREACHABLE(
-                    "ripple::PeerFinder::Counts::adjust : invalid input state");
+                    "xrpl::PeerFinder::Counts::adjust : invalid input state");
                 break;
                 // LCOV_EXCL_STOP
         };
@@ -341,6 +322,6 @@ private:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

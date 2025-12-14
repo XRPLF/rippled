@@ -1,20 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
@@ -31,7 +14,7 @@
 
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Subscribe_test : public beast::unit_test::suite
@@ -486,11 +469,11 @@ public:
                     return false;
 
                 if (jv[jss::ledger_hash] !=
-                    to_string(env.closed()->info().hash))
+                    to_string(env.closed()->header().hash))
                     return false;
 
                 if (jv[jss::ledger_index] !=
-                    std::to_string(env.closed()->info().seq))
+                    std::to_string(env.closed()->header().seq))
                     return false;
 
                 if (jv[jss::flags] != (vfFullyCanonicalSig | vfFullValidation))
@@ -521,7 +504,7 @@ public:
 
                 // Certain fields are only added on a flag ledger.
                 bool const isFlagLedger =
-                    (env.closed()->info().seq + 1) % 256 == 0;
+                    (env.closed()->header().seq + 1) % 256 == 0;
 
                 if (jv.isMember(jss::server_version) != isFlagLedger)
                     return false;
@@ -537,7 +520,7 @@ public:
 
             // Check stream update.  Look at enough stream entries so we see
             // at least one flag ledger.
-            while (env.closed()->info().seq < 300)
+            while (env.closed()->header().seq < 300)
             {
                 env.close();
                 using namespace std::chrono_literals;
@@ -1608,7 +1591,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Subscribe, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Subscribe, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

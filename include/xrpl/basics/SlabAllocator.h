@@ -1,24 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
+// Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
-#define RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
+#ifndef XRPL_BASICS_SLABALLOCATOR_H_INCLUDED
+#define XRPL_BASICS_SLABALLOCATOR_H_INCLUDED
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/type_name.h>
@@ -39,7 +22,7 @@
 #include <sys/mman.h>
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 template <typename Type>
 class SlabAllocator
@@ -145,7 +128,7 @@ class SlabAllocator
         {
             XRPL_ASSERT(
                 own(ptr),
-                "ripple::SlabAllocator::SlabBlock::deallocate : own input");
+                "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
             std::lock_guard l(m_);
 
@@ -176,7 +159,7 @@ public:
         @param count the number of items the slab allocator can allocate; note
                      that a count of 0 is valid and means that the allocator
                      is, effectively, disabled. This can be very useful in some
-                     contexts (e.g. when mimimal memory usage is needed) and
+                     contexts (e.g. when minimal memory usage is needed) and
                      allows for graceful failure.
      */
     constexpr explicit SlabAllocator(
@@ -190,7 +173,7 @@ public:
     {
         XRPL_ASSERT(
             (itemAlignment_ & (itemAlignment_ - 1)) == 0,
-            "ripple::SlabAllocator::SlabAllocator : valid alignment");
+            "xrpl::SlabAllocator::SlabAllocator : valid alignment");
     }
 
     SlabAllocator(SlabAllocator const& other) = delete;
@@ -302,7 +285,7 @@ public:
     {
         XRPL_ASSERT(
             ptr,
-            "ripple::SlabAllocator::SlabAllocator::deallocate : non-null "
+            "xrpl::SlabAllocator::SlabAllocator::deallocate : non-null "
             "input");
 
         for (auto slab = slabs_.load(); slab != nullptr; slab = slab->next_)
@@ -436,6 +419,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
-#endif  // RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
+#endif  // XRPL_BASICS_SLABALLOCATOR_H_INCLUDED

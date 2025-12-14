@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
 
@@ -43,21 +24,19 @@ computeFreezeFlags(
 {
     if (bSetFreeze && !bClearFreeze && !bNoFreeze)
     {
-        uFlags |= (bHigh ? ripple::lsfHighFreeze : ripple::lsfLowFreeze);
+        uFlags |= (bHigh ? xrpl::lsfHighFreeze : xrpl::lsfLowFreeze);
     }
     else if (bClearFreeze && !bSetFreeze)
     {
-        uFlags &= ~(bHigh ? ripple::lsfHighFreeze : ripple::lsfLowFreeze);
+        uFlags &= ~(bHigh ? xrpl::lsfHighFreeze : xrpl::lsfLowFreeze);
     }
     if (bSetDeepFreeze && !bClearDeepFreeze && !bNoFreeze)
     {
-        uFlags |=
-            (bHigh ? ripple::lsfHighDeepFreeze : ripple::lsfLowDeepFreeze);
+        uFlags |= (bHigh ? xrpl::lsfHighDeepFreeze : xrpl::lsfLowDeepFreeze);
     }
     else if (bClearDeepFreeze && !bSetDeepFreeze)
     {
-        uFlags &=
-            ~(bHigh ? ripple::lsfHighDeepFreeze : ripple::lsfLowDeepFreeze);
+        uFlags &= ~(bHigh ? xrpl::lsfHighDeepFreeze : xrpl::lsfLowDeepFreeze);
     }
 
     return uFlags;
@@ -65,7 +44,7 @@ computeFreezeFlags(
 
 }  // namespace
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 SetTrust::getFlagsMask(PreflightContext const& ctx)
@@ -127,7 +106,7 @@ SetTrust::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+NotTEC
 SetTrust::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -138,7 +117,7 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
@@ -149,10 +128,10 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     // TrustlineUnfreeze granular permission. Setting other flags returns
     // error.
     if (txFlags & tfTrustSetPermissionMask)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
     auto const sleRippleState = view.read(keylet::line(
@@ -161,19 +140,19 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     // if the trustline does not exist, granular permissions are
     // not allowed to create trustline
     if (!sleRippleState)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
 
     if (txFlags & tfSetfAuth &&
         !granularPermissions.contains(TrustlineAuthorize))
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
     if (txFlags & tfSetFreeze && !granularPermissions.contains(TrustlineFreeze))
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
     if (txFlags & tfClearFreeze &&
         !granularPermissions.contains(TrustlineUnfreeze))
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     // updating LimitAmount is not allowed only with granular permissions,
     // unless there's a new granular permission for this in the future.
@@ -185,7 +164,7 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     saLimitAllow.setIssuer(tx[sfAccount]);
 
     if (curLimit != saLimitAllow)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
 }
@@ -214,57 +193,32 @@ SetTrust::preclaim(PreclaimContext const& ctx)
     auto const currency = saLimitAmount.getCurrency();
     auto const uDstAccountID = saLimitAmount.getIssuer();
 
-    if (ctx.view.rules().enabled(fixTrustLinesToSelf))
-    {
-        if (id == uDstAccountID)
-            return temDST_IS_SRC;
-    }
-    else
-    {
-        if (id == uDstAccountID)
-        {
-            // Prevent trustline to self from being created,
-            // unless one has somehow already been created
-            // (in which case doApply will clean it up).
-            auto const sleDelete =
-                ctx.view.read(keylet::line(id, uDstAccountID, currency));
-
-            if (!sleDelete)
-            {
-                JLOG(ctx.j.trace())
-                    << "Malformed transaction: Can not extend credit to self.";
-                return temDST_IS_SRC;
-            }
-        }
-    }
+    if (id == uDstAccountID)
+        return temDST_IS_SRC;
 
     // This might be nullptr
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
-    if ((ctx.view.rules().enabled(featureDisallowIncoming) ||
-         ammEnabled(ctx.view.rules()) ||
+    if ((ammEnabled(ctx.view.rules()) ||
          ctx.view.rules().enabled(featureSingleAssetVault)) &&
         sleDst == nullptr)
         return tecNO_DST;
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if (ctx.view.rules().enabled(featureDisallowIncoming))
+    if (sleDst->getFlags() & lsfDisallowIncomingTrustline)
     {
-        if (sleDst->getFlags() & lsfDisallowIncomingTrustline)
+        // The original implementation of featureDisallowIncoming was
+        // too restrictive. If
+        //   o fixDisallowIncomingV1 is enabled and
+        //   o The trust line already exists
+        // Then allow the TrustSet.
+        if (ctx.view.rules().enabled(fixDisallowIncomingV1) &&
+            ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
         {
-            // The original implementation of featureDisallowIncoming was
-            // too restrictive.  If
-            //   o fixDisallowIncomingV1 is enabled and
-            //   o The trust line already exists
-            // Then allow the TrustSet.
-            if (ctx.view.rules().enabled(fixDisallowIncomingV1) &&
-                ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
-            {
-                // pass
-            }
-            else
-                return tecNO_PERMISSION;
+            // pass
         }
+        else
+            return tecNO_PERMISSION;
     }
 
     // In general, trust lines to pseudo accounts are not permitted, unless
@@ -295,7 +249,9 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             else
                 return tecINTERNAL;  // LCOV_EXCL_LINE
         }
-        else if (sleDst->isFieldPresent(sfVaultID))
+        else if (
+            sleDst->isFieldPresent(sfVaultID) ||
+            sleDst->isFieldPresent(sfLoanBrokerID))
         {
             if (!ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
                 return tecNO_PERMISSION;
@@ -421,21 +377,6 @@ SetTrust::doApply()
     bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
 
     auto viewJ = ctx_.app.journal("View");
-
-    // Trust lines to self are impossible but because of the old bug there
-    // are two on 19-02-2022. This code was here to allow those trust lines
-    // to be deleted. The fixTrustLinesToSelf fix amendment will remove them
-    // when it enables so this code will no longer be needed.
-    if (!view().rules().enabled(fixTrustLinesToSelf) &&
-        account_ == uDstAccountID)
-    {
-        return trustDelete(
-            view(),
-            view().peek(keylet::line(account_, uDstAccountID, currency)),
-            account_,
-            uDstAccountID,
-            viewJ);
-    }
 
     SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
 
@@ -576,7 +517,7 @@ SetTrust::doApply()
             if ((bHigh ? saHighBalance : saLowBalance) >= beast::zero)
                 uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
 
-            else if (view().rules().enabled(fix1578))
+            else
                 // Cannot set noRipple on a negative balance.
                 return tecNO_PERMISSION;
         }
@@ -746,4 +687,4 @@ SetTrust::doApply()
     return terResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

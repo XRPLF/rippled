@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpld/app/misc/NetworkOPs.h>
@@ -33,7 +14,7 @@
 #include <optional>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Env_test : public beast::unit_test::suite
@@ -265,7 +246,7 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, testable_amendments() | fixMasterKeyAsRegularKey};
+        Env env{*this, testable_amendments()};
         Account const alice("alice", KeyType::ed25519);
         Account const bob("bob", KeyType::secp256k1);
         Account const carol("carol");
@@ -817,17 +798,18 @@ public:
 
         {
             // a Env FeatureBitset has *only* those features
-            Env env{*this, FeatureBitset(featureMultiSignReserve, featureFlow)};
+            Env env{
+                *this, FeatureBitset{featureDynamicMPT | featureTokenEscrow}};
             BEAST_EXPECT(env.app().config().features.size() == 2);
             foreachFeature(supported, [&](uint256 const& f) {
                 bool const has =
-                    (f == featureMultiSignReserve || f == featureFlow);
+                    (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
         }
 
         auto const missingSomeFeatures =
-            testable_amendments() - featureMultiSignReserve - featureFlow;
+            testable_amendments() - featureDynamicMPT - featureTokenEscrow;
         BEAST_EXPECT(missingSomeFeatures.count() == (supported.count() - 2));
         {
             // a Env supported_features_except is missing *only* those features
@@ -836,7 +818,7 @@ public:
                 env.app().config().features.size() == (supported.count() - 2));
             foreachFeature(supported, [&](uint256 const& f) {
                 bool hasnot =
-                    (f == featureMultiSignReserve || f == featureFlow);
+                    (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -848,8 +830,10 @@ public:
             // the two supported ones
             Env env{
                 *this,
-                FeatureBitset(
-                    featureMultiSignReserve, featureFlow, *neverSupportedFeat)};
+                FeatureBitset{
+                    featureDynamicMPT,
+                    featureTokenEscrow,
+                    *neverSupportedFeat}};
 
             // this app will have just 2 supported amendments and
             // one additional never supported feature flag
@@ -857,7 +841,7 @@ public:
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
 
             foreachFeature(supported, [&](uint256 const& f) {
-                bool has = (f == featureMultiSignReserve || f == featureFlow);
+                bool has = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
         }
@@ -878,7 +862,7 @@ public:
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
             foreachFeature(supported, [&](uint256 const& f) {
                 bool hasnot =
-                    (f == featureMultiSignReserve || f == featureFlow);
+                    (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -944,7 +928,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Env, jtx, ripple);
+BEAST_DEFINE_TESTSUITE(Env, jtx, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/beast/unit_test.h>
@@ -24,7 +5,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 class AccountLines_test : public beast::unit_test::suite
@@ -87,7 +68,7 @@ public:
         }
         env.fund(XRP(10000), alice);
         env.close();
-        LedgerInfo const ledger3Info = env.closed()->info();
+        LedgerHeader const ledger3Info = env.closed()->header();
         BEAST_EXPECT(ledger3Info.seq == 3);
 
         {
@@ -108,7 +89,7 @@ public:
                 env.rpc("json", "account_lines", to_string(params));
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                "ledgerIndexMalformed");
+                "Invalid field 'ledger_index', not string or number.");
         }
         {
             // Specify a different ledger that doesn't exist.
@@ -137,7 +118,7 @@ public:
             env(pay(gw1, alice, gw1Currency(50 + c)));
         }
         env.close();
-        LedgerInfo const ledger4Info = env.closed()->info();
+        LedgerHeader const ledger4Info = env.closed()->header();
         BEAST_EXPECT(ledger4Info.seq == 4);
 
         // Add another set of trust lines in another ledger so we can see
@@ -172,13 +153,13 @@ public:
                 tfSetNoRipple | tfSetFreeze | tfSetDeepFreeze));
         }
         env.close();
-        LedgerInfo const ledger58Info = env.closed()->info();
+        LedgerHeader const ledger58Info = env.closed()->header();
         BEAST_EXPECT(ledger58Info.seq == 58);
 
         // A re-usable test for historic ledgers.
         auto testAccountLinesHistory = [this, &env](
                                            Account const& account,
-                                           LedgerInfo const& info,
+                                           LedgerHeader const& info,
                                            int count) {
             // Get account_lines by ledger index.
             Json::Value paramsSeq;
@@ -209,16 +190,30 @@ public:
         testAccountLinesHistory(alice, ledger58Info, 52);
 
         {
-            // Surprisingly, it's valid to specify both index and hash, in
-            // which case the hash wins.
+            // Invalid to specify both index and hash
             Json::Value params;
             params[jss::account] = alice.human();
             params[jss::ledger_hash] = to_string(ledger4Info.hash);
             params[jss::ledger_index] = ledger58Info.seq;
-            auto const lines =
-                env.rpc("json", "account_lines", to_string(params));
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
+            auto const lines = env.rpc(
+                "json", "account_lines", to_string(params))[jss::result];
+            BEAST_EXPECT(lines[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                lines[jss::error_message] ==
+                "Exactly one of 'ledger_hash' or 'ledger_index' can be "
+                "specified.");
+        }
+        {
+            // Invalid index
+            Json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::ledger_index] = Json::objectValue;
+            auto const lines = env.rpc(
+                "json", "account_lines", to_string(params))[jss::result];
+            BEAST_EXPECT(lines[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                lines[jss::error_message] ==
+                "Invalid field 'ledger_index', not string or number.");
         }
         {
             // alice should have 52 trust lines in the current ledger.
@@ -822,7 +817,7 @@ public:
         }
         env.fund(XRP(10000), alice);
         env.close();
-        LedgerInfo const ledger3Info = env.closed()->info();
+        LedgerHeader const ledger3Info = env.closed()->header();
         BEAST_EXPECT(ledger3Info.seq == 3);
 
         {
@@ -858,7 +853,8 @@ public:
             request[jss::params] = params;
             auto const lines = env.rpc("json2", to_string(request));
             BEAST_EXPECT(
-                lines[jss::error][jss::message] == "ledgerIndexMalformed");
+                lines[jss::error][jss::message] ==
+                "Invalid field 'ledger_index', not string or number.");
             BEAST_EXPECT(
                 lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(
@@ -903,7 +899,7 @@ public:
             env(pay(gw1, alice, gw1Currency(50 + c)));
         }
         env.close();
-        LedgerInfo const ledger4Info = env.closed()->info();
+        LedgerHeader const ledger4Info = env.closed()->header();
         BEAST_EXPECT(ledger4Info.seq == 4);
 
         // Add another set of trust lines in another ledger so we can see
@@ -938,13 +934,13 @@ public:
                 tfSetNoRipple | tfSetFreeze | tfSetDeepFreeze));
         }
         env.close();
-        LedgerInfo const ledger58Info = env.closed()->info();
+        LedgerHeader const ledger58Info = env.closed()->header();
         BEAST_EXPECT(ledger58Info.seq == 58);
 
         // A re-usable test for historic ledgers.
         auto testAccountLinesHistory = [this, &env](
                                            Account const& account,
-                                           LedgerInfo const& info,
+                                           LedgerHeader const& info,
                                            int count) {
             // Get account_lines by ledger index.
             Json::Value paramsSeq;
@@ -1013,8 +1009,11 @@ public:
             request[jss::id] = 5;
             request[jss::params] = params;
             auto const lines = env.rpc("json2", to_string(request));
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
+            BEAST_EXPECT(lines[jss::error][jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                lines[jss::error][jss::message] ==
+                "Exactly one of 'ledger_hash' or 'ledger_index' can be "
+                "specified.");
             BEAST_EXPECT(
                 lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(
@@ -1401,7 +1400,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountLines, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountLines, rpc, xrpl);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

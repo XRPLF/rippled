@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012 - 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_TER_H_INCLUDED
-#define RIPPLE_PROTOCOL_TER_H_INCLUDED
+#ifndef XRPL_PROTOCOL_TER_H_INCLUDED
+#define XRPL_PROTOCOL_TER_H_INCLUDED
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
@@ -28,7 +9,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 // See https://xrpl.org/transaction-results.html
 //
@@ -225,8 +206,9 @@ enum TERcodes : TERUnderlyingType {
     terQUEUED,       // Transaction is being held in TxQ until fee drops
     terPRE_TICKET,   // Ticket is not yet in ledger but might be on its way
     terNO_AMM,       // AMM doesn't exist for the asset pair
-    terADDRESS_COLLISION,  // Failed to allocate AccountID when trying to
-                           // create a pseudo-account
+    terADDRESS_COLLISION,       // Failed to allocate AccountID when trying to
+                                // create a pseudo-account
+    terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
 };
 
 //------------------------------------------------------------------------------
@@ -361,6 +343,9 @@ enum TECcodes : TERUnderlyingType {
     tecLIMIT_EXCEEDED = 195,
     tecPSEUDO_ACCOUNT = 196,
     tecPRECISION_LOSS = 197,
+    // DEPRECATED: This error code tecNO_DELEGATE_PERMISSION is reserved for
+    // backward compatibility with historical data on non-prod networks, can be
+    // reclaimed after those networks reset.
     tecNO_DELEGATE_PERMISSION = 198,
 };
 
@@ -700,6 +685,6 @@ transHuman(TER code);
 std::optional<TER>
 transCode(std::string const& token);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

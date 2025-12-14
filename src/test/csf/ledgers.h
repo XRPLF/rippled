@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_LEDGERS_H_INCLUDED
-#define RIPPLE_TEST_CSF_LEDGERS_H_INCLUDED
+#ifndef XRPL_TEST_CSF_LEDGERS_H_INCLUDED
+#define XRPL_TEST_CSF_LEDGERS_H_INCLUDED
 
 #include <test/csf/Tx.h>
 
@@ -35,7 +16,7 @@
 #include <optional>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -54,7 +35,7 @@ namespace csf {
 
     Ledgers are immutable value types. All ledgers with the same sequence
     number, transactions, close time, etc. will have the same ledger ID. The
-    LedgerOracle class below manges ID assignments for a simulation and is the
+    LedgerOracle class below manages ID assignments for a simulation and is the
     only way to close and create a new ledger. Since the parent ledger ID is
     part of type, this also means ledgers with distinct histories will have
     distinct ids, even if they have the same set of transactions, sequence
@@ -249,8 +230,8 @@ private:
 class LedgerOracle
 {
     using InstanceMap = boost::bimaps::bimap<
-        boost::bimaps::set_of<Ledger::Instance, ripple::less<Ledger::Instance>>,
-        boost::bimaps::set_of<Ledger::ID, ripple::less<Ledger::ID>>>;
+        boost::bimaps::set_of<Ledger::Instance, xrpl::less<Ledger::Instance>>,
+        boost::bimaps::set_of<Ledger::ID, xrpl::less<Ledger::ID>>>;
     using InstanceEntry = InstanceMap::value_type;
 
     // Set of all known ledgers; note this is never pruned
@@ -360,6 +341,6 @@ struct LedgerHistoryHelper
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

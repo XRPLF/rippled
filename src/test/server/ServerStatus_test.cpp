@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/JSONRPCClient.h>
 #include <test/jtx/WSClient.h>
@@ -43,7 +24,7 @@
 #include <random>
 #include <regex>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ServerStatus_test : public beast::unit_test::suite,
@@ -861,7 +842,7 @@ class ServerStatus_test : public beast::unit_test::suite,
 
         // mark the Network as having an Amendment Warning, but won't fail
         env.app().getOPs().setAmendmentWarned();
-        env.app().getOPs().beginConsensus(env.closed()->info().hash, {});
+        env.app().getOPs().beginConsensus(env.closed()->header().hash, {});
 
         // consensus doesn't change
         BEAST_EXPECT(
@@ -992,7 +973,7 @@ class ServerStatus_test : public beast::unit_test::suite,
         // mark the Network as Amendment Blocked, but still won't fail until
         // ELB is enabled (next step)
         env.app().getOPs().setAmendmentBlocked();
-        env.app().getOPs().beginConsensus(env.closed()->info().hash, {});
+        env.app().getOPs().beginConsensus(env.closed()->header().hash, {});
 
         // consensus now sees validation disabled
         BEAST_EXPECT(
@@ -1245,7 +1226,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ServerStatus, server, ripple);
+BEAST_DEFINE_TESTSUITE(ServerStatus, server, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/ValidatorList.h>
@@ -43,7 +24,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 namespace CrawlOptions {
 enum {
@@ -262,6 +243,8 @@ OverlayImpl::onHandoff(
             remote_endpoint.address(),
             app_);
 
+        consumer.setPublicKey(publicKey);
+
         {
             // The node gets a reserved slot if it is in our cluster
             // or if it has a reservation.
@@ -302,7 +285,7 @@ OverlayImpl::onHandoff(
                 auto const result = m_peers.emplace(peer->slot(), peer);
                 XRPL_ASSERT(
                     result.second,
-                    "ripple::OverlayImpl::onHandoff : peer is inserted");
+                    "xrpl::OverlayImpl::onHandoff : peer is inserted");
                 (void)result.second;
             }
             list_.emplace(peer.get(), peer);
@@ -395,7 +378,7 @@ OverlayImpl::makeErrorResponse(
 void
 OverlayImpl::connect(beast::IP::Endpoint const& remote_endpoint)
 {
-    XRPL_ASSERT(work_, "ripple::OverlayImpl::connect : work is set");
+    XRPL_ASSERT(work_, "xrpl::OverlayImpl::connect : work is set");
 
     auto usage = resourceManager().newOutboundEndpoint(remote_endpoint);
     if (usage.disconnect(journal_))
@@ -434,13 +417,15 @@ OverlayImpl::connect(beast::IP::Endpoint const& remote_endpoint)
 void
 OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
 {
+    beast::WrappedSink sink{journal_.sink(), peer->prefix()};
+    beast::Journal journal{sink};
+
     std::lock_guard lock(mutex_);
 
     {
         auto const result = m_peers.emplace(peer->slot(), peer);
         XRPL_ASSERT(
-            result.second,
-            "ripple::OverlayImpl::add_active : peer is inserted");
+            result.second, "xrpl::OverlayImpl::add_active : peer is inserted");
         (void)result.second;
     }
 
@@ -451,17 +436,13 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
             std::make_tuple(peer));
         XRPL_ASSERT(
             result.second,
-            "ripple::OverlayImpl::add_active : peer ID is inserted");
+            "xrpl::OverlayImpl::add_active : peer ID is inserted");
         (void)result.second;
     }
 
     list_.emplace(peer.get(), peer);
 
-    JLOG(journal_.debug()) << "activated " << peer->getRemoteAddress() << " ("
-                           << peer->id() << ":"
-                           << toBase58(
-                                  TokenType::NodePublic, peer->getNodePublic())
-                           << ")";
+    JLOG(journal.debug()) << "activated";
 
     // As we are not on the strand, run() must be called
     // while holding the lock, otherwise new I/O can be
@@ -475,7 +456,7 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
     std::lock_guard lock(mutex_);
     auto const iter = m_peers.find(slot);
     XRPL_ASSERT(
-        iter != m_peers.end(), "ripple::OverlayImpl::remove : valid input");
+        iter != m_peers.end(), "xrpl::OverlayImpl::remove : valid input");
     m_peers.erase(iter);
 }
 
@@ -605,6 +586,9 @@ OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 void
 OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 {
+    beast::WrappedSink sink{journal_.sink(), peer->prefix()};
+    beast::Journal journal{sink};
+
     // Now track this peer
     {
         std::lock_guard lock(mutex_);
@@ -613,19 +597,14 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
             std::make_tuple(peer->id()),
             std::make_tuple(peer)));
         XRPL_ASSERT(
-            result.second,
-            "ripple::OverlayImpl::activate : peer ID is inserted");
+            result.second, "xrpl::OverlayImpl::activate : peer ID is inserted");
         (void)result.second;
     }
 
-    JLOG(journal_.debug()) << "activated " << peer->getRemoteAddress() << " ("
-                           << peer->id() << ":"
-                           << toBase58(
-                                  TokenType::NodePublic, peer->getNodePublic())
-                           << ")";
+    JLOG(journal.debug()) << "activated";
 
     // We just accepted this peer so we have non-zero active peers
-    XRPL_ASSERT(size(), "ripple::OverlayImpl::activate : nonzero peers");
+    XRPL_ASSERT(size(), "xrpl::OverlayImpl::activate : nonzero peers");
 }
 
 void
@@ -666,7 +645,7 @@ OverlayImpl::onManifests(
                 mo = deserializeManifest(serialized);
                 XRPL_ASSERT(
                     mo,
-                    "ripple::OverlayImpl::onManifests : manifest "
+                    "xrpl::OverlayImpl::onManifests : manifest "
                     "deserialization succeeded");
 
                 app_.getOPs().pubManifest(*mo);
@@ -1228,7 +1207,16 @@ OverlayImpl::relay(
     {
         auto& txn = tx->get();
         SerialIter sit(makeSlice(txn.rawtransaction()));
-        relay = !isPseudoTx(STTx{sit});
+        try
+        {
+            relay = !isPseudoTx(STTx{sit});
+        }
+        catch (std::exception const&)
+        {
+            // Could not construct STTx, not relaying
+            JLOG(journal_.debug()) << "Could not construct STTx: " << hash;
+            return;
+        }
     }
 
     Overlay::PeerSequence peers = {};
@@ -1613,4 +1601,4 @@ make_Overlay(
         collector);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

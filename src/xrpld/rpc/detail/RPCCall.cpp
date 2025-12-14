@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/ServerHandler.h>
 
@@ -47,7 +28,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 class RPCParser;
 
@@ -121,7 +102,7 @@ private:
     jvParseCurrencyIssuer(std::string const& strCurrencyIssuer)
     {
         // Matches a sequence of 3 characters from
-        // `ripple::detail::isoCharSet` (the currency),
+        // `xrpl::detail::isoCharSet` (the currency),
         // optionally followed by a forward slash and some other characters
         // (the issuer).
         // https://www.boost.org/doc/libs/1_82_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
@@ -159,7 +140,7 @@ private:
         std::string const& strPk,
         TokenType type = TokenType::AccountPublic)
     {
-        if (parseBase58<ripple::PublicKey>(type, strPk))
+        if (parseBase58<xrpl::PublicKey>(type, strPk))
             return true;
 
         auto pkHex = strUnHex(strPk);
@@ -351,15 +332,31 @@ private:
 
         if (jvParams.size() >= 5)
         {
-            int iLimit = jvParams[5u].asInt();
+            try
+            {
+                int iLimit = jvParams[4u].asInt();
 
-            if (iLimit > 0)
-                jvRequest[jss::limit] = iLimit;
+                if (iLimit > 0)
+                    jvRequest[jss::limit] = iLimit;
+            }
+            catch (std::exception const&)
+            {
+                return RPC::invalid_field_error(jss::limit);
+            }
         }
 
-        if (jvParams.size() >= 6 && jvParams[5u].asInt())
+        if (jvParams.size() >= 6)
         {
-            jvRequest[jss::proof] = true;
+            try
+            {
+                int bProof = jvParams[5u].asInt();
+                if (bProof)
+                    jvRequest[jss::proof] = true;
+            }
+            catch (std::exception const&)
+            {
+                return RPC::invalid_field_error(jss::proof);
+            }
         }
 
         if (jvParams.size() == 7)
@@ -965,7 +962,16 @@ private:
         Json::Value txJSON;
         Json::Reader reader;
         bool const bOffline =
-            3 == jvParams.size() && jvParams[2u].asString() == "offline";
+            jvParams.size() >= 3 && jvParams[2u].asString() == "offline";
+        std::optional<std::string> const field =
+            [&jvParams, bOffline]() -> std::optional<std::string> {
+            if (jvParams.size() < 3)
+                return std::nullopt;
+            if (jvParams.size() < 4 && bOffline)
+                return std::nullopt;
+            Json::UInt index = bOffline ? 3u : 2u;
+            return jvParams[index].asString();
+        }();
 
         if (1 == jvParams.size())
         {
@@ -978,7 +984,7 @@ private:
             return jvRequest;
         }
         else if (
-            (2 == jvParams.size() || bOffline) &&
+            (jvParams.size() >= 2 || bOffline) &&
             reader.parse(jvParams[1u].asString(), txJSON))
         {
             // Signing or submitting tx_json.
@@ -989,6 +995,9 @@ private:
 
             if (bOffline)
                 jvRequest[jss::offline] = true;
+
+            if (field)
+                jvRequest[jss::signature_target] = *field;
 
             return jvRequest;
         }
@@ -1024,7 +1033,7 @@ private:
         // Parameter count should have already been verified.
         XRPL_ASSERT(
             jvParams.size() == 2,
-            "ripple::RPCParser::parseTransactionEntry : valid parameter count");
+            "xrpl::RPCParser::parseTransactionEntry : valid parameter count");
 
         std::string const txHash = jvParams[0u].asString();
         if (txHash.length() != 64)
@@ -1270,11 +1279,11 @@ public:
             {"server_definitions", &RPCParser::parseServerDefinitions, 0, 1},
             {"server_info", &RPCParser::parseServerInfo, 0, 1},
             {"server_state", &RPCParser::parseServerInfo, 0, 1},
-            {"sign", &RPCParser::parseSignSubmit, 2, 3},
+            {"sign", &RPCParser::parseSignSubmit, 2, 4},
             {"sign_for", &RPCParser::parseSignFor, 3, 4},
             {"stop", &RPCParser::parseAsIs, 0, 0},
             {"simulate", &RPCParser::parseSimulate, 1, 2},
-            {"submit", &RPCParser::parseSignSubmit, 1, 3},
+            {"submit", &RPCParser::parseSignSubmit, 1, 4},
             {"submit_multisigned", &RPCParser::parseSubmitMultiSigned, 1, 1},
             {"transaction_entry", &RPCParser::parseTransactionEntry, 2, 2},
             {"tx", &RPCParser::parseTx, 1, 4},
@@ -1507,7 +1516,7 @@ rpcClient(
         }
         else
         {
-            ripple::ServerHandler::Setup setup;
+            xrpl::ServerHandler::Setup setup;
             try
             {
                 setup = setup_ServerHandler(
@@ -1711,4 +1720,4 @@ fromNetwork(
 
 }  // namespace RPCCall
 
-}  // namespace ripple
+}  // namespace xrpl

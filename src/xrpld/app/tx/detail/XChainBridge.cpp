@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/SignerEntries.h>
 #include <xrpld/app/tx/detail/Transactor.h>
@@ -46,7 +27,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 /*
    Bridges connect two independent ledgers: a "locking chain" and an "issuing
@@ -225,8 +206,8 @@ claimHelper(
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::claimHelper : invalid inputs");  // should have already
-                                                          // been checked
+                "xrpl::claimHelper : invalid inputs");  // should have already
+                                                        // been checked
             continue;
             // LCOV_EXCL_STOP
         }
@@ -442,7 +423,7 @@ transferHelper(
     if (amt.native())
     {
         auto const sleSrc = psb.peek(keylet::account(src));
-        XRPL_ASSERT(sleSrc, "ripple::transferHelper : non-null source account");
+        XRPL_ASSERT(sleSrc, "xrpl::transferHelper : non-null source account");
         if (!sleSrc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -483,12 +464,9 @@ transferHelper(
             }
 
             // Create the account.
-            std::uint32_t const seqno{
-                psb.rules().enabled(featureDeletableAccounts) ? psb.seq() : 1};
-
             sleDst = std::make_shared<SLE>(dstK);
             sleDst->setAccountID(sfAccount, dst);
-            sleDst->setFieldU32(sfSequence, seqno);
+            sleDst->setFieldU32(sfSequence, psb.seq());
 
             psb.insert(sleDst);
         }
@@ -2260,4 +2238,4 @@ XChainCreateAccountCommit::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
