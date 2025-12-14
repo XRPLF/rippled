@@ -623,6 +623,7 @@ JSS(time_threshold);          // in/out: Oracle aggregate
 JSS(time_interval);           // out: AMM Auction Slot
 JSS(track);                   // out: PeerImp
 JSS(traffic);                 // out: Overlay
+JSS(TRANSACTION_FLAGS);       // out: server_definitions
 JSS(trim);                    // in: get_aggregate_price
 JSS(trimmed_set);             // out: get_aggregate_price
 JSS(total);                   // out: counters

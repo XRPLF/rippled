@@ -26,6 +26,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
@@ -71,8 +72,24 @@ public:
         {
             solution[std::string{ledgerEntrySection.first}] = Json::objectValue;
 
-            for(auto const& flag: ledgerEntrySection.second)
-                solution[std::string{ledgerEntrySection.first}][flag.first] = flag.second;
+            for (auto const& flag : ledgerEntrySection.second)
+                solution[std::string{ledgerEntrySection.first}][flag.first] =
+                    flag.second;
+        }
+
+        return solution;
+    }
+
+    static Json::Value
+    parseTransactionFlags()
+    {
+        Json::Value solution;
+        for (auto const& txSection : TXFlags)
+        {
+            solution[txSection.first] = Json::objectValue;
+
+            for (auto const& flag : txSection.second)
+                solution[txSection.first][flag.first] = flag.second;
         }
 
         return solution;
@@ -236,6 +253,8 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 
     // populate all the flags which are associated with ledger entries.
     defs_[jss::LEDGER_ENTRY_FLAGS] = parseLedgerSpecificFlags();
+
+    defs_[jss::TRANSACTION_FLAGS] = parseTransactionFlags();
 
     defs_[jss::TRANSACTION_FORMATS] = parseTxnFormats();
 

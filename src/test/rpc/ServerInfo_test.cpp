@@ -260,31 +260,81 @@ admin = 127.0.0.1
                     result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
                 Json::Value const& leFlags =
                     result[jss::result][jss::LEDGER_ENTRY_FLAGS];
-                // at present time, there are a total of 11 ledger objects with flags
+                // at present time, there are a total of 11 ledger objects with
+                // flags
                 BEAST_EXPECT(leFlags.size() == 11);
 
                 unsigned int totalCountLedgerSpecificFlags = 0;
-                for(auto const& ledgerObjectFlags: leFlags)
+                for (auto const& ledgerObjectFlags : leFlags)
                 {
                     totalCountLedgerSpecificFlags += ledgerObjectFlags.size();
                 }
                 BEAST_EXPECT(totalCountLedgerSpecificFlags == 54);
 
-                // sanity test the mapped value of a few arbitrarily chosen flags
-                BEAST_EXPECT(leFlags["ltACCOUNT_ROOT"]["lsfDisallowXRP"] == 0x00080000);
-                BEAST_EXPECT(leFlags["ltACCOUNT_ROOT"]["lsfDepositAuth"] == 0x01000000);
+                // sanity test the mapped value of a few arbitrarily chosen
+                // flags
                 BEAST_EXPECT(
-                    leFlags["ltACCOUNT_ROOT"]["lsfAllowTrustLineClawback"] == 0x80000000);
+                    leFlags["ltACCOUNT_ROOT"]["lsfDisallowXRP"] == 0x00080000);
+                BEAST_EXPECT(
+                    leFlags["ltACCOUNT_ROOT"]["lsfDepositAuth"] == 0x01000000);
+                BEAST_EXPECT(
+                    leFlags["ltACCOUNT_ROOT"]["lsfAllowTrustLineClawback"] ==
+                    0x80000000);
 
-                BEAST_EXPECT(leFlags["ltRIPPLE_STATE"]["lsfHighFreeze"] == 0x00800000);
-                BEAST_EXPECT(leFlags["ltRIPPLE_STATE"]["lsfAMMNode"] == 0x01000000);
+                BEAST_EXPECT(
+                    leFlags["ltRIPPLE_STATE"]["lsfHighFreeze"] == 0x00800000);
+                BEAST_EXPECT(
+                    leFlags["ltRIPPLE_STATE"]["lsfAMMNode"] == 0x01000000);
 
-                BEAST_EXPECT(leFlags["ltDIR_NODE"]["lsfNFTokenBuyOffers"] == 0x00000001);
-                BEAST_EXPECT(leFlags["ltMPTOKEN_ISSUANCE"]["lsfMPTCanTrade"] == 0x00000010);
-                BEAST_EXPECT(leFlags["ltCREDENTIAL"]["lsfAccepted"] == 0x00010000);
-                BEAST_EXPECT(leFlags["ltLOAN"]["lsfLoanImpaired"] == 0x00020000);
-                BEAST_EXPECT(leFlags["ltVAULT"]["lsfVaultPrivate"] == 0x00010000);
-                BEAST_EXPECT(leFlags["ltMPTOKEN"]["lsfMPTAuthorized"] == 0x00000002);
+                BEAST_EXPECT(
+                    leFlags["ltDIR_NODE"]["lsfNFTokenBuyOffers"] == 0x00000001);
+                BEAST_EXPECT(
+                    leFlags["ltMPTOKEN_ISSUANCE"]["lsfMPTCanTrade"] ==
+                    0x00000010);
+                BEAST_EXPECT(
+                    leFlags["ltCREDENTIAL"]["lsfAccepted"] == 0x00010000);
+                BEAST_EXPECT(
+                    leFlags["ltLOAN"]["lsfLoanImpaired"] == 0x00020000);
+                BEAST_EXPECT(
+                    leFlags["ltVAULT"]["lsfVaultPrivate"] == 0x00010000);
+                BEAST_EXPECT(
+                    leFlags["ltMPTOKEN"]["lsfMPTAuthorized"] == 0x00000002);
+            }
+            // validate the correctness of few chosen transaction flags
+            {
+                BEAST_EXPECT(
+                    result[jss::result].isMember(jss::TRANSACTION_FLAGS));
+                Json::Value const& txFlags =
+                    result[jss::result][jss::TRANSACTION_FLAGS];
+
+                std::cerr << txFlags << std::endl;
+
+                // count the transactions which allow for custom flag values
+                std::cerr << "size: " << txFlags.size() << std::endl;
+                BEAST_EXPECT(txFlags.size() == 22);
+
+                BEAST_EXPECT(
+                    txFlags["Universal"]["tfFullyCanonicalSig"] == 0x80000000);
+                BEAST_EXPECT(
+                    txFlags["Universal"]["tfInnerBatchTxn"] == 0x40000000);
+
+                BEAST_EXPECT(
+                    txFlags["AccountSet"]["tfRequireAuth"] == 0x00040000);
+                BEAST_EXPECT(txFlags["AccountSet"]["tfAllowXRP"] == 0x00200000);
+
+                BEAST_EXPECT(
+                    txFlags["MPTokenIssuanceSet"]["tfMPTLock"] == 0x00000001);
+                BEAST_EXPECT(
+                    txFlags["MPTokenIssuanceSet"]["tfMPTUnlock"] == 0x00000002);
+
+                BEAST_EXPECT(txFlags["AMM"]["tfLPToken"] == 0x00010000);
+                BEAST_EXPECT(txFlags["AMM"]["tfLimitLPToken"] == 0x00400000);
+
+                unsigned int totalTxFlags = 0;
+                for (auto const& txSection : txFlags)
+                    totalTxFlags += txSection.size();
+                std::cerr << "all flags: " << totalTxFlags << std::endl;
+                BEAST_EXPECT(totalTxFlags == 123);
             }
 
             // test the response fields of the TRANSACTION_FORMATS section
