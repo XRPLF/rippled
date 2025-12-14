@@ -452,9 +452,6 @@ admin = 127.0.0.1
                     BEAST_EXPECT(
                         txnFormats["Clawback"][jss::sfields][0u]
                                   [jss::optionality] == "REQUIRED");
-                    BEAST_EXPECT(
-                        txnFormats["Clawback"][jss::sfields][0u]
-                                  [jss::isMPTSupported] == "MPTSupported");
 
                     BEAST_EXPECT(
                         txnFormats["Clawback"][jss::sfields][1u]

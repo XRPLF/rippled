@@ -331,7 +331,6 @@ JSS(invalid_API_version);     // out: Many, when a request has an invalid
                               //      version
 JSS(io_latency_ms);           // out: NetworkOPs
 JSS(ip);                      // in: Connect, out: OverlayImpl
-JSS(isMPTSupported);          // out: server_definitions RPC
 JSS(is_burned);               // out: nft_info (clio)
 JSS(isSerialized);            // out: RPC server_definitions
                               // matches definitions.json format

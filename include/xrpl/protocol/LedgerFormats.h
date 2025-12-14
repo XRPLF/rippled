@@ -119,9 +119,9 @@ enum LedgerEntryType : std::uint16_t
 
 // define an X-MACRO format for the ledger-specific-flags.
 // This common macro-definition can be used to declare an enum and a std::unordered_map for these flags
-#define LIST_OF_LSF_FLAGS(X, START_SECTION, END_SECTION) \
+#define LIST_OF_LSF_FLAGS(X, START_SECTION_XMACRO, END_SECTION_XMACRO) \
     /* ltACCOUNT_ROOT */ \
-    START_SECTION(ltACCOUNT_ROOT) \
+    START_SECTION_XMACRO(ltACCOUNT_ROOT) \
         X(lsfPasswordSpent, 0x00010000) /* True, if password set fee is spent. */ \
         X(lsfRequireDestTag, 0x00020000) /* True, to require a DestinationTag for payments. */ \
         X(lsfRequireAuth, 0x00040000) /* True, to require a authorization to hold IOUs. */ \
@@ -140,17 +140,17 @@ enum LedgerEntryType : std::uint16_t
         X(lsfDisallowIncomingTrustline, 0x20000000) /* True, reject new trustlines (only if no issued assets) */ \
         X(lsfAllowTrustLineLocking, 0x40000000) /* True, enable trustline locking */ \
         X(lsfAllowTrustLineClawback, 0x80000000) /* True, enable clawback */ \
-    END_SECTION \
+    END_SECTION_XMACRO \
     \
     /* OFFER */ \
-    START_SECTION(ltOFFER) \
+    START_SECTION_XMACRO(ltOFFER) \
         X(lsfPassive, 0x00010000) \
         X(lsfSell, 0x00020000) /* True, offer was placed as a sell. */ \
         X(lsfHybrid, 0x00040000) /* True, offer is hybrid. */ \
-    END_SECTION \
+    END_SECTION_XMACRO \
     \
     /* ltRIPPLE_STATE */ \
-    START_SECTION(ltRIPPLE_STATE) \
+    START_SECTION_XMACRO(ltRIPPLE_STATE) \
         X(lsfLowReserve, 0x00010000) /* True, if entry counts toward reserve. */ \
         X(lsfHighReserve, 0x00020000) \
         X(lsfLowAuth, 0x00040000) \
@@ -162,26 +162,26 @@ enum LedgerEntryType : std::uint16_t
         X(lsfLowDeepFreeze, 0x02000000) /* True, low side has set deep freeze flag */ \
         X(lsfHighDeepFreeze, 0x04000000) /* True, high side has set deep freeze flag */ \
         X(lsfAMMNode, 0x01000000) /* True, trust line to AMM. Used by client apps to identify payments via AMM. */ \
-    END_SECTION \
+    END_SECTION_XMACRO \
     \
     /* ltSIGNER_LIST */ \
-    START_SECTION(ltSIGNER_LIST) \
+    START_SECTION_XMACRO(ltSIGNER_LIST) \
         X(lsfOneOwnerCount, 0x00010000) /* True, uses only one OwnerCount */ \
-    END_SECTION \
+    END_SECTION_XMACRO \
     \
     /* ltDIR_NODE */ \
-    START_SECTION(ltDIR_NODE) \
+    START_SECTION_XMACRO(ltDIR_NODE) \
         X(lsfNFTokenBuyOffers, 0x00000001) \
         X(lsfNFTokenSellOffers, 0x00000002) \
-    END_SECTION \
+    END_SECTION_XMACRO \
     \
     /* ltNFTOKEN_OFFER */ \
-    START_SECTION(ltNFTOKEN_OFFER) \
+    START_SECTION_XMACRO(ltNFTOKEN_OFFER) \
         X(lsfSellNFToken, 0x00000001) \
-    END_SECTION \
+    END_SECTION_XMACRO \
     \
     /* ltMPTOKEN_ISSUANCE */ \
-    START_SECTION(ltMPTOKEN_ISSUANCE) \
+    START_SECTION_XMACRO(ltMPTOKEN_ISSUANCE) \
         X(lsfMPTLocked, 0x00000001) /* Also used in ltMPTOKEN */ \
         X(lsfMPTCanLock, 0x00000002) \
         X(lsfMPTRequireAuth, 0x00000004) \
@@ -198,29 +198,29 @@ enum LedgerEntryType : std::uint16_t
         X(lsmfMPTCanMutateCanClawback, 0x00000040) \
         X(lsmfMPTCanMutateMetadata, 0x00010000) \
         X(lsmfMPTCanMutateTransferFee, 0x00020000) \
-    END_SECTION \
+    END_SECTION_XMACRO \
     \
     /* ltMPTOKEN */ \
-    START_SECTION(ltMPTOKEN) \
+    START_SECTION_XMACRO(ltMPTOKEN) \
         X(lsfMPTAuthorized, 0x00000002) \
-    END_SECTION \
+    END_SECTION_XMACRO \
     \
     /* ltCREDENTIAL */ \
-    START_SECTION(ltCREDENTIAL) \
+    START_SECTION_XMACRO(ltCREDENTIAL) \
         X(lsfAccepted, 0x00010000) \
-    END_SECTION \
+    END_SECTION_XMACRO \
     \
     /* ltVAULT */ \
-    START_SECTION(ltVAULT) \
+    START_SECTION_XMACRO(ltVAULT) \
         X(lsfVaultPrivate, 0x00010000) \
-    END_SECTION \
+    END_SECTION_XMACRO \
     \
     /* ltLOAN */ \
-    START_SECTION(ltLOAN) \
+    START_SECTION_XMACRO(ltLOAN) \
         X(lsfLoanDefault, 0x00010000) \
         X(lsfLoanImpaired, 0x00020000) \
         X(lsfLoanOverpayment, 0x00040000) /* True, loan allows overpayments */ \
-    END_SECTION \
+    END_SECTION_XMACRO \
 
 #define EXPAND_FLAG_VALUES(flagName, flagValue) {#flagName, flagValue},
 #define START_LE_MAP(ledgerObjectName) {#ledgerObjectName, std::unordered_map<std::string, unsigned int>{

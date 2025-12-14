@@ -342,10 +342,14 @@
 namespace ripple {
 
 // cpp type and value declarations for transaction flags
+// For the purpose of flag initialization, the transaction-name information is
+// discarded.
 #define START_TX_SECTION_NOOP(txName)
 #define END_TX_SECTION_NOOP
 #define DEFINE_FLAGS(flagName, flagValue) \
     constexpr std::uint32_t flagName = flagValue;
+// Note: Certain flags have the `const` type specifier in their declaraction,
+// which is handled by the below macro.
 #define DEFINE_FLAGS_CONST_TYPE(flagName, flagValue) \
     constexpr std::uint32_t const flagName = flagValue;
 LIST_OF_TRANSACTION_FLAGS(
@@ -379,6 +383,8 @@ inline std::unordered_map<std::string, unsigned int> const ASFlags = {
     {                                                           \
         #txnName, std::unordered_map<std::string, unsigned int> \
         {
+// Note: For the purposes of including transaction-flags inside a map, the const
+// type specifier is ignored.
 #define EXPAND_TX_FLAGS(flagName, flagValue) {#flagName, flagValue},
 #define EXPAND_TX_FLAGS_CONST_TYPE(flagName, flagValue) {#flagName, flagValue},
 #define END_TX_SECTION \

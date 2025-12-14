@@ -131,12 +131,6 @@ public:
                 else if (element.style() == 2)
                     elementObj[jss::optionality] = "DEFAULT";
 
-                if (element.supportMPT() == 1)
-                    elementObj[jss::isMPTSupported] = "MPTSupported";
-                else if (element.supportMPT() == 2)
-                    elementObj[jss::isMPTSupported] = "MPTNotSupported";
-                else if (element.supportMPT() == 0)
-                    elementObj[jss::isMPTSupported] = "MPTNone";
                 solution[f.getName()][jss::sfields].append(elementObj);
             }
         }
