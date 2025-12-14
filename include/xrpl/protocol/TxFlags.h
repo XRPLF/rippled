@@ -16,13 +16,34 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
+#pragma once
 #ifndef RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
 #define RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
 
 #include <xrpl/protocol/LedgerFormats.h>
 
 #include <cstdint>
+
+#define LIST_OF_ACCOUNT_SPECIFIC_FLAGS(X)     \
+    /* AccountSet SetFlag/ClearFlag values */ \
+    X(asfRequireDest, 1)                      \
+    X(asfRequireAuth, 2)                      \
+    X(asfDisallowXRP, 3)                      \
+    X(asfDisableMaster, 4)                    \
+    X(asfAccountTxnID, 5)                     \
+    X(asfNoFreeze, 6)                         \
+    X(asfGlobalFreeze, 7)                     \
+    X(asfDefaultRipple, 8)                    \
+    X(asfDepositAuth, 9)                      \
+    X(asfAuthorizedNFTokenMinter, 10)         \
+    /*  // reserved for Hooks amendment */    \
+    /* X(asfTshCollect, 11) */                \
+    X(asfDisallowIncomingNFTokenOffer, 12)    \
+    X(asfDisallowIncomingCheck, 13)           \
+    X(asfDisallowIncomingPayChan, 14)         \
+    X(asfDisallowIncomingTrustline, 15)       \
+    X(asfAllowTrustLineClawback, 16)          \
+    X(asfAllowTrustLineLocking, 17)
 
 /** Transaction flags.
 
@@ -73,27 +94,6 @@
     X(tfAccountSetMask,                                                        \
       ~(tfUniversal | tfRequireDestTag | tfOptionalDestTag | tfRequireAuth |   \
         tfOptionalAuth | tfDisallowXRP | tfAllowXRP))                          \
-    END_TX_FLAGS_XMACRO                                                        \
-    /* AccountSet SetFlag/ClearFlag values */                                  \
-    START_TX_FLAGS_XMACRO(AccountSetUpdateFlags)                               \
-    X(asfRequireDest, 1)                                                       \
-    X(asfRequireAuth, 2)                                                       \
-    X(asfDisallowXRP, 3)                                                       \
-    X(asfDisableMaster, 4)                                                     \
-    X(asfAccountTxnID, 5)                                                      \
-    X(asfNoFreeze, 6)                                                          \
-    X(asfGlobalFreeze, 7)                                                      \
-    X(asfDefaultRipple, 8)                                                     \
-    X(asfDepositAuth, 9)                                                       \
-    X(asfAuthorizedNFTokenMinter, 10)                                          \
-    /*  // reserved for Hooks amendment */                                     \
-    /* X(asfTshCollect, 11) */                                                 \
-    X(asfDisallowIncomingNFTokenOffer, 12)                                     \
-    X(asfDisallowIncomingCheck, 13)                                            \
-    X(asfDisallowIncomingPayChan, 14)                                          \
-    X(asfDisallowIncomingTrustline, 15)                                        \
-    X(asfAllowTrustLineClawback, 16)                                           \
-    X(asfAllowTrustLineLocking, 17)                                            \
     END_TX_FLAGS_XMACRO                                                        \
     /* OfferCreate flags: */                                                   \
     START_TX_FLAGS_XMACRO(OfferCreate)                                         \
@@ -341,7 +341,7 @@
 
 namespace ripple {
 
-// cpp type and value declarations
+// cpp type and value declarations for transaction flags
 #define START_TX_SECTION_NOOP(txName)
 #define END_TX_SECTION_NOOP
 #define DEFINE_FLAGS(flagName, flagValue) \
@@ -360,6 +360,21 @@ LIST_OF_TRANSACTION_FLAGS(
 
 static_assert(tfVaultPrivate == lsfVaultPrivate);
 
+// cpp type and value declarations for account-specific-flags
+#define GENERATE_ASF_FLAG_DECL(flagName, flagValue) \
+    constexpr std::uint32_t flagName = flagValue;
+LIST_OF_ACCOUNT_SPECIFIC_FLAGS(GENERATE_ASF_FLAG_DECL)
+#undef GENERATE_ASF_FLAG_DECL
+
+// store all the asf flags inside a map. This is used in the response of the
+// server_definitions RPC.
+#define INCLUDE_FLAG_IN_MAP(flagName, flagValue) {#flagName, flagValue},
+inline std::unordered_map<std::string, unsigned int> const ASFlags = {
+    LIST_OF_ACCOUNT_SPECIFIC_FLAGS(INCLUDE_FLAG_IN_MAP)};
+#undef INCLUDE_FLAG_IN_MAP
+
+// store all the transaction-flags inside a map. This is used in the response of
+// the server_definitions RPC.
 #define START_TX_SECTION(txnName)                               \
     {                                                           \
         #txnName, std::unordered_map<std::string, unsigned int> \

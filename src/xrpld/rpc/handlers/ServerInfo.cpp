@@ -96,6 +96,14 @@ public:
     }
 
     static Json::Value
+    parseAccountSpecificFlags()
+    {
+        Json::Value solution;
+        for (auto const& flag : ASFlags)
+            solution[flag.first] = flag.second;
+        return solution;
+    }
+    static Json::Value
     parseTxnFormats()
     {
         Json::Value solution = Json::objectValue;
@@ -255,6 +263,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     defs_[jss::LEDGER_ENTRY_FLAGS] = parseLedgerSpecificFlags();
 
     defs_[jss::TRANSACTION_FLAGS] = parseTransactionFlags();
+    defs_[jss::ACCOUNT_SPECIFIC_FLAGS] = parseAccountSpecificFlags();
 
     defs_[jss::TRANSACTION_FORMATS] = parseTxnFormats();
 

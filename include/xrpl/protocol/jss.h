@@ -46,6 +46,7 @@ JSS(AL_size);              // out: GetCounts
 JSS(AL_hit_rate);          // out: GetCounts
 JSS(AcceptedCredentials);  // out: AccountObjects
 JSS(Account);              // in: TransactionSign; field.
+JSS(ACCOUNT_SPECIFIC_FLAGS); // out: server_definitions RPC
 JSS(AMMID);                // field
 JSS(Amount);               // in: TransactionSign; field.
 JSS(Amount2);              // in/out: AMM IOU/XRP pool, deposit, withdraw amount

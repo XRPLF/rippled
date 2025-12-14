@@ -311,7 +311,7 @@ admin = 127.0.0.1
 
                 // count the transactions which allow for custom flag values
                 std::cerr << "size: " << txFlags.size() << std::endl;
-                BEAST_EXPECT(txFlags.size() == 22);
+                BEAST_EXPECT(txFlags.size() == 21);
 
                 BEAST_EXPECT(
                     txFlags["Universal"]["tfFullyCanonicalSig"] == 0x80000000);
@@ -334,7 +334,21 @@ admin = 127.0.0.1
                 for (auto const& txSection : txFlags)
                     totalTxFlags += txSection.size();
                 std::cerr << "all flags: " << totalTxFlags << std::endl;
-                BEAST_EXPECT(totalTxFlags == 123);
+                BEAST_EXPECT(totalTxFlags == 107);
+            }
+
+            // validate the correctness of the AccountSpecificFlags section
+            {
+                BEAST_EXPECT(
+                    result[jss::result].isMember(jss::ACCOUNT_SPECIFIC_FLAGS));
+                Json::Value const& asFlags =
+                    result[jss::result][jss::ACCOUNT_SPECIFIC_FLAGS];
+
+                BEAST_EXPECT(asFlags.size() == 16);
+                BEAST_EXPECT(asFlags["asfDisallowXRP"] == 3);
+                BEAST_EXPECT(asFlags["asfGlobalFreeze"] == 7);
+                BEAST_EXPECT(asFlags["asfDisallowIncomingNFTokenOffer"] == 12);
+                BEAST_EXPECT(asFlags["asfDisallowIncomingTrustline"] == 15);
             }
 
             // test the response fields of the TRANSACTION_FORMATS section
