@@ -146,7 +146,7 @@ jobs:
       - name: Show and reset ccache statistics
         if: ${{ env.CCACHE_ENABLED == 'true' }}
         run: |
-          ccache --show-stats ${{ runner.debug && '-vv' || '' }}
+          ccache --show-stats -vv
           ccache --zero-stats
 
       - name: Upload the binary (Linux)
