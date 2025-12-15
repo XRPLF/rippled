@@ -58,7 +58,7 @@ on:
       # * For HTTP use the following format: http://ip:port/cache when using
       #   nginx as backend or http://ip:port|layout-bazel when using Bazel
       #   Remote Cache, see https://github.com/ccache/ccache/wiki/HTTP-storage.
-      CACHE_REMOTE_STORAGE:
+      CCACHE_REMOTE_STORAGE:
         description: "The endpoint to use by ccache as remote storage."
         required: true
       CODECOV_TOKEN:
@@ -79,7 +79,7 @@ jobs:
       CCACHE_ENABLED: ${{ github.repository_owner == 'XRPLF' && github.event_name == 'pull_request' }}
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
       CCACHE_REMOTE_ONLY: true
-      CCACHE_REMOTE_STORAGE: ${{ secrets.CACHE_REMOTE_STORAGE }}
+      CCACHE_REMOTE_STORAGE: ${{ secrets.CCACHE_REMOTE_STORAGE }}
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
     steps:
