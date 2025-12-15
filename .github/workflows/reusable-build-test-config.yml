@@ -51,11 +51,18 @@ on:
         default: 2
 
     secrets:
+      # Ccache supports both Redis and HTTP endpoints.
+      # * For Redis, use the following format: redis://ip:port, see
+      #   https://github.com/ccache/ccache/wiki/Redis-storage. Note that TLS is
+      #   not directly supported, and requires use of a proxy.
+      # * For HTTP use the following format: http://ip:port/cache when using
+      #   nginx as backend or http://ip:port|layout-bazel when using Bazel
+      #   Remote Cache, see https://github.com/ccache/ccache/wiki/HTTP-storage.
+      CACHE_REMOTE_STORAGE:
+        description: "The endpoint to use by ccache as remote storage."
+        required: true
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
-        required: true
-      REDIS_ENDPOINT:
-        description: "The Redis endpoint to use by ccache as remote storage."
         required: true
 
 defaults:
@@ -72,7 +79,7 @@ jobs:
       CCACHE_ENABLED: ${{ github.repository_owner == 'XRPLF' && github.event_name == 'pull_request' }}
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
       CCACHE_REMOTE_ONLY: true
-      CCACHE_REMOTE_STORAGE: ${{ secrets.REDIS_ENDPOINT }}
+      CCACHE_REMOTE_STORAGE: ${{ inputs.CACHE_REMOTE_STORAGE }}
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
     steps:

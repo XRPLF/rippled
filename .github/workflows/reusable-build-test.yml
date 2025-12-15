@@ -24,11 +24,11 @@ on:
         type: string
         default: "minimal"
     secrets:
+      CACHE_REMOTE_STORAGE:
+        description: "The endpoint to use by ccache as remote storage."
+        required: true
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
-        required: true
-      REDIS_ENDPOINT:
-        description: "The Redis endpoint to use by ccache as remote storage."
         required: true
 
 jobs:
@@ -58,5 +58,5 @@ jobs:
       image: ${{ contains(matrix.architecture.platform, 'linux') && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}-sha-{4}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version, matrix.os.image_sha) || '' }}
       config_name: ${{ matrix.config_name }}
     secrets:
+      CACHE_REMOTE_STORAGE: ${{ secrets.CACHE_REMOTE_STORAGE }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      REDIS_ENDPOINT: ${{ secrets.REDIS_ENDPOINT }}
