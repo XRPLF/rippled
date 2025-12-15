@@ -183,6 +183,20 @@ public:
                 BEAST_EXPECT(asFlags["asfDisallowIncomingTrustline"] == 15);
             }
 
+            // validate the correctness of the ledgerNameSpaces section
+            {
+                BEAST_EXPECT(
+                    result[jss::result].isMember(jss::LEDGER_NAME_SPACE));
+                Json::Value const& lnSpace =
+                    result[jss::result][jss::LEDGER_NAME_SPACE];
+
+                BEAST_EXPECT(lnSpace.size() == 37);
+                BEAST_EXPECT(lnSpace["ESCROW"] == 'u');
+                BEAST_EXPECT(lnSpace["DEPOSIT_PREAUTH"] == 'p');
+                BEAST_EXPECT(lnSpace["ORACLE"] == 'R');
+                BEAST_EXPECT(lnSpace["LOAN_BROKER"] == 'l');
+            }
+
             // test the response fields of the TRANSACTION_FORMATS section
             {
                 BEAST_EXPECT(

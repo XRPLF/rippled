@@ -13,6 +13,8 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <libxrpl/protocol/Indexes.cpp>
+
 #include <unordered_map>
 
 namespace xrpl {
@@ -70,6 +72,17 @@ public:
             for (auto const& flag : txSection.second)
                 solution[txSection.first][flag.first] = flag.second;
         }
+
+        return solution;
+    }
+
+    static Json::Value
+    parseLedgerNameSpace()
+    {
+        Json::Value solution;
+
+        for (auto value : ledgerNameSpace)
+            solution[value.first] = value.second;
 
         return solution;
     }
@@ -231,6 +244,8 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 
     // populate ledger_entry formats
     defs_[jss::LEDGER_ENTRIES] = parseLedgerFormats();
+
+    defs_[jss::LEDGER_NAME_SPACE] = parseLedgerNameSpace();
 
     // populate all the flags which are associated with ledger entries.
     defs_[jss::LEDGER_ENTRY_FLAGS] = parseLedgerSpecificFlags();

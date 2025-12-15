@@ -44,48 +44,68 @@ namespace xrpl {
           Entries that are removed should be moved to the bottom of the enum
           and marked as [[deprecated]] to prevent accidental reuse.
 */
-enum class LedgerNameSpace : std::uint16_t {
-    ACCOUNT = 'a',
-    DIR_NODE = 'd',
-    TRUST_LINE = 'r',
-    OFFER = 'o',
-    OWNER_DIR = 'O',
-    BOOK_DIR = 'B',
-    SKIP_LIST = 's',
-    ESCROW = 'u',
-    AMENDMENTS = 'f',
-    FEE_SETTINGS = 'e',
-    TICKET = 'T',
-    SIGNER_LIST = 'S',
-    XRP_PAYMENT_CHANNEL = 'x',
-    CHECK = 'C',
-    DEPOSIT_PREAUTH = 'p',
-    DEPOSIT_PREAUTH_CREDENTIALS = 'P',
-    NEGATIVE_UNL = 'N',
-    NFTOKEN_OFFER = 'q',
-    NFTOKEN_BUY_OFFERS = 'h',
-    NFTOKEN_SELL_OFFERS = 'i',
-    AMM = 'A',
-    BRIDGE = 'H',
-    XCHAIN_CLAIM_ID = 'Q',
-    XCHAIN_CREATE_ACCOUNT_CLAIM_ID = 'K',
-    DID = 'I',
-    ORACLE = 'R',
-    MPTOKEN_ISSUANCE = '~',
-    MPTOKEN = 't',
-    CREDENTIAL = 'D',
-    PERMISSIONED_DOMAIN = 'm',
-    DELEGATE = 'E',
-    VAULT = 'V',
-    LOAN_BROKER = 'l',  // lower-case L
-    LOAN = 'L',
+#define LIST_OF_LEDGER_NAME_SPACES(X, XMACRO_DEPRECATED)              \
+    X(ACCOUNT, 'a')                                                   \
+    X(DIR_NODE, 'd')                                                  \
+    X(TRUST_LINE, 'r')                                                \
+    X(OFFER, 'o')                                                     \
+    X(OWNER_DIR, 'O')                                                 \
+    X(BOOK_DIR, 'B')                                                  \
+    X(SKIP_LIST, 's')                                                 \
+    X(ESCROW, 'u')                                                    \
+    X(AMENDMENTS, 'f')                                                \
+    X(FEE_SETTINGS, 'e')                                              \
+    X(TICKET, 'T')                                                    \
+    X(SIGNER_LIST, 'S')                                               \
+    X(XRP_PAYMENT_CHANNEL, 'x')                                       \
+    X(CHECK, 'C')                                                     \
+    X(DEPOSIT_PREAUTH, 'p')                                           \
+    X(DEPOSIT_PREAUTH_CREDENTIALS, 'P')                               \
+    X(NEGATIVE_UNL, 'N')                                              \
+    X(NFTOKEN_OFFER, 'q')                                             \
+    X(NFTOKEN_BUY_OFFERS, 'h')                                        \
+    X(NFTOKEN_SELL_OFFERS, 'i')                                       \
+    X(AMM, 'A')                                                       \
+    X(BRIDGE, 'H')                                                    \
+    X(XCHAIN_CLAIM_ID, 'Q')                                           \
+    X(XCHAIN_CREATE_ACCOUNT_CLAIM_ID, 'K')                            \
+    X(DID, 'I')                                                       \
+    X(ORACLE, 'R')                                                    \
+    X(MPTOKEN_ISSUANCE, '~')                                          \
+    X(MPTOKEN, 't')                                                   \
+    X(CREDENTIAL, 'D')                                                \
+    X(PERMISSIONED_DOMAIN, 'm')                                       \
+    X(DELEGATE, 'E')                                                  \
+    X(VAULT, 'V')                                                     \
+    X(LOAN_BROKER, 'l') /* lower-case L */                            \
+    X(LOAN, 'L')                                                      \
+                                                                      \
+    /* No longer used or supported. Left here to reserve the space */ \
+    /* to avoid accidental reuse. */                                  \
+    XMACRO_DEPRECATED(CONTRACT, 'c')                                  \
+    XMACRO_DEPRECATED(GENERATOR, 'g')                                 \
+    XMACRO_DEPRECATED(NICKNAME, 'n')
 
-    // No longer used or supported. Left here to reserve the space
-    // to avoid accidental reuse.
-    CONTRACT [[deprecated]] = 'c',
-    GENERATOR [[deprecated]] = 'g',
-    NICKNAME [[deprecated]] = 'n',
+#define DECL_LEDGER_NAME_SPACE(space, character) space = character,
+#define DECL_LEDGER_NAME_SPACE_DEPRECATED(space, character) \
+    space [[deprecated]] = character,
+enum class LedgerNameSpace : std::uint16_t {
+    LIST_OF_LEDGER_NAME_SPACES(
+        DECL_LEDGER_NAME_SPACE,
+        DECL_LEDGER_NAME_SPACE_DEPRECATED)
 };
+#undef DECL_LEDGER_NAME_SPACE_DEPRECATED
+#undef DECL_LEDGER_NAME_SPACE
+
+// initialize a map so that runtime operations can retrieve iterate over the
+// LedgerNameSpace values Note: The deprecated tag is not relevant for the
+// purposes of server_definitions RPC response
+#define EXPAND_LEDGER_NAME_SPACE(space, character) {#space, character},
+std::unordered_map<std::string, std::uint16_t> ledgerNameSpace{
+    LIST_OF_LEDGER_NAME_SPACES(
+        EXPAND_LEDGER_NAME_SPACE,
+        EXPAND_LEDGER_NAME_SPACE)};
+#undef EXPAND_LEDGER_NAME_SPACE
 
 template <class... Args>
 static uint256
