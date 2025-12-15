@@ -29,12 +29,12 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class Vault_test : public beast::unit_test::suite
 {
-    using PrettyAsset = ripple::test::jtx::PrettyAsset;
-    using PrettyAmount = ripple::test::jtx::PrettyAmount;
+    using PrettyAsset = xrpl::test::jtx::PrettyAsset;
+    using PrettyAmount = xrpl::test::jtx::PrettyAmount;
 
     static auto constexpr negativeAmount =
         [](PrettyAsset const& asset) -> PrettyAmount {
@@ -2223,7 +2223,7 @@ class Vault_test : public beast::unit_test::suite
             env(tx);
             env.close();
 
-            auto const issuanceId = [&env](ripple::Keylet keylet) -> MPTID {
+            auto const issuanceId = [&env](xrpl::Keylet keylet) -> MPTID {
                 auto const vault = env.le(keylet);
                 return vault->at(sfShareMPTID);
             }(keylet);
@@ -2555,10 +2555,10 @@ class Vault_test : public beast::unit_test::suite
                     Account const& owner,
                     Account const& issuer,
                     Account const& charlie,
-                    std::function<Account(ripple::Keylet)> vaultAccount,
+                    std::function<Account(xrpl::Keylet)> vaultAccount,
                     Vault& vault,
                     PrettyAsset const& asset,
-                    std::function<MPTID(ripple::Keylet)> issuanceId)> test,
+                    std::function<MPTID(xrpl::Keylet)> issuanceId)> test,
                 CaseArgs args = {}) {
                 Env env{*this, testable_amendments() | featureSingleAssetVault};
                 Account const owner{"owner"};
@@ -2590,10 +2590,10 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
 
                 auto const vaultAccount =
-                    [&env](ripple::Keylet keylet) -> Account {
+                    [&env](xrpl::Keylet keylet) -> Account {
                     return Account("vault", env.le(keylet)->at(sfAccount));
                 };
-                auto const issuanceId = [&env](ripple::Keylet keylet) -> MPTID {
+                auto const issuanceId = [&env](xrpl::Keylet keylet) -> MPTID {
                     return env.le(keylet)->at(sfShareMPTID);
                 };
 
@@ -2843,7 +2843,7 @@ class Vault_test : public beast::unit_test::suite
             env.close();
 
             // Withdraw to 3rd party works
-            auto const withdrawToCharlie = [&](ripple::Keylet keylet) {
+            auto const withdrawToCharlie = [&](xrpl::Keylet keylet) {
                 auto tx = vault.withdraw(
                     {.depositor = owner,
                      .id = keylet.key,
@@ -2914,7 +2914,7 @@ class Vault_test : public beast::unit_test::suite
             env.close();
 
             // Withdraw to 3rd party without trust line
-            auto const tx1 = [&](ripple::Keylet keylet) {
+            auto const tx1 = [&](xrpl::Keylet keylet) {
                 auto tx = vault.withdraw(
                     {.depositor = owner,
                      .id = keylet.key,
@@ -2953,7 +2953,7 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(trustline == nullptr);
 
             // Withdraw without trust line, will succeed
-            auto const tx1 = [&](ripple::Keylet keylet) {
+            auto const tx1 = [&](xrpl::Keylet keylet) {
                 auto tx = vault.withdraw(
                     {.depositor = owner,
                      .id = keylet.key,
@@ -2972,7 +2972,7 @@ class Vault_test : public beast::unit_test::suite
                 auto vaultAccount,
                 Vault& vault,
                 PrettyAsset const& asset,
-                std::function<MPTID(ripple::Keylet)> issuanceId) {
+                std::function<MPTID(xrpl::Keylet)> issuanceId) {
                 testcase("IOU non-transferable");
 
                 auto [tx, keylet] =
@@ -3250,7 +3250,7 @@ class Vault_test : public beast::unit_test::suite
             env.close();
 
             // Withdraw to 3rd party works
-            auto const withdrawToCharlie = [&](ripple::Keylet keylet) {
+            auto const withdrawToCharlie = [&](xrpl::Keylet keylet) {
                 auto tx = vault.withdraw(
                     {.depositor = owner,
                      .id = keylet.key,
@@ -3520,7 +3520,7 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("private vault expired authorization");
             uint32_t const closeTime = env.current()
-                                           ->info()
+                                           ->header()
                                            .parentCloseTime.time_since_epoch()
                                            .count();
             {
@@ -3755,7 +3755,7 @@ class Vault_test : public beast::unit_test::suite
         for (int i = 0; i < 256; ++i)
         {
             AccountID const accountId =
-                ripple::pseudoAccountAddress(*env.current(), keylet.key);
+                xrpl::pseudoAccountAddress(*env.current(), keylet.key);
 
             env(pay(env.master.id(), accountId, XRP(1000)),
                 seq(autofill),
@@ -3783,7 +3783,7 @@ class Vault_test : public beast::unit_test::suite
             MPTIssue shares;
             PrettyAsset const& share;
             Vault& vault;
-            ripple::Keylet keylet;
+            xrpl::Keylet keylet;
             Issue assets;
             PrettyAsset const& asset;
             std::function<bool(std::function<bool(SLE&, SLE&)>)> peek;
@@ -3813,7 +3813,7 @@ class Vault_test : public beast::unit_test::suite
             env(tx);
 
             auto const [vaultAccount, issuanceId] =
-                [&env](ripple::Keylet keylet) -> std::tuple<Account, MPTID> {
+                [&env](xrpl::Keylet keylet) -> std::tuple<Account, MPTID> {
                 auto const vault = env.le(keylet);
                 return {
                     Account("vault", vault->at(sfAccount)),
@@ -5264,6 +5264,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Vault, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(Vault, app, xrpl, 1);
 
-}  // namespace ripple
+}  // namespace xrpl

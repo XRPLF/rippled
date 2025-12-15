@@ -4,7 +4,7 @@
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 
 class FileUtilities_test : public beast::unit_test::suite
 {
@@ -12,7 +12,7 @@ public:
     void
     testGetFileContents()
     {
-        using namespace ripple::detail;
+        using namespace xrpl::detail;
         using namespace boost::system;
 
         constexpr char const* expectedContents =
@@ -60,6 +60,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FileUtilities, basics, ripple);
+BEAST_DEFINE_TESTSUITE(FileUtilities, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

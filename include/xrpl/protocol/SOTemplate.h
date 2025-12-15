@@ -8,7 +8,7 @@
 #include <initializer_list>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 /** Kind of element in each entry of an SOTemplate. */
 enum SOEStyle {
@@ -154,6 +154,6 @@ private:
     std::vector<int> indices_;  // field num -> index
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

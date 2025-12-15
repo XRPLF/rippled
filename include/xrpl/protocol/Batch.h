@@ -2,7 +2,7 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Serializer.h>
 
-namespace ripple {
+namespace xrpl {
 
 inline void
 serializeBatch(
@@ -17,4 +17,4 @@ serializeBatch(
         msg.addBitString(txid);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

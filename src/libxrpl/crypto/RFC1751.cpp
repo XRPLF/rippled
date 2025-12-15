@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 //
 // RFC 1751 code converted to C++/Boost.
@@ -260,12 +260,12 @@ RFC1751::extract(char const* s, int start, int length)
     unsigned char cr;
     unsigned long x;
 
-    XRPL_ASSERT(length <= 11, "ripple::RFC1751::extract : maximum length");
-    XRPL_ASSERT(start >= 0, "ripple::RFC1751::extract : minimum start");
-    XRPL_ASSERT(length >= 0, "ripple::RFC1751::extract : minimum length");
+    XRPL_ASSERT(length <= 11, "xrpl::RFC1751::extract : maximum length");
+    XRPL_ASSERT(start >= 0, "xrpl::RFC1751::extract : minimum start");
+    XRPL_ASSERT(length >= 0, "xrpl::RFC1751::extract : minimum length");
     XRPL_ASSERT(
         start + length <= 66,
-        "ripple::RFC1751::extract : maximum start + length");
+        "xrpl::RFC1751::extract : maximum start + length");
 
     int const shiftR = 24 - (length + (start % 8));
     cl = s[start / 8];  // get components
@@ -312,12 +312,11 @@ RFC1751::insert(char* s, int x, int start, int length)
     unsigned long y;
     int shift;
 
-    XRPL_ASSERT(length <= 11, "ripple::RFC1751::insert : maximum length");
-    XRPL_ASSERT(start >= 0, "ripple::RFC1751::insert : minimum start");
-    XRPL_ASSERT(length >= 0, "ripple::RFC1751::insert : minimum length");
+    XRPL_ASSERT(length <= 11, "xrpl::RFC1751::insert : maximum length");
+    XRPL_ASSERT(start >= 0, "xrpl::RFC1751::insert : minimum start");
+    XRPL_ASSERT(length >= 0, "xrpl::RFC1751::insert : minimum length");
     XRPL_ASSERT(
-        start + length <= 66,
-        "ripple::RFC1751::insert : maximum start + length");
+        start + length <= 66, "xrpl::RFC1751::insert : maximum start + length");
 
     shift = ((8 - ((start + length) % 8)) % 8);
     y = (long)x << shift;
@@ -508,4 +507,4 @@ RFC1751::getWordFromBlob(void const* blob, size_t bytes)
         [hash % (sizeof(s_dictionary) / sizeof(s_dictionary[0]))];
 }
 
-}  // namespace ripple
+}  // namespace xrpl

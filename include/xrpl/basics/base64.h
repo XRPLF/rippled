@@ -38,7 +38,7 @@
 #include <cstdint>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 base64_encode(std::uint8_t const* data, std::size_t len);
@@ -53,6 +53,6 @@ base64_encode(std::string const& s)
 std::string
 base64_decode(std::string_view data);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

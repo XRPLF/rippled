@@ -1,14 +1,13 @@
 #include <test/jtx/Env.h>
 
-#include <xrpld/core/ClosureCounter.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/core/ClosureCounter.h>
 
 #include <atomic>
 #include <chrono>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 //------------------------------------------------------------------------------
@@ -319,7 +318,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ClosureCounter, core, ripple);
+BEAST_DEFINE_TESTSUITE(ClosureCounter, core, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

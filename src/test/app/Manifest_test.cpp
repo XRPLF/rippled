@@ -15,7 +15,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Manifest_test : public beast::unit_test::suite
@@ -1066,7 +1066,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Manifest, app, ripple);
+BEAST_DEFINE_TESTSUITE(Manifest, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

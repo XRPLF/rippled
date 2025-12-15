@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class CancelCheck : public Transactor
 {
@@ -26,6 +26,6 @@ public:
 
 using CheckCancel = CancelCheck;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

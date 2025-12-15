@@ -10,7 +10,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 auto constexpr default_refresh_interval = std::chrono::minutes{5};
 auto constexpr error_retry_interval = std::chrono::seconds{30};
@@ -394,7 +394,7 @@ ValidatorSite::parseJsonResponse(
     auto const manifest = body[jss::manifest].asString();
     XRPL_ASSERT(
         version == body[jss::version].asUInt(),
-        "ripple::ValidatorSite::parseJsonResponse : version match");
+        "xrpl::ValidatorSite::parseJsonResponse : version match");
     auto const& uri = sites_[siteIdx].activeResource->uri;
     auto const hash = sha512Half(manifest, blobs, version);
     auto const applyResult = app_.validators().applyListsAndBroadcast(
@@ -571,7 +571,7 @@ ValidatorSite::onSiteFetch(
                             processRedirect(res, siteIdx, lock_sites);
                         XRPL_ASSERT(
                             newLocation,
-                            "ripple::ValidatorSite::onSiteFetch : non-null "
+                            "xrpl::ValidatorSite::onSiteFetch : non-null "
                             "validator");
                         // for perm redirects, also update our starting URI
                         if (res.result() == status::moved_permanently ||
@@ -684,4 +684,4 @@ ValidatorSite::getJson() const
     }
     return jrr;
 }
-}  // namespace ripple
+}  // namespace xrpl

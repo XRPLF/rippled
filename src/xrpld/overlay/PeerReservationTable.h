@@ -12,7 +12,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class DatabaseCon;
 
@@ -97,6 +97,6 @@ private:
     std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual> table_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

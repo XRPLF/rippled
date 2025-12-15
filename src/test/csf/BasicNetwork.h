@@ -4,7 +4,7 @@
 #include <test/csf/Digraph.h>
 #include <test/csf/Scheduler.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 /** Peer to peer network simulator.
@@ -234,6 +234,6 @@ BasicNetwork<Peer>::send(Peer const& from, Peer const& to, Function&& f)
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

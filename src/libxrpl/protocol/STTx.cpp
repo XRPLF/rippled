@@ -51,7 +51,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 static auto
 getTxFormat(TxType type)
@@ -150,7 +150,7 @@ STTx::getMentionedAccounts() const
         {
             XRPL_ASSERT(
                 !sacc->isDefault(),
-                "ripple::STTx::getMentionedAccounts : account is set");
+                "xrpl::STTx::getMentionedAccounts : account is set");
             if (!sacc->isDefault())
                 list.insert(sacc->value());
         }
@@ -222,7 +222,7 @@ STTx::sign(
 {
     auto const data = getSigningData(*this);
 
-    auto const sig = ripple::sign(publicKey, secretKey, makeSlice(data));
+    auto const sig = xrpl::sign(publicKey, secretKey, makeSlice(data));
 
     if (signatureTarget)
     {
@@ -375,7 +375,7 @@ STTx::getMetaSQL(
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
-    XRPL_ASSERT(format, "ripple::STTx::getMetaSQL : non-null type format");
+    XRPL_ASSERT(format, "xrpl::STTx::getMetaSQL : non-null type format");
 
     return str(
         boost::format(bfTrans) % to_string(getTransactionID()) %
@@ -819,4 +819,4 @@ isPseudoTx(STObject const& tx)
     return tt == ttAMENDMENT || tt == ttFEE || tt == ttUNL_MODIFY;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -11,7 +11,7 @@
 #include <random>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 #ifndef __INTELLISENSE__
 static_assert(
@@ -95,7 +95,7 @@ std::enable_if_t<
     Integral>
 rand_int(Engine& engine, Integral min, Integral max)
 {
-    XRPL_ASSERT(max > min, "ripple::rand_int : max over min inputs");
+    XRPL_ASSERT(max > min, "xrpl::rand_int : max over min inputs");
 
     // This should have no state and constructing it should
     // be very cheap. If that turns out not to be the case
@@ -186,6 +186,6 @@ rand_bool()
 }
 /** @} */
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_BASICS_RANDOM_H_INCLUDED

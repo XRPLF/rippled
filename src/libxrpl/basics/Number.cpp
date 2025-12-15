@@ -20,7 +20,7 @@ using uint128_t = boost::multiprecision::uint128_t;
 using uint128_t = __uint128_t;
 #endif  // !defined(_MSC_VER)
 
-namespace ripple {
+namespace xrpl {
 
 thread_local Number::rounding_mode Number::mode_ = Number::to_nearest;
 
@@ -280,7 +280,7 @@ Number::operator+=(Number const& y)
     }
     XRPL_ASSERT(
         isnormal() && y.isnormal(),
-        "ripple::Number::operator+=(Number) : is normal");
+        "xrpl::Number::operator+=(Number) : is normal");
     auto xm = mantissa();
     auto xe = exponent();
     int xn = 1;
@@ -396,7 +396,7 @@ Number::operator*=(Number const& y)
     }
     XRPL_ASSERT(
         isnormal() && y.isnormal(),
-        "ripple::Number::operator*=(Number) : is normal");
+        "xrpl::Number::operator*=(Number) : is normal");
     auto xm = mantissa();
     auto xe = exponent();
     int xn = 1;
@@ -437,7 +437,7 @@ Number::operator*=(Number const& y)
     exponent_ = xe;
     XRPL_ASSERT(
         isnormal() || *this == Number{},
-        "ripple::Number::operator*=(Number) : result is normal");
+        "xrpl::Number::operator*=(Number) : result is normal");
     return *this;
 }
 
@@ -548,7 +548,7 @@ to_string(Number const& amount)
     }
 
     XRPL_ASSERT(
-        exponent + 43 > 0, "ripple::to_string(Number) : minimum exponent");
+        exponent + 43 > 0, "xrpl::to_string(Number) : minimum exponent");
 
     ptrdiff_t const pad_prefix = 27;
     ptrdiff_t const pad_suffix = 23;
@@ -575,8 +575,7 @@ to_string(Number const& amount)
         pre_from += pad_prefix;
 
     XRPL_ASSERT(
-        post_to >= post_from,
-        "ripple::to_string(Number) : first distance check");
+        post_to >= post_from, "xrpl::to_string(Number) : first distance check");
 
     pre_from = std::find_if(pre_from, pre_to, [](char c) { return c != '0'; });
 
@@ -587,7 +586,7 @@ to_string(Number const& amount)
 
     XRPL_ASSERT(
         post_to >= post_from,
-        "ripple::to_string(Number) : second distance check");
+        "xrpl::to_string(Number) : second distance check");
 
     post_to = std::find_if(
                   std::make_reverse_iterator(post_to),
@@ -772,4 +771,4 @@ power(Number const& f, unsigned n, unsigned d)
     return root(power(f, n), d);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -4,7 +4,7 @@
 #include <array>
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -116,6 +116,6 @@ inline constexpr std::array<char const*, 6> WalletDBInit{
 
      "END TRANSACTION;"}};
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

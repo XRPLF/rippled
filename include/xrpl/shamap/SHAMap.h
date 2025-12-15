@@ -19,7 +19,7 @@
 #include <stack>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class SHAMapNodeID;
 class SHAMapSyncFilter;
@@ -584,7 +584,7 @@ SHAMap::setImmutable()
 {
     XRPL_ASSERT(
         state_ != SHAMapState::Invalid,
-        "ripple::SHAMap::setImmutable : state is valid");
+        "xrpl::SHAMap::setImmutable : state is valid");
     state_ = SHAMapState::Immutable;
 }
 
@@ -666,8 +666,7 @@ private:
 inline SHAMap::const_iterator::const_iterator(SHAMap const* map) : map_(map)
 {
     XRPL_ASSERT(
-        map_,
-        "ripple::SHAMap::const_iterator::const_iterator : non-null input");
+        map_, "xrpl::SHAMap::const_iterator::const_iterator : non-null input");
 
     if (auto temp = map_->peekFirstItem(stack_))
         item_ = temp->peekItem().get();
@@ -721,7 +720,7 @@ operator==(SHAMap::const_iterator const& x, SHAMap::const_iterator const& y)
 {
     XRPL_ASSERT(
         x.map_ == y.map_,
-        "ripple::operator==(SHAMap::const_iterator, SHAMap::const_iterator) : "
+        "xrpl::operator==(SHAMap::const_iterator, SHAMap::const_iterator) : "
         "inputs map do match");
     return x.item_ == y.item_;
 }
@@ -744,6 +743,6 @@ SHAMap::end() const
     return const_iterator(this, nullptr);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

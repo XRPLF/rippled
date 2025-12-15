@@ -9,7 +9,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 // VFALCO TODO Rename to OldLedgers ?
 
@@ -135,6 +135,6 @@ private:
     beast::Journal j_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
