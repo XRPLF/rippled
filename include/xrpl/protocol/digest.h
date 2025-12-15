@@ -8,7 +8,7 @@
 
 #include <array>
 
-namespace ripple {
+namespace xrpl {
 
 /** Message digest functions used in the codebase
 
@@ -226,6 +226,6 @@ sha512Half_s(Args const&... args)
     return static_cast<typename sha512_half_hasher_s::result_type>(h);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

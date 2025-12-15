@@ -6,7 +6,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 namespace token {
@@ -72,7 +72,7 @@ getID(
     // sequence number.
     nftSeq +=
         env.le(issuer)->at(~sfFirstNFTokenSequence).value_or(env.seq(issuer));
-    return ripple::NFTokenMint::createNFTokenID(
+    return xrpl::NFTokenMint::createNFTokenID(
         flags, xferFee, issuer, nft::toTaxon(nfTokenTaxon), nftSeq);
 }
 
@@ -223,4 +223,4 @@ modify(jtx::Account const& account, uint256 const& nftokenID)
 }  // namespace token
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

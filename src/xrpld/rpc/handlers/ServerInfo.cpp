@@ -6,7 +6,7 @@
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doServerInfo(RPC::JsonContext& context)
@@ -22,4 +22,4 @@ doServerInfo(RPC::JsonContext& context)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

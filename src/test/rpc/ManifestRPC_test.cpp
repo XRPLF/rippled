@@ -9,7 +9,7 @@
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ManifestRPC_test : public beast::unit_test::suite
@@ -73,6 +73,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ManifestRPC, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(ManifestRPC, rpc, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

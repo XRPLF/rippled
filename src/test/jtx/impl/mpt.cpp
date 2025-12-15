@@ -3,7 +3,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -595,7 +595,7 @@ MPTTester::mpt(std::int64_t amount) const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
-    return ripple::test::jtx::MPT(issuer_.name(), *id_)(amount);
+    return xrpl::test::jtx::MPT(issuer_.name(), *id_)(amount);
 }
 
 MPTTester::operator Asset() const
@@ -651,4 +651,4 @@ MPTTester::operator()(std::int64_t amount) const
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

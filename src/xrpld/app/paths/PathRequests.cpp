@@ -1,16 +1,16 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/PathRequests.h>
-#include <xrpld/core/JobQueue.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 /** Get the current RippleLineCache, updating it if necessary.
     Get the correct ledger to use.
@@ -300,4 +300,4 @@ PathRequests::doLegacyPathRequest(
     return std::move(jvRes);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

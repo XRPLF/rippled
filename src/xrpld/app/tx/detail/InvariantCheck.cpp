@@ -25,7 +25,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /*
 assert(enforce)
@@ -525,7 +525,7 @@ AccountRootsDeletedClean::finalize(
             // assert.
             XRPL_ASSERT(
                 enforce,
-                "ripple::AccountRootsDeletedClean::finalize::objectExists : "
+                "xrpl::AccountRootsDeletedClean::finalize::objectExists : "
                 "account deletion left no objects behind");
             return true;
         }
@@ -542,7 +542,7 @@ AccountRootsDeletedClean::finalize(
                                "behind a non-zero balance";
             XRPL_ASSERT(
                 enforce,
-                "ripple::AccountRootsDeletedClean::finalize : "
+                "xrpl::AccountRootsDeletedClean::finalize : "
                 "deleted account has zero balance");
             if (enforce)
                 return false;
@@ -554,7 +554,7 @@ AccountRootsDeletedClean::finalize(
                                "behind a non-zero owner count";
             XRPL_ASSERT(
                 enforce,
-                "ripple::AccountRootsDeletedClean::finalize : "
+                "xrpl::AccountRootsDeletedClean::finalize : "
                 "deleted account has zero owner count");
             if (enforce)
                 return false;
@@ -796,7 +796,7 @@ TransfersNotFrozen::finalize(
             // assert.
             XRPL_ASSERT(
                 enforce,
-                "ripple::TransfersNotFrozen::finalize : enforce "
+                "xrpl::TransfersNotFrozen::finalize : enforce "
                 "invariant.");
             if (enforce)
             {
@@ -820,8 +820,7 @@ TransfersNotFrozen::isValidEntry(
     std::shared_ptr<SLE const> const& after)
 {
     // `after` can never be null, even if the trust line is deleted.
-    XRPL_ASSERT(
-        after, "ripple::TransfersNotFrozen::isValidEntry : valid after.");
+    XRPL_ASSERT(after, "xrpl::TransfersNotFrozen::isValidEntry : valid after.");
     if (!after)
     {
         return false;
@@ -877,7 +876,7 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 {
     XRPL_ASSERT(
         change.balanceChangeSign,
-        "ripple::TransfersNotFrozen::recordBalance : valid trustline "
+        "xrpl::TransfersNotFrozen::recordBalance : valid trustline "
         "balance sign.");
     auto& changes = balanceChanges_[issue];
     if (change.balanceChangeSign < 0)
@@ -996,7 +995,7 @@ TransfersNotFrozen::validateFrozenState(
     // The comment above starting with "assert(enforce)" explains this assert.
     XRPL_ASSERT(
         enforce,
-        "ripple::TransfersNotFrozen::validateFrozenState : enforce "
+        "xrpl::TransfersNotFrozen::validateFrozenState : enforce "
         "invariant.");
 
     if (enforce)
@@ -1084,7 +1083,7 @@ ValidNewAccountRoot::finalize(
 
     JLOG(j.fatal()) << "Invariant failed: account root created illegally";
     return false;
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 
@@ -1486,7 +1485,7 @@ ValidMPTIssuance::finalize(
             // assert.
             XRPL_ASSERT_PARTS(
                 enforceCreatedByIssuer,
-                "ripple::ValidMPTIssuance::finalize",
+                "xrpl::ValidMPTIssuance::finalize",
                 "no issuer MPToken");
             if (enforceCreatedByIssuer)
                 return false;
@@ -1598,7 +1597,7 @@ ValidMPTIssuance::finalize(
             // non-amendment-gated side effects.
             XRPL_ASSERT_PARTS(
                 !enforceEscrowFinish,
-                "ripple::ValidMPTIssuance::finalize",
+                "xrpl::ValidMPTIssuance::finalize",
                 "not escrow finish tx");
             return true;
         }
@@ -1811,7 +1810,7 @@ ValidPseudoAccounts::finalize(
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
     XRPL_ASSERT(
         errors_.empty() || enforce,
-        "ripple::ValidPseudoAccounts::finalize : no bad "
+        "xrpl::ValidPseudoAccounts::finalize : no bad "
         "changes or enforce invariant");
     if (!errors_.empty())
     {
@@ -2089,8 +2088,8 @@ ValidAMM::finalizeDEX(bool enforce, beast::Journal const& j) const
 
 bool
 ValidAMM::generalInvariant(
-    ripple::STTx const& tx,
-    ripple::ReadView const& view,
+    xrpl::STTx const& tx,
+    xrpl::ReadView const& view,
     ZeroAllowed zeroAllowed,
     beast::Journal const& j) const
 {
@@ -2135,8 +2134,8 @@ ValidAMM::generalInvariant(
 
 bool
 ValidAMM::finalizeDeposit(
-    ripple::STTx const& tx,
-    ripple::ReadView const& view,
+    xrpl::STTx const& tx,
+    xrpl::ReadView const& view,
     bool enforce,
     beast::Journal const& j) const
 {
@@ -2156,8 +2155,8 @@ ValidAMM::finalizeDeposit(
 
 bool
 ValidAMM::finalizeWithdraw(
-    ripple::STTx const& tx,
-    ripple::ReadView const& view,
+    xrpl::STTx const& tx,
+    xrpl::ReadView const& view,
     bool enforce,
     beast::Journal const& j) const
 {
@@ -2317,7 +2316,7 @@ NoModifiedUnmodifiableFields::finalize(
         }
         XRPL_ASSERT(
             !bad || enforce,
-            "ripple::NoModifiedUnmodifiableFields::finalize : no bad "
+            "xrpl::NoModifiedUnmodifiableFields::finalize : no bad "
             "changes or enforce invariant");
         if (bad)
         {
@@ -2657,7 +2656,7 @@ ValidVault::visitEntry(
     // `isDelete` indicates whether an object is being deleted or modified.
     XRPL_ASSERT(
         after != nullptr && (before != nullptr || !isDelete),
-        "ripple::ValidVault::visitEntry : some object is available");
+        "xrpl::ValidVault::visitEntry : some object is available");
 
     // Number balanceDelta will capture the difference (delta) between "before"
     // state (zero if created) and "after" state (zero if destroyed), so the
@@ -2755,7 +2754,7 @@ ValidVault::finalize(
                 "Invariant failed: vault operation succeeded without modifying "
                 "a vault";
             XRPL_ASSERT(
-                enforce, "ripple::ValidVault::finalize : vault noop invariant");
+                enforce, "xrpl::ValidVault::finalize : vault noop invariant");
             return !enforce;
         }
 
@@ -2768,7 +2767,7 @@ ValidVault::finalize(
             "Invariant failed: vault updated by a wrong transaction type";
         XRPL_ASSERT(
             enforce,
-            "ripple::ValidVault::finalize : illegal vault transaction "
+            "xrpl::ValidVault::finalize : illegal vault transaction "
             "invariant");
         return !enforce;  // Also not a vault operation
     }
@@ -2778,7 +2777,7 @@ ValidVault::finalize(
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault operation updated more than single vault";
         XRPL_ASSERT(
-            enforce, "ripple::ValidVault::finalize : single vault invariant");
+            enforce, "xrpl::ValidVault::finalize : single vault invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -2794,7 +2793,7 @@ ValidVault::finalize(
                 "Invariant failed: vault deleted by a wrong transaction type";
             XRPL_ASSERT(
                 enforce,
-                "ripple::ValidVault::finalize : illegal vault deletion "
+                "xrpl::ValidVault::finalize : illegal vault deletion "
                 "invariant");
             return !enforce;  // That's all we can do here
         }
@@ -2821,7 +2820,7 @@ ValidVault::finalize(
                                "delete shares";
             XRPL_ASSERT(
                 enforce,
-                "ripple::ValidVault::finalize : shares deletion invariant");
+                "xrpl::ValidVault::finalize : shares deletion invariant");
             return !enforce;  // That's all we can do here
         }
 
@@ -2852,7 +2851,7 @@ ValidVault::finalize(
         JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without "
                            "deleting a vault";
         XRPL_ASSERT(
-            enforce, "ripple::ValidVault::finalize : vault deletion invariant");
+            enforce, "xrpl::ValidVault::finalize : vault deletion invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -2860,7 +2859,7 @@ ValidVault::finalize(
     auto const& afterVault = afterVault_[0];
     XRPL_ASSERT(
         beforeVault_.empty() || beforeVault_[0].key == afterVault.key,
-        "ripple::ValidVault::finalize : single vault operation");
+        "xrpl::ValidVault::finalize : single vault operation");
 
     auto const updatedShares = [&]() -> std::optional<Shares> {
         // At this moment we only know that a vault is being updated and there
@@ -2901,8 +2900,7 @@ ValidVault::finalize(
     {
         JLOG(j.fatal()) << "Invariant failed: updated vault must have shares";
         XRPL_ASSERT(
-            enforce,
-            "ripple::ValidVault::finalize : vault has shares invariant");
+            enforce, "xrpl::ValidVault::finalize : vault has shares invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -2972,7 +2970,7 @@ ValidVault::finalize(
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault created by a wrong transaction type";
         XRPL_ASSERT(
-            enforce, "ripple::ValidVault::finalize : vault creation invariant");
+            enforce, "xrpl::ValidVault::finalize : vault creation invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -3007,7 +3005,7 @@ ValidVault::finalize(
         JLOG(j.fatal()) << "Invariant failed: vault operation succeeded "
                            "without updating shares";
         XRPL_ASSERT(
-            enforce, "ripple::ValidVault::finalize : shares noop invariant");
+            enforce, "xrpl::ValidVault::finalize : shares noop invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -3137,7 +3135,7 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "ripple::ValidVault::finalize : set updated a vault");
+                    "xrpl::ValidVault::finalize : set updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
                 auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
@@ -3189,7 +3187,7 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "ripple::ValidVault::finalize : deposit updated a vault");
+                    "xrpl::ValidVault::finalize : deposit updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
                 auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
@@ -3316,7 +3314,7 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "ripple::ValidVault::finalize : withdrawal updated a "
+                    "xrpl::ValidVault::finalize : withdrawal updated a "
                     "vault");
                 auto const& beforeVault = beforeVault_[0];
 
@@ -3444,7 +3442,7 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "ripple::ValidVault::finalize : clawback updated a vault");
+                    "xrpl::ValidVault::finalize : clawback updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
                 if (vaultAsset.native() ||
@@ -3536,7 +3534,7 @@ ValidVault::finalize(
             default:
                 // LCOV_EXCL_START
                 UNREACHABLE(
-                    "ripple::ValidVault::finalize : unknown transaction type");
+                    "xrpl::ValidVault::finalize : unknown transaction type");
                 return false;
                 // LCOV_EXCL_STOP
         }
@@ -3546,11 +3544,11 @@ ValidVault::finalize(
     {
         // The comment at the top of this file starting with "assert(enforce)"
         // explains this assert.
-        XRPL_ASSERT(enforce, "ripple::ValidVault::finalize : vault invariants");
+        XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault invariants");
         return !enforce;
     }
 
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

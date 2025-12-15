@@ -3,9 +3,9 @@
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/InfoSub.h>
 
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/messages.h>
@@ -14,7 +14,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -275,6 +275,6 @@ make_NetworkOPs(
     beast::Journal journal,
     beast::insight::Collector::ptr const& collector);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

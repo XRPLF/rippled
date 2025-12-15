@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/ApiVersion.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 class VersionHandler
@@ -43,6 +43,6 @@ private:
 };
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -1,7 +1,7 @@
 #ifndef XRPL_RESOURCE_DISPOSITION_H_INCLUDED
 #define XRPL_RESOURCE_DISPOSITION_H_INCLUDED
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 /** The disposition of a consumer after applying a load charge. */
@@ -19,6 +19,6 @@ enum Disposition {
 };
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

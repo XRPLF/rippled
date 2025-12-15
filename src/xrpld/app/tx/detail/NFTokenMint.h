@@ -6,7 +6,7 @@
 
 #include <xrpl/protocol/nft.h>
 
-namespace ripple {
+namespace xrpl {
 
 class NFTokenMint : public Transactor
 {
@@ -42,6 +42,6 @@ public:
         std::uint32_t tokenSeq);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

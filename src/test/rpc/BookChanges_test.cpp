@@ -4,7 +4,7 @@
 #include "xrpl/beast/unit_test/suite.h"
 #include "xrpl/protocol/jss.h"
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class BookChanges_test : public beast::unit_test::suite
@@ -124,7 +124,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(BookChanges, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(BookChanges, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

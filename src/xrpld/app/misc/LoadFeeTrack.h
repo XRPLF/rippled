@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 struct Fees;
 
@@ -147,6 +147,6 @@ scaleFeeLoad(
     Fees const& fees,
     bool bUnlimited);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
