@@ -1298,7 +1298,7 @@ public:
     testNegativeBalance(FeatureBitset features)
     {
         // This test creates an offer test for negative balance
-        // with transfer fees and miniscule funds.
+        // with transfer fees and minuscule funds.
         testcase("Negative Balance");
 
         using namespace jtx;
