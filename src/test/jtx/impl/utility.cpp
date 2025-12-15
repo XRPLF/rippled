@@ -3,7 +3,6 @@
 #include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/json/Object.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
@@ -83,7 +82,7 @@ cmdToJSONRPC(
     // If paramsObj is not empty, put it in a [params] array.
     if (paramsObj.begin() != paramsObj.end())
     {
-        auto& paramsArray = Json::setArray(jv, jss::params);
+        auto& paramsArray = jv[jss::params] = Json::arrayValue;
         paramsArray.append(paramsObj);
     }
     if (paramsObj.isMember(jss::jsonrpc))
