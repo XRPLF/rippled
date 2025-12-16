@@ -76,7 +76,12 @@ jobs:
     container: ${{ inputs.image != '' && inputs.image || null }}
     timeout-minutes: 60
     env:
-      CCACHE_ENABLED: ${{ github.repository_owner == 'XRPLF' && github.event_name == 'pull_request' }}
+      # Enable ccache only for PR commits, merge_group, and scheduled builds in
+      # the XRPLF organization. We do not enable ccache for PRs from forks as
+      # they do not have access to our remote cache storage. We further do not
+      # enable ccache for push events, to protect against the rare case that the
+      # ccached output is not identical to a regular compilation.
+      CCACHE_ENABLED: ${{ github.repository_owner == 'XRPLF' && (github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.event_name == 'schedule') }}
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
       CCACHE_REMOTE_ONLY: true
       CCACHE_REMOTE_STORAGE: ${{ secrets.CCACHE_REMOTE_STORAGE }}
@@ -143,11 +148,9 @@ jobs:
             --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
 
-      - name: Show and reset ccache statistics
+      - name: Show ccache statistics
         if: ${{ env.CCACHE_ENABLED == 'true' }}
-        run: |
-          ccache --show-stats -vv
-          ccache --zero-stats
+        run: ccache --show-stats -vv
 
       - name: Upload the binary (Linux)
         if: ${{ github.repository_owner == 'XRPLF' && runner.os == 'Linux' }}
