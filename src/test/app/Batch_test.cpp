@@ -151,9 +151,15 @@ class Batch_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
+        bool const withInnerSigFix = features[fixBatchInnerSigs];
+
         for (bool const withBatch : {true, false})
         {
-            testcase << "enabled: " << (withBatch ? "enabled" : "disabled");
+            testcase << "enabled: Batch "
+                     << (withBatch ? "enabled" : "disabled")
+                     << ", Inner Sig Fix: "
+                     << (withInnerSigFix ? "enabled" : "disabled");
+
             auto const amend = withBatch ? features : features - featureBatch;
 
             test::jtx::Env env{*this, amend};
@@ -2218,15 +2224,24 @@ class Batch_test : public beast::unit_test::suite
     void
     doTestInnerSubmitRPC(FeatureBitset features, bool withBatch)
     {
-        testcase << "inner submit rpc: batch "
-                 << (withBatch ? "enabled" : "disabled");
+        bool const withInnerSigFix = features[fixBatchInnerSigs];
+
+        std::string const testName = [&]() {
+            std::stringstream ss;
+            ss << "inner submit rpc: batch "
+               << (withBatch ? "enabled" : "disabled") << ", inner sig fix: "
+               << (withInnerSigFix ? "enabled" : "disabled") << ": ";
+            return ss.str();
+        }();
+
         auto const amend = withBatch ? features : features - featureBatch;
 
         using namespace test::jtx;
         using namespace std::literals;
 
         test::jtx::Env env{*this, amend};
-        auto const batchEnabled = amend[featureBatch];
+        if (!BEAST_EXPECT(amend[featureBatch] == withBatch))
+            return;
 
         auto const alice = Account("alice");
         auto const bob = Account("bob");
@@ -2235,13 +2250,18 @@ class Batch_test : public beast::unit_test::suite
         env.close();
 
         auto submitAndValidate =
-            [&](Slice const& slice,
+            [&](std::string caseName,
+                Slice const& slice,
                 int line,
                 std::optional<std::string> expectedEnabled = std::nullopt,
                 std::optional<std::string> expectedDisabled = std::nullopt,
                 bool expectInvalidFlag = false) {
+                testcase << testName << caseName
+                         << (expectInvalidFlag
+                                 ? " - Expected to reach tx engine!"
+                                 : "");
                 auto const jrr = env.rpc("submit", strHex(slice))[jss::result];
-                auto const expected = batchEnabled
+                auto const expected = withBatch
                     ? expectedEnabled.value_or(
                           "fails local checks: Malformed: Invalid inner batch "
                           "transaction.")
@@ -2270,24 +2290,24 @@ class Batch_test : public beast::unit_test::suite
             };
 
         // Invalid RPC Submission: TxnSignature
-        // - has `TxnSignature` field
+        // + has `TxnSignature` field
         // - has no `SigningPubKey` field
         // - has no `Signers` field
-        // - has `tfInnerBatchTxn` flag
+        // + has `tfInnerBatchTxn` flag
         {
             auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
             txn[sfTxnSignature] = "DEADBEEF";
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);
-            submitAndValidate(s.slice(), __LINE__);
+            submitAndValidate("TxnSignature set", s.slice(), __LINE__);
         }
 
         // Invalid RPC Submission: SigningPubKey
         // - has no `TxnSignature` field
-        // - has `SigningPubKey` field
+        // + has `SigningPubKey` field
         // - has no `Signers` field
-        // - has `tfInnerBatchTxn` flag
+        // + has `tfInnerBatchTxn` flag
         {
             auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
             txn[sfSigningPubKey] = strHex(alice.pk());
@@ -2295,6 +2315,7 @@ class Batch_test : public beast::unit_test::suite
             Serializer s;
             parsed.object->add(s);
             submitAndValidate(
+                "SigningPubKey set",
                 s.slice(),
                 __LINE__,
                 std::nullopt,
@@ -2303,9 +2324,9 @@ class Batch_test : public beast::unit_test::suite
 
         // Invalid RPC Submission: Signers
         // - has no `TxnSignature` field
-        // - has empty `SigningPubKey` field
-        // - has `Signers` field
-        // - has `tfInnerBatchTxn` flag
+        // + has empty `SigningPubKey` field
+        // + has `Signers` field
+        // + has `tfInnerBatchTxn` flag
         {
             auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
             txn[sfSigners] = Json::arrayValue;
@@ -2313,6 +2334,7 @@ class Batch_test : public beast::unit_test::suite
             Serializer s;
             parsed.object->add(s);
             submitAndValidate(
+                "Signers set",
                 s.slice(),
                 __LINE__,
                 std::nullopt,
@@ -2329,25 +2351,59 @@ class Batch_test : public beast::unit_test::suite
             Serializer s;
             parsed.object->add(s);
             submitAndValidate(
-                s.slice(), __LINE__, std::nullopt, std::nullopt, !batchEnabled);
+                "Fully signed",
+                s.slice(),
+                __LINE__,
+                std::nullopt,
+                std::nullopt,
+                !withBatch);
         }
 
         // Invalid RPC Submission: tfInnerBatchTxn
         // - has no `TxnSignature` field
-        // - has empty `SigningPubKey` field
+        // + has empty `SigningPubKey` field
         // - has no `Signers` field
-        // - has `tfInnerBatchTxn` flag
+        // + has `tfInnerBatchTxn` flag
         {
             auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);
             submitAndValidate(
+                "No signing fields set",
                 s.slice(),
                 __LINE__,
-                std::nullopt,
                 "fails local checks: Empty SigningPubKey.",
-                batchEnabled);
+                "fails local checks: Empty SigningPubKey.",
+                withBatch && !withInnerSigFix);
+        }
+
+        // Invalid RPC Submission: tfInnerBatchTxn pseudo-transaction
+        // - has no `TxnSignature` field
+        // + has empty `SigningPubKey` field
+        // - has no `Signers` field
+        // + has `tfInnerBatchTxn` flag
+        {
+            STTx amendTx(
+                ttAMENDMENT, [seq = env.closed()->header().seq + 1](auto& obj) {
+                    obj.setAccountID(sfAccount, AccountID());
+                    obj.setFieldH256(sfAmendment, fixBatchInnerSigs);
+                    obj.setFieldU32(sfLedgerSequence, seq);
+                    obj.setFieldU32(sfFlags, tfInnerBatchTxn);
+                });
+            auto txn = batch::inner(
+                amendTx.getJson(JsonOptions::none), env.seq(alice));
+            STParsedJSONObject parsed("test", txn.getTxn());
+            Serializer s;
+            parsed.object->add(s);
+            submitAndValidate(
+                "Pseudo-transaction",
+                s.slice(),
+                __LINE__,
+                withInnerSigFix
+                    ? "fails local checks: Empty SigningPubKey."
+                    : "fails local checks: Cannot submit pseudo transactions.",
+                "fails local checks: Empty SigningPubKey.");
         }
     }
 
@@ -4410,8 +4466,8 @@ public:
     {
         using namespace test::jtx;
         auto const sa = testable_amendments();
-        // testWithFeats(sa);
         testWithFeats(sa - fixBatchInnerSigs);
+        testWithFeats(sa);
     }
 };
 
