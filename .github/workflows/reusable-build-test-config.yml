@@ -83,6 +83,7 @@ jobs:
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
       CCACHE_REMOTE_ONLY: true
       CCACHE_REMOTE_STORAGE: http://cache.dev.ripplex.io:8080|layout=bazel
+      CCACHE_SLOPPINESS: include_file_ctime,include_file_mtime
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
     steps:
