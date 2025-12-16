@@ -83,7 +83,6 @@ jobs:
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
       CCACHE_REMOTE_ONLY: true
       CCACHE_REMOTE_STORAGE: http://cache.dev.ripplex.io:8080|layout=bazel
-      CCACHE_LOGFILE: ${{ runner.temp }}/ccache.log
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
     steps:
@@ -98,6 +97,10 @@ jobs:
         uses: XRPLF/actions/prepare-runner@2ece4ec6ab7de266859a6f053571425b2bd684b6
         with:
           disable_ccache: ${{ env.CCACHE_ENABLED == 'false' }}
+
+      - name: Set ccache log file
+        if: ${{ env.CCACHE_ENABLED == 'true' && runner.debug }}
+        run: echo "CCACHE_LOGFILE=${{ runner.temp }}/ccache.log" >> "${{ GITHUB_ENV }}"
 
       - name: Print build environment
         uses: ./.github/actions/print-env
