@@ -70,19 +70,23 @@ jobs:
       # the XRPLF organization. We do not enable ccache for PRs from forks as
       # they do not have access to our remote cache storage. We further do not
       # enable ccache for push events, to protect against the rare case that the
-      # ccached output is not identical to a regular compilation.
+      # output produced by ccache is not identical to a regular compilation.
       CCACHE_ENABLED: ${{ github.repository_owner == 'XRPLF' && (github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.event_name == 'schedule') }}
+      # Use a namespace to keep the objects separate for each configuration.
+      CCACHE_NAMESPACE: ${{ inputs.config_name }}
       # Ccache supports both Redis and HTTP endpoints.
       # * For Redis, use the following format: redis://ip:port, see
       #   https://github.com/ccache/ccache/wiki/Redis-storage. Note that TLS is
-      #   not directly supported, and requires use of a proxy.
+      #   not directly supported by ccache, and requires use of a proxy.
       # * For HTTP use the following format: http://ip:port/cache when using
-      #   nginx as backend or http://ip:port|layout-bazel when using Bazel
+      #   nginx as backend or http://ip:port|layout=bazel when using Bazel
       #   Remote Cache, see https://github.com/ccache/ccache/wiki/HTTP-storage.
-      # We use a namespace to keep the objects separate for each configuration.
-      CCACHE_NAMESPACE: ${{ inputs.config_name }}
+      #   Note that HTTPS is not directly supported by ccache.
       CCACHE_REMOTE_ONLY: true
       CCACHE_REMOTE_STORAGE: http://cache.dev.ripplex.io:8080|layout=bazel
+      # Ignore the creation and modification timestamps on files, since the
+      # header files are copied into separate directories by CMake, which will
+      # otherwise result in cache misses.
       CCACHE_SLOPPINESS: include_file_ctime,include_file_mtime
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
