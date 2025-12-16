@@ -1494,7 +1494,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 // issuer has already issued MaximumAmount
                 {2'000, 2'000, 1'000, tecINSUFFICIENT_FUNDS},
             };
-        for (auto const [pay, max, deposit, err] : mptTests)
+        for (auto const& [pay, max, deposit, err] : mptTests)
         {
             test([&](Env& env) -> std::tuple<MPT, PrettyAmount, TER> {
                 MPT const token = MPTTester(
