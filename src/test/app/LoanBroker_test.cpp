@@ -1480,19 +1480,27 @@ class LoanBroker_test : public beast::unit_test::suite
             auto const token = issuer["IOU"];
             return std::make_tuple(token, token(1'000), tesSUCCESS);
         });
-        // pay to holder, max amount, deposit amount, expected error
-        std::vector<
-            std::tuple<std::uint64_t, std::uint64_t, std::uint64_t, TER>>
+        std::vector<std::tuple<
+            std::uint64_t,                 // pay to holder
+            std::optional<std::uint64_t>,  // max amount
+            std::uint64_t,                 // deposit amount
+            TER>>                          // expected error
             mptTests = {
                 // issuer can issue up to 2'000 tokens
                 {2'000, 4'000, 1'000, tesSUCCESS},
                 // issuer can issue 500 tokens (250 VaultDeposit +
                 // 250 LoanBrokerCoverDeposit)
                 {2'000, 2'500, 250, tesSUCCESS},
+                // issuer can issue 500 tokens (250 VaultDeposit +
+                // 250 LoanBrokerCoverDeposit). MaximumAmount is default.
+                {maxMPTokenAmount - 500, std::nullopt, 250, tesSUCCESS},
                 // issuer can issue 500, and fails on depositing 1'000
                 {2'000, 2'500, 1'000, tecINSUFFICIENT_FUNDS},
                 // issuer has already issued MaximumAmount
                 {2'000, 2'000, 1'000, tecINSUFFICIENT_FUNDS},
+                // issuer has already issued MaximumAmount. MaximumAmount is
+                // default.
+                {maxMPTokenAmount, std::nullopt, 250, tecINSUFFICIENT_FUNDS},
             };
         for (auto const& [pay, max, deposit, err] : mptTests)
         {
