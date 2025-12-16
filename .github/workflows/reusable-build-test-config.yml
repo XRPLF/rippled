@@ -82,7 +82,7 @@ jobs:
       # We use a namespace to keep the objects separate for each configuration.
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
       CCACHE_REMOTE_ONLY: true
-      CCACHE_REMOTE_STORAGE: http://cache.dev.ripplex.io:8080|layout-bazel
+      CCACHE_REMOTE_STORAGE: http://cache.dev.ripplex.io:8080|layout=bazel
       CCACHE_LOGFILE: /tmp/ccache.log
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
