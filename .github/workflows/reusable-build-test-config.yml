@@ -100,7 +100,7 @@ jobs:
 
       - name: Set ccache log file
         if: ${{ env.CCACHE_ENABLED == 'true' && runner.debug }}
-        run: echo "CCACHE_LOGFILE=${{ runner.temp }}/ccache.log" >> "${{ GITHUB_ENV }}"
+        run: echo "CCACHE_LOGFILE=${{ runner.temp }}/ccache.log" >> "${GITHUB_ENV}"
 
       - name: Print build environment
         uses: ./.github/actions/print-env
