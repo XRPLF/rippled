@@ -1528,5 +1528,20 @@ pub extern "C" fn finish() -> i32 {
         )
     });
 
+    // ensure that the Slice index desync issue is fixed
+    let empty: &[u8] = b"";
+    check_result(
+        unsafe {
+            host::trace_account(
+                empty.as_ptr(),
+                empty.len(),
+                account.0.as_ptr(),
+                account.0.len(),
+            )
+        },
+        34,
+        "trace_account_check_desync",
+    );
+
     1 // <-- If we get here, finish the escrow.
 }
