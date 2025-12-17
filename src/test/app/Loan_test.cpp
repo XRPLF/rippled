@@ -7084,6 +7084,9 @@ protected:
             "overpayment management fee missmatch; expected:" +
                 to_string(expectedOverpaymentManagementFee) + " got: " +
                 to_string(env.balance(lender) - loanBrokerBalanceBefore));
+    }
+
+    void
     testLoanPayBrokerOwnerMissingTrustline()
     {
         testcase << "LoanPay Broker Owner Missing Trustline (PoC)";
