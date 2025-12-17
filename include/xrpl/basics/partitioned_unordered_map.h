@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 template <typename Key>
 static std::size_t
@@ -242,7 +242,7 @@ public:
         map_.resize(partitions_);
         XRPL_ASSERT(
             partitions_,
-            "ripple::partitioned_unordered_map::partitioned_unordered_map : "
+            "xrpl::partitioned_unordered_map::partitioned_unordered_map : "
             "nonzero partitions");
     }
 
@@ -401,6 +401,6 @@ private:
     mutable partition_map_type map_{};
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_BASICS_PARTITIONED_UNORDERED_MAP_H

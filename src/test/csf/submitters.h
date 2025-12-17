@@ -8,7 +8,7 @@
 
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -31,7 +31,7 @@ struct Rate
 /** Submits transactions to a specified peer
 
     Submits successive transactions beginning at start, then spaced according
-    to succesive calls of distribution(), until stop.
+    to successive calls of distribution(), until stop.
 
     @tparam Distribution is a `UniformRandomBitGenerator` from the STL that
             is used by random distributions to generate random samples
@@ -109,6 +109,6 @@ makeSubmitter(
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

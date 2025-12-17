@@ -5,7 +5,7 @@
 
 #include <xrpl/ledger/CredentialHelpers.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
@@ -175,4 +175,4 @@ LoanBrokerCoverWithdraw::doApply()
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl

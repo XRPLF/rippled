@@ -4,7 +4,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct PreflightContext;
 
@@ -155,7 +155,7 @@ struct LoanState
         XRPL_ASSERT_PARTS(
             interestDue + managementFeeDue ==
                 valueOutstanding - principalOutstanding,
-            "ripple::LoanState::interestOutstanding",
+            "xrpl::LoanState::interestOutstanding",
             "other values add up correctly");
         return interestDue + managementFeeDue;
     }
@@ -179,11 +179,12 @@ adjustImpreciseNumber(
 }
 
 inline int
-getVaultScale(SLE::const_ref vaultSle)
+getAssetsTotalScale(SLE::const_ref vaultSle)
 {
     if (!vaultSle)
         return Number::minExponent - 1;  // LCOV_EXCL_LINE
-    return vaultSle->at(sfAssetsTotal).exponent();
+    return STAmount{vaultSle->at(sfAsset), vaultSle->at(sfAssetsTotal)}
+        .exponent();
 }
 
 TER
@@ -451,7 +452,8 @@ computeLoanProperties(
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining,
     TenthBips32 managementFeeRate,
-    std::int32_t minimumScale);
+    std::int32_t minimumScale,
+    beast::Journal j);
 
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale);
@@ -472,6 +474,6 @@ loanMakePayment(
     LoanPaymentType const paymentType,
     beast::Journal j);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_APP_MISC_LENDINGHELPERS_H_INCLUDED

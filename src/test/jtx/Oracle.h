@@ -5,7 +5,7 @@
 
 #include <date/date.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 namespace oracle {
@@ -185,6 +185,6 @@ public:
 }  // namespace oracle
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_TEST_JTX_ORACLE_H_INCLUDED

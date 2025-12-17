@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** A closed interval over the domain T.
 
@@ -85,7 +85,7 @@ to_string(RangeSet<T> const& rs)
 
     std::string s;
     for (auto const& interval : rs)
-        s += ripple::to_string(interval) + ",";
+        s += xrpl::to_string(interval) + ",";
     s.pop_back();
 
     return s;
@@ -172,6 +172,6 @@ prevMissing(RangeSet<T> const& rs, T t, T minVal = 0)
     return boost::icl::last(tgt);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -9,7 +9,7 @@
 #include <memory>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -37,6 +37,6 @@ insertMPTokenIssuanceID(
 /** @} */
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

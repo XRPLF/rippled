@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 namespace detail {
@@ -205,8 +205,8 @@ rpcErrorString(Json::Value const& jv)
 {
     XRPL_ASSERT(
         RPC::contains_error(jv),
-        "ripple::RPC::rpcErrorString : input contains an error");
+        "xrpl::RPC::rpcErrorString : input contains an error");
     return jv[jss::error].asString() + jv[jss::error_message].asString();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

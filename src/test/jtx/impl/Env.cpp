@@ -28,7 +28,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -67,7 +67,8 @@ Env::AppBundle::AppBundle(
     app->logs().threshold(thresh);
     if (!app->setup({}))
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
-    timeKeeper->set(app->getLedgerMaster().getClosedLedger()->info().closeTime);
+    timeKeeper->set(
+        app->getLedgerMaster().getClosedLedger()->header().closeTime);
     app->start(false /*don't start timers*/);
     thread = std::thread([&]() { app->run(); });
 
@@ -107,7 +108,7 @@ Env::close(
     // Round up to next distinguishable value
     using namespace std::chrono_literals;
     bool res = true;
-    closeTime += closed()->info().closeTimeResolution - 1s;
+    closeTime += closed()->header().closeTimeResolution - 1s;
     timeKeeper().set(closeTime);
     // Go through the rpc interface unless we need to simulate
     // a specific consensus delay.
@@ -130,7 +131,7 @@ Env::close(
             res = false;
         }
     }
-    timeKeeper().set(closed()->info().closeTime);
+    timeKeeper().set(closed()->header().closeTime);
     return res;
 }
 
@@ -672,4 +673,4 @@ Env::disableFeature(uint256 const feature)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

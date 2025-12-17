@@ -1,6 +1,6 @@
 #include <xrpld/app/paths/AccountCurrencies.h>
 
-namespace ripple {
+namespace xrpl {
 
 hash_set<Currency>
 accountSourceCurrencies(
@@ -66,4 +66,4 @@ accountDestCurrencies(
     return currencies;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

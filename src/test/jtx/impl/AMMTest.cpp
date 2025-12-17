@@ -10,7 +10,7 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -280,4 +280,4 @@ AMMTest::find_paths(
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

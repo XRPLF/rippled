@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/RippleLedgerHash.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages the lifetime of inbound ledgers.
 
@@ -84,6 +84,6 @@ make_InboundLedgers(
     InboundLedgers::clock_type& clock,
     beast::insight::Collector::ptr const& collector);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

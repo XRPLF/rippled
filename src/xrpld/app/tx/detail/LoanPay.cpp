@@ -9,7 +9,7 @@
 
 #include <bit>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 LoanPay::checkExtraFeatures(PreflightContext const& ctx)
@@ -262,9 +262,10 @@ LoanPay::doApply()
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
     // Send the broker fee to the owner if they have sufficient cover available,
-    // _and_ if the owner can receive funds. If not, so as not to block the
-    // payment, add it to the cover balance (send it to the broker pseudo
-    // account).
+    // _and_ if the owner can receive funds
+    // _and_ if the broker is authorized to hold funds. If not, so as not to
+    // block the payment, add it to the cover balance (send it to the broker
+    // pseudo account).
     //
     // Normally freeze status is checked in preflight, but we do it here to
     // avoid duplicating the check. It'll claim a fee either way.
@@ -278,7 +279,8 @@ LoanPay::doApply()
                    asset,
                    tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum),
                    loanScale) &&
-            !isDeepFrozen(view, brokerOwner, asset);
+            !isDeepFrozen(view, brokerOwner, asset) &&
+            !requireAuth(view, asset, brokerOwner, AuthType::StrongAuth);
     }();
 
     auto const brokerPayee =
@@ -305,7 +307,12 @@ LoanPay::doApply()
     // change will be discarded.
     if (loanSle->isFlag(lsfLoanImpaired))
     {
-        LoanManage::unimpairLoan(view, loanSle, vaultSle, j_);
+        if (auto const ret =
+                LoanManage::unimpairLoan(view, loanSle, vaultSle, asset, j_))
+        {
+            JLOG(j_.fatal()) << "Failed to unimpair loan before payment.";
+            return ret;  // LCOV_EXCL_LINE
+        }
     }
 
     LoanPaymentType const paymentType = [&tx]() {
@@ -326,7 +333,7 @@ LoanPay::doApply()
     {
         XRPL_ASSERT_PARTS(
             paymentParts.error(),
-            "ripple::LoanPay::doApply",
+            "xrpl::LoanPay::doApply",
             "payment error is an error");
         return paymentParts.error();
     }
@@ -338,22 +345,20 @@ LoanPay::doApply()
     XRPL_ASSERT_PARTS(
         // It is possible to pay 0 principal
         paymentParts->principalPaid >= 0,
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "valid principal paid");
     XRPL_ASSERT_PARTS(
         // It is possible to pay 0 interest
         paymentParts->interestPaid >= 0,
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "valid interest paid");
     XRPL_ASSERT_PARTS(
         // It should not be possible to pay 0 total
         paymentParts->principalPaid + paymentParts->interestPaid > 0,
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "valid total paid");
     XRPL_ASSERT_PARTS(
-        paymentParts->feePaid >= 0,
-        "ripple::LoanPay::doApply",
-        "valid fee paid");
+        paymentParts->feePaid >= 0, "xrpl::LoanPay::doApply", "valid fee paid");
 
     if (paymentParts->principalPaid < 0 || paymentParts->interestPaid < 0 ||
         paymentParts->feePaid < 0)
@@ -379,7 +384,7 @@ LoanPay::doApply()
 
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the payment by rounding some of the values to that scale.
-    auto const vaultScale = assetsTotalProxy.value().exponent();
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     auto const totalPaidToVaultRaw =
         paymentParts->principalPaid + paymentParts->interestPaid;
@@ -387,7 +392,7 @@ LoanPay::doApply()
         roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::downward);
     XRPL_ASSERT_PARTS(
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "rounding does nothing for integral asset");
     // Account for value changes when reducing the broker's debt:
     // - Positive value change (from full/late/overpayments): Subtract from the
@@ -403,7 +408,7 @@ LoanPay::doApply()
         (totalPaidToVaultRaw + totalPaidToBroker) ==
             (paymentParts->principalPaid + paymentParts->interestPaid +
              paymentParts->feePaid),
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "payments add up");
 
     // Decrease LoanBroker Debt by the amount paid, add the Loan value change
@@ -411,7 +416,7 @@ LoanPay::doApply()
     // increasing the debt
     XRPL_ASSERT_PARTS(
         isRounded(asset, totalPaidToVaultForDebt, loanScale),
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "totalPaidToVaultForDebt rounding good");
     // Despite our best efforts, it's possible for rounding errors to accumulate
     // in the loan broker's debt total. This is because the broker may have more
@@ -435,7 +440,7 @@ LoanPay::doApply()
     {
         XRPL_ASSERT_PARTS(
             assetsAvailableBefore == pseudoAccountBalanceBefore,
-            "ripple::LoanPay::doApply",
+            "xrpl::LoanPay::doApply",
             "vault pseudo balance agrees before");
 
         assetsAvailableProxy += totalPaidToVaultRounded;
@@ -443,12 +448,16 @@ LoanPay::doApply()
 
         XRPL_ASSERT_PARTS(
             *assetsAvailableProxy <= *assetsTotalProxy,
-            "ripple::LoanPay::doApply",
+            "xrpl::LoanPay::doApply",
             "assets available must not be greater than assets outstanding");
 
         if (*assetsAvailableProxy > *assetsTotalProxy)
         {
             // LCOV_EXCL_START
+            JLOG(j_.fatal())
+                << "Vault assets available must not be greater "
+                   "than assets outstanding. Available: "
+                << *assetsAvailableProxy << ", Total: " << *assetsTotalProxy;
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
@@ -463,7 +472,7 @@ LoanPay::doApply()
     // Move funds
     XRPL_ASSERT_PARTS(
         totalPaidToVaultRounded + totalPaidToBroker <= amount,
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "amount is sufficient");
 
     if (!sendBrokerFeeToOwner)
@@ -541,7 +550,7 @@ LoanPay::doApply()
         j_);
     XRPL_ASSERT_PARTS(
         assetsAvailableAfter == pseudoAccountBalanceAfter,
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "vault pseudo balance agrees after");
 
 #if !NDEBUG
@@ -564,33 +573,33 @@ LoanPay::doApply()
     XRPL_ASSERT_PARTS(
         accountBalanceBefore + vaultBalanceBefore + brokerBalanceBefore ==
             accountBalanceAfter + vaultBalanceAfter + brokerBalanceAfter,
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "funds are conserved (with rounding)");
     XRPL_ASSERT_PARTS(
         accountBalanceAfter >= beast::zero,
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "positive account balance");
     XRPL_ASSERT_PARTS(
         accountBalanceAfter < accountBalanceBefore ||
             account_ == asset.getIssuer(),
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "account balance decreased");
     XRPL_ASSERT_PARTS(
         vaultBalanceAfter >= beast::zero && brokerBalanceAfter >= beast::zero,
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "positive vault and broker balances");
     XRPL_ASSERT_PARTS(
         vaultBalanceAfter >= vaultBalanceBefore,
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "vault balance did not decrease");
     XRPL_ASSERT_PARTS(
         brokerBalanceAfter >= brokerBalanceBefore,
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "broker balance did not decrease");
     XRPL_ASSERT_PARTS(
         vaultBalanceAfter > vaultBalanceBefore ||
             brokerBalanceAfter > brokerBalanceBefore,
-        "ripple::LoanPay::doApply",
+        "xrpl::LoanPay::doApply",
         "vault and/or broker balance increased");
 #endif
 
@@ -599,4 +608,4 @@ LoanPay::doApply()
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -2,7 +2,7 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 LoanBrokerDelete::checkExtraFeatures(PreflightContext const& ctx)
@@ -56,7 +56,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         if (!vault)
             return tefINTERNAL;  // LCOV_EXCL_LINE
         auto const asset = vault->at(sfAsset);
-        auto const scale = getVaultScale(vault);
+        auto const scale = getAssetsTotalScale(vault);
 
         auto const rounded =
             roundToAsset(asset, debtTotal, scale, Number::towards_zero);
@@ -194,4 +194,4 @@ LoanBrokerDelete::doApply()
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl

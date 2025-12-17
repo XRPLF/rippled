@@ -9,7 +9,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 Json::Value
 doValidatorInfo(RPC::JsonContext& context)
 {
@@ -43,4 +43,4 @@ doValidatorInfo(RPC::JsonContext& context)
 
     return ret;
 }
-}  // namespace ripple
+}  // namespace xrpl

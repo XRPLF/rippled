@@ -1,12 +1,12 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/Tuning.h>
+#include <xrpld/rpc/detail/WSInfoSub.h>
 #include <xrpld/rpc/json_body.h>
 
 #include <xrpl/basics/Log.h>
@@ -15,6 +15,7 @@
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ApiVersion.h>
@@ -31,9 +32,16 @@
 #include <boost/beast/http/string_body.hpp>
 
 #include <algorithm>
+#include <memory>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
+
+class Peer;
+class LedgerMaster;
+class Transaction;
+class ValidatorKeys;
+class CanonicalTXSet;
 
 static bool
 isStatusRequest(http_request_type const& request)
@@ -1268,4 +1276,4 @@ make_ServerHandler(
         cm);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

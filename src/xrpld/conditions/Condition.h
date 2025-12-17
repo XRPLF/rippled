@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 namespace cryptoconditions {
 
 enum class Type : std::uint8_t {
@@ -94,6 +94,6 @@ operator!=(Condition const& lhs, Condition const& rhs)
 
 }  // namespace cryptoconditions
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

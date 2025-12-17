@@ -3,7 +3,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 namespace NodeStore {
 
@@ -95,7 +95,7 @@ ManagerImp::erase(Factory& factory)
         });
     XRPL_ASSERT(
         iter != list_.end(),
-        "ripple::NodeStore::ManagerImp::erase : valid input");
+        "xrpl::NodeStore::ManagerImp::erase : valid input");
     list_.erase(iter);
 }
 
@@ -121,4 +121,4 @@ Manager::instance()
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

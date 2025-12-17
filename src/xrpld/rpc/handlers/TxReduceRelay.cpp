@@ -4,7 +4,7 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doTxReduceRelay(RPC::JsonContext& context)
@@ -12,4 +12,4 @@ doTxReduceRelay(RPC::JsonContext& context)
     return context.app.overlay().txMetrics();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

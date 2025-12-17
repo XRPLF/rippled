@@ -17,7 +17,7 @@
 #include <optional>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 using socket_type = boost::beast::tcp_stream;
 using stream_type = boost::beast::ssl_stream<socket_type>;
@@ -233,6 +233,6 @@ makeFeaturesResponseHeader(
     bool txReduceRelayEnabled,
     bool vpReduceRelayEnabled);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

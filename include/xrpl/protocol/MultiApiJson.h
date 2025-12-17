@@ -12,7 +12,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 template <typename T>
@@ -141,7 +141,7 @@ struct MultiApiJson
         {
             XRPL_ASSERT(
                 valid(version) && index(version) >= 0 && index(version) < size,
-                "ripple::detail::MultiApiJson::operator<Args...>() : valid "
+                "xrpl::detail::MultiApiJson::operator<Args...>() : valid "
                 "version");
             return std::invoke(
                 fn,
@@ -161,7 +161,7 @@ struct MultiApiJson
         {
             XRPL_ASSERT(
                 valid(version) && index(version) >= 0 && index(version) < size,
-                "ripple::detail::MultiApiJson::operator() : valid version");
+                "xrpl::detail::MultiApiJson::operator() : valid version");
             return std::invoke(fn, json.val[index(version)]);
         }
     } visitor = {};
@@ -217,6 +217,6 @@ struct MultiApiJson
 using MultiApiJson = detail::
     MultiApiJson<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

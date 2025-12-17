@@ -7,7 +7,7 @@
 
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 isFeatureEnabled(uint256 const& feature);
@@ -111,5 +111,5 @@ private:
     std::optional<Rules> saved_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 #endif
