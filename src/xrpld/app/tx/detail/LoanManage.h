@@ -48,7 +48,7 @@ public:
 
     /** Helper function that might be needed by other transactors
      */
-    static TER
+    [[nodiscard]] static TER
     unimpairLoan(
         ApplyView& view,
         SLE::ref loanSle,
