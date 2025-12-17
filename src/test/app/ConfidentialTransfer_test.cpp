@@ -2407,33 +2407,61 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     void
     testClawbackProof(FeatureBitset features)
     {
-        testcase("Clawback Proof");
+        testcase("ConfidentialClawback Proof");
         using namespace test::jtx;
 
-        // SETUP 1: to test clawback from inbox only and spending only balances.
-        // bob converts 500 and merge inbox
-        // carol converts 1000, but not merge inbox
-        // so that bob has 500 in spending, carol has 1000 in inbox
-        {
-            Env env{*this, features};
-            Account const alice("alice");
-            Account const bob("bob");
-            Account const carol("carol");
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+
+        // lambda function to set up MPT with alice as issuer, bob and carol as
+        // authorized holders, and fund 1000 mpt to bob and 2000 mpt to carol.
+        auto setupEnv = [&](Env& env) -> MPTTester {
             MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create(
                 {.flags =
                      tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanPrivacy});
-            mptAlice.authorize({.account = bob});
-            mptAlice.pay(alice, bob, 1000);
-            mptAlice.authorize({.account = carol});
-            mptAlice.pay(alice, carol, 2000);
+
+            for (auto const& [acct, amt] :
+                 {std::pair{bob, 1000}, {carol, 2000}})
+            {
+                mptAlice.authorize({.account = acct});
+                mptAlice.pay(alice, acct, amt);
+                mptAlice.generateKeyPair(acct);
+            }
 
             mptAlice.generateKeyPair(alice);
-            mptAlice.generateKeyPair(bob);
-            mptAlice.generateKeyPair(carol);
             mptAlice.set(
                 {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+
+            return mptAlice;
+        };
+
+        // lambda function to test a set of bad clawback amounts that should
+        // return tecBAD_PROOF
+        auto checkBadProofs = [&](MPTTester& mpt,
+                                  Account const& holder,
+                                  std::initializer_list<uint64_t> amts) {
+            for (auto const badAmt : amts)
+            {
+                mpt.confidentialClaw(
+                    {.account = alice,
+                     .holder = holder,
+                     .amt = badAmt,
+                     .err = tecBAD_PROOF});
+            }
+        };
+
+        // SCENARIO 1: clawback from inbox only or spending only balances.
+        // bob converts 500 and merge inbox,
+        // carol converts 1000, but not merge inbox.
+        // after setup, bob has 500 in spending, carol has 1000 in inbox.
+        {
+            Env env{*this, features};
+            auto mptAlice = setupEnv(env);
+
+            // bob converts and merges
             mptAlice.convert(
                 {.account = bob,
                  .amt = 500,
@@ -2442,85 +2470,38 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.mergeInbox({
                 .account = bob,
             });
-
+            // carol converts without merge
             mptAlice.convert(
                 {.account = carol,
                  .amt = 1000,
                  .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(carol)});
 
-            // proof failure for incorrect amount when clawbacking from bob
-            // bob has 500 confidential balance spending, inbox is empty after
-            // merge
-            {
-                for (auto const badAmt :
-                     {1, 10, 70, 100, 110, 70, 200, 499, 501, 600})
-                {
-                    // alice clawback with incorrect amount
-                    mptAlice.confidentialClaw(
-                        {.account = alice,
-                         .holder = bob,
-                         .amt = badAmt,
-                         .err = tecBAD_PROOF});
-                }
-            }
+            // verify proof fails with invalid clawback amount
+            // bob: 500 in Spending, 0 in Inbox
+            checkBadProofs(
+                mptAlice, bob, {1, 10, 70, 100, 110, 200, 499, 501, 600});
 
-            // proof failure for incorrect amount when clawbacking from carol
-            // carol has 1000 confidential balance in inbox, spending is empty
-            // without merge
-            {
-                for (auto const badAmt :
-                     {1, 10, 50, 500, 777, 850, 999, 1001, 1200})
-                {
-                    // alice clawback with incorrect amount from carol
-                    mptAlice.confidentialClaw(
-                        {.account = alice,
-                         .holder = carol,
-                         .amt = badAmt,
-                         .err = tecBAD_PROOF});
-                }
-            }
+            // carol: 1000 in Inbox, 0 in Spending
+            checkBadProofs(
+                mptAlice, carol, {1, 10, 50, 500, 777, 850, 999, 1001, 1200});
 
-            // correct proof generated with correct amount
-            {
-                // when clawback from bob when bob's confidential balance is in
-                // spending
-                mptAlice.confidentialClaw(
-                    {.account = alice, .holder = bob, .amt = 500});
-
-                // when clawback from carol when carol's confidential balance is
-                // in inbox
-                mptAlice.confidentialClaw(
-                    {.account = alice, .holder = carol, .amt = 1000});
-            }
+            // clawback with correct amount that passes proof verification
+            mptAlice.confidentialClaw(
+                {.account = alice, .holder = bob, .amt = 500});
+            mptAlice.confidentialClaw(
+                {.account = alice, .holder = carol, .amt = 1000});
         }
 
-        // SETUP 2: to test clawback from mixed inbox and spending balances.
-        // bob converts another 300 to confidential and merge inbox,
-        // carol converts another 400 to confidential and merge inbox
-        // bob sends 100 to carol so that:
-        // bob has 200 confidential balance in spending;
-        // carol has 100 in inbox and 400 in spending.
+        // SCENARIO 2: clawback from mixed inbox and spending balances.
+        // bob converts 300 to confidential and merge inbox,
+        // carol converts 400 to confidential and merge inbox,
+        // bob sends 100 to carol, carol sends 100 to bob.
+        // After setup, bob has 100 in inbox and 200 in spending;
+        // carol has 100 in inbox and 300 in spending.
         {
             Env env{*this, features};
-            Account const alice("alice");
-            Account const bob("bob");
-            Account const carol("carol");
-            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
-
-            mptAlice.create(
-                {.flags =
-                     tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanPrivacy});
-            mptAlice.authorize({.account = bob});
-            mptAlice.pay(alice, bob, 1000);
-            mptAlice.authorize({.account = carol});
-            mptAlice.pay(alice, carol, 2000);
-
-            mptAlice.generateKeyPair(alice);
-            mptAlice.generateKeyPair(bob);
-            mptAlice.generateKeyPair(carol);
-            mptAlice.set(
-                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+            auto mptAlice = setupEnv(env);
 
             mptAlice.convert(
                 {.account = bob,
@@ -2540,28 +2521,23 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
             mptAlice.send(
                 {.account = bob, .dest = carol, .amt = 100, .proof = "123"});
+            mptAlice.send(
+                {.account = carol, .dest = bob, .amt = 100, .proof = "123"});
+
+            // verify proof fails with invalid clawback amount
+            // bob: 100 in inbox, 200 in spending
+            checkBadProofs(mptAlice, bob, {1, 10, 50, 100, 200, 299, 301, 400});
 
             // proof failure for incorrect amount when clawbacking from carol
-            // carol has 100 in inbox and 400 in spending.
-            {
-                for (auto const badAmt : {1, 10, 50, 100, 400, 501, 600})
-                {
-                    // alice clawback with incorrect amount from carol
-                    mptAlice.confidentialClaw(
-                        {.account = alice,
-                         .holder = carol,
-                         .amt = badAmt,
-                         .err = tecBAD_PROOF});
-                }
-            }
+            // carol: 100 in inbox, 300 in spending
+            checkBadProofs(
+                mptAlice, carol, {1, 10, 50, 100, 300, 399, 401, 501});
 
             // clawback with correct amount that passes proof verification
-            {
-                // clawback all 500 from carol with 100 in inbox and 400 in
-                // spending
-                mptAlice.confidentialClaw(
-                    {.account = alice, .holder = carol, .amt = 500});
-            }
+            mptAlice.confidentialClaw(
+                {.account = alice, .holder = bob, .amt = 300});
+            mptAlice.confidentialClaw(
+                {.account = alice, .holder = carol, .amt = 400});
         }
     }
 

@@ -715,38 +715,33 @@ MPTTester::getClawbackProof(
     auto const sleHolder = env_.le(keylet::mptoken(*id_, holder.id()));
     auto const sleIssuance = env_.le(keylet::mptIssuance(*id_));
 
-    if (!sleHolder)
-    {
-        // This is a placeholder for proof, so that the other preclaim tests can
-        // proceed
+    // helper to generate a dummy proof, so that other preclaim tests can
+    // proceed
+    auto const getDummyProof = []() {
         Buffer dummy(ecEqualityProofLength);
         std::memset(dummy.data(), 0, ecEqualityProofLength);
         return dummy;
-    }
+    };
+
+    if (!sleHolder)
+        return getDummyProof();
+
     if (!sleIssuance)
         Throw<std::runtime_error>("Issuance object not found");
 
     auto const ciphertextBlob = sleHolder->getFieldVL(sfIssuerEncryptedBalance);
     if (ciphertextBlob.size() == 0)
-    {
-        // This is a placeholder for proof, so that the other preclaim tests can
-        // proceed eg. test when there's no confidential balance yet
-        Buffer dummy(ecEqualityProofLength);
-        std::memset(dummy.data(), 0, ecEqualityProofLength);
-        return dummy;
-    }
-    auto const pubKeyBlob = sleIssuance->getFieldVL(sfIssuerElGamalPublicKey);
+        return getDummyProof();
 
+    auto const pubKeyBlob = sleIssuance->getFieldVL(sfIssuerElGamalPublicKey);
     Slice const ciphertext(ciphertextBlob.data(), ciphertextBlob.size());
     Slice const pubKey(pubKeyBlob.data(), pubKeyBlob.size());
-
-    static secp256k1_context* ctx = secp256k1_context_create(
-        SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
 
     if (ciphertextBlob.size() != ecGamalEncryptedTotalLength)
         Throw<std::runtime_error>("Invalid Ciphertext length");
 
     secp256k1_pubkey c1, c2;
+    auto const ctx = secp256k1Context();
     if (!secp256k1_ec_pubkey_parse(
             ctx, &c1, ciphertextBlob.data(), ecGamalEncryptedLength) ||
         !secp256k1_ec_pubkey_parse(
@@ -762,18 +757,18 @@ MPTTester::getClawbackProof(
     std::memcpy(pk.data, pubKeyBlob.data(), ecPubKeyLength);
     Buffer proof(ecEqualityProofLength);
 
-    int result = secp256k1_equality_plaintext_prove(
-        ctx,
-        proof.data(),
-        &pk,
-        &c2,
-        &c1,
-        amount,
-        privateKey.data(),
-        ctxHash.data());
-
-    if (result != 1)
+    if (secp256k1_equality_plaintext_prove(
+            ctx,
+            proof.data(),
+            &pk,
+            &c2,
+            &c1,
+            amount,
+            privateKey.data(),
+            ctxHash.data()) != 1)
+    {
         Throw<std::runtime_error>("Proof generation failed");
+    }
 
     return proof;
 }
