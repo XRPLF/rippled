@@ -407,6 +407,17 @@ LoanSet::doApply()
         vaultScale,
         j_);
 
+    LoanState const state = constructLoanState(
+        properties.totalValueOutstanding,
+        principalRequested,
+        properties.managementFeeOwedToBroker);
+
+    if (vaultSle->at(sfAssetsMaximum) != 0 &&
+        vaultTotalProxy + state.interestDue > vaultSle->at(sfAssetsMaximum))
+    {
+        JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
+        return tecLIMIT_EXCEEDED;
+    }
     // Check that relevant values won't lose precision. This is mostly only
     // relevant for IOU assets.
     {
@@ -448,11 +459,6 @@ LoanSet::doApply()
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
-
-    LoanState const state = constructLoanState(
-        properties.totalValueOutstanding,
-        principalRequested,
-        properties.managementFeeOwedToBroker);
 
     auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
 
