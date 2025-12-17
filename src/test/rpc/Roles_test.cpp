@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -370,8 +370,8 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Roles, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Roles, rpc, xrpl);
 
 }  // namespace test
 
-}  // namespace ripple
+}  // namespace xrpl

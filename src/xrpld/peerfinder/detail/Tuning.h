@@ -3,7 +3,7 @@
 
 #include <array>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Heuristically tuned constants. */
@@ -116,6 +116,6 @@ std::chrono::seconds constexpr recentAttemptDuration(60);
 /** @} */
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -5,7 +5,7 @@
 
 #include <atomic>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ManualTimeKeeper : public TimeKeeper
@@ -30,6 +30,6 @@ public:
 };
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

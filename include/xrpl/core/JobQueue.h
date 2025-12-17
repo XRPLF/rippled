@@ -1,19 +1,18 @@
 #ifndef XRPL_CORE_JOBQUEUE_H_INCLUDED
 #define XRPL_CORE_JOBQUEUE_H_INCLUDED
 
-#include <xrpld/core/ClosureCounter.h>
-#include <xrpld/core/JobTypeData.h>
-#include <xrpld/core/JobTypes.h>
-#include <xrpld/core/detail/Workers.h>
-
 #include <xrpl/basics/LocalValue.h>
+#include <xrpl/core/ClosureCounter.h>
+#include <xrpl/core/JobTypeData.h>
+#include <xrpl/core/JobTypes.h>
+#include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
 
 #include <boost/coroutine/all.hpp>
 
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 namespace perf {
 class PerfLog;
@@ -383,11 +382,11 @@ private:
             lock is released which only happens after the coroutine completes.
 */
 
-}  // namespace ripple
+}  // namespace xrpl
 
-#include <xrpld/core/Coro.ipp>
+#include <xrpl/core/Coro.ipp>
 
-namespace ripple {
+namespace xrpl {
 
 template <class F>
 std::shared_ptr<JobQueue::Coro>
@@ -409,6 +408,6 @@ JobQueue::postCoro(JobType t, std::string const& name, F&& f)
     return coro;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

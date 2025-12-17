@@ -14,7 +14,7 @@
 #include <atomic>
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 class RocksDBEnv : public rocksdb::EnvWrapper
@@ -213,7 +213,7 @@ public:
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::NodeStore::RocksDBBackend::open : database is already "
+                "xrpl::NodeStore::RocksDBBackend::open : database is already "
                 "open");
             JLOG(m_journal.error()) << "database is already open";
             return;
@@ -261,8 +261,7 @@ public:
     fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
         XRPL_ASSERT(
-            m_db,
-            "ripple::NodeStore::RocksDBBackend::fetch : non-null database");
+            m_db, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
         pObject->reset();
 
         Status status(ok);
@@ -340,7 +339,7 @@ public:
     {
         XRPL_ASSERT(
             m_db,
-            "ripple::NodeStore::RocksDBBackend::storeBatch : non-null "
+            "xrpl::NodeStore::RocksDBBackend::storeBatch : non-null "
             "database");
         rocksdb::WriteBatch wb;
 
@@ -375,7 +374,7 @@ public:
     {
         XRPL_ASSERT(
             m_db,
-            "ripple::NodeStore::RocksDBBackend::for_each : non-null database");
+            "xrpl::NodeStore::RocksDBBackend::for_each : non-null database");
         rocksdb::ReadOptions const options;
 
         std::unique_ptr<rocksdb::Iterator> it(m_db->NewIterator(options));
@@ -477,6 +476,6 @@ registerRocksDBFactory(Manager& manager)
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -1,9 +1,9 @@
-#include <xrpld/core/JobTypes.h>
 #include <xrpld/perflog/detail/PerfLogImp.h>
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/JobTypes.h>
 #include <xrpl/json/json_writer.h>
 
 #include <atomic>
@@ -18,7 +18,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace perf {
 
 PerfLogImp::Counters::Counters(
@@ -36,7 +36,7 @@ PerfLogImp::Counters::Counters(
                 // Ensure that no other function populates this entry.
                 // LCOV_EXCL_START
                 UNREACHABLE(
-                    "ripple::perf::PerfLogImp::Counters::Counters : failed to "
+                    "xrpl::perf::PerfLogImp::Counters::Counters : failed to "
                     "insert label");
                 // LCOV_EXCL_STOP
             }
@@ -53,7 +53,7 @@ PerfLogImp::Counters::Counters(
                 // Ensure that no other function populates this entry.
                 // LCOV_EXCL_START
                 UNREACHABLE(
-                    "ripple::perf::PerfLogImp::Counters::Counters : failed to "
+                    "xrpl::perf::PerfLogImp::Counters::Counters : failed to "
                     "insert job type");
                 // LCOV_EXCL_STOP
             }
@@ -315,7 +315,7 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
     if (counter == counters_.rpc_.end())
     {
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::perf::PerfLogImp::rpcStart : valid method input");
+        UNREACHABLE("xrpl::perf::PerfLogImp::rpcStart : valid method input");
         return;
         // LCOV_EXCL_STOP
     }
@@ -339,7 +339,7 @@ PerfLogImp::rpcEnd(
     if (counter == counters_.rpc_.end())
     {
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::perf::PerfLogImp::rpcEnd : valid method input");
+        UNREACHABLE("xrpl::perf::PerfLogImp::rpcEnd : valid method input");
         return;
         // LCOV_EXCL_STOP
     }
@@ -356,7 +356,7 @@ PerfLogImp::rpcEnd(
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::perf::PerfLogImp::rpcEnd : valid requestId input");
+                "xrpl::perf::PerfLogImp::rpcEnd : valid requestId input");
             // LCOV_EXCL_STOP
         }
     }
@@ -376,8 +376,7 @@ PerfLogImp::jobQueue(JobType const type)
     if (counter == counters_.jq_.end())
     {
         // LCOV_EXCL_START
-        UNREACHABLE(
-            "ripple::perf::PerfLogImp::jobQueue : valid job type input");
+        UNREACHABLE("xrpl::perf::PerfLogImp::jobQueue : valid job type input");
         return;
         // LCOV_EXCL_STOP
     }
@@ -396,8 +395,7 @@ PerfLogImp::jobStart(
     if (counter == counters_.jq_.end())
     {
         // LCOV_EXCL_START
-        UNREACHABLE(
-            "ripple::perf::PerfLogImp::jobStart : valid job type input");
+        UNREACHABLE("xrpl::perf::PerfLogImp::jobStart : valid job type input");
         return;
         // LCOV_EXCL_STOP
     }
@@ -419,8 +417,7 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
     if (counter == counters_.jq_.end())
     {
         // LCOV_EXCL_START
-        UNREACHABLE(
-            "ripple::perf::PerfLogImp::jobFinish : valid job type input");
+        UNREACHABLE("xrpl::perf::PerfLogImp::jobFinish : valid job type input");
         return;
         // LCOV_EXCL_STOP
     }
@@ -511,4 +508,4 @@ make_PerfLog(
 }
 
 }  // namespace perf
-}  // namespace ripple
+}  // namespace xrpl

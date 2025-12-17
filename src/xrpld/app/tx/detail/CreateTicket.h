@@ -4,7 +4,7 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class CreateTicket : public Transactor
 {
@@ -65,6 +65,6 @@ public:
 
 using TicketCreate = CreateTicket;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

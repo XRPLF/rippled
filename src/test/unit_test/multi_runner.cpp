@@ -10,7 +10,7 @@
 #include <sstream>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -636,4 +636,4 @@ template class multi_runner_base<true>;
 template class multi_runner_base<false>;
 }  // namespace detail
 
-}  // namespace ripple
+}  // namespace xrpl

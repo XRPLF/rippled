@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 NFTokenAcceptOffer::getFlagsMask(PreflightContext const& ctx)
@@ -551,4 +551,4 @@ NFTokenAcceptOffer::doApply()
     return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
-}  // namespace ripple
+}  // namespace xrpl

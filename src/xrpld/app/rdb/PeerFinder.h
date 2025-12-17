@@ -5,7 +5,7 @@
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/peerfinder/detail/Store.h>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * @brief initPeerFinderDB Opens a session with the peer finder database.
@@ -52,6 +52,6 @@ savePeerFinderDB(
     soci::session& session,
     std::vector<PeerFinder::Store::Entry> const& v);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

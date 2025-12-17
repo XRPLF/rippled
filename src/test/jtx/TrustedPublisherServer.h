@@ -23,7 +23,7 @@
 #include <memory>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class TrustedPublisherServer
@@ -164,8 +164,7 @@ public:
         bool immediateStart = true,
         int sequence = 1)
         : sock_{ioc}
-        , ep_{boost::asio::ip::make_address(
-                  ripple::test::getEnvLocalhostAddr()),
+        , ep_{boost::asio::ip::make_address(xrpl::test::getEnvLocalhostAddr()),
               // 0 means let OS pick the port based on what's available
               0}
         , acceptor_{ioc}
@@ -715,5 +714,5 @@ make_TrustedPublisherServer(
 }
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 #endif

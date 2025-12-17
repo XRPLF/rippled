@@ -2,7 +2,7 @@
 
 #include <xrpl/ledger/CredentialHelpers.h>
 
-namespace ripple {
+namespace xrpl {
 namespace permissioned_dex {
 
 bool
@@ -29,7 +29,7 @@ accountInDomain(
                 return false;
 
             return !credentials::checkExpired(
-                sleCred, view.info().parentCloseTime);
+                sleCred, view.header().parentCloseTime);
         });
 
     return inDomain;
@@ -67,4 +67,4 @@ offerInDomain(
 
 }  // namespace permissioned_dex
 
-}  // namespace ripple
+}  // namespace xrpl

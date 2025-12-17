@@ -6,7 +6,7 @@
 #include <limits>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 namespace directory {
 
@@ -135,9 +135,7 @@ insertPage(
     if (page != 1)
         node->setFieldU64(sfIndexPrevious, page - 1);
     XRPL_ASSERT_PARTS(
-        !nextPage,
-        "ripple::directory::insertPage",
-        "nextPage has default value");
+        !nextPage, "xrpl::directory::insertPage", "nextPage has default value");
     /* Reserved for future use when directory pages may be inserted in
      * between two other pages instead of only at the end of the chain.
     if (nextPage)
@@ -193,7 +191,7 @@ ApplyView::emptyDirDelete(Keylet const& directory)
         node->getFieldH256(sfRootIndex) != directory.key)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::ApplyView::emptyDirDelete : invalid node type");
+        UNREACHABLE("xrpl::ApplyView::emptyDirDelete : invalid node type");
         return false;
         // LCOV_EXCL_STOP
     }
@@ -435,4 +433,4 @@ ApplyView::dirDelete(
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -8,7 +8,7 @@
 
 #include <boost/asio/io_context.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 /** Create the HTTP server using the specified handler. */
 template <class Handler>
@@ -21,6 +21,6 @@ make_Server(
     return std::make_unique<ServerImpl<Handler>>(handler, io_context, journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

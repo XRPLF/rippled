@@ -13,7 +13,7 @@
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Stores IP addresses useful for gaining initial connections.
@@ -68,8 +68,8 @@ private:
     using left_t = boost::bimaps::unordered_set_of<
         beast::IP::Endpoint,
         boost::hash<beast::IP::Endpoint>,
-        ripple::equal_to<beast::IP::Endpoint>>;
-    using right_t = boost::bimaps::multiset_of<Entry, ripple::less<Entry>>;
+        xrpl::equal_to<beast::IP::Endpoint>>;
+    using right_t = boost::bimaps::multiset_of<Entry, xrpl::less<Entry>>;
     using map_type = boost::bimap<left_t, right_t>;
     using value_type = map_type::value_type;
 
@@ -176,6 +176,6 @@ private:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

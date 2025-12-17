@@ -7,7 +7,7 @@
 
 #include <boost/container/flat_set.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 class Logs;
 
@@ -85,6 +85,6 @@ private:
     Json::Value mJson;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

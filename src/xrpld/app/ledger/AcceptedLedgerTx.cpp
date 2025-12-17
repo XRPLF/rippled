@@ -5,7 +5,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 AcceptedLedgerTx::AcceptedLedgerTx(
     std::shared_ptr<ReadView const> const& ledger,
@@ -17,7 +17,7 @@ AcceptedLedgerTx::AcceptedLedgerTx(
 {
     XRPL_ASSERT(
         !ledger->open(),
-        "ripple::AcceptedLedgerTx::AcceptedLedgerTx : valid ledger state");
+        "xrpl::AcceptedLedgerTx::AcceptedLedgerTx : valid ledger state");
 
     Serializer s;
     met->add(s);
@@ -62,8 +62,8 @@ AcceptedLedgerTx::getEscMeta() const
 {
     XRPL_ASSERT(
         !mRawMeta.empty(),
-        "ripple::AcceptedLedgerTx::getEscMeta : metadata is set");
+        "xrpl::AcceptedLedgerTx::getEscMeta : metadata is set");
     return sqlBlobLiteral(mRawMeta);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

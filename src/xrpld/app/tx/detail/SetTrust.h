@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 class SetTrust : public Transactor
 {
@@ -34,6 +34,6 @@ public:
 
 using TrustSet = SetTrust;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

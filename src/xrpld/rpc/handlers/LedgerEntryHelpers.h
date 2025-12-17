@@ -12,7 +12,7 @@
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace LedgerEntryHelpers {
 
@@ -277,4 +277,4 @@ parseBridgeFields(Json::Value const& params)
 
 }  // namespace LedgerEntryHelpers
 
-}  // namespace ripple
+}  // namespace xrpl

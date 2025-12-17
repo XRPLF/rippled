@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 /** The list of protocol versions we speak and we prefer to use.
 
@@ -164,4 +164,4 @@ isProtocolSupported(ProtocolVersion const& v)
                v);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

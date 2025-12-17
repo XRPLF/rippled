@@ -1,7 +1,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/BuildInfo.h>
 
-namespace ripple {
+namespace xrpl {
 
 class BuildInfo_test : public beast::unit_test::suite
 {
@@ -95,5 +95,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(BuildInfo, protocol, ripple);
-}  // namespace ripple
+BEAST_DEFINE_TESTSUITE(BuildInfo, protocol, xrpl);
+}  // namespace xrpl

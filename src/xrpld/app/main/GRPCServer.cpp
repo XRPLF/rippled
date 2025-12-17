@@ -5,7 +5,7 @@
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -249,7 +249,7 @@ template <class Request, class Response>
 std::optional<boost::asio::ip::tcp::endpoint>
 GRPCServerImpl::CallData<Request, Response>::getClientEndpoint()
 {
-    return ripple::getEndpoint(ctx_.peer());
+    return xrpl::getEndpoint(ctx_.peer());
 }
 
 template <class Request, class Response>
@@ -601,7 +601,7 @@ GRPCServer::stop()
 
 GRPCServer::~GRPCServer()
 {
-    XRPL_ASSERT(!running_, "ripple::GRPCServer::~GRPCServer : is not running");
+    XRPL_ASSERT(!running_, "xrpl::GRPCServer::~GRPCServer : is not running");
 }
 
 boost::asio::ip::tcp::endpoint
@@ -610,4 +610,4 @@ GRPCServer::getEndpoint() const
     return impl_.getEndpoint();
 }
 
-}  // namespace ripple
+}  // namespace xrpl
