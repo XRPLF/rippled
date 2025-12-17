@@ -262,9 +262,10 @@ LoanPay::doApply()
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
     // Send the broker fee to the owner if they have sufficient cover available,
-    // _and_ if the owner can receive funds. If not, so as not to block the
-    // payment, add it to the cover balance (send it to the broker pseudo
-    // account).
+    // _and_ if the owner can receive funds
+    // _and_ if the broker is authorized to hold funds. If not, so as not to
+    // block the payment, add it to the cover balance (send it to the broker
+    // pseudo account).
     //
     // Normally freeze status is checked in preflight, but we do it here to
     // avoid duplicating the check. It'll claim a fee either way.
@@ -278,7 +279,8 @@ LoanPay::doApply()
                    asset,
                    tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum),
                    loanScale) &&
-            !isDeepFrozen(view, brokerOwner, asset);
+            !isDeepFrozen(view, brokerOwner, asset) &&
+            !requireAuth(view, asset, brokerOwner, AuthType::StrongAuth);
     }();
 
     auto const brokerPayee =
