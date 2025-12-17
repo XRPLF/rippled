@@ -48,6 +48,11 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const dstAcct = tx[~sfDestination].value_or(account);
 
+    if (isPseudoAccount(ctx.view, dstAcct))
+    {
+        JLOG(ctx.j.warn()) << "Trying to withdraw into a pseudo-account.";
+        return tecPSEUDO_ACCOUNT;
+    }
     auto const sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
     if (!sleBroker)
     {

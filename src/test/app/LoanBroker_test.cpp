@@ -1024,6 +1024,12 @@ class LoanBroker_test : public beast::unit_test::suite
                 destination(dest),
                 ter(tecFROZEN),
                 THISLINE);
+
+            // preclaim: tecPSEUDO_ACCOUNT
+            env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
+                destination(vaultInfo.pseudoAccount),
+                ter(tecPSEUDO_ACCOUNT),
+                THISLINE);
         }
 
         if (brokerTest == CoverClawback)
