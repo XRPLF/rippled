@@ -32,8 +32,8 @@ ConfidentialClawback::preflight(PreflightContext const& ctx)
     if (clawAmount == 0 || clawAmount > maxMPTokenAmount)
         return temBAD_AMOUNT;
 
-    // if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
-    //     return temMALFORMED;
+    if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
+        return temMALFORMED;
 
     return tesSUCCESS;
 }
@@ -84,11 +84,32 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
         (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0))
         return tecINSUFFICIENT_FUNDS;
 
-    // todo: ZKP Verification
-    // verify the MPT amount to clawback is the holder's confidential balance
+    Slice const proof = ctx.tx[sfZKProof];
+    Slice const ciphertext = (*sleHolderMPToken)[sfIssuerEncryptedBalance];
+    Slice const pubKeySlice = (*sleIssuance)[sfIssuerElGamalPublicKey];
+    std::uint64_t const amount = ctx.tx[sfMPTAmount];
 
-    // if (!isTesSuccess(terProof))
-    //     return tecBAD_PROOF;
+    secp256k1_pubkey c1, c2;
+    if (!makeEcPair(ciphertext, c1, c2))
+        return tecINTERNAL;
+
+    secp256k1_pubkey pubKey;
+    std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
+
+    auto const contextHash = getClawbackContextHash(
+        account, ctx.tx[sfSequence], mptIssuanceID, amount, holder);
+
+    int const result = secp256k1_equality_plaintext_verify(
+        secp256k1Context(),
+        reinterpret_cast<unsigned char const*>(proof.data()),
+        &pubKey,
+        &c2,
+        &c1,
+        amount,
+        contextHash.data());
+
+    if (result != 1)
+        return tecBAD_PROOF;
 
     return tesSUCCESS;
 }

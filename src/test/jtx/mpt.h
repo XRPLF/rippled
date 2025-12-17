@@ -414,6 +414,13 @@ public:
     std::int64_t
     getIssuanceOutstandingBalance() const;
 
+    Buffer
+    getClawbackProof(
+        Account const& holder,
+        std::uint64_t amount,
+        Buffer const& privateKey,
+        uint256 const& txHash) const;
+
 private:
     using SLEP = SLE::const_pointer;
     bool
