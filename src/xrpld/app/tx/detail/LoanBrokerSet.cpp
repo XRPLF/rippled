@@ -89,6 +89,18 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
             JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
             return tecNO_PERMISSION;
         }
+
+        if (auto const debtMax = tx[~sfDebtMaximum])
+        {
+            // Can't reduce the debt maximum below the current total debt
+            auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
+            if (*debtMax != 0 && *debtMax < currentDebtTotal)
+            {
+                JLOG(ctx.j.warn())
+                    << "Cannot reduce DebtMaximum below current DebtTotal.";
+                return tecLIMIT_EXCEEDED;
+            }
+        }
     }
     else
     {

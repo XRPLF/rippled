@@ -544,11 +544,11 @@ LoanSet::doApply()
             // ignore tecDUPLICATE. That means the holding already exists,
             // and is fine here
             return ter;
-
-        if (auto const ter = requireAuth(
-                view, vaultAsset, brokerOwner, AuthType::StrongAuth))
-            return ter;
     }
+
+    if (auto const ter =
+            requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
+        return ter;
 
     if (auto const ter = accountSendMulti(
             view,

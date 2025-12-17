@@ -1436,10 +1436,83 @@ class LoanBroker_test : public beast::unit_test::suite
         });
     }
 
+    void
+    testLoanBrokerSetDebtMaximum()
+    {
+        testcase("testLoanBrokerSetDebtMaximum");
+        using namespace jtx;
+        using namespace loanBroker;
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Env env(*this);
+        Vault vault{env};
+
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        PrettyAsset const asset = [&]() {
+            env(trust(alice, issuer["IOU"](1'000'000)), THISLINE);
+            env.close();
+            return PrettyAsset(issuer["IOU"]);
+        }();
+
+        env(pay(issuer, alice, asset(100'000)), THISLINE);
+        env.close();
+
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx, THISLINE);
+        env.close();
+        auto const le = env.le(vaultKeylet);
+        VaultInfo vaultInfo = [&]() {
+            if (BEAST_EXPECT(le))
+                return VaultInfo{asset, vaultKeylet.key, le->at(sfAccount)};
+            return VaultInfo{asset, {}, {}};
+        }();
+        if (vaultInfo.vaultID == uint256{})
+            return;
+
+        env(vault.deposit(
+                {.depositor = alice,
+                 .id = vaultKeylet.key,
+                 .amount = asset(50)}),
+            THISLINE);
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultInfo.vaultID), THISLINE);
+        env.close();
+
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000), borrower);
+        env(loan::set(borrower, brokerKeylet.key, asset(50).value()),
+            sig(sfCounterpartySignature, alice),
+            fee(env.current()->fees().base * 2),
+            THISLINE);
+        auto const broker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(broker))
+            return;
+
+        BEAST_EXPECT(broker->at(sfDebtTotal) == 50);
+        auto debtTotal = broker->at(sfDebtTotal);
+
+        auto tx2 = set(alice, vaultInfo.vaultID);
+        tx2[sfLoanBrokerID] = to_string(brokerKeylet.key);
+        tx2[sfDebtMaximum] = debtTotal - 1;
+        env(tx2, ter(tecLIMIT_EXCEEDED), THISLINE);
+
+        tx2[sfDebtMaximum] = debtTotal + 1;
+        env(tx2, ter(tesSUCCESS), THISLINE);
+
+        tx2[sfDebtMaximum] = 0;
+        env(tx2, ter(tesSUCCESS), THISLINE);
+    }
+
 public:
     void
     run() override
     {
+        testLoanBrokerSetDebtMaximum();
         testLoanBrokerCoverDepositNullVault();
 
         testDisabled();
