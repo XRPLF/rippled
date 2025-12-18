@@ -73,10 +73,7 @@ include(target_link_modules)
 
 # Level 01
 add_module(xrpl beast)
-target_link_libraries(xrpl.libxrpl.beast PUBLIC
-  xrpl.imports.main
-  xrpl.libpb
-)
+target_link_libraries(xrpl.libxrpl.beast PUBLIC xrpl.imports.main)
 
 # Level 02
 add_module(xrpl basics)
@@ -97,10 +94,18 @@ target_link_libraries(xrpl.libxrpl.protocol PUBLIC
 )
 
 # Level 05
+add_module(xrpl core)
+target_link_libraries(xrpl.libxrpl.core PUBLIC
+  xrpl.libxrpl.basics
+  xrpl.libxrpl.json
+  xrpl.libxrpl.protocol
+)
+
+# Level 06
 add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
-# Level 06
+# Level 07
 add_module(xrpl net)
 target_link_libraries(xrpl.libxrpl.net PUBLIC
   xrpl.libxrpl.basics
@@ -147,6 +152,7 @@ target_sources(xrpl.libxrpl PRIVATE ${sources})
 target_link_modules(xrpl PUBLIC
   basics
   beast
+  core
   crypto
   json
   protocol
@@ -226,6 +232,4 @@ if(xrpld)
       src/test/ledger/Invariants_test.cpp
       PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
   endif()
-  # For the time being, we will keep the name of the binary as it was.
-  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")
 endif()

@@ -12,14 +12,18 @@
 
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 template <>
 NotTEC
 Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 {
     // 0 means "Allow any flags"
-    if (auto const ret = preflight0(ctx, 0))
+    // The check for tfChangeMask is gated by LendingProtocol because that
+    // feature introduced this parameter, and it's not worth adding another
+    // amendment just for this.
+    if (auto const ret = preflight0(
+            ctx, ctx.rules.enabled(featureLendingProtocol) ? tfChangeMask : 0))
         return ret;
 
     auto account = ctx.tx.getAccountID(sfAccount);
@@ -49,13 +53,6 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
     {
         JLOG(ctx.j.warn()) << "Change: Bad sequence";
         return temBAD_SEQUENCE;
-    }
-
-    if (ctx.tx.getTxnType() == ttUNL_MODIFY &&
-        !ctx.rules.enabled(featureNegativeUNL))
-    {
-        JLOG(ctx.j.warn()) << "Change: NegativeUNL not enabled";
-        return temDISABLED;
     }
 
     return tesSUCCESS;
@@ -134,7 +131,7 @@ Change::doApply()
             return applyUNLModify();
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Change::doApply : invalid transaction type");
+            UNREACHABLE("xrpl::Change::doApply : invalid transaction type");
             return tefFAILURE;
             // LCOV_EXCL_STOP
     }
@@ -144,7 +141,7 @@ void
 Change::preCompute()
 {
     XRPL_ASSERT(
-        account_ == beast::zero, "ripple::Change::preCompute : zero account");
+        account_ == beast::zero, "xrpl::Change::preCompute : zero account");
 }
 
 TER
@@ -410,4 +407,4 @@ Change::applyUNLModify()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

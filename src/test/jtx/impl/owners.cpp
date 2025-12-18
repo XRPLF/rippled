@@ -1,6 +1,6 @@
 #include <test/jtx/owners.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 std::uint32_t
@@ -38,4 +38,4 @@ owners::operator()(Env& env) const
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -63,7 +63,7 @@
  *
  */
 
-namespace ripple {
+namespace xrpl {
 
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
 enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
@@ -78,12 +78,15 @@ namespace detail {
 #undef XRPL_FEATURE
 #pragma push_macro("XRPL_FIX")
 #undef XRPL_FIX
-#pragma push_macro("XRPL_RETIRE")
-#undef XRPL_RETIRE
+#pragma push_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FEATURE
+#pragma push_macro("XRPL_RETIRE_FIX")
+#undef XRPL_RETIRE_FIX
 
 #define XRPL_FEATURE(name, supported, vote) +1
 #define XRPL_FIX(name, supported, vote) +1
-#define XRPL_RETIRE(name) +1
+#define XRPL_RETIRE_FEATURE(name) +1
+#define XRPL_RETIRE_FIX(name) +1
 
 // This value SHOULD be equal to the number of amendments registered in
 // Feature.cpp. Because it's only used to reserve storage, and determine how
@@ -94,8 +97,10 @@ static constexpr std::size_t numFeatures =
 #include <xrpl/protocol/detail/features.macro>
     );
 
-#undef XRPL_RETIRE
-#pragma pop_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE_FEATURE
+#pragma pop_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FIX
+#pragma pop_macro("XRPL_RETIRE_FIX")
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE
@@ -172,7 +177,7 @@ public:
     {
         XRPL_ASSERT(
             b.count() == count(),
-            "ripple::FeatureBitset::FeatureBitset(base) : count match");
+            "xrpl::FeatureBitset::FeatureBitset(base) : count match");
     }
 
     template <class... Fs>
@@ -181,7 +186,7 @@ public:
         initFromFeatures(f, std::forward<Fs>(fs)...);
         XRPL_ASSERT(
             count() == (sizeof...(fs) + 1),
-            "ripple::FeatureBitset::FeatureBitset(uint256) : count and "
+            "xrpl::FeatureBitset::FeatureBitset(uint256) : count and "
             "sizeof... do match");
     }
 
@@ -192,7 +197,7 @@ public:
             set(featureToBitsetIndex(f));
         XRPL_ASSERT(
             fs.size() == count(),
-            "ripple::FeatureBitset::FeatureBitset(Container auto) : count and "
+            "xrpl::FeatureBitset::FeatureBitset(Container auto) : count and "
             "size do match");
     }
 
@@ -339,22 +344,27 @@ foreachFeature(FeatureBitset bs, F&& f)
 #undef XRPL_FEATURE
 #pragma push_macro("XRPL_FIX")
 #undef XRPL_FIX
-#pragma push_macro("XRPL_RETIRE")
-#undef XRPL_RETIRE
+#pragma push_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FEATURE
+#pragma push_macro("XRPL_RETIRE_FIX")
+#undef XRPL_RETIRE_FIX
 
 #define XRPL_FEATURE(name, supported, vote) extern uint256 const feature##name;
 #define XRPL_FIX(name, supported, vote) extern uint256 const fix##name;
-#define XRPL_RETIRE(name)
+#define XRPL_RETIRE_FEATURE(name)
+#define XRPL_RETIRE_FIX(name)
 
 #include <xrpl/protocol/detail/features.macro>
 
-#undef XRPL_RETIRE
-#pragma pop_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE_FEATURE
+#pragma pop_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FIX
+#pragma pop_macro("XRPL_RETIRE_FIX")
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE
 #pragma pop_macro("XRPL_FEATURE")
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

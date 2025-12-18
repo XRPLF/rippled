@@ -9,7 +9,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 DepositPreauth::checkExtraFeatures(PreflightContext const& ctx)
@@ -293,4 +293,4 @@ DepositPreauth::removeFromLedger(
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

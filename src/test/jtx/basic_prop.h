@@ -3,7 +3,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -41,6 +41,6 @@ struct prop_type : basic_prop
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

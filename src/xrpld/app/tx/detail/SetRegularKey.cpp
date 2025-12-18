@@ -4,7 +4,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 XRPAmount
 SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
@@ -70,4 +70,4 @@ SetRegularKey::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

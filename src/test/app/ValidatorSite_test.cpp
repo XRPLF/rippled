@@ -17,7 +17,7 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 constexpr char const*
 realValidatorContents()
@@ -572,7 +572,7 @@ public:
                   false,
                   true,
                   1,
-                  std::chrono::seconds{Json::Value::maxInt + 1}}});
+                  std::chrono::seconds{Json::Value::minInt}}});
             // force an out-of-range validUntil value on the future list
             // The first list is accepted. The second fails. The parser
             // returns the "best" result, so this looks like a success.
@@ -608,7 +608,7 @@ public:
                   false,
                   true,
                   1,
-                  std::chrono::seconds{Json::Value::maxInt + 1},
+                  std::chrono::seconds{Json::Value::minInt},
                   std::chrono::seconds{Json::Value::maxInt - 6000}}});
             // verify refresh intervals are properly clamped
             testFetchList(
@@ -688,7 +688,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(ValidatorSite, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(ValidatorSite, app, xrpl, 2);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

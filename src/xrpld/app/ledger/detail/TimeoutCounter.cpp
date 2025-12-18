@@ -1,7 +1,8 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
-#include <xrpld/core/JobQueue.h>
 
-namespace ripple {
+#include <xrpl/core/JobQueue.h>
+
+namespace xrpl {
 
 using namespace std::chrono_literals;
 
@@ -24,7 +25,7 @@ TimeoutCounter::TimeoutCounter(
 {
     XRPL_ASSERT(
         (timerInterval_ > 10ms) && (timerInterval_ < 30s),
-        "ripple::TimeoutCounter::TimeoutCounter : interval input inside range");
+        "xrpl::TimeoutCounter::TimeoutCounter : interval input inside range");
 }
 
 void
@@ -106,4 +107,4 @@ TimeoutCounter::cancel()
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

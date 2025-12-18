@@ -8,7 +8,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 AMMDeposit::checkExtraFeatures(PreflightContext const& ctx)
@@ -456,7 +456,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     {
         XRPL_ASSERT(
             newLPTokenBalance > beast::zero,
-            "ripple::AMMDeposit::applyGuts : valid new LP token balance");
+            "xrpl::AMMDeposit::applyGuts : valid new LP token balance");
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         // LP depositing into AMM empty state gets the auction slot
         // and the voting
@@ -1016,4 +1016,4 @@ AMMDeposit::equalDepositInEmptyState(
         tfee);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

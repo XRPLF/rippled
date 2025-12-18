@@ -7,7 +7,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 /*
     DID
@@ -191,4 +191,4 @@ DIDDelete::doApply()
     return deleteSLE(ctx_, keylet::did(account_), account_);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

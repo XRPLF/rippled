@@ -10,7 +10,7 @@
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
@@ -333,4 +333,4 @@ AMMCreate::doApply()
     return result.first;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

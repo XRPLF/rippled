@@ -9,7 +9,7 @@
 #include <atomic>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 class SlotImp : public Slot
@@ -176,7 +176,7 @@ public:
     // DEPRECATED public data members
 
     // Tells us if we checked the connection. Outbound connections
-    // are always considered checked since we successfuly connected.
+    // are always considered checked since we successfully connected.
     bool checked;
 
     // Set to indicate if the connection can receive incoming at the
@@ -195,6 +195,6 @@ public:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

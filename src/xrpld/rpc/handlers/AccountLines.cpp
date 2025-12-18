@@ -1,6 +1,7 @@
 #include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/ledger/ReadView.h>
@@ -9,7 +10,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 addLine(Json::Value& jsonLines, RPCTrustLine const& line)
@@ -172,7 +173,7 @@ doAccountLines(RPC::JsonContext& context)
                     if (!sleCur)
                     {
                         // LCOV_EXCL_START
-                        UNREACHABLE("ripple::doAccountLines : null SLE");
+                        UNREACHABLE("xrpl::doAccountLines : null SLE");
                         return false;
                         // LCOV_EXCL_STOP
                     }
@@ -239,4 +240,4 @@ doAccountLines(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

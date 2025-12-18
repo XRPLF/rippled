@@ -16,7 +16,7 @@
 
 #include <boost/beast/core/multi_buffer.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ValidatorList_test : public beast::unit_test::suite
@@ -1740,7 +1740,7 @@ private:
             // locals[0]: from 0 to maxKeys - 4
             // locals[1]: from 1 to maxKeys - 2
             // locals[2]: from 2 to maxKeys
-            // interesection of at least 2: same as locals[1]
+            // intersection of at least 2: same as locals[1]
             // intersection when 1 is dropped: from 2 to maxKeys - 4
             constexpr static int publishers = 3;
             std::array<
@@ -2294,7 +2294,7 @@ private:
     {
         testcase("Sha512 hashing");
         // Tests that ValidatorList hash_append helpers with a single blob
-        // returns the same result as ripple::Sha512Half used by the
+        // returns the same result as xrpl::Sha512Half used by the
         // TMValidatorList protocol message handler
         std::string const manifest = "This is not really a manifest";
         std::string const blob = "This is not really a blob";
@@ -4145,7 +4145,7 @@ public:
     }
 };  // namespace test
 
-BEAST_DEFINE_TESTSUITE(ValidatorList, app, ripple);
+BEAST_DEFINE_TESTSUITE(ValidatorList, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

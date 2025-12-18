@@ -1,12 +1,12 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 
-#include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/jss.h>
 
@@ -18,7 +18,7 @@
 
 //------------------------------------------------------------------------------
 
-namespace ripple {
+namespace xrpl {
 
 class PerfLog_test : public beast::unit_test::suite
 {
@@ -293,7 +293,7 @@ public:
         // Get the all the labels we can use for RPC interfaces without
         // causing an assert.
         std::vector<char const*> labels =
-            test::jtx::make_vector(ripple::RPC::getHandlerNames());
+            test::jtx::make_vector(xrpl::RPC::getHandlerNames());
         std::shuffle(labels.begin(), labels.end(), default_prng());
 
         // Get two IDs to associate with each label.  Errors tend to happen at
@@ -1042,6 +1042,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PerfLog, basics, ripple);
+BEAST_DEFINE_TESTSUITE(PerfLog, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

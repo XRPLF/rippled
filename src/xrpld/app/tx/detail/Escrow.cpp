@@ -15,7 +15,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
@@ -141,7 +141,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 
     if (auto const cb = ctx.tx[~sfCondition])
     {
-        using namespace ripple::cryptoconditions;
+        using namespace xrpl::cryptoconditions;
 
         std::error_code ec;
 
@@ -153,12 +153,6 @@ EscrowCreate::preflight(PreflightContext const& ctx)
                 << ec.message();
             return temMALFORMED;
         }
-
-        // Conditions other than PrefixSha256 require the
-        // "CryptoConditionsSuite" amendment:
-        if (condition->type != Type::preimageSha256 &&
-            !ctx.rules.enabled(featureCryptoConditionsSuite))
-            return temDISABLED;
     }
 
     return tesSUCCESS;
@@ -422,7 +416,7 @@ escrowLockApplyHelper<MPTIssue>(
 TER
 EscrowCreate::doApply()
 {
-    auto const closeTime = ctx_.view().info().parentCloseTime;
+    auto const closeTime = ctx_.view().header().parentCloseTime;
 
     if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
         return tecNO_PERMISSION;
@@ -460,12 +454,6 @@ EscrowCreate::doApply()
         if (((*sled)[sfFlags] & lsfRequireDestTag) &&
             !ctx_.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
-
-        // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
-        // featureDepositAuth to remove the bug.
-        if (!ctx_.view().rules().enabled(featureDepositAuth) &&
-            ((*sled)[sfFlags] & lsfDisallowXRP))
-            return tecNO_TARGET;
     }
 
     // Create escrow in ledger.  Note that we we use the value from the
@@ -559,7 +547,7 @@ EscrowCreate::doApply()
 static bool
 checkCondition(Slice f, Slice c)
 {
-    using namespace ripple::cryptoconditions;
+    using namespace xrpl::cryptoconditions;
 
     std::error_code ec;
 
@@ -976,7 +964,7 @@ EscrowFinish::doApply()
 
     // If a cancel time is present, a finish operation should only succeed prior
     // to that time.
-    auto const now = ctx_.view().info().parentCloseTime;
+    auto const now = ctx_.view().header().parentCloseTime;
 
     // Too soon: can't execute before the finish time
     if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
@@ -1041,13 +1029,10 @@ EscrowFinish::doApply()
     if (!sled)
         return tecNO_DST;
 
-    if (ctx_.view().rules().enabled(featureDepositAuth))
-    {
-        if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
-            !isTesSuccess(err))
-            return err;
-    }
+    if (auto err = verifyDepositPreauth(
+            ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
+        !isTesSuccess(err))
+        return err;
 
     AccountID const account = (*slep)[sfAccount];
 
@@ -1087,7 +1072,7 @@ EscrowFinish::doApply()
             return temDISABLED;  // LCOV_EXCL_LINE
 
         Rate lockedRate = slep->isFieldPresent(sfTransferRate)
-            ? ripple::Rate(slep->getFieldU32(sfTransferRate))
+            ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
             : parityRate;
         auto const issuer = amount.getIssuer();
         bool const createAsset = destID == account_;
@@ -1241,7 +1226,7 @@ EscrowCancel::doApply()
         return tecNO_TARGET;
     }
 
-    auto const now = ctx_.view().info().parentCloseTime;
+    auto const now = ctx_.view().header().parentCloseTime;
 
     // No cancel time specified: can't execute at all.
     if (!(*slep)[~sfCancelAfter])
@@ -1336,4 +1321,4 @@ EscrowCancel::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

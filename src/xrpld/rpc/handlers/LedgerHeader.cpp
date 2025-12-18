@@ -1,11 +1,11 @@
 #include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   ledger_hash : <ledger>
@@ -21,7 +21,7 @@ doLedgerHeader(RPC::JsonContext& context)
         return jvResult;
 
     Serializer s;
-    addRaw(lpLedger->info(), s);
+    addRaw(lpLedger->header(), s);
     jvResult[jss::ledger_data] = strHex(s.peekData());
 
     // This information isn't verified: they should only use it if they trust
@@ -31,4 +31,4 @@ doLedgerHeader(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,5 +1,6 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/json/json_value.h>
@@ -10,7 +11,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 appendOfferJson(std::shared_ptr<SLE const> const& offer, Json::Value& offers)
@@ -124,7 +125,7 @@ doAccountOffers(RPC::JsonContext& context)
                 if (!sle)
                 {
                     // LCOV_EXCL_START
-                    UNREACHABLE("ripple::doAccountOffers : null SLE");
+                    UNREACHABLE("xrpl::doAccountOffers : null SLE");
                     return false;
                     // LCOV_EXCL_STOP
                 }
@@ -163,4 +164,4 @@ doAccountOffers(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

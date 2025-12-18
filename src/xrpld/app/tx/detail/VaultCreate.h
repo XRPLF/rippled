@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class VaultCreate : public Transactor
 {
@@ -23,9 +23,6 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    static XRPAmount
-    calculateBaseFee(ReadView const& view, STTx const& tx);
-
     static TER
     preclaim(PreclaimContext const& ctx);
 
@@ -33,6 +30,6 @@ public:
     doApply() override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

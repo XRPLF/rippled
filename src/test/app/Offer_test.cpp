@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class OfferBaseUtil_test : public beast::unit_test::suite
@@ -20,7 +20,10 @@ class OfferBaseUtil_test : public beast::unit_test::suite
     std::uint32_t
     lastClose(jtx::Env& env)
     {
-        return env.current()->info().parentCloseTime.time_since_epoch().count();
+        return env.current()
+            ->header()
+            .parentCloseTime.time_since_epoch()
+            .count();
     }
 
     static auto
@@ -180,13 +183,10 @@ public:
         // an offer.  Show that the attempt to remove the offer fails.
         env.require(offers(alice, 2));
 
-        // featureDepositPreauths changes the return code on an expired Offer.
-        // Adapt to that.
-        bool const featPreauth{features[featureDepositPreauth]};
         env(offer(alice, XRP(5), USD(2)),
             json(sfExpiration.fieldName, lastClose(env)),
             json(jss::OfferSequence, offer2Seq),
-            ter(featPreauth ? TER{tecEXPIRED} : TER{tesSUCCESS}));
+            ter(tecEXPIRED));
         env.close();
 
         env.require(offers(alice, 2));
@@ -1082,13 +1082,9 @@ public:
             offers(alice, 0),
             owners(alice, 1));
 
-        // Place an offer that should have already expired.
-        // The DepositPreauth amendment changes the return code; adapt to that.
-        bool const featPreauth{features[featureDepositPreauth]};
-
         env(offer(alice, xrpOffer, usdOffer),
             json(sfExpiration.fieldName, lastClose(env)),
-            ter(featPreauth ? TER{tecEXPIRED} : TER{tesSUCCESS}));
+            ter(tecEXPIRED));
 
         env.require(
             balance(alice, startBalance - f - f),
@@ -1302,7 +1298,7 @@ public:
     testNegativeBalance(FeatureBitset features)
     {
         // This test creates an offer test for negative balance
-        // with transfer fees and miniscule funds.
+        // with transfer fees and minuscule funds.
         testcase("Negative Balance");
 
         using namespace jtx;
@@ -4499,21 +4495,13 @@ public:
         env(fset(gw, asfRequireAuth));
         env.close();
 
-        // The test behaves differently with or without DepositPreauth.
-        bool const preauth = features[featureDepositPreauth];
-
         // Before DepositPreauth an account with lsfRequireAuth set could not
         // create an offer to buy their own currency.  After DepositPreauth
         // they can.
-        env(offer(gw, gwUSD(40), XRP(4000)),
-            ter(preauth ? TER{tesSUCCESS} : TER{tecNO_LINE}));
+        env(offer(gw, gwUSD(40), XRP(4000)), ter(tesSUCCESS));
         env.close();
 
-        env.require(offers(gw, preauth ? 1 : 0));
-
-        if (!preauth)
-            // The rest of the test verifies DepositPreauth behavior.
-            return;
+        env.require(offers(gw, 1));
 
         // Set up an authorized trust line and pay alice gwUSD 50.
         env(trust(gw, aliceUSD(100)), txflags(tfSetfAuth));
@@ -5312,10 +5300,10 @@ class Offer_manual_test : public OfferBaseUtil_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, app, ripple, 20);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, app, xrpl, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, app, xrpl, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, app, xrpl, 2);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, app, xrpl, 20);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 
 class SetRegularKey_test : public beast::unit_test::suite
 {
@@ -169,6 +169,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SetRegularKey, app, ripple);
+BEAST_DEFINE_TESTSUITE(SetRegularKey, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

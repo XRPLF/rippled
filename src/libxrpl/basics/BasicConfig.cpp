@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 Section::Section(std::string const& name) : name_(name)
 {
@@ -30,7 +30,7 @@ Section::append(std::vector<std::string> const& lines)
     // <key> '=' <value>
     static boost::regex const re1(
         "^"                        // start of line
-        "(?:\\s*)"                 // whitespace (optonal)
+        "(?:\\s*)"                 // whitespace (optional)
         "([a-zA-Z][_a-zA-Z0-9]*)"  // <key>
         "(?:\\s*)"                 // whitespace (optional)
         "(?:=)"                    // '='
@@ -183,4 +183,4 @@ operator<<(std::ostream& ss, BasicConfig const& c)
     return ss;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

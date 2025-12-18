@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 TxConsequences
 CreateTicket::makeTxConsequences(PreflightContext const& ctx)
@@ -122,4 +122,4 @@ CreateTicket::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

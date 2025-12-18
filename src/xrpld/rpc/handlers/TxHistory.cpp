@@ -11,7 +11,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   start: <index>
@@ -49,4 +49,4 @@ doTxHistory(RPC::JsonContext& context)
     return obj;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

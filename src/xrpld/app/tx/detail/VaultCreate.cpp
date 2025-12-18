@@ -14,7 +14,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
@@ -22,8 +22,11 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1))
         return false;
 
-    return !ctx.tx.isFieldPresent(sfDomainID) ||
-        ctx.rules.enabled(featurePermissionedDomains);
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDomains))
+        return false;
+
+    return true;
 }
 
 std::uint32_t
@@ -77,13 +80,6 @@ VaultCreate::preflight(PreflightContext const& ctx)
     }
 
     return tesSUCCESS;
-}
-
-XRPAmount
-VaultCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
-{
-    // One reserve increment is typically much greater than one base fee.
-    return calculateOwnerReserveFee(view, tx);
 }
 
 TER
@@ -143,12 +139,12 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), account_, vault))
         return ter;
 
+    // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
     if (auto const ret =
-            checkInsufficientReserve(view(), owner, mPriorBalance, 1);
+            checkInsufficientReserve(view(), owner, mPriorBalance, 2);
         !isTesSuccess(ret))
         return ret;
-
-    adjustOwnerCount(view(), owner, 1, j_);
+    adjustOwnerCount(view(), owner, 2, j_);
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)
@@ -239,4 +235,4 @@ VaultCreate::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

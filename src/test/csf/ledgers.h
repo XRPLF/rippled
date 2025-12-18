@@ -16,7 +16,7 @@
 #include <optional>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -35,7 +35,7 @@ namespace csf {
 
     Ledgers are immutable value types. All ledgers with the same sequence
     number, transactions, close time, etc. will have the same ledger ID. The
-    LedgerOracle class below manges ID assignments for a simulation and is the
+    LedgerOracle class below manages ID assignments for a simulation and is the
     only way to close and create a new ledger. Since the parent ledger ID is
     part of type, this also means ledgers with distinct histories will have
     distinct ids, even if they have the same set of transactions, sequence
@@ -230,8 +230,8 @@ private:
 class LedgerOracle
 {
     using InstanceMap = boost::bimaps::bimap<
-        boost::bimaps::set_of<Ledger::Instance, ripple::less<Ledger::Instance>>,
-        boost::bimaps::set_of<Ledger::ID, ripple::less<Ledger::ID>>>;
+        boost::bimaps::set_of<Ledger::Instance, xrpl::less<Ledger::Instance>>,
+        boost::bimaps::set_of<Ledger::ID, xrpl::less<Ledger::ID>>>;
     using InstanceEntry = InstanceMap::value_type;
 
     // Set of all known ledgers; note this is never pruned
@@ -341,6 +341,6 @@ struct LedgerHistoryHelper
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

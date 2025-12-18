@@ -5,6 +5,7 @@
 #include <xrpl/json/json_forwards.h>
 
 #include <cstring>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -139,9 +140,9 @@ public:
     using ArrayIndex = UInt;
 
     static Value const null;
-    static Int const minInt;
-    static Int const maxInt;
-    static UInt const maxUInt;
+    static constexpr Int minInt = std::numeric_limits<Int>::min();
+    static constexpr Int maxInt = std::numeric_limits<Int>::max();
+    static constexpr UInt maxUInt = std::numeric_limits<UInt>::max();
 
 private:
     class CZString
@@ -198,7 +199,7 @@ public:
     Value(UInt value);
     Value(double value);
     Value(char const* value);
-    Value(ripple::Number const& value);
+    Value(xrpl::Number const& value);
     /** \brief Constructs a value from a static string.
 
      * Like other value string constructor but do not duplicate the string for
@@ -243,6 +244,10 @@ public:
     asDouble() const;
     bool
     asBool() const;
+
+    /** Correct absolute value from int or unsigned int */
+    UInt
+    asAbsUInt() const;
 
     // TODO: What is the "empty()" method this docstring mentions?
     /** isNull() tests to see if this field is null.  Don't use this method to
@@ -376,6 +381,9 @@ public:
     /// Return true if the object has a member named key.
     bool
     isMember(std::string const& key) const;
+    /// Return true if the object has a member named key.
+    bool
+    isMember(StaticString const& key) const;
 
     /// \brief Return a list of the member names.
     ///
@@ -422,7 +430,7 @@ private:
 };
 
 inline Value
-to_json(ripple::Number const& number)
+to_json(xrpl::Number const& number)
 {
     return to_string(number);
 }

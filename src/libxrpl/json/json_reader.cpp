@@ -941,7 +941,7 @@ operator>>(std::istream& sin, Value& root)
 
     // XRPL_ASSERT(ok, "Json::operator>>() : parse succeeded");
     if (!ok)
-        ripple::Throw<std::runtime_error>(reader.getFormatedErrorMessages());
+        xrpl::Throw<std::runtime_error>(reader.getFormatedErrorMessages());
 
     return sin;
 }

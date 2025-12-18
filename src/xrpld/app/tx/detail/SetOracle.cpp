@@ -7,7 +7,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 static inline std::pair<Currency, Currency>
 tokenPairKey(STObject const& pair)
@@ -51,7 +51,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
     // of the last closed ledger
     using namespace std::chrono;
     std::size_t const closeTime =
-        duration_cast<seconds>(ctx.view.info().closeTime.time_since_epoch())
+        duration_cast<seconds>(ctx.view.header().closeTime.time_since_epoch())
             .count();
     std::size_t const lastUpdateTime = ctx.tx[sfLastUpdateTime];
     if (lastUpdateTime < epoch_offset.count())
@@ -310,4 +310,4 @@ SetOracle::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

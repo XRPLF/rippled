@@ -12,7 +12,7 @@
 #include <ostream>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -28,7 +28,7 @@ namespace csf {
 /** Group of collectors.
 
     Presents a group of collectors as a single collector which process an event
-    by calling each collector sequentially. This is analagous to CollectorRefs
+    by calling each collector sequentially. This is analogous to CollectorRefs
     in CollectorRef.h, but does *not* erase the type information of the combined
     collectors.
  */
@@ -699,6 +699,6 @@ struct JumpCollector
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

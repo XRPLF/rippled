@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class LedgerClosed_test : public beast::unit_test::suite
 {
@@ -38,7 +38,7 @@ public:
         lc_result = env.rpc("ledger_closed")[jss::result];
         BEAST_EXPECT(
             lc_result[jss::ledger_hash] ==
-            "E86DE7F3D7A4D9CE17EF7C8BA08A8F4D8F643B9552F0D895A31CDA78F541DE4E");
+            "0F1A9E0C109ADEF6DA2BDE19217C12BBEC57174CBDBD212B0EBDC1CEDB853185");
         BEAST_EXPECT(lc_result[jss::ledger_index] == 3);
     }
 
@@ -49,6 +49,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerClosed, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerClosed, rpc, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

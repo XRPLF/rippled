@@ -13,7 +13,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 /*
     PaymentChannel
@@ -116,8 +116,7 @@ closeChannel(
     }
 
     // Remove PayChan from recipient's owner directory, if present.
-    if (auto const page = (*slep)[~sfDestinationNode];
-        page && view.rules().enabled(fixPayChanRecipientOwnerDir))
+    if (auto const page = (*slep)[~sfDestinationNode])
     {
         auto const dst = (*slep)[sfDestination];
         if (!view.dirRemove(keylet::ownerDir(dst), *page, key, true))
@@ -137,7 +136,7 @@ closeChannel(
 
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance],
-        "ripple::closeChannel : minimum channel amount");
+        "xrpl::closeChannel : minimum channel amount");
     (*sle)[sfBalance] =
         (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     adjustOwnerCount(view, sle, -1, j);
@@ -204,18 +203,11 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         auto const flags = sled->getFlags();
 
         // Check if they have disallowed incoming payment channels
-        if (ctx.view.rules().enabled(featureDisallowIncoming) &&
-            (flags & lsfDisallowIncomingPayChan))
+        if (flags & lsfDisallowIncomingPayChan)
             return tecNO_PERMISSION;
 
         if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
-
-        // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
-        // featureDepositAuth to remove the bug.
-        if (!ctx.view.rules().enabled(featureDepositAuth) &&
-            (flags & lsfDisallowXRP))
-            return tecNO_TARGET;
 
         // Pseudo-accounts cannot receive payment channels, other than native
         // to their underlying ledger object - implemented in their respective
@@ -240,7 +232,7 @@ PayChanCreate::doApply()
 
     if (ctx_.view().rules().enabled(fixPayChanCancelAfter))
     {
-        auto const closeTime = ctx_.view().info().parentCloseTime;
+        auto const closeTime = ctx_.view().header().parentCloseTime;
         if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
             return tecEXPIRED;
     }
@@ -285,7 +277,6 @@ PayChanCreate::doApply()
     }
 
     // Add PayChan to the recipient's owner directory
-    if (ctx_.view().rules().enabled(fixPayChanRecipientOwnerDir))
     {
         auto const page = ctx_.view().dirInsert(
             keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
@@ -334,7 +325,7 @@ PayChanFund::doApply()
     {
         auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count();
+            ctx_.view().header().parentCloseTime.time_since_epoch().count();
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (expiration && closeTime >= *expiration))
             return closeChannel(
@@ -348,7 +339,7 @@ PayChanFund::doApply()
     if (auto extend = ctx_.tx[~sfExpiration])
     {
         auto minExpiration =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() +
+            ctx_.view().header().parentCloseTime.time_since_epoch().count() +
             (*slep)[sfSettleDelay];
         if (expiration && *expiration < minExpiration)
             minExpiration = *expiration;
@@ -451,7 +442,7 @@ PayChanClaim::preflight(PreflightContext const& ctx)
         PublicKey const pk(ctx.tx[sfPublicKey]);
         Serializer msg;
         serializePayChanAuthorization(msg, k.key, authAmt);
-        if (!verify(pk, msg.slice(), *sig, /*canonical*/ true))
+        if (!verify(pk, msg.slice(), *sig))
             return temBAD_SIGNATURE;
     }
 
@@ -492,7 +483,7 @@ PayChanClaim::doApply()
     {
         auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count();
+            ctx_.view().header().parentCloseTime.time_since_epoch().count();
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (curExpiration && closeTime >= *curExpiration))
             return closeChannel(
@@ -529,26 +520,16 @@ PayChanClaim::doApply()
         if (!sled)
             return tecNO_DST;
 
-        // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
-        // featureDepositAuth to remove the bug.
-        bool const depositAuth{ctx_.view().rules().enabled(featureDepositAuth)};
-        if (!depositAuth &&
-            (txAccount == src && (sled->getFlags() & lsfDisallowXRP)))
-            return tecNO_TARGET;
-
-        if (depositAuth)
-        {
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
         XRPL_ASSERT(
             reqDelta >= beast::zero,
-            "ripple::PayChanClaim::doApply : minimum balance delta");
+            "xrpl::PayChanClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
         ctx_.view().update(slep);
@@ -570,7 +551,7 @@ PayChanClaim::doApply()
                 slep, ctx_.view(), k.key, ctx_.app.journal("View"));
 
         auto const settleExpiration =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() +
+            ctx_.view().header().parentCloseTime.time_since_epoch().count() +
             (*slep)[sfSettleDelay];
 
         if (!curExpiration || *curExpiration > settleExpiration)
@@ -583,4 +564,4 @@ PayChanClaim::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

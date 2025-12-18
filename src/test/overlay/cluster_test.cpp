@@ -6,10 +6,10 @@
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/protocol/SecretKey.h>
 
-namespace ripple {
+namespace xrpl {
 namespace tests {
 
-class cluster_test : public ripple::TestSuite
+class cluster_test : public xrpl::TestSuite
 {
     test::SuiteJournal journal_;
 
@@ -227,7 +227,7 @@ public:
         BEAST_EXPECT(!c->load(s4));
 
         // Check if we properly terminate when we encounter
-        // a malformed or unparseable entry:
+        // a malformed or unparsable entry:
         auto const node1 = randomNode();
         auto const node2 = randomNode();
 
@@ -248,7 +248,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(cluster, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(cluster, overlay, xrpl);
 
 }  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl

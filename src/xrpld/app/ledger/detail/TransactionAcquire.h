@@ -5,7 +5,7 @@
 
 #include <xrpl/shamap/SHAMap.h>
 
-namespace ripple {
+namespace xrpl {
 
 // VFALCO TODO rename to PeerTxRequest
 // A transaction set we are trying to acquire
@@ -54,6 +54,6 @@ private:
     pmDowncast() override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

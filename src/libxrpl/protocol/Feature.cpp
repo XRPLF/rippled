@@ -19,10 +19,10 @@
 #include <optional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 inline std::size_t
-hash_value(ripple::uint256 const& feature)
+hash_value(xrpl::uint256 const& feature)
 {
     std::size_t seed = 0;
     using namespace boost;
@@ -205,7 +205,7 @@ public:
 
 FeatureCollections::FeatureCollections()
 {
-    features.reserve(ripple::detail::numFeatures);
+    features.reserve(xrpl::detail::numFeatures);
 }
 
 std::optional<uint256>
@@ -213,7 +213,7 @@ FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
     XRPL_ASSERT(
         readOnly.load(),
-        "ripple::FeatureCollections::getRegisteredFeature : startup completed");
+        "xrpl::FeatureCollections::getRegisteredFeature : startup completed");
     Feature const* feature = getByName(name);
     if (feature)
         return feature->feature;
@@ -294,7 +294,7 @@ FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 {
     XRPL_ASSERT(
         readOnly.load(),
-        "ripple::FeatureCollections::featureToBitsetIndex : startup completed");
+        "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
 
     Feature const* feature = getByFeature(f);
     if (!feature)
@@ -308,7 +308,7 @@ FeatureCollections::bitsetIndexToFeature(size_t i) const
 {
     XRPL_ASSERT(
         readOnly.load(),
-        "ripple::FeatureCollections::bitsetIndexToFeature : startup completed");
+        "xrpl::FeatureCollections::bitsetIndexToFeature : startup completed");
     Feature const& feature = getByIndex(i);
     return feature.feature;
 }
@@ -318,7 +318,7 @@ FeatureCollections::featureToName(uint256 const& f) const
 {
     XRPL_ASSERT(
         readOnly.load(),
-        "ripple::FeatureCollections::featureToName : startup completed");
+        "xrpl::FeatureCollections::featureToName : startup completed");
     Feature const* feature = getByFeature(f);
     return feature ? feature->name : to_string(f);
 }
@@ -411,8 +411,10 @@ featureToName(uint256 const& f)
 #undef XRPL_FEATURE
 #pragma push_macro("XRPL_FIX")
 #undef XRPL_FIX
-#pragma push_macro("XRPL_RETIRE")
-#undef XRPL_RETIRE
+#pragma push_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FEATURE
+#pragma push_macro("XRPL_RETIRE_FIX")
+#undef XRPL_RETIRE_FIX
 
 #define XRPL_FEATURE(name, supported, vote) \
     uint256 const feature##name = registerFeature(#name, supported, vote);
@@ -420,16 +422,23 @@ featureToName(uint256 const& f)
     uint256 const fix##name = registerFeature("fix" #name, supported, vote);
 
 // clang-format off
-#define XRPL_RETIRE(name)                                       \
-    [[deprecated("The referenced amendment has been retired")]] \
-    [[maybe_unused]]                                            \
-    uint256 const retired##name = retireFeature(#name);
+#define XRPL_RETIRE_FEATURE(name)                                       \
+    [[deprecated("The referenced feature amendment has been retired")]] \
+    [[maybe_unused]]                                                    \
+    uint256 const retiredFeature##name = retireFeature(#name);
+
+#define XRPL_RETIRE_FIX(name)                                           \
+    [[deprecated("The referenced fix amendment has been retired")]]     \
+    [[maybe_unused]]                                                    \
+    uint256 const retiredFix##name = retireFeature("fix" #name);
 // clang-format on
 
 #include <xrpl/protocol/detail/features.macro>
 
-#undef XRPL_RETIRE
-#pragma pop_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE_FEATURE
+#pragma pop_macro("XRPL_RETIRE_FEATURE")
+#undef XRPL_RETIRE_FIX
+#pragma pop_macro("XRPL_RETIRE_FIX")
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE
@@ -443,4 +452,4 @@ featureToName(uint256 const& f)
 [[maybe_unused]] static bool const readOnlySet =
     featureCollections.registrationIsDone();
 
-}  // namespace ripple
+}  // namespace xrpl

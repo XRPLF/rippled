@@ -40,7 +40,7 @@ multi(32gb):
 
 */
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -235,7 +235,7 @@ parse_args(std::string const& s)
     // <key> '=' <value>
     static boost::regex const re1(
         "^"                        // start of line
-        "(?:\\s*)"                 // whitespace (optonal)
+        "(?:\\s*)"                 // whitespace (optional)
         "([a-zA-Z][_a-zA-Z0-9]*)"  // <key>
         "(?:\\s*)"                 // whitespace (optional)
         "(?:=)"                    // '='
@@ -530,11 +530,11 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(import, nodestore, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(import, nodestore, xrpl);
 
 #endif
 
 //------------------------------------------------------------------------------
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

@@ -13,7 +13,6 @@
 #include <boost/multiprecision/number.hpp>
 
 #include <ed25519.h>
-#include <secp256k1.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -22,7 +21,7 @@
 #include <ostream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 std::ostream&
 operator<<(std::ostream& os, PublicKey const& pk)
@@ -267,18 +266,13 @@ verifyDigest(
 }
 
 bool
-verify(
-    PublicKey const& publicKey,
-    Slice const& m,
-    Slice const& sig,
-    bool mustBeFullyCanonical) noexcept
+verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 {
     if (auto const type = publicKeyType(publicKey))
     {
         if (*type == KeyType::secp256k1)
         {
-            return verifyDigest(
-                publicKey, sha512Half(m), sig, mustBeFullyCanonical);
+            return verifyDigest(publicKey, sha512Half(m), sig);
         }
         else if (*type == KeyType::ed25519)
         {
@@ -307,4 +301,4 @@ calcNodeID(PublicKey const& pk)
     return NodeID{static_cast<ripesha_hasher::result_type>(h)};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

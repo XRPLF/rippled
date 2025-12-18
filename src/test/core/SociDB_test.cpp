@@ -8,7 +8,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
-namespace ripple {
+namespace xrpl {
 class SociDB_test final : public TestSuite
 {
 private:
@@ -79,7 +79,7 @@ public:
     void
     testSQLiteFileNames()
     {
-        // confirm that files are given the correct exensions
+        // confirm that files are given the correct extensions
         testcase("sqliteFileNames");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
@@ -351,6 +351,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SociDB, core, ripple);
+BEAST_DEFINE_TESTSUITE(SociDB, core, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

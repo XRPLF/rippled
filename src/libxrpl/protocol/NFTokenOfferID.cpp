@@ -13,7 +13,7 @@
 #include <memory>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 canHaveNFTokenOfferID(
@@ -64,4 +64,4 @@ insertNFTokenOfferID(
         response[jss::offer_id] = to_string(result.value());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

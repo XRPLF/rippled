@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 Expected<std::vector<SignerEntries::SignerEntry>, NotTEC>
 SignerEntries::deserialize(
@@ -25,7 +25,7 @@ SignerEntries::deserialize(
     }
 
     std::vector<SignerEntry> accountVec;
-    accountVec.reserve(STTx::maxMultiSigners());
+    accountVec.reserve(STTx::maxMultiSigners);
 
     STArray const& sEntries(obj.getFieldArray(sfSignerEntries));
     for (STObject const& sEntry : sEntries)
@@ -48,4 +48,4 @@ SignerEntries::deserialize(
     return accountVec;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

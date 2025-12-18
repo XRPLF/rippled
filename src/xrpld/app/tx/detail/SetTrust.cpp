@@ -24,21 +24,19 @@ computeFreezeFlags(
 {
     if (bSetFreeze && !bClearFreeze && !bNoFreeze)
     {
-        uFlags |= (bHigh ? ripple::lsfHighFreeze : ripple::lsfLowFreeze);
+        uFlags |= (bHigh ? xrpl::lsfHighFreeze : xrpl::lsfLowFreeze);
     }
     else if (bClearFreeze && !bSetFreeze)
     {
-        uFlags &= ~(bHigh ? ripple::lsfHighFreeze : ripple::lsfLowFreeze);
+        uFlags &= ~(bHigh ? xrpl::lsfHighFreeze : xrpl::lsfLowFreeze);
     }
     if (bSetDeepFreeze && !bClearDeepFreeze && !bNoFreeze)
     {
-        uFlags |=
-            (bHigh ? ripple::lsfHighDeepFreeze : ripple::lsfLowDeepFreeze);
+        uFlags |= (bHigh ? xrpl::lsfHighDeepFreeze : xrpl::lsfLowDeepFreeze);
     }
     else if (bClearDeepFreeze && !bSetDeepFreeze)
     {
-        uFlags &=
-            ~(bHigh ? ripple::lsfHighDeepFreeze : ripple::lsfLowDeepFreeze);
+        uFlags &= ~(bHigh ? xrpl::lsfHighDeepFreeze : xrpl::lsfLowDeepFreeze);
     }
 
     return uFlags;
@@ -46,7 +44,7 @@ computeFreezeFlags(
 
 }  // namespace
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 SetTrust::getFlagsMask(PreflightContext const& ctx)
@@ -200,31 +198,27 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 
     // This might be nullptr
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
-    if ((ctx.view.rules().enabled(featureDisallowIncoming) ||
-         ammEnabled(ctx.view.rules()) ||
+    if ((ammEnabled(ctx.view.rules()) ||
          ctx.view.rules().enabled(featureSingleAssetVault)) &&
         sleDst == nullptr)
         return tecNO_DST;
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if (ctx.view.rules().enabled(featureDisallowIncoming))
+    if (sleDst->getFlags() & lsfDisallowIncomingTrustline)
     {
-        if (sleDst->getFlags() & lsfDisallowIncomingTrustline)
+        // The original implementation of featureDisallowIncoming was
+        // too restrictive. If
+        //   o fixDisallowIncomingV1 is enabled and
+        //   o The trust line already exists
+        // Then allow the TrustSet.
+        if (ctx.view.rules().enabled(fixDisallowIncomingV1) &&
+            ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
         {
-            // The original implementation of featureDisallowIncoming was
-            // too restrictive.  If
-            //   o fixDisallowIncomingV1 is enabled and
-            //   o The trust line already exists
-            // Then allow the TrustSet.
-            if (ctx.view.rules().enabled(fixDisallowIncomingV1) &&
-                ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
-            {
-                // pass
-            }
-            else
-                return tecNO_PERMISSION;
+            // pass
         }
+        else
+            return tecNO_PERMISSION;
     }
 
     // In general, trust lines to pseudo accounts are not permitted, unless
@@ -255,7 +249,9 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             else
                 return tecINTERNAL;  // LCOV_EXCL_LINE
         }
-        else if (sleDst->isFieldPresent(sfVaultID))
+        else if (
+            sleDst->isFieldPresent(sfVaultID) ||
+            sleDst->isFieldPresent(sfLoanBrokerID))
         {
             if (!ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
                 return tecNO_PERMISSION;
@@ -691,4 +687,4 @@ SetTrust::doApply()
     return terResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

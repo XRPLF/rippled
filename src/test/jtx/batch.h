@@ -15,7 +15,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -49,8 +49,7 @@ public:
     inner(
         Json::Value const& txn,
         std::uint32_t const& sequence,
-        std::optional<std::uint32_t> const& ticket = std::nullopt,
-        std::optional<std::uint32_t> const& fee = std::nullopt)
+        std::optional<std::uint32_t> const& ticket = std::nullopt)
         : txn_(txn), seq_(sequence), ticket_(ticket)
     {
         txn_[jss::SigningPubKey] = "";
@@ -145,6 +144,6 @@ public:
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
