@@ -15,8 +15,14 @@ on:
 
       build_type:
         description: 'The build type to use ("Debug", "Release").'
-        type: string
         required: true
+        type: string
+
+      ccache_enabled:
+        description: "Whether to enable ccache."
+        required: false
+        type: boolean
+        default: false
 
       cmake_args:
         description: "Additional arguments to pass to CMake."
@@ -26,8 +32,8 @@ on:
 
       cmake_target:
         description: "The CMake target to build."
-        type: string
         required: true
+        type: string
 
       runs_on:
         description: Runner to run the job on as a JSON string
@@ -66,13 +72,7 @@ jobs:
     container: ${{ inputs.image != '' && inputs.image || null }}
     timeout-minutes: 60
     env:
-      # Enable ccache only for PR commits, merge_group, most pushes, and
-      # scheduled builds in the XRPLF organization. We do not enable ccache for
-      # PRs from forks as they do not have access to our remote cache storage.
-      # We further do not enable ccache for push events to the master or a
-      # release branch, to protect against the rare case that the output
-      # produced by ccache is not identical to a regular compilation.
-      CCACHE_ENABLED: ${{ github.repository_owner == 'XRPLF' && (github.event_name == 'pull_request' || github.event_name == 'merge_group' || ( github.event_name == 'push' && !(github.base_ref == 'master' || startsWith(github.base_ref, 'release'))) || github.event_name == 'schedule') }}
+      CCACHE_ENABLED: ${{ inputs.ccache_enabled }}
       # Use a namespace to keep the objects separate for each configuration.
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
       # Ccache supports both Redis and HTTP endpoints.
