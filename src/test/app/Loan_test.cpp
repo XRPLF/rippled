@@ -3586,6 +3586,26 @@ protected:
                     fee(env.current()->fees().base * 5));
             },
             CaseArgs{.requireAuth = true, .authorizeBorrower = true});
+
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+                Vault vault{env};
+                auto tx = vault.set({.owner = lender, .id = broker.vaultID});
+                tx[sfAssetsMaximum] = BrokerParameters::defaults().vaultDeposit;
+                env(tx);
+                env.close();
+
+                testcase("Vault maximum value exceeded");
+                env(set(issuer, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    interestRate(TenthBips32(10'000)),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter(tecLIMIT_EXCEEDED));
+            },
+            nullptr);
     }
 
     void
