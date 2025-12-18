@@ -771,8 +771,9 @@ escrowUnlockApplyHelper<Issue>(
     if (!view.exists(trustLineKey) && createAsset && !receiverIssuer)
     {
         // Can the account cover the trust line's reserve?
-        if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
-            xrpBalance < view.fees().accountReserve(ownerCount + 1))
+        if (auto const ret =
+                checkInsufficientReserve(view, sleDest, xrpBalance, 1);
+            !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
                                      "Insufficent reserve to create line.";

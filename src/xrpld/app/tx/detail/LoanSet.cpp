@@ -482,7 +482,8 @@ LoanSet::doApply()
         auto const balance = account_ == borrower
             ? mPriorBalance
             : borrowerSle->at(sfBalance).value().xrp();
-        if (auto const ret = checkInsufficientReserve(view, borrowerSle, balance, 1);
+        if (auto const ret =
+                checkInsufficientReserve(view, borrowerSle, balance, 1);
             !isTesSuccess(ret))
             return ret;
     }

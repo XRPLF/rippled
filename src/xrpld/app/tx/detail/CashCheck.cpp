@@ -329,8 +329,9 @@ CashCheck::doApply()
                 auto const sleDst = psb.peek(keylet::account(account_));
 
                 // Can the account cover the trust line's reserve?
-                if (std::uint32_t const ownerCount = {sleDst->at(sfOwnerCount)};
-                    mPriorBalance < psb.fees().accountReserve(ownerCount + 1))
+                if (auto const ret =
+                        checkInsufficientReserve(psb, sleDst, mPriorBalance, 1);
+                    !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
                                         "Insufficent reserve to create line.";
