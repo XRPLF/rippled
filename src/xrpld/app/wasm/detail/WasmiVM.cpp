@@ -415,6 +415,7 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports)
                 "/" + std::to_string(importTypes.vec_.size),
             nullptr,
             j_);
+        throw std::runtime_error("Missing imports");
     }
 
     return wimports;
