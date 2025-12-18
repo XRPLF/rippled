@@ -72,7 +72,6 @@ jobs:
     container: ${{ inputs.image != '' && inputs.image || null }}
     timeout-minutes: 60
     env:
-      CCACHE_ENABLED: ${{ inputs.ccache_enabled }}
       # Use a namespace to keep the objects separate for each configuration.
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
       # Ccache supports both Redis and HTTP endpoints.
@@ -102,10 +101,10 @@ jobs:
       - name: Prepare runner
         uses: XRPLF/actions/prepare-runner@2ece4ec6ab7de266859a6f053571425b2bd684b6
         with:
-          disable_ccache: ${{ env.CCACHE_ENABLED == 'false' }}
+          disable_ccache: ${{ !inputs.ccache_enabled }}
 
       - name: Set ccache log file
-        if: ${{ env.CCACHE_ENABLED == 'true' && runner.debug }}
+        if: ${{ inputs.ccache_enabled && runner.debug }}
         run: echo "CCACHE_LOGFILE=${{ runner.temp }}/ccache.log" >> "${GITHUB_ENV}"
 
       - name: Print build environment
@@ -157,7 +156,7 @@ jobs:
             --target "${CMAKE_TARGET}"
 
       - name: Show ccache statistics
-        if: ${{ env.CCACHE_ENABLED == 'true' }}
+        if: ${{ inputs.ccache_enabled }}
         run: |
           ccache --show-stats -vv
           if [ '${{ runner.debug }}' = '1' ]; then
