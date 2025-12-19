@@ -104,7 +104,7 @@ jobs:
           disable_ccache: ${{ !inputs.ccache_enabled }}
 
       - name: Set ccache log file
-        if: ${{ inputs.ccache_enabled && runner.debug }}
+        if: ${{ inputs.ccache_enabled && runner.debug == '1' }}
         run: echo "CCACHE_LOGFILE=${{ runner.temp }}/ccache.log" >> "${GITHUB_ENV}"
 
       - name: Print build environment
