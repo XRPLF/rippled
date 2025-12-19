@@ -6,7 +6,7 @@
 #include <optional>
 
 /** Callback for filtering SHAMap during sync. */
-namespace ripple {
+namespace xrpl {
 
 class SHAMapSyncFilter
 {
@@ -30,6 +30,6 @@ public:
     getNode(SHAMapHash const& nodeHash) const = 0;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

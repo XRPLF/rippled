@@ -4,7 +4,7 @@
 
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 LoanSet::checkExtraFeatures(PreflightContext const& ctx)
@@ -50,8 +50,8 @@ LoanSet::preflight(PreflightContext const& ctx)
 
     if (counterPartySig)
     {
-        if (auto const ret = ripple::detail::preflightCheckSigningKey(
-                *counterPartySig, ctx.j))
+        if (auto const ret =
+                xrpl::detail::preflightCheckSigningKey(*counterPartySig, ctx.j))
             return ret;
     }
 
@@ -97,7 +97,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     // Copied from preflight2
     if (counterPartySig)
     {
-        if (auto const ret = ripple::detail::preflightCheckSimulateKeys(
+        if (auto const ret = xrpl::detail::preflightCheckSimulateKeys(
                 ctx.flags, *counterPartySig, ctx.j))
             return *ret;
     }
@@ -188,7 +188,7 @@ LoanSet::getValueFields()
 static std::uint32_t
 getStartDate(ReadView const& view)
 {
-    return view.info().closeTime.time_since_epoch().count();
+    return view.header().closeTime.time_since_epoch().count();
 }
 
 TER
@@ -407,6 +407,17 @@ LoanSet::doApply()
         vaultScale,
         j_);
 
+    LoanState const state = constructLoanState(
+        properties.totalValueOutstanding,
+        principalRequested,
+        properties.managementFeeOwedToBroker);
+
+    if (vaultSle->at(sfAssetsMaximum) != 0 &&
+        vaultTotalProxy + state.interestDue > vaultSle->at(sfAssetsMaximum))
+    {
+        JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
+        return tecLIMIT_EXCEEDED;
+    }
     // Check that relevant values won't lose precision. This is mostly only
     // relevant for IOU assets.
     {
@@ -448,11 +459,6 @@ LoanSet::doApply()
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
-
-    LoanState const state = constructLoanState(
-        properties.totalValueOutstanding,
-        principalRequested,
-        properties.managementFeeOwedToBroker);
 
     auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
 
@@ -500,7 +506,7 @@ LoanSet::doApply()
 
     XRPL_ASSERT_PARTS(
         borrower == account_ || borrower == counterparty,
-        "ripple::LoanSet::doApply",
+        "xrpl::LoanSet::doApply",
         "borrower signed transaction");
     if (auto const ter = addEmptyHolding(
             view,
@@ -525,7 +531,7 @@ LoanSet::doApply()
         // The owner may have deleted their MPT / line at some point.
         XRPL_ASSERT_PARTS(
             brokerOwner == account_ || brokerOwner == counterparty,
-            "ripple::LoanSet::doApply",
+            "xrpl::LoanSet::doApply",
             "broker owner signed transaction");
 
         if (auto const ter = addEmptyHolding(
@@ -538,11 +544,11 @@ LoanSet::doApply()
             // ignore tecDUPLICATE. That means the holding already exists,
             // and is fine here
             return ter;
-
-        if (auto const ter = requireAuth(
-                view, vaultAsset, brokerOwner, AuthType::StrongAuth))
-            return ter;
     }
+
+    if (auto const ter =
+            requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
+        return ter;
 
     if (auto const ter = accountSendMulti(
             view,
@@ -604,7 +610,7 @@ LoanSet::doApply()
     vaultTotalProxy += state.interestDue;
     XRPL_ASSERT_PARTS(
         *vaultAvailableProxy <= *vaultTotalProxy,
-        "ripple::LoanSet::doApply",
+        "xrpl::LoanSet::doApply",
         "assets available must not be greater than assets outstanding");
     view.update(vaultSle);
 
@@ -633,4 +639,4 @@ LoanSet::doApply()
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl

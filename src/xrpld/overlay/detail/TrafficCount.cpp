@@ -1,6 +1,6 @@
 #include <xrpld/overlay/detail/TrafficCount.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::unordered_map<protocol::MessageType, TrafficCount::category> const
     type_lookup = {
@@ -127,4 +127,4 @@ TrafficCount::categorize(
 
     return TrafficCount::category::unknown;
 }
-}  // namespace ripple
+}  // namespace xrpl

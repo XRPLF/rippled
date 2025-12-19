@@ -19,7 +19,7 @@
 #include <functional>
 #include <list>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents an active WebSocket connection. */
 template <class Handler, class Impl>
@@ -508,17 +508,17 @@ BaseWSPeer<Handler, Impl>::fail(error_code ec, String const& what)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::BaseWSPeer::fail : strand in this thread");
+        "xrpl::BaseWSPeer::fail : strand in this thread");
 
     cancel_timer();
     if (!ec_ && ec != boost::asio::error::operation_aborted)
     {
         ec_ = ec;
         JLOG(this->j_.trace()) << what << ": " << ec.message();
-        ripple::get_lowest_layer(impl().ws_).socket().close(ec);
+        xrpl::get_lowest_layer(impl().ws_).socket().close(ec);
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -6,7 +6,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Holds transactions which were deferred to the next pass of consensus.
 
@@ -156,6 +156,6 @@ private:
     uint256 salt_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

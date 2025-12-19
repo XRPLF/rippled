@@ -4,7 +4,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -62,6 +62,6 @@ unauthCredentials(
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -6,7 +6,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Properties and state associated with a peer to peer overlay connection. */
@@ -60,6 +60,6 @@ public:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

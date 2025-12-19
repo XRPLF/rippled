@@ -4,7 +4,7 @@
 #include <memory>
 #include <variant>
 
-namespace ripple {
+namespace xrpl {
 
 /** A combination of a std::shared_ptr and a std::weak_pointer.
 
@@ -112,5 +112,5 @@ public:
 private:
     std::variant<std::shared_ptr<T>, std::weak_ptr<T>> combo_;
 };
-}  // namespace ripple
+}  // namespace xrpl
 #endif

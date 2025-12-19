@@ -8,7 +8,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 static NetworkOPs::FailHard
 getFailHard(RPC::JsonContext const& context)
@@ -173,4 +173,4 @@ doSubmit(RPC::JsonContext& context)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

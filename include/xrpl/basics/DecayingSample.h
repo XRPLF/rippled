@@ -4,7 +4,7 @@
 #include <chrono>
 #include <cmath>
 
-namespace ripple {
+namespace xrpl {
 
 /** Sampling function using exponential decay to provide a continuous value.
     @tparam The number of seconds in the decay window.
@@ -131,6 +131,6 @@ private:
     time_point when_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

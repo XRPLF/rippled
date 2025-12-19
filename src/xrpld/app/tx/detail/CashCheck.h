@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class CashCheck : public Transactor
 {
@@ -26,6 +26,6 @@ public:
 
 using CheckCash = CashCheck;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

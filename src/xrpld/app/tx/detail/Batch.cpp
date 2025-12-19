@@ -9,7 +9,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * @brief Calculates the total base fee for a batch transaction.
@@ -78,7 +78,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             }
             // LCOV_EXCL_STOP
 
-            auto const fee = ripple::calculateBaseFee(view, stx);
+            auto const fee = xrpl::calculateBaseFee(view, stx);
             // LCOV_EXCL_START
             if (txnFees > maxAmount - fee)
             {
@@ -306,7 +306,7 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         auto const innerAccount = stx.getAccountID(sfAccount);
-        if (auto const preflightResult = ripple::preflight(
+        if (auto const preflightResult = xrpl::preflight(
                 ctx.app, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
             preflightResult.ter != tesSUCCESS)
         {
@@ -521,4 +521,4 @@ Batch::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

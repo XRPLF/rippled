@@ -7,7 +7,7 @@
 #include <xrpl/beast/container/aged_set.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 namespace detail {
@@ -25,7 +25,7 @@ handout_one(Target& t, HopContainer& h)
 {
     XRPL_ASSERT(
         !t.full(),
-        "ripple::PeerFinder::detail::handout_one : target is not full");
+        "xrpl::PeerFinder::detail::handout_one : target is not full");
     for (auto it = h.begin(); it != h.end(); ++it)
     {
         auto const& e = *it;
@@ -340,6 +340,6 @@ ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
 }
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

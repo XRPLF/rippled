@@ -11,7 +11,7 @@
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/SField.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Loan_test : public beast::unit_test::suite
@@ -592,7 +592,7 @@ protected:
                 auto const unrealizedLoss = vaultSle->at(sfLossUnrealized) +
                     state.totalValue - state.managementFeeOutstanding;
 
-                if (unrealizedLoss > assetsUnavailable)
+                if (!BEAST_EXPECT(unrealizedLoss <= assetsUnavailable))
                 {
                     return false;
                 }
@@ -968,7 +968,7 @@ protected:
         Number totalFeesPaid = 0;
         std::size_t totalPaymentsMade = 0;
 
-        ripple::LoanState currentTrueState = computeRawLoanState(
+        xrpl::LoanState currentTrueState = computeRawLoanState(
             state.periodicPayment,
             periodicRate,
             state.paymentRemaining,
@@ -1023,7 +1023,7 @@ protected:
                     paymentComponents.trackedInterestPart() +
                     paymentComponents.trackedManagementFeeDelta);
 
-            ripple::LoanState const nextTrueState = computeRawLoanState(
+            xrpl::LoanState const nextTrueState = computeRawLoanState(
                 state.periodicPayment,
                 periodicRate,
                 state.paymentRemaining - 1,
@@ -1403,7 +1403,7 @@ protected:
         env.close();
 
         auto const startDate =
-            env.current()->info().parentCloseTime.time_since_epoch().count();
+            env.current()->header().parentCloseTime.time_since_epoch().count();
 
         if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             BEAST_EXPECT(brokerSle))
@@ -2716,7 +2716,7 @@ protected:
                 Number totalInterestPaid = 0;
                 std::size_t totalPaymentsMade = 0;
 
-                ripple::LoanState currentTrueState = computeRawLoanState(
+                xrpl::LoanState currentTrueState = computeRawLoanState(
                     state.periodicPayment,
                     periodicRate,
                     state.paymentRemaining,
@@ -2741,7 +2741,7 @@ protected:
                         paymentComponents.trackedValueDelta <=
                         roundedPeriodicPayment);
 
-                    ripple::LoanState const nextTrueState = computeRawLoanState(
+                    xrpl::LoanState const nextTrueState = computeRawLoanState(
                         state.periodicPayment,
                         periodicRate,
                         state.paymentRemaining - 1,
@@ -3464,11 +3464,12 @@ protected:
                     ter{tecNO_AUTH});
                 env.close();
 
-                // Can create loan without origination fee
+                // Cannot create loan, even without an origination fee
                 env(set(borrower, broker.brokerID, principalRequest),
                     counterparty(lender),
                     sig(sfCounterpartySignature, lender),
-                    fee(env.current()->fees().base * 5));
+                    fee(env.current()->fees().base * 5),
+                    ter{tecNO_AUTH});
                 env.close();
 
                 // No MPToken for lender - no authorization and no payment
@@ -3589,6 +3590,26 @@ protected:
                     fee(env.current()->fees().base * 5));
             },
             CaseArgs{.requireAuth = true, .authorizeBorrower = true});
+
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+                Vault vault{env};
+                auto tx = vault.set({.owner = lender, .id = broker.vaultID});
+                tx[sfAssetsMaximum] = BrokerParameters::defaults().vaultDeposit;
+                env(tx);
+                env.close();
+
+                testcase("Vault maximum value exceeded");
+                env(set(issuer, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    interestRate(TenthBips32(10'000)),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    ter(tecLIMIT_EXCEEDED));
+            },
+            nullptr);
     }
 
     void
@@ -3772,7 +3793,7 @@ protected:
 
         env.close();
 
-        auto const startDate = env.current()->info().parentCloseTime;
+        auto const startDate = env.current()->header().parentCloseTime;
 
         // Loan is successfully created
         {
@@ -3884,7 +3905,7 @@ protected:
         Serializer ss;
         ss.add32(HashPrefix::txSign);
         parse(randomData).addWithoutSigningFields(ss);
-        auto const sig = ripple::sign(borrower.pk(), borrower.sk(), ss.slice());
+        auto const sig = xrpl::sign(borrower.pk(), borrower.sk(), ss.slice());
         sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
 
         forgedLoanSet[Json::StaticString{"CounterpartySignature"}] = sigObject;
@@ -3968,7 +3989,7 @@ protected:
     testLoanPayComputePeriodicPaymentValidRateInvariant()
     {
         // From FIND-012
-        testcase << "LoanPay ripple::detail::computePeriodicPayment : "
+        testcase << "LoanPay xrpl::detail::computePeriodicPayment : "
                     "valid rate";
 
         using namespace jtx;
@@ -4784,7 +4805,7 @@ protected:
     testAccountSendMptMinAmountInvariant()
     {
         // (From FIND-006)
-        testcase << "LoanSet trigger ripple::accountSendMPT : minimum amount "
+        testcase << "LoanSet trigger xrpl::accountSendMPT : minimum amount "
                     "and MPT";
 
         using namespace jtx;
@@ -4846,7 +4867,7 @@ protected:
     testLoanPayDebtDecreaseInvariant()
     {
         // From FIND-007
-        testcase << "LoanPay ripple::LoanPay::doApply : debtDecrease "
+        testcase << "LoanPay xrpl::LoanPay::doApply : debtDecrease "
                     "rounding good";
 
         using namespace jtx;
@@ -4951,7 +4972,7 @@ protected:
     testLoanPayComputePeriodicPaymentValidTotalInterestInvariant()
     {
         // From FIND-010
-        testcase << "ripple::loanComputePaymentParts : valid total interest";
+        testcase << "xrpl::loanComputePaymentParts : valid total interest";
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -5104,7 +5125,7 @@ protected:
     testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant()
     {
         // From FIND-009
-        testcase << "ripple::loanComputePaymentParts : totalPrincipalPaid "
+        testcase << "xrpl::loanComputePaymentParts : totalPrincipalPaid "
                     "rounded";
 
         using namespace jtx;
@@ -5218,7 +5239,7 @@ protected:
     testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant()
     {
         // From FIND-008
-        testcase << "ripple::loanComputePaymentParts : loanValueChange rounded";
+        testcase << "xrpl::loanComputePaymentParts : loanValueChange rounded";
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -7038,6 +7059,350 @@ protected:
             paymentParams);
     }
 
+    void
+    testLoanPayBrokerOwnerMissingTrustline()
+    {
+        testcase << "LoanPay Broker Owner Missing Trustline (PoC)";
+        using namespace jtx;
+        using namespace loan;
+        Account const issuer("issuer");
+        Account const borrower("borrower");
+        Account const broker("broker");
+        auto const IOU = issuer["IOU"];
+        Env env(*this, all);
+        env.fund(XRP(20'000), issuer, broker, borrower);
+        env.close();
+        // Set up trustlines and fund accounts
+        env(trust(broker, IOU(20'000'000)));
+        env(trust(borrower, IOU(20'000'000)));
+        env(pay(issuer, broker, IOU(10'000'000)));
+        env(pay(issuer, borrower, IOU(1'000)));
+        env.close();
+        // Create vault and broker
+        auto const brokerInfo = createVaultAndBroker(env, IOU, broker);
+        // Create a loan first (this creates debt)
+        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        env(set(borrower, brokerInfo.brokerID, 10'000),
+            sig(sfCounterpartySignature, broker),
+            loanServiceFee(IOU(100).value()),
+            paymentInterval(100),
+            fee(XRP(100)));
+        env.close();
+        // Ensure broker has sufficient cover so brokerPayee == brokerOwner
+        // We need coverAvailable >= (debtTotal * coverRateMinimum)
+        // Deposit enough cover to ensure the fee goes to broker owner
+        // The default coverRateMinimum is 10%, so for a 10,000 loan we need
+        // at least 1,000 cover. Default cover is 1,000, so we add more to be
+        // safe.
+        auto const additionalCover = IOU(50'000).value();
+        env(loanBroker::coverDeposit(
+            broker, brokerInfo.brokerID, STAmount{IOU, additionalCover}));
+        env.close();
+        // Verify broker owner has a trustline
+        auto const brokerTrustline = keylet::line(broker, IOU);
+        BEAST_EXPECT(env.le(brokerTrustline) != nullptr);
+        // Broker owner deletes their trustline
+        // First, pay any positive balance to issuer to zero it out
+        auto const brokerBalance = env.balance(broker, IOU);
+        env(pay(broker, issuer, brokerBalance));
+        env.close();
+        // Remove the trustline by setting limit to 0
+        env(trust(broker, IOU(0)));
+        env.close();
+        // Verify trustline is deleted
+        BEAST_EXPECT(env.le(brokerTrustline) == nullptr);
+        // Now borrower tries to make a payment
+        // We should get a tesSUCCESS instead of a tecNO_LINE.
+        env(pay(borrower, keylet.key, IOU(10'100)),
+            fee(XRP(100)),
+            ter(tesSUCCESS));
+        env.close();
+        // Verify trustline is still deleted
+        BEAST_EXPECT(env.le(brokerTrustline) == nullptr);
+        // Verify the service fee went to the broker pseudo-account
+        if (auto const brokerSle =
+                env.le(keylet::loanbroker(brokerInfo.brokerID));
+            BEAST_EXPECT(brokerSle))
+        {
+            Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
+            auto const balance = env.balance(pseudo, IOU);
+            // 1,000 default + 50,000 extra + 100 service fee from LoanPay
+            BEAST_EXPECTS(
+                balance == IOU(51'100), to_string(Json::Value(balance)));
+        }
+    }
+
+    void
+    testLoanPayBrokerOwnerUnauthorizedMPT()
+    {
+        testcase << "LoanPay Broker Owner MPT unauthorized";
+        using namespace jtx;
+        using namespace loan;
+
+        Account const issuer("issuer");
+        Account const borrower("borrower");
+        Account const broker("broker");
+
+        Env env(*this, all);
+        env.fund(XRP(20'000), issuer, broker, borrower);
+        env.close();
+
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create(
+            {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+
+        PrettyAsset const MPT{mptt.issuanceID()};
+
+        // Authorize broker and borrower
+        mptt.authorize({.account = broker});
+        mptt.authorize({.account = borrower});
+
+        env.close();
+
+        // Fund accounts
+        env(pay(issuer, broker, MPT(10'000'000)));
+        env(pay(issuer, borrower, MPT(1'000)));
+        env.close();
+
+        // Create vault and broker
+        auto const brokerInfo = createVaultAndBroker(env, MPT, broker);
+        // Create a loan first (this creates debt)
+        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        env(set(borrower, brokerInfo.brokerID, 10'000),
+            sig(sfCounterpartySignature, broker),
+            loanServiceFee(MPT(100).value()),
+            paymentInterval(100),
+            fee(XRP(100)));
+        env.close();
+        // Ensure broker has sufficient cover so brokerPayee == brokerOwner
+        // We need coverAvailable >= (debtTotal * coverRateMinimum)
+        // Deposit enough cover to ensure the fee goes to broker owner
+        // The default coverRateMinimum is 10%, so for a 10,000 loan we need
+        // at least 1,000 cover. Default cover is 1,000, so we add more to be
+        // safe.
+        auto const additionalCover = MPT(50'000).value();
+        env(loanBroker::coverDeposit(
+            broker, brokerInfo.brokerID, STAmount{MPT, additionalCover}));
+        env.close();
+        // Verify broker owner is authorized
+        auto const brokerMpt = keylet::mptoken(mptt.issuanceID(), broker);
+        BEAST_EXPECT(env.le(brokerMpt) != nullptr);
+        // Broker owner unauthorizes.
+        // First, pay any positive balance to issuer to zero it out
+        auto const brokerBalance = env.balance(broker, MPT);
+        env(pay(broker, issuer, brokerBalance));
+        env.close();
+        // Then, unauthorize the MPT.
+        mptt.authorize({.account = broker, .flags = tfMPTUnauthorize});
+        env.close();
+        // Verify the MPT is unauthorized.
+        BEAST_EXPECT(env.le(brokerMpt) == nullptr);
+        // Now borrower tries to make a payment
+        // We should get a tesSUCCESS instead of a tecNO_AUTH.
+        auto const borrowerBalance = env.balance(borrower, MPT);
+        env(pay(borrower, keylet.key, MPT(10'100)),
+            fee(XRP(100)),
+            ter(tesSUCCESS));
+        env.close();
+        // Verify the MPT is still unauthorized.
+        BEAST_EXPECT(env.le(brokerMpt) == nullptr);
+        // Verify the service fee went to the broker pseudo-account
+        if (auto const brokerSle =
+                env.le(keylet::loanbroker(brokerInfo.brokerID));
+            BEAST_EXPECT(brokerSle))
+        {
+            Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
+            auto const balance = env.balance(pseudo, MPT);
+            // 1,000 default + 50,000 extra + 100 service fee from LoanPay
+            BEAST_EXPECTS(
+                balance == MPT(51'100), to_string(Json::Value(balance)));
+        }
+    }
+
+    void
+    testLoanPayBrokerOwnerNoPermissionedDomainMPT()
+    {
+        testcase
+            << "LoanPay Broker Owner without permissioned domain of the MPT";
+        using namespace jtx;
+        using namespace loan;
+
+        Account const issuer("issuer");
+        Account const borrower("borrower");
+        Account const broker("broker");
+
+        Env env(*this, all);
+        env.fund(XRP(20'000), issuer, broker, borrower);
+        env.close();
+
+        auto credType = "credential1";
+
+        pdomain::Credentials const credentials1{{issuer, credType}};
+        env(pdomain::setTx(issuer, credentials1));
+        env.close();
+
+        auto domainID = pdomain::getNewDomain(env.meta());
+
+        env(credentials::create(broker, issuer, credType));
+        env(credentials::accept(broker, issuer, credType));
+        env.close();
+
+        env(credentials::create(borrower, issuer, credType));
+        env(credentials::accept(borrower, issuer, credType));
+        env.close();
+
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create({
+            .flags = tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer |
+                tfMPTCanLock,
+            .domainID = domainID,
+        });
+
+        PrettyAsset const MPT{mptt.issuanceID()};
+
+        // Authorize broker and borrower
+        mptt.authorize({.account = broker});
+        mptt.authorize({.account = borrower});
+
+        env.close();
+
+        // Fund accounts
+        env(pay(issuer, broker, MPT(10'000'000)));
+        env(pay(issuer, borrower, MPT(1'000)));
+        env.close();
+
+        // Create vault and broker
+        auto const brokerInfo = createVaultAndBroker(env, MPT, broker);
+        // Create a loan first (this creates debt)
+        auto const keylet = keylet::loan(brokerInfo.brokerID, 1);
+        env(set(borrower, brokerInfo.brokerID, 10'000),
+            sig(sfCounterpartySignature, broker),
+            loanServiceFee(MPT(100).value()),
+            paymentInterval(100),
+            fee(XRP(100)));
+        env.close();
+        // Ensure broker has sufficient cover so brokerPayee == brokerOwner
+        // We need coverAvailable >= (debtTotal * coverRateMinimum)
+        // Deposit enough cover to ensure the fee goes to broker owner
+        // The default coverRateMinimum is 10%, so for a 10,000 loan we need
+        // at least 1,000 cover. Default cover is 1,000, so we add more to be
+        // safe.
+        auto const additionalCover = MPT(50'000).value();
+        env(loanBroker::coverDeposit(
+            broker, brokerInfo.brokerID, STAmount{MPT, additionalCover}));
+        env.close();
+        // Verify broker owner is authorized
+        auto const brokerMpt = keylet::mptoken(mptt.issuanceID(), broker);
+        BEAST_EXPECT(env.le(brokerMpt) != nullptr);
+        // Remove the credentials for the Broker owner.
+        // First, pay any positive balance to issuer to zero it out
+        auto const brokerBalance = env.balance(broker, MPT);
+        env(pay(broker, issuer, brokerBalance));
+        env.close();
+
+        env(credentials::deleteCred(broker, broker, issuer, credType));
+        env.close();
+
+        // Make sure the broker is not authorized to hold the MPT after we
+        // deleted the credentials
+        env(pay(issuer, broker, MPT(1'000)), ter(tecNO_AUTH));
+
+        // Now borrower tries to make a payment
+        // We should get a tesSUCCESS instead of a tecNO_AUTH.
+        auto const borrowerBalance = env.balance(borrower, MPT);
+        env(pay(borrower, keylet.key, MPT(10'100)),
+            fee(XRP(100)),
+            ter(tesSUCCESS));
+        env.close();
+        // Verify broker is still not authorized
+        env(pay(issuer, broker, MPT(1'000)), ter(tecNO_AUTH));
+        // Verify the service fee went to the broker pseudo-account
+        if (auto const brokerSle =
+                env.le(keylet::loanbroker(brokerInfo.brokerID));
+            BEAST_EXPECT(brokerSle))
+        {
+            Account const pseudo("pseudo-account", brokerSle->at(sfAccount));
+            auto const balance = env.balance(pseudo, MPT);
+            // 1,000 default + 50,000 extra + 100 service fee from LoanPay
+            BEAST_EXPECTS(
+                balance == MPT(51'100), to_string(Json::Value(balance)));
+        }
+    }
+
+    void
+    testLoanSetBrokerOwnerNoPermissionedDomainMPT()
+    {
+        testcase
+            << "LoanSet Broker Owner without permissioned domain of the MPT";
+        using namespace jtx;
+        using namespace loan;
+
+        Account const issuer("issuer");
+        Account const borrower("borrower");
+        Account const broker("broker");
+
+        Env env(*this, all);
+        env.fund(XRP(20'000), issuer, broker, borrower);
+        env.close();
+
+        auto credType = "credential1";
+
+        pdomain::Credentials const credentials1{{issuer, credType}};
+        env(pdomain::setTx(issuer, credentials1));
+        env.close();
+
+        auto domainID = pdomain::getNewDomain(env.meta());
+
+        // Add credentials for the broker and borrower
+        env(credentials::create(broker, issuer, credType));
+        env(credentials::accept(broker, issuer, credType));
+        env.close();
+
+        env(credentials::create(borrower, issuer, credType));
+        env(credentials::accept(borrower, issuer, credType));
+        env.close();
+
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create({
+            .flags = tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer |
+                tfMPTCanLock,
+            .domainID = domainID,
+        });
+
+        PrettyAsset const MPT{mptt.issuanceID()};
+
+        // Authorize broker and borrower
+        mptt.authorize({.account = broker});
+        mptt.authorize({.account = borrower});
+        env.close();
+
+        // Fund accounts
+        env(pay(issuer, broker, MPT(10'000'000)));
+        env(pay(issuer, borrower, MPT(1'000)));
+        env.close();
+
+        // Create vault and broker
+        auto const brokerInfo = createVaultAndBroker(env, MPT, broker);
+
+        // Remove the credentials for the Broker owner.
+        // Clear the balance first.
+        auto const brokerBalance = env.balance(broker, MPT);
+        env(pay(broker, issuer, brokerBalance));
+        env.close();
+        // Delete the credentials
+        env(credentials::deleteCred(broker, broker, issuer, credType));
+        env.close();
+
+        // Create a loan, this should fail for tecNO_AUTH
+        env(set(borrower, brokerInfo.brokerID, 10'000),
+            sig(sfCounterpartySignature, broker),
+            loanServiceFee(MPT(100).value()),
+            paymentInterval(100),
+            fee(XRP(100)),
+            ter(tecNO_AUTH));
+        env.close();
+    }
+
 public:
     void
     run() override
@@ -7086,6 +7451,10 @@ public:
         testBorrowerIsBroker();
         testIssuerIsBorrower();
         testLimitExceeded();
+        testLoanPayBrokerOwnerMissingTrustline();
+        testLoanPayBrokerOwnerUnauthorizedMPT();
+        testLoanPayBrokerOwnerNoPermissionedDomainMPT();
+        testLoanSetBrokerOwnerNoPermissionedDomainMPT();
     }
 };
 
@@ -7219,9 +7588,9 @@ class LoanArbitrary_test : public LoanBatch_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Loan, tx, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(LoanBatch, tx, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(LoanArbitrary, tx, ripple);
+BEAST_DEFINE_TESTSUITE(Loan, tx, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(LoanBatch, tx, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(LoanArbitrary, tx, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

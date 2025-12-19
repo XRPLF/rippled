@@ -18,7 +18,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Performs early sanity checks on the txid */
 NotTEC
@@ -204,8 +204,14 @@ Transactor::preflight2(PreflightContext const& ctx)
         // regardless of success or failure
         return *ret;
 
+    // It should be impossible for the InnerBatchTxn flag to be set without
+    // featureBatch being enabled
+    XRPL_ASSERT_PARTS(
+        !ctx.tx.isFlag(tfInnerBatchTxn) || ctx.rules.enabled(featureBatch),
+        "xrpl::Transactor::preflight2",
+        "InnerBatch flag only set if feature enabled");
     // Skip signature check on batch inner transactions
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch))
         return tesSUCCESS;
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
@@ -307,7 +313,7 @@ Transactor::calculateOwnerReserveFee(ReadView const& view, STTx const& tx)
     // condition.
     XRPL_ASSERT(
         view.fees().increment > view.fees().base * 100,
-        "ripple::Transactor::calculateOwnerReserveFee : Owner reserve is "
+        "xrpl::Transactor::calculateOwnerReserveFee : Owner reserve is "
         "reasonable");
     return view.fees().increment;
 }
@@ -527,7 +533,7 @@ TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
     XRPL_ASSERT(
-        sleAccount, "ripple::Transactor::consumeSeqProxy : non-null account");
+        sleAccount, "xrpl::Transactor::consumeSeqProxy : non-null account");
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {
@@ -609,7 +615,7 @@ Transactor::preCompute()
 {
     XRPL_ASSERT(
         account_ != beast::zero,
-        "ripple::Transactor::preCompute : nonzero account");
+        "xrpl::Transactor::preCompute : nonzero account");
 }
 
 TER
@@ -625,7 +631,7 @@ Transactor::apply()
     // that allow zero account.
     XRPL_ASSERT(
         sle != nullptr || account_ == beast::zero,
-        "ripple::Transactor::apply : non-null SLE or zero account");
+        "xrpl::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
     {
@@ -699,7 +705,7 @@ Transactor::checkSign(
 
     // Check Single Sign
     XRPL_ASSERT(
-        !pkSigner.empty(), "ripple::Transactor::checkSign : non-empty signer");
+        !pkSigner.empty(), "xrpl::Transactor::checkSign : non-empty signer");
 
     if (!publicKeyType(makeSlice(pkSigner)))
     {
@@ -829,10 +835,10 @@ Transactor::checkMultiSign(
     // presence and defaulted value of the SignerListID field will enable that.
     XRPL_ASSERT(
         sleAccountSigners->isFieldPresent(sfSignerListID),
-        "ripple::Transactor::checkMultiSign : has signer list ID");
+        "xrpl::Transactor::checkMultiSign : has signer list ID");
     XRPL_ASSERT(
         sleAccountSigners->getFieldU32(sfSignerListID) == 0,
-        "ripple::Transactor::checkMultiSign : signer list ID is 0");
+        "xrpl::Transactor::checkMultiSign : signer list ID is 0");
 
     auto accountSigners =
         SignerEntries::deserialize(*sleAccountSigners, j, "ledger");
@@ -888,7 +894,7 @@ Transactor::checkMultiSign(
 
         XRPL_ASSERT(
             (flags & tapDRY_RUN) || !spk.empty(),
-            "ripple::Transactor::checkMultiSign : non-empty signer or "
+            "xrpl::Transactor::checkMultiSign : non-empty signer or "
             "simulation");
         AccountID const signingAcctIDFromPubKey = spk.empty()
             ? txSignerAcctID
@@ -1087,7 +1093,7 @@ Transactor::reset(XRPAmount fee)
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
         balance != beast::zero && (!view().open() || balance >= fee),
-        "ripple::Transactor::reset : valid balance");
+        "xrpl::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or
     // we're applying against an open ledger and the balance is less than
@@ -1104,7 +1110,7 @@ Transactor::reset(XRPAmount fee)
     payerSle->setFieldAmount(sfBalance, balance - fee);
     TER const ter{consumeSeqProxy(txnAcct)};
     XRPL_ASSERT(
-        isTesSuccess(ter), "ripple::Transactor::reset : result is tesSUCCESS");
+        isTesSuccess(ter), "xrpl::Transactor::reset : result is tesSUCCESS");
 
     if (isTesSuccess(ter))
     {
@@ -1149,7 +1155,7 @@ Transactor::operator()()
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
             JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
             UNREACHABLE(
-                "ripple::Transactor::operator() : transaction serdes mismatch");
+                "xrpl::Transactor::operator() : transaction serdes mismatch");
             // LCOV_EXCL_STOP
         }
     }
@@ -1169,7 +1175,7 @@ Transactor::operator()()
     // and it can't be passed in from a preclaim.
     XRPL_ASSERT(
         result != temUNKNOWN,
-        "ripple::Transactor::operator() : result is not temUNKNOWN");
+        "xrpl::Transactor::operator() : result is not temUNKNOWN");
 
     if (auto stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
@@ -1226,7 +1232,7 @@ Transactor::operator()()
                 {
                     XRPL_ASSERT(
                         before && after,
-                        "ripple::Transactor::operator()::visit : non-null SLE "
+                        "xrpl::Transactor::operator()::visit : non-null SLE "
                         "inputs");
                     if (doOffers && before && after &&
                         (before->getType() == ltOFFER) &&
@@ -1346,4 +1352,4 @@ Transactor::operator()()
     return {result, applied, metadata};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

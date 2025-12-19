@@ -16,6 +16,7 @@ install (
     xrpl.libxrpl
     xrpl.libxrpl.basics
     xrpl.libxrpl.beast
+    xrpl.libxrpl.core
     xrpl.libxrpl.crypto
     xrpl.libxrpl.json
     xrpl.libxrpl.ledger
@@ -67,8 +68,8 @@ if (is_root_project AND TARGET xrpld)
   install(CODE "
     set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
     include(create_symbolic_link)
-    create_symbolic_link(rippled${suffix} \
-       \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix})
+    create_symbolic_link(xrpld${suffix} \
+       \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/rippled${suffix})
   ")
 endif ()
 

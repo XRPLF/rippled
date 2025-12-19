@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class LedgerHeader_test : public beast::unit_test::suite
 {
@@ -68,6 +68,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerHeader, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerHeader, rpc, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

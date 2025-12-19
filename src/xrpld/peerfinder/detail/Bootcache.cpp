@@ -4,7 +4,7 @@
 
 #include <xrpl/basics/Log.h>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 Bootcache::Bootcache(Store& store, clock_type& clock, beast::Journal journal)
@@ -270,4 +270,4 @@ Bootcache::flagForUpdate()
 }
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl

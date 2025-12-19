@@ -4,7 +4,7 @@
 
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 LoanManage::checkExtraFeatures(PreflightContext const& ctx)
@@ -223,11 +223,13 @@ LoanManage::defaultLoan(
         }
         if (*vaultAvailableProxy > *vaultTotalProxy)
         {
-            JLOG(j.warn()) << "Vault assets available must not be greater "
-                              "than assets outstanding. Available: "
-                           << *vaultAvailableProxy
-                           << ", Total: " << *vaultTotalProxy;
-            return tecLIMIT_EXCEEDED;
+            // LCOV_EXCL_START
+            JLOG(j.fatal())
+                << "Vault assets available must not be greater "
+                   "than assets outstanding. Available: "
+                << *vaultAvailableProxy << ", Total: " << *vaultTotalProxy;
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
 
         // The loss has been realized
@@ -338,7 +340,7 @@ LoanManage::impairLoan(
     return tesSUCCESS;
 }
 
-TER
+[[nodiscard]] TER
 LoanManage::unimpairLoan(
     ApplyView& view,
     SLE::ref loanSle,
@@ -437,4 +439,4 @@ LoanManage::doApply()
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl

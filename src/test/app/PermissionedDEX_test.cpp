@@ -28,7 +28,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 using namespace jtx;
@@ -242,7 +242,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             auto jv = credentials::create(devin, domainOwner, credType);
             uint32_t const t = env.current()
-                                   ->info()
+                                   ->header()
                                    .parentCloseTime.time_since_epoch()
                                    .count();
             jv[sfExpiration.jsonName] = t + 20;
@@ -797,7 +797,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             auto jv = credentials::create(devin, domainOwner, credType);
             uint32_t const t = env.current()
-                                   ->info()
+                                   ->header()
                                    .parentCloseTime.time_since_epoch()
                                    .count();
             jv[sfExpiration.jsonName] = t + 20;
@@ -1552,7 +1552,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PermissionedDEX, app, ripple);
+BEAST_DEFINE_TESTSUITE(PermissionedDEX, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** TaggedPointer is a combination of a pointer and a mask stored in the
     lowest two bits.
@@ -226,6 +226,6 @@ popcnt16(std::uint16_t a)
 #endif
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

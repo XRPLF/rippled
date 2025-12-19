@@ -5,7 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class CanonicalTXSet;
@@ -57,5 +57,5 @@ buildLedger(
     Application& app,
     beast::Journal j);
 
-}  // namespace ripple
+}  // namespace xrpl
 #endif

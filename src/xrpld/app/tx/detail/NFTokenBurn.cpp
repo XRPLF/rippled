@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 NFTokenBurn::preflight(PreflightContext const& ctx)
@@ -90,4 +90,4 @@ NFTokenBurn::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

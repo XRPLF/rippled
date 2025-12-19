@@ -20,7 +20,7 @@
 #include <map>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 enum class WaiveTransferFee : bool { No = false, Yes };
 enum class SkipEntry : bool { No = false, Yes };
@@ -655,7 +655,7 @@ createPseudoAccount(
     uint256 const& pseudoOwnerKey,
     SField const& ownerField);
 
-// Returns true iff sleAcct is a pseudo-account or specific
+// Returns true if and only if sleAcct is a pseudo-account or specific
 // pseudo-accounts in pseudoFieldFilter.
 //
 // Returns false if sleAcct is
@@ -1197,6 +1197,6 @@ sharesToAssetsWithdraw(
 bool
 after(NetClock::time_point now, std::uint32_t mark);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

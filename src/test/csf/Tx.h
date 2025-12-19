@@ -14,7 +14,7 @@
 #include <string>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -210,6 +210,6 @@ hash_append(Hasher& h, Tx const& tx)
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

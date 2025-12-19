@@ -9,7 +9,7 @@
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 class Validations_test : public beast::unit_test::suite
@@ -1125,7 +1125,7 @@ class Validations_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Validations, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(Validations, consensus, xrpl);
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
