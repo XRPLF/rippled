@@ -404,9 +404,19 @@ LoanSet::doApply()
         paymentInterval,
         paymentTotal,
         TenthBips16{brokerSle->at(sfManagementFeeRate)},
-        vaultScale,
-        j_);
+        vaultScale);
 
+    LoanState const state = constructLoanState(
+        properties.loanState.valueOutstanding,
+        principalRequested,
+        properties.loanState.managementFeeDue);
+
+    if (vaultSle->at(sfAssetsMaximum) != 0 &&
+        vaultTotalProxy + state.interestDue > vaultSle->at(sfAssetsMaximum))
+    {
+        JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
+        return tecLIMIT_EXCEEDED;
+    }
     // Check that relevant values won't lose precision. This is mostly only
     // relevant for IOU assets.
     {
@@ -418,8 +428,8 @@ LoanSet::doApply()
                 JLOG(j_.warn())
                     << field.f->getName() << " (" << *value
                     << ") has too much precision. Total loan value is "
-                    << properties.totalValueOutstanding << " with a scale of "
-                    << properties.loanScale;
+                    << properties.loanState.valueOutstanding
+                    << " with a scale of " << properties.loanScale;
                 return tecPRECISION_LOSS;
             }
         }
@@ -435,24 +445,19 @@ LoanSet::doApply()
         return ret;
 
     // Check that the other computed values are valid
-    if (properties.managementFeeOwedToBroker < 0 ||
-        properties.totalValueOutstanding <= 0 ||
+    if (properties.loanState.managementFeeDue < 0 ||
+        properties.loanState.valueOutstanding <= 0 ||
         properties.periodicPayment <= 0)
     {
         // LCOV_EXCL_START
         JLOG(j_.warn())
             << "Computed loan properties are invalid. Does not compute."
-            << " Management fee: " << properties.managementFeeOwedToBroker
-            << ". Total Value: " << properties.totalValueOutstanding
+            << " Management fee: " << properties.loanState.managementFeeDue
+            << ". Total Value: " << properties.loanState.valueOutstanding
             << ". PeriodicPayment: " << properties.periodicPayment;
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
-
-    LoanState const state = constructLoanState(
-        properties.totalValueOutstanding,
-        principalRequested,
-        properties.managementFeeOwedToBroker);
 
     auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
 
@@ -538,11 +543,11 @@ LoanSet::doApply()
             // ignore tecDUPLICATE. That means the holding already exists,
             // and is fine here
             return ter;
-
-        if (auto const ter = requireAuth(
-                view, vaultAsset, brokerOwner, AuthType::StrongAuth))
-            return ter;
     }
+
+    if (auto const ter =
+            requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
+        return ter;
 
     if (auto const ter = accountSendMulti(
             view,
@@ -592,8 +597,9 @@ LoanSet::doApply()
     // Set dynamic / computed fields to their initial values
     loan->at(sfPrincipalOutstanding) = principalRequested;
     loan->at(sfPeriodicPayment) = properties.periodicPayment;
-    loan->at(sfTotalValueOutstanding) = properties.totalValueOutstanding;
-    loan->at(sfManagementFeeOutstanding) = properties.managementFeeOwedToBroker;
+    loan->at(sfTotalValueOutstanding) = properties.loanState.valueOutstanding;
+    loan->at(sfManagementFeeOutstanding) =
+        properties.loanState.managementFeeDue;
     loan->at(sfPreviousPaymentDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;

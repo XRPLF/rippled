@@ -262,9 +262,10 @@ LoanPay::doApply()
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
     // Send the broker fee to the owner if they have sufficient cover available,
-    // _and_ if the owner can receive funds. If not, so as not to block the
-    // payment, add it to the cover balance (send it to the broker pseudo
-    // account).
+    // _and_ if the owner can receive funds
+    // _and_ if the broker is authorized to hold funds. If not, so as not to
+    // block the payment, add it to the cover balance (send it to the broker
+    // pseudo account).
     //
     // Normally freeze status is checked in preflight, but we do it here to
     // avoid duplicating the check. It'll claim a fee either way.
@@ -278,7 +279,8 @@ LoanPay::doApply()
                    asset,
                    tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum),
                    loanScale) &&
-            !isDeepFrozen(view, brokerOwner, asset);
+            !isDeepFrozen(view, brokerOwner, asset) &&
+            !requireAuth(view, asset, brokerOwner, AuthType::StrongAuth);
     }();
 
     auto const brokerPayee =
@@ -305,7 +307,12 @@ LoanPay::doApply()
     // change will be discarded.
     if (loanSle->isFlag(lsfLoanImpaired))
     {
-        LoanManage::unimpairLoan(view, loanSle, vaultSle, asset, j_);
+        if (auto const ret =
+                LoanManage::unimpairLoan(view, loanSle, vaultSle, asset, j_))
+        {
+            JLOG(j_.fatal()) << "Failed to unimpair loan before payment.";
+            return ret;  // LCOV_EXCL_LINE
+        }
     }
 
     LoanPaymentType const paymentType = [&tx]() {
@@ -447,6 +454,10 @@ LoanPay::doApply()
         if (*assetsAvailableProxy > *assetsTotalProxy)
         {
             // LCOV_EXCL_START
+            JLOG(j_.fatal())
+                << "Vault assets available must not be greater "
+                   "than assets outstanding. Available: "
+                << *assetsAvailableProxy << ", Total: " << *assetsTotalProxy;
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
