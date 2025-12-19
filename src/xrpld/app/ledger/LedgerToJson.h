@@ -7,7 +7,6 @@
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/basics/chrono.h>
-#include <xrpl/json/Object.h>
 #include <xrpl/protocol/serialize.h>
 
 namespace xrpl {
@@ -42,16 +41,19 @@ struct LedgerFill
     std::optional<NetClock::time_point> closeTime;
 };
 
-/** Given a Ledger and options, fill a Json::Object or Json::Value with a
+/** Given a Ledger and options, fill a Json::Value with a
     description of the ledger.
  */
-
 void
 addJson(Json::Value&, LedgerFill const&);
 
 /** Return a new Json::Value representing the ledger with given options.*/
 Json::Value
 getJson(LedgerFill const&);
+
+/** Copy all the keys and values from one object into another. */
+void
+copyFrom(Json::Value& to, Json::Value const& from);
 
 }  // namespace xrpl
 

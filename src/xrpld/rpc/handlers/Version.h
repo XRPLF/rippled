@@ -20,9 +20,8 @@ public:
         return Status::OK;
     }
 
-    template <class Object>
     void
-    writeResult(Object& obj)
+    writeResult(Json::Value& obj)
     {
         setVersion(obj, apiVersion_, betaEnabled_);
     }
