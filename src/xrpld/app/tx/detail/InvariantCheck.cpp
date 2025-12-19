@@ -1633,7 +1633,7 @@ ValidMPTIssuance::finalize(
 
 void
 ValidPermissionedDomain::visitEntry(
-    bool,
+    bool isDel,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
@@ -1642,12 +1642,13 @@ ValidPermissionedDomain::visitEntry(
     if (after && after->getType() != ltPERMISSIONED_DOMAIN)
         return;
 
-    auto check = [](std::vector<SleStatus>& sleStatus,
-                    std::shared_ptr<SLE const> const& sle) {
+    auto check = [isDel](
+                     std::vector<SleStatus>& sleStatus,
+                     std::shared_ptr<SLE const> const& sle) {
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 
-        SleStatus ss{credentials.size(), false, !sorted.empty()};
+        SleStatus ss{credentials.size(), false, !sorted.empty(), isDel};
 
         // If array have duplicates then all the other checks are invalid
         if (ss.isUnique_)
@@ -1677,16 +1678,6 @@ ValidPermissionedDomain::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET || result != tesSUCCESS)
-        return true;
-
-    if (sleStatus_.size() > 1)
-    {
-        JLOG(j.fatal()) << "Invariant failed: transaction modified more than 1 "
-                           "entry.";  // LCOV_EXCL_LINE
-        return false;                 // LCOV_EXCL_LINE
-    }
-
     auto check = [](SleStatus const& sleStatus, beast::Journal const& j) {
         if (!sleStatus.credentialsSize_)
         {
@@ -1723,7 +1714,83 @@ ValidPermissionedDomain::finalize(
         return true;
     };
 
-    return !sleStatus_.empty() ? check(sleStatus_[0], j) : true;
+    if (view.rules().enabled(fixPermissionedDomainInvariant))
+    {
+        // Nothing was changed by a failed tx. All good.
+        if (result != tesSUCCESS && sleStatus_.size() == 0)
+            return true;
+
+        if (sleStatus_.size() > 1)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: transaction affected more than 1 entry.";
+            return false;
+        }
+
+        switch (tx.getTxnType())
+        {
+            case ttPERMISSIONED_DOMAIN_SET: {
+                if (sleStatus_.empty())
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: no domain objects affected by "
+                           "PermissionedDomainSet";
+                    return false;
+                }
+
+                auto const& sleStatus = sleStatus_[0];
+                if (sleStatus.isDelete_)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: domain object "
+                                       "deleted by PermissionedDomainSet";
+                    return false;
+                }
+
+                // Failed 1st check. Here it means that failure is not critical
+                // (something wrong with credentials list). Lets include tx into
+                // ledger and take fee.
+                if (result == tecINVARIANT_FAILED)
+                    return true;
+                return check(sleStatus, j);
+            }
+            case ttPERMISSIONED_DOMAIN_DELETE: {
+                if (sleStatus_.empty())
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: no domain objects affected by "
+                           "PermissionedDomainDelete";
+                    return false;
+                }
+
+                if (!sleStatus_[0].isDelete_)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: domain object "
+                                       "modified, but not deleted by "
+                                       "PermissionedDomainDelete";
+                    return false;
+                }
+                return true;
+            }
+            default: {
+                if (!sleStatus_.empty())
+                {
+                    JLOG(j.fatal()) << "Invariant failed: " << sleStatus_.size()
+                                    << " domain object(s) affected by an "
+                                       "unauthorized transaction. "
+                                    << tx.getTxnType();
+                    return false;
+                }
+                return true;
+            }
+        }
+    }
+    else
+    {
+        if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET ||
+            result != tesSUCCESS || sleStatus_.empty())
+            return true;
+        return check(sleStatus_[0], j);
+    }
 }
 
 //------------------------------------------------------------------------------
