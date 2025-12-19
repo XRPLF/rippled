@@ -9,7 +9,6 @@
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
 
-#include <xrpl/json/Object.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
@@ -37,9 +36,8 @@ public:
     Status
     check();
 
-    template <class Object>
     void
-    writeResult(Object&);
+    writeResult(Json::Value&);
 
     static constexpr char name[] = "ledger";
 
@@ -58,49 +56,6 @@ private:
     Json::Value result_;
     int options_ = 0;
 };
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// Implementation.
-
-template <class Object>
-void
-LedgerHandler::writeResult(Object& value)
-{
-    if (ledger_)
-    {
-        Json::copyFrom(value, result_);
-        addJson(value, {*ledger_, &context_, options_, queueTxs_});
-    }
-    else
-    {
-        auto& master = context_.app.getLedgerMaster();
-        {
-            auto&& closed = Json::addObject(value, jss::closed);
-            addJson(closed, {*master.getClosedLedger(), &context_, 0});
-        }
-        {
-            auto&& open = Json::addObject(value, jss::open);
-            addJson(open, {*master.getCurrentLedger(), &context_, 0});
-        }
-    }
-
-    Json::Value warnings{Json::arrayValue};
-    if (context_.params.isMember(jss::type))
-    {
-        Json::Value& w = warnings.append(Json::objectValue);
-        w[jss::id] = warnRPC_FIELDS_DEPRECATED;
-        w[jss::message] =
-            "Some fields from your request are deprecated. Please check the "
-            "documentation at "
-            "https://xrpl.org/docs/references/http-websocket-apis/ "
-            "and update your request. Field `type` is deprecated.";
-    }
-
-    if (warnings.size())
-        value[jss::warnings] = std::move(warnings);
-}
 
 }  // namespace RPC
 }  // namespace xrpl

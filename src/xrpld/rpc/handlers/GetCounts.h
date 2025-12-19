@@ -3,8 +3,6 @@
 
 #include <xrpld/app/main/Application.h>
 
-#include <xrpl/json/Object.h>
-
 namespace xrpl {
 
 Json::Value
