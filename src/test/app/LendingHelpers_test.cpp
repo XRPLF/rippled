@@ -620,10 +620,113 @@ class LendingHelpers_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testTryOverpaymentValueChange()
+    {
+        // This test ensures that overpayment value change is computed
+        // correctly.
+        testcase("tryOverpayment - Value Change is the decrease in interest");
+
+        using namespace jtx;
+        using namespace xrpl::detail;
+
+        Env env{*this};
+        Account const issuer{"issuer"};
+        PrettyAsset const asset = issuer["USD"];
+
+        // Interest delta is 40 (100 - 50 - 10)
+        ExtendedPaymentComponents const overpaymentComponents = {
+            PaymentComponents{
+                .trackedValueDelta = Number{50, 0},
+                .trackedPrincipalDelta = Number{50, 0},
+                .trackedManagementFeeDelta = Number{0, 0},
+                .specialCase = PaymentSpecialCase::extra,
+            },
+            numZero,
+            numZero,
+        };
+
+        TenthBips16 managementFeeRate{20'000};  // 20%
+        TenthBips32 loanInterestRate{10'000};   // 10%
+        Number loanPrincipal{1'000};
+        std::uint32_t paymentInterval = 30 * 24 * 60 * 60;
+        std::uint32_t paymentsRemaining = 10;
+        std::int32_t loanScale = -5;
+        auto const periodicRate =
+            loanPeriodicRate(loanInterestRate, paymentInterval);
+
+        auto loanProperites = computeLoanProperties(
+            asset,
+            loanPrincipal,
+            loanInterestRate,
+            paymentInterval,
+            paymentsRemaining,
+            managementFeeRate,
+            loanScale);
+
+        Number periodicPayment = loanProperites.periodicPayment;
+
+        auto const ret = tryOverpayment(
+            asset,
+            loanScale,
+            overpaymentComponents,
+            loanProperites.loanState,
+            periodicPayment,
+            periodicRate,
+            paymentsRemaining,
+            managementFeeRate,
+            env.journal);
+
+        BEAST_EXPECT(ret);
+
+        auto const& [actualPaymentParts, newLoanProperties] = *ret;
+        auto const& newState = newLoanProperties.loanState;
+
+        // value change should be equal to interest decrease
+        BEAST_EXPECTS(
+            actualPaymentParts.valueChange ==
+                newState.interestDue - loanProperites.loanState.interestDue,
+            " valueChange mismatch: expected " +
+                to_string(
+                    newState.interestDue -
+                    loanProperites.loanState.interestDue) +
+                ", got " + to_string(actualPaymentParts.valueChange));
+
+        BEAST_EXPECTS(
+            actualPaymentParts.feePaid ==
+                loanProperites.loanState.managementFeeDue -
+                    newState.managementFeeDue,
+            " feePaid mismatch: expected " +
+                to_string(
+                    loanProperites.loanState.managementFeeDue -
+                    newState.managementFeeDue) +
+                ", got " + to_string(actualPaymentParts.feePaid));
+
+        BEAST_EXPECTS(
+            actualPaymentParts.principalPaid ==
+                loanProperites.loanState.principalOutstanding -
+                    newState.principalOutstanding,
+            " principalPaid mismatch: expected " +
+                to_string(
+                    loanProperites.loanState.principalOutstanding -
+                    newState.principalOutstanding) +
+                ", got " + to_string(actualPaymentParts.principalPaid));
+
+        BEAST_EXPECTS(
+            actualPaymentParts.interestPaid ==
+                loanProperites.loanState.interestDue - newState.interestDue,
+            " interestPaid mismatch: expected " +
+                to_string(
+                    loanProperites.loanState.interestDue -
+                    newState.interestDue) +
+                ", got " + to_string(actualPaymentParts.interestPaid));
+    }
+
 public:
     void
     run() override
     {
+        testTryOverpaymentValueChange();
         testComputeFullPaymentInterest();
         testLoanAccruedInterest();
         testLoanLatePaymentInterest();
