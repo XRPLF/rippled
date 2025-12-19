@@ -84,46 +84,6 @@ struct LoanPaymentParts
     operator==(LoanPaymentParts const& other) const;
 };
 
-/* Describes the initial computed properties of a loan.
- *
- * This structure contains the fundamental calculated values that define a
- * loan's payment structure and amortization schedule. These properties are
- * computed:
- * - At loan creation (LoanSet transaction)
- * - When loan terms change (e.g., after an overpayment that reduces the loan
- * balance)
- */
-struct LoanProperties
-{
-    // The unrounded amount to be paid at each regular payment period.
-    // Calculated using the standard amortization formula based on principal,
-    // interest rate, and number of payments.
-    // The actual amount paid in the LoanPay transaction must be rounded up to
-    // the precision of the asset and loan.
-    Number periodicPayment;
-
-    // The total amount the borrower will pay over the life of the loan.
-    // Equal to periodicPayment * paymentsRemaining.
-    // This includes principal, interest, and management fees.
-    Number totalValueOutstanding;
-
-    // The total management fee that will be paid to the broker over the
-    // loan's lifetime. This is a percentage of the total interest (gross)
-    // as specified by the broker's management fee rate.
-    Number managementFeeOwedToBroker;
-
-    // The scale (decimal places) used for rounding all loan amounts.
-    // This is the maximum of:
-    // - The asset's native scale
-    // - A minimum scale required to represent the periodic payment accurately
-    // All loan state values (principal, interest, fees) are rounded to this
-    // scale.
-    std::int32_t loanScale;
-
-    // The principal portion of the first payment.
-    Number firstPaymentPrincipal;
-};
-
 /** This structure captures the parts of a loan state.
  *
  *  Whether the values are raw (unrounded) or rounded will depend on how it was
@@ -159,6 +119,39 @@ struct LoanState
             "other values add up correctly");
         return interestDue + managementFeeDue;
     }
+};
+
+/* Describes the initial computed properties of a loan.
+ *
+ * This structure contains the fundamental calculated values that define a
+ * loan's payment structure and amortization schedule. These properties are
+ * computed:
+ * - At loan creation (LoanSet transaction)
+ * - When loan terms change (e.g., after an overpayment that reduces the loan
+ * balance)
+ */
+struct LoanProperties
+{
+    // The unrounded amount to be paid at each regular payment period.
+    // Calculated using the standard amortization formula based on principal,
+    // interest rate, and number of payments.
+    // The actual amount paid in the LoanPay transaction must be rounded up to
+    // the precision of the asset and loan.
+    Number periodicPayment;
+
+    // The loan's current state, with all values rounded to the loan's scale.
+    LoanState loanState;
+
+    // The scale (decimal places) used for rounding all loan amounts.
+    // This is the maximum of:
+    // - The asset's native scale
+    // - A minimum scale required to represent the periodic payment accurately
+    // All loan state values (principal, interest, fees) are rounded to this
+    // scale.
+    std::int32_t loanScale;
+
+    // The principal portion of the first payment.
+    Number firstPaymentPrincipal;
 };
 
 // Some values get re-rounded to the vault scale any time they are adjusted. In
@@ -369,6 +362,18 @@ struct LoanStateDeltas
     nonNegative();
 };
 
+Expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
+tryOverpayment(
+    Asset const& asset,
+    std::int32_t loanScale,
+    ExtendedPaymentComponents const& overpaymentComponents,
+    LoanState const& roundedLoanState,
+    Number const& periodicPayment,
+    Number const& periodicRate,
+    std::uint32_t paymentRemaining,
+    TenthBips16 const managementFeeRate,
+    beast::Journal j);
+
 Number
 computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining);
 
@@ -447,13 +452,21 @@ operator+(LoanState const& lhs, detail::LoanStateDeltas const& rhs);
 LoanProperties
 computeLoanProperties(
     Asset const& asset,
-    Number principalOutstanding,
+    Number const& principalOutstanding,
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining,
     TenthBips32 managementFeeRate,
-    std::int32_t minimumScale,
-    beast::Journal j);
+    std::int32_t minimumScale);
+
+LoanProperties
+computeLoanProperties(
+    Asset const& asset,
+    Number const& principalOutstanding,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining,
+    TenthBips32 managementFeeRate,
+    std::int32_t minimumScale);
 
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale);
