@@ -374,7 +374,8 @@ LoanManage::unimpairLoan(
     loanSle->clearFlag(lsfLoanImpaired);
     auto const paymentInterval = loanSle->at(sfPaymentInterval);
     auto const normalPaymentDueDate =
-        std::max(loanSle->at(sfPreviousPaymentDate), loanSle->at(sfStartDate)) +
+        std::max(
+            loanSle->at(sfPreviousPaymentDueDate), loanSle->at(sfStartDate)) +
         paymentInterval;
     if (!hasExpired(view, normalPaymentDueDate))
     {
