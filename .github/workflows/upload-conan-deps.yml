@@ -92,7 +92,6 @@ jobs:
       - name: Build dependencies
         uses: ./.github/actions/build-deps
         with:
-          build_dir: .build
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ matrix.build_type }}
           force_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
