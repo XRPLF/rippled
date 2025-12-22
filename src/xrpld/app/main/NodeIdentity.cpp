@@ -3,6 +3,7 @@
 #include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
+#include <xrpl/protocol/KeyType.h>
 
 namespace xrpl {
 
@@ -32,8 +33,25 @@ getNodeIdentity(
 
     if (seed)
     {
-        auto secretKey = generateSecretKey(KeyType::secp256k1, *seed);
-        auto publicKey = derivePublicKey(KeyType::secp256k1, secretKey);
+        // Read key type from config, default to secp256k1
+        KeyType keyType = KeyType::secp256k1;
+        if (app.config().exists(SECTION_VALIDATOR_KEY_TYPE))
+        {
+            auto const keyTypeStr =
+                app.config().section(SECTION_VALIDATOR_KEY_TYPE).lines().front();
+            auto const parsedKeyType = keyTypeFromString(keyTypeStr);
+            if (parsedKeyType)
+            {
+                keyType = *parsedKeyType;
+            }
+            throw std::runtime_error(
+                "Invalid key type specified in [" SECTION_VALIDATOR_KEY_TYPE
+                "]: " +
+                keyTypeStr);
+        }
+
+        auto secretKey = generateSecretKey(keyType, *seed);
+        auto publicKey = derivePublicKey(keyType, secretKey);
 
         return {publicKey, secretKey};
     }

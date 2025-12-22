@@ -476,7 +476,7 @@ public:
         for (int i = 0; i < num; ++i)
         {
             auto const& back =
-                ret.emplace_back(randomKeyPair(KeyType::secp256k1));
+                ret.emplace_back(randomKeyPair(KeyType::dilithium));
             trustedValidators.insert(back.first);
         }
         table->trustChanged(trustedValidators);
@@ -1001,7 +1001,7 @@ public:
         }
 
         // Add one new validator to the UNL.
-        validators.emplace_back(randomKeyPair(KeyType::secp256k1));
+        validators.emplace_back(randomKeyPair(KeyType::dilithium));
 
         // A lambda that updates the AmendmentTable with the latest
         // trusted validators.

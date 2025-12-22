@@ -147,10 +147,15 @@ ValidatorSite::load(
 void
 ValidatorSite::start()
 {
+    JLOG(j_.debug()) << "ValidatorSite::start() called";
     std::lock_guard l0{sites_mutex_};
     std::lock_guard l1{state_mutex_};
+    JLOG(j_.debug()) << "ValidatorSite::start() - sites_.size()=" << sites_.size();
+    JLOG(j_.debug()) << "ValidatorSite::start() - timer expiry check: "
+                     << (timer_.expiry() == clock_type::time_point{} ? "timer not set, will setTimer" : "timer already set");
     if (timer_.expiry() == clock_type::time_point{})
         setTimer(l0, l1);
+    JLOG(j_.debug()) << "ValidatorSite::start() completed";
 }
 
 void
@@ -191,6 +196,7 @@ ValidatorSite::setTimer(
     std::lock_guard<std::mutex> const& site_lock,
     std::lock_guard<std::mutex> const& state_lock)
 {
+    JLOG(j_.debug()) << "ValidatorSite::setTimer() called with " << sites_.size() << " sites";
     auto next = std::min_element(
         sites_.begin(), sites_.end(), [](Site const& a, Site const& b) {
             return a.nextRefresh < b.nextRefresh;
@@ -198,13 +204,25 @@ ValidatorSite::setTimer(
 
     if (next != sites_.end())
     {
+        auto now = clock_type::now();
+        auto idx = std::distance(sites_.begin(), next);
+        JLOG(j_.debug()) << "setTimer: site[" << idx << "] URI=" << next->loadedResource->uri;
+        JLOG(j_.debug()) << "setTimer: nextRefresh=" << next->nextRefresh.time_since_epoch().count()
+                         << ", now=" << now.time_since_epoch().count();
+        JLOG(j_.debug()) << "setTimer: nextRefresh is "
+                         << (next->nextRefresh <= now ? "in the past (fetch immediately)" : "in the future (will wait)");
+
         pending_ = next->nextRefresh <= clock_type::now();
         cv_.notify_all();
         timer_.expires_at(next->nextRefresh);
-        auto idx = std::distance(sites_.begin(), next);
         timer_.async_wait([this, idx](boost::system::error_code const& ec) {
             this->onTimer(idx, ec);
         });
+        JLOG(j_.debug()) << "setTimer: async_wait scheduled for site[" << idx << "]";
+    }
+    else
+    {
+        JLOG(j_.debug()) << "setTimer: no sites to schedule";
     }
 }
 
@@ -320,8 +338,10 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
 void
 ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
 {
+    JLOG(j_.debug()) << "ValidatorSite::onTimer() called for site[" << siteIdx << "], ec=" << ec.message();
     if (ec)
     {
+        JLOG(j_.debug()) << "onTimer: error code indicates timer was cancelled or failed: " << ec.message();
         // Restart the timer if any errors are encountered, unless the error
         // is from the wait operation being aborted due to a shutdown request.
         if (ec != boost::asio::error::operation_aborted)

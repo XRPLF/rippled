@@ -47,7 +47,7 @@ class PeerPartial : public Peer
 {
 public:
     PeerPartial()
-        : nodePublicKey_(derivePublicKey(KeyType::ed25519, randomSecretKey()))
+        : nodePublicKey_(derivePublicKey(KeyType::dilithium, randomSecretKey(KeyType::dilithium)))
     {
     }
 
@@ -306,7 +306,7 @@ class Validator
     using Links = std::unordered_map<Peer::id_t, LinkSPtr>;
 
 public:
-    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::ed25519)))
+    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::dilithium)))
     {
         protocol::TMValidation v;
         v.set_validation("validation");
@@ -1549,7 +1549,7 @@ vp_base_squelch_max_selected_peers=2
     testRandomSquelch(bool l)
     {
         doTest("Random Squelch", l, [&](bool l) {
-            PublicKey validator = std::get<0>(randomKeyPair(KeyType::ed25519));
+            PublicKey validator = std::get<0>(randomKeyPair(KeyType::dilithium));
             Handler handler;
 
             auto run = [&](int npeers) {

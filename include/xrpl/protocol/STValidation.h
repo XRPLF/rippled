@@ -159,7 +159,7 @@ STValidation::STValidation(
     , signingPubKey_([this]() {
         auto const spk = getFieldVL(sfSigningPubKey);
 
-        if (publicKeyType(makeSlice(spk)) != KeyType::secp256k1)
+        if (publicKeyType(makeSlice(spk)) != KeyType::dilithium)
             Throw<std::runtime_error>("Invalid public key in validation");
 
         return PublicKey{makeSlice(spk)};
@@ -204,8 +204,8 @@ STValidation::STValidation(
         "node");
 
     // First, set our own public key:
-    if (publicKeyType(pk) != KeyType::secp256k1)
-        LogicError("We can only use secp256k1 keys for signing validations");
+    if (publicKeyType(pk) != KeyType::dilithium)
+        LogicError("We can only use dilithium keys for signing validations");
 
     setFieldVL(sfSigningPubKey, pk.slice());
     setFieldU32(sfSigningTime, signTime.time_since_epoch().count());

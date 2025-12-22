@@ -130,13 +130,13 @@ getNodeIdentity(soci::session& session)
                 TokenType::NodePublic, pubKO.value_or(""));
 
             // Only use if the public and secret keys are a pair
-            if (sk && pk && (*pk == derivePublicKey(KeyType::secp256k1, *sk)))
+            if (sk && pk && (*pk == derivePublicKey(KeyType::dilithium, *sk)))
                 return {*pk, *sk};
         }
     }
 
     // If a valid identity wasn't found, we randomly generate a new one:
-    auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::secp256k1);
+    auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::dilithium);
 
     session << str(
         boost::format("INSERT INTO NodeIdentity (PublicKey,PrivateKey) "

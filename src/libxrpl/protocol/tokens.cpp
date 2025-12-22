@@ -267,8 +267,7 @@ decodeBase58(std::string const& s)
         --remain;
     }
 
-    if (remain > 64)
-        return {};
+    // *** Removed the 64-char limit here ***
 
     // Allocate enough space in big-endian base256 representation.
     // log(58) / log(256), rounded up.
@@ -345,6 +344,7 @@ decodeBase58Token(std::string const& s, TokenType type)
     checksum(guard.data(), ret.data(), ret.size() - guard.size());
     if (!std::equal(guard.rbegin(), guard.rend(), ret.rbegin()))
         return {};
+        
 
     // Skip the leading type byte and the trailing checksum.
     return ret.substr(1, ret.size() - 1 - guard.size());
@@ -709,7 +709,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
         reinterpret_cast<std::uint8_t const*>(token), size);
     auto r = b58_fast::encodeBase58Token(type, inSp, outSp);
     if (!r)
-        return {};
+        return b58_ref::encodeBase58Token(type, token, size);
     sr.resize(r.value().size());
     return sr;
 }
@@ -725,7 +725,7 @@ decodeBase58Token(std::string const& s, TokenType type)
         reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
     auto r = b58_fast::decodeBase58Token(type, s, outSp);
     if (!r)
-        return {};
+        return b58_ref::decodeBase58Token(s, type);
     sr.resize(r.value().size());
     return sr;
 }

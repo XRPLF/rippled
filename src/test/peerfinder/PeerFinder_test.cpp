@@ -112,7 +112,7 @@ public:
             logic.config(c);
         }
 
-        PublicKey const pk(randomKeyPair(KeyType::secp256k1).first);
+        PublicKey const pk(randomKeyPair(KeyType::dilithium).first);
         std::size_t n = 0;
 
         for (std::size_t i = 0; i < seconds; ++i)
@@ -262,7 +262,7 @@ public:
 
         auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
 
-        PublicKey const pk1(randomKeyPair(KeyType::secp256k1).first);
+        PublicKey const pk1(randomKeyPair(KeyType::dilithium).first);
 
         auto const [slot, rSlot] = logic.new_outbound_slot(
             beast::IP::Endpoint::from_string("55.104.0.2:1025"));
@@ -306,7 +306,7 @@ public:
             logic.config(c);
         }
 
-        PublicKey const pk1(randomKeyPair(KeyType::secp256k1).first);
+        PublicKey const pk1(randomKeyPair(KeyType::dilithium).first);
         auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
 
         auto const [slot, rSlot] = logic.new_inbound_slot(
@@ -334,7 +334,7 @@ public:
         BEAST_EXPECT(slot2 != nullptr);
         BEAST_EXPECT(r2Slot == Result::success);
 
-        PublicKey const pk2(randomKeyPair(KeyType::secp256k1).first);
+        PublicKey const pk2(randomKeyPair(KeyType::dilithium).first);
 
         // an inbound slot exceeding inPeers limit must fail
         BEAST_EXPECT(logic.activate(slot2, pk2, false) == Result::full);

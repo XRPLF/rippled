@@ -985,13 +985,46 @@ RCLConsensus::Adaptor::preStartRound(
     // check to make sure that it's not expired.
     if (validating_ && !app_.config().standalone() && app_.validators().count())
     {
-        auto const when = app_.validators().expires();
+        JLOG(j_.debug()) << "Checking validator list expiration. "
+                         << "Validator count: " << app_.validators().count();
 
-        if (!when || *when < app_.timeKeeper().now())
+        auto const when = app_.validators().expires();
+        auto const now = app_.timeKeeper().now();
+
+        JLOG(j_.debug()) << "Validator list expiration check: "
+                         << "has_expiration=" << (when ? "yes" : "no")
+                         << ", current_time=" << now.time_since_epoch().count();
+
+        if (when)
         {
+            JLOG(j_.debug()) << "Validator list expires at: "
+                             << when->time_since_epoch().count()
+                             << ", time_until_expiry="
+                             << std::chrono::duration_cast<std::chrono::seconds>(*when - now).count()
+                             << " seconds";
+        }
+
+        if (!when || *when < now)
+        {
+            if (!when)
+            {
+                JLOG(j_.debug()) << "Validator list has no expiration time set";
+            }
+            else
+            {
+                JLOG(j_.debug()) << "Validator list has expired. "
+                                 << "Expired "
+                                 << std::chrono::duration_cast<std::chrono::seconds>(now - *when).count()
+                                 << " seconds ago";
+            }
+
             JLOG(j_.error()) << "Voluntarily bowing out of consensus process "
                                 "because of an expired validator list.";
             validating_ = false;
+        }
+        else
+        {
+            JLOG(j_.debug()) << "Validator list is valid and not expired";
         }
     }
 

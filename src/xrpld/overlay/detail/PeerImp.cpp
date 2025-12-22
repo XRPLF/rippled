@@ -1770,14 +1770,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     auto const sig = makeSlice(set.signature());
 
     // Preliminary check for the validity of the signature: A DER encoded
-    // signature can't be longer than 72 bytes.
-    if ((std::clamp<std::size_t>(sig.size(), 64, 72) != sig.size()) ||
-        (publicKeyType(makeSlice(set.nodepubkey())) != KeyType::secp256k1))
+    // signature can't be longer than 2420 bytes.
+    if ((std::clamp<std::size_t>(sig.size(), 64, 2420) != sig.size()) ||
+        (publicKeyType(makeSlice(set.nodepubkey())) != KeyType::dilithium))
     {
         JLOG(p_journal_.warn()) << "Proposal: malformed";
         fee_.update(
             Resource::feeInvalidSignature,
-            " signature can't be longer than 72 bytes");
+            " signature can't be longer than 2420 bytes");
         return;
     }
 

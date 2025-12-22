@@ -68,6 +68,7 @@ struct ConfigSection
 #define SECTION_SWEEP_INTERVAL "sweep_interval"
 #define SECTION_VALIDATORS_FILE "validators_file"
 #define SECTION_VALIDATION_SEED "validation_seed"
+#define SECTION_VALIDATOR_KEY_TYPE "validator_key_type"
 #define SECTION_VALIDATOR_KEYS "validator_keys"
 #define SECTION_VALIDATOR_KEY_REVOCATION "validator_key_revocation"
 #define SECTION_VALIDATOR_LIST_KEYS "validator_list_keys"

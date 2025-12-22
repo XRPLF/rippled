@@ -80,7 +80,7 @@ public:
             *parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr);
 
         auto const tokenPublicKey =
-            derivePublicKey(KeyType::secp256k1, tokenSecretKey);
+            derivePublicKey(KeyType::dilithium, tokenSecretKey);
 
         auto const m = deserializeManifest(base64_decode(tokenManifest));
         BEAST_EXPECT(m);
@@ -98,6 +98,7 @@ public:
             // validation seed section -> empty manifest and valid seeds
             Config c;
             c.section(SECTION_VALIDATION_SEED).append(seed);
+            c.section(SECTION_VALIDATOR_KEY_TYPE).append("secp256k1");
 
             ValidatorKeys k{c, journal};
             if (BEAST_EXPECT(k.keys))
@@ -114,6 +115,7 @@ public:
             // validation seed bad seed -> invalid
             Config c;
             c.section(SECTION_VALIDATION_SEED).append("badseed");
+            c.section(SECTION_VALIDATOR_KEY_TYPE).append("secp256k1");
 
             ValidatorKeys k{c, journal};
             BEAST_EXPECT(k.configInvalid());
@@ -125,6 +127,7 @@ public:
             // validator token
             Config c;
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
+            c.section(SECTION_VALIDATOR_KEY_TYPE).append("secp256k1");
             ValidatorKeys k{c, journal};
 
             if (BEAST_EXPECT(k.keys))
@@ -140,6 +143,7 @@ public:
             // invalid validator token
             Config c;
             c.section(SECTION_VALIDATOR_TOKEN).append("badtoken");
+            c.section(SECTION_VALIDATOR_KEY_TYPE).append("secp256k1");
             ValidatorKeys k{c, journal};
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);
@@ -151,6 +155,7 @@ public:
             Config c;
             c.section(SECTION_VALIDATION_SEED).append(seed);
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
+            c.section(SECTION_VALIDATOR_KEY_TYPE).append("secp256k1");
             ValidatorKeys k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
@@ -162,6 +167,7 @@ public:
             // Token manifest and private key must match
             Config c;
             c.section(SECTION_VALIDATOR_TOKEN).append(invalidTokenBlob);
+            c.section(SECTION_VALIDATOR_KEY_TYPE).append("secp256k1");
             ValidatorKeys k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());

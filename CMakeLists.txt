@@ -84,6 +84,7 @@ endif()
 
 ###
 
+include(deps/dilithium)
 include(deps/Boost)
 find_package(OpenSSL 1.1.1 REQUIRED)
 set_target_properties(OpenSSL::SSL PROPERTIES

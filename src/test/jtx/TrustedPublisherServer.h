@@ -132,9 +132,9 @@ public:
     static Validator
     randomValidator()
     {
-        auto const secret = randomSecretKey();
-        auto const masterPublic = derivePublicKey(KeyType::ed25519, secret);
-        auto const signingKeys = randomKeyPair(KeyType::secp256k1);
+        auto const secret = randomSecretKey(KeyType::dilithium);
+        auto const masterPublic = derivePublicKey(KeyType::dilithium, secret);
+        auto const signingKeys = randomKeyPair(KeyType::dilithium);
         return {
             masterPublic,
             signingKeys.first,
@@ -169,10 +169,10 @@ public:
               0}
         , acceptor_{ioc}
         , useSSL_{useSSL}
-        , publisherSecret_{randomSecretKey()}
-        , publisherPublic_{derivePublicKey(KeyType::ed25519, publisherSecret_)}
+        , publisherSecret_{randomSecretKey(KeyType::dilithium)}
+        , publisherPublic_{derivePublicKey(KeyType::dilithium, publisherSecret_)}
     {
-        auto const keys = randomKeyPair(KeyType::secp256k1);
+        auto const keys = randomKeyPair(KeyType::dilithium);
         auto const manifest = makeManifestString(
             publisherPublic_, publisherSecret_, keys.first, keys.second, 1);
 

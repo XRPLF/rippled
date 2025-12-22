@@ -29,16 +29,17 @@ private:
         std::string manifest;
     };
 
+    // Default to secp256k1 (standard), dilithium added for quantum resistance
     static PublicKey
-    randomNode()
+    randomNode(KeyType type = KeyType::secp256k1)
     {
-        return derivePublicKey(KeyType::secp256k1, randomSecretKey());
+        return derivePublicKey(type, randomSecretKey(type));
     }
 
     static PublicKey
-    randomMasterKey()
+    randomMasterKey(KeyType type = KeyType::secp256k1)
     {
-        return derivePublicKey(KeyType::ed25519, randomSecretKey());
+        return derivePublicKey(type, randomSecretKey(type));
     }
 
     static std::string
@@ -93,11 +94,11 @@ private:
     }
 
     static Validator
-    randomValidator()
+    randomValidator(KeyType type = KeyType::dilithium)
     {
-        auto const secret = randomSecretKey();
-        auto const masterPublic = derivePublicKey(KeyType::ed25519, secret);
-        auto const signingKeys = randomKeyPair(KeyType::secp256k1);
+        auto const secret = randomSecretKey(type);
+        auto const masterPublic = derivePublicKey(type, secret);
+        auto const signingKeys = randomKeyPair(type);
         return {
             masterPublic,
             signingKeys.first,
@@ -207,12 +208,12 @@ private:
         std::vector<std::string> const emptyCfgKeys;
         std::vector<std::string> const emptyCfgPublishers;
 
-        auto const localSigningKeys = randomKeyPair(KeyType::secp256k1);
+        auto const localSigningKeys = randomKeyPair(KeyType::dilithium);
         auto const localSigningPublicOuter = localSigningKeys.first;
         auto const localSigningSecret = localSigningKeys.second;
-        auto const localMasterSecret = randomSecretKey();
+        auto const localMasterSecret = randomSecretKey(KeyType::dilithium);
         auto const localMasterPublic =
-            derivePublicKey(KeyType::ed25519, localMasterSecret);
+            derivePublicKey(KeyType::dilithium, localMasterSecret);
 
         std::string const cfgManifest(makeManifestString(
             localMasterPublic,
@@ -223,11 +224,14 @@ private:
 
         auto format = [](PublicKey const& publicKey,
                          char const* comment = nullptr) {
+            
+            // std::cout << "publicKey: " << strHex(publicKey) << std::endl;
             auto ret = toBase58(TokenType::NodePublic, publicKey);
 
             if (comment)
                 ret += comment;
-
+            
+            // std::cout << "ret: " << ret << std::endl;
             return ret;
         };
 
@@ -449,10 +453,10 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
 
-            auto const pubRevokedSecret = randomSecretKey();
+            auto const pubRevokedSecret = randomSecretKey(KeyType::dilithium);
             auto const pubRevokedPublic =
-                derivePublicKey(KeyType::ed25519, pubRevokedSecret);
-            auto const pubRevokedSigning = randomKeyPair(KeyType::secp256k1);
+                derivePublicKey(KeyType::dilithium, pubRevokedSecret);
+            auto const pubRevokedSigning = randomKeyPair(KeyType::dilithium);
             // make this manifest revoked (seq num = max)
             //  -- thus should not be loaded
             pubManifests.applyManifest(*deserializeManifest(makeManifestString(
@@ -488,10 +492,10 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
 
-            auto const pubRevokedSecret = randomSecretKey();
+            auto const pubRevokedSecret = randomSecretKey(KeyType::dilithium);
             auto const pubRevokedPublic =
-                derivePublicKey(KeyType::ed25519, pubRevokedSecret);
-            auto const pubRevokedSigning = randomKeyPair(KeyType::secp256k1);
+                derivePublicKey(KeyType::dilithium, pubRevokedSecret);
+            auto const pubRevokedSigning = randomKeyPair(KeyType::dilithium);
             // make this manifest revoked (seq num = max)
             //  -- thus should not be loaded
             pubManifests.applyManifest(*deserializeManifest(makeManifestString(
@@ -599,12 +603,12 @@ private:
                 }
             };
 
-        auto const publisherSecret = randomSecretKey();
+        auto const publisherSecret = randomSecretKey(KeyType::dilithium);
         auto const publisherPublic =
-            derivePublicKey(KeyType::ed25519, publisherSecret);
+            derivePublicKey(KeyType::dilithium, publisherSecret);
         auto const hexPublic =
             strHex(publisherPublic.begin(), publisherPublic.end());
-        auto const pubSigningKeys1 = randomKeyPair(KeyType::secp256k1);
+        auto const pubSigningKeys1 = randomKeyPair(KeyType::dilithium);
         auto const manifest1 = base64_encode(makeManifestString(
             publisherPublic,
             publisherSecret,
@@ -830,7 +834,7 @@ private:
 
         // apply list with new publisher key updated by manifest. Also send some
         // old lists along with the old manifest
-        auto const pubSigningKeys2 = randomKeyPair(KeyType::secp256k1);
+        auto const pubSigningKeys2 = randomKeyPair(KeyType::dilithium);
         auto manifest2 = base64_encode(makeManifestString(
             publisherPublic,
             publisherSecret,
@@ -957,7 +961,7 @@ private:
 
         // do not apply list with revoked publisher key
         // applied list is removed due to revoked publisher key
-        auto const signingKeysMax = randomKeyPair(KeyType::secp256k1);
+        auto const signingKeysMax = randomKeyPair(KeyType::dilithium);
         auto maxManifest = base64_encode(
             makeRevocationString(publisherPublic, publisherSecret));
 
@@ -1001,12 +1005,12 @@ private:
             app.config().legacy("database_path"),
             env.journal);
 
-        auto const publisherSecret = randomSecretKey();
+        auto const publisherSecret = randomSecretKey(KeyType::dilithium);
         auto const publisherPublic =
-            derivePublicKey(KeyType::ed25519, publisherSecret);
+            derivePublicKey(KeyType::dilithium, publisherSecret);
         auto const hexPublic =
             strHex(publisherPublic.begin(), publisherPublic.end());
-        auto const pubSigningKeys1 = randomKeyPair(KeyType::secp256k1);
+        auto const pubSigningKeys1 = randomKeyPair(KeyType::dilithium);
         auto const manifest = base64_encode(makeManifestString(
             publisherPublic,
             publisherSecret,
@@ -1054,8 +1058,8 @@ private:
 
         {
             // unknown public key
-            auto const badSecret = randomSecretKey();
-            auto const badPublic = derivePublicKey(KeyType::ed25519, badSecret);
+            auto const badSecret = randomSecretKey(KeyType::dilithium);
+            auto const badPublic = derivePublicKey(KeyType::dilithium, badSecret);
             auto const hexBad = strHex(badPublic.begin(), badPublic.end());
 
             auto const available = trustedKeys->getAvailable(hexBad, 1);
@@ -1199,9 +1203,9 @@ private:
         }
         {
             // update with manifests
-            auto const masterPrivate = randomSecretKey();
+            auto const masterPrivate = randomSecretKey(KeyType::dilithium);
             auto const masterPublic =
-                derivePublicKey(KeyType::ed25519, masterPrivate);
+                derivePublicKey(KeyType::dilithium, masterPrivate);
 
             std::vector<std::string> cfgKeys(
                 {toBase58(TokenType::NodePublic, masterPublic)});
@@ -1209,7 +1213,7 @@ private:
             BEAST_EXPECT(
                 trustedKeysOuter->load({}, cfgKeys, cfgPublishersOuter));
 
-            auto const signingKeys1 = randomKeyPair(KeyType::secp256k1);
+            auto const signingKeys1 = randomKeyPair(KeyType::dilithium);
             auto const signingPublic1 = signingKeys1.first;
             activeValidatorsOuter.emplace(calcNodeID(masterPublic));
 
@@ -1247,7 +1251,7 @@ private:
 
             // Should only trust the ephemeral signing key
             // from the newest applied manifest
-            auto const signingKeys2 = randomKeyPair(KeyType::secp256k1);
+            auto const signingKeys2 = randomKeyPair(KeyType::dilithium);
             auto const signingPublic2 = signingKeys2.first;
             auto m2 = deserializeManifest(makeManifestString(
                 masterPublic,
@@ -1266,7 +1270,7 @@ private:
             BEAST_EXPECT(!trustedKeysOuter->trusted(signingPublic1));
 
             // Should not trust keys from revoked master public key
-            auto const signingKeysMax = randomKeyPair(KeyType::secp256k1);
+            auto const signingKeysMax = randomKeyPair(KeyType::dilithium);
             auto const signingPublicMax = signingKeysMax.first;
             activeValidatorsOuter.emplace(calcNodeID(signingPublicMax));
             auto mMax = deserializeManifest(
@@ -1312,9 +1316,9 @@ private:
                 env.timeKeeper(),
                 app.config().legacy("database_path"),
                 env.journal);
-            auto const publisherSecret = randomSecretKey();
+            auto const publisherSecret = randomSecretKey(KeyType::dilithium);
             auto const publisherPublic =
-                derivePublicKey(KeyType::ed25519, publisherSecret);
+                derivePublicKey(KeyType::dilithium, publisherSecret);
 
             std::vector<std::string> cfgPublishers({strHex(publisherPublic)});
             std::vector<std::string> emptyCfgKeys;
@@ -1342,18 +1346,18 @@ private:
                 env.timeKeeper(),
                 app.config().legacy("database_path"),
                 env.journal);
-            auto const masterPrivate = randomSecretKey();
+            auto const masterPrivate = randomSecretKey(KeyType::dilithium);
             auto const masterPublic =
-                derivePublicKey(KeyType::ed25519, masterPrivate);
+                derivePublicKey(KeyType::dilithium, masterPrivate);
             std::vector<std::string> cfgKeys(
                 {toBase58(TokenType::NodePublic, masterPublic)});
 
-            auto const publisher1Secret = randomSecretKey();
+            auto const publisher1Secret = randomSecretKey(KeyType::dilithium);
             auto const publisher1Public =
-                derivePublicKey(KeyType::ed25519, publisher1Secret);
-            auto const publisher2Secret = randomSecretKey();
+                derivePublicKey(KeyType::dilithium, publisher1Secret);
+            auto const publisher2Secret = randomSecretKey(KeyType::dilithium);
             auto const publisher2Public =
-                derivePublicKey(KeyType::ed25519, publisher2Secret);
+                derivePublicKey(KeyType::dilithium, publisher2Secret);
             std::vector<std::string> cfgPublishers(
                 {strHex(publisher1Public), strHex(publisher2Public)});
 
@@ -1435,8 +1439,8 @@ private:
                 env.journal);
 
             std::vector<std::string> emptyCfgKeys;
-            auto const publisherKeys = randomKeyPair(KeyType::secp256k1);
-            auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
+            auto const publisherKeys = randomKeyPair(KeyType::dilithium);
+            auto const pubSigningKeys = randomKeyPair(KeyType::dilithium);
             auto const manifest = base64_encode(makeManifestString(
                 publisherKeys.first,
                 publisherKeys.second,
@@ -1654,10 +1658,10 @@ private:
                 };
 
             auto addPublishedList = [&, this](int i) {
-                auto const publisherSecret = randomSecretKey();
+                auto const publisherSecret = randomSecretKey(KeyType::dilithium);
                 auto const publisherPublic =
-                    derivePublicKey(KeyType::ed25519, publisherSecret);
-                auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
+                    derivePublicKey(KeyType::dilithium, publisherSecret);
+                auto const pubSigningKeys = randomKeyPair(KeyType::dilithium);
                 auto const manifest = base64_encode(makeManifestString(
                     publisherPublic,
                     publisherSecret,
@@ -1758,10 +1762,10 @@ private:
                                         int i,
                                         NetClock::time_point& validUntil1,
                                         NetClock::time_point& validUntil2) {
-                auto const publisherSecret = randomSecretKey();
+                auto const publisherSecret = randomSecretKey(KeyType::dilithium);
                 auto const publisherPublic =
-                    derivePublicKey(KeyType::ed25519, publisherSecret);
-                auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
+                    derivePublicKey(KeyType::dilithium, publisherSecret);
+                auto const pubSigningKeys = randomKeyPair(KeyType::dilithium);
                 auto const manifest = base64_encode(makeManifestString(
                     publisherPublic,
                     publisherSecret,
@@ -1965,10 +1969,10 @@ private:
 
             using namespace std::chrono_literals;
             auto addPublishedList = [this, &env, &trustedKeys, &validators]() {
-                auto const publisherSecret = randomSecretKey();
+                auto const publisherSecret = randomSecretKey(KeyType::dilithium);
                 auto const publisherPublic =
-                    derivePublicKey(KeyType::ed25519, publisherSecret);
-                auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
+                    derivePublicKey(KeyType::dilithium, publisherSecret);
+                auto const pubSigningKeys = randomKeyPair(KeyType::dilithium);
                 auto const manifest = base64_encode(makeManifestString(
                     publisherPublic,
                     publisherSecret,
@@ -2746,10 +2750,10 @@ private:
             std::vector<std::string> cfgPublishers;
             for (std::size_t i = 0; i < countTotal; ++i)
             {
-                auto const publisherSecret = randomSecretKey();
+                auto const publisherSecret = randomSecretKey(KeyType::dilithium);
                 auto const publisherPublic =
-                    derivePublicKey(KeyType::ed25519, publisherSecret);
-                auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
+                    derivePublicKey(KeyType::dilithium, publisherSecret);
+                auto const pubSigningKeys = randomKeyPair(KeyType::dilithium);
                 cfgPublishers.push_back(strHex(publisherPublic));
 
                 constexpr auto revoked =

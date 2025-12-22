@@ -31,7 +31,7 @@ class Peers_test : public beast::unit_test::suite
         for (auto i = 0; i < 3; ++i)
         {
             auto kp = generateKeyPair(
-                KeyType::secp256k1, generateSeed("seed" + std::to_string(i)));
+                KeyType::dilithium, generateSeed("seed" + std::to_string(i)));
 
             std::string name = "Node " + std::to_string(i);
 

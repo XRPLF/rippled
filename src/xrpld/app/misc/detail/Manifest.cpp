@@ -271,8 +271,7 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
             if (m.isString() && k.isString())
             {
                 auto const key = strUnHex(k.asString());
-
-                if (key && key->size() == 32)
+                if (key && (key->size() == 32 || key->size() == 2560))
                     return ValidatorToken{m.asString(), makeSlice(*key)};
             }
         }

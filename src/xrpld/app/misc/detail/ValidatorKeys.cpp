@@ -5,6 +5,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/protocol/KeyType.h>
 
 namespace xrpl {
 ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
@@ -20,12 +21,30 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
 
     if (config.exists(SECTION_VALIDATOR_TOKEN))
     {
+        // Read key type from config, default to secp256k1 for tokens
+        KeyType keyType = KeyType::secp256k1;
+        if (config.exists(SECTION_VALIDATOR_KEY_TYPE))
+        {
+            auto const keyTypeStr =
+                config.section(SECTION_VALIDATOR_KEY_TYPE).lines().front();
+            auto const parsedKeyType = keyTypeFromString(keyTypeStr);
+            if (!parsedKeyType)
+            {
+                configInvalid_ = true;
+                JLOG(j.fatal())
+                    << "Invalid key type specified in [" SECTION_VALIDATOR_KEY_TYPE
+                       "]: " << keyTypeStr;
+                return;
+            }
+            keyType = *parsedKeyType;
+        }
+
         // token is non-const so it can be moved from
         if (auto token = loadValidatorToken(
                 config.section(SECTION_VALIDATOR_TOKEN).lines()))
         {
             auto const pk =
-                derivePublicKey(KeyType::secp256k1, token->validationSecret);
+                derivePublicKey(keyType, token->validationSecret);
             auto const m = deserializeManifest(base64_decode(token->manifest));
 
             if (!m || pk != m->signingKey)
@@ -47,7 +66,7 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         {
             configInvalid_ = true;
             JLOG(j.fatal())
-                << "Invalid token specified in [" SECTION_VALIDATOR_TOKEN "]";
+                << "Could not load token specified in [" SECTION_VALIDATOR_TOKEN "]";
         }
     }
     else if (config.exists(SECTION_VALIDATION_SEED))
@@ -62,8 +81,26 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         }
         else
         {
-            SecretKey const sk = generateSecretKey(KeyType::secp256k1, *seed);
-            PublicKey const pk = derivePublicKey(KeyType::secp256k1, sk);
+            // Read key type from config, default to secp256k1
+            KeyType keyType = KeyType::secp256k1;
+            if (config.exists(SECTION_VALIDATOR_KEY_TYPE))
+            {
+                auto const keyTypeStr =
+                    config.section(SECTION_VALIDATOR_KEY_TYPE).lines().front();
+                auto const parsedKeyType = keyTypeFromString(keyTypeStr);
+                if (!parsedKeyType)
+                {
+                    configInvalid_ = true;
+                    JLOG(j.fatal())
+                        << "Invalid key type specified in [" SECTION_VALIDATOR_KEY_TYPE
+                           "]: " << keyTypeStr;
+                    return;
+                }
+                keyType = *parsedKeyType;
+            }
+
+            SecretKey const sk = generateSecretKey(keyType, *seed);
+            PublicKey const pk = derivePublicKey(keyType, sk);
             keys.emplace(pk, pk, sk);
             nodeID = calcNodeID(pk);
             sequence = 0;

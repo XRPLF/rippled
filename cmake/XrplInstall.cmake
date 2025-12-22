@@ -27,6 +27,7 @@ install (
     xrpl.libxrpl.server
     xrpl.libxrpl.shamap
     antithesis-sdk-cpp
+    randombytes_ref
   EXPORT XrplExports
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib

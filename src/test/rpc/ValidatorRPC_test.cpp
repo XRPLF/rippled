@@ -124,8 +124,8 @@ public:
         // Negative UNL update
         {
             hash_set<PublicKey> disabledKeys;
-            auto k1 = randomKeyPair(KeyType::ed25519).first;
-            auto k2 = randomKeyPair(KeyType::ed25519).first;
+            auto k1 = randomKeyPair(KeyType::dilithium).first;
+            auto k2 = randomKeyPair(KeyType::dilithium).first;
             disabledKeys.insert(k1);
             disabledKeys.insert(k2);
             env.app().validators().setNegativeUNL(disabledKeys);

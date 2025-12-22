@@ -88,7 +88,7 @@ private:
     PublicKey publicKey_;
     uint256 suppression_;
     Proposal proposal_;
-    boost::container::static_vector<std::uint8_t, 72> signature_;
+    boost::container::static_vector<std::uint8_t, 2420> signature_;
 
     template <class Hasher>
     void
