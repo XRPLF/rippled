@@ -3599,13 +3599,14 @@ protected:
                 env(tx);
                 env.close();
 
-                testcase("Vault maximum value exceeded");
+                testcase("Vault at maximum value");
                 env(set(issuer, broker.brokerID, principalRequest),
                     counterparty(lender),
                     interestRate(TenthBips32(10'000)),
                     sig(sfCounterpartySignature, lender),
                     fee(env.current()->fees().base * 5),
-                    ter(tecLIMIT_EXCEEDED));
+                    ter(tecLIMIT_EXCEEDED),
+                    THISLINE);
             },
             nullptr);
 
@@ -3627,7 +3628,10 @@ protected:
                     interestRate(TenthBips32(100'000)),
                     sig(sfCounterpartySignature, lender),
                     fee(env.current()->fees().base * 5),
-                    ter(tecLIMIT_EXCEEDED));
+                    paymentTotal(2),
+                    paymentInterval(3600 * 24),
+                    ter(tecLIMIT_EXCEEDED),
+                    THISLINE);
             },
             nullptr);
     }
