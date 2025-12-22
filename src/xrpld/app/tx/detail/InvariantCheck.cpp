@@ -90,7 +90,7 @@ operator|(Privilege lhs, Privilege rhs)
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, amendment, privileges, ...) \
+#define TRANSACTION(tag, value, name, delegatable, amendment, privileges, emitable, ...) \
     case tag: {                                                                \
         return (privileges) & priv;                                            \
     }

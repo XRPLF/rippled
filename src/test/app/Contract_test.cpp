@@ -2042,64 +2042,6 @@ class Contract_test : public beast::unit_test::suite
     }
 
     void
-    testExitWith(FeatureBitset features)
-    {
-        testcase("exit with");
-
-        using namespace jtx;
-
-        // Env env{
-        //     *this,
-        //     envconfig(),
-        //     features,
-        //     nullptr,
-        //     // beast::severities::kWarning
-        //     beast::severities::kTrace};
-        Env env{*this, features};
-
-        auto const alice = Account{"alice"};
-        auto const bob = Account{"bob"};
-        auto const gw = Account{"gw"};
-        auto const USD = gw["USD"];
-        env.fund(XRP(10'000), alice, bob);
-        env.close();
-
-        std::string wasmHex = loadContractWasmStr("exit_with");
-        auto const [contractAccount, contractHash, _] = setContract(
-            env,
-            tesSUCCESS,
-            contract::create(alice, wasmHex),
-            contract::add_instance_param(
-                tfSendAmount, "amount", "AMOUNT", XRP(2000)),
-            contract::add_instance_param(0, "uint8", "UINT8", 1),
-            contract::add_function("exit", {}),
-            fee(XRP(200)));
-
-        // {
-        //     Json::Value params;
-        //     params[jss::ledger_index] = env.current()->seq() - 1;
-        //     params[jss::transactions] = true;
-        //     params[jss::expand] = true;
-        //     auto const jrr = env.rpc("json", "ledger", to_string(params));
-        //     std::cout << jrr << std::endl;
-        // }
-
-        env(contract::call(alice, contractAccount, "exit"),
-            escrow::comp_allowance(1000000),
-            ter(tesSUCCESS));
-        env.close();
-
-        // {
-        //     Json::Value params;
-        //     params[jss::ledger_index] = env.current()->seq() - 1;
-        //     params[jss::transactions] = true;
-        //     params[jss::expand] = true;
-        //     auto const jrr = env.rpc("json", "ledger", to_string(params));
-        //     std::cout << jrr << std::endl;
-        // }
-    }
-
-    void
     testEasyMode(FeatureBitset features)
     {
         testcase("easy mode");
@@ -2180,7 +2122,6 @@ class Contract_test : public beast::unit_test::suite
         testFunctionParameters(features);
         testEmit(features);
         // testEvents(features);
-        // testExitWith(features);
     }
 
 public:

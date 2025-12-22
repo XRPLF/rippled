@@ -131,7 +131,7 @@ ContractCall::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.trace())
             << "ContractCall: FunctionName: " << functionNameHexStr
-            << " does not exist in contract.";
+            << " does not exist in contract abi.";
         return temMALFORMED;
     }
 

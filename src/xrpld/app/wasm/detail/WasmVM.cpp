@@ -123,7 +123,6 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     WASM_IMPORT_FUNC2(i, emitBuiltTxn, "emit_built_txn", hfs,                                                2'000);
     WASM_IMPORT_FUNC2(i, emitTxn, "emit_txn", hfs,                                                           2'000);
     WASM_IMPORT_FUNC2(i, emitEvent, "emit_event", hfs,                                                          70);
-    WASM_IMPORT_FUNC2(i, exitWith, "exit_with", hfs,                                                            70);
     // clang-format on
 }
 

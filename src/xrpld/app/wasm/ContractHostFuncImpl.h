@@ -118,9 +118,6 @@ public:
     Expected<int32_t, HostFunctionError>
     emitEvent(std::string_view const& eventName, STJson const& eventData)
         override;
-
-    Expected<int32_t, HostFunctionError>
-    exitWith(int32_t code, std::string_view const& msg) override;
 };
 
 }  // namespace ripple

@@ -643,12 +643,6 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
-    exitWith(int32_t code, std::string_view const& msg)
-    {
-        return Unexpected(HostFunctionError::INTERNAL);
-    }
-
     virtual ~HostFunctions() = default;
     // LCOV_EXCL_STOP
 };

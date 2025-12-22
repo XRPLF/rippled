@@ -25,6 +25,7 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Emitable.h>
 
 namespace ripple {
 
@@ -886,6 +887,13 @@ Expected<int32_t, HostFunctionError>
 ContractHostFunctionsImpl::buildTxn(std::uint16_t const& txType)
 {
     auto j = getJournal();
+    auto& app = contractCtx.applyCtx.app;
+
+    if (!Emitable::getInstance().isEmitable(txType))
+    {
+        JLOG(j.trace()) << "Transaction type: " << txType << " is not emitable.";
+        return Unexpected(HostFunctionError::SUBMIT_TXN_FAILURE);
+    }
 
     try
     {
@@ -898,6 +906,8 @@ ContractHostFunctionsImpl::buildTxn(std::uint16_t const& txType)
         jv[sfSequence] = contractCtx.result.nextSequence;
         jv[sfAccount] = to_string(contractCtx.result.contractAccount);
         jv[sfSigningPubKey] = "";
+        if (app.config().NETWORK_ID != 0)
+            jv[sfNetworkID] = app.config().NETWORK_ID;
 
         STParsedJSONObject parsed("txn", jv);
         contractCtx.built_txns.push_back(*parsed.object);
@@ -1100,14 +1110,6 @@ ContractHostFunctionsImpl::emitEvent(
                         << "]: Exception in emitEvent: " << e.what();
         return Unexpected(HostFunctionError::INTERNAL);
     }
-}
-
-Expected<int32_t, HostFunctionError>
-ContractHostFunctionsImpl::exitWith(int32_t code, std::string_view const& msg)
-{
-    contractCtx.result.exitReason = std::string(msg);
-    contractCtx.result.exitCode = code;
-    return code;
 }
 
 }  // namespace ripple

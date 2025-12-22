@@ -2562,38 +2562,6 @@ emitEvent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         rt, params, results, hf->emitEvent(*name, *parsed), index);
 }
 
-wasm_trap_t*
-exitWith_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
-{
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const code = getDataInt32(rt, params, index);
-    if (!code)
-    {
-        return hfResult(results, code.error());
-    }
-
-    if (params->data[2].of.i32 > maxWasmDataLength)
-    {
-        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
-    }
-
-    auto const msg = getDataString(rt, params, index);
-    if (!msg)
-    {
-        return hfResult(results, msg.error());
-    }
-
-    // Call exitWith to store the exit code and reason
-    [[maybe_unused]] auto result = hf->exitWith(*code, *msg);
-
-    // ALWAYS return a trap to halt execution
-    // This ensures WASM stops here
-    return static_cast<wasm_trap_t*>(WasmEngine::instance().newTrap(*msg));
-}
-
 // LCOV_EXCL_START
 namespace test {
 

@@ -26,6 +26,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/Emitable.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 namespace ripple {
