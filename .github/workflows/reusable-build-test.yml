@@ -8,11 +8,6 @@ name: Build and test
 on:
   workflow_call:
     inputs:
-      build_dir:
-        description: "The directory where to build."
-        required: false
-        type: string
-        default: ".build"
       os:
         description: 'The operating system to use for the build ("linux", "macos", "windows").'
         required: true
@@ -46,7 +41,6 @@ jobs:
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
       max-parallel: 10
     with:
-      build_dir: ${{ inputs.build_dir }}
       build_only: ${{ matrix.build_only }}
       build_type: ${{ matrix.build_type }}
       cmake_args: ${{ matrix.cmake_args }}
