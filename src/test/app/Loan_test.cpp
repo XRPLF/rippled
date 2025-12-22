@@ -372,7 +372,7 @@ protected:
             if (auto loan = env.le(loanKeylet); env.test.BEAST_EXPECT(loan))
             {
                 env.test.BEAST_EXPECT(
-                    loan->at(sfPreviousPaymentDate) == previousPaymentDate);
+                    loan->at(sfPreviousPaymentDueDate) == previousPaymentDate);
                 env.test.BEAST_EXPECT(
                     loan->at(sfPaymentRemaining) == paymentRemaining);
                 env.test.BEAST_EXPECT(
@@ -507,7 +507,7 @@ protected:
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
             return LoanState{
-                .previousPaymentDate = loan->at(sfPreviousPaymentDate),
+                .previousPaymentDate = loan->at(sfPreviousPaymentDueDate),
                 .startDate = tp{d{loan->at(sfStartDate)}},
                 .nextPaymentDate = loan->at(sfNextPaymentDueDate),
                 .paymentRemaining = loan->at(sfPaymentRemaining),
@@ -1454,7 +1454,7 @@ protected:
             BEAST_EXPECT(
                 loan->at(sfPaymentInterval) == *loanParams.payInterval);
             BEAST_EXPECT(loan->at(sfGracePeriod) == *loanParams.gracePd);
-            BEAST_EXPECT(loan->at(sfPreviousPaymentDate) == 0);
+            BEAST_EXPECT(loan->at(sfPreviousPaymentDueDate) == 0);
             BEAST_EXPECT(
                 loan->at(sfNextPaymentDueDate) ==
                 startDate + *loanParams.payInterval);
@@ -3597,13 +3597,39 @@ protected:
                 env(tx);
                 env.close();
 
-                testcase("Vault maximum value exceeded");
+                testcase("Vault at maximum value");
                 env(set(issuer, broker.brokerID, principalRequest),
                     counterparty(lender),
                     interestRate(TenthBips32(10'000)),
                     sig(sfCounterpartySignature, lender),
                     fee(env.current()->fees().base * 5),
-                    ter(tecLIMIT_EXCEEDED));
+                    ter(tecLIMIT_EXCEEDED),
+                    THISLINE);
+            },
+            nullptr);
+
+        testCase(
+            [&, this](Env& env, BrokerInfo const& broker, auto&) {
+                using namespace loan;
+                Number const principalRequest = broker.asset(1'000).value();
+                Vault vault{env};
+                auto tx = vault.set({.owner = lender, .id = broker.vaultID});
+                tx[sfAssetsMaximum] =
+                    BrokerParameters::defaults().vaultDeposit +
+                    broker.asset(1).number();
+                env(tx);
+                env.close();
+
+                testcase("Vault maximum value exceeded");
+                env(set(issuer, broker.brokerID, principalRequest),
+                    counterparty(lender),
+                    interestRate(TenthBips32(100'000)),
+                    sig(sfCounterpartySignature, lender),
+                    fee(env.current()->fees().base * 5),
+                    paymentTotal(2),
+                    paymentInterval(3600 * 24),
+                    ter(tecLIMIT_EXCEEDED),
+                    THISLINE);
             },
             nullptr);
     }
@@ -3841,7 +3867,7 @@ protected:
             BEAST_EXPECT(loan[sfPaymentInterval] == 60);
             BEAST_EXPECT(loan[sfPeriodicPayment] == "1000000000");
             BEAST_EXPECT(loan[sfPaymentRemaining] == 1);
-            BEAST_EXPECT(!loan.isMember(sfPreviousPaymentDate));
+            BEAST_EXPECT(!loan.isMember(sfPreviousPaymentDueDate));
             BEAST_EXPECT(loan[sfPrincipalOutstanding] == "1000000000");
             BEAST_EXPECT(loan[sfTotalValueOutstanding] == "1000000000");
             BEAST_EXPECT(!loan.isMember(sfLoanScale));
@@ -6048,7 +6074,7 @@ protected:
     {
         // --- PoC Summary ----------------------------------------------------
         // Scenario: Borrower makes one periodic payment early (before next due)
-        // so doPayment sets sfPreviousPaymentDate to the (future)
+        // so doPayment sets sfPreviousPaymentDueDate to the (future)
         // sfNextPaymentDueDate and advances sfNextPaymentDueDate by one
         // interval. Borrower then immediately performs a full-payment
         // (tfLoanFullPayment). Why it matters: Full-payment interest accrual
