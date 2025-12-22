@@ -282,6 +282,15 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     if (!vault)
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    if (vault->at(sfAssetsMaximum) != 0 &&
+        vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
+    {
+        JLOG(ctx.j.warn())
+            << "Vault at maximum assets limit. Can't add another loan.";
+        return tecLIMIT_EXCEEDED;
+    }
+
     Asset const asset = vault->at(sfAsset);
 
     auto const vaultPseudo = vault->at(sfAccount);
@@ -411,8 +420,12 @@ LoanSet::doApply()
         principalRequested,
         properties.loanState.managementFeeDue);
 
-    if (vaultSle->at(sfAssetsMaximum) != 0 &&
-        vaultTotalProxy + state.interestDue > vaultSle->at(sfAssetsMaximum))
+    auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
+    XRPL_ASSERT_PARTS(
+        vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
+        "ripple::LoanSet::doApply",
+        "Vault is below maximum limit");
+    if (vaultMaximum != 0 && state.interestDue > vaultMaximum - vaultTotalProxy)
     {
         JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
         return tecLIMIT_EXCEEDED;
@@ -600,7 +613,7 @@ LoanSet::doApply()
     loan->at(sfTotalValueOutstanding) = properties.loanState.valueOutstanding;
     loan->at(sfManagementFeeOutstanding) =
         properties.loanState.managementFeeDue;
-    loan->at(sfPreviousPaymentDate) = 0;
+    loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
     view.insert(loan);

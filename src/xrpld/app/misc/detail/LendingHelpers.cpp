@@ -1669,7 +1669,7 @@ loanMakePayment(
 
     Number const periodicPayment = loan->at(sfPeriodicPayment);
 
-    auto prevPaymentDateProxy = loan->at(sfPreviousPaymentDate);
+    auto prevPaymentDateProxy = loan->at(sfPreviousPaymentDueDate);
     std::uint32_t const startDate = loan->at(sfStartDate);
 
     std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
