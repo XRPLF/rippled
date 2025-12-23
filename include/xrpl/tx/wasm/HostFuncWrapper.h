@@ -300,4 +300,96 @@ using floatLog_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, int32
 wasm_trap_t*
 floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
+// Contract-specific host function wrappers
+
+using instanceParam_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+instanceParam_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using functionParam_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+functionParam_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using getDataObjectField_proto =
+    int32_t(uint8_t*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+getDataObjectField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using getDataNestedObjectField_proto =
+    int32_t(uint8_t*, int32_t, uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+getDataNestedObjectField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using setDataObjectField_proto =
+    int32_t(uint8_t*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+setDataObjectField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using setDataNestedObjectField_proto =
+    int32_t(uint8_t*, int32_t, uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+setDataNestedObjectField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using getDataArrayElementField_proto =
+    int32_t(uint8_t*, int32_t, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+getDataArrayElementField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using getDataNestedArrayElementField_proto = int32_t(
+    uint8_t*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+getDataNestedArrayElementField_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using setDataArrayElementField_proto =
+    int32_t(uint8_t*, int32_t, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+setDataArrayElementField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using setDataNestedArrayElementField_proto = int32_t(
+    uint8_t*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+setDataNestedArrayElementField_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using buildTxn_proto = int32_t(int32_t);
+wasm_trap_t*
+buildTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using addTxnField_proto = int32_t(int32_t, int32_t, uint8_t const*, int32_t);
+wasm_trap_t*
+addTxnField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using emitBuiltTxn_proto = int32_t(int32_t);
+wasm_trap_t*
+emitBuiltTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using emitTxn_proto = int32_t(uint8_t const*, int32_t);
+wasm_trap_t*
+emitTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using emitEvent_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
+wasm_trap_t*
+emitEvent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
 }  // namespace xrpl

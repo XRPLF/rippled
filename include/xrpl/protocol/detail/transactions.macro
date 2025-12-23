@@ -3,7 +3,7 @@
 #endif
 
 /**
- * TRANSACTION(tag, value, name, delegable, amendments, privileges, fields)
+ * TRANSACTION(tag, value, name, delegable, amendments, privileges, emitable, fields)
  *
  * To ease maintenance, you may replace any unneeded values with "..."
  * e.g. #define TRANSACTION(tag, value, name, ...)
@@ -28,6 +28,7 @@ TRANSACTION(ttPAYMENT, 0, Payment,
     Delegation::delegable,
     uint256{},
     createAcct,
+    Emittance::emitable,
     ({
     {sfDestination, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
@@ -48,6 +49,7 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfDestination, soeREQUIRED},
     {sfDestinationTag, soeOPTIONAL},
@@ -67,6 +69,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfOwner, soeREQUIRED},
     {sfOfferSequence, soeREQUIRED},
@@ -85,6 +88,7 @@ TRANSACTION(ttACCOUNT_SET, 3, AccountSet,
     Delegation::notDelegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfEmailHash, soeOPTIONAL},
     {sfWalletLocator, soeOPTIONAL},
@@ -106,6 +110,7 @@ TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfOwner, soeREQUIRED},
     {sfOfferSequence, soeREQUIRED},
@@ -119,6 +124,7 @@ TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey,
     Delegation::notDelegable,
     uint256{},
     noPriv,
+    Emittance::notEmitable,
     ({
     {sfRegularKey, soeOPTIONAL},
 }))
@@ -133,6 +139,7 @@ TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfTakerPays, soeREQUIRED},
     {sfTakerGets, soeREQUIRED},
@@ -149,6 +156,7 @@ TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfOfferSequence, soeREQUIRED},
 }))
@@ -163,6 +171,7 @@ TRANSACTION(ttTICKET_CREATE, 10, TicketCreate,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfTicketCount, soeREQUIRED},
 }))
@@ -179,6 +188,7 @@ TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
     Delegation::notDelegable,
     uint256{},
     noPriv,
+    Emittance::notEmitable,
     ({
     {sfSignerQuorum, soeREQUIRED},
     {sfSignerEntries, soeOPTIONAL},
@@ -192,6 +202,7 @@ TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfDestination, soeREQUIRED},
     {sfAmount, soeREQUIRED},
@@ -209,6 +220,7 @@ TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfChannel, soeREQUIRED},
     {sfAmount, soeREQUIRED},
@@ -223,6 +235,7 @@ TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfChannel, soeREQUIRED},
     {sfAmount, soeOPTIONAL},
@@ -240,6 +253,7 @@ TRANSACTION(ttCHECK_CREATE, 16, CheckCreate,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfDestination, soeREQUIRED},
     {sfSendMax, soeREQUIRED},
@@ -256,6 +270,7 @@ TRANSACTION(ttCHECK_CASH, 17, CheckCash,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfCheckID, soeREQUIRED},
     {sfAmount, soeOPTIONAL},
@@ -270,6 +285,7 @@ TRANSACTION(ttCHECK_CANCEL, 18, CheckCancel,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfCheckID, soeREQUIRED},
 }))
@@ -282,6 +298,7 @@ TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::notEmitable,
     ({
     {sfAuthorize, soeOPTIONAL},
     {sfUnauthorize, soeOPTIONAL},
@@ -297,6 +314,7 @@ TRANSACTION(ttTRUST_SET, 20, TrustSet,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfLimitAmount, soeOPTIONAL},
     {sfQualityIn, soeOPTIONAL},
@@ -311,6 +329,7 @@ TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
     Delegation::notDelegable,
     uint256{},
     mustDeleteAcct,
+    Emittance::notEmitable,
     ({
     {sfDestination, soeREQUIRED},
     {sfDestinationTag, soeOPTIONAL},
@@ -327,6 +346,7 @@ TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint,
     Delegation::delegable,
     uint256{},
     changeNFTCounts,
+    Emittance::emitable,
     ({
     {sfNFTokenTaxon, soeREQUIRED},
     {sfTransferFee, soeOPTIONAL},
@@ -345,6 +365,7 @@ TRANSACTION(ttNFTOKEN_BURN, 26, NFTokenBurn,
     Delegation::delegable,
     uint256{},
     changeNFTCounts,
+    Emittance::emitable,
     ({
     {sfNFTokenID, soeREQUIRED},
     {sfOwner, soeOPTIONAL},
@@ -358,6 +379,7 @@ TRANSACTION(ttNFTOKEN_CREATE_OFFER, 27, NFTokenCreateOffer,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfNFTokenID, soeREQUIRED},
     {sfAmount, soeREQUIRED},
@@ -374,6 +396,7 @@ TRANSACTION(ttNFTOKEN_CANCEL_OFFER, 28, NFTokenCancelOffer,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfNFTokenOffers, soeREQUIRED},
 }))
@@ -386,6 +409,7 @@ TRANSACTION(ttNFTOKEN_ACCEPT_OFFER, 29, NFTokenAcceptOffer,
     Delegation::delegable,
     uint256{},
     noPriv,
+    Emittance::emitable,
     ({
     {sfNFTokenBuyOffer, soeOPTIONAL},
     {sfNFTokenSellOffer, soeOPTIONAL},
@@ -400,6 +424,7 @@ TRANSACTION(ttCLAWBACK, 30, Clawback,
     Delegation::delegable,
     featureClawback,
     noPriv,
+    Emittance::emitable,
     ({
     {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfHolder, soeOPTIONAL},
@@ -413,6 +438,7 @@ TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
     Delegation::delegable,
     featureAMMClawback,
     mayDeleteAcct | overrideFreeze,
+    Emittance::emitable,
     ({
     {sfHolder, soeREQUIRED},
     {sfAsset, soeREQUIRED},
@@ -428,6 +454,7 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
     Delegation::delegable,
     featureAMM,
     createPseudoAcct,
+    Emittance::emitable,
     ({
     {sfAmount, soeREQUIRED},
     {sfAmount2, soeREQUIRED},
@@ -442,6 +469,7 @@ TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
     Delegation::delegable,
     featureAMM,
     noPriv,
+    Emittance::emitable,
     ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
@@ -460,6 +488,7 @@ TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
     Delegation::delegable,
     featureAMM,
     mayDeleteAcct,
+    Emittance::emitable,
     ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
@@ -477,6 +506,7 @@ TRANSACTION(ttAMM_VOTE, 38, AMMVote,
     Delegation::delegable,
     featureAMM,
     noPriv,
+    Emittance::emitable,
     ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
@@ -491,6 +521,7 @@ TRANSACTION(ttAMM_BID, 39, AMMBid,
     Delegation::delegable,
     featureAMM,
     noPriv,
+    Emittance::emitable,
     ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
@@ -507,6 +538,7 @@ TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
     Delegation::delegable,
     featureAMM,
     mustDeleteAcct,
+    Emittance::emitable,
     ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
@@ -520,6 +552,7 @@ TRANSACTION(ttXCHAIN_CREATE_CLAIM_ID, 41, XChainCreateClaimID,
     Delegation::delegable,
     featureXChainBridge,
     noPriv,
+    Emittance::emitable,
     ({
     {sfXChainBridge, soeREQUIRED},
     {sfSignatureReward, soeREQUIRED},
@@ -531,6 +564,7 @@ TRANSACTION(ttXCHAIN_COMMIT, 42, XChainCommit,
     Delegation::delegable,
     featureXChainBridge,
     noPriv,
+    Emittance::emitable,
     ({
     {sfXChainBridge, soeREQUIRED},
     {sfXChainClaimID, soeREQUIRED},
@@ -543,6 +577,7 @@ TRANSACTION(ttXCHAIN_CLAIM, 43, XChainClaim,
     Delegation::delegable,
     featureXChainBridge,
     noPriv,
+    Emittance::emitable,
     ({
     {sfXChainBridge, soeREQUIRED},
     {sfXChainClaimID, soeREQUIRED},
@@ -556,6 +591,7 @@ TRANSACTION(ttXCHAIN_ACCOUNT_CREATE_COMMIT, 44, XChainAccountCreateCommit,
     Delegation::delegable,
     featureXChainBridge,
     noPriv,
+    Emittance::emitable,
     ({
     {sfXChainBridge, soeREQUIRED},
     {sfDestination, soeREQUIRED},
@@ -568,6 +604,7 @@ TRANSACTION(ttXCHAIN_ADD_CLAIM_ATTESTATION, 45, XChainAddClaimAttestation,
     Delegation::delegable,
     featureXChainBridge,
     createAcct,
+    Emittance::emitable,
     ({
     {sfXChainBridge, soeREQUIRED},
 
@@ -589,6 +626,7 @@ TRANSACTION(ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, 46,
     Delegation::delegable,
     featureXChainBridge,
     createAcct,
+    Emittance::emitable,
     ({
     {sfXChainBridge, soeREQUIRED},
 
@@ -610,6 +648,7 @@ TRANSACTION(ttXCHAIN_MODIFY_BRIDGE, 47, XChainModifyBridge,
     Delegation::delegable,
     featureXChainBridge,
     noPriv,
+    Emittance::emitable,
     ({
     {sfXChainBridge, soeREQUIRED},
     {sfSignatureReward, soeOPTIONAL},
@@ -621,6 +660,7 @@ TRANSACTION(ttXCHAIN_CREATE_BRIDGE, 48, XChainCreateBridge,
     Delegation::delegable,
     featureXChainBridge,
     noPriv,
+    Emittance::emitable,
     ({
     {sfXChainBridge, soeREQUIRED},
     {sfSignatureReward, soeREQUIRED},
@@ -635,6 +675,7 @@ TRANSACTION(ttDID_SET, 49, DIDSet,
     Delegation::delegable,
     featureDID,
     noPriv,
+    Emittance::emitable,
     ({
     {sfDIDDocument, soeOPTIONAL},
     {sfURI, soeOPTIONAL},
@@ -649,6 +690,7 @@ TRANSACTION(ttDID_DELETE, 50, DIDDelete,
     Delegation::delegable,
     featureDID,
     noPriv,
+    Emittance::emitable,
     ({}))
 
 /** This transaction type creates an Oracle instance */
@@ -659,6 +701,7 @@ TRANSACTION(ttORACLE_SET, 51, OracleSet,
     Delegation::delegable,
     featurePriceOracle,
     noPriv,
+    Emittance::emitable,
     ({
     {sfOracleDocumentID, soeREQUIRED},
     {sfProvider, soeOPTIONAL},
@@ -676,6 +719,7 @@ TRANSACTION(ttORACLE_DELETE, 52, OracleDelete,
     Delegation::delegable,
     featurePriceOracle,
     noPriv,
+    Emittance::emitable,
     ({
     {sfOracleDocumentID, soeREQUIRED},
 }))
@@ -688,6 +732,7 @@ TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix,
     Delegation::delegable,
     fixNFTokenPageLinks,
     noPriv,
+    Emittance::emitable,
     ({
     {sfLedgerFixType, soeREQUIRED},
     {sfOwner, soeOPTIONAL},
@@ -701,6 +746,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate,
     Delegation::delegable,
     featureMPTokensV1,
     createMPTIssuance,
+    Emittance::emitable,
     ({
     {sfAssetScale, soeOPTIONAL},
     {sfTransferFee, soeOPTIONAL},
@@ -718,6 +764,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy,
     Delegation::delegable,
     featureMPTokensV1,
     destroyMPTIssuance,
+    Emittance::emitable,
     ({
     {sfMPTokenIssuanceID, soeREQUIRED},
 }))
@@ -730,6 +777,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     Delegation::delegable,
     featureMPTokensV1,
     noPriv,
+    Emittance::emitable,
     ({
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfHolder, soeOPTIONAL},
@@ -747,6 +795,7 @@ TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize,
     Delegation::delegable,
     featureMPTokensV1,
     mustAuthorizeMPT,
+    Emittance::emitable,
     ({
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfHolder, soeOPTIONAL},
@@ -760,6 +809,7 @@ TRANSACTION(ttCREDENTIAL_CREATE, 58, CredentialCreate,
     Delegation::delegable,
     featureCredentials,
     noPriv,
+    Emittance::emitable,
     ({
     {sfSubject, soeREQUIRED},
     {sfCredentialType, soeREQUIRED},
@@ -775,6 +825,7 @@ TRANSACTION(ttCREDENTIAL_ACCEPT, 59, CredentialAccept,
     Delegation::delegable,
     featureCredentials,
     noPriv,
+    Emittance::emitable,
     ({
     {sfIssuer, soeREQUIRED},
     {sfCredentialType, soeREQUIRED},
@@ -788,6 +839,7 @@ TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete,
     Delegation::delegable,
     featureCredentials,
     noPriv,
+    Emittance::emitable,
     ({
     {sfSubject, soeOPTIONAL},
     {sfIssuer, soeOPTIONAL},
@@ -802,6 +854,7 @@ TRANSACTION(ttNFTOKEN_MODIFY, 61, NFTokenModify,
     Delegation::delegable,
     featureDynamicNFT,
     noPriv,
+    Emittance::emitable,
     ({
     {sfNFTokenID, soeREQUIRED},
     {sfOwner, soeOPTIONAL},
@@ -816,6 +869,7 @@ TRANSACTION(ttPERMISSIONED_DOMAIN_SET, 62, PermissionedDomainSet,
     Delegation::delegable,
     featurePermissionedDomains,
     noPriv,
+    Emittance::emitable,
     ({
     {sfDomainID, soeOPTIONAL},
     {sfAcceptedCredentials, soeREQUIRED},
@@ -829,6 +883,7 @@ TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete,
     Delegation::delegable,
     featurePermissionedDomains,
     noPriv,
+    Emittance::emitable,
     ({
     {sfDomainID, soeREQUIRED},
 }))
@@ -841,6 +896,7 @@ TRANSACTION(ttDELEGATE_SET, 64, DelegateSet,
     Delegation::notDelegable,
     featurePermissionDelegationV1_1,
     noPriv,
+    Emittance::notEmitable,
     ({
     {sfAuthorize, soeREQUIRED},
     {sfPermissions, soeREQUIRED},
@@ -854,6 +910,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     Delegation::notDelegable,
     featureSingleAssetVault,
     createPseudoAcct | createMPTIssuance | mustModifyVault,
+    Emittance::emitable,
     ({
     {sfAsset, soeREQUIRED, soeMPTSupported},
     {sfAssetsMaximum, soeOPTIONAL},
@@ -872,6 +929,7 @@ TRANSACTION(ttVAULT_SET, 66, VaultSet,
     Delegation::notDelegable,
     featureSingleAssetVault,
     mustModifyVault,
+    Emittance::emitable,
     ({
     {sfVaultID, soeREQUIRED},
     {sfAssetsMaximum, soeOPTIONAL},
@@ -887,6 +945,7 @@ TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
     Delegation::notDelegable,
     featureSingleAssetVault,
     mustDeleteAcct | destroyMPTIssuance | mustModifyVault,
+    Emittance::emitable,
     ({
     {sfVaultID, soeREQUIRED},
 }))
@@ -899,6 +958,7 @@ TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
     Delegation::notDelegable,
     featureSingleAssetVault,
     mayAuthorizeMPT | mustModifyVault,
+    Emittance::emitable,
     ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
@@ -912,6 +972,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     Delegation::notDelegable,
     featureSingleAssetVault,
     mayDeleteMPT | mayAuthorizeMPT | mustModifyVault,
+    Emittance::emitable,
     ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
@@ -927,6 +988,7 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
     Delegation::notDelegable,
     featureSingleAssetVault,
     mayDeleteMPT | mustModifyVault,
+    Emittance::emitable,
     ({
     {sfVaultID, soeREQUIRED},
     {sfHolder, soeREQUIRED},
@@ -941,6 +1003,7 @@ TRANSACTION(ttBATCH, 71, Batch,
     Delegation::notDelegable,
     featureBatch,
     noPriv,
+    Emittance::notEmitable,
     ({
     {sfRawTransactions, soeREQUIRED},
     {sfBatchSigners, soeOPTIONAL},
@@ -955,7 +1018,9 @@ TRANSACTION(ttBATCH, 71, Batch,
 TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
     Delegation::notDelegable,
     featureLendingProtocol,
-    createPseudoAcct | mayAuthorizeMPT, ({
+    createPseudoAcct | mayAuthorizeMPT,
+    Emittance::emitable,
+    ({
     {sfVaultID, soeREQUIRED},
     {sfLoanBrokerID, soeOPTIONAL},
     {sfData, soeOPTIONAL},
@@ -972,7 +1037,9 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
 TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
     Delegation::notDelegable,
     featureLendingProtocol,
-    mustDeleteAcct | mayAuthorizeMPT, ({
+    mustDeleteAcct | mayAuthorizeMPT,
+    Emittance::emitable,
+    ({
     {sfLoanBrokerID, soeREQUIRED},
 }))
 
@@ -983,7 +1050,9 @@ TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
 TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit,
     Delegation::notDelegable,
     featureLendingProtocol,
-    noPriv, ({
+    noPriv,
+    Emittance::emitable,
+    ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
 }))
@@ -995,7 +1064,9 @@ TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit,
 TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
     Delegation::notDelegable,
     featureLendingProtocol,
-    mayAuthorizeMPT, ({
+    mayAuthorizeMPT,
+    Emittance::emitable,
+    ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfDestination, soeOPTIONAL},
@@ -1010,7 +1081,9 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
 TRANSACTION(ttLOAN_BROKER_COVER_CLAWBACK, 78, LoanBrokerCoverClawback,
     Delegation::notDelegable,
     featureLendingProtocol,
-    noPriv, ({
+    noPriv,
+    Emittance::emitable,
+    ({
     {sfLoanBrokerID, soeOPTIONAL},
     {sfAmount, soeOPTIONAL, soeMPTSupported},
 }))
@@ -1022,7 +1095,9 @@ TRANSACTION(ttLOAN_BROKER_COVER_CLAWBACK, 78, LoanBrokerCoverClawback,
 TRANSACTION(ttLOAN_SET, 80, LoanSet,
     Delegation::notDelegable,
     featureLendingProtocol,
-    mayAuthorizeMPT | mustModifyVault, ({
+    mayAuthorizeMPT | mustModifyVault,
+    Emittance::emitable,
+    ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfData, soeOPTIONAL},
     {sfCounterparty, soeOPTIONAL},
@@ -1049,7 +1124,9 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
 TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
     Delegation::notDelegable,
     featureLendingProtocol,
-    noPriv, ({
+    noPriv,
+    Emittance::emitable,
+({
     {sfLoanID, soeREQUIRED},
 }))
 
@@ -1063,7 +1140,9 @@ TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
     // All of the LoanManage options will modify the vault, but the
     // transaction can succeed without options, essentially making it
     // a noop.
-    mayModifyVault, ({
+    mayModifyVault,
+    Emittance::emitable,
+    ({
     {sfLoanID, soeREQUIRED},
 }))
 
@@ -1074,9 +1153,108 @@ TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
 TRANSACTION(ttLOAN_PAY, 84, LoanPay,
     Delegation::notDelegable,
     featureLendingProtocol,
-    mayAuthorizeMPT | mustModifyVault, ({
+    mayAuthorizeMPT | mustModifyVault,
+    Emittance::emitable,
+    ({
     {sfLoanID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
+}))
+
+/** This transaction type creates the smart contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/contract/ContractCreate.h>
+#endif
+TRANSACTION(ttCONTRACT_CREATE, 85, ContractCreate,
+    Delegation::delegable,
+    featureSmartContract,
+    createPseudoAcct,
+    Emittance::emitable,
+    ({
+    {sfContractCode, soeOPTIONAL},
+    {sfContractHash, soeOPTIONAL},
+    {sfFunctions, soeOPTIONAL},
+    {sfInstanceParameters, soeOPTIONAL},
+    {sfInstanceParameterValues, soeOPTIONAL},
+    {sfURI, soeOPTIONAL},
+}))
+
+/** This transaction type modifies the smart contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/contract/ContractModify.h>
+#endif
+TRANSACTION(ttCONTRACT_MODIFY, 86, ContractModify,
+    Delegation::delegable,
+    featureSmartContract,
+    noPriv,
+    Emittance::emitable,
+    ({
+    {sfContractAccount, soeOPTIONAL},
+    {sfOwner, soeOPTIONAL},
+    {sfContractCode, soeOPTIONAL},
+    {sfContractHash, soeOPTIONAL},
+    {sfFunctions, soeOPTIONAL},
+    {sfInstanceParameters, soeOPTIONAL},
+    {sfInstanceParameterValues, soeOPTIONAL},
+    {sfURI, soeOPTIONAL},
+}))
+
+/** This transaction type deletes the smart contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/contract/ContractDelete.h>
+#endif
+TRANSACTION(ttCONTRACT_DELETE, 87, ContractDelete,
+    Delegation::delegable,
+    featureSmartContract,
+    mustDeleteAcct,
+    Emittance::emitable,
+    ({
+    {sfContractAccount, soeREQUIRED},
+}))
+
+/** This transaction type claws back funds from the contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/contract/ContractClawback.h>
+#endif
+TRANSACTION(ttCONTRACT_CLAWBACK, 88, ContractClawback,
+    Delegation::delegable,
+    featureSmartContract,
+    noPriv,
+    Emittance::emitable,
+    ({
+    {sfContractAccount, soeOPTIONAL},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
+}))
+
+/** This transaction type deletes user data. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/contract/ContractUserDelete.h>
+#endif
+TRANSACTION(ttCONTRACT_USER_DELETE, 89, ContractUserDelete,
+    Delegation::delegable,
+    featureSmartContract,
+    noPriv,
+    Emittance::notEmitable,
+    ({
+    {sfContractAccount, soeREQUIRED},
+    {sfFunctionName, soeREQUIRED},
+    {sfParameters, soeOPTIONAL},
+    {sfComputationAllowance, soeREQUIRED},
+}))
+
+/** This transaction type calls the smart contract. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/contract/ContractCall.h>
+#endif
+TRANSACTION(ttCONTRACT_CALL, 90, ContractCall,
+    Delegation::delegable,
+    featureSmartContract,
+    noPriv,
+    Emittance::notEmitable,
+    ({
+    {sfContractAccount, soeREQUIRED},
+    {sfFunctionName, soeREQUIRED},
+    {sfParameters, soeOPTIONAL},
+    {sfComputationAllowance, soeREQUIRED},
 }))
 
 /** This system-generated transaction type is used to update the status of the various amendments.
@@ -1090,6 +1268,7 @@ TRANSACTION(ttAMENDMENT, 100, EnableAmendment,
     Delegation::notDelegable,
     uint256{},
     noPriv,
+    Emittance::notEmitable,
     ({
     {sfLedgerSequence, soeREQUIRED},
     {sfAmendment, soeREQUIRED},
@@ -1102,6 +1281,7 @@ TRANSACTION(ttFEE, 101, SetFee,
     Delegation::notDelegable,
     uint256{},
     noPriv,
+    Emittance::notEmitable,
     ({
     {sfLedgerSequence, soeOPTIONAL},
     // Old version uses raw numbers
@@ -1127,6 +1307,7 @@ TRANSACTION(ttUNL_MODIFY, 102, UNLModify,
     Delegation::notDelegable,
     uint256{},
     noPriv,
+    Emittance::notEmitable,
     ({
     {sfUNLModifyDisabling, soeREQUIRED},
     {sfLedgerSequence, soeREQUIRED},

@@ -1,12 +1,12 @@
 #pragma once
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/nft.h>
-#include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 
@@ -139,6 +139,13 @@ checkTrustlineDeepFrozen(
     AccountID const id,
     beast::Journal const j,
     Issue const& issue);
+
+TER
+transferNFToken(
+    ApplyView& view,
+    AccountID const& buyer,
+    AccountID const& seller,
+    uint256 const& nftokenID);
 
 }  // namespace nft
 

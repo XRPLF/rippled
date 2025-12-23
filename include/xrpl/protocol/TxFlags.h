@@ -212,7 +212,20 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfLoanDefault, 0x00010000)                                                                                                                     \
         TF_FLAG(tfLoanImpair, 0x00020000)                                                                                                                      \
         TF_FLAG(tfLoanUnimpair, 0x00040000),                                                                                                                   \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(Contract,                                                                                                                                      \
+        TF_FLAG(tfImmutable, 0x00010000)                                                                                                                       \
+        TF_FLAG(tfCodeImmutable, 0x00020000)                                                                                                                   \
+        TF_FLAG(tfABIImmutable, 0x00040000)                                                                                                                    \
+        TF_FLAG(tfUndeletable, 0x00080000),                                                                                                                    \
         MASK_ADJ(0))
+
+constexpr std::uint32_t tfSendAmount     = 0x00010000;
+constexpr std::uint32_t tfSendNFToken    = 0x00020000;
+constexpr std::uint32_t tfAuthorizeToken = 0x00040000;
+constexpr std::uint32_t tfContractParameterMask =
+    ~(tfSendAmount | tfSendNFToken | tfAuthorizeToken);
 
 // clang-format on
 

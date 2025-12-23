@@ -348,6 +348,22 @@ permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
 
 Keylet
 permissionedDomain(uint256 const& domainID) noexcept;
+
+Keylet
+contractSource(uint256 const& contractHash) noexcept;
+
+Keylet
+contract(uint256 const& contractHash, AccountID const& owner, std::uint32_t seq) noexcept;
+
+inline Keylet
+contract(uint256 const& contractID)
+{
+    return {ltCONTRACT, contractID};
+}
+
+Keylet
+contractData(AccountID const& owner, AccountID const& contractAccount) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

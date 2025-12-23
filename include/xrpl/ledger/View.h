@@ -3,6 +3,10 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -210,6 +214,27 @@ doWithdraw(
     XRPAmount priorBalance,
     STAmount const& amount,
     beast::Journal j);
+
+enum class SendIssuerHandling { ihSENDER_NOT_ALLOWED, ihRECEIVER_NOT_ALLOWED, ihIGNORE };
+enum class SendEscrowHandling { ehIGNORE, ehCHECK };
+enum class SendAuthHandling { ahCHECK_SENDER, ahCHECK_RECEIVER, ahBOTH, ahNEITHER };
+enum class SendFreezeHandling { fhCHECK_SENDER, fhCHECK_RECEIVER, fhBOTH, fhNEITHER };
+enum class SendTransferHandling { thIGNORE, thCHECK };
+enum class SendBalanceHandling { bhIGNORE, bhCHECK };
+
+TER
+canTransferFT(
+    ReadView const& view,
+    AccountID const& sender,
+    AccountID const& receiver,
+    STAmount const& amount,
+    beast::Journal j,
+    SendIssuerHandling issuerHandling,
+    SendEscrowHandling escrowHandling,
+    SendAuthHandling authHandling,
+    SendFreezeHandling freezeHandling,
+    SendTransferHandling transferHandling,
+    SendBalanceHandling balanceHandling);
 
 /** Deleter function prototype. Returns the status of the entry deletion
  * (if should not be skipped) and if the entry should be skipped. The status

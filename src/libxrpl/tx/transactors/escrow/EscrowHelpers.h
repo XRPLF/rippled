@@ -227,8 +227,11 @@ escrowUnlockApplyHelper<MPTIssue>(
         journal);
 }
 
+// calculateAdditionalReserve computes the owner count impact of an Escrow.
+// An escrow without a FinishFunction costs 1 reserve. With a FinishFunction,
+// each additional 500 bytes beyond the first 500 adds another reserve slot.
 template <class T>
-static uint32_t
+inline uint32_t
 calculateAdditionalReserve(T const& finishFunction)
 {
     if (!finishFunction)

@@ -9,6 +9,8 @@
 
 namespace xrpl {
 
+class Application;
+
 class HashRouter;
 class ServiceRegistry;
 
@@ -101,6 +103,24 @@ apply(
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal journal);
+
+ApplyResult
+apply(
+    ServiceRegistry& registry,
+    OpenView& view,
+    uint256 const& parentBatchId,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j);
+
+ApplyResult
+apply(
+    Application& app,
+    OpenView& view,
+    uint256 const& parentBatchId,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j);
 
 /** Enum class for return value from `applyTransaction`
 

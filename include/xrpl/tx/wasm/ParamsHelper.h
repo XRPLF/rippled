@@ -31,6 +31,7 @@ struct WasmResult
     int64_t cost;
 };
 typedef WasmResult<int32_t> EscrowResult;
+typedef WasmResult<int32_t> WasmRunResult;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -180,6 +181,43 @@ wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
 //     v.push_back({.type = WT_F64, .of = {.f64 = p}});
 //     wasmParamsHlp(v, std::forward<Types>(args)...);
 // }
+
+template <class... Types>
+inline void
+wasmParamsHlp(std::vector<WasmParam>& v, std::uint8_t const* dt, std::int32_t sz, Types&&... args)
+{
+    v.push_back({.type = WT_U8V, .of = {.u8v = {.d = dt, .sz = sz}}});
+    wasmParamsHlp(v, std::forward<Types>(args)...);
+}
+
+template <class... Types>
+inline void
+wasmParamsHlp(std::vector<WasmParam>& v, Bytes const& p, Types&&... args)
+{
+    wasmParamsHlp(v, p.data(), static_cast<std::int32_t>(p.size()), std::forward<Types>(args)...);
+}
+
+template <class... Types>
+inline void
+wasmParamsHlp(std::vector<WasmParam>& v, std::string_view const& p, Types&&... args)
+{
+    wasmParamsHlp(
+        v,
+        reinterpret_cast<std::uint8_t const*>(p.data()),
+        static_cast<std::int32_t>(p.size()),
+        std::forward<Types>(args)...);
+}
+
+template <class... Types>
+inline void
+wasmParamsHlp(std::vector<WasmParam>& v, std::string const& p, Types&&... args)
+{
+    wasmParamsHlp(
+        v,
+        reinterpret_cast<std::uint8_t const*>(p.c_str()),
+        static_cast<std::int32_t>(p.size()),
+        std::forward<Types>(args)...);
+}
 
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v)

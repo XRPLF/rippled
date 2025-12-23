@@ -72,7 +72,14 @@ struct FeeSetup
     Fees
     toFees() const
     {
-        return Fees{reference_fee, account_reserve, owner_reserve};
+        Fees f;
+        f.base = reference_fee;
+        f.reserve = account_reserve;
+        f.increment = owner_reserve;
+        f.extensionComputeLimit = extension_compute_limit;
+        f.extensionSizeLimit = extension_size_limit;
+        f.gasPrice = gas_price;
+        return f;
     }
 };
 

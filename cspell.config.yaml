@@ -99,6 +99,7 @@ words:
   - distro
   - doxyfile
   - dxrpl
+  - emittance
   - endmacro
   - exceptioned
   - Falco
@@ -248,6 +249,7 @@ words:
   - statsd
   - STATSDCOLLECTOR
   - stissue
+  - stjson
   - stnum
   - stobj
   - stobject

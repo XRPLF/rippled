@@ -1,6 +1,6 @@
+#include <xrpl/ledger/helpers/NFTokenUtils.h>
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 
 namespace xrpl {
