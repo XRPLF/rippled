@@ -5,6 +5,9 @@ ignorePaths:
   - CMakeUserPresets.json
   - Doxyfile
 language: en
+allowCompoundWords: true
+ignoreRandomStrings: true
+minWordLength: 5
 dictionaries:
   - cpp
   - en_US
@@ -25,7 +28,9 @@ ignoreRegExpList:
   - /\[[A-Za-z0-9]+\]\(https:\/\/github.com\/[A-Za-z0-9]+\)/g # Github links
   - /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g # emails
   - /-[DWw][a-zA-Z0-9_-]+=/g # compile flags
-  - /'-[DWw][a-zA-Z0-9_-]+'/g # compile flags
+  - /['"]-[DWw][a-zA-Z0-9_-]+['"]/g # compile flags
+suggestWords:
+  - xprl->xrpl
 words:
   - AMMID
   - amt
@@ -150,6 +155,7 @@ words:
   - stpath
   - stpathset
   - sttx
+  - stvar
   - superpeer
   - superpeers
   - takergets
