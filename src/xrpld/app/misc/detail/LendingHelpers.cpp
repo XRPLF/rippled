@@ -1504,6 +1504,11 @@ computeManagementFee(
 
 /*
  * Given the loan parameters, compute the derived properties of the loan.
+ *
+ * Pulls together several formulas from the XLS-66 spec, which are noted at each
+ * step, plus the concepts from 3.2.4.3 Conceptual Loan Value. They are used for
+ * to check some of the conditions in 3.2.1.5 Failure Conditions for the LoanSet
+ * transaction.
  */
 LoanProperties
 computeLoanProperties(
@@ -1528,6 +1533,14 @@ computeLoanProperties(
         minimumScale);
 }
 
+/*
+ * Given the loan parameters, compute the derived properties of the loan.
+ *
+ * Pulls together several formulas from the XLS-66 spec, which are noted at each
+ * step, plus the concepts from 3.2.4.3 Conceptual Loan Value. They are used for
+ * to check some of the conditions in 3.2.1.5 Failure Conditions for the LoanSet
+ * transaction.
+ */
 LoanProperties
 computeLoanProperties(
     Asset const& asset,
