@@ -20,15 +20,16 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
+    TER
+    doApply() override;
+
+private:
     Expected<std::pair<STAmount, STAmount>, TER>
     assetsToClawback(
         std::shared_ptr<SLE> const& vault,
         std::shared_ptr<SLE const> const& sleShareIssuance,
         AccountID const& holder,
         STAmount const& clawbackAmount);
-
-    TER
-    doApply() override;
 };
 
 }  // namespace xrpl

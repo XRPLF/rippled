@@ -97,9 +97,8 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         auto const assetsTotal = vault->at(sfAssetsTotal);
         auto const assetsAvailable = vault->at(sfAssetsAvailable);
         auto const sharesTotal = sleShareIssuance->at(sfOutstandingAmount);
-        auto const owner = vault->at(sfOwner);
-        // Vault Owner can clawback funds only when the vault has shares, but no
-        // assets
+
+        // Owner can clawback funds when the vault has shares but no assets
         if (sharesTotal != 0 && (assetsTotal != 0 || assetsAvailable != 0))
         {
             JLOG(ctx.j.debug())
@@ -209,6 +208,13 @@ VaultClawback::assetsToClawback(
     AccountID const& holder,
     STAmount const& clawbackAmount)
 {
+    if (clawbackAmount.asset() != vault->at(sfAsset))
+    {
+        // preclaim should have blocked this case, this is now an internal error
+        JLOG(j_.error()) << "VaultClawback: asset mismatch in clawback.";
+        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+    }
+
     auto const assetsAvailable = vault->at(sfAssetsAvailable);
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
@@ -419,30 +425,34 @@ VaultClawback::doApply()
         // else quietly ignore, holder balance is not zero
     }
 
-    // Transfer assets from vault to issuer.
-    if (auto const ter = accountSend(
-            view(),
-            vaultAccount,
-            account_,
-            assetsRecovered,
-            j_,
-            WaiveTransferFee::Yes);
-        !isTesSuccess(ter))
-        return ter;
-
-    // Sanity check
-    if (accountHolds(
-            view(),
-            vaultAccount,
-            assetsRecovered.asset(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_) < beast::zero)
+    if (assetsRecovered > beast::zero)
     {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultClawback: negative balance of vault assets.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
+        // Transfer assets from vault to issuer.
+        if (auto const ter = accountSend(
+                view(),
+                vaultAccount,
+                account_,
+                assetsRecovered,
+                j_,
+                WaiveTransferFee::Yes);
+            !isTesSuccess(ter))
+            return ter;
+
+        // Sanity check
+        if (accountHolds(
+                view(),
+                vaultAccount,
+                assetsRecovered.asset(),
+                FreezeHandling::fhIGNORE_FREEZE,
+                AuthHandling::ahIGNORE_AUTH,
+                j_) < beast::zero)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error())
+                << "VaultClawback: negative balance of vault assets.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
     }
 
     return tesSUCCESS;

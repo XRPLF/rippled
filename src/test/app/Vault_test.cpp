@@ -5528,11 +5528,28 @@ class Vault_test : public beast::unit_test::suite
                     }),
                     ter(tecNO_PERMISSION),
                     THISLINE);
-
-                env.close();
             }
             else
             {
+                {
+                    testcase(
+                        "VaultClawback (asset) - " + prefix +
+                        " clawback for different asset fails");
+                    auto [vault, vaultKeylet] =
+                        setupVault(asset, owner, depositor, issuer);
+
+                    Account issuer2{"issuer2"};
+                    PrettyAsset asset2 = issuer2["FOO"];
+                    env(vault.clawback({
+                            .issuer = issuer,
+                            .id = vaultKeylet.key,
+                            .holder = depositor,
+                            .amount = asset2(1).value(),
+                        }),
+                        ter(tecWRONG_ASSET),
+                        THISLINE);
+                }
+
                 {
                     testcase(
                         "VaultClawback (asset) - " + prefix +
@@ -5546,8 +5563,8 @@ class Vault_test : public beast::unit_test::suite
                         }),
                         ter(tecWRONG_ASSET),
                         THISLINE);
-                    env.close();
                 }
+
                 {
                     testcase(
                         "VaultClawback (asset) - " + prefix +
@@ -5571,7 +5588,6 @@ class Vault_test : public beast::unit_test::suite
                         }),
                         ter(tecNO_PERMISSION),
                         THISLINE);
-                    env.close();
                 }
 
                 {
@@ -5587,7 +5603,6 @@ class Vault_test : public beast::unit_test::suite
                         }),
                         ter(tecNO_PERMISSION),
                         THISLINE);
-                    env.close();
                 }
 
                 {
@@ -5610,7 +5625,6 @@ class Vault_test : public beast::unit_test::suite
                         }),
                         ter(tecNO_PERMISSION),
                         THISLINE);
-                    env.close();
                 }
 
                 {
@@ -5628,7 +5642,6 @@ class Vault_test : public beast::unit_test::suite
                         }),
                         ter(tesSUCCESS),
                         THISLINE);
-                    env.close();
                 }
 
                 {
@@ -5646,7 +5659,6 @@ class Vault_test : public beast::unit_test::suite
                         }),
                         ter(tesSUCCESS),
                         THISLINE);
-                    env.close();
                 }
 
                 {
@@ -5663,7 +5675,6 @@ class Vault_test : public beast::unit_test::suite
                         }),
                         ter(tesSUCCESS),
                         THISLINE);
-                    env.close();
                 }
             }
         };
