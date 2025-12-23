@@ -32,7 +32,7 @@ WasmHostFunctionsImpl::getParentLedgerTime()
 Expected<Hash, HostFunctionError>
 WasmHostFunctionsImpl::getParentLedgerHash()
 {
-    return ctx.view().info().parentHash;
+    return ctx.view().header().parentHash;
 }
 
 Expected<int32_t, HostFunctionError>

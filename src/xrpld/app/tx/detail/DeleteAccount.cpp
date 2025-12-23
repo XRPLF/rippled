@@ -172,7 +172,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     } while (cdirNext(
         ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
 
-    if (auto const res = deletePreclaim(ctx, 255, account, dest);
+    if (auto const res = deletePreclaim(ctx, 255, account, dst);
         !isTesSuccess(res))
         return res;
     return tesSUCCESS;

@@ -92,7 +92,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         auto const result = hfs.getLedgerSqn();
         if (BEAST_EXPECT(result.has_value()))
-            BEAST_EXPECT(result.value() == env.current()->info().seq);
+            BEAST_EXPECT(result.value() == env.current()->header().seq);
     }
 
     void
@@ -149,7 +149,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         auto const result = hfs.getParentLedgerHash();
         if (BEAST_EXPECT(result.has_value()))
-            BEAST_EXPECT(result.value() == env.current()->info().parentHash);
+            BEAST_EXPECT(result.value() == env.current()->header().parentHash);
     }
 
     void

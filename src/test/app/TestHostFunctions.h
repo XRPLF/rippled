@@ -87,7 +87,7 @@ public:
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() override
     {
-        return env_.current()->info().parentHash;
+        return env_.current()->header().parentHash;
     }
 
     Expected<int32_t, HostFunctionError>
@@ -284,7 +284,7 @@ public:
     Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data) override
     {
-        return env_.current()->info().parentHash;
+        return env_.current()->header().parentHash;
     }
 
     Expected<Bytes, HostFunctionError>
@@ -603,7 +603,7 @@ struct PerfHostFunctions : public TestHostFunctions
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() override
     {
-        return env_.current()->info().parentHash;
+        return env_.current()->header().parentHash;
     }
 
     Expected<int32_t, HostFunctionError>
