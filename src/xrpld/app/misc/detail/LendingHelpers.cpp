@@ -741,25 +741,21 @@ computeLatePayment(
     // this to keep the logic clear. This preserves all the other fields without
     // having to enumerate them.
 
-    ExtendedPaymentComponents const late = [&]() {
-        auto inner = periodic;
+    ExtendedPaymentComponents const late{
+        periodic,
+        // Untracked management fee includes:
+        // 1. Regular service fee (from periodic.untrackedManagementFee)
+        // 2. Late payment fee (fixed penalty)
+        // 3. Management fee portion of late interest
+        periodic.untrackedManagementFee + latePaymentFee +
+            roundedLateManagementFee,
 
-        return ExtendedPaymentComponents{
-            inner,
-            // Untracked management fee includes:
-            // 1. Regular service fee (from periodic.untrackedManagementFee)
-            // 2. Late payment fee (fixed penalty)
-            // 3. Management fee portion of late interest
-            periodic.untrackedManagementFee + latePaymentFee +
-                roundedLateManagementFee,
-
-            // Untracked interest includes:
-            // 1. Any untracked interest from the regular payment (usually 0)
-            // 2. Late penalty interest (increases loan value)
-            // This positive value indicates the loan's value increased due
-            // to the late payment.
-            periodic.untrackedInterest + roundedLateInterest};
-    }();
+        // Untracked interest includes:
+        // 1. Any untracked interest from the regular payment (usually 0)
+        // 2. Late penalty interest (increases loan value)
+        // This positive value indicates the loan's value increased due
+        // to the late payment.
+        periodic.untrackedInterest + roundedLateInterest};
 
     XRPL_ASSERT_PARTS(
         isRounded(asset, late.totalDue, loanScale),
