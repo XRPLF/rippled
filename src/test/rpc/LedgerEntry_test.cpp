@@ -653,8 +653,68 @@ class LedgerEntry_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        // positive test is difficult since we need a validator to vote for an
-        // amendment in order for the object to exist
+        // positive test
+        {
+            Keylet const keylet = keylet::amendments();
+
+            // easier to hack an object into the ledger than generate it
+            // legitimately
+            {
+                auto const amendments = [&](OpenView& view,
+                                            beast::Journal) -> bool {
+                    auto const sle = std::make_shared<SLE>(keylet);
+
+                    // Create Amendments vector (enabled amendments)
+                    std::vector<uint256> enabledAmendments;
+                    enabledAmendments.push_back(
+                        uint256::fromVoid("42426C4D4F1009EE67080A9B7965B44656D7"
+                                          "714D104A72F9B4369F97ABF044EE"));
+                    enabledAmendments.push_back(
+                        uint256::fromVoid("4C97EBA926031A7CF7D7B36FDE3ED66DDA54"
+                                          "21192D63DE53FFB46E43B9DC8373"));
+                    enabledAmendments.push_back(
+                        uint256::fromVoid("03BDC0099C4E14163ADA272C1B6F6FABB448"
+                                          "CC3E51F522F978041E4B57D9158C"));
+                    enabledAmendments.push_back(
+                        uint256::fromVoid("35291ADD2D79EB6991343BDA0912269C817D"
+                                          "0F094B02226C1C14AD2858962ED4"));
+                    sle->setFieldV256(
+                        sfAmendments, STVector256(enabledAmendments));
+
+                    // Create Majorities array
+                    STArray majorities;
+
+                    auto majority1 = STObject::makeInnerObject(sfMajority);
+                    majority1.setFieldH256(
+                        sfAmendment,
+                        uint256::fromVoid("7BB62DC13EC72B775091E9C71BF8CF97E122"
+                                          "647693B50C5E87A80DFD6FCFAC50"));
+                    majority1.setFieldU32(sfCloseTime, 779561310);
+                    majorities.push_back(std::move(majority1));
+
+                    auto majority2 = STObject::makeInnerObject(sfMajority);
+                    majority2.setFieldH256(
+                        sfAmendment,
+                        uint256::fromVoid("755C971C29971C9F20C6F080F2ED96F87884"
+                                          "E40AD19554A5EBECDCEC8A1F77FE"));
+                    majority2.setFieldU32(sfCloseTime, 779561310);
+                    majorities.push_back(std::move(majority2));
+
+                    sle->setFieldArray(sfMajorities, majorities);
+
+                    view.rawInsert(sle);
+                    return true;
+                };
+                env.app().openLedger().modify(amendments);
+            }
+
+            Json::Value jvParams;
+            jvParams[jss::amendments] = to_string(keylet.key);
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Amendments);
+        }
 
         // negative tests
         runLedgerEntryTest(env, jss::amendments);
@@ -1580,8 +1640,50 @@ class LedgerEntry_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        // positive test is complicated since it requires a validator to be on
-        // the nUNL
+        // positive test
+        {
+            Keylet const keylet = keylet::negativeUNL();
+
+            // easier to hack an object into the ledger than generate it
+            // legitimately
+            {
+                auto const nUNL = [&](OpenView& view, beast::Journal) -> bool {
+                    auto const sle = std::make_shared<SLE>(keylet);
+
+                    // Create DisabledValidators array
+                    STArray disabledValidators;
+                    auto disabledValidator =
+                        STObject::makeInnerObject(sfDisabledValidator);
+                    auto pubKeyBlob = strUnHex(
+                        "ED58F6770DB5DD77E59D28CB650EC3816E2FC95021BB56E720C9A1"
+                        "2DA79C58A3AB");
+                    disabledValidator.setFieldVL(sfPublicKey, *pubKeyBlob);
+                    disabledValidator.setFieldU32(
+                        sfFirstLedgerSequence, 91371264);
+                    disabledValidators.push_back(std::move(disabledValidator));
+
+                    sle->setFieldArray(
+                        sfDisabledValidators, disabledValidators);
+                    sle->setFieldH256(
+                        sfPreviousTxnID,
+                        uint256::fromVoid("8D47FFE664BE6C335108DF689537625855A6"
+                                          "A95160CC6D351341B9"
+                                          "2624D9C5E3"));
+                    sle->setFieldU32(sfPreviousTxnLgrSeq, 91442944);
+
+                    view.rawInsert(sle);
+                    return true;
+                };
+                env.app().openLedger().modify(nUNL);
+            }
+
+            Json::Value jvParams;
+            jvParams[jss::nunl] = to_string(keylet.key);
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::NegativeUNL);
+        }
 
         // negative tests
         runLedgerEntryTest(env, jss::nunl);
