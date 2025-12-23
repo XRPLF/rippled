@@ -713,8 +713,8 @@ checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag);
  */
 [[nodiscard]] TER
 canWithdraw(
-    AccountID const& from,
     ReadView const& view,
+    AccountID const& from,
     AccountID const& to,
     SLE::const_ref toSle,
     bool hasDestinationTag);
@@ -733,8 +733,8 @@ canWithdraw(
  */
 [[nodiscard]] TER
 canWithdraw(
-    AccountID const& from,
     ReadView const& view,
+    AccountID const& from,
     AccountID const& to,
     bool hasDestinationTag);
 

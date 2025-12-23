@@ -1343,8 +1343,8 @@ checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag)
 
 [[nodiscard]] TER
 canWithdraw(
-    AccountID const& from,
     ReadView const& view,
+    AccountID const& from,
     AccountID const& to,
     SLE::const_ref toSle,
     bool hasDestinationTag)
@@ -1366,14 +1366,14 @@ canWithdraw(
 
 [[nodiscard]] TER
 canWithdraw(
-    AccountID const& from,
     ReadView const& view,
+    AccountID const& from,
     AccountID const& to,
     bool hasDestinationTag)
 {
     auto const toSle = view.read(keylet::account(to));
 
-    return canWithdraw(from, view, to, toSle, hasDestinationTag);
+    return canWithdraw(view, from, to, toSle, hasDestinationTag);
 }
 
 [[nodiscard]] TER
@@ -1382,7 +1382,7 @@ canWithdraw(ReadView const& view, STTx const& tx)
     auto const from = tx[sfAccount];
     auto const to = tx[~sfDestination].value_or(from);
 
-    return canWithdraw(from, view, to, tx.isFieldPresent(sfDestinationTag));
+    return canWithdraw(view, from, to, tx.isFieldPresent(sfDestinationTag));
 }
 
 TER
