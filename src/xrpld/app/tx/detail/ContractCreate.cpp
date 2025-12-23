@@ -66,12 +66,6 @@ ContractCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 ContractCreate::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSmartContract))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const flags = ctx.tx.getFlags();
     if (flags & tfContractMask)
     {
@@ -130,7 +124,7 @@ ContractCreate::preflight(PreflightContext const& ctx)
         return res;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

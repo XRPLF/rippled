@@ -47,12 +47,6 @@ ContractCall::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 ContractCall::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSmartContract))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const flags = ctx.tx.getFlags();
     if (flags & tfUniversalMask)
     {
@@ -61,7 +55,7 @@ ContractCall::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -302,7 +296,7 @@ ContractCall::doApply()
     }
 
     std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
-    auto re = runEscrowWasm(wasm, funcName, {}, &ledgerDataProvider, allowance);
+    auto re = runEscrowWasm(wasm, ledgerDataProvider, funcName, {}, allowance);
 
     // Wasm Result
     if (re.has_value())

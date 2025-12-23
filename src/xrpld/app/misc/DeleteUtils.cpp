@@ -219,8 +219,7 @@ deletePreclaim(
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
-        if (ctx.view.rules().enabled(featureDepositAuth) &&
-            (destSle->getFlags() & lsfDepositAuth))
+        if (destSle->getFlags() & lsfDepositAuth)
         {
             if (!ctx.view.exists(keylet::depositPreauth(dest, account)) &&
                 !isPseudoAccount)
@@ -233,7 +232,6 @@ deletePreclaim(
     if (!srcSle)
         return terNO_ACCOUNT;
 
-    if (ctx.view.rules().enabled(featureNonFungibleTokensV1))
     {
         // If an issuer has any issued NFTs resident in the ledger then it
         // cannot be deleted.
@@ -271,10 +269,7 @@ deletePreclaim(
     // their account and mints a NFToken, it is possible that the
     // NFTokenSequence of this NFToken is the same as the one that the
     // authorized minter minted in a previous ledger.
-    if (ctx.view.rules().enabled(fixNFTokenRemint) &&
-        ((*srcSle)[~sfFirstNFTokenSequence].value_or(0) +
-             (*srcSle)[~sfMintedNFTokens].value_or(0) + seqDelta >
-         ctx.view.seq()))
+    if ((*srcSle)[~sfFirstNFTokenSequence].value_or(0) + (*srcSle)[~sfMintedNFTokens].value_or(0) + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
     // Verify that the account does not own any objects that would prevent
@@ -352,8 +347,7 @@ deleteDoApply(
     if (!destSle)
         return tefBAD_LEDGER;
 
-    if (view.rules().enabled(featureDepositAuth) &&
-        tx.isFieldPresent(sfCredentialIDs))
+    if (tx.isFieldPresent(sfCredentialIDs))
     {
         if (auto err =
                 verifyDepositPreauth(tx, view, account, dest, destSle, j);

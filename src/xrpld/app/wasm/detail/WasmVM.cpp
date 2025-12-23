@@ -177,67 +177,67 @@ preflightEscrowWasm(
     return ret;
 }
 
-Expected<WasmRunResult, TER>
-runContractWasm(
-    Bytes const& wasmCode,
-    std::string_view funcName,
-    std::vector<WasmParam> const& params,
-    HostFunctions* hfs,
-    int64_t gasLimit,
-    beast::Journal j)
-{
-    //  create VM and set cost limit
-    auto& vm = WasmEngine::instance();
-    vm.initMaxPages(MAX_PAGES);
+// Expected<WasmRunResult, TER>
+// runContractWasm(
+//     Bytes const& wasmCode,
+//     std::string_view funcName,
+//     std::vector<WasmParam> const& params,
+//     HostFunctions* hfs,
+//     int64_t gasLimit,
+//     beast::Journal j)
+// {
+//     //  create VM and set cost limit
+//     auto& vm = WasmEngine::instance();
+//     // vm.initMaxPages(MAX_PAGES);
 
-    auto const ret = vm.run(
-        wasmCode,
-        funcName,
-        params,
-        createWasmImport(hfs),
-        hfs,
-        gasLimit,
-        hfs ? hfs->getJournal() : j);
+//     auto const ret = vm.run(
+//         wasmCode,
+//         funcName,
+//         params,
+//         createWasmImport(hfs),
+//         &hfs,
+//         gasLimit,
+//         hfs->getJournal());
 
-    // std::cout << "runContractWasm, mod size: " << wasmCode.size()
-    //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
+//     // std::cout << "runContractWasm, mod size: " << wasmCode.size()
+//     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
 
-    if (!ret)
-    {
-#ifdef DEBUG_OUTPUT
-        std::cout << ", error: " << ret.error() << std::endl;
-#endif
-        return Unexpected<TER>(ret.error());
-    }
+//     if (!ret)
+//     {
+// #ifdef DEBUG_OUTPUT
+//         std::cout << ", error: " << ret.error() << std::endl;
+// #endif
+//         return Unexpected<TER>(ret.error());
+//     }
 
-#ifdef DEBUG_OUTPUT
-    std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
-              << std::endl;
-#endif
-    return WasmRunResult{ret->result, ret->cost};
-}
+// #ifdef DEBUG_OUTPUT
+//     std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
+//               << std::endl;
+// #endif
+//     return WasmRunResult{ret->result, ret->cost};
+// }
 
-NotTEC
-preflightContractWasm(
-    Bytes const& wasmCode,
-    std::string_view funcName,
-    std::vector<WasmParam> const& params,
-    HostFunctions* hfs,
-    beast::Journal j)
-{
-    //  create VM and set cost limit
-    auto& vm = WasmEngine::instance();
-    vm.initMaxPages(MAX_PAGES);
+// NotTEC
+// preflightContractWasm(
+//     Bytes const& wasmCode,
+//     std::string_view funcName,
+//     std::vector<WasmParam> const& params,
+//     HostFunctions* hfs,
+//     beast::Journal j)
+// {
+//     //  create VM and set cost limit
+//     auto& vm = WasmEngine::instance();
+//     // vm.initMaxPages(MAX_PAGES);
 
-    auto const ret = vm.check(
-        wasmCode,
-        funcName,
-        params,
-        createWasmImport(hfs),
-        hfs ? hfs->getJournal() : j);
+//     auto const ret = vm.check(
+//         wasmCode,
+//         funcName,
+//         params,
+//         createWasmImport(hfs),
+//         hfs->getJournal());
 
-    return ret;
-}
+//     return ret;
+// }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

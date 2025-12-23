@@ -1441,7 +1441,6 @@ addEmptyHolding(
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,
-    STAmount const& limit,
     beast::Journal journal)
 {
     // Every account can hold XRP. An issuer can issue directly.
@@ -1455,7 +1454,6 @@ addEmptyHolding(
 
     auto const& srcId = issuerId;
     auto const& dstId = accountID;
-    auto const high = srcId > dstId;
     auto const index = keylet::line(srcId, dstId, currency);
     auto const sleSrc = view.peek(keylet::account(srcId));
     auto const sleDst = view.peek(keylet::account(dstId));
@@ -1472,22 +1470,7 @@ addEmptyHolding(
     if (priorBalance < view.fees().accountReserve(ownerCount + 1))
         return tecNO_LINE_INSUF_RESERVE;
 
-    return trustCreate(
-        view,
-        high,
-        srcId,
-        dstId,
-        index.key,
-        sleDst,
-        /*auth=*/false,
-        /*noRipple=*/true,
-        /*freeze=*/false,
-        /*deepFreeze*/ false,
-        /*balance=*/STAmount{Issue{currency, noAccount()}},
-        /*limit=*/limit,
-        /*qualityIn=*/0,
-        /*qualityOut=*/0,
-        journal);
+    return tesSUCCESS;
 }
 
 [[nodiscard]] TER
@@ -1496,7 +1479,6 @@ addEmptyHolding(
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
-    STAmount const& limit,
     beast::Journal journal)
 {
     auto const& mptID = mptIssue.getMptID();

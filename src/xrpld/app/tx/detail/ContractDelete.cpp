@@ -28,12 +28,6 @@ namespace ripple {
 NotTEC
 ContractDelete::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSmartContract))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const flags = ctx.tx.getFlags();
     if (flags & tfUniversalMask)
     {
@@ -42,7 +36,7 @@ ContractDelete::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

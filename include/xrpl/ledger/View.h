@@ -772,7 +772,6 @@ addEmptyHolding(
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,
-    STAmount const& limit,
     beast::Journal journal);
 
 [[nodiscard]] TER
@@ -781,7 +780,6 @@ addEmptyHolding(
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
-    STAmount const& limit,
     beast::Journal journal);
 
 [[nodiscard]] inline TER
@@ -790,13 +788,12 @@ addEmptyHolding(
     AccountID const& accountID,
     XRPAmount priorBalance,
     Asset const& asset,
-    STAmount const& limit,
     beast::Journal journal)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
             return addEmptyHolding(
-                view, accountID, priorBalance, issue, limit, journal);
+                view, accountID, priorBalance, issue, journal);
         },
         asset.value());
 }

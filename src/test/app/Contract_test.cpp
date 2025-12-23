@@ -23,6 +23,7 @@
 
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/digest.h>
 
 namespace ripple {
 namespace test {

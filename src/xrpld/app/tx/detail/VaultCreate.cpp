@@ -154,7 +154,7 @@ VaultCreate::doApply()
     Issue const issue = asset.get<Issue>();
     STAmount limit{issue, 0};
     if (auto ter =
-            addEmptyHolding(view(), pseudoId, mPriorBalance, asset, limit, j_);
+            addEmptyHolding(view(), pseudoId, mPriorBalance, asset, j_);
         !isTesSuccess(ter))
         return ter;
 
