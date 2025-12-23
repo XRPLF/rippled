@@ -115,7 +115,7 @@ TYPED_SFIELD(sfExtensionSizeLimit,       UINT32,    70)
 TYPED_SFIELD(sfGasPrice,                 UINT32,    71)
 TYPED_SFIELD(sfComputationAllowance,     UINT32,    72)
 TYPED_SFIELD(sfGasUsed,                  UINT32,    73)
-TYPED_SFIELD(sfParameterFlag,            UINT32,    59)
+TYPED_SFIELD(sfParameterFlag,            UINT32,    74)
 
 // 64-bit integers (common)
 TYPED_SFIELD(sfIndexNext,                UINT64,     1)
