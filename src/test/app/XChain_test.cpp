@@ -4548,7 +4548,7 @@ private:
 
     enum SmState {
         st_initial,
-        st_claimid_created,
+        st_claim_id_created,
         st_attesting,
         st_attested,
         st_completed,
@@ -4864,10 +4864,10 @@ private:
             {
                 case st_initial:
                     xfer.claim_id = create_claim_id();
-                    sm_state = st_claimid_created;
+                    sm_state = st_claim_id_created;
                     break;
 
-                case st_claimid_created:
+                case st_claim_id_created:
                     commit();
                     sm_state = st_attesting;
                     break;

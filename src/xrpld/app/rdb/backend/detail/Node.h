@@ -205,8 +205,8 @@ getHashesByIndex(
 
 /**
  * @brief getHashesByIndex Returns hash of the ledger and hash of parent
- *        ledger for all ledgers with seqyences from given minimum limit
- *        to fiven maximum limit.
+ *        ledger for all ledgers with sequences from given minimum limit
+ *        to given maximum limit.
  * @param session Session with database.
  * @param minSeq Minimum ledger sequence.
  * @param maxSeq Maximum ledger sequence.

@@ -316,7 +316,7 @@ Payment::preclaim(PreclaimContext const& ctx)
                 << "Delay transaction: Destination account does not exist. "
                 << "Insufficent payment to create account.";
 
-            // TODO: dedupe
+            // TODO: de-dupe
             // Another transaction could create the account and then this
             // transaction would succeed.
             return tecNO_DST_INSUF_XRP;

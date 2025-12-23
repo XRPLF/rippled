@@ -154,7 +154,7 @@ RCLConsensus::Adaptor::share(RCLCxPeerPos const& peerPos)
     prop.set_proposeseq(proposal.proposeSeq());
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
 
-    prop.set_currenttxhash(
+    prop.set_currentTxHash(
         proposal.position().begin(), proposal.position().size());
     prop.set_previousLedger(
         proposal.prevLedger().begin(), proposal.position().size());
@@ -198,7 +198,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 
     protocol::TMProposeSet prop;
 
-    prop.set_currenttxhash(
+    prop.set_currentTxHash(
         proposal.position().begin(), proposal.position().size());
     prop.set_previousLedger(
         proposal.prevLedger().begin(), proposal.prevLedger().size());

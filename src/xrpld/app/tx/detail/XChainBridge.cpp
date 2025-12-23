@@ -622,7 +622,7 @@ finalizeClaimHelper(
         // If distributing the reward pool fails, the mainFunds transfer should
         // be rolled back
         //
-        // If the claimid is removed, the rewards should be distributed
+        // If the claim ID is removed, the rewards should be distributed
         // even if the mainFunds fails.
         //
         // If OnTransferFail::removeClaim, the claim should be removed even if

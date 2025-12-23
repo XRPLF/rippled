@@ -661,7 +661,7 @@ public:
         // Run to the ledger *prior* to decreasing the resolution
         sim.run(increaseLedgerTimeResolutionEvery - 2);
 
-        // In order to create the discrepency, we want a case where if
+        // In order to create the discrepancy, we want a case where if
         //   X = effCloseTime(closeTime, resolution, parentCloseTime)
         //   X != effCloseTime(X, resolution, parentCloseTime)
         //
@@ -1029,7 +1029,7 @@ public:
         // The "ahead" validators run normal speed and run ahead validating the
         // upper chain of ledgers.
         //
-        // Due to the uncommited support definition of the preferred branch
+        // Due to the uncommitted support definition of the preferred branch
         // protocol, even if the "behind" validators are a majority, the "ahead"
         // validators cannot jump to the proper branch until the "behind"
         // validators catch up to the same sequence number. For this test to

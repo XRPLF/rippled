@@ -354,7 +354,7 @@ struct XChainCreateAccountAttestation
         XChainCreateAccountAttestation const& rhs);
 };
 
-// Attestations from witness servers for a particular claimid and bridge.
+// Attestations from witness servers for a particular claim ID and bridge.
 // Only one attestation per signature is allowed.
 template <class TAttestation>
 class XChainAttestationsBase

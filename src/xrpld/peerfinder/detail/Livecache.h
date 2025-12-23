@@ -172,7 +172,7 @@ protected:
     they are connectable (with one small exception regarding neighbors).
     Therefore, these addresses are not suitable for persisting across
     launches or for bootstrapping, because they do not have verifiable
-    and locally observed uptime and connectibility information.
+    and locally observed uptime and connectability information.
 */
 template <class Allocator = std::allocator<char>>
 class Livecache : protected detail::LivecacheBase
