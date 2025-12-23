@@ -18,7 +18,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Performs early sanity checks on the txid */
 NotTEC
@@ -307,7 +307,7 @@ Transactor::calculateOwnerReserveFee(ReadView const& view, STTx const& tx)
     // condition.
     XRPL_ASSERT(
         view.fees().increment > view.fees().base * 100,
-        "ripple::Transactor::calculateOwnerReserveFee : Owner reserve is "
+        "xrpl::Transactor::calculateOwnerReserveFee : Owner reserve is "
         "reasonable");
     return view.fees().increment;
 }
@@ -527,7 +527,7 @@ TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
     XRPL_ASSERT(
-        sleAccount, "ripple::Transactor::consumeSeqProxy : non-null account");
+        sleAccount, "xrpl::Transactor::consumeSeqProxy : non-null account");
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {
@@ -603,13 +603,39 @@ Transactor::ticketDelete(
     return tesSUCCESS;
 }
 
+std::pair<TER, XRPAmount>
+Transactor::checkInvariants(TER result, XRPAmount fee)
+{
+    // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
+    // proceed to apply the tx
+    result = ctx_.checkInvariants(result, fee);
+
+    if (result == tecINVARIANT_FAILED)
+    {
+        // if invariants checking failed again, reset the context and
+        // attempt to only claim a fee.
+        auto const resetResult = reset(fee);
+        if (!isTesSuccess(resetResult.first))
+            result = resetResult.first;
+
+        fee = resetResult.second;
+
+        // Check invariants again to ensure the fee claiming doesn't
+        // violate invariants.
+        if (isTesSuccess(result) || isTecClaim(result))
+            result = ctx_.checkInvariants(result, fee);
+    }
+
+    return {result, fee};
+}
+
 // check stuff before you bother to lock the ledger
 void
 Transactor::preCompute()
 {
     XRPL_ASSERT(
         account_ != beast::zero,
-        "ripple::Transactor::preCompute : nonzero account");
+        "xrpl::Transactor::preCompute : nonzero account");
 }
 
 TER
@@ -625,7 +651,7 @@ Transactor::apply()
     // that allow zero account.
     XRPL_ASSERT(
         sle != nullptr || account_ == beast::zero,
-        "ripple::Transactor::apply : non-null SLE or zero account");
+        "xrpl::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
     {
@@ -658,19 +684,8 @@ Transactor::checkSign(
     STObject const& sigObject,
     beast::Journal const j)
 {
-    {
-        auto const sle = view.read(keylet::account(idAccount));
-
-        if (view.rules().enabled(featureLendingProtocol) &&
-            isPseudoAccount(sle))
-            // Pseudo-accounts can't sign transactions. This check is gated on
-            // the Lending Protocol amendment because that's the project it was
-            // added under, and it doesn't justify another amendment
-            return tefBAD_AUTH;
-    }
-
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
-    // Ignore signature check on batch inner transactions
+    // Ignore signature check on batch inner transactions (e.g., emitted transactions from contracts)
     if (parentBatchId && view.rules().enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
@@ -680,6 +695,17 @@ Transactor::checkSign(
             return temINVALID_FLAG;  // LCOV_EXCL_LINE
         }
         return tesSUCCESS;
+    }
+
+    {
+        auto const sle = view.read(keylet::account(idAccount));
+
+        if (view.rules().enabled(featureLendingProtocol) &&
+            isPseudoAccount(sle))
+            // Pseudo-accounts can't sign transactions. This check is gated on
+            // the Lending Protocol amendment because that's the project it was
+            // added under, and it doesn't justify another amendment
+            return tefBAD_AUTH;
     }
 
     if ((flags & tapDRY_RUN) && pkSigner.empty() &&
@@ -699,7 +725,7 @@ Transactor::checkSign(
 
     // Check Single Sign
     XRPL_ASSERT(
-        !pkSigner.empty(), "ripple::Transactor::checkSign : non-empty signer");
+        !pkSigner.empty(), "xrpl::Transactor::checkSign : non-empty signer");
 
     if (!publicKeyType(makeSlice(pkSigner)))
     {
@@ -829,10 +855,10 @@ Transactor::checkMultiSign(
     // presence and defaulted value of the SignerListID field will enable that.
     XRPL_ASSERT(
         sleAccountSigners->isFieldPresent(sfSignerListID),
-        "ripple::Transactor::checkMultiSign : has signer list ID");
+        "xrpl::Transactor::checkMultiSign : has signer list ID");
     XRPL_ASSERT(
         sleAccountSigners->getFieldU32(sfSignerListID) == 0,
-        "ripple::Transactor::checkMultiSign : signer list ID is 0");
+        "xrpl::Transactor::checkMultiSign : signer list ID is 0");
 
     auto accountSigners =
         SignerEntries::deserialize(*sleAccountSigners, j, "ledger");
@@ -888,7 +914,7 @@ Transactor::checkMultiSign(
 
         XRPL_ASSERT(
             (flags & tapDRY_RUN) || !spk.empty(),
-            "ripple::Transactor::checkMultiSign : non-empty signer or "
+            "xrpl::Transactor::checkMultiSign : non-empty signer or "
             "simulation");
         AccountID const signingAcctIDFromPubKey = spk.empty()
             ? txSignerAcctID
@@ -1103,7 +1129,7 @@ Transactor::reset(XRPAmount fee)
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
         balance != beast::zero && (!view().open() || balance >= fee),
-        "ripple::Transactor::reset : valid balance");
+        "xrpl::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or
     // we're applying against an open ledger and the balance is less than
@@ -1120,7 +1146,7 @@ Transactor::reset(XRPAmount fee)
     payerSle->setFieldAmount(sfBalance, balance - fee);
     TER const ter{consumeSeqProxy(txnAcct)};
     XRPL_ASSERT(
-        isTesSuccess(ter), "ripple::Transactor::reset : result is tesSUCCESS");
+        isTesSuccess(ter), "xrpl::Transactor::reset : result is tesSUCCESS");
 
     if (isTesSuccess(ter))
     {
@@ -1165,7 +1191,7 @@ Transactor::operator()()
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
             JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
             UNREACHABLE(
-                "ripple::Transactor::operator() : transaction serdes mismatch");
+                "xrpl::Transactor::operator() : transaction serdes mismatch");
             // LCOV_EXCL_STOP
         }
     }
@@ -1185,7 +1211,7 @@ Transactor::operator()()
     // and it can't be passed in from a preclaim.
     XRPL_ASSERT(
         result != temUNKNOWN,
-        "ripple::Transactor::operator() : result is not temUNKNOWN");
+        "xrpl::Transactor::operator() : result is not temUNKNOWN");
 
     if (auto stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
@@ -1248,7 +1274,7 @@ Transactor::operator()()
                 {
                     XRPL_ASSERT(
                         before && after,
-                        "ripple::Transactor::operator()::visit : non-null SLE "
+                        "xrpl::Transactor::operator()::visit : non-null SLE "
                         "inputs");
                     if (doOffers && before && after &&
                         (before->getType() == ltOFFER) &&
@@ -1319,26 +1345,9 @@ Transactor::operator()()
 
     if (applied)
     {
-        // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
-        // proceed to apply the tx
-        result = ctx_.checkInvariants(result, fee);
-
-        if (result == tecINVARIANT_FAILED)
-        {
-            // if invariants checking failed again, reset the context and
-            // attempt to only claim a fee.
-            auto const resetResult = reset(fee);
-            if (!isTesSuccess(resetResult.first))
-                result = resetResult.first;
-
-            fee = resetResult.second;
-
-            // Check invariants again to ensure the fee claiming doesn't
-            // violate invariants.
-            if (isTesSuccess(result) || isTecClaim(result))
-                result = ctx_.checkInvariants(result, fee);
-        }
-
+        auto const invariantsResult = checkInvariants(result, fee);
+        result = invariantsResult.first;
+        fee = invariantsResult.second;
         // We ran through the invariant checker, which can, in some cases,
         // return a tef error code. Don't apply the transaction in that case.
         if (!isTecClaim(result) && !isTesSuccess(result))
@@ -1373,10 +1382,82 @@ Transactor::operator()()
         applied = false;
     }
 
+    if (metadata && ctx_.getEmittedTxns().size() > 0)
+    {
+        OpenView emittedTxnsView(batch_view, ctx_.openView());
+        auto const parentBatchId = ctx_.tx.getTransactionID();
+
+        auto applyOneTransaction = [this, &parentBatchId, &emittedTxnsView](
+                                       STTx const& tx) {
+            OpenView perTxBatchView(batch_view, emittedTxnsView);
+
+            auto const ret = xrpl::apply(
+                ctx_.app,
+                perTxBatchView,
+                parentBatchId,
+                tx,
+                tapBATCH,
+                ctx_.journal);
+            XRPL_ASSERT(
+                ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
+                "Inner transaction should not be applied");
+
+            JLOG(ctx_.journal.debug()) << "BatchTrace[" << parentBatchId
+                                       << "]: " << tx.getTransactionID() << " "
+                                       << (ret.applied ? "applied" : "failure")
+                                       << ": " << transToken(ret.ter);
+
+            // If the transaction should be applied push its changes to the
+            // whole-batch view.
+            if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+                perTxBatchView.apply(emittedTxnsView);
+
+            return ret;
+        };
+
+        bool emitResult = true;
+        auto emittedTxns = ctx_.getEmittedTxns();
+        while (!emittedTxns.empty())
+        {
+            auto txn = emittedTxns.front();
+            emittedTxns.pop();
+            auto const result = applyOneTransaction(*txn->getSTransaction());
+            XRPL_ASSERT(
+                result.applied ==
+                    (isTesSuccess(result.ter) || isTecClaim(result.ter)),
+                "Outer Batch failure, inner transaction should not be applied");
+
+            if (!isTesSuccess(result.ter))
+                emitResult = false;
+        }
+
+        if (emitResult)
+            emittedTxnsView.apply(ctx_.openView());
+        else
+        {
+            // reset context
+            result = tecWASM_REJECTED;
+            auto const resetResult = reset(fee);
+            if (!isTesSuccess(resetResult.first))
+                result = resetResult.first;
+            fee = resetResult.second;
+
+            // InvariantCheck
+            auto const invariantsResult = checkInvariants(result, fee);
+            result = invariantsResult.first;
+            fee = invariantsResult.second;
+
+            // apply
+            metadata = ctx_.apply(result);
+        }
+    }
+
+    ctx_.finalize();
+
     JLOG(j_.trace()) << (applied ? "applied " : "not applied ")
                      << transToken(result);
 
     return {result, applied, metadata};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

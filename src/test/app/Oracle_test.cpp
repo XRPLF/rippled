@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 namespace oracle {
@@ -252,7 +252,9 @@ private:
                 static_cast<int>(env.current()->fees().base.drops());
             auto closeTime = [&]() {
                 return duration_cast<seconds>(
-                           env.current()->info().closeTime.time_since_epoch() -
+                           env.current()
+                               ->header()
+                               .closeTime.time_since_epoch() -
                            10'000s)
                     .count();
             };
@@ -559,7 +561,7 @@ private:
             BEAST_EXPECT(oracle.exists());
             BEAST_EXPECT(oracle1.exists());
             auto const index = env.closed()->seq();
-            auto const hash = env.closed()->info().hash;
+            auto const hash = env.closed()->header().hash;
             for (int i = 0; i < 256; ++i)
                 env.close();
             env(acctdelete(owner, alice), fee(acctDelFee));
@@ -863,7 +865,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Oracle, app, ripple);
+BEAST_DEFINE_TESTSUITE(Oracle, app, xrpl);
 
 }  // namespace oracle
 
@@ -871,4 +873,4 @@ BEAST_DEFINE_TESTSUITE(Oracle, app, ripple);
 
 }  // namespace test
 
-}  // namespace ripple
+}  // namespace xrpl

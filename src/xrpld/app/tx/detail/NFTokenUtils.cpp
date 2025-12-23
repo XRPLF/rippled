@@ -11,7 +11,7 @@
 #include <functional>
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 namespace nft {
 
@@ -167,7 +167,7 @@ getPageForToken(
     auto np = std::make_shared<SLE>(keylet::nftpage(base, tokenIDForNewPage));
     XRPL_ASSERT(
         np->key() > base.key,
-        "ripple::nft::getPageForToken : valid NFT page index");
+        "xrpl::nft::getPageForToken : valid NFT page index");
     np->setFieldArray(sfNFTokens, narr);
     np->setFieldH256(sfNextPageMin, cp->key());
 
@@ -213,7 +213,7 @@ changeTokenURI(
     ApplyView& view,
     AccountID const& owner,
     uint256 const& nftokenID,
-    std::optional<ripple::Slice> const& uri)
+    std::optional<xrpl::Slice> const& uri)
 {
     std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
 
@@ -247,7 +247,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
 {
     XRPL_ASSERT(
         nft.isFieldPresent(sfNFTokenID),
-        "ripple::nft::insertToken : has NFT token");
+        "xrpl::nft::insertToken : has NFT token");
 
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
@@ -789,7 +789,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
 
     XRPL_ASSERT(
         nextPage,
-        "ripple::nft::repairNFTokenDirectoryLinks : next page is available");
+        "xrpl::nft::repairNFTokenDirectoryLinks : next page is available");
     if (nextPage->isFieldPresent(sfNextPageMin))
     {
         didRepair = true;
@@ -887,7 +887,7 @@ tokenOfferCreatePreclaim(
     {
         auto const root = view.read(keylet::account(nftIssuer));
         XRPL_ASSERT(
-            root, "ripple::nft::tokenOfferCreatePreclaim : non-null account");
+            root, "xrpl::nft::tokenOfferCreatePreclaim : non-null account");
 
         if (auto minter = (*root)[~sfNFTokenMinter]; minter != acctID)
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
@@ -1035,14 +1035,14 @@ checkTrustlineAuthorized(
     // Only valid for custom currencies
     XRPL_ASSERT(
         !isXRP(issue.currency),
-        "ripple::nft::checkTrustlineAuthorized : valid to check.");
+        "xrpl::nft::checkTrustlineAuthorized : valid to check.");
 
     if (view.rules().enabled(fixEnforceNFTokenTrustlineV2))
     {
         auto const issuerAccount = view.read(keylet::account(issue.account));
         if (!issuerAccount)
         {
-            JLOG(j.debug()) << "ripple::nft::checkTrustlineAuthorized: can't "
+            JLOG(j.debug()) << "xrpl::nft::checkTrustlineAuthorized: can't "
                                "receive IOUs from non-existent issuer: "
                             << to_string(issue.account);
 
@@ -1091,14 +1091,14 @@ checkTrustlineDeepFrozen(
     // Only valid for custom currencies
     XRPL_ASSERT(
         !isXRP(issue.currency),
-        "ripple::nft::checkTrustlineDeepFrozen : valid to check.");
+        "xrpl::nft::checkTrustlineDeepFrozen : valid to check.");
 
     if (view.rules().enabled(featureDeepFreeze))
     {
         auto const issuerAccount = view.read(keylet::account(issue.account));
         if (!issuerAccount)
         {
-            JLOG(j.debug()) << "ripple::nft::checkTrustlineDeepFrozen: can't "
+            JLOG(j.debug()) << "xrpl::nft::checkTrustlineDeepFrozen: can't "
                                "receive IOUs from non-existent issuer: "
                             << to_string(issue.account);
 
@@ -1135,5 +1135,60 @@ checkTrustlineDeepFrozen(
     return tesSUCCESS;
 }
 
+TER
+transferNFToken(
+    ApplyView& view,
+    AccountID const& buyer,
+    AccountID const& seller,
+    uint256 const& nftokenID)
+{
+    auto tokenAndPage = nft::findTokenAndPage(view, seller, nftokenID);
+
+    if (!tokenAndPage)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    if (auto const ret = nft::removeToken(
+            view, seller, nftokenID, std::move(tokenAndPage->page));
+        !isTesSuccess(ret))
+        return ret;
+
+    auto const sleBuyer = view.read(keylet::account(buyer));
+    if (!sleBuyer)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    std::uint32_t const buyerOwnerCountBefore =
+        sleBuyer->getFieldU32(sfOwnerCount);
+
+    auto const insertRet =
+        nft::insertToken(view, buyer, std::move(tokenAndPage->token));
+
+    // if fixNFTokenReserve is enabled, check if the buyer has sufficient
+    // reserve to own a new object, if their OwnerCount changed.
+    //
+    // There was an issue where the buyer accepts a sell offer, the ledger
+    // didn't check if the buyer has enough reserve, meaning that buyer can get
+    // NFTs free of reserve.
+    if (view.rules().enabled(fixNFTokenReserve))
+    {
+        // To check if there is sufficient reserve, we cannot use mPriorBalance
+        // because NFT is sold for a price. So we must use the balance after
+        // the deduction of the potential offer price. A small caveat here is
+        // that the balance has already deducted the transaction fee, meaning
+        // that the reserve requirement is a few drops higher.
+        auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
+
+        auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
+        if (buyerOwnerCountAfter > buyerOwnerCountBefore)
+        {
+            if (auto const reserve =
+                    view.fees().accountReserve(buyerOwnerCountAfter);
+                buyerBalance < reserve)
+                return tecINSUFFICIENT_RESERVE;
+        }
+    }
+
+    return insertRet;
+}
+
 }  // namespace nft
-}  // namespace ripple
+}  // namespace xrpl

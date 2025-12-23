@@ -14,7 +14,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
@@ -151,7 +151,10 @@ VaultCreate::doApply()
     auto pseudoId = pseudo->at(sfAccount);
     auto asset = tx[sfAsset];
 
-    if (auto ter = addEmptyHolding(view(), pseudoId, mPriorBalance, asset, j_);
+    Issue const issue = asset.get<Issue>();
+    STAmount limit{issue, 0};
+    if (auto ter =
+            addEmptyHolding(view(), pseudoId, mPriorBalance, asset, j_);
         !isTesSuccess(ter))
         return ter;
 
@@ -233,4 +236,4 @@ VaultCreate::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 class Ledger;
 class STTx;
@@ -52,6 +52,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

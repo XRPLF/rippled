@@ -10,7 +10,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class TxMeta
 {
@@ -84,7 +84,7 @@ public:
             deliveredAmount_ = obj.getFieldAmount(sfDeliveredAmount);
 
         if (obj.isFieldPresent(sfParentBatchID))
-            parentBatchID_ = obj.getFieldH256(sfParentBatchID);
+            parentBatchId_ = obj.getFieldH256(sfParentBatchID);
 
         if (obj.isFieldPresent(sfGasUsed))
             gasUsed_ = obj.getFieldU32(sfGasUsed);
@@ -108,7 +108,7 @@ public:
     void
     setParentBatchID(std::optional<uint256> const& id)
     {
-        parentBatchID_ = id;
+        parentBatchId_ = id;
     }
 
     void
@@ -142,13 +142,13 @@ private:
     int result_;
 
     std::optional<STAmount> deliveredAmount_;
-    std::optional<uint256> parentBatchID_;
+    std::optional<uint256> parentBatchId_;
     std::optional<std::uint32_t> gasUsed_;
     std::optional<std::int32_t> wasmReturnCode_;
 
     STArray nodes_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

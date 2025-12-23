@@ -13,10 +13,10 @@
 
 namespace bft = boost::function_types;
 
-namespace ripple {
+namespace xrpl {
 
 using Bytes = std::vector<std::uint8_t>;
-using Hash = ripple::uint256;
+using Hash = xrpl::uint256;
 
 struct wmem
 {
@@ -31,6 +31,7 @@ struct WasmResult
     int64_t cost;
 };
 typedef WasmResult<int32_t> EscrowResult;
+typedef WasmResult<int32_t> WasmRunResult;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -247,4 +248,4 @@ wasmParams(Types&&... args)
     return v;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -15,6 +15,7 @@
 #include <test/jtx/balance.h>
 #include <test/jtx/batch.h>
 #include <test/jtx/check.h>
+#include <test/jtx/contract.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/delegate.h>
 #include <test/jtx/delivermin.h>

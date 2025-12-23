@@ -1,7 +1,7 @@
 #include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/ledger/CachedView.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 bool
@@ -39,8 +39,7 @@ CachedViewImpl::read(Keylet const& k) const
     });
     // If the sle is null, then a failure must have occurred in base_.read()
     XRPL_ASSERT(
-        sle || baseRead,
-        "ripple::CachedView::read : null SLE result from base");
+        sle || baseRead, "xrpl::CachedView::read : null SLE result from base");
     if (cacheHit && baseRead)
         hitsexpired.increment();
     else if (cacheHit)
@@ -62,4 +61,4 @@ CachedViewImpl::read(Keylet const& k) const
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl

@@ -269,7 +269,7 @@ protected:
         error_code const& ec,
         size_t bytesTransferred)
     {
-        using namespace ripple;
+        using namespace xrpl;
 
         if (ec)
         {

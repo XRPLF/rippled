@@ -6,7 +6,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Editable, discardable view that can build metadata for one tx.
 
@@ -89,6 +89,6 @@ private:
     std::optional<std::int32_t> wasmReturnCode_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

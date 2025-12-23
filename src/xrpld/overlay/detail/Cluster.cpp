@@ -9,7 +9,7 @@
 
 #include <boost/regex.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 Cluster::Cluster(beast::Journal j) : j_(j)
 {
@@ -114,4 +114,4 @@ Cluster::load(Section const& nodes)
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

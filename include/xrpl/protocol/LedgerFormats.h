@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/KnownFormats.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Identifiers for on-ledger objects.
 
@@ -79,14 +79,6 @@ enum LedgerEntryType : std::uint16_t
                     No objects of this type were ever created.
      */
     ltNICKNAME [[deprecated("This object type is not supported and should not be used.")]] = 0x006e,
-
-    /** A legacy, deprecated type.
-
-        \deprecated **This object type is not supported and should not be used.**
-                    Support for this type of object was never implemented.
-                    No objects of this type were ever created.
-     */
-    ltCONTRACT [[deprecated("This object type is not supported and should not be used.")]] = 0x0063,
 
     /** A legacy, deprecated type.
 
@@ -210,6 +202,6 @@ public:
     getInstance();
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

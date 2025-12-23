@@ -5,7 +5,7 @@
 
 #include <initializer_list>
 
-namespace ripple {
+namespace xrpl {
 
 TxFormats::TxFormats()
 {
@@ -37,7 +37,7 @@ TxFormats::TxFormats()
 
 #define UNWRAP(...) __VA_ARGS__
 #define TRANSACTION(                                              \
-    tag, value, name, delegatable, amendment, privileges, fields) \
+    tag, value, name, delegatable, amendment, privileges, emitable, fields) \
     add(jss::name, tag, UNWRAP fields, commonFields);
 
 #include <xrpl/protocol/detail/transactions.macro>
@@ -55,4 +55,4 @@ TxFormats::getInstance()
     return instance;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

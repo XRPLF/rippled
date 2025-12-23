@@ -1,6 +1,6 @@
 #include <xrpld/rpc/InfoSub.h>
 
-namespace ripple {
+namespace xrpl {
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as
@@ -32,6 +32,7 @@ InfoSub::~InfoSub()
     m_source.unsubValidations(mSeq);
     m_source.unsubPeerStatus(mSeq);
     m_source.unsubConsensus(mSeq);
+    m_source.unsubContractEvent(mSeq);
 
     // Use the internal unsubscribe so that it won't call
     // back to us and modify its own parameter
@@ -126,8 +127,8 @@ unsigned int
 InfoSub::getApiVersion() const noexcept
 {
     XRPL_ASSERT(
-        apiVersion_ > 0, "ripple::InfoSub::getApiVersion : valid API version");
+        apiVersion_ > 0, "xrpl::InfoSub::getApiVersion : valid API version");
     return apiVersion_;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

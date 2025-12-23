@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * API version numbers used in later API versions
@@ -58,14 +58,14 @@ static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
 static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
 static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
 
-template <class JsonObject>
-void
-setVersion(JsonObject& parent, unsigned int apiVersion, bool betaEnabled)
+inline void
+setVersion(Json::Value& parent, unsigned int apiVersion, bool betaEnabled)
 {
     XRPL_ASSERT(
         apiVersion != apiInvalidVersion,
-        "ripple::RPC::setVersion : input is valid");
-    auto& retObj = addObject(parent, jss::version);
+        "xrpl::RPC::setVersion : input is valid");
+
+    auto& retObj = parent[jss::version] = Json::objectValue;
 
     if (apiVersion == apiVersionIfUnspecified)
     {
@@ -95,7 +95,7 @@ setVersion(JsonObject& parent, unsigned int apiVersion, bool betaEnabled)
  * 3) the version number is unspecified and
  *    APIVersionIfUnspecified is out of the supported range
  *
- * @param jv a Json value that may or may not specifies
+ * @param jv a Json value that may or may not specify
  *        the api version number
  * @param betaEnabled if the beta API version is enabled
  * @return the api version number
@@ -167,6 +167,6 @@ forAllApiVersions(Fn const& fn, Args&&... args)
         RPC::apiMaximumValidVersion>(fn, std::forward<Args>(args)...);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

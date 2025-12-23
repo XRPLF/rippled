@@ -3,7 +3,7 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 
 namespace Tuning {
 
@@ -47,6 +47,6 @@ std::size_t constexpr readBufferBytes = 16384;
 
 }  // namespace Tuning
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

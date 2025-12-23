@@ -9,7 +9,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/resource/Consumer.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
@@ -158,6 +158,11 @@ public:
         virtual bool
         unsubConsensus(std::uint64_t uListener) = 0;
 
+        virtual bool
+        subContractEvent(ref ispListener) = 0;
+        virtual bool
+        unsubContractEvent(std::uint64_t uListener) = 0;
+
         // VFALCO TODO Remove
         //             This was added for one particular partner, it
         //             "pushes" subscription data to a particular URL.
@@ -237,6 +242,6 @@ private:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

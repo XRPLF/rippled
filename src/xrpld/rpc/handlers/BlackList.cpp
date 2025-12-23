@@ -4,7 +4,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/ResourceManager.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doBlackList(RPC::JsonContext& context)
@@ -16,4 +16,4 @@ doBlackList(RPC::JsonContext& context)
         return rm.getJson();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

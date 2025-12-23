@@ -9,7 +9,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 // See https://xrpl.org/transaction-results.html
 //
@@ -352,6 +352,7 @@ enum TECcodes : TERUnderlyingType {
     // reclaimed after those networks reset.
     tecNO_DELEGATE_PERMISSION = 198,
     tecWASM_REJECTED = 199,
+    tecINVALID_PARAMETERS = 200,
 };
 
 //------------------------------------------------------------------------------
@@ -690,6 +691,6 @@ transHuman(TER code);
 std::optional<TER>
 transCode(std::string const& token);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

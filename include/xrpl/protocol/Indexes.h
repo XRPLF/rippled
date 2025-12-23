@@ -15,7 +15,7 @@
 #include <cstdint>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 class SeqProxy;
 /** Keylet computation funclets.
@@ -203,7 +203,7 @@ inline Keylet
 page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
     XRPL_ASSERT(
-        root.type == ltDIR_NODE, "ripple::keylet::page : valid root type");
+        root.type == ltDIR_NODE, "xrpl::keylet::page : valid root type");
     return page(root.key, index);
 }
 /** @} */
@@ -356,6 +356,25 @@ permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
 
 Keylet
 permissionedDomain(uint256 const& domainID) noexcept;
+
+Keylet
+contractSource(uint256 const& contractHash) noexcept;
+
+Keylet
+contract(
+    uint256 const& contractHash,
+    AccountID const& owner,
+    std::uint32_t seq) noexcept;
+
+inline Keylet
+contract(uint256 const& contractID)
+{
+    return {ltCONTRACT, contractID};
+}
+
+Keylet
+contractData(AccountID const& owner, AccountID const& contractAccount) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
@@ -399,6 +418,6 @@ std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
 MPTID
 makeMptID(std::uint32_t sequence, AccountID const& account);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

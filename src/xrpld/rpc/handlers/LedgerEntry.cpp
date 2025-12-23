@@ -16,7 +16,7 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 static Expected<uint256, Json::Value>
 parseObjectID(
@@ -716,6 +716,71 @@ parseXChainOwnedCreateAccountClaimID(
     return keylet.key;
 }
 
+static Expected<uint256, Json::Value>
+parseContractSource(
+    Json::Value const& params,
+    Json::StaticString const fieldName)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const id = LedgerEntryHelpers::requiredAccountID(
+        params, jss::owner, "malformedOwner");
+    if (!id)
+        return Unexpected(id.error());
+
+    auto const seq = LedgerEntryHelpers::requiredUInt32(
+        params, jss::seq, "malformedRequest");
+    if (!seq)
+        return Unexpected(seq.error());
+
+    return keylet::vault(*id, *seq).key;
+}
+
+static Expected<uint256, Json::Value>
+parseContract(Json::Value const& params, Json::StaticString const fieldName)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const id = LedgerEntryHelpers::requiredAccountID(
+        params, jss::owner, "malformedOwner");
+    if (!id)
+        return Unexpected(id.error());
+
+    auto const seq = LedgerEntryHelpers::requiredUInt32(
+        params, jss::seq, "malformedRequest");
+    if (!seq)
+        return Unexpected(seq.error());
+
+    return keylet::vault(*id, *seq).key;
+}
+
+static Expected<uint256, Json::Value>
+parseContractData(Json::Value const& params, Json::StaticString const fieldName)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const id = LedgerEntryHelpers::requiredAccountID(
+        params, jss::owner, "malformedOwner");
+    if (!id)
+        return Unexpected(id.error());
+
+    auto const seq = LedgerEntryHelpers::requiredUInt32(
+        params, jss::seq, "malformedRequest");
+    if (!seq)
+        return Unexpected(seq.error());
+
+    return keylet::vault(*id, *seq).key;
+}
+
 using FunctionType = Expected<uint256, Json::Value> (*)(
     Json::Value const&,
     Json::StaticString const);
@@ -918,4 +983,4 @@ doLedgerEntryGrpc(
     *(response.mutable_ledger()) = request.ledger();
     return {response, status};
 }
-}  // namespace ripple
+}  // namespace xrpl

@@ -2,7 +2,6 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/json/json_value.h>
@@ -12,7 +11,9 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+#include <boost/algorithm/string/case_conv.hpp>
+
+namespace xrpl {
 
 // {
 //   account: <ident>,
@@ -141,7 +142,7 @@ doAccountInfo(RPC::JsonContext& context)
                     name = name.substr(0, name.size() - 2);
                     XRPL_ASSERT_PARTS(
                         !name.empty(),
-                        "ripple::doAccountInfo",
+                        "xrpl::doAccountInfo",
                         "name is not empty");
                 }
                 // ValidPseudoAccounts invariant guarantees that only one field
@@ -293,4 +294,4 @@ doAccountInfo(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

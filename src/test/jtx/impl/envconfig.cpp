@@ -3,7 +3,7 @@
 
 #include <xrpld/core/ConfigSections.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 std::atomic<bool> envUseIPv4{false};
@@ -161,4 +161,4 @@ makeConfig(
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

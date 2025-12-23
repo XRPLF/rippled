@@ -8,7 +8,7 @@
 #include <cstring>
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 /** Like std::vector<char> but better.
     Meets the requirements of BufferFactory.
@@ -96,7 +96,7 @@ public:
         XRPL_ASSERT(
             s.size() == 0 || size_ == 0 || s.data() < p_.get() ||
                 s.data() >= p_.get() + size_,
-            "ripple::Buffer::operator=(Slice) : input not a subset");
+            "xrpl::Buffer::operator=(Slice) : input not a subset");
 
         if (auto p = alloc(s.size()))
             std::memcpy(p, s.data(), s.size());
@@ -215,6 +215,6 @@ operator!=(Buffer const& lhs, Buffer const& rhs) noexcept
     return !(lhs == rhs);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

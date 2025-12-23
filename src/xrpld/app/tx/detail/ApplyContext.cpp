@@ -5,7 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
 
-namespace ripple {
+namespace xrpl {
 
 ApplyContext::ApplyContext(
     Application& app_,
@@ -28,13 +28,21 @@ ApplyContext::ApplyContext(
     XRPL_ASSERT(
         parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),
         "Parent Batch ID should be set if batch apply flag is set");
-    view_.emplace(&base_, flags_);
+    view_.emplace(&base_.view(), flags_);
 }
 
 void
 ApplyContext::discard()
 {
-    view_.emplace(&base_, flags_);
+    base_.discard();
+    view_.emplace(&base_.view(), flags_);
+}
+
+void
+ApplyContext::finalize()
+{
+    base_.commit();
+    view_.emplace(&base_.view(), flags_);
 }
 
 std::optional<TxMeta>
@@ -46,7 +54,7 @@ ApplyContext::apply(TER ter)
     }
     view_->setGasUsed(gasUsed_);
     return view_->apply(
-        base_, tx, ter, parentBatchId_, flags_ & tapDRY_RUN, journal);
+        base_.view(), tx, ter, parentBatchId_, flags_ & tapDRY_RUN, journal);
 }
 
 std::size_t
@@ -62,7 +70,7 @@ ApplyContext::visit(std::function<void(
                         std::shared_ptr<SLE const> const&,
                         std::shared_ptr<SLE const> const&)> const& func)
 {
-    view_->visit(base_, func);
+    view_->visit(base_.view(), func);
 }
 
 TER
@@ -138,7 +146,7 @@ ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
 {
     XRPL_ASSERT(
         isTesSuccess(result) || isTecClaim(result),
-        "ripple::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM");
+        "xrpl::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM");
 
     return checkInvariantsHelper(
         result,
@@ -146,4 +154,4 @@ ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
         std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
 }
 
-}  // namespace ripple
+}  // namespace xrpl

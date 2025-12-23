@@ -12,6 +12,7 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Units.h>
@@ -24,7 +25,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 class STArray;
 
@@ -216,6 +217,10 @@ public:
     getFieldI32(SField const& field) const;
     AccountID
     getAccountID(SField const& field) const;
+    STData
+    getFieldData(SField const& field) const;
+    STDataType
+    getFieldDataType(SField const& field) const;
 
     Blob
     getFieldVL(SField const& field) const;
@@ -234,6 +239,8 @@ public:
     getFieldCurrency(SField const& field) const;
     STNumber const&
     getFieldNumber(SField const& field) const;
+    STJson const&
+    getFieldJson(SField const& field) const;
 
     /** Get the value of a field.
         @param A TypedField built from an SField value representing the desired
@@ -339,6 +346,9 @@ public:
     set(STBase&& v);
 
     void
+    addFieldFromSlice(SField const& sfield, Slice const& data);
+
+    void
     setFieldU8(SField const& field, unsigned char);
     void
     setFieldU16(SField const& field, std::uint16_t);
@@ -376,6 +386,8 @@ public:
     setFieldArray(SField const& field, STArray const& v);
     void
     setFieldObject(SField const& field, STObject const& v);
+    void
+    setFieldJson(SField const& field, STJson const& v);
 
     template <class Tag>
     void
@@ -772,7 +784,7 @@ STObject::Proxy<T>::assign(U&& u)
         t = dynamic_cast<T*>(st_->getPField(*f_, true));
     else
         t = dynamic_cast<T*>(st_->makeFieldPresent(*f_));
-    XRPL_ASSERT(t, "ripple::STObject::Proxy::assign : type cast succeeded");
+    XRPL_ASSERT(t, "xrpl::STObject::Proxy::assign : type cast succeeded");
     *t = std::forward<U>(u);
 }
 
@@ -1064,18 +1076,17 @@ STObject::at(TypedField<T> const& f) const
         return u->value();
 
     XRPL_ASSERT(
-        mType,
-        "ripple::STObject::at(TypedField auto) : field template non-null");
+        mType, "xrpl::STObject::at(TypedField auto) : field template non-null");
     XRPL_ASSERT(
         b->getSType() == STI_NOTPRESENT,
-        "ripple::STObject::at(TypedField auto) : type not present");
+        "xrpl::STObject::at(TypedField auto) : type not present");
 
     if (mType->style(f) == soeOPTIONAL)
         Throw<STObject::FieldErr>("Missing optional field: " + f.getName());
 
     XRPL_ASSERT(
         mType->style(f) == soeDEFAULT,
-        "ripple::STObject::at(TypedField auto) : template style is default");
+        "xrpl::STObject::at(TypedField auto) : template style is default");
 
     // Used to help handle the case where value_type is a const reference,
     // otherwise we would return the address of a temporary.
@@ -1095,16 +1106,16 @@ STObject::at(OptionaledField<T> const& of) const
     {
         XRPL_ASSERT(
             mType,
-            "ripple::STObject::at(OptionaledField auto) : field template "
+            "xrpl::STObject::at(OptionaledField auto) : field template "
             "non-null");
         XRPL_ASSERT(
             b->getSType() == STI_NOTPRESENT,
-            "ripple::STObject::at(OptionaledField auto) : type not present");
+            "xrpl::STObject::at(OptionaledField auto) : type not present");
         if (mType->style(*of.f) == soeOPTIONAL)
             return std::nullopt;
         XRPL_ASSERT(
             mType->style(*of.f) == soeDEFAULT,
-            "ripple::STObject::at(OptionaledField auto) : template style is "
+            "xrpl::STObject::at(OptionaledField auto) : template style is "
             "default");
         return typename T::value_type{};
     }
@@ -1264,6 +1275,6 @@ STObject::peekField(SField const& field)
     return *cf;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

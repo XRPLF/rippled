@@ -12,7 +12,7 @@
 #include <unordered_set>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 // Use a static inside a function to help prevent order-of-initialization issues
@@ -82,7 +82,7 @@ public:
             return false;
         XRPL_ASSERT(
             presets_ == other.presets_,
-            "ripple::Rules::Impl::operator==(Impl) const : input presets do "
+            "xrpl::Rules::Impl::operator==(Impl) const : input presets do "
             "match");
         return *digest_ == *other.digest_;
     }
@@ -110,7 +110,7 @@ Rules::presets() const
 bool
 Rules::enabled(uint256 const& feature) const
 {
-    XRPL_ASSERT(impl_, "ripple::Rules::enabled : initialized");
+    XRPL_ASSERT(impl_, "xrpl::Rules::enabled : initialized");
 
     return impl_->enabled(feature);
 }
@@ -120,7 +120,7 @@ Rules::operator==(Rules const& other) const
 {
     XRPL_ASSERT(
         impl_ && other.impl_,
-        "ripple::Rules::operator==(Rules) const : both initialized");
+        "xrpl::Rules::operator==(Rules) const : both initialized");
     if (impl_.get() == other.impl_.get())
         return true;
     return *impl_ == *other.impl_;
@@ -139,4 +139,4 @@ isFeatureEnabled(uint256 const& feature)
     return rules && rules->enabled(feature);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

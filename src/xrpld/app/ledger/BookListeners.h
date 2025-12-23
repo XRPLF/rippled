@@ -8,7 +8,7 @@
 #include <memory>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 /** Listen to public/subscribe messages from a book. */
 class BookListeners
@@ -50,6 +50,6 @@ private:
     hash_map<std::uint64_t, InfoSub::wptr> mListeners;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

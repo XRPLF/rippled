@@ -9,7 +9,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/nft.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace nft {
 
@@ -91,7 +91,7 @@ changeTokenURI(
     ApplyView& view,
     AccountID const& owner,
     uint256 const& nftokenID,
-    std::optional<ripple::Slice> const& uri);
+    std::optional<xrpl::Slice> const& uri);
 
 /** Preflight checks shared by NFTokenCreateOffer and NFTokenMint */
 NotTEC
@@ -147,8 +147,15 @@ checkTrustlineDeepFrozen(
     beast::Journal const j,
     Issue const& issue);
 
+TER
+transferNFToken(
+    ApplyView& view,
+    AccountID const& buyer,
+    AccountID const& seller,
+    uint256 const& nftokenID);
+
 }  // namespace nft
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED

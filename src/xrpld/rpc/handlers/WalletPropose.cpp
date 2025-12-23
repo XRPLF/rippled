@@ -14,7 +14,7 @@
 #include <cmath>
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 double
 estimate_entropy(std::string const& input)
@@ -158,4 +158,4 @@ walletPropose(Json::Value const& params)
     return obj;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

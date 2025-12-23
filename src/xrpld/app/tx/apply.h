@@ -10,7 +10,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class HashRouter;
@@ -109,6 +109,15 @@ apply(
     ApplyFlags flags,
     beast::Journal journal);
 
+ApplyResult
+apply(
+    Application& app,
+    OpenView& view,
+    uint256 const& parentBatchId,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j);
+
 /** Enum class for return value from `applyTransaction`
 
     @see applyTransaction
@@ -138,6 +147,6 @@ applyTransaction(
     ApplyFlags flags,
     beast::Journal journal);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

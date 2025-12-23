@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 /** Transaction flags.
 
@@ -292,8 +292,22 @@ constexpr std::uint32_t const tfLoanImpair = 0x00020000;
 constexpr std::uint32_t const tfLoanUnimpair = 0x00040000;
 constexpr std::uint32_t const tfLoanManageMask = ~(tfUniversal | tfLoanDefault | tfLoanImpair | tfLoanUnimpair);
 
+// Contract flags:
+constexpr std::uint32_t tfImmutable     = 0x00010000;
+constexpr std::uint32_t tfCodeImmutable = 0x00020000;
+constexpr std::uint32_t tfABIImmutable  = 0x00040000;
+constexpr std::uint32_t tfUndeletable   = 0x00080000;
+constexpr std::uint32_t tfContractMask =
+    ~(tfUniversal | tfImmutable | tfCodeImmutable | tfABIImmutable | tfUndeletable);
+
+constexpr std::uint32_t tfSendAmount     = 0x00010000;
+constexpr std::uint32_t tfSendNFToken    = 0x00020000;
+constexpr std::uint32_t tfAuthorizeToken = 0x00040000;
+constexpr std::uint32_t tfContractParameterMask =
+    ~(tfSendAmount | tfSendNFToken | tfAuthorizeToken);
+
 // clang-format on
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** AMMBid implements AMM bid Transactor.
  * This is a mechanism for an AMM instance to auction-off
@@ -65,6 +65,6 @@ public:
     doApply() override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_TX_AMMBID_H_INCLUDED

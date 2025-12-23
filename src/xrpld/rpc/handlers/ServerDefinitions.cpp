@@ -14,7 +14,7 @@
 
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -75,6 +75,7 @@ ServerDefinitions::translate(std::string const& inp)
         {"PATHSET", "PathSet"},
         {"VL", "Blob"},
         {"XCHAIN_BRIDGE", "XChainBridge"},
+        {"DATATYPE", "DataType"},
     };
 
     if (auto const& it = replacements.find(inp); it != replacements.end())
@@ -214,7 +215,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::FIELDS][i++] = a;
     }
 
-    for (auto const& [code, f] : ripple::SField::getKnownCodeToField())
+    for (auto const& [code, f] : xrpl::SField::getKnownCodeToField())
     {
         if (f->fieldName == "")
             continue;
@@ -268,7 +269,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     // generate hash
     {
         std::string const out = Json::FastWriter().write(defs_);
-        defsHash_ = ripple::sha512Half(ripple::Slice{out.data(), out.size()});
+        defsHash_ = xrpl::sha512Half(xrpl::Slice{out.data(), out.size()});
         defs_[jss::hash] = to_string(defsHash_);
     }
 }
@@ -298,4 +299,4 @@ doServerDefinitions(RPC::JsonContext& context)
     return defs.get();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

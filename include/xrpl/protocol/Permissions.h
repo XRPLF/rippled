@@ -1,6 +1,7 @@
 #ifndef XRPL_PROTOCOL_PERMISSION_H_INCLUDED
 #define XRPL_PROTOCOL_PERMISSION_H_INCLUDED
 
+#include <xrpl/protocol/Emitable.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -9,7 +10,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 /**
  * We have both transaction type permissions and granular type permissions.
  * Since we will reuse the TransactionFormats to parse the Transaction
@@ -83,6 +84,6 @@ public:
     permissionToTxType(uint32_t const& value) const;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

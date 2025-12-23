@@ -4,7 +4,7 @@
 #include <optional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 enum class KeyType {
     secp256k1 = 0,
@@ -42,6 +42,6 @@ operator<<(Stream& s, KeyType type)
     return s << to_string(type);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

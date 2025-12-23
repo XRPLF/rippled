@@ -13,7 +13,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doSubscribe(RPC::JsonContext& context)
@@ -148,6 +148,10 @@ doSubscribe(RPC::JsonContext& context)
             else if (streamName == "consensus")
             {
                 context.netOps.subConsensus(ispSub);
+            }
+            else if (streamName == "contract_events")
+            {
+                context.netOps.subContractEvent(ispSub);
             }
             else
             {
@@ -367,4 +371,4 @@ doSubscribe(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

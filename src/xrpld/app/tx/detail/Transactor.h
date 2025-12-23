@@ -7,9 +7,10 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/Emitable.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** State information when preflighting a tx. */
 struct PreflightContext
@@ -247,7 +248,7 @@ protected:
 
         @param app The application hosting the server
         @param baseFee The base fee of a candidate transaction
-            @see ripple::calculateBaseFee
+            @see xrpl::calculateBaseFee
         @param fees Fee settings from the current ledger
         @param flags Transaction processing fees
      */
@@ -312,6 +313,9 @@ protected:
 private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
+
+    std::pair<TER, XRPAmount>
+    checkInvariants(TER result, XRPAmount fee);
 
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);
@@ -452,6 +456,6 @@ Transactor::validNumericMinimum(
     return validNumericMinimum(value, min.value());
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

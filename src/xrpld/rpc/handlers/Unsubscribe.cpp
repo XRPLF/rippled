@@ -8,7 +8,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doUnsubscribe(RPC::JsonContext& context)
@@ -83,6 +83,10 @@ doUnsubscribe(RPC::JsonContext& context)
             else if (streamName == "consensus")
             {
                 context.netOps.unsubConsensus(ispSub->getSeq());
+            }
+            else if (streamName == "contract_events")
+            {
+                context.netOps.unsubContractEvent(ispSub->getSeq());
             }
             else
             {
@@ -244,4 +248,4 @@ doUnsubscribe(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
