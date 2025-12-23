@@ -187,6 +187,15 @@ parse(Json::Value const& param)
     return uNodeIndex;
 }
 
+Expected<uint256, Json::Value>
+requiredUInt256(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    std::string const& err)
+{
+    return required<uint256>(params, fieldName, err, "Hash256");
+}
+
 template <>
 std::optional<uint192>
 parse(Json::Value const& param)
