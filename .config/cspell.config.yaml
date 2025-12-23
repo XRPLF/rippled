@@ -16,18 +16,18 @@ dictionaries:
   - en_US
   - en_GB
 ignoreRegExpList:
-  - /[rs][1-9A-HJ-NP-Za-km-z]{25,34}/g
-  - /(XRPL|BEAST)_[A-Z_0-9]+_H_INCLUDED+/g
-  - /(XRPL|BEAST)_[A-Z_0-9]+_H+/g
-  - /::[a-z:_]+/g
-  - /lib[a-z]+/g
-  - /https?:\/\/[^\s"'<>]+/g
-  - /[0-9]{4}-[0-9]{2}-[0-9]{2}[,:]\s*[A-Za-zÀ-ÖØ-öø-ÿ.\s]+/g
-  - /[0-9]{4}[,:]?\s*[A-Za-zÀ-ÖØ-öø-ÿ.\s]+/gu
-  - /\[[A-Za-zÀ-ÖØ-öø-ÿ0-9-]+\]\(https:\/\/github.com\/[A-Za-zÀ-ÖØ-öø-ÿ0-9-]+\)/g
-  - /[A-Za-zÀ-ÖØ-öø-ÿ0-9._%+-]+@[A-Za-zÀ-ÖØ-öø-ÿ0-9.-]+\.[A-Za-zÀ-ÖØ-öø-ÿ]{2,}/g
-  - /-[DWw][a-zA-Z0-9_-]+=/g
-  - /[\['"`]-[DWw][a-zA-Z0-9_-]+['"`\]]/g
+  - /[rs][1-9A-HJ-NP-Za-km-z]{25,34}/g # addresses and seeds
+  - /(XRPL|BEAST)_[A-Z_0-9]+_H_INCLUDED+/g # include guards
+  - /(XRPL|BEAST)_[A-Z_0-9]+_H+/g # include guards
+  - /::[a-z:_]+/g # things from other namespaces
+  - /lib[a-z]+/g # libraries
+  - /https?:\/\/[^\s"'<>]+/g # URLs
+  - /[0-9]{4}-[0-9]{2}-[0-9]{2}[,:]\s*[A-Za-zÀ-ÖØ-öø-ÿ.\s]+/g # copyright dates
+  - /[0-9]{4}[,:]?\s*[A-Za-zÀ-ÖØ-öø-ÿ.\s]+/g # copyright years
+  - /\[[A-Za-zÀ-ÖØ-öø-ÿ0-9-]+\]\(https:\/\/github.com\/[A-Za-zÀ-ÖØ-öø-ÿ0-9-]+\)/g # Github usernames
+  - /[A-Za-zÀ-ÖØ-öø-ÿ0-9._%+-]+@[A-Za-zÀ-ÖØ-öø-ÿ0-9.-]+\.[A-Za-zÀ-ÖØ-öø-ÿ]{2,}/g # emails
+  - /-[DWw][a-zA-Z0-9_-]+=/g # compile flags
+  - /[\['"`]-[DWw][a-zA-Z0-9_-]+['"`\]]/g # compile flags
 suggestWords:
   - xprl->xrpl
   - syn
@@ -35,9 +35,11 @@ suggestWords:
   - synched->synced
   - synch->sync
 words:
+  - abempty
   - AMMID
   - amt
   - amts
+  - asnode
   - asynchrony
   - attestation
   - autobridge
@@ -52,6 +54,7 @@ words:
   - canonicality
   - checkme
   - chrono
+  - citardauq
   - clawback
   - clawbacks
   - coeffs
@@ -70,6 +73,7 @@ words:
   - ctid
   - currenttxhash
   - daria
+  - dcmake
   - dearmor
   - deleteme
   - demultiplexer
@@ -83,6 +87,7 @@ words:
   - eahennis
   - endmacro
   - endpointv
+  - ercentage
   - evented
   - exceptioned
   - Falco
@@ -93,6 +98,8 @@ words:
   - gcov
   - gcovr
   - Gnutella
+  - gpgcheck
+  - gpgkey
   - hotwallet
   - ifndef
   - inequation
@@ -105,18 +112,22 @@ words:
   - jlog
   - keylet
   - keylets
+  - keyvadb
   - ledgerentry
   - ledgerhash
   - ledgerindex
+  - leftw
   - legleux
   - levelization
   - levelized
   - libpb
   - libxrpl
+  - llection
   - LOCALGOOD
   - logwstream
   - lseq
   - lsmf
+  - ltype
   - MEMORYSTATUSEX
   - Merkle
   - Metafuncton
@@ -141,12 +152,14 @@ words:
   - nftokens
   - nftpage
   - nikb
+  - nonxrp
   - noripple
   - nudb
   - nullptr
   - nunl
   - Nyffenegger
   - ostr
+  - partitioner
   - paychan
   - paychans
   - permdex
@@ -162,9 +175,11 @@ words:
   - protos
   - ptrs
   - pyenv
+  - qalloc
   - queuable
   - Raphson
   - replayer
+  - rerere
   - retriable
   - RIPD
   - ripdtop
@@ -179,6 +194,8 @@ words:
   - sahyadri
   - Satoshi
   - secp
+  - sendq
+  - seqit
   - sf
   - shamap
   - shamapitem
@@ -188,6 +205,7 @@ words:
   - sles
   - soci
   - sslws
+  - statsd
   - STATSDCOLLECTOR
   - stobj
   - stobject
@@ -209,9 +227,11 @@ words:
   - txn
   - txns
   - txs
+  - umant
   - unacquired
   - unambiguity
   - unauthorizing
+  - unergonomic
   - unfetched
   - unflatten
   - unfund
@@ -229,8 +249,11 @@ words:
   - venv
   - vfalco
   - vinnie
+  - wextra
   - wptr
+  - writeme
   - wsrch
+  - wthread
   - xbridge
   - xchain
   - XMACRO
@@ -240,25 +263,3 @@ words:
   - xrplf
   - xxhash
   - xxhasher
-  - abempty
-  - asnode
-  - citardauq
-  - dcmake
-  - ercentage
-  - gpgcheck
-  - gpgkey
-  - keyvadb
-  - leftw
-  - ltype
-  - nonxrp
-  - partitioner
-  - qalloc
-  - rerere
-  - sendq
-  - seqit
-  - statsd
-  - umant
-  - unergonomic
-  - wextra
-  - writeme
-  - wthread
