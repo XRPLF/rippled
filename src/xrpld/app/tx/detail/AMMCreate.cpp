@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
@@ -31,21 +12,15 @@
 
 namespace ripple {
 
+bool
+AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return ammEnabled(ctx.rules);
+}
+
 NotTEC
 AMMCreate::preflight(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Instance: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
 
@@ -74,14 +49,14 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 XRPAmount
 AMMCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // The fee required for AMMCreate is one owner reserve.
-    return view.fees().increment;
+    return calculateOwnerReserveFee(view, tx);
 }
 
 TER
@@ -203,7 +178,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             return tesSUCCESS;
         if (auto const sle = ctx.view.read(keylet::account(issue.account));
             !sle)
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
         else if (sle->getFlags() & lsfAllowTrustLineClawback)
             return tecNO_PERMISSION;
         return tesSUCCESS;
@@ -297,7 +272,7 @@ applyCreate(
             if (SLE::pointer sleRippleState =
                     sb.peek(keylet::line(accountId, amount.issue()));
                 !sleRippleState)
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
             else
             {
                 auto const flags = sleRippleState->getFlags();

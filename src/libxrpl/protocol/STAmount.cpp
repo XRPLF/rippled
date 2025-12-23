@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -67,29 +48,6 @@
 #include <vector>
 
 namespace ripple {
-
-namespace {
-
-// Use a static inside a function to help prevent order-of-initialzation issues
-LocalValue<bool>&
-getStaticSTAmountCanonicalizeSwitchover()
-{
-    static LocalValue<bool> r{true};
-    return r;
-}
-}  // namespace
-
-bool
-getSTAmountCanonicalizeSwitchover()
-{
-    return *getStaticSTAmountCanonicalizeSwitchover();
-}
-
-void
-setSTAmountCanonicalizeSwitchover(bool v)
-{
-    *getStaticSTAmountCanonicalizeSwitchover() = v;
-}
 
 static std::uint64_t const tenTo14 = 100000000000000ull;
 static std::uint64_t const tenTo14m1 = tenTo14 - 1;
@@ -321,7 +279,7 @@ STAmount::xrp() const
 IOUAmount
 STAmount::iou() const
 {
-    if (native() || !holds<Issue>())
+    if (integral())
         Throw<std::logic_error>("Cannot return non-IOU STAmount as IOUAmount");
 
     auto mantissa = static_cast<std::int64_t>(mValue);
@@ -872,7 +830,7 @@ STAmount::isDefault() const
 void
 STAmount::canonicalize()
 {
-    if (native() || mAsset.holds<MPTIssue>())
+    if (integral())
     {
         // native and MPT currency amounts should always have an offset of zero
         // log(2^64,10) ~ 19.2
@@ -884,18 +842,14 @@ STAmount::canonicalize()
             return;
         }
 
-        if (getSTAmountCanonicalizeSwitchover())
-        {
-            // log(cMaxNativeN, 10) == 17
-            if (native() && mOffset > 17)
-                Throw<std::runtime_error>(
-                    "Native currency amount out of range");
-            // log(maxMPTokenAmount, 10) ~ 18.96
-            if (mAsset.holds<MPTIssue>() && mOffset > 18)
-                Throw<std::runtime_error>("MPT amount out of range");
-        }
+        // log(cMaxNativeN, 10) == 17
+        if (native() && mOffset > 17)
+            Throw<std::runtime_error>("Native currency amount out of range");
+        // log(maxMPTokenAmount, 10) ~ 18.96
+        if (mAsset.holds<MPTIssue>() && mOffset > 18)
+            Throw<std::runtime_error>("MPT amount out of range");
 
-        if (getSTNumberSwitchover() && getSTAmountCanonicalizeSwitchover())
+        if (getSTNumberSwitchover())
         {
             Number num(
                 mIsNegative ? -mValue : mValue, mOffset, Number::unchecked{});
@@ -905,8 +859,10 @@ STAmount::canonicalize()
             };
             if (native())
                 set(XRPAmount{num});
-            else
+            else if (mAsset.holds<MPTIssue>())
                 set(MPTAmount{num});
+            else
+                Throw<std::runtime_error>("Unknown integral asset type");
             mOffset = 0;
         }
         else
@@ -919,16 +875,14 @@ STAmount::canonicalize()
 
             while (mOffset > 0)
             {
-                if (getSTAmountCanonicalizeSwitchover())
-                {
-                    // N.B. do not move the overflow check to after the
-                    // multiplication
-                    if (native() && mValue > cMaxNativeN)
-                        Throw<std::runtime_error>(
-                            "Native currency amount out of range");
-                    else if (!native() && mValue > maxMPTokenAmount)
-                        Throw<std::runtime_error>("MPT amount out of range");
-                }
+                // N.B. do not move the overflow check to after the
+                // multiplication
+                if (native() && mValue > cMaxNativeN)
+                    Throw<std::runtime_error>(
+                        "Native currency amount out of range");
+                else if (!native() && mValue > maxMPTokenAmount)
+                    Throw<std::runtime_error>("MPT amount out of range");
+
                 mValue *= 10;
                 --mOffset;
             }
@@ -1135,7 +1089,7 @@ amountFromJson(SField const& name, Json::Value const& v)
         }
         else
         {
-            parts.mantissa = -value.asInt();
+            parts.mantissa = value.asAbsUInt();
             parts.negative = true;
         }
     }
@@ -1507,6 +1461,33 @@ canonicalizeRoundStrict(
         value /= 10;
         ++offset;
     }
+}
+
+STAmount
+roundToScale(
+    STAmount const& value,
+    std::int32_t scale,
+    Number::rounding_mode rounding)
+{
+    // Nothing to do for integral types.
+    if (value.integral())
+        return value;
+
+    // If the value's exponent is greater than or equal to the scale, then
+    // rounding will do nothing, and might even lose precision, so just return
+    // the value.
+    if (value.exponent() >= scale)
+        return value;
+
+    STAmount const referenceValue{
+        value.asset(), STAmount::cMinValue, scale, value.negative()};
+
+    NumberRoundModeGuard mg(rounding);
+    // With an IOU, the the result of addition will be truncated to the
+    // precision of the larger value, which in this case is referenceValue. Then
+    // remove the reference value via subtraction, and we're left with the
+    // rounded value.
+    return (value + referenceValue) - referenceValue;
 }
 
 namespace {

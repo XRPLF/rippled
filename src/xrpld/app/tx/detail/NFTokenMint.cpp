@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2021 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/NFTokenMint.h>
 
 #include <xrpl/basics/Expected.h>
@@ -38,22 +19,23 @@ extractNFTokenFlagsFromTxFlags(std::uint32_t txFlags)
     return static_cast<std::uint16_t>(txFlags & 0x0000FFFF);
 }
 
-NotTEC
-NFTokenMint::preflight(PreflightContext const& ctx)
+static bool
+hasOfferFields(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureNonFungibleTokensV1))
-        return temDISABLED;
-
-    bool const hasOfferFields = ctx.tx.isFieldPresent(sfAmount) ||
+    return ctx.tx.isFieldPresent(sfAmount) ||
         ctx.tx.isFieldPresent(sfDestination) ||
         ctx.tx.isFieldPresent(sfExpiration);
+}
 
-    if (!ctx.rules.enabled(featureNFTokenMintOffer) && hasOfferFields)
-        return temDISABLED;
+bool
+NFTokenMint::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return ctx.rules.enabled(featureNFTokenMintOffer) || !hasOfferFields(ctx);
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
+std::uint32_t
+NFTokenMint::getFlagsMask(PreflightContext const& ctx)
+{
     // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
     // accounts allowed a TrustLine to be added to the issuer of that token
     // without explicit permission from that issuer.  This was enabled by
@@ -67,7 +49,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
     // tfTrustLine flag as a way to prevent the attack.  But until the
     // amendment passes we still need to keep the old behavior available.
-    std::uint32_t const NFTokenMintMask =
+    std::uint32_t const nfTokenMintMask =
         ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine)
         // if featureDynamicNFT enabled then new flag allowing mutable URI
         // available
@@ -76,9 +58,12 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         : ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable
                                                : tfNFTokenMintOldMask;
 
-    if (ctx.tx.getFlags() & NFTokenMintMask)
-        return temINVALID_FLAG;
+    return nfTokenMintMask;
+}
 
+NotTEC
+NFTokenMint::preflight(PreflightContext const& ctx)
+{
     if (auto const f = ctx.tx[~sfTransferFee])
     {
         if (f > maxTransferFee)
@@ -100,7 +85,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    if (hasOfferFields)
+    if (hasOfferFields(ctx))
     {
         // The Amount field must be present if either the Destination or
         // Expiration fields are present.
@@ -123,7 +108,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 uint256
@@ -226,24 +211,6 @@ NFTokenMint::doApply()
             // Should not happen.  Checked in preclaim.
             return Unexpected(tecNO_ISSUER);
 
-        if (!ctx_.view().rules().enabled(fixNFTokenRemint))
-        {
-            // Get the unique sequence number for this token:
-            std::uint32_t const tokenSeq =
-                (*root)[~sfMintedNFTokens].value_or(0);
-            {
-                std::uint32_t const nextTokenSeq = tokenSeq + 1;
-                if (nextTokenSeq < tokenSeq)
-                    return Unexpected(tecMAX_SEQUENCE_REACHED);
-
-                (*root)[sfMintedNFTokens] = nextTokenSeq;
-            }
-            ctx_.view().update(root);
-            return tokenSeq;
-        }
-
-        // With fixNFTokenRemint amendment enabled:
-        //
         // If the issuer hasn't minted an NFToken before we must add a
         // FirstNFTokenSequence field to the issuer's AccountRoot.  The
         // value of the FirstNFTokenSequence must equal the issuer's
@@ -302,7 +269,7 @@ NFTokenMint::doApply()
 
     if (nfTokenTemplate == nullptr)
         // Should never happen.
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const nftokenID = createNFTokenID(
         extractNFTokenFlagsFromTxFlags(ctx_.tx.getFlags()),

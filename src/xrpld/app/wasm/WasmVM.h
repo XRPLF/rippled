@@ -1,21 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
 #pragma once
 
 #include <xrpld/app/wasm/HostFunc.h>
@@ -38,10 +20,11 @@ static std::string_view const ESCROW_FUNCTION_NAME = "finish";
 
 uint32_t const MAX_PAGES = 128;  // 8MB = 64KB*128
 
-class WamrEngine;
+class WasmiEngine;
+
 class WasmEngine
 {
-    std::unique_ptr<WamrEngine> const impl;
+    std::unique_ptr<WasmiEngine> const impl;
 
     WasmEngine();
 
@@ -62,7 +45,7 @@ public:
     run(Bytes const& wasmCode,
         std::string_view funcName = {},
         std::vector<WasmParam> const& params = {},
-        std::vector<WasmImportFunc> const& imports = {},
+        ImportVec const& imports = {},
         HostFunctions* hfs = nullptr,
         int64_t gasLimit = -1,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
@@ -72,15 +55,13 @@ public:
         Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params = {},
-        std::vector<WasmImportFunc> const& imports = {},
+        ImportVec const& imports = {},
+        HostFunctions* hfs = nullptr,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
-
-    std::int32_t
-    initMaxPages(std::int32_t def);
 
     // Host functions helper functionality
     void*
-    newTrap(std::string_view msg = {});
+    newTrap(std::string const& txt = std::string());
 
     beast::Journal
     getJournal() const;
@@ -88,25 +69,23 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::vector<WasmImportFunc>
-createWasmImport(HostFunctions* hfs);
+ImportVec
+createWasmImport(HostFunctions& hfs);
 
 Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName = ESCROW_FUNCTION_NAME,
     std::vector<WasmParam> const& params = {},
-    HostFunctions* hfs = nullptr,
-    int64_t gasLimit = -1,
-    beast::Journal j = beast::Journal(beast::Journal::getNullSink()));
+    int64_t gasLimit = -1);
 
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName = ESCROW_FUNCTION_NAME,
-    std::vector<WasmParam> const& params = {},
-    HostFunctions* hfs = nullptr,
-    beast::Journal j = beast::Journal(beast::Journal::getNullSink()));
+    std::vector<WasmParam> const& params = {});
 
 Expected<WasmRunResult, TER>
 runContractWasm(

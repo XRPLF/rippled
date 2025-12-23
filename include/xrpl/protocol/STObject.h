@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
-#define RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
+#ifndef XRPL_PROTOCOL_STOBJECT_H_INCLUDED
+#define XRPL_PROTOCOL_STOBJECT_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Slice.h>
@@ -249,6 +230,9 @@ public:
     getFieldPathSet(SField const& field) const;
     STVector256 const&
     getFieldV256(SField const& field) const;
+    // If not found, returns an object constructed with the given field
+    STObject
+    getFieldObject(SField const& field) const;
     STArray const&
     getFieldArray(SField const& field) const;
     STCurrency const&
@@ -401,6 +385,8 @@ public:
     void
     setFieldArray(SField const& field, STArray const& v);
     void
+    setFieldObject(SField const& field, STObject const& v);
+    void
     setFieldJson(SField const& field, STJson const& v);
 
     template <class Tag>
@@ -508,6 +494,8 @@ public:
     value_type
     operator*() const;
 
+    /// Do not use operator->() unless the field is required, or you've checked
+    /// that it's set.
     T const*
     operator->() const;
 
@@ -531,7 +519,26 @@ protected:
 // Constraint += and -= ValueProxy operators
 // to value types that support arithmetic operations
 template <typename U>
-concept IsArithmetic = std::is_arithmetic_v<U> || std::is_same_v<U, STAmount>;
+concept IsArithmeticNumber = std::is_arithmetic_v<U> ||
+    std::is_same_v<U, Number> || std::is_same_v<U, STAmount>;
+template <
+    typename U,
+    typename Value = typename U::value_type,
+    typename Unit = typename U::unit_type>
+concept IsArithmeticValueUnit =
+    std::is_same_v<U, unit::ValueUnit<Unit, Value>> &&
+    IsArithmeticNumber<Value> && std::is_class_v<Unit>;
+template <typename U, typename Value = typename U::value_type>
+concept IsArithmeticST = !IsArithmeticValueUnit<U> && IsArithmeticNumber<Value>;
+template <typename U>
+concept IsArithmetic =
+    IsArithmeticNumber<U> || IsArithmeticST<U> || IsArithmeticValueUnit<U>;
+
+template <class T, class U>
+concept Addable = requires(T t, U u) { t = t + u; };
+template <typename T, typename U>
+concept IsArithmeticCompatible =
+    IsArithmetic<typename T::value_type> && Addable<typename T::value_type, U>;
 
 template <class T>
 class STObject::ValueProxy : public Proxy<T>
@@ -551,10 +558,12 @@ public:
     // Convenience operators for value types supporting
     // arithmetic operations
     template <IsArithmetic U>
+        requires IsArithmeticCompatible<T, U>
     ValueProxy&
     operator+=(U const& u);
 
     template <IsArithmetic U>
+        requires IsArithmeticCompatible<T, U>
     ValueProxy&
     operator-=(U const& u);
 
@@ -744,6 +753,8 @@ STObject::Proxy<T>::operator*() const -> value_type
     return this->value();
 }
 
+/// Do not use operator->() unless the field is required, or you've checked that
+/// it's set.
 template <class T>
 T const*
 STObject::Proxy<T>::operator->() const
@@ -790,6 +801,7 @@ STObject::ValueProxy<T>::operator=(U&& u)
 
 template <typename T>
 template <IsArithmetic U>
+    requires IsArithmeticCompatible<T, U>
 STObject::ValueProxy<T>&
 STObject::ValueProxy<T>::operator+=(U const& u)
 {
@@ -799,6 +811,7 @@ STObject::ValueProxy<T>::operator+=(U const& u)
 
 template <class T>
 template <IsArithmetic U>
+    requires IsArithmeticCompatible<T, U>
 STObject::ValueProxy<T>&
 STObject::ValueProxy<T>::operator-=(U const& u)
 {

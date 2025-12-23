@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
-#define RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
+#ifndef XRPL_PROTOCOL_TXFLAGS_H_INCLUDED
+#define XRPL_PROTOCOL_TXFLAGS_H_INCLUDED
 
 #include <xrpl/protocol/LedgerFormats.h>
 
@@ -156,14 +137,14 @@ constexpr std::uint32_t const tfMPTokenIssuanceCreateMask  =
 
 // MPTokenIssuanceCreate MutableFlags:
 // Indicating specific fields or flags may be changed after issuance.
-constexpr std::uint32_t const tmfMPTCanMutateCanLock = lmfMPTCanMutateCanLock;
-constexpr std::uint32_t const tmfMPTCanMutateRequireAuth = lmfMPTCanMutateRequireAuth;
-constexpr std::uint32_t const tmfMPTCanMutateCanEscrow = lmfMPTCanMutateCanEscrow;
-constexpr std::uint32_t const tmfMPTCanMutateCanTrade = lmfMPTCanMutateCanTrade;
-constexpr std::uint32_t const tmfMPTCanMutateCanTransfer = lmfMPTCanMutateCanTransfer;
-constexpr std::uint32_t const tmfMPTCanMutateCanClawback = lmfMPTCanMutateCanClawback;
-constexpr std::uint32_t const tmfMPTCanMutateMetadata = lmfMPTCanMutateMetadata;
-constexpr std::uint32_t const tmfMPTCanMutateTransferFee = lmfMPTCanMutateTransferFee;
+constexpr std::uint32_t const tmfMPTCanMutateCanLock = lsmfMPTCanMutateCanLock;
+constexpr std::uint32_t const tmfMPTCanMutateRequireAuth = lsmfMPTCanMutateRequireAuth;
+constexpr std::uint32_t const tmfMPTCanMutateCanEscrow = lsmfMPTCanMutateCanEscrow;
+constexpr std::uint32_t const tmfMPTCanMutateCanTrade = lsmfMPTCanMutateCanTrade;
+constexpr std::uint32_t const tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTransfer;
+constexpr std::uint32_t const tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
+constexpr std::uint32_t const tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
+constexpr std::uint32_t const tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
 constexpr std::uint32_t const tmfMPTokenIssuanceCreateMutableMask =
   ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow | tmfMPTCanMutateCanTrade
     | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback | tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
@@ -285,7 +266,33 @@ constexpr std::uint32_t tfIndependent                  = 0x00080000;
 constexpr std::uint32_t const tfBatchMask =
     ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent) | tfInnerBatchTxn;
 
+// LoanSet and LoanPay flags:
+// LoanSet: True, indicates the loan supports overpayments
+// LoanPay: True, indicates any excess in this payment can be used
+// as an overpayment. False, no overpayments will be taken.
+constexpr std::uint32_t const tfLoanOverpayment = 0x00010000;
+// LoanPay exclusive flags:
+// tfLoanFullPayment: True, indicates that the payment is an early
+// full payment. It must pay the entire loan including close
+// interest and fees, or it will fail. False: Not a full payment.
+constexpr std::uint32_t const tfLoanFullPayment = 0x00020000;
+// tfLoanLatePayment: True, indicates that the payment is late,
+// and includes late iterest and fees. If the loan is not late,
+// it will fail. False: not a late payment. If the current payment
+// is overdue, the transaction will fail.
+constexpr std::uint32_t const tfLoanLatePayment = 0x00040000;
+constexpr std::uint32_t const tfLoanSetMask = ~(tfUniversal |
+    tfLoanOverpayment);
+constexpr std::uint32_t const tfLoanPayMask = ~(tfUniversal |
+    tfLoanOverpayment | tfLoanFullPayment | tfLoanLatePayment);
 
+// LoanManage flags:
+constexpr std::uint32_t const tfLoanDefault = 0x00010000;
+constexpr std::uint32_t const tfLoanImpair = 0x00020000;
+constexpr std::uint32_t const tfLoanUnimpair = 0x00040000;
+constexpr std::uint32_t const tfLoanManageMask = ~(tfUniversal | tfLoanDefault | tfLoanImpair | tfLoanUnimpair);
+
+// Contract flags:
 constexpr std::uint32_t tfImmutable     = 0x00010000;
 constexpr std::uint32_t tfCodeImmutable = 0x00020000;
 constexpr std::uint32_t tfABIImmutable  = 0x00040000;

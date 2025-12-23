@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
-#define RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
+#ifndef XRPL_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
+#define XRPL_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/paths/AMMContext.h>
@@ -167,6 +148,7 @@ flow(
                         // Something is very wrong
                         // throwing out the sandbox can only increase liquidity
                         // yet the limiting is still limiting
+                        // LCOV_EXCL_START
                         JLOG(j.fatal())
                             << "Re-executed limiting step failed. r.first: "
                             << to_string(get<TInAmt>(r.first))
@@ -175,6 +157,7 @@ flow(
                             "ripple::flow : first step re-executing the "
                             "limiting step failed");
                         return Result{strand, std::move(ofrsToRm)};
+                        // LCOV_EXCL_STOP
                     }
                 }
                 else if (!strand[i]->equalOut(r.second, stepOut))
@@ -202,6 +185,7 @@ flow(
                         // Something is very wrong
                         // throwing out the sandbox can only increase liquidity
                         // yet the limiting is still limiting
+                        // LCOV_EXCL_START
 #ifndef NDEBUG
                         JLOG(j.fatal())
                             << "Re-executed limiting step failed. r.second: "
@@ -213,6 +197,7 @@ flow(
                             "ripple::flow : limiting step re-executing the "
                             "limiting step failed");
                         return Result{strand, std::move(ofrsToRm)};
+                        // LCOV_EXCL_STOP
                     }
                 }
 
@@ -238,6 +223,7 @@ flow(
                     // The limits should already have been found, so executing a
                     // strand forward from the limiting step should not find a
                     // new limit
+                    // LCOV_EXCL_START
 #ifndef NDEBUG
                     JLOG(j.fatal())
                         << "Re-executed forward pass failed. r.first: "
@@ -249,6 +235,7 @@ flow(
                         "ripple::flow : non-limiting step re-executing the "
                         "forward pass failed");
                     return Result{strand, std::move(ofrsToRm)};
+                    // LCOV_EXCL_STOP
                 }
                 stepIn = r.second;
             }
@@ -446,7 +433,7 @@ public:
         // add the strands in `next_` to `cur_`, sorted by theoretical quality.
         // Best quality first.
         cur_.clear();
-        if (v.rules().enabled(featureFlowSortStrands) && !next_.empty())
+        if (!next_.empty())
         {
             std::vector<std::pair<Quality, Strand const*>> strandQuals;
             strandQuals.reserve(next_.size());
@@ -499,8 +486,10 @@ public:
     {
         if (i >= cur_.size())
         {
+            // LCOV_EXCL_START
             UNREACHABLE("ripple::ActiveStrands::get : input out of range");
             return nullptr;
+            // LCOV_EXCL_STOP
         }
         return cur_[i];
     }
@@ -730,46 +719,16 @@ flow(
                 continue;
             }
 
-            if (baseView.rules().enabled(featureFlowSortStrands))
-            {
-                XRPL_ASSERT(!best, "ripple::flow : best is unset");
-                if (!f.inactive)
-                    activeStrands.push(strand);
-                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
-                activeStrands.pushRemainingCurToNext(strandIndex + 1);
-                break;
-            }
-
-            activeStrands.push(strand);
-
-            if (!best || best->quality < q ||
-                (best->quality == q && best->out < f.out))
-            {
-                // If this strand is inactive (because it consumed too many
-                // offers) and ends up having the best quality, remove it
-                // from the activeStrands. If it doesn't end up having the
-                // best quality, keep it active.
-
-                if (f.inactive)
-                {
-                    // This should be `nextSize`, not `size`. This issue is
-                    // fixed in featureFlowSortStrands.
-                    markInactiveOnUse = activeStrands.size() - 1;
-                }
-                else
-                {
-                    markInactiveOnUse.reset();
-                }
-
-                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
-            }
+            XRPL_ASSERT(!best, "ripple::flow : best is unset");
+            if (!f.inactive)
+                activeStrands.push(strand);
+            best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
+            activeStrands.pushRemainingCurToNext(strandIndex + 1);
+            break;
         }
 
-        bool const shouldBreak = [&] {
-            if (baseView.rules().enabled(featureFlowSortStrands))
-                return !best || offersConsidered >= maxOffersToConsider;
-            return !best;
-        }();
+        bool const shouldBreak =
+            !best || offersConsidered >= maxOffersToConsider;
 
         if (best)
         {

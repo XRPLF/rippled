@@ -1,25 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2024 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/testline.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -43,6 +27,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <optional>
+
 namespace ripple {
 
 class Vault_test : public beast::unit_test::suite
@@ -59,14 +45,15 @@ class Vault_test : public beast::unit_test::suite
     testSequences()
     {
         using namespace test::jtx;
+        Account issuer{"issuer"};
+        Account owner{"owner"};
+        Account depositor{"depositor"};
+        Account charlie{"charlie"};  // authorized 3rd party
+        Account dave{"dave"};
 
-        auto const testSequence = [this](
+        auto const testSequence = [&, this](
                                       std::string const& prefix,
                                       Env& env,
-                                      Account const& issuer,
-                                      Account const& owner,
-                                      Account const& depositor,
-                                      Account const& charlie,
                                       Vault& vault,
                                       PrettyAsset const& asset) {
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
@@ -84,14 +71,14 @@ class Vault_test : public beast::unit_test::suite
                  this]() -> std::tuple<PrettyAsset, Account> {
                 auto const vault = env.le(keylet);
                 BEAST_EXPECT(vault != nullptr);
-                if (asset.raw().holds<Issue>() && !asset.raw().native())
+                if (!asset.integral())
                     BEAST_EXPECT(vault->at(sfScale) == 6);
                 else
                     BEAST_EXPECT(vault->at(sfScale) == 0);
                 auto const shares =
                     env.le(keylet::mptIssuance(vault->at(sfShareMPTID)));
                 BEAST_EXPECT(shares != nullptr);
-                if (asset.raw().holds<Issue>() && !asset.raw().native())
+                if (!asset.integral())
                     BEAST_EXPECT(shares->at(sfAssetScale) == 6);
                 else
                     BEAST_EXPECT(shares->at(sfAssetScale) == 0);
@@ -104,11 +91,9 @@ class Vault_test : public beast::unit_test::suite
 
             // Several 3rd party accounts which cannot receive funds
             Account alice{"alice"};
-            Account dave{"dave"};
             Account erin{"erin"};  // not authorized by issuer
-            env.fund(XRP(1000), alice, dave, erin);
+            env.fund(XRP(1000), alice, erin);
             env(fset(alice, asfDepositAuth));
-            env(fset(dave, asfRequireDest));
             env.close();
 
             {
@@ -178,6 +163,14 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
+                testcase(prefix + " set maximum is idempotent, set it again");
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfAssetsMaximum] = asset(150).number();
+                env(tx);
+                env.close();
+            }
+
+            {
                 testcase(prefix + " set data");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfData] = "0";
@@ -218,6 +211,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .amount = asset(1000)});
                 env(tx, ter(tecINSUFFICIENT_FUNDS));
+                env.close();
             }
 
             {
@@ -295,6 +289,55 @@ class Vault_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     env.balance(depositor, shares) == share(200 * scale));
             }
+            else
+            {
+                testcase(prefix + " deposit/withdrawal same or less than fee");
+                auto const amount = env.current()->fees().base;
+
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = amount});
+                env(tx);
+                env.close();
+
+                tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = amount});
+                env(tx);
+                env.close();
+
+                tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = amount});
+                env(tx);
+                env.close();
+
+                // Withdraw to 3rd party
+                tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = amount});
+                tx[sfDestination] = charlie.human();
+                env(tx);
+                env.close();
+
+                tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = amount - 1});
+                env(tx);
+                env.close();
+
+                tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = amount - 1});
+                env(tx);
+                env.close();
+            }
 
             {
                 testcase(
@@ -315,19 +358,6 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .amount = asset(1000)});
                 tx[sfDestination] = "0";
-                env(tx, ter(temMALFORMED));
-                env.close();
-            }
-
-            {
-                testcase(
-                    prefix +
-                    " fail to withdraw with tag but without destination");
-                auto tx = vault.withdraw(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(1000)});
-                tx[sfDestinationTag] = "0";
                 env(tx, ter(temMALFORMED));
                 env.close();
             }
@@ -360,11 +390,48 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
+                testcase(prefix + " withdraw to 3rd party lsfRequireDestTag");
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(50)});
+                tx[sfDestination] = dave.human();
+                tx[sfDestinationTag] = "0";
+                env(tx);
+                env.close();
+            }
+
+            {
+                testcase(prefix + " deposit again");
+                auto tx = vault.deposit(
+                    {.depositor = dave, .id = keylet.key, .amount = asset(50)});
+                env(tx);
+                env.close();
+            }
+
+            {
+                testcase(prefix + " fail to withdraw lsfRequireDestTag");
+                auto tx = vault.withdraw(
+                    {.depositor = dave, .id = keylet.key, .amount = asset(50)});
+                env(tx, ter{tecDST_TAG_NEEDED});
+                env.close();
+            }
+
+            {
+                testcase(prefix + " withdraw with tag");
+                auto tx = vault.withdraw(
+                    {.depositor = dave, .id = keylet.key, .amount = asset(50)});
+                tx[sfDestinationTag] = "0";
+                env(tx);
+                env.close();
+            }
+
+            {
                 testcase(prefix + " withdraw to authorized 3rd party");
                 auto tx = vault.withdraw(
                     {.depositor = depositor,
                      .id = keylet.key,
-                     .amount = asset(100)});
+                     .amount = asset(50)});
                 tx[sfDestination] = charlie.human();
                 env(tx);
                 env.close();
@@ -383,6 +450,27 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
                 BEAST_EXPECT(
                     env.balance(depositor, shares) == share(50 * scale));
+            }
+
+            if (!asset.raw().native())
+            {
+                testcase(prefix + " issuer deposits");
+                auto tx = vault.deposit(
+                    {.depositor = issuer,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                env(tx);
+                env.close();
+                BEAST_EXPECT(env.balance(issuer, shares) == share(10 * scale));
+
+                testcase(prefix + " issuer withdraws");
+                tx = vault.withdraw(
+                    {.depositor = issuer,
+                     .id = keylet.key,
+                     .amount = share(10 * scale)});
+                env(tx);
+                env.close();
+                BEAST_EXPECT(env.balance(issuer, shares) == share(0 * scale));
             }
 
             {
@@ -416,7 +504,7 @@ class Vault_test : public beast::unit_test::suite
                 }
             }
 
-            if (!asset.raw().native() && asset.raw().holds<Issue>())
+            if (!asset.integral())
             {
                 testcase(prefix + " temporary authorization for 3rd party");
                 env(trust(erin, asset(1000)));
@@ -454,6 +542,8 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(10)});
                 tx[sfDestination] = erin.human();
                 env(tx);
+                env.close();
+
                 // Erin returns assets to issuer
                 env(pay(erin, issuer, asset(10)));
                 env.close();
@@ -479,90 +569,68 @@ class Vault_test : public beast::unit_test::suite
                 testcase(prefix + " fail to delete because wrong owner");
                 auto tx = vault.del({.owner = issuer, .id = keylet.key});
                 env(tx, ter(tecNO_PERMISSION));
+                env.close();
             }
 
             {
                 testcase(prefix + " delete empty vault");
                 auto tx = vault.del({.owner = owner, .id = keylet.key});
                 env(tx);
+                env.close();
                 BEAST_EXPECT(!env.le(keylet));
             }
         };
 
-        auto testCases = [this, &testSequence](
+        auto testCases = [&, this](
                              std::string prefix,
-                             std::function<PrettyAsset(
-                                 Env & env,
-                                 Account const& issuer,
-                                 Account const& owner,
-                                 Account const& depositor,
-                                 Account const& charlie)> setup) {
+                             std::function<PrettyAsset(Env & env)> setup) {
             Env env{*this, testable_amendments() | featureSingleAssetVault};
-            Account issuer{"issuer"};
-            Account owner{"owner"};
-            Account depositor{"depositor"};
-            Account charlie{"charlie"};  // authorized 3rd party
+
             Vault vault{env};
-            env.fund(XRP(1000), issuer, owner, depositor, charlie);
+            env.fund(XRP(1000), issuer, owner, depositor, charlie, dave);
             env.close();
             env(fset(issuer, asfAllowTrustLineClawback));
             env(fset(issuer, asfRequireAuth));
+            env(fset(dave, asfRequireDest));
             env.close();
             env.require(flags(issuer, asfAllowTrustLineClawback));
             env.require(flags(issuer, asfRequireAuth));
 
-            PrettyAsset asset = setup(env, issuer, owner, depositor, charlie);
-            testSequence(
-                prefix, env, issuer, owner, depositor, charlie, vault, asset);
+            PrettyAsset asset = setup(env);
+            testSequence(prefix, env, vault, asset);
         };
 
-        testCases(
-            "XRP",
-            [](Env& env,
-               Account const& issuer,
-               Account const& owner,
-               Account const& depositor,
-               Account const& charlie) -> PrettyAsset {
-                return {xrpIssue(), 1'000'000};
-            });
+        testCases("XRP", [&](Env& env) -> PrettyAsset {
+            return {xrpIssue(), 1'000'000};
+        });
 
-        testCases(
-            "IOU",
-            [](Env& env,
-               Account const& issuer,
-               Account const& owner,
-               Account const& depositor,
-               Account const& charlie) -> Asset {
-                PrettyAsset asset = issuer["IOU"];
-                env(trust(owner, asset(1000)));
-                env(trust(depositor, asset(1000)));
-                env(trust(charlie, asset(1000)));
-                env(trust(issuer, asset(0), owner, tfSetfAuth));
-                env(trust(issuer, asset(0), depositor, tfSetfAuth));
-                env(trust(issuer, asset(0), charlie, tfSetfAuth));
-                env(pay(issuer, depositor, asset(1000)));
-                env.close();
-                return asset;
-            });
+        testCases("IOU", [&](Env& env) -> Asset {
+            PrettyAsset asset = issuer["IOU"];
+            env(trust(owner, asset(1000)));
+            env(trust(depositor, asset(1000)));
+            env(trust(charlie, asset(1000)));
+            env(trust(dave, asset(1000)));
+            env(trust(issuer, asset(0), owner, tfSetfAuth));
+            env(trust(issuer, asset(0), depositor, tfSetfAuth));
+            env(trust(issuer, asset(0), charlie, tfSetfAuth));
+            env(trust(issuer, asset(0), dave, tfSetfAuth));
+            env(pay(issuer, depositor, asset(1000)));
+            env.close();
+            return asset;
+        });
 
-        testCases(
-            "MPT",
-            [](Env& env,
-               Account const& issuer,
-               Account const& owner,
-               Account const& depositor,
-               Account const& charlie) -> Asset {
-                MPTTester mptt{env, issuer, mptInitNoFund};
-                mptt.create(
-                    {.flags =
-                         tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
-                PrettyAsset asset = mptt.issuanceID();
-                mptt.authorize({.account = depositor});
-                mptt.authorize({.account = charlie});
-                env(pay(issuer, depositor, asset(1000)));
-                env.close();
-                return asset;
-            });
+        testCases("MPT", [&](Env& env) -> Asset {
+            MPTTester mptt{env, issuer, mptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset asset = mptt.issuanceID();
+            mptt.authorize({.account = depositor});
+            mptt.authorize({.account = charlie});
+            mptt.authorize({.account = dave});
+            env(pay(issuer, depositor, asset(1000)));
+            env.close();
+            return asset;
+        });
     }
 
     void
@@ -604,12 +672,13 @@ class Vault_test : public beast::unit_test::suite
             test(env, issuer, owner, asset, vault);
         };
 
-        testCase(
-            [&](Env& env,
-                Account const& issuer,
-                Account const& owner,
-                Asset const& asset,
-                Vault& vault) {
+        auto testDisabled = [&](TER resultAfterCreate = temDISABLED) {
+            return [&, resultAfterCreate](
+                       Env& env,
+                       Account const& issuer,
+                       Account const& owner,
+                       Asset const& asset,
+                       Vault& vault) {
                 testcase("disabled single asset vault");
 
                 auto [tx, keylet] =
@@ -618,7 +687,7 @@ class Vault_test : public beast::unit_test::suite
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    env(tx, ter{temDISABLED});
+                    env(tx, data("test"), ter{resultAfterCreate});
                 }
 
                 {
@@ -626,7 +695,7 @@ class Vault_test : public beast::unit_test::suite
                         {.depositor = owner,
                          .id = keylet.key,
                          .amount = asset(10)});
-                    env(tx, ter{temDISABLED});
+                    env(tx, ter{resultAfterCreate});
                 }
 
                 {
@@ -634,7 +703,7 @@ class Vault_test : public beast::unit_test::suite
                         {.depositor = owner,
                          .id = keylet.key,
                          .amount = asset(10)});
-                    env(tx, ter{temDISABLED});
+                    env(tx, ter{resultAfterCreate});
                 }
 
                 {
@@ -643,15 +712,49 @@ class Vault_test : public beast::unit_test::suite
                          .id = keylet.key,
                          .holder = owner,
                          .amount = asset(10)});
-                    env(tx, ter{temDISABLED});
+                    env(tx, ter{resultAfterCreate});
                 }
 
                 {
                     auto tx = vault.del({.owner = owner, .id = keylet.key});
+                    env(tx, ter{resultAfterCreate});
+                }
+            };
+        };
+
+        testCase(
+            testDisabled(),
+            {.features = testable_amendments() - featureSingleAssetVault});
+
+        testCase(
+            testDisabled(tecNO_ENTRY),
+            {.features = testable_amendments() - featureMPTokensV1});
+
+        testCase(
+            [&](Env& env,
+                Account const& issuer,
+                Account const& owner,
+                Asset const& asset,
+                Vault& vault) {
+                testcase("disabled permissioned domains");
+
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                env(tx);
+
+                tx[sfFlags] = tx[sfFlags].asUInt() | tfVaultPrivate;
+                tx[sfDomainID] = to_string(base_uint<256>(42ul));
+                env(tx, ter{temDISABLED});
+
+                {
+                    auto tx = vault.set({.owner = owner, .id = keylet.key});
+                    env(tx, data("Test"));
+
+                    tx[sfDomainID] = to_string(base_uint<256>(13ul));
                     env(tx, ter{temDISABLED});
                 }
             },
-            {.features = testable_amendments() - featureSingleAssetVault});
+            {.features = testable_amendments() - featurePermissionedDomains});
 
         testCase([&](Env& env,
                      Account const& issuer,
@@ -1263,7 +1366,7 @@ class Vault_test : public beast::unit_test::suite
                      Vault& vault) {
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             testcase("insufficient fee");
-            env(tx, fee(env.current()->fees().base), ter(telINSUF_FEE_P));
+            env(tx, fee(env.current()->fees().base - 1), ter(telINSUF_FEE_P));
         });
 
         testCase([this](
@@ -1328,6 +1431,26 @@ class Vault_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
         {
+            {
+                testcase("IOU fail because MPT is disabled");
+                Env env{
+                    *this,
+                    (testable_amendments() - featureMPTokensV1) |
+                        featureSingleAssetVault};
+                Account issuer{"issuer"};
+                Account owner{"owner"};
+                env.fund(XRP(1000), issuer, owner);
+                env.close();
+
+                Vault vault{env};
+                Asset asset = issuer["IOU"].asset();
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+
+                env(tx, ter(temDISABLED));
+                env.close();
+            }
+
             {
                 testcase("IOU fail create frozen");
                 Env env{*this, testable_amendments() | featureSingleAssetVault};
@@ -1618,6 +1741,7 @@ class Vault_test : public beast::unit_test::suite
         {
             bool enableClawback = true;
             bool requireAuth = true;
+            int initialXRP = 1000;
         };
 
         auto testCase = [this](
@@ -1634,7 +1758,7 @@ class Vault_test : public beast::unit_test::suite
             Account issuer{"issuer"};
             Account owner{"owner"};
             Account depositor{"depositor"};
-            env.fund(XRP(1000), issuer, owner, depositor);
+            env.fund(XRP(args.initialXRP), issuer, owner, depositor);
             env.close();
             Vault vault{env};
 
@@ -1643,7 +1767,8 @@ class Vault_test : public beast::unit_test::suite
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock |
                      (args.enableClawback ? tfMPTCanClawback : none) |
-                     (args.requireAuth ? tfMPTRequireAuth : none)});
+                     (args.requireAuth ? tfMPTRequireAuth : none),
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
             PrettyAsset asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
@@ -1814,9 +1939,7 @@ class Vault_test : public beast::unit_test::suite
                 PrettyAsset const& asset,
                 Vault& vault,
                 MPTTester& mptt) {
-                testcase(
-                    "MPT 3rd party without MPToken cannot be withdrawal "
-                    "destination");
+                testcase("MPT depositor without MPToken, auth required");
 
                 auto [tx, keylet] =
                     vault.create({.owner = owner, .asset = asset});
@@ -1826,9 +1949,31 @@ class Vault_test : public beast::unit_test::suite
                 tx = vault.deposit(
                     {.depositor = depositor,
                      .id = keylet.key,
-                     .amount = asset(100)});
+                     .amount = asset(1000)});
                 env(tx);
                 env.close();
+
+                {
+                    // Remove depositor MPToken and it will not be re-created
+                    mptt.authorize(
+                        {.account = depositor, .flags = tfMPTUnauthorize});
+                    env.close();
+
+                    auto const mptoken =
+                        keylet::mptoken(mptt.issuanceID(), depositor);
+                    auto const sleMPT1 = env.le(mptoken);
+                    BEAST_EXPECT(sleMPT1 == nullptr);
+
+                    tx = vault.withdraw(
+                        {.depositor = depositor,
+                         .id = keylet.key,
+                         .amount = asset(100)});
+                    env(tx, ter{tecNO_AUTH});
+                    env.close();
+
+                    auto const sleMPT2 = env.le(mptoken);
+                    BEAST_EXPECT(sleMPT2 == nullptr);
+                }
 
                 {
                     // Set destination to 3rd party without MPToken
@@ -1844,7 +1989,7 @@ class Vault_test : public beast::unit_test::suite
                     env(tx, ter(tecNO_AUTH));
                 }
             },
-            {.requireAuth = false});
+            {.requireAuth = true});
 
         testCase(
             [this](
@@ -1855,7 +2000,7 @@ class Vault_test : public beast::unit_test::suite
                 PrettyAsset const& asset,
                 Vault& vault,
                 MPTTester& mptt) {
-                testcase("MPT depositor without MPToken cannot withdraw");
+                testcase("MPT depositor without MPToken, no auth required");
 
                 auto [tx, keylet] =
                     vault.create({.owner = owner, .asset = asset});
@@ -1863,7 +2008,6 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
                 auto v = env.le(keylet);
                 BEAST_EXPECT(v);
-                MPTID share = (*v)[sfShareMPTID];
 
                 tx = vault.deposit(
                     {.depositor = depositor,
@@ -1873,40 +2017,123 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
 
                 {
-                    // Remove depositor's MPToken and withdraw will fail
+                    // Remove depositor's MPToken and it will be re-created
                     mptt.authorize(
                         {.account = depositor, .flags = tfMPTUnauthorize});
                     env.close();
+
                     auto const mptoken =
-                        env.le(keylet::mptoken(mptt.issuanceID(), depositor));
-                    BEAST_EXPECT(mptoken == nullptr);
+                        keylet::mptoken(mptt.issuanceID(), depositor);
+                    auto const sleMPT1 = env.le(mptoken);
+                    BEAST_EXPECT(sleMPT1 == nullptr);
 
                     tx = vault.withdraw(
                         {.depositor = depositor,
                          .id = keylet.key,
                          .amount = asset(100)});
-                    env(tx, ter(tecNO_AUTH));
+                    env(tx);
+                    env.close();
+
+                    auto const sleMPT2 = env.le(mptoken);
+                    BEAST_EXPECT(sleMPT2 != nullptr);
+                    BEAST_EXPECT(sleMPT2->at(sfMPTAmount) == 100);
                 }
 
                 {
-                    // Restore depositor's MPToken and withdraw will succeed
-                    mptt.authorize({.account = depositor});
+                    // Remove 3rd party MPToken and it will not be re-created
+                    mptt.authorize(
+                        {.account = owner, .flags = tfMPTUnauthorize});
                     env.close();
+
+                    auto const mptoken =
+                        keylet::mptoken(mptt.issuanceID(), owner);
+                    auto const sleMPT1 = env.le(mptoken);
+                    BEAST_EXPECT(sleMPT1 == nullptr);
 
                     tx = vault.withdraw(
                         {.depositor = depositor,
                          .id = keylet.key,
-                         .amount = asset(1000)});
-                    env(tx);
+                         .amount = asset(100)});
+                    tx[sfDestination] = owner.human();
+                    env(tx, ter(tecNO_AUTH));
                     env.close();
 
-                    // Withdraw removed shares MPToken
-                    auto const mptSle =
-                        env.le(keylet::mptoken(share, depositor.id()));
-                    BEAST_EXPECT(mptSle == nullptr);
+                    auto const sleMPT2 = env.le(mptoken);
+                    BEAST_EXPECT(sleMPT2 == nullptr);
                 }
             },
             {.requireAuth = false});
+
+        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+            Env env{*this, testable_amendments()};
+            return {
+                env.current()->fees().accountReserve(0).drops() /
+                    DROPS_PER_XRP.drops(),
+                env.current()->fees().increment.drops() /
+                    DROPS_PER_XRP.drops()};
+        }();
+
+        testCase(
+            [&, this](
+                Env& env,
+                Account const& issuer,
+                Account const& owner,
+                Account const& depositor,
+                PrettyAsset const& asset,
+                Vault& vault,
+                MPTTester& mptt) {
+                testcase("MPT failed reserve to re-create MPToken");
+
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                env(tx);
+                env.close();
+                auto v = env.le(keylet);
+                BEAST_EXPECT(v);
+
+                env(pay(depositor, owner, asset(1000)));
+                env.close();
+
+                tx = vault.deposit(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(1000)});  // all assets held by owner
+                env(tx);
+                env.close();
+
+                {
+                    // Remove owners's MPToken and it will not be re-created
+                    mptt.authorize(
+                        {.account = owner, .flags = tfMPTUnauthorize});
+                    env.close();
+
+                    auto const mptoken =
+                        keylet::mptoken(mptt.issuanceID(), owner);
+                    auto const sleMPT = env.le(mptoken);
+                    BEAST_EXPECT(sleMPT == nullptr);
+
+                    // Use one reserve so the next transaction fails
+                    env(ticket::create(owner, 1));
+                    env.close();
+
+                    // No reserve to create MPToken for asset in VaultWithdraw
+                    tx = vault.withdraw(
+                        {.depositor = owner,
+                         .id = keylet.key,
+                         .amount = asset(100)});
+                    env(tx, ter{tecINSUFFICIENT_RESERVE});
+                    env.close();
+
+                    env(pay(depositor, owner, XRP(incReserve)));
+                    env.close();
+
+                    // Withdraw can now create asset MPToken, tx will succeed
+                    env(tx);
+                    env.close();
+                }
+            },
+            {.requireAuth = false,
+             .initialXRP = acctReserve + incReserve * 4 + 1});
 
         testCase([this](
                      Env& env,
@@ -2259,6 +2486,53 @@ class Vault_test : public beast::unit_test::suite
             env(tx2, ter{tecWRONG_ASSET});
             env.close();
         }
+
+        testCase([this](
+                     Env& env,
+                     Account const&,
+                     Account const& owner,
+                     Account const& depositor,
+                     PrettyAsset const& asset,
+                     Vault& vault,
+                     MPTTester& mptt) {
+            testcase("MPT non-transferable");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx);
+            env.close();
+
+            // Remove CanTransfer
+            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
+            env.close();
+
+            env(tx, ter{tecNO_AUTH});
+            env.close();
+
+            tx = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+
+            env(tx, ter{tecNO_AUTH});
+            env.close();
+
+            // Restore CanTransfer
+            mptt.set({.mutableFlags = tmfMPTSetCanTransfer});
+            env.close();
+
+            env(tx);
+            env.close();
+
+            // Delete vault with zero balance
+            env(vault.del({.owner = owner, .id = keylet.key}));
+        });
     }
 
     void
@@ -2266,31 +2540,53 @@ class Vault_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
+        struct CaseArgs
+        {
+            int initialXRP = 1000;
+            Number initialIOU = 200;
+            double transferRate = 1.0;
+            bool charlieRipple = true;
+        };
+
         auto testCase =
-            [&,
-             this](std::function<void(
-                       Env & env,
-                       Account const& owner,
-                       Account const& issuer,
-                       Account const& charlie,
-                       std::function<Account(ripple::Keylet)> vaultAccount,
-                       Vault& vault,
-                       PrettyAsset const& asset,
-                       std::function<MPTID(ripple::Keylet)> issuanceId)> test) {
+            [&, this](
+                std::function<void(
+                    Env & env,
+                    Account const& owner,
+                    Account const& issuer,
+                    Account const& charlie,
+                    std::function<Account(ripple::Keylet)> vaultAccount,
+                    Vault& vault,
+                    PrettyAsset const& asset,
+                    std::function<MPTID(ripple::Keylet)> issuanceId)> test,
+                CaseArgs args = {}) {
                 Env env{*this, testable_amendments() | featureSingleAssetVault};
                 Account const owner{"owner"};
                 Account const issuer{"issuer"};
                 Account const charlie{"charlie"};
                 Vault vault{env};
-                env.fund(XRP(1000), issuer, owner, charlie);
+                env.fund(XRP(args.initialXRP), issuer, owner, charlie);
                 env(fset(issuer, asfAllowTrustLineClawback));
                 env.close();
 
                 PrettyAsset const asset = issuer["IOU"];
                 env.trust(asset(1000), owner);
-                env.trust(asset(1000), charlie);
-                env(pay(issuer, owner, asset(200)));
-                env(rate(issuer, 1.25));
+                env(pay(issuer, owner, asset(args.initialIOU)));
+                env.close();
+                if (!args.charlieRipple)
+                {
+                    env(fset(issuer, 0, asfDefaultRipple));
+                    env.close();
+                    env.trust(asset(1000), charlie);
+                    env.close();
+                    env(pay(issuer, charlie, asset(args.initialIOU)));
+                    env.close();
+                    env(fset(issuer, asfDefaultRipple));
+                }
+                else
+                    env.trust(asset(1000), charlie);
+                env.close();
+                env(rate(issuer, args.transferRate));
                 env.close();
 
                 auto const vaultAccount =
@@ -2451,73 +2747,81 @@ class Vault_test : public beast::unit_test::suite
             env.close();
         });
 
-        testCase([&, this](
-                     Env& env,
-                     Account const& owner,
-                     Account const& issuer,
-                     Account const& charlie,
-                     auto vaultAccount,
-                     Vault& vault,
-                     PrettyAsset const& asset,
-                     auto issuanceId) {
-            testcase("IOU transfer fees not applied");
+        testCase(
+            [&, this](
+                Env& env,
+                Account const& owner,
+                Account const& issuer,
+                Account const& charlie,
+                auto vaultAccount,
+                Vault& vault,
+                PrettyAsset const& asset,
+                auto issuanceId) {
+                testcase("IOU transfer fees not applied");
 
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
-            env(vault.deposit(
-                {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
-            env.close();
-
-            auto const issue = asset.raw().get<Issue>();
-            Asset const share = Asset(issuanceId(keylet));
-
-            // transfer fees ignored on deposit
-            BEAST_EXPECT(env.balance(owner, issue) == asset(100));
-            BEAST_EXPECT(
-                env.balance(vaultAccount(keylet), issue) == asset(100));
-
-            {
-                auto tx = vault.clawback(
-                    {.issuer = issuer,
-                     .id = keylet.key,
-                     .holder = owner,
-                     .amount = asset(50)});
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
                 env(tx);
                 env.close();
-            }
 
-            // transfer fees ignored on clawback
-            BEAST_EXPECT(env.balance(owner, issue) == asset(100));
-            BEAST_EXPECT(env.balance(vaultAccount(keylet), issue) == asset(50));
-
-            env(vault.withdraw(
-                {.depositor = owner,
-                 .id = keylet.key,
-                 .amount = share(20'000'000)}));
-
-            // transfer fees ignored on withdraw
-            BEAST_EXPECT(env.balance(owner, issue) == asset(120));
-            BEAST_EXPECT(env.balance(vaultAccount(keylet), issue) == asset(30));
-
-            {
-                auto tx = vault.withdraw(
+                env(vault.deposit(
                     {.depositor = owner,
                      .id = keylet.key,
-                     .amount = share(30'000'000)});
-                tx[sfDestination] = charlie.human();
-                env(tx);
-            }
+                     .amount = asset(100)}));
+                env.close();
 
-            // transfer fees ignored on withdraw to 3rd party
-            BEAST_EXPECT(env.balance(owner, issue) == asset(120));
-            BEAST_EXPECT(env.balance(charlie, issue) == asset(30));
-            BEAST_EXPECT(env.balance(vaultAccount(keylet), issue) == asset(0));
+                auto const issue = asset.raw().get<Issue>();
+                Asset const share = Asset(issuanceId(keylet));
 
-            env(vault.del({.owner = owner, .id = keylet.key}));
-            env.close();
-        });
+                // transfer fees ignored on deposit
+                BEAST_EXPECT(env.balance(owner, issue) == asset(100));
+                BEAST_EXPECT(
+                    env.balance(vaultAccount(keylet), issue) == asset(100));
+
+                {
+                    auto tx = vault.clawback(
+                        {.issuer = issuer,
+                         .id = keylet.key,
+                         .holder = owner,
+                         .amount = asset(50)});
+                    env(tx);
+                    env.close();
+                }
+
+                // transfer fees ignored on clawback
+                BEAST_EXPECT(env.balance(owner, issue) == asset(100));
+                BEAST_EXPECT(
+                    env.balance(vaultAccount(keylet), issue) == asset(50));
+
+                env(vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = share(20'000'000)}));
+
+                // transfer fees ignored on withdraw
+                BEAST_EXPECT(env.balance(owner, issue) == asset(120));
+                BEAST_EXPECT(
+                    env.balance(vaultAccount(keylet), issue) == asset(30));
+
+                {
+                    auto tx = vault.withdraw(
+                        {.depositor = owner,
+                         .id = keylet.key,
+                         .amount = share(30'000'000)});
+                    tx[sfDestination] = charlie.human();
+                    env(tx);
+                }
+
+                // transfer fees ignored on withdraw to 3rd party
+                BEAST_EXPECT(env.balance(owner, issue) == asset(120));
+                BEAST_EXPECT(env.balance(charlie, issue) == asset(30));
+                BEAST_EXPECT(
+                    env.balance(vaultAccount(keylet), issue) == asset(0));
+
+                env(vault.del({.owner = owner, .id = keylet.key}));
+                env.close();
+            },
+            CaseArgs{.transferRate = 1.25});
 
         testCase([&, this](
                      Env& env,
@@ -2658,6 +2962,273 @@ class Vault_test : public beast::unit_test::suite
             }(keylet);
             env(tx1);
         });
+
+        testCase(
+            [&, this](
+                Env& env,
+                Account const& owner,
+                Account const& issuer,
+                Account const& charlie,
+                auto vaultAccount,
+                Vault& vault,
+                PrettyAsset const& asset,
+                std::function<MPTID(ripple::Keylet)> issuanceId) {
+                testcase("IOU non-transferable");
+
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                tx[sfScale] = 0;
+                env(tx);
+                env.close();
+
+                // Turn on noripple on the pseudo account's trust line.
+                // Charlie's is already set.
+                env(trust(issuer, vaultAccount(keylet)["IOU"], tfSetNoRipple),
+                    THISLINE);
+
+                {
+                    // Charlie cannot deposit
+                    auto tx = vault.deposit(
+                        {.depositor = charlie,
+                         .id = keylet.key,
+                         .amount = asset(100)});
+                    env(tx, ter{terNO_RIPPLE}, THISLINE);
+                    env.close();
+                }
+
+                {
+                    PrettyAsset shares = issuanceId(keylet);
+                    auto tx1 = vault.deposit(
+                        {.depositor = owner,
+                         .id = keylet.key,
+                         .amount = asset(100)});
+                    env(tx1, THISLINE);
+                    env.close();
+
+                    // Charlie cannot receive funds
+                    auto tx2 = vault.withdraw(
+                        {.depositor = owner,
+                         .id = keylet.key,
+                         .amount = shares(100)});
+                    tx2[sfDestination] = charlie.human();
+                    env(tx2, ter{terNO_RIPPLE}, THISLINE);
+                    env.close();
+
+                    {
+                        // Create MPToken for shares held by Charlie
+                        Json::Value tx{Json::objectValue};
+                        tx[sfAccount] = charlie.human();
+                        tx[sfMPTokenIssuanceID] =
+                            to_string(shares.raw().get<MPTIssue>().getMptID());
+                        tx[sfTransactionType] = jss::MPTokenAuthorize;
+                        env(tx);
+                        env.close();
+                    }
+                    env(pay(owner, charlie, shares(100)), THISLINE);
+                    env.close();
+
+                    // Charlie cannot withdraw
+                    auto tx3 = vault.withdraw(
+                        {.depositor = charlie,
+                         .id = keylet.key,
+                         .amount = shares(100)});
+                    env(tx3, ter{terNO_RIPPLE});
+                    env.close();
+
+                    env(pay(charlie, owner, shares(100)), THISLINE);
+                    env.close();
+                }
+
+                tx = vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(100)});
+                env(tx, THISLINE);
+                env.close();
+
+                // Delete vault with zero balance
+                env(vault.del({.owner = owner, .id = keylet.key}), THISLINE);
+            },
+            {.charlieRipple = false});
+
+        testCase(
+            [&, this](
+                Env& env,
+                Account const& owner,
+                Account const& issuer,
+                Account const& charlie,
+                auto const& vaultAccount,
+                Vault& vault,
+                PrettyAsset const& asset,
+                auto&&...) {
+                testcase("IOU calculation rounding");
+
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                tx[sfScale] = 1;
+                env(tx);
+                env.close();
+
+                auto const startingOwnerBalance = env.balance(owner, asset);
+                BEAST_EXPECT(
+                    (startingOwnerBalance.value() ==
+                     STAmount{asset, 11875, -2}));
+
+                // This operation (first deposit 100, then 3.75 x 5) is known to
+                // have triggered calculation rounding errors in Number
+                // (addition and division), causing the last deposit to be
+                // blocked by Vault invariants.
+                env(vault.deposit(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(100)}));
+
+                auto const tx1 = vault.deposit(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(Number(375, -2))});
+                for (auto i = 0; i < 5; ++i)
+                {
+                    env(tx1);
+                }
+                env.close();
+
+                {
+                    STAmount const xfer{asset, 1185, -1};
+                    BEAST_EXPECT(
+                        env.balance(owner, asset) ==
+                        startingOwnerBalance.value() - xfer);
+                    BEAST_EXPECT(
+                        env.balance(vaultAccount(keylet), asset) == xfer);
+
+                    auto const vault = env.le(keylet);
+                    BEAST_EXPECT(vault->at(sfAssetsAvailable) == xfer);
+                    BEAST_EXPECT(vault->at(sfAssetsTotal) == xfer);
+                }
+
+                // Total vault balance should be 118.5 IOU. Withdraw and delete
+                // the vault to verify this exact amount was deposited and the
+                // owner has matching shares
+                env(vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(Number(1000 + 37 * 5, -1))}));
+
+                {
+                    BEAST_EXPECT(
+                        env.balance(owner, asset) ==
+                        startingOwnerBalance.value());
+                    BEAST_EXPECT(
+                        env.balance(vaultAccount(keylet), asset) ==
+                        beast::zero);
+                    auto const vault = env.le(keylet);
+                    BEAST_EXPECT(vault->at(sfAssetsAvailable) == beast::zero);
+                    BEAST_EXPECT(vault->at(sfAssetsTotal) == beast::zero);
+                }
+
+                env(vault.del({.owner = owner, .id = keylet.key}));
+                env.close();
+            },
+            {.initialIOU = Number(11875, -2)});
+
+        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+            Env env{*this, testable_amendments()};
+            return {
+                env.current()->fees().accountReserve(0).drops() /
+                    DROPS_PER_XRP.drops(),
+                env.current()->fees().increment.drops() /
+                    DROPS_PER_XRP.drops()};
+        }();
+
+        testCase(
+            [&, this](
+                Env& env,
+                Account const& owner,
+                Account const& issuer,
+                Account const& charlie,
+                auto,
+                Vault& vault,
+                PrettyAsset const& asset,
+                auto&&...) {
+                testcase("IOU no trust line to depositor no reserve");
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                env(tx);
+                env.close();
+
+                // reset limit, so deposit of all funds will delete the trust
+                // line
+                env.trust(asset(0), owner);
+                env.close();
+
+                env(vault.deposit(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(200)}));
+                env.close();
+
+                auto trustline =
+                    env.le(keylet::line(owner, asset.raw().get<Issue>()));
+                BEAST_EXPECT(trustline == nullptr);
+
+                env(ticket::create(owner, 1));
+                env.close();
+
+                // Fail because not enough reserve to create trust line
+                tx = vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                env(tx, ter{tecNO_LINE_INSUF_RESERVE});
+                env.close();
+
+                env(pay(charlie, owner, XRP(incReserve)));
+                env.close();
+
+                // Withdraw can now create trust line, will succeed
+                env(tx);
+                env.close();
+            },
+            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
+
+        testCase(
+            [&, this](
+                Env& env,
+                Account const& owner,
+                Account const& issuer,
+                Account const& charlie,
+                auto,
+                Vault& vault,
+                PrettyAsset const& asset,
+                auto&&...) {
+                testcase("IOU no reserve for share MPToken");
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                env(tx);
+                env.close();
+
+                env(pay(owner, charlie, asset(100)));
+                env.close();
+
+                env(ticket::create(charlie, 3));
+                env.close();
+
+                // Fail because not enough reserve to create MPToken for shares
+                tx = vault.deposit(
+                    {.depositor = charlie,
+                     .id = keylet.key,
+                     .amount = asset(100)});
+                env(tx, ter{tecINSUFFICIENT_RESERVE});
+                env.close();
+
+                env(pay(issuer, charlie, XRP(incReserve)));
+                env.close();
+
+                // Deposit can now create MPToken, will succeed
+                env(tx);
+                env.close();
+            },
+            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
 
         testCase([&, this](
                      Env& env,
@@ -2878,6 +3449,12 @@ class Vault_test : public beast::unit_test::suite
                 tx[sfDomainID] = to_string(domainId);
                 env(tx);
                 env.close();
+
+                // Should be idempotent
+                tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfDomainID] = to_string(domainId);
+                env(tx);
+                env.close();
             }
         }
 
@@ -3033,6 +3610,7 @@ class Vault_test : public beast::unit_test::suite
                  .id = keylet.key,
                  .amount = asset(50)});
             env(tx);
+            env.close();
 
             tx = vault.clawback(
                 {.issuer = issuer,
@@ -3047,6 +3625,7 @@ class Vault_test : public beast::unit_test::suite
                  .holder = owner,
                  .amount = asset(0)});
             env(tx);
+            env.close();
 
             tx = vault.del({
                 .owner = owner,
@@ -3093,6 +3672,7 @@ class Vault_test : public beast::unit_test::suite
             auto tx = vault.deposit(
                 {.depositor = owner, .id = keylet.key, .amount = asset(50)});
             env(tx);
+            env.close();
         }
 
         {
@@ -4132,7 +4712,7 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(checkString(vault, sfAssetsAvailable, "50"));
             BEAST_EXPECT(checkString(vault, sfAssetsMaximum, "1000"));
             BEAST_EXPECT(checkString(vault, sfAssetsTotal, "50"));
-            BEAST_EXPECT(checkString(vault, sfLossUnrealized, "0"));
+            BEAST_EXPECT(!vault.isMember(sfLossUnrealized.getJsonName()));
 
             auto const strShareID = strHex(sle->at(sfShareMPTID));
             BEAST_EXPECT(checkString(vault, sfShareMPTID, strShareID));
@@ -4522,6 +5102,147 @@ class Vault_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testDelegate()
+    {
+        using namespace test::jtx;
+
+        Env env(*this, testable_amendments());
+        Account alice{"alice"};
+        Account bob{"bob"};
+        Account carol{"carol"};
+
+        struct CaseArgs
+        {
+            PrettyAsset asset = xrpIssue();
+        };
+
+        auto const xrpBalance =
+            [this](
+                Env const& env, Account const& account) -> std::optional<long> {
+            auto sle = env.le(keylet::account(account.id()));
+            if (BEAST_EXPECT(sle != nullptr))
+                return sle->getFieldAmount(sfBalance).xrp().drops();
+            return std::nullopt;
+        };
+
+        auto testCase = [&, this](auto test, CaseArgs args = {}) {
+            Env env{*this, testable_amendments() | featureSingleAssetVault};
+
+            Vault vault{env};
+
+            // use different initial amount to distinguish the source balance
+            env.fund(XRP(10000), alice);
+            env.fund(XRP(20000), bob);
+            env.fund(XRP(30000), carol);
+            env.close();
+
+            env(delegate::set(
+                carol,
+                alice,
+                {"Payment",
+                 "VaultCreate",
+                 "VaultSet",
+                 "VaultDelete",
+                 "VaultDeposit",
+                 "VaultWithdraw",
+                 "VaultClawback"}));
+
+            test(env, vault, args.asset);
+        };
+
+        testCase([&, this](Env& env, Vault& vault, PrettyAsset const& asset) {
+            testcase("delegated vault creation");
+            auto startBalance = xrpBalance(env, carol);
+            if (!BEAST_EXPECT(startBalance.has_value()))
+                return;
+
+            auto [tx, keylet] = vault.create({.owner = carol, .asset = asset});
+            env(tx, delegate::as(alice));
+            env.close();
+            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance);
+        });
+
+        testCase([&, this](Env& env, Vault& vault, PrettyAsset const& asset) {
+            testcase("delegated deposit and withdrawal");
+            auto [tx, keylet] = vault.create({.owner = carol, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const amount = 1513;
+            auto const baseFee = env.current()->fees().base;
+
+            auto startBalance = xrpBalance(env, carol);
+            if (!BEAST_EXPECT(startBalance.has_value()))
+                return;
+
+            tx = vault.deposit(
+                {.depositor = carol,
+                 .id = keylet.key,
+                 .amount = asset(amount)});
+            env(tx, delegate::as(alice));
+            env.close();
+            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance - amount);
+
+            tx = vault.withdraw(
+                {.depositor = carol,
+                 .id = keylet.key,
+                 .amount = asset(amount - 1)});
+            env(tx, delegate::as(alice));
+            env.close();
+            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance - 1);
+
+            tx = vault.withdraw(
+                {.depositor = carol, .id = keylet.key, .amount = asset(1)});
+            env(tx);
+            env.close();
+            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance - baseFee);
+        });
+
+        testCase([&, this](Env& env, Vault& vault, PrettyAsset const& asset) {
+            testcase("delegated withdrawal same as base fee and deletion");
+            auto [tx, keylet] = vault.create({.owner = carol, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const amount = 25537;
+            auto const baseFee = env.current()->fees().base;
+
+            auto startBalance = xrpBalance(env, carol);
+            if (!BEAST_EXPECT(startBalance.has_value()))
+                return;
+
+            tx = vault.deposit(
+                {.depositor = carol,
+                 .id = keylet.key,
+                 .amount = asset(amount)});
+            env(tx);
+            env.close();
+            BEAST_EXPECT(
+                xrpBalance(env, carol) == *startBalance - amount - baseFee);
+
+            tx = vault.withdraw(
+                {.depositor = carol,
+                 .id = keylet.key,
+                 .amount = asset(baseFee)});
+            env(tx, delegate::as(alice));
+            env.close();
+            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance - amount);
+
+            tx = vault.withdraw(
+                {.depositor = carol,
+                 .id = keylet.key,
+                 .amount = asset(amount - baseFee)});
+            env(tx, delegate::as(alice));
+            env.close();
+            BEAST_EXPECT(xrpBalance(env, carol) == *startBalance - baseFee);
+
+            tx = vault.del({.owner = carol, .id = keylet.key});
+            env(tx, delegate::as(alice));
+            env.close();
+        });
+    }
+
 public:
     void
     run() override
@@ -4539,6 +5260,7 @@ public:
         testFailedPseudoAccount();
         testScaleIOU();
         testRPC();
+        testDelegate();
     }
 };
 

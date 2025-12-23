@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
@@ -28,13 +9,13 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/core/SociDB.h>
-#include <xrpld/nodestore/Database.h>
-#include <xrpld/nodestore/detail/DatabaseNodeImp.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/detail/DatabaseNodeImp.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
@@ -442,8 +423,10 @@ Ledger::read(Keylet const& k) const
 {
     if (k.key == beast::zero)
     {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::Ledger::read : zero key");
         return nullptr;
+        // LCOV_EXCL_STOP
     }
     auto const& item = stateMap_.peekItem(k.key);
     if (!item)
@@ -902,6 +885,7 @@ Ledger::assertSensible(beast::Journal ledgerJ) const
         return true;
     }
 
+    // LCOV_EXCL_START
     Json::Value j = getJson({*this, {}});
 
     j[jss::accountTreeHash] = to_string(info_.accountHash);
@@ -912,6 +896,7 @@ Ledger::assertSensible(beast::Journal ledgerJ) const
     UNREACHABLE("ripple::Ledger::assertSensible : ledger is not sensible");
 
     return false;
+    // LCOV_EXCL_STOP
 }
 
 // update the skip list with the information from our previous ledger

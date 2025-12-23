@@ -1,21 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
 #pragma once
 
 #include <xrpl/basics/base_uint.h>
@@ -60,11 +42,14 @@ struct WasmImportFunc
     std::string name;
     std::optional<WasmTypes> result;
     std::vector<WasmTypes> params;
-    void* udata = nullptr;
+    // void* udata = nullptr;
     // wasm_func_callback_with_env_t
     void* wrap = nullptr;
     uint32_t gas = 0;
 };
+
+typedef std::pair<void*, WasmImportFunc> WasmUserData;
+typedef std::vector<WasmUserData> ImportVec;
 
 #define WASM_IMPORT_FUNC(v, f, ...) \
     WasmImpFunc<f##_proto>(         \
@@ -130,7 +115,7 @@ WasmImpFuncHelper(WasmImportFunc& e)
 template <typename F>
 void
 WasmImpFunc(
-    std::vector<WasmImportFunc>& v,
+    ImportVec& v,
     std::string_view imp_name,
     void* f_wrap,
     void* data = nullptr,
@@ -138,11 +123,10 @@ WasmImpFunc(
 {
     WasmImportFunc e;
     e.name = imp_name;
-    e.udata = data;
     e.wrap = f_wrap;
     e.gas = gas;
     WasmImpFuncHelper<F>(e);
-    v.push_back(std::move(e));
+    v.push_back(std::make_pair(data, std::move(e)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -18,6 +18,10 @@ on:
         description: "The generated strategy matrix."
         value: ${{ jobs.generate-matrix.outputs.matrix }}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   generate-matrix:
     runs-on: ubuntu-latest
@@ -35,4 +39,7 @@ jobs:
       - name: Generate strategy matrix
         working-directory: .github/scripts/strategy-matrix
         id: generate
-        run: ./generate.py ${{ inputs.strategy_matrix == 'all' && '--all' || '' }} ${{ inputs.os != '' && format('--config={0}.json', inputs.os) || '' }} >> "${GITHUB_OUTPUT}"
+        env:
+          GENERATE_CONFIG: ${{ inputs.os != '' && format('--config={0}.json', inputs.os) || '' }}
+          GENERATE_OPTION: ${{ inputs.strategy_matrix == 'all' && '--all' || '' }}
+        run: ./generate.py ${GENERATE_OPTION} ${GENERATE_CONFIG} >> "${GITHUB_OUTPUT}"

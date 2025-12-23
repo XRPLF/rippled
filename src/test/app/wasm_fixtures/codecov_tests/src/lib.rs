@@ -7,10 +7,10 @@ use core::panic;
 use xrpl_std::core::current_tx::escrow_finish::{get_current_escrow_finish, EscrowFinish};
 use xrpl_std::core::current_tx::traits::TransactionCommonFields;
 use xrpl_std::core::locator::Locator;
-use xrpl_std::core::types::amount::asset::Asset;
-use xrpl_std::core::types::amount::asset::XrpAsset;
-use xrpl_std::core::types::amount::mpt_id::MptId;
+use xrpl_std::core::types::issue::Issue;
+use xrpl_std::core::types::issue::XrpIssue;
 use xrpl_std::core::types::keylets;
+use xrpl_std::core::types::mpt_id::MptId;
 use xrpl_std::host;
 use xrpl_std::host::error_codes;
 use xrpl_std::host::trace::{trace, trace_num as trace_number};
@@ -66,20 +66,6 @@ pub extern "C" fn finish() -> i32 {
             unsafe { host::get_parent_ledger_hash(ptr, len) },
             32,
             "get_parent_ledger_hash",
-        );
-    });
-    with_buffer::<32, _, _>(|ptr, len| {
-        check_result(
-            unsafe { host::get_ledger_account_hash(ptr, len) },
-            32,
-            "get_ledger_account_hash",
-        );
-    });
-    with_buffer::<32, _, _>(|ptr, len| {
-        check_result(
-            unsafe { host::get_ledger_tx_hash(ptr, len) },
-            32,
-            "get_ledger_tx_hash",
         );
     });
     check_result(unsafe { host::get_base_fee() }, 10, "get_base_fee");
@@ -176,7 +162,7 @@ pub extern "C" fn finish() -> i32 {
     );
     check_result(
         unsafe { host::update_data(account.0.as_ptr(), account.0.len()) },
-        0,
+        20,
         "update_data",
     );
     with_buffer::<32, _, _>(|ptr, len| {
@@ -277,6 +263,19 @@ pub extern "C" fn finish() -> i32 {
         },
         19,
         "trace_amount",
+    );
+    let amount = &[0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]; // 0 drops of XRP
+    check_result(
+        unsafe {
+            host::trace_amount(
+                message.as_ptr(),
+                message.len(),
+                amount.as_ptr(),
+                amount.len(),
+            )
+        },
+        18,
+        "trace_amount_zero",
     );
 
     // ########################################
@@ -496,8 +495,8 @@ pub extern "C" fn finish() -> i32 {
         )
     });
 
-    // Asset
-    let asset1_bytes = Asset::XRP(XrpAsset {}).as_bytes();
+    // Issue
+    let asset1_bytes = Issue::XRP(XrpIssue {}).as_bytes();
     with_buffer::<32, _, _>(|ptr, len| {
         check_result(
             unsafe {
@@ -1528,6 +1527,21 @@ pub extern "C" fn finish() -> i32 {
             "mptoken_keylet_mptid_wrong_length",
         )
     });
+
+    // ensure that the Slice index desync issue is fixed
+    let empty: &[u8] = b"";
+    check_result(
+        unsafe {
+            host::trace_account(
+                empty.as_ptr(),
+                empty.len(),
+                account.0.as_ptr(),
+                account.0.len(),
+            )
+        },
+        34,
+        "trace_account_check_desync",
+    );
 
     1 // <-- If we get here, finish the escrow.
 }

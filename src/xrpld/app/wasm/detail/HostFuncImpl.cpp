@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/wasm/HostFuncImpl.h>
@@ -25,8 +6,7 @@
 #include <xrpl/protocol/digest.h>
 
 #ifdef _DEBUG
-#define DEBUG_OUTPUT 1
-#define DEBUG_OUTPUT_WAMR 1
+// #define DEBUG_OUTPUT 1
 #endif
 
 namespace ripple {
@@ -53,18 +33,6 @@ Expected<Hash, HostFunctionError>
 WasmHostFunctionsImpl::getParentLedgerHash()
 {
     return ctx.view().info().parentHash;
-}
-
-Expected<Hash, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerAccountHash()
-{
-    return ctx.view().info().accountHash;
-}
-
-Expected<Hash, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerTransactionHash()
-{
-    return ctx.view().info().txHash;
 }
 
 Expected<int32_t, HostFunctionError>
@@ -443,7 +411,7 @@ WasmHostFunctionsImpl::updateData(Slice const& data)
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
     data_ = Bytes(data.begin(), data.end());
-    return 0;
+    return data_->size();
 }
 
 Expected<int32_t, HostFunctionError>
@@ -456,7 +424,7 @@ WasmHostFunctionsImpl::checkSignature(
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
     PublicKey const pk(pubkey);
-    return verify(pk, message, signature, /*canonical*/ true);
+    return verify(pk, message, signature);
 }
 
 Expected<Hash, HostFunctionError>
@@ -1301,10 +1269,12 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 
         return res.toBytes();
     }
+    // LCOV_EXCL_START
     catch (...)
     {
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    // LCOV_EXCL_STOP
 }
 
 Expected<Bytes, HostFunctionError>

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2017 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
 #include <test/jtx/WSClient.h>
@@ -199,13 +180,10 @@ public:
         // an offer.  Show that the attempt to remove the offer fails.
         env.require(offers(alice, 2));
 
-        // featureDepositPreauths changes the return code on an expired Offer.
-        // Adapt to that.
-        bool const featPreauth{features[featureDepositPreauth]};
         env(offer(alice, XRP(5), USD(2)),
             json(sfExpiration.fieldName, lastClose(env)),
             json(jss::OfferSequence, offer2Seq),
-            ter(featPreauth ? TER{tecEXPIRED} : TER{tesSUCCESS}));
+            ter(tecEXPIRED));
         env.close();
 
         env.require(offers(alice, 2));
@@ -366,37 +344,22 @@ public:
             env(offer(alice, USD(1), aliceTakerGets));
             env.close();
 
-            if (features[fixRmSmallIncreasedQOffers])
+            env.require(
+                offers(carol, 0),
+                balance(
+                    carol,
+                    initialCarolUSD));  // offer is removed but not taken
+            if (crossBothOffers)
             {
                 env.require(
-                    offers(carol, 0),
-                    balance(
-                        carol,
-                        initialCarolUSD));  // offer is removed but not taken
-                if (crossBothOffers)
-                {
-                    env.require(
-                        offers(alice, 0),
-                        balance(alice, USD(1)));  // alice's offer is crossed
-                }
-                else
-                {
-                    env.require(
-                        offers(alice, 1),
-                        balance(
-                            alice, USD(0)));  // alice's offer is not crossed
-                }
+                    offers(alice, 0),
+                    balance(alice, USD(1)));  // alice's offer is crossed
             }
             else
             {
                 env.require(
                     offers(alice, 1),
-                    offers(bob, 1),
-                    offers(carol, 1),
-                    balance(alice, USD(0)),
-                    balance(
-                        carol,
-                        initialCarolUSD));  // offer is not crossed at all
+                    balance(alice, USD(0)));  // alice's offer is not crossed
             }
         }
 
@@ -434,36 +397,19 @@ public:
                 ter(expectedTer));
             env.close();
 
-            if (features[fixRmSmallIncreasedQOffers])
+            if (expectedTer == tesSUCCESS)
             {
-                if (expectedTer == tesSUCCESS)
-                {
-                    env.require(offers(carol, 0));
-                    env.require(balance(
-                        carol,
-                        initialCarolUSD));  // offer is removed but not taken
-                }
-                else
-                {
-                    // TODO: Offers are not removed when payments fail
-                    // If that is addressed, the test should show that carol's
-                    // offer is removed but not taken, as in the other branch of
-                    // this if statement
-                }
+                env.require(offers(carol, 0));
+                env.require(balance(
+                    carol,
+                    initialCarolUSD));  // offer is removed but not taken
             }
             else
             {
-                if (partialPayment)
-                {
-                    env.require(offers(carol, 0));
-                    env.require(
-                        balance(carol, USD(0)));  // offer is removed and taken
-                }
-                else
-                {
-                    // offer is not removed or taken
-                    BEAST_EXPECT(isOffer(env, carol, drops(1), USD(1)));
-                }
+                // TODO: Offers are not removed when payments fail
+                // If that is addressed, the test should show that carol's
+                // offer is removed but not taken, as in the other branch of
+                // this if statement
             }
         }
     }
@@ -526,37 +472,22 @@ public:
             env(offer(alice, USD(1), aliceTakerGets));
             env.close();
 
-            if (features[fixRmSmallIncreasedQOffers])
+            env.require(
+                offers(carol, 0),
+                balance(
+                    carol,
+                    initialCarolUSD));  // offer is removed but not taken
+            if (crossBothOffers)
             {
                 env.require(
-                    offers(carol, 0),
-                    balance(
-                        carol,
-                        initialCarolUSD));  // offer is removed but not taken
-                if (crossBothOffers)
-                {
-                    env.require(
-                        offers(alice, 0),
-                        balance(alice, USD(1)));  // alice's offer is crossed
-                }
-                else
-                {
-                    env.require(
-                        offers(alice, 1),
-                        balance(
-                            alice, USD(0)));  // alice's offer is not crossed
-                }
+                    offers(alice, 0),
+                    balance(alice, USD(1)));  // alice's offer is crossed
             }
             else
             {
                 env.require(
                     offers(alice, 1),
-                    offers(bob, 1),
-                    offers(carol, 1),
-                    balance(alice, USD(0)),
-                    balance(
-                        carol,
-                        initialCarolUSD));  // offer is not crossed at all
+                    balance(alice, USD(0)));  // alice's offer is not crossed
             }
         }
 
@@ -597,36 +528,19 @@ public:
                 ter(expectedTer));
             env.close();
 
-            if (features[fixRmSmallIncreasedQOffers])
+            if (expectedTer == tesSUCCESS)
             {
-                if (expectedTer == tesSUCCESS)
-                {
-                    env.require(offers(carol, 0));
-                    env.require(balance(
-                        carol,
-                        initialCarolUSD));  // offer is removed but not taken
-                }
-                else
-                {
-                    // TODO: Offers are not removed when payments fail
-                    // If that is addressed, the test should show that carol's
-                    // offer is removed but not taken, as in the other branch of
-                    // this if statement
-                }
+                env.require(offers(carol, 0));
+                env.require(balance(
+                    carol,
+                    initialCarolUSD));  // offer is removed but not taken
             }
             else
             {
-                if (partialPayment)
-                {
-                    env.require(offers(carol, 0));
-                    env.require(
-                        balance(carol, USD(0)));  // offer is removed and taken
-                }
-                else
-                {
-                    // offer is not removed or taken
-                    BEAST_EXPECT(isOffer(env, carol, EUR(1), USD(2)));
-                }
+                // TODO: Offers are not removed when payments fail
+                // If that is addressed, the test should show that carol's
+                // offer is removed but not taken, as in the other branch of
+                // this if statement
             }
         }
     }
@@ -846,13 +760,8 @@ public:
         // Fill or Kill - unless we fully cross, just charge a fee and don't
         // place the offer on the books.  But also clean up expired offers
         // that are discovered along the way.
-        //
-        // fix1578 changes the return code.  Verify expected behavior
-        // without and with fix1578.
-        for (auto const& tweakedFeatures :
-             {features - fix1578, features | fix1578})
         {
-            Env env{*this, tweakedFeatures};
+            Env env{*this, features};
 
             auto const f = env.current()->fees().base;
 
@@ -878,9 +787,7 @@ public:
 
             // Order that can't be filled but will remove bob's expired offer:
             {
-                TER const killedCode{
-                    tweakedFeatures[fix1578] ? TER{tecKILLED}
-                                             : TER{tesSUCCESS}};
+                TER const killedCode{TER{tecKILLED}};
                 env(offer(alice, XRP(1000), USD(1000)),
                     txflags(tfFillOrKill),
                     ter(killedCode));
@@ -926,9 +833,7 @@ public:
 
             // No cross:
             {
-                TER const expectedCode = features[featureImmediateOfferKilled]
-                    ? static_cast<TER>(tecKILLED)
-                    : static_cast<TER>(tesSUCCESS);
+                TER const expectedCode = tecKILLED;
                 env(offer(alice, XRP(1000), USD(1000)),
                     txflags(tfImmediateOrCancel),
                     ter(expectedCode));
@@ -1174,13 +1079,9 @@ public:
             offers(alice, 0),
             owners(alice, 1));
 
-        // Place an offer that should have already expired.
-        // The DepositPreauth amendment changes the return code; adapt to that.
-        bool const featPreauth{features[featureDepositPreauth]};
-
         env(offer(alice, xrpOffer, usdOffer),
             json(sfExpiration.fieldName, lastClose(env)),
-            ter(featPreauth ? TER{tecEXPIRED} : TER{tesSUCCESS}));
+            ter(tecEXPIRED));
 
         env.require(
             balance(alice, startBalance - f - f),
@@ -3008,8 +2909,7 @@ public:
         env.close();
 
         // Code returned if an offer is killed.
-        TER const killedCode{
-            features[fix1578] ? TER{tecKILLED} : TER{tesSUCCESS}};
+        TER const killedCode{TER{tecKILLED}};
 
         // bob offers XRP for USD.
         env(trust(bob, USD(200)));
@@ -4592,21 +4492,13 @@ public:
         env(fset(gw, asfRequireAuth));
         env.close();
 
-        // The test behaves differently with or without DepositPreauth.
-        bool const preauth = features[featureDepositPreauth];
-
         // Before DepositPreauth an account with lsfRequireAuth set could not
         // create an offer to buy their own currency.  After DepositPreauth
         // they can.
-        env(offer(gw, gwUSD(40), XRP(4000)),
-            ter(preauth ? TER{tesSUCCESS} : TER{tecNO_LINE}));
+        env(offer(gw, gwUSD(40), XRP(4000)), ter(tesSUCCESS));
         env.close();
 
-        env.require(offers(gw, preauth ? 1 : 0));
-
-        if (!preauth)
-            // The rest of the test verifies DepositPreauth behavior.
-            return;
+        env.require(offers(gw, 1));
 
         // Set up an authorized trust line and pay alice gwUSD 50.
         env(trust(gw, aliceUSD(100)), txflags(tfSetfAuth));
@@ -5361,49 +5253,13 @@ public:
         testFillOrKill(features);
     }
 
-    void
-    run(std::uint32_t instance, bool last = false)
-    {
-        using namespace jtx;
-        static FeatureBitset const all{testable_amendments()};
-        static FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
-        static FeatureBitset const rmSmallIncreasedQOffers{
-            fixRmSmallIncreasedQOffers};
-        static FeatureBitset const immediateOfferKilled{
-            featureImmediateOfferKilled};
-        FeatureBitset const fillOrKill{fixFillOrKill};
-        FeatureBitset const permDEX{featurePermissionedDEX};
-
-        static std::array<FeatureBitset, 6> const feats{
-            all - takerDryOffer - immediateOfferKilled - permDEX,
-            all - immediateOfferKilled - permDEX,
-            all - rmSmallIncreasedQOffers - immediateOfferKilled - fillOrKill -
-                permDEX,
-            all - fillOrKill - permDEX,
-            all - permDEX,
-            all};
-
-        if (BEAST_EXPECT(instance < feats.size()))
-        {
-            testAll(feats[instance]);
-        }
-        BEAST_EXPECT(!last || instance == feats.size() - 1);
-    }
+    FeatureBitset const allFeatures{jtx::testable_amendments()};
 
     void
     run() override
     {
-        run(0);
+        testAll(allFeatures - featurePermissionedDEX);
         testFalseAssert();
-    }
-};
-
-class OfferWTakerDryOffer_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        OfferBaseUtil_test::run(1);
     }
 };
 
@@ -5412,25 +5268,7 @@ class OfferWOSmallQOffers_test : public OfferBaseUtil_test
     void
     run() override
     {
-        OfferBaseUtil_test::run(2);
-    }
-};
-
-class OfferWOFillOrKill_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        OfferBaseUtil_test::run(3);
-    }
-};
-
-class OfferWOPermDEX_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        OfferBaseUtil_test::run(4);
+        testAll(allFeatures - fixFillOrKill - featurePermissionedDEX);
     }
 };
 
@@ -5439,7 +5277,7 @@ class OfferAllFeatures_test : public OfferBaseUtil_test
     void
     run() override
     {
-        OfferBaseUtil_test::run(5, true);
+        testAll(allFeatures);
     }
 };
 
@@ -5450,27 +5288,17 @@ class Offer_manual_test : public OfferBaseUtil_test
     {
         using namespace jtx;
         FeatureBitset const all{testable_amendments()};
-        FeatureBitset const f1513{fix1513};
-        FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
-        FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         FeatureBitset const fillOrKill{fixFillOrKill};
         FeatureBitset const permDEX{featurePermissionedDEX};
 
-        testAll(all - f1513 - immediateOfferKilled - permDEX);
-        testAll(all - immediateOfferKilled - fillOrKill - permDEX);
         testAll(all - fillOrKill - permDEX);
         testAll(all - permDEX);
         testAll(all);
-
-        testAll(all - takerDryOffer - permDEX);
     }
 };
 
 BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWTakerDryOffer, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFillOrKill, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOPermDEX, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, app, ripple, 20);
 

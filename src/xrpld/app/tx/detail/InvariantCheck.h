@@ -1,27 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
+#ifndef XRPL_APP_TX_INVARIANTCHECK_H_INCLUDED
+#define XRPL_APP_TX_INVARIANTCHECK_H_INCLUDED
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_TX_INVARIANTCHECK_H_INCLUDED
-#define RIPPLE_APP_TX_INVARIANTCHECK_H_INCLUDED
-
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -175,7 +158,14 @@ public:
  */
 class AccountRootsDeletedClean
 {
-    std::vector<std::shared_ptr<SLE const>> accountsDeleted_;
+    // Pair is <before, after>. Before is used for most of the checks, so that
+    // if, for example, an object ID field is cleared, but the object is not
+    // deleted, it can still be found. After is used specifically for any checks
+    // that are expected as part of the deletion, such as zeroing out the
+    // balance.
+    std::vector<
+        std::pair<std::shared_ptr<SLE const>, std::shared_ptr<SLE const>>>
+        accountsDeleted_;
 
 public:
     void
@@ -567,6 +557,9 @@ class ValidMPTIssuance
 
     std::uint32_t mptokensCreated_ = 0;
     std::uint32_t mptokensDeleted_ = 0;
+    // non-MPT transactions may attempt to create
+    // MPToken by an issuer
+    bool mptCreatedByIssuer_ = false;
 
 public:
     void
@@ -732,6 +725,182 @@ private:
         beast::Journal const&) const;
 };
 
+/**
+ * @brief Invariants: Some fields are unmodifiable
+ *
+ * Check that any fields specified as unmodifiable are not modified when the
+ * object is modified. Creation and deletion are ignored.
+ *
+ */
+class NoModifiedUnmodifiableFields
+{
+    // Pair is <before, after>.
+    std::set<std::pair<SLE::const_pointer, SLE::const_pointer>> changedEntries_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+/**
+ * @brief Invariants: Loan brokers are internally consistent
+ *
+ * 1. If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most one
+ *    node (the root), which will only hold entries for `RippleState` or
+ * `MPToken` objects.
+ *
+ */
+class ValidLoanBroker
+{
+    // Not all of these elements will necessarily be populated. Remaining items
+    // will be looked up as needed.
+    struct BrokerInfo
+    {
+        SLE::const_pointer brokerBefore = nullptr;
+        // After is used for most of the checks, except
+        // those that check changed values.
+        SLE::const_pointer brokerAfter = nullptr;
+    };
+    // Collect all the LoanBrokers found directly or indirectly through
+    // pseudo-accounts. Key is the brokerID / index. It will be used to find the
+    // LoanBroker object if brokerBefore and brokerAfter are nullptr
+    std::map<uint256, BrokerInfo> brokers_;
+    // Collect all the modified trust lines. Their high and low accounts will be
+    // loaded to look for LoanBroker pseudo-accounts.
+    std::vector<SLE::const_pointer> lines_;
+    // Collect all the modified MPTokens. Their accounts will be loaded to look
+    // for LoanBroker pseudo-accounts.
+    std::vector<SLE::const_pointer> mpts_;
+
+    bool
+    goodZeroDirectory(
+        ReadView const& view,
+        SLE::const_ref dir,
+        beast::Journal const& j) const;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+/**
+ * @brief Invariants: Loans are internally consistent
+ *
+ * 1. If `Loan.PaymentRemaining = 0` then `Loan.PrincipalOutstanding = 0`
+ *
+ */
+class ValidLoan
+{
+    // Pair is <before, after>. After is used for most of the checks, except
+    // those that check changed values.
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> loans_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+/*
+ * @brief Invariants: Vault object and MPTokenIssuance for vault shares
+ *
+ * - vault deleted and vault created is empty
+ * - vault created must be linked to pseudo-account for shares and assets
+ * - vault must have MPTokenIssuance for shares
+ * - vault without shares outstanding must have no shares
+ * - loss unrealized does not exceed the difference between assets total and
+ *   assets available
+ * - assets available do not exceed assets total
+ * - vault deposit increases assets and share issuance, and adds to:
+ *   total assets, assets available, shares outstanding
+ * - vault withdrawal and clawback reduce assets and share issuance, and
+ *   subtracts from: total assets, assets available, shares outstanding
+ * - vault set must not alter the vault assets or shares balance
+ * - no vault transaction can change loss unrealized (it's updated by loan
+ *   transactions)
+ *
+ */
+class ValidVault
+{
+    Number static constexpr zero{};
+
+    struct Vault final
+    {
+        uint256 key = beast::zero;
+        Asset asset = {};
+        AccountID pseudoId = {};
+        uint192 shareMPTID = beast::zero;
+        Number assetsTotal = 0;
+        Number assetsAvailable = 0;
+        Number assetsMaximum = 0;
+        Number lossUnrealized = 0;
+
+        Vault static make(SLE const&);
+    };
+
+    struct Shares final
+    {
+        MPTIssue share = {};
+        std::uint64_t sharesTotal = 0;
+        std::uint64_t sharesMaximum = 0;
+
+        Shares static make(SLE const&);
+    };
+
+    std::vector<Vault> afterVault_ = {};
+    std::vector<Shares> afterMPTs_ = {};
+    std::vector<Vault> beforeVault_ = {};
+    std::vector<Shares> beforeMPTs_ = {};
+    std::unordered_map<uint256, Number> deltas_ = {};
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -754,7 +923,11 @@ using InvariantChecks = std::tuple<
     ValidPermissionedDomain,
     ValidPermissionedDEX,
     ValidAMM,
-    ValidPseudoAccounts>;
+    NoModifiedUnmodifiableFields,
+    ValidPseudoAccounts,
+    ValidLoanBroker,
+    ValidLoan,
+    ValidVault>;
 
 /**
  * @brief get a tuple of all invariant checks

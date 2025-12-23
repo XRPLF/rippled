@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2018 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/core/JobTypes.h>
 #include <xrpld/perflog/detail/PerfLogImp.h>
 
@@ -53,9 +34,11 @@ PerfLogImp::Counters::Counters(
             if (!inserted)
             {
                 // Ensure that no other function populates this entry.
+                // LCOV_EXCL_START
                 UNREACHABLE(
                     "ripple::perf::PerfLogImp::Counters::Counters : failed to "
                     "insert label");
+                // LCOV_EXCL_STOP
             }
         }
     }
@@ -68,9 +51,11 @@ PerfLogImp::Counters::Counters(
             if (!inserted)
             {
                 // Ensure that no other function populates this entry.
+                // LCOV_EXCL_START
                 UNREACHABLE(
                     "ripple::perf::PerfLogImp::Counters::Counters : failed to "
                     "insert job type");
+                // LCOV_EXCL_STOP
             }
         }
     }
@@ -329,8 +314,10 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
     auto counter = counters_.rpc_.find(method);
     if (counter == counters_.rpc_.end())
     {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::perf::PerfLogImp::rpcStart : valid method input");
         return;
+        // LCOV_EXCL_STOP
     }
 
     {
@@ -351,8 +338,10 @@ PerfLogImp::rpcEnd(
     auto counter = counters_.rpc_.find(method);
     if (counter == counters_.rpc_.end())
     {
+        // LCOV_EXCL_START
         UNREACHABLE("ripple::perf::PerfLogImp::rpcEnd : valid method input");
         return;
+        // LCOV_EXCL_STOP
     }
     steady_time_point startTime;
     {
@@ -365,8 +354,10 @@ PerfLogImp::rpcEnd(
         }
         else
         {
+            // LCOV_EXCL_START
             UNREACHABLE(
                 "ripple::perf::PerfLogImp::rpcEnd : valid requestId input");
+            // LCOV_EXCL_STOP
         }
     }
     std::lock_guard lock(counter->second.mutex);
@@ -384,9 +375,11 @@ PerfLogImp::jobQueue(JobType const type)
     auto counter = counters_.jq_.find(type);
     if (counter == counters_.jq_.end())
     {
+        // LCOV_EXCL_START
         UNREACHABLE(
             "ripple::perf::PerfLogImp::jobQueue : valid job type input");
         return;
+        // LCOV_EXCL_STOP
     }
     std::lock_guard lock(counter->second.mutex);
     ++counter->second.value.queued;
@@ -402,10 +395,13 @@ PerfLogImp::jobStart(
     auto counter = counters_.jq_.find(type);
     if (counter == counters_.jq_.end())
     {
+        // LCOV_EXCL_START
         UNREACHABLE(
             "ripple::perf::PerfLogImp::jobStart : valid job type input");
         return;
+        // LCOV_EXCL_STOP
     }
+
     {
         std::lock_guard lock(counter->second.mutex);
         ++counter->second.value.started;
@@ -422,10 +418,13 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
     auto counter = counters_.jq_.find(type);
     if (counter == counters_.jq_.end())
     {
+        // LCOV_EXCL_START
         UNREACHABLE(
             "ripple::perf::PerfLogImp::jobFinish : valid job type input");
         return;
+        // LCOV_EXCL_STOP
     }
+
     {
         std::lock_guard lock(counter->second.mutex);
         ++counter->second.value.finished;

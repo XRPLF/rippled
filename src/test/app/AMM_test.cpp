@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
@@ -3572,7 +3553,7 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = AMMBid::preflight(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
                 BEAST_EXPECT(pf == temDISABLED);
                 env.app().config().features.insert(featureAMM);
             }
@@ -3587,7 +3568,7 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = AMMBid::preflight(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
                 BEAST_EXPECT(pf != tesSUCCESS);
             }
 
@@ -3602,7 +3583,7 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = AMMBid::preflight(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
                 BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
             }
         }
@@ -3666,7 +3647,7 @@ private:
             auto const settleDelay = 100s;
             NetClock::time_point const cancelAfter =
                 env.current()->info().parentCloseTime + 200s;
-            env(create(
+            env(paychan::create(
                     carol,
                     ammAlice.ammAccount(),
                     XRP(1'000),

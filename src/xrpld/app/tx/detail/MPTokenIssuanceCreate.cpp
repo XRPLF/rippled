@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2024 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
 
 #include <xrpl/ledger/View.h>
@@ -25,29 +6,35 @@
 
 namespace ripple {
 
-NotTEC
-MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
+bool
+MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureMPTokensV1))
-        return temDISABLED;
-
     if (ctx.tx.isFieldPresent(sfDomainID) &&
         !(ctx.rules.enabled(featurePermissionedDomains) &&
           ctx.rules.enabled(featureSingleAssetVault)))
-        return temDISABLED;
+        return false;
 
     if (ctx.tx.isFieldPresent(sfMutableFlags) &&
         !ctx.rules.enabled(featureDynamicMPT))
-        return temDISABLED;
+        return false;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+    return true;
+}
 
+std::uint32_t
+MPTokenIssuanceCreate::getFlagsMask(PreflightContext const& ctx)
+{
+    // This mask is only compared against sfFlags
+    return tfMPTokenIssuanceCreateMask;
+}
+
+NotTEC
+MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
+{
+    // If the mutable flags field is included, at least one flag must be
+    // specified.
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
         (!*mutableFlags || *mutableFlags & tmfMPTokenIssuanceCreateMutableMask))
-        return temINVALID_FLAG;
-
-    if (ctx.tx.getFlags() & tfMPTokenIssuanceCreateMask)
         return temINVALID_FLAG;
 
     if (auto const fee = ctx.tx[~sfTransferFee])
@@ -87,7 +74,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         if (maxAmt > maxMPTokenAmount)
             return temMALFORMED;
     }
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 Expected<MPTID, TER>

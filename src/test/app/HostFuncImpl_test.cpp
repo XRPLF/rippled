@@ -1,25 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpld/app/wasm/HostFuncImpl.h>
+
+#include <xrpl/protocol/digest.h>
 
 namespace ripple {
 namespace test {
@@ -167,44 +150,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         auto const result = hfs.getParentLedgerHash();
         if (BEAST_EXPECT(result.has_value()))
             BEAST_EXPECT(result.value() == env.current()->info().parentHash);
-    }
-
-    void
-    testGetLedgerAccountHash()
-    {
-        testcase("getLedgerAccountHash");
-        using namespace test::jtx;
-
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        auto const result = hfs.getLedgerAccountHash();
-        if (BEAST_EXPECT(result.has_value()))
-            BEAST_EXPECT(result.value() == env.current()->info().accountHash);
-    }
-
-    void
-    testGetLedgerTransactionHash()
-    {
-        testcase("getLedgerTransactionHash");
-        using namespace test::jtx;
-
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        auto const result = hfs.getLedgerTransactionHash();
-        if (BEAST_EXPECT(result.has_value()))
-            BEAST_EXPECT(result.value() == env.current()->info().txHash);
     }
 
     void
@@ -1353,7 +1298,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Should succeed for small data
         std::vector<uint8_t> data(10, 0x42);
         auto const result = hfs.updateData(Slice(data.data(), data.size()));
-        BEAST_EXPECT(result.has_value() && result.value() == 0);
+        BEAST_EXPECT(result.has_value() && result.value() == data.size());
 
         // Should fail for too large data
         std::vector<uint8_t> bigData(
@@ -2900,7 +2845,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     testFloatNonIOU()
     {
-        testcase("Float Xrp+Mpt");
+        testcase("float Xrp+Mpt");
         using namespace test::jtx;
 
         Env env{*this};
@@ -2962,6 +2907,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     testFloats()
     {
+        testFloatTrace();
         testFloatFromInt();
         testFloatFromUint();
         testFloatSet();
@@ -2974,7 +2920,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testFloatPower();
         testFloatLog();
         testFloatNonIOU();
-        testFloatTrace();
     }
 
     void
@@ -2983,8 +2928,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testGetLedgerSqn();
         testGetParentLedgerTime();
         testGetParentLedgerHash();
-        testGetLedgerAccountHash();
-        testGetLedgerTransactionHash();
         testGetBaseFee();
         testIsAmendmentEnabled();
         testCacheLedgerObj();

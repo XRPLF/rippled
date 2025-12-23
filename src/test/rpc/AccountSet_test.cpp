@@ -1,23 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
+
+#include <xrpld/app/tx/apply.h>
 
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
@@ -52,8 +35,7 @@ public:
         using namespace test::jtx;
         Account const alice("alice");
 
-        // Test without DepositAuth enabled initially.
-        Env env(*this, testable_amendments() - featureDepositAuth);
+        Env env(*this, testable_amendments());
         env.fund(XRP(10000), noripple(alice));
 
         // Give alice a regular key so she can legally set and clear
@@ -133,19 +115,6 @@ public:
                 }
             }
         };
-
-        // Test with featureDepositAuth disabled.
-        testFlags(
-            {asfRequireDest,
-             asfRequireAuth,
-             asfDisallowXRP,
-             asfGlobalFreeze,
-             asfDisableMaster,
-             asfDefaultRipple});
-
-        // Enable featureDepositAuth and retest.
-        env.enableFeature(featureDepositAuth);
-        env.close();
         testFlags(
             {asfRequireDest,
              asfRequireAuth,
@@ -579,6 +548,32 @@ public:
     }
 
     void
+    testBadSigningKey()
+    {
+        using namespace test::jtx;
+        testcase("Bad signing key");
+        Env env(*this);
+        Account const alice("alice");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto jtx = env.jt(noop("alice"), ter(temBAD_SIGNATURE));
+        if (!BEAST_EXPECT(jtx.stx))
+            return;
+        auto stx = std::make_shared<STTx>(*jtx.stx);
+        stx->at(sfSigningPubKey) = makeSlice(std::string("badkey"));
+
+        env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            auto const result =
+                ripple::apply(env.app(), view, *stx, tapNONE, j);
+            BEAST_EXPECT(result.ter == temBAD_SIGNATURE);
+            BEAST_EXPECT(!result.applied);
+            return result.applied;
+        });
+    }
+
+    void
     run() override
     {
         testNullAccountSet();
@@ -594,6 +589,7 @@ public:
         testRequireAuthWithDir();
         testTransferRate();
         testTicket();
+        testBadSigningKey();
     }
 };
 

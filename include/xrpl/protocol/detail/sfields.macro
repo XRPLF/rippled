@@ -1,28 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED AS IS AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #if !defined(UNTYPED_SFIELD)
 #error "undefined macro: UNTYPED_SFIELD"
 #endif
 #if !defined(TYPED_SFIELD)
 #error "undefined macro: TYPED_SFIELD"
 #endif
+
+// clang-format off
 
 // untyped
 UNTYPED_SFIELD(sfLedgerEntry,            LEDGERENTRY, 257)
@@ -57,6 +40,7 @@ TYPED_SFIELD(sfDiscountedFee,            UINT16,     6)
 TYPED_SFIELD(sfVersion,                  UINT16,    16)
 // 17 to 20 unused
 TYPED_SFIELD(sfLedgerFixType,            UINT16,    21)
+TYPED_SFIELD(sfManagementFeeRate,        UINT16,    22) // 1/10 basis points (bips)
 
 // 32-bit integers (common)
 TYPED_SFIELD(sfNetworkID,                UINT32,     1)
@@ -111,11 +95,26 @@ TYPED_SFIELD(sfFirstNFTokenSequence,     UINT32,    50)
 TYPED_SFIELD(sfOracleDocumentID,         UINT32,    51)
 TYPED_SFIELD(sfPermissionValue,          UINT32,    52)
 TYPED_SFIELD(sfMutableFlags,             UINT32,    53)
-TYPED_SFIELD(sfExtensionComputeLimit,    UINT32,    54)
-TYPED_SFIELD(sfExtensionSizeLimit,       UINT32,    55)
-TYPED_SFIELD(sfGasPrice,                 UINT32,    56)
-TYPED_SFIELD(sfComputationAllowance,     UINT32,    57)
-TYPED_SFIELD(sfGasUsed,                  UINT32,    58)
+TYPED_SFIELD(sfStartDate,                UINT32,    54)
+TYPED_SFIELD(sfPaymentInterval,          UINT32,    55)
+TYPED_SFIELD(sfGracePeriod,              UINT32,    56)
+TYPED_SFIELD(sfPreviousPaymentDate,      UINT32,    57)
+TYPED_SFIELD(sfNextPaymentDueDate,       UINT32,    58)
+TYPED_SFIELD(sfPaymentRemaining,         UINT32,    59)
+TYPED_SFIELD(sfPaymentTotal,             UINT32,    60)
+TYPED_SFIELD(sfLoanSequence,             UINT32,    61)
+TYPED_SFIELD(sfCoverRateMinimum,         UINT32,    62) // 1/10 basis points (bips)
+TYPED_SFIELD(sfCoverRateLiquidation,     UINT32,    63) // 1/10 basis points (bips)
+TYPED_SFIELD(sfOverpaymentFee,           UINT32,    64) // 1/10 basis points (bips)
+TYPED_SFIELD(sfInterestRate,             UINT32,    65) // 1/10 basis points (bips)
+TYPED_SFIELD(sfLateInterestRate,         UINT32,    66) // 1/10 basis points (bips)
+TYPED_SFIELD(sfCloseInterestRate,        UINT32,    67) // 1/10 basis points (bips)
+TYPED_SFIELD(sfOverpaymentInterestRate,  UINT32,    68) // 1/10 basis points (bips)
+TYPED_SFIELD(sfExtensionComputeLimit,    UINT32,    69)
+TYPED_SFIELD(sfExtensionSizeLimit,       UINT32,    70)
+TYPED_SFIELD(sfGasPrice,                 UINT32,    71)
+TYPED_SFIELD(sfComputationAllowance,     UINT32,    72)
+TYPED_SFIELD(sfGasUsed,                  UINT32,    73)
 TYPED_SFIELD(sfParameterFlag,            UINT32,    59)
 
 // 64-bit integers (common)
@@ -146,7 +145,8 @@ TYPED_SFIELD(sfMPTAmount,                UINT64,    26, SField::sMD_BaseTen|SFie
 TYPED_SFIELD(sfIssuerNode,               UINT64,    27)
 TYPED_SFIELD(sfSubjectNode,              UINT64,    28)
 TYPED_SFIELD(sfLockedAmount,             UINT64,    29, SField::sMD_BaseTen|SField::sMD_Default)
-TYPED_SFIELD(sfContractReturnCode,       UINT64,    30)
+TYPED_SFIELD(sfVaultNode,                UINT64,    30)
+TYPED_SFIELD(sfLoanBrokerNode,           UINT64,    31)
 
 // 128-bit
 TYPED_SFIELD(sfEmailHash,                UINT128,    1)
@@ -198,8 +198,11 @@ TYPED_SFIELD(sfDomainID,                 UINT256,   34)
 TYPED_SFIELD(sfVaultID,                  UINT256,   35,
     SField::sMD_PseudoAccount | SField::sMD_Default)
 TYPED_SFIELD(sfParentBatchID,            UINT256,   36)
-TYPED_SFIELD(sfContractHash,             UINT256,   37)
-TYPED_SFIELD(sfContractID,               UINT256,   38,
+TYPED_SFIELD(sfLoanBrokerID,             UINT256,   37,
+    SField::sMD_PseudoAccount | SField::sMD_Default)
+TYPED_SFIELD(sfLoanID,                   UINT256,   38)
+TYPED_SFIELD(sfContractHash,             UINT256,   39)
+TYPED_SFIELD(sfContractID,               UINT256,   40,
     SField::sMD_PseudoAccount | SField::sMD_Default)
 
 // number (common)
@@ -208,9 +211,22 @@ TYPED_SFIELD(sfAssetsAvailable,          NUMBER,     2)
 TYPED_SFIELD(sfAssetsMaximum,            NUMBER,     3)
 TYPED_SFIELD(sfAssetsTotal,              NUMBER,     4)
 TYPED_SFIELD(sfLossUnrealized,           NUMBER,     5)
+TYPED_SFIELD(sfDebtTotal,                NUMBER,     6)
+TYPED_SFIELD(sfDebtMaximum,              NUMBER,     7)
+TYPED_SFIELD(sfCoverAvailable,           NUMBER,     8)
+TYPED_SFIELD(sfLoanOriginationFee,       NUMBER,     9)
+TYPED_SFIELD(sfLoanServiceFee,           NUMBER,     10)
+TYPED_SFIELD(sfLatePaymentFee,           NUMBER,     11)
+TYPED_SFIELD(sfClosePaymentFee,          NUMBER,     12)
+TYPED_SFIELD(sfPrincipalOutstanding,     NUMBER,     13)
+TYPED_SFIELD(sfPrincipalRequested,       NUMBER,     14)
+TYPED_SFIELD(sfTotalValueOutstanding,    NUMBER,     15)
+TYPED_SFIELD(sfPeriodicPayment,          NUMBER,     16)
+TYPED_SFIELD(sfManagementFeeOutstanding, NUMBER,     17)
 
 // 32-bit signed (common)
-TYPED_SFIELD(sfWasmReturnCode,            INT32,     1)
+TYPED_SFIELD(sfLoanScale,                INT32,      1)
+TYPED_SFIELD(sfWasmReturnCode,           INT32,      2)
 
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)
@@ -304,7 +320,9 @@ TYPED_SFIELD(sfAttestationRewardAccount, ACCOUNT,   21)
 TYPED_SFIELD(sfLockingChainDoor,         ACCOUNT,   22)
 TYPED_SFIELD(sfIssuingChainDoor,         ACCOUNT,   23)
 TYPED_SFIELD(sfSubject,                  ACCOUNT,   24)
-TYPED_SFIELD(sfContractAccount,          ACCOUNT,   25)
+TYPED_SFIELD(sfBorrower,                 ACCOUNT,   25)
+TYPED_SFIELD(sfCounterparty,             ACCOUNT,   26)
+TYPED_SFIELD(sfContractAccount,          ACCOUNT,   27)
 
 // vector of 256-bit
 TYPED_SFIELD(sfIndexes,                  VECTOR256,  1, SField::sMD_Never)
@@ -364,6 +382,7 @@ UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
 UNTYPED_SFIELD(sfRawTransaction,         OBJECT,    34)
 UNTYPED_SFIELD(sfBatchSigner,            OBJECT,    35)
 UNTYPED_SFIELD(sfBook,                   OBJECT,    36)
+UNTYPED_SFIELD(sfCounterpartySignature,  OBJECT,    37, SField::sMD_Default, SField::notSigning)
 UNTYPED_SFIELD(sfFunction,               OBJECT,    37)
 UNTYPED_SFIELD(sfInstanceParameter,      OBJECT,    38)
 UNTYPED_SFIELD(sfInstanceParameterValue,      OBJECT,    39)
@@ -400,10 +419,10 @@ UNTYPED_SFIELD(sfAcceptedCredentials,    ARRAY,     28)
 UNTYPED_SFIELD(sfPermissions,            ARRAY,     29)
 UNTYPED_SFIELD(sfRawTransactions,        ARRAY,     30)
 UNTYPED_SFIELD(sfBatchSigners,           ARRAY,     31, SField::sMD_Default, SField::notSigning)
-UNTYPED_SFIELD(sfFunctions,              ARRAY,     33)
-UNTYPED_SFIELD(sfInstanceParameters,     ARRAY,     34)
-UNTYPED_SFIELD(sfInstanceParameterValues,     ARRAY,     35)
-UNTYPED_SFIELD(sfParameters,             ARRAY,     36)
+UNTYPED_SFIELD(sfFunctions,              ARRAY,     32)
+UNTYPED_SFIELD(sfInstanceParameters,     ARRAY,     33)
+UNTYPED_SFIELD(sfInstanceParameterValues,     ARRAY,     34)
+UNTYPED_SFIELD(sfParameters,             ARRAY,     35)
 
 // data
 TYPED_SFIELD(sfParameterValue,           DATA,       1, SField::sMD_Default)

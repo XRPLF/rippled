@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/Batch.h>
 
@@ -164,6 +145,12 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     return signerFees + txnFees + batchBase;
 }
 
+std::uint32_t
+Batch::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfBatchMask;
+}
+
 /**
  * @brief Performs preflight validation checks for a Batch transaction.
  *
@@ -200,22 +187,8 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 Batch::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureBatch))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const parentBatchId = ctx.tx.getTransactionID();
-    auto const outerAccount = ctx.tx.getAccountID(sfAccount);
     auto const flags = ctx.tx.getFlags();
-
-    if (flags & tfBatchMask)
-    {
-        JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
-                            << "invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     if (std::popcount(
             flags &
@@ -242,10 +215,42 @@ Batch::preflight(PreflightContext const& ctx)
     }
 
     // Validation Inner Batch Txns
-    std::unordered_set<AccountID> requiredSigners;
     std::unordered_set<uint256> uniqueHashes;
     std::unordered_map<AccountID, std::unordered_set<std::uint32_t>>
         accountSeqTicket;
+    auto checkSignatureFields = [&parentBatchId, &j = ctx.j](
+                                    STObject const& sig,
+                                    uint256 const& hash,
+                                    char const* label = "") -> NotTEC {
+        if (sig.isFieldPresent(sfTxnSignature))
+        {
+            JLOG(j.debug())
+                << "BatchTrace[" << parentBatchId << "]: "
+                << "inner txn " << label << "cannot include TxnSignature. "
+                << "txID: " << hash;
+            return temBAD_SIGNATURE;
+        }
+
+        if (sig.isFieldPresent(sfSigners))
+        {
+            JLOG(j.debug())
+                << "BatchTrace[" << parentBatchId << "]: "
+                << "inner txn " << label << " cannot include Signers. "
+                << "txID: " << hash;
+            return temBAD_SIGNER;
+        }
+
+        if (!sig.getFieldVL(sfSigningPubKey).empty())
+        {
+            JLOG(j.debug())
+                << "BatchTrace[" << parentBatchId << "]: "
+                << "inner txn " << label << " SigningPubKey must be empty. "
+                << "txID: " << hash;
+            return temBAD_REGKEY;
+        }
+
+        return tesSUCCESS;
+    };
     for (STObject rb : rawTxns)
     {
         STTx const stx = STTx{std::move(rb)};
@@ -258,12 +263,21 @@ Batch::preflight(PreflightContext const& ctx)
             return temREDUNDANT;
         }
 
-        if (stx.getFieldU16(sfTransactionType) == ttBATCH)
+        auto const txType = stx.getFieldU16(sfTransactionType);
+        if (txType == ttBATCH)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "batch cannot have an inner batch txn. "
                                 << "txID: " << hash;
             return temINVALID;
+        }
+
+        if (std::any_of(
+                disabledTxTypes.begin(),
+                disabledTxTypes.end(),
+                [txType](auto const& disabled) { return txType == disabled; }))
+        {
+            return temINVALID_INNER_BATCH;
         }
 
         if (!(stx.getFlags() & tfInnerBatchTxn))
@@ -275,28 +289,20 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID_FLAG;
         }
 
-        if (stx.isFieldPresent(sfTxnSignature))
-        {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn cannot include TxnSignature. "
-                                << "txID: " << hash;
-            return temBAD_SIGNATURE;
-        }
+        if (auto const ret = checkSignatureFields(stx, hash))
+            return ret;
 
-        if (stx.isFieldPresent(sfSigners))
+        // Note that the CounterpartySignature is optional, and should not be
+        // included, but if it is, ensure it doesn't contain a signature.
+        if (stx.isFieldPresent(sfCounterpartySignature))
         {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn cannot include Signers. "
-                                << "txID: " << hash;
-            return temBAD_SIGNER;
-        }
-
-        if (!stx.getSigningPubKey().empty())
-        {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn SigningPubKey must be empty. "
-                                << "txID: " << hash;
-            return temBAD_REGKEY;
+            auto const counterpartySignature =
+                stx.getFieldObject(sfCounterpartySignature);
+            if (auto const ret = checkSignatureFields(
+                    counterpartySignature, hash, "counterparty signature "))
+            {
+                return ret;
+            }
         }
 
         auto const innerAccount = stx.getAccountID(sfAccount);
@@ -372,17 +378,34 @@ Batch::preflight(PreflightContext const& ctx)
                 }
             }
         }
+    }
+
+    return tesSUCCESS;
+}
+
+NotTEC
+Batch::preflightSigValidated(PreflightContext const& ctx)
+{
+    auto const parentBatchId = ctx.tx.getTransactionID();
+    auto const outerAccount = ctx.tx.getAccountID(sfAccount);
+    auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
+
+    // Build the signers list
+    std::unordered_set<AccountID> requiredSigners;
+    for (STObject const& rb : rawTxns)
+    {
+        auto const innerAccount = rb.getAccountID(sfAccount);
 
         // If the inner account is the same as the outer account, do not add the
         // inner account to the required signers set.
         if (innerAccount != outerAccount)
             requiredSigners.insert(innerAccount);
+        // Some transactions have a Counterparty, who must also sign the
+        // transaction if they are not the outer account
+        if (auto const counterparty = rb.at(~sfCounterparty);
+            counterparty && counterparty != outerAccount)
+            requiredSigners.insert(*counterparty);
     }
-
-    // LCOV_EXCL_START
-    if (auto const ret = preflight2(ctx); !isTesSuccess(ret))
-        return ret;
-    // LCOV_EXCL_STOP
 
     // Validation Batch Signers
     std::unordered_set<AccountID> batchSigners;
@@ -433,8 +456,7 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         // Check the batch signers signatures.
-        auto const sigResult = ctx.tx.checkBatchSign(
-            STTx::RequireFullyCanonicalSig::yes, ctx.rules);
+        auto const sigResult = ctx.tx.checkBatchSign(ctx.rules);
 
         if (!sigResult)
         {

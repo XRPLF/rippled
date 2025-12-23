@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2021 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/NFTokenBurn.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
@@ -29,16 +10,7 @@ namespace ripple {
 NotTEC
 NFTokenBurn::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureNonFungibleTokensV1))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -73,13 +45,6 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (!ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
-    {
-        // If there are too many offers, then burning the token would produce
-        // too much metadata.  Disallow burning a token with too many offers.
-        return nft::notTooManyOffers(ctx.view, ctx.tx[sfNFTokenID]);
-    }
-
     return tesSUCCESS;
 }
 
@@ -105,37 +70,21 @@ NFTokenBurn::doApply()
         view().update(issuer);
     }
 
-    if (ctx_.view().rules().enabled(fixNonFungibleTokensV1_2))
-    {
-        // Delete up to 500 offers in total.
-        // Because the number of sell offers is likely to be less than
-        // the number of buy offers, we prioritize the deletion of sell
-        // offers in order to clean up sell offer directory
-        std::size_t const deletedSellOffers = nft::removeTokenOffersWithLimit(
-            view(),
-            keylet::nft_sells(ctx_.tx[sfNFTokenID]),
-            maxDeletableTokenOfferEntries);
+    // Delete up to 500 offers in total.
+    // Because the number of sell offers is likely to be less than
+    // the number of buy offers, we prioritize the deletion of sell
+    // offers in order to clean up sell offer directory
+    std::size_t const deletedSellOffers = nft::removeTokenOffersWithLimit(
+        view(),
+        keylet::nft_sells(ctx_.tx[sfNFTokenID]),
+        maxDeletableTokenOfferEntries);
 
-        if (maxDeletableTokenOfferEntries > deletedSellOffers)
-        {
-            nft::removeTokenOffersWithLimit(
-                view(),
-                keylet::nft_buys(ctx_.tx[sfNFTokenID]),
-                maxDeletableTokenOfferEntries - deletedSellOffers);
-        }
-    }
-    else
+    if (maxDeletableTokenOfferEntries > deletedSellOffers)
     {
-        // Deletion of all offers.
-        nft::removeTokenOffersWithLimit(
-            view(),
-            keylet::nft_sells(ctx_.tx[sfNFTokenID]),
-            std::numeric_limits<int>::max());
-
         nft::removeTokenOffersWithLimit(
             view(),
             keylet::nft_buys(ctx_.tx[sfNFTokenID]),
-            std::numeric_limits<int>::max());
+            maxDeletableTokenOfferEntries - deletedSellOffers);
     }
 
     return tesSUCCESS;

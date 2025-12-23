@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #pragma once
 
 #include <xrpld/app/wasm/ParamsHelper.h>
@@ -56,8 +37,10 @@ enum class HostFunctionError : int32_t {
     INDEX_OUT_OF_BOUNDS = -18,
     FLOAT_INPUT_MALFORMED = -19,
     FLOAT_COMPUTATION_ERROR = -20,
-    SUBMIT_TXN_FAILURE = -21,
-    INVALID_STATE = -22,
+    NO_RUNTIME = -21,
+    OUT_OF_GAS = -22,
+    SUBMIT_TXN_FAILURE = -23,
+    INVALID_STATE = -24,
 };
 
 inline int32_t
@@ -104,6 +87,14 @@ floatLogImpl(Slice const& x, int32_t mode);
 
 struct HostFunctions
 {
+    beast::Journal j_;
+
+    HostFunctions(
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : j_(j)
+    {
+    }
+
     // LCOV_EXCL_START
     virtual void
     setRT(void const*)
@@ -116,10 +107,22 @@ struct HostFunctions
         return nullptr;
     }
 
-    virtual beast::Journal
+    std::int64_t
+    getGas()
+    {
+        return -1;
+    }
+
+    void
+    setGas(std::int64_t)
+    {
+        return;
+    }
+
+    beast::Journal
     getJournal()
     {
-        return beast::Journal{beast::Journal::getNullSink()};
+        return j_;
     }
 
     virtual Expected<std::int32_t, HostFunctionError>
@@ -136,18 +139,6 @@ struct HostFunctions
 
     virtual Expected<Hash, HostFunctionError>
     getParentLedgerHash()
-    {
-        return Unexpected(HostFunctionError::INTERNAL);
-    }
-
-    virtual Expected<Hash, HostFunctionError>
-    getLedgerAccountHash()
-    {
-        return Unexpected(HostFunctionError::INTERNAL);
-    }
-
-    virtual Expected<Hash, HostFunctionError>
-    getLedgerTransactionHash()
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

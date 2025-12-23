@@ -10,24 +10,40 @@ inputs:
   build_type:
     description: 'The build type to use ("Debug", "Release").'
     required: true
+  build_nproc:
+    description: "The number of processors to use for building."
+    required: true
   force_build:
     description: 'Force building of all dependencies ("true", "false").'
     required: false
     default: "false"
+  log_verbosity:
+    description: "The logging verbosity."
+    required: false
+    default: "verbose"
 
 runs:
   using: composite
   steps:
     - name: Install Conan dependencies
       shell: bash
+      env:
+        BUILD_DIR: ${{ inputs.build_dir }}
+        BUILD_NPROC: ${{ inputs.build_nproc }}
+        BUILD_OPTION: ${{ inputs.force_build == 'true' && '*' || 'missing' }}
+        BUILD_TYPE: ${{ inputs.build_type }}
+        LOG_VERBOSITY: ${{ inputs.log_verbosity }}
       run: |
         echo 'Installing dependencies.'
-        mkdir -p ${{ inputs.build_dir }}
-        cd ${{ inputs.build_dir }}
+        mkdir -p "${BUILD_DIR}"
+        cd "${BUILD_DIR}"
         conan install \
           --output-folder . \
-          --build ${{ inputs.force_build == 'true' && '"*"' || 'missing' }} \
-          --options:host '&:tests=True' \
-          --options:host '&:xrpld=True' \
-          --settings:all build_type=${{ inputs.build_type }} \
+          --build="${BUILD_OPTION}" \
+          --options:host='&:tests=True' \
+          --options:host='&:xrpld=True' \
+          --settings:all build_type="${BUILD_TYPE}" \
+          --conf:all tools.build:jobs=${BUILD_NPROC} \
+          --conf:all tools.build:verbosity="${LOG_VERBOSITY}" \
+          --conf:all tools.compilation:verbosity="${LOG_VERBOSITY}" \
           ..

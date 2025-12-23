@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2025 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/VaultSet.h>
 
 #include <xrpl/ledger/View.h>
@@ -30,27 +11,24 @@
 
 namespace ripple {
 
+bool
+VaultSet::checkExtraFeatures(PreflightContext const& ctx)
+{
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDomains))
+        return false;
+
+    return true;
+}
+
 NotTEC
 VaultSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
-
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDomains))
-        return temDISABLED;
-
-    if (auto const ter = preflight1(ctx))
-        return ter;
-
     if (ctx.tx[sfVaultID] == beast::zero)
     {
         JLOG(ctx.j.debug()) << "VaultSet: zero/empty vault ID.";
         return temMALFORMED;
     }
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
 
     if (auto const data = ctx.tx[~sfData])
     {
@@ -78,7 +56,7 @@ VaultSet::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -189,6 +167,9 @@ VaultSet::doApply()
         view().update(sleIssuance);
     }
 
+    // Note, we must update Vault object even if only DomainID is being updated
+    // in Issuance object. Otherwise it's really difficult for Vault invariants
+    // to verify the operation.
     view().update(vault);
 
     return tesSUCCESS;
