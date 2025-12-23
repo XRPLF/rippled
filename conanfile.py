@@ -182,12 +182,10 @@ class Xrpl(ConanFile):
         libxrpl.libs = [
             "xrpl",
             "xrpl.libpb",
-            "ed25519",
-            "secp256k1",
         ]
         # TODO: Fix the protobufs to include each other relative to
         # `include/`, not `include/ripple/proto/`.
-        libxrpl.includedirs = ["include", "include/ripple/proto"]
+        libxrpl.includedirs = ["include", "include/xrpl/proto"]
         libxrpl.requires = [
             "boost::headers",
             "boost::chrono",
@@ -217,3 +215,5 @@ class Xrpl(ConanFile):
         ]
         if self.options.rocksdb:
             libxrpl.requires.append("rocksdb::librocksdb")
+
+# changes
