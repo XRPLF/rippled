@@ -429,39 +429,41 @@ LoanPay::doApply()
     // Vault object state changes
     view.update(vaultSle);
 
-    Number const assetsAvailableBefore = *assetsAvailableProxy;
-    Number const pseudoAccountBalanceBefore = accountHolds(
-        view,
-        vaultPseudoAccount,
-        asset,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
-        j_);
-
+#if !NDEBUG
     {
+        Number const assetsAvailableBefore = *assetsAvailableProxy;
+        Number const pseudoAccountBalanceBefore = accountHolds(
+            view,
+            vaultPseudoAccount,
+            asset,
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j_);
+
         XRPL_ASSERT_PARTS(
             assetsAvailableBefore == pseudoAccountBalanceBefore,
             "xrpl::LoanPay::doApply",
             "vault pseudo balance agrees before");
+    }
+#endif
 
-        assetsAvailableProxy += totalPaidToVaultRounded;
-        assetsTotalProxy += paymentParts->valueChange;
+    assetsAvailableProxy += totalPaidToVaultRounded;
+    assetsTotalProxy += paymentParts->valueChange;
 
-        XRPL_ASSERT_PARTS(
-            *assetsAvailableProxy <= *assetsTotalProxy,
-            "xrpl::LoanPay::doApply",
-            "assets available must not be greater than assets outstanding");
+    XRPL_ASSERT_PARTS(
+        *assetsAvailableProxy <= *assetsTotalProxy,
+        "xrpl::LoanPay::doApply",
+        "assets available must not be greater than assets outstanding");
 
-        if (*assetsAvailableProxy > *assetsTotalProxy)
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.fatal())
-                << "Vault assets available must not be greater "
-                   "than assets outstanding. Available: "
-                << *assetsAvailableProxy << ", Total: " << *assetsTotalProxy;
-            return tecINTERNAL;
-            // LCOV_EXCL_STOP
-        }
+    if (*assetsAvailableProxy > *assetsTotalProxy)
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.fatal()) << "Vault assets available must not be greater "
+                            "than assets outstanding. Available: "
+                         << *assetsAvailableProxy
+                         << ", Total: " << *assetsTotalProxy;
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     JLOG(j_.debug()) << "total paid to vault raw: " << totalPaidToVaultRaw
@@ -554,6 +556,7 @@ LoanPay::doApply()
             WaiveTransferFee::Yes))
         return ter;
 
+#if !NDEBUG
     Number const assetsAvailableAfter = *assetsAvailableProxy;
     Number const pseudoAccountBalanceAfter = accountHolds(
         view,
@@ -567,7 +570,6 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "vault pseudo balance agrees after");
 
-#if !NDEBUG
     auto const accountBalanceAfter = accountHolds(
         view,
         account_,
