@@ -86,9 +86,9 @@ message TMPublicKey {
 // you must first combine coins from one address to another.
 
 enum TransactionStatus {
-  tsNEW = 1;        // origin node did/could not validate
-  tsCURRENT = 2;    // scheduled to go in this ledger
-  tsCOMMITTED = 3;  // in a closed ledger
+  tsNEW = 1;       // origin node did/could not validate
+  tsCURRENT = 2;   // scheduled to go in this ledger
+  tsCOMMITED = 3;  // in a closed ledger
   tsREJECT_CONFLICT = 4;
   tsREJECT_INVALID = 5;
   tsREJECT_FUNDS = 6;
@@ -140,7 +140,7 @@ message TMProposeSet {
   required bytes nodePubKey = 3;
   required uint32 closeTime = 4;
   required bytes signature = 5;  // signature of above fields
-  required bytes previousLedger = 6;
+  required bytes previousledger = 6;
   repeated bytes addedTransactions = 10;    // not required if number is large
   repeated bytes removedTransactions = 11;  // not required if number is large
 
@@ -308,7 +308,7 @@ message TMSquelch {
 }
 
 enum TMLedgerMapType {
-  lmTRANSACTION = 1;    // transaction map
+  lmTRANASCTION = 1;    // transaction map
   lmACCOUNT_STATE = 2;  // account state map
 }
 

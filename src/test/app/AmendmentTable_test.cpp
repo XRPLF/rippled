@@ -506,7 +506,7 @@ public:
 
         // Parameters:
         // table:      Our table of known and vetoed amendments
-        // validators: The addreses of validators we trust
+        // validators: The addresses of validators we trust
         // votes:      Amendments and the number of validators who vote for them
         // ourVotes:   The amendments we vote for in our validation
         // enabled:    In/out enabled amendments

@@ -1423,7 +1423,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // minter1 is no longer alice's minter, so no longer has
-            // permisson to burn alice's nfts.
+            // permission to burn alice's nfts.
             env(token::burn(minter1, burnableID),
                 token::owner(buyer),
                 ter(tecNO_PERMISSION));
@@ -2003,7 +2003,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, becky) == 1);
             BEAST_EXPECT(ownerCount(env, minter) == 0);
 
-            // Just for tidyness, becky burns the token before shutting
+            // Just for tidiness, becky burns the token before shutting
             // things down.
             env(token::burn(becky, nftAliceID));
             env.close();
@@ -6388,7 +6388,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         //
         // The values of these fields are dependent on the NFTokenID/OfferID
         // changed in its corresponding transaction. We want to validate each
-        // transaction to make sure the synethic fields hold the right values.
+        // transaction to make sure the synthetic fields hold the right values.
 
         testcase("Test synthetic fields from JSON response");
 

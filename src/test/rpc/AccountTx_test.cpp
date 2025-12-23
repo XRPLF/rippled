@@ -788,19 +788,19 @@ class AccountTx_test : public beast::unit_test::suite
             BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
 
             // The first two transactions listed in sanity haven't happened yet.
-            constexpr unsigned int beckyDeletedOffest = 2;
+            constexpr unsigned int beckyDeletedOffset = 2;
             BEAST_EXPECT(
                 std::size(sanity) ==
                 result[jss::result][jss::transactions].size() +
-                    beckyDeletedOffest);
+                    beckyDeletedOffset);
 
             Json::Value const& txs{result[jss::result][jss::transactions]};
 
-            for (unsigned int index = beckyDeletedOffest;
+            for (unsigned int index = beckyDeletedOffset;
                  index < std::size(sanity);
                  ++index)
             {
-                checkSanity(txs[index - beckyDeletedOffest], sanity[index]);
+                checkSanity(txs[index - beckyDeletedOffset], sanity[index]);
             }
         }
 

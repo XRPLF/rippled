@@ -25,7 +25,7 @@ namespace test {
 
 /**
  * Test the size of the negative UNL in a ledger,
- * also test if the ledger has ToDisalbe and/or ToReEnable
+ * also test if the ledger has ToDisable and/or ToReEnable
  *
  * @param l the ledger
  * @param size the expected negative UNL size

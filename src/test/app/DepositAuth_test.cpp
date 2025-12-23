@@ -737,7 +737,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env(deposit::auth(bob, alice));
             env.close();
 
-            // And alice can't pay with any credentials, amendement is not
+            // And alice can't pay with any credentials, amendment is not
             // enabled
             std::string const invalidIdx =
                 "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"

@@ -74,7 +74,7 @@ public:
             ConsensusState::No ==
             checkConsensus(10, 2, 2, 0, 3s, 2s, false, p, true, journal_));
 
-        // If not enough peers have propsed, ensure
+        // If not enough peers have proposed, ensure
         // more time for proposals
         BEAST_EXPECT(
             ConsensusState::No ==
@@ -119,7 +119,7 @@ public:
             ConsensusState::No ==
             checkConsensus(10, 2, 2, 0, 3s, 2s, true, p, true, journal_));
 
-        // If not enough peers have propsed, ensure
+        // If not enough peers have proposed, ensure
         // more time for proposals
         BEAST_EXPECT(
             ConsensusState::No ==
@@ -906,7 +906,7 @@ public:
         //   for B.
         // - The network reconnects and the validations for generation 3 ledgers
         //   are observed (D and the 8 C's)
-        // - In the old approach, 2 votes for D outweights 1 vote for each C'
+        // - In the old approach, 2 votes for D outweighs 1 vote for each C'
         //   so the network would avalanche towards D and fully validate it
         //   EVEN though C was fully validated by one node
         // - In the new approach, 2 votes for D are not enough to outweight the

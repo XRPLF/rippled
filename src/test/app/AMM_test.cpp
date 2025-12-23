@@ -2818,7 +2818,7 @@ private:
             BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
 
             // gw burns all but one of its LPTokens through a bid transaction
-            // this transaction suceeds because the bid price is less than
+            // this transaction succeeds because the bid price is less than
             // the total outstanding LPToken balance
             env(amm.bid({
                     .account = gw,
@@ -2872,7 +2872,7 @@ private:
                     ter(temBAD_AMOUNT));
             }
 
-            // Invlaid Min/Max combination
+            // Invalid Min/Max combination
             env(ammAlice.bid({
                     .account = carol,
                     .bidMin = 200,

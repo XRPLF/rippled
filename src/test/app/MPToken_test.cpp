@@ -115,7 +115,7 @@ class MPToken_test : public beast::unit_test::suite
                  .metadata = "",
                  .err = temMALFORMED});
 
-            // MaximumAmout of 0 returns error
+            // MaximumAmount of 0 returns error
             mptAlice.create(
                 {.maxAmt = 0,
                  .assetScale = 1,

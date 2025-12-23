@@ -1,5 +1,4 @@
 ignorePaths:
-  - external/**
   - build/**
   - src/test/**
   - src/libxrpl/crypto
@@ -11,7 +10,7 @@ dictionaries:
   - en_US
   - en_GB
 ignoreRegExpList:
-  - /r[1-9A-HJ-NP-Za-km-z]{25,34}/g
+  - /[rs][1-9A-HJ-NP-Za-km-z]{25,34}/g
   - /XRPL_[A-Z_]+_H_INCLUDED+/g
   - /XRPL_[A-Z_]+_H+/g
   - /BEAST_[A-Z_]+_H_INCLUDED+/g

@@ -1693,7 +1693,7 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testTxReqireFeatures(FeatureBitset features)
+    testTxRequireFeatures(FeatureBitset features)
     {
         testcase("test delegate disabled tx");
         using namespace jtx;
@@ -1803,7 +1803,7 @@ class Delegate_test : public beast::unit_test::suite
         testMultiSign();
         testMultiSignQuorumNotMet();
         testPermissionValue(all);
-        testTxReqireFeatures(all);
+        testTxRequireFeatures(all);
     }
 };
 BEAST_DEFINE_TESTSUITE(Delegate, app, xrpl);
