@@ -9,6 +9,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
@@ -146,6 +147,13 @@ inline XChainBridgeValue
 canonical_XCHAIN_BRIDGE()
 {
     return XChainBridgeValue{xrpAccount(), xrpIssue(), xrpAccount(), xrpIssue()};
+}
+
+using JsonValue = std::decay_t<typename SF_JSON::type::value_type>;
+inline JsonValue
+canonical_JSON()
+{
+    return JsonValue{};
 }
 
 // Untyped field canonical values

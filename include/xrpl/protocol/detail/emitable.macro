@@ -1,0 +1,19 @@
+#if !defined(EMITABLE)
+#error "undefined macro: EMITABLE"
+#endif
+
+/**
+ * EMITABLE(name, type, txType, value)
+ *
+ * This macro defines a permission:
+ * name: the name of the permission.
+ * type: the GranularPermissionType enum.
+ * txType: the corresponding TxType for this permission.
+ * value: the uint32 numeric value for the enum type.
+ */
+
+/** This removes the contract account the ability to set or remove deposit auth. */
+EMITABLE(AccountDepositAuth, ttACCOUNT_SET, 65537)
+
+// ** This removes the contract account the ability to set or remove disable master key. */
+EMITABLE(AccountDisableMaster, ttACCOUNT_SET, 65538)

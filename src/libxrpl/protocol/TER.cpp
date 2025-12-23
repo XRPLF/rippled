@@ -107,6 +107,7 @@ transResults()
         MAKE_ERROR(tecPSEUDO_ACCOUNT,                "This operation is not allowed against a pseudo-account."),
         MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
         MAKE_ERROR(tecWASM_REJECTED,                 "The custom WASM code that was run rejected your transaction."),
+        MAKE_ERROR(tecINVALID_PARAMETERS,            "Contract parameters do not match the expected ABI."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),

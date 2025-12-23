@@ -802,6 +802,72 @@ parseXChainOwnedCreateAccountClaimID(
     return keylet.key;
 }
 
+static Expected<uint256, Json::Value>
+parseContractSource(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!id)
+        return Unexpected(id.error());
+
+    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!seq)
+        return Unexpected(seq.error());
+
+    return keylet::vault(*id, *seq).key;
+}
+
+static Expected<uint256, Json::Value>
+parseContract(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!id)
+        return Unexpected(id.error());
+
+    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!seq)
+        return Unexpected(seq.error());
+
+    return keylet::vault(*id, *seq).key;
+}
+
+static Expected<uint256, Json::Value>
+parseContractData(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!id)
+        return Unexpected(id.error());
+
+    auto const seq = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!seq)
+        return Unexpected(seq.error());
+
+    return keylet::vault(*id, *seq).key;
+}
+
 struct LedgerEntry
 {
     Json::StaticString fieldName;
@@ -817,7 +883,7 @@ struct LedgerEntry
 Json::Value
 doLedgerEntry(RPC::JsonContext& context)
 {
-    static auto ledgerEntryParsers = std::to_array<LedgerEntry>({
+    static LedgerEntry ledgerEntryParsers[] = {
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
@@ -831,7 +897,7 @@ doLedgerEntry(RPC::JsonContext& context)
         // aliases
         {jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
         {jss::ripple_state, parseRippleState, ltRIPPLE_STATE},
-    });
+    };
 
     auto const hasMoreThanOneMember = [&]() {
         int count = 0;

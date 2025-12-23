@@ -1,10 +1,10 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/NFTokenUtils.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 
@@ -415,7 +415,7 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
     }
 
     // Now transfer the NFT:
-    return transferNFToken(buyer, seller, nftokenID);
+    return nft::transferNFToken(ctx_.view(), buyer, seller, nftokenID);
 }
 
 TER
@@ -538,7 +538,7 @@ NFTokenAcceptOffer::doApply()
         }
 
         // Now transfer the NFT:
-        return transferNFToken(buyer, seller, nftokenID);
+        return nft::transferNFToken(ctx_.view(), buyer, seller, nftokenID);
     }
 
     if (bo)

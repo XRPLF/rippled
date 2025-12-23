@@ -96,6 +96,28 @@ createWasmImport(HostFunctions& hfs)
     setCommonHostFunctions(&hfs, i);
     WASM_IMPORT_FUNC2(i, updateData, "update_data", &hfs, 1000);
 
+    // clang-format off
+    // Contract-specific host functions
+    WASM_IMPORT_FUNC2(i, instanceParam, "instance_param", &hfs,                                  100);
+    WASM_IMPORT_FUNC2(i, functionParam, "function_param", &hfs,                                  100);
+
+    WASM_IMPORT_FUNC2(i, getDataObjectField, "get_data_object_field", &hfs,                      500);
+    WASM_IMPORT_FUNC2(i, getDataNestedObjectField, "get_data_nested_object_field", &hfs,         500);
+    WASM_IMPORT_FUNC2(i, getDataArrayElementField, "get_data_array_element_field", &hfs,         500);
+    WASM_IMPORT_FUNC2(i, getDataNestedArrayElementField, "get_data_nested_array_element_field", &hfs, 500);
+
+    WASM_IMPORT_FUNC2(i, setDataObjectField, "set_data_object_field", &hfs,                      500);
+    WASM_IMPORT_FUNC2(i, setDataNestedObjectField, "set_data_nested_object_field", &hfs,         500);
+    WASM_IMPORT_FUNC2(i, setDataArrayElementField, "set_data_array_element_field", &hfs,         500);
+    WASM_IMPORT_FUNC2(i, setDataNestedArrayElementField, "set_data_nested_array_element_field", &hfs, 500);
+
+    WASM_IMPORT_FUNC2(i, buildTxn, "build_txn", &hfs,                                           200);
+    WASM_IMPORT_FUNC2(i, addTxnField, "add_txn_field", &hfs,                                    200);
+    WASM_IMPORT_FUNC2(i, emitBuiltTxn, "emit_built_txn", &hfs,                                  500);
+    WASM_IMPORT_FUNC2(i, emitTxn, "emit_txn", &hfs,                                             500);
+    WASM_IMPORT_FUNC2(i, emitEvent, "emit_event", &hfs,                                         500);
+    // clang-format on
+
     return i;
 }
 

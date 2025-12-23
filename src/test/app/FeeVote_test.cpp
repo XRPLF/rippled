@@ -3,6 +3,7 @@
 #include <xrpld/app/misc/FeeVote.h>
 
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -62,6 +63,15 @@ createFeeTx(
                 sfReserveIncrement, fields.reserveIncrement ? *fields.reserveIncrement : 0);
             obj.setFieldU32(
                 sfReferenceFeeUnits, fields.referenceFeeUnits ? *fields.referenceFeeUnits : 0);
+        }
+        if (rules.enabled(featureSmartEscrow) || forceAllFields)
+        {
+            obj.setFieldU32(
+                sfExtensionComputeLimit,
+                fields.extensionComputeLimit ? *fields.extensionComputeLimit : 0);
+            obj.setFieldU32(
+                sfExtensionSizeLimit, fields.extensionSizeLimit ? *fields.extensionSizeLimit : 0);
+            obj.setFieldU32(sfGasPrice, fields.gasPrice ? *fields.gasPrice : 0);
         }
         if (rules.enabled(featureSmartEscrow) || forceAllFields)
         {

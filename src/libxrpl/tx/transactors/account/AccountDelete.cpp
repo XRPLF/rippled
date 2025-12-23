@@ -3,6 +3,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenUtils.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -11,9 +12,9 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/tx/transactors/account/AccountDelete.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
+#include <xrpl/tx/transactors/contract/ContractDelete.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
@@ -169,6 +170,18 @@ removeDelegateFromLedger(
     return DelegateSet::deleteDelegate(view, sleDel, account, j);
 }
 
+TER
+removeContractFromLedger(
+    ServiceRegistry&,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& /*delIndex*/,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
+{
+    return ContractDelete::deleteContract(view, sleDel, account, j);
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -195,6 +208,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeCredentialFromLedger;
         case ltDELEGATE:
             return removeDelegateFromLedger;
+        case ltCONTRACT:
+            return removeContractFromLedger;
         default:
             return nullptr;
     }

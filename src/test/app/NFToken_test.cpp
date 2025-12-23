@@ -1,9 +1,9 @@
 #include <test/jtx.h>
 
 #include <xrpl/basics/random.h>
+#include <xrpl/ledger/helpers/NFTokenUtils.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 #include <initializer_list>
 

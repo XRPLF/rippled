@@ -352,6 +352,7 @@ enum TECcodes : TERUnderlyingType {
     // reclaimed after those networks reset.
     tecNO_DELEGATE_PERMISSION = 198,
     tecWASM_REJECTED = 199,
+    tecINVALID_PARAMETERS = 200,
 };
 
 //------------------------------------------------------------------------------

@@ -79,10 +79,12 @@ enum class LedgerNameSpace : std::uint16_t {
     VAULT = 'V',
     LOAN_BROKER = 'l',  // lower-case L
     LOAN = 'L',
+    CONTRACT_SOURCE = 'Z',
+    CONTRACT = 'z',
+    CONTRACT_DATA = 'b',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
-    CONTRACT [[deprecated]] = 'c',
     GENERATOR [[deprecated]] = 'g',
     NICKNAME [[deprecated]] = 'n',
 };
@@ -528,6 +530,24 @@ Keylet
 permissionedDomain(uint256 const& domainID) noexcept
 {
     return {ltPERMISSIONED_DOMAIN, domainID};
+}
+
+Keylet
+contractSource(uint256 const& contractHash) noexcept
+{
+    return {ltCONTRACT_SOURCE, indexHash(LedgerNameSpace::CONTRACT_SOURCE, contractHash)};
+}
+
+Keylet
+contract(uint256 const& contractHash, AccountID const& owner, std::uint32_t seq) noexcept
+{
+    return {ltCONTRACT, indexHash(LedgerNameSpace::CONTRACT, contractHash, owner, seq)};
+}
+
+Keylet
+contractData(AccountID const& owner, AccountID const& contractAccount) noexcept
+{
+    return {ltCONTRACT_DATA, indexHash(LedgerNameSpace::CONTRACT_DATA, owner, contractAccount)};
 }
 
 }  // namespace keylet

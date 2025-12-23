@@ -859,7 +859,8 @@ ValidPseudoAccounts::visitEntry(
                     errors_.emplace_back(error.str());
                 }
             }
-            if (before && before->at(sfSequence) != after->at(sfSequence))
+            if (before && before->at(sfSequence) != after->at(sfSequence) &&
+                !after->isFieldPresent(sfContractID))
             {
                 errors_.emplace_back("pseudo-account sequence changed");
             }

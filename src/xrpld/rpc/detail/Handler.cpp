@@ -85,6 +85,7 @@ Handler const handlerArray[]{
     {"channel_verify", byRef(&doChannelVerify), Role::USER, NO_CONDITION},
     {"connect", byRef(&doConnect), Role::ADMIN, NO_CONDITION},
     {"consensus_info", byRef(&doConsensusInfo), Role::ADMIN, NO_CONDITION},
+    {"contract_info", byRef(&doContractInfo), Role::USER, NO_CONDITION},
     {"deposit_authorized", byRef(&doDepositAuthorized), Role::USER, NO_CONDITION},
     {"feature", byRef(&doFeature), Role::USER, NO_CONDITION},
     {"fee", byRef(&doFee), Role::USER, NEEDS_CURRENT_LEDGER},
