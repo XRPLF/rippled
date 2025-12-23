@@ -324,7 +324,7 @@ port_wss_admin
                 "/Users/dummy/xrpld/config/log/debug.log");
         }
 
-        // Config file in XDG_CONFIG_HOME directory.
+        // Config file in HOME or XDG_CONFIG_HOME directory.
 #if BOOST_OS_LINUX || BOOST_OS_MACOS
         for (auto const& configFile : configFiles)
         {
@@ -347,10 +347,10 @@ port_wss_admin
                 setenv("XDG_CONFIG_HOME", tc.path().c_str(), 1);
 
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
-                path const d = tc.file(systemName());
-                create_directory(d);
-                path const f = tc.file(systemName() + "/" + configFile);
-                std::ofstream o(f.string());
+                path p = tc.file(systemName());
+                create_directory(p);
+                p = tc.file(systemName() + "/" + configFile);
+                std::ofstream o(p.string());
                 o << detail::configContents("", "");
                 o.close();
 
@@ -381,14 +381,14 @@ port_wss_admin
                 unsetenv("XDG_CONFIG_HOME");
 
                 // Create the config file in '${HOME}/.config/[systemName]'.
-                std::string const s1 = ".config";
-                path const d1 = tc.file(s1);
-                create_directory(d1);
-                std::string const s2 = s1 + "/" + systemName();
-                path const d2 = tc.file(s2);
-                create_directory(d2);
-                path const f = tc.file(s2 + "/" + configFile);
-                std::ofstream o(f.string());
+                std::string s = ".config";
+                path p = tc.file(s);
+                create_directory(p);
+                s += "/" + systemName();
+                p = tc.file(s);
+                create_directory(p);
+                p = tc.file(s + "/" + configFile);
+                std::ofstream o(p.string());
                 o << detail::configContents("", "");
                 o.close();
 
