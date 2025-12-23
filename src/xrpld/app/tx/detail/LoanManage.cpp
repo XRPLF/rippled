@@ -418,24 +418,21 @@ LoanManage::doApply()
     // just a noop.
     if (tx.isFlag(tfLoanDefault))
     {
-        if (auto const ter =
-                defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_))
-            return ter;
+        return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
     }
     else if (tx.isFlag(tfLoanImpair))
     {
-        if (auto const ter =
-                impairLoan(view, loanSle, vaultSle, vaultAsset, j_))
-            return ter;
+        return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
     }
     else if (tx.isFlag(tfLoanUnimpair))
     {
-        if (auto const ter =
-                unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_))
-            return ter;
+        return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
     }
-
-    return tesSUCCESS;
+    else
+    {
+        // Noop, as described above.
+        return tesSUCCESS;
+    }
 }
 
 //------------------------------------------------------------------------------

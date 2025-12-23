@@ -848,9 +848,8 @@ computeFullPayment(
     auto const [roundedFullInterest, roundedFullManagementFee] = [&]() {
         auto const interest = roundToAsset(
             asset, fullPaymentInterest, loanScale, Number::downward);
-        auto const parts = computeInterestAndFeeParts(
+        return computeInterestAndFeeParts(
             asset, interest, managementFeeRate, loanScale);
-        return std::make_tuple(parts.first, parts.second);
     }();
 
     ExtendedPaymentComponents const full{
