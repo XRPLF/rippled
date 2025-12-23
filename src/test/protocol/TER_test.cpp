@@ -183,7 +183,7 @@ struct TER_test : public beast::unit_test::suite
         isConvertible(tesSUCCESS, ter);
         isConvertible(tecCLAIM, ter);
         isConvertible(notTec, ter);
-        isConvertable(ter, ter);
+        isConvertible(ter, ter);
 
         // Verify that you can't convert from int to ter.
         notConvertible(4, ter);

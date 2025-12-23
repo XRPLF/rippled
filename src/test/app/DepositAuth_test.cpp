@@ -15,7 +15,7 @@ reserve(jtx::Env& env, std::uint32_t count)
     return env.current()->fees().accountReserve(count);
 }
 
-// Helper function that returns true if acct has the lsfDepostAuth flag set.
+// Helper function that returns true if acct has the lsfDepositAuth flag set.
 static bool
 hasDepositAuth(jtx::Env const& env, jtx::Account const& acct)
 {
@@ -769,7 +769,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env(fset(bob, asfDepositAuth));
             env.close();
 
-            // Bob will accept payements from accounts with credentials signed
+            // Bob will accept payments from accounts with credentials signed
             // by 'issuer'
             env(deposit::authCredentials(bob, {{issuer, credType}}));
             env.close();

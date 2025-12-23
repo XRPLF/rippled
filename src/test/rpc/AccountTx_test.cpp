@@ -551,12 +551,12 @@ class AccountTx_test : public beast::unit_test::suite
             auto escrow = [](Account const& account,
                              Account const& to,
                              STAmount const& amount) {
-                Json::Value escro;
-                escro[jss::TransactionType] = jss::EscrowCreate;
-                escro[jss::Account] = account.human();
-                escro[jss::Destination] = to.human();
-                escro[jss::Amount] = amount.getJson(JsonOptions::none);
-                return escro;
+                Json::Value escrow;
+                escrow[jss::TransactionType] = jss::EscrowCreate;
+                escrow[jss::Account] = account.human();
+                escrow[jss::Destination] = to.human();
+                escrow[jss::Amount] = amount.getJson(JsonOptions::none);
+                return escrow;
             };
 
             NetClock::time_point const nextTime{env.now() + 2s};

@@ -1,7 +1,7 @@
 ignorePaths:
   - build/**
-  - src/test/**
   - src/libxrpl/crypto
+  - src/test/** # Will be removed in the future
   - CMakeUserPresets.json
   - Doxyfile
   - docs/**/*.puml
@@ -42,6 +42,7 @@ words:
   - asnode
   - asynchrony
   - attestation
+  - authorises
   - autobridge
   - autobridged
   - autobridging
@@ -136,8 +137,10 @@ words:
   - mptflags
   - mptid
   - mptissuance
+  - mptissuanceid
   - mptoken
   - mptokenid
+  - mptokenissuance
   - mptokens
   - mpts
   - multisig
@@ -191,6 +194,7 @@ words:
   - rngfill
   - rocksdb
   - Rohrs
+  - roundings
   - sahyadri
   - Satoshi
   - secp
@@ -204,9 +208,12 @@ words:
   - sle
   - sles
   - soci
+  - socidb
   - sslws
   - statsd
   - STATSDCOLLECTOR
+  - stissue
+  - stnum
   - stobj
   - stobject
   - stpath
@@ -230,6 +237,7 @@ words:
   - umant
   - unacquired
   - unambiguity
+  - unauthorizes
   - unauthorizing
   - unergonomic
   - unfetched
@@ -237,12 +245,16 @@ words:
   - unfund
   - unimpair
   - unroutable
+  - unscalable
   - unserviced
   - unshareable
   - unshares
   - unsquelch
   - unsquelched
+  - unsquelching
+  - unvalidated
   - unveto
+  - unvetoed
   - upvotes
   - USDB
   - variadics

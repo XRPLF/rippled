@@ -11,18 +11,18 @@ namespace jtx {
 class expiration
 {
 private:
-    std::uint32_t const expry_;
+    std::uint32_t const expiry_;
 
 public:
     explicit expiration(NetClock::time_point const& expiry)
-        : expry_{expiry.time_since_epoch().count()}
+        : expiry_{expiry.time_since_epoch().count()}
     {
     }
 
     void
     operator()(Env&, JTx& jt) const
     {
-        jt[sfExpiration.jsonName] = expry_;
+        jt[sfExpiration.jsonName] = expiry_;
     }
 };
 

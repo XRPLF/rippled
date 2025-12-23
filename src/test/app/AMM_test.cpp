@@ -831,10 +831,10 @@ private:
         // Tiny deposit
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto const enabledv1_3 =
+                auto const enabledV1_3 =
                     env.current()->rules().enabled(fixAMMv1_3);
                 auto const err =
-                    !enabledv1_3 ? ter(temBAD_AMOUNT) : ter(tesSUCCESS);
+                    !enabledV1_3 ? ter(temBAD_AMOUNT) : ter(tesSUCCESS);
                 // Pre-amendment XRP deposit side is rounded to 0
                 // and deposit fails.
                 // Post-amendment XRP deposit side is rounded to 1

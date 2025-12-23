@@ -63,7 +63,7 @@ public:
         using namespace std::chrono_literals;
         testcase("check consensus");
 
-        // Use default parameterss
+        // Use default parameters
         ConsensusParms const p{};
 
         ///////////////

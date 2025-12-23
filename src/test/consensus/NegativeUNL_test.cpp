@@ -553,11 +553,11 @@ struct NetworkHistory
     bool
     createLedgerHistory()
     {
-        static uint256 fake_amemdment;  // So we have different genesis ledgers
+        static uint256 fake_amendment;  // So we have different genesis ledgers
         auto l = std::make_shared<Ledger>(
             create_genesis,
             env.app().config(),
-            std::vector<uint256>{fake_amemdment++},
+            std::vector<uint256>{fake_amendment++},
             env.app().getNodeFamily());
         history.push_back(l);
 

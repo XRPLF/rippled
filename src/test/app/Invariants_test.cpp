@@ -888,7 +888,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"escrow specifies invalid amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
-                // mpissuance outstanding is negative
+                // mptissuance outstanding is negative
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
@@ -906,7 +906,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"escrow specifies invalid amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
-                // mpissuance locked is less than locked
+                // mptissuance locked is less than locked
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
@@ -924,7 +924,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"escrow specifies invalid amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
-                // mpissuance outstanding is less than locked
+                // mptissuance outstanding is less than locked
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
