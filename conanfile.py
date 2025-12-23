@@ -184,7 +184,7 @@ class Xrpl(ConanFile):
             "xrpl.libpb",
         ]
         # TODO: Fix the protobufs to include each other relative to
-        # `include/`, not `include/ripple/proto/`.
+        # `include/`, not `include/xrpl/proto/`.
         libxrpl.includedirs = ["include", "include/xrpl/proto"]
         libxrpl.requires = [
             "boost::headers",
@@ -215,5 +215,3 @@ class Xrpl(ConanFile):
         ]
         if self.options.rocksdb:
             libxrpl.requires.append("rocksdb::librocksdb")
-
-# changes
