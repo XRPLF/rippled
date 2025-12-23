@@ -20,21 +20,17 @@ VaultClawback::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    AccountID const issuer = ctx.tx[sfAccount];
-    AccountID const holder = ctx.tx[sfHolder];
-
-    if (issuer == holder)
-    {
-        JLOG(ctx.j.debug()) << "VaultClawback: issuer cannot be holder.";
-        return temMALFORMED;
-    }
-
     auto const amount = ctx.tx[~sfAmount];
     if (amount)
     {
         // Note, zero amount is valid, it means "all". It is also the default.
         if (*amount < beast::zero)
             return temBAD_AMOUNT;
+        else if (isXRP(amount->asset()))
+        {
+            JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback XRP.";
+            return temMALFORMED;
+        }
     }
 
     return tesSUCCESS;
@@ -47,26 +43,10 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
+    Asset const vaultAsset = vault->at(sfAsset);
     auto const account = ctx.tx[sfAccount];
     auto const holder = ctx.tx[sfHolder];
-    auto const issuer = ctx.view.read(keylet::account(account));
-    if (!issuer)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultClawback: missing issuer account.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
-
-    Asset const vaultAsset = vault->at(sfAsset);
-    if (auto const amount = ctx.tx[~sfAmount];
-        amount && vaultAsset != amount->asset())
-        return tecWRONG_ASSET;
-
-    // There is a special case that allows the VaultOwner to use clawback to
-    // burn shares when Vault assets total and available are zero, but
-    // shares remain. However, that case is handled in doApply() directly,
-    // so here we just enforce checks.
+    auto const maybeAmount = ctx.tx[~sfAmount];
     auto const mptIssuanceID = vault->at(sfShareMPTID);
     auto const sleShareIssuance =
         ctx.view.read(keylet::mptIssuance(mptIssuanceID));
@@ -79,19 +59,59 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const assetsTotal = vault->at(sfAssetsTotal);
-    auto const assetsAvailable = vault->at(sfAssetsAvailable);
-    auto const sharesTotal = sleShareIssuance->at(sfOutstandingAmount);
-    auto const owner = vault->at(sfOwner);
-    auto const share = MPTIssue{mptIssuanceID};
-
-    // Allow clawback to burn shares in this special case.
-    if (sharesTotal > 0 && assetsTotal == 0 && assetsAvailable == 0 &&
-        account == owner)
+    Asset const share = MPTIssue{mptIssuanceID};
+    // Ambiguous case: If the Issuer is the Vault Owner the must explicitly
+    // provide the asset
+    if (!maybeAmount && !vaultAsset.native() &&
+        vaultAsset.getIssuer() == vault->at(sfOwner))
     {
-        if (auto const amount = ctx.tx[~sfAmount]; amount)
+        JLOG(ctx.j.debug())
+            << "VaultClawback: must specify amount when issuer is owner.";
+        return tecWRONG_ASSET;
+    }
+
+    auto const amount = [&]() {
+        if (maybeAmount)
+            return *maybeAmount;
+
+        if (account == vault->at(sfOwner))
+            return STAmount{share};
+
+        return STAmount{vaultAsset};
+    }();
+
+    // There is a special case that allows the VaultOwner to use clawback to
+    // burn shares when Vault assets total and available are zero, but
+    // shares remain. However, that case is handled in doApply() directly,
+    // so here we just enforce checks.
+    if (amount.asset() == share)
+    {
+        // Only the Vault Owner may clawback shares
+        if (account != vault->at(sfOwner))
         {
-            Number const sharesHeld = accountHolds(
+            JLOG(ctx.j.debug())
+                << "VaultClawback: only vault owner can clawback shares.";
+            return tecNO_PERMISSION;
+        }
+
+        auto const assetsTotal = vault->at(sfAssetsTotal);
+        auto const assetsAvailable = vault->at(sfAssetsAvailable);
+        auto const sharesTotal = sleShareIssuance->at(sfOutstandingAmount);
+        auto const owner = vault->at(sfOwner);
+        // Vault Owner can clawback funds only when the vault has shares, but no
+        // assets
+        if (sharesTotal != 0 && (assetsTotal != 0 || assetsAvailable != 0))
+        {
+            JLOG(ctx.j.debug())
+                << "VaultClawback: vault owner can clawback shares only"
+                   " when vault has no assets.";
+            return tecNO_PERMISSION;
+        }
+
+        // If amount is non-zero, the VaultOwner must burn all shares
+        if (amount != beast::zero)
+        {
+            Number const& sharesHeld = accountHolds(
                 ctx.view,
                 holder,
                 share,
@@ -100,55 +120,86 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                 ctx.j);
 
             // The VaultOwner must burn all shares
-            if (*amount != sharesHeld)
+            if (amount != sharesHeld)
+            {
+                JLOG(ctx.j.debug())
+                    << "VaultClawback: vault owner must clawback all "
+                       "shares.";
                 return tecLIMIT_EXCEEDED;
+            }
         }
 
         return tesSUCCESS;
     }
 
-    // ========== CHECK PERMISSIONS ==========
-    if (vaultAsset.native())
+    // The asset that is being clawed back is the vault asset
+    if (amount.asset() == vaultAsset)
     {
-        JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback XRP.";
-        return tecNO_PERMISSION;  // Cannot clawback XRP.
-    }
-
-    if (vaultAsset.getIssuer() != account)
-    {
-        JLOG(ctx.j.debug()) << "VaultClawback: only asset issuer can clawback.";
-        return tecNO_PERMISSION;  // Only issuers can clawback.
-    }
-
-    if (vaultAsset.holds<MPTIssue>())
-    {
-        auto const mpt = vaultAsset.get<MPTIssue>();
-        auto const mptIssue =
-            ctx.view.read(keylet::mptIssuance(mpt.getMptID()));
-        if (mptIssue == nullptr)
-            return tecOBJECT_NOT_FOUND;
-
-        std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
-        if (!(issueFlags & lsfMPTCanClawback))
+        // XRP cannot be clawed back
+        if (vaultAsset.native())
         {
-            JLOG(ctx.j.debug())
-                << "VaultClawback: cannot clawback MPT vault asset.";
+            JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback XRP.";
             return tecNO_PERMISSION;
         }
-    }
-    else if (vaultAsset.holds<Issue>())
-    {
-        std::uint32_t const issuerFlags = issuer->getFieldU32(sfFlags);
-        if (!(issuerFlags & lsfAllowTrustLineClawback) ||
-            (issuerFlags & lsfNoFreeze))
+
+        auto const issuer = ctx.view.read(keylet::account(account));
+        if (!issuer)
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.error()) << "VaultClawback: missing submitter account.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
+        // Only the Asset Issuer may clawback the asset
+        if (account != vaultAsset.getIssuer())
         {
             JLOG(ctx.j.debug())
-                << "VaultClawback: cannot clawback IOU vault asset.";
+                << "VaultClawback: only asset issuer can clawback asset.";
             return tecNO_PERMISSION;
         }
+
+        // The issuer cannot clawback from itself
+        if (account == holder)
+        {
+            JLOG(ctx.j.debug())
+                << "VaultClawback: issuer cannot be the holder.";
+            return tecNO_PERMISSION;
+        }
+
+        if (vaultAsset.holds<MPTIssue>())
+        {
+            auto const mpt = vaultAsset.get<MPTIssue>();
+            auto const mptIssue =
+                ctx.view.read(keylet::mptIssuance(mpt.getMptID()));
+            if (mptIssue == nullptr)
+                return tecOBJECT_NOT_FOUND;
+
+            std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
+            if (!(issueFlags & lsfMPTCanClawback))
+            {
+                JLOG(ctx.j.debug())
+                    << "VaultClawback: cannot clawback MPT vault asset.";
+                return tecNO_PERMISSION;
+            }
+        }
+        else if (vaultAsset.holds<Issue>())
+        {
+            std::uint32_t const issuerFlags = issuer->getFieldU32(sfFlags);
+            if (!(issuerFlags & lsfAllowTrustLineClawback) ||
+                (issuerFlags & lsfNoFreeze))
+            {
+                JLOG(ctx.j.debug())
+                    << "VaultClawback: cannot clawback IOU vault asset.";
+                return tecNO_PERMISSION;
+            }
+        }
+
+        return tesSUCCESS;
     }
 
-    return tesSUCCESS;
+    // Invalid asset
+    return tecWRONG_ASSET;
 }
 
 Expected<std::pair<STAmount, STAmount>, TER>
@@ -159,7 +210,7 @@ VaultClawback::assetsToClawback(
     STAmount const& clawbackAmount)
 {
     auto const assetsAvailable = vault->at(sfAssetsAvailable);
-    auto const mptIssuanceID = vault->getFieldH192(sfShareMPTID);
+    auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
 
     if (clawbackAmount == beast::zero)
@@ -254,7 +305,7 @@ VaultClawback::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const mptIssuanceID = vault->getFieldH192(sfShareMPTID);
+    auto const mptIssuanceID = *vault->at(sfShareMPTID);
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
@@ -263,16 +314,19 @@ VaultClawback::doApply()
         return tefINTERNAL;
         // LCOV_EXCL_STOP
     }
+    MPTIssue const share{mptIssuanceID};
+
     Asset const vaultAsset = vault->at(sfAsset);
-    STAmount const amount = [&]() -> STAmount {
+    STAmount const amount = [&]() {
         auto const maybeAmount = tx[~sfAmount];
         if (maybeAmount)
             return *maybeAmount;
-        return {sfAmount, vaultAsset, 0};
+
+        if (account_ == vault->at(sfOwner))
+            return STAmount{share};
+
+        return STAmount{vaultAsset};
     }();
-    XRPL_ASSERT(
-        amount.asset() == vaultAsset,
-        "xrpl::VaultClawback::doApply : matching asset");
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
@@ -283,13 +337,16 @@ VaultClawback::doApply()
         "xrpl::VaultClawback::doApply : loss and assets do balance");
 
     AccountID holder = tx[sfHolder];
-    MPTIssue const share{mptIssuanceID};
     STAmount sharesDestroyed = {share};
     STAmount assetsRecovered = {vault->at(sfAsset)};
 
     // The Owner is burning shares
     if (account_ == vault->at(sfOwner))
     {
+        XRPL_ASSERT(
+            amount.asset() == share,
+            "xrpl::VaultClawback::doApply : matching share");
+
         sharesDestroyed = accountHolds(
             view(),
             holder,
@@ -297,10 +354,13 @@ VaultClawback::doApply()
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_);
-        assetsRecovered = STAmount{vault->at(sfAsset)};
     }
-    else
+    else  // The Issuer is clawbacking vault assets
     {
+        XRPL_ASSERT(
+            amount.asset() == vaultAsset,
+            "xrpl::VaultClawback::doApply : matching asset");
+
         auto const clawbackParts =
             assetsToClawback(vault, sleIssuance, holder, amount);
         if (!clawbackParts)
