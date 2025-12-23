@@ -1180,6 +1180,17 @@ class Vault_test : public beast::unit_test::suite
 
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
+            // Preclaim only checks for native assets.
+            if (asset.native())
+            {
+                auto tx = vault.clawback(
+                    {.issuer = issuer,
+                     .id = keylet.key,
+                     .holder = owner,
+                     .amount = asset(50)});
+                env(tx, ter(temMALFORMED));
+            }
+
             {
                 auto tx = vault.clawback(
                     {.issuer = issuer,
