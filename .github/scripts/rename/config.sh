@@ -55,6 +55,12 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
   done
 done
 ${SED_COMMAND} -i 's/rippled/xrpld/g' cfg/xrpld-example.cfg
+${SED_COMMAND} -i 's/rippled/xrpld/g' src/test/core/Config_test.cpp
+${SED_COMMAND} -i 's/ripplevalidators/xrplvalidators/g' src/test/core/Config_test.cpp
+${SED_COMMAND} -i 's/rippleConfig/xrpldConfig/g' src/test/core/Config_test.cpp
+${SED_COMMAND} -i 's@ripple/@xrpld/@g' src/test/core/Config_test.cpp
+${SED_COMMAND} -i 's/Rippled/File/g' src/test/core/Config_test.cpp
+
 
 # Restore the old config file name in the code that maintains support for now.
 ${SED_COMMAND} -i 's/configLegacyName = "xrpld.cfg"/configLegacyName = "rippled.cfg"/g' src/xrpld/core/detail/Config.cpp

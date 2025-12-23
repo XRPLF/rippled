@@ -317,12 +317,6 @@ Config::setup(
     {
         do
         {
-            // Construct XDG config and data home.
-            // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html.
-            auto const strHome = getEnvVar("HOME");
-            auto strXdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
-            auto strXdgDataHome = getEnvVar("XDG_DATA_HOME");
-
             // Check if either of the config files exist in the current working
             // directory, in which case the databases will be stored in a
             // subdirectory.
@@ -335,31 +329,36 @@ Config::setup(
             if (boost::filesystem::exists(CONFIG_FILE))
                 break;
 
-            // Check if the XDG config and/or data directories are set, in which
-            // case we will use them, unless $HOME is not set.
-            if (strHome.empty() &&
-                (strXdgConfigHome.empty() || strXdgDataHome.empty()))
-                break;
-            if (strXdgConfigHome.empty())
+            // Check if the home directory is set, and optionally the XDG config
+            // and/or data directories, as the config may be there. See
+            // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html.
+            auto const strHome = getEnvVar("HOME");
+            if (!strHome.empty())
             {
-                // $XDG_CONFIG_HOME was not set, use default based on $HOME.
-                strXdgConfigHome = strHome + "/.config";
-            }
-            if (strXdgDataHome.empty())
-            {
-                // $XDG_DATA_HOME was not set, use default based on $HOME.
-                strXdgDataHome = strHome + "/.local/share";
-            }
+                auto strXdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
+                auto strXdgDataHome = getEnvVar("XDG_DATA_HOME");
+                if (strXdgConfigHome.empty())
+                {
+                    // $XDG_CONFIG_HOME was not set, use default based on $HOME.
+                    strXdgConfigHome = strHome + "/.config";
+                }
+                if (strXdgDataHome.empty())
+                {
+                    // $XDG_DATA_HOME was not set, use default based on $HOME.
+                    strXdgDataHome = strHome + "/.local/share";
+                }
 
-            // Check if either of the config files exist in the XDG config dir.
-            dataDir = strXdgDataHome + "/" + systemName();
-            CONFIG_DIR = strXdgConfigHome + "/" + systemName();
-            CONFIG_FILE = CONFIG_DIR / configFileName;
-            if (boost::filesystem::exists(CONFIG_FILE))
-                break;
-            CONFIG_FILE = CONFIG_DIR / configLegacyName;
-            if (boost::filesystem::exists(CONFIG_FILE))
-                break;
+                // Check if either of the config files exist in the XDG config
+                // dir.
+                dataDir = strXdgDataHome + "/" + systemName();
+                CONFIG_DIR = strXdgConfigHome + "/" + systemName();
+                CONFIG_FILE = CONFIG_DIR / configFileName;
+                if (boost::filesystem::exists(CONFIG_FILE))
+                    break;
+                CONFIG_FILE = CONFIG_DIR / configLegacyName;
+                if (boost::filesystem::exists(CONFIG_FILE))
+                    break;
+            }
 
             // As a last resort, check the system config directory.
             dataDir = "/var/opt/" + systemName();
