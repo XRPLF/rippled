@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
 
@@ -31,7 +12,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 class NoRippleCheck_test : public beast::unit_test::suite
 {
@@ -59,9 +40,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             Json::Value params;
             params[jss::account] = alice.human();
             auto const result = env.rpc(
-                "json",
-                "noripple_check",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::error_message] == "Missing field 'role'.");
         }
@@ -92,9 +71,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::account] = alice.human();
             params[jss::role] = "not_a_role";
             auto const result = env.rpc(
-                "json",
-                "noripple_check",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'role'.");
         }
@@ -105,9 +82,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::role] = "user";
             params[jss::limit] = -1;
             auto const result = env.rpc(
-                "json",
-                "noripple_check",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(
                 result[jss::error_message] ==
@@ -120,11 +95,11 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::role] = "user";
             params[jss::ledger_hash] = 1;
             auto const result = env.rpc(
-                "json",
-                "noripple_check",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(result[jss::error_message] == "ledgerHashNotString");
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'ledger_hash', not hex string.");
         }
 
         {  // account not found
@@ -133,9 +108,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::role] = "user";
             params[jss::ledger] = "current";
             auto const result = env.rpc(
-                "json",
-                "noripple_check",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actNotFound");
             BEAST_EXPECT(result[jss::error_message] == "Account not found.");
         }
@@ -147,11 +120,39 @@ class NoRippleCheck_test : public beast::unit_test::suite
             params[jss::role] = "user";
             params[jss::ledger] = "current";
             auto const result = env.rpc(
-                "json",
-                "noripple_check",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                "json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
+        }
+
+        {
+            // ledger and ledger_hash are included
+            Json::Value params;
+            params[jss::account] = Account{"nobody"}.human();
+            params[jss::role] = "user";
+            params[jss::ledger] = "current";
+            params[jss::ledger_hash] = "ABCDEF";
+            auto const result = env.rpc(
+                "json", "noripple_check", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Exactly one of 'ledger', 'ledger_hash', or 'ledger_index' can "
+                "be specified.");
+        }
+
+        {
+            // invalid ledger
+            Json::Value params;
+            params[jss::account] = Account{"nobody"}.human();
+            params[jss::role] = "user";
+            params[jss::ledger] = Json::objectValue;
+            auto const result = env.rpc(
+                "json", "noripple_check", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'ledger', not string or number.");
         }
     }
 
@@ -184,10 +185,8 @@ class NoRippleCheck_test : public beast::unit_test::suite
         params[jss::account] = alice.human();
         params[jss::role] = (user ? "user" : "gateway");
         params[jss::ledger] = "current";
-        auto result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        auto result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
 
         auto const pa = result["problems"];
         if (!BEAST_EXPECT(pa.isArray()))
@@ -221,10 +220,8 @@ class NoRippleCheck_test : public beast::unit_test::suite
         // now make a second request asking for the relevant transactions this
         // time.
         params[jss::transactions] = true;
-        result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
         if (!BEAST_EXPECT(result[jss::transactions].isArray()))
             return;
 
@@ -287,12 +284,12 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
         auto checkBalance = [&env]() {
             // this is endpoint drop prevention. Non admin ports will drop
             // requests if they are coming too fast, so we manipulate the
-            // resource manager here to reset the enpoint balance (for
+            // resource manager here to reset the endpoint balance (for
             // localhost) if we get too close to the drop limit. It would
             // be better if we could add this functionality to Env somehow
             // or otherwise disable endpoint charging for certain test
             // cases.
-            using namespace ripple::Resource;
+            using namespace xrpl::Resource;
             using namespace std::chrono;
             using namespace beast::IP;
             auto c = env.app().getResourceManager().newInboundEndpoint(
@@ -307,7 +304,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
             }
         };
 
-        for (auto i = 0; i < ripple::RPC::Tuning::noRippleCheck.rmax + 5; ++i)
+        for (auto i = 0; i < xrpl::RPC::Tuning::noRippleCheck.rmax + 5; ++i)
         {
             if (!admin)
                 checkBalance();
@@ -343,43 +340,33 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
         params[jss::account] = alice.human();
         params[jss::role] = "user";
         params[jss::ledger] = "current";
-        auto result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        auto result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
 
         BEAST_EXPECT(result["problems"].size() == 301);
 
         // one below minimum
         params[jss::limit] = 9;
-        result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
         BEAST_EXPECT(result["problems"].size() == (admin ? 10 : 11));
 
         // at minimum
         params[jss::limit] = 10;
-        result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
         BEAST_EXPECT(result["problems"].size() == 11);
 
         // at max
         params[jss::limit] = 400;
-        result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
         BEAST_EXPECT(result["problems"].size() == 401);
 
         // at max+1
         params[jss::limit] = 401;
-        result = env.rpc(
-            "json",
-            "noripple_check",
-            boost::lexical_cast<std::string>(params))[jss::result];
+        result =
+            env.rpc("json", "noripple_check", to_string(params))[jss::result];
         BEAST_EXPECT(result["problems"].size() == (admin ? 402 : 401));
     }
 
@@ -392,12 +379,12 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NoRippleCheck, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(NoRippleCheck, rpc, xrpl);
 
 // These tests that deal with limit amounts are slow because of the
 // offer/account setup, so making them manual -- the additional coverage
 // provided by them is minimal
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(NoRippleCheckLimits, rpc, ripple, 1);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(NoRippleCheckLimits, rpc, xrpl, 1);
 
-}  // namespace ripple
+}  // namespace xrpl

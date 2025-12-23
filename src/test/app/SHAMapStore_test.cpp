@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
 
@@ -25,11 +6,11 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
 
+#include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class SHAMapStore_test : public beast::unit_test::suite
@@ -68,11 +49,11 @@ class SHAMapStore_test : public beast::unit_test::suite
 
         auto const seq = json[jss::result][jss::ledger_index].asUInt();
 
-        std::optional<LedgerInfo> oinfo =
+        std::optional<LedgerHeader> oinfo =
             env.app().getRelationalDatabase().getLedgerInfoByIndex(seq);
         if (!oinfo)
             return false;
-        LedgerInfo const& info = oinfo.value();
+        LedgerHeader const& info = oinfo.value();
 
         std::string const outHash = to_string(info.hash);
         LedgerIndex const outSeq = info.seq;
@@ -656,7 +637,7 @@ public:
 };
 
 // VFALCO This test fails because of thread asynchronous issues
-BEAST_DEFINE_TESTSUITE(SHAMapStore, app, ripple);
+BEAST_DEFINE_TESTSUITE(SHAMapStore, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
@@ -31,12 +12,12 @@
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/core/PerfLog.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
@@ -44,6 +25,7 @@
 #include <boost/beast/core/ostream.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <numeric>
@@ -51,7 +33,7 @@
 
 using namespace std::chrono_literals;
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 /** The threshold above which we treat a peer connection as high latency */
@@ -59,6 +41,10 @@ std::chrono::milliseconds constexpr peerHighLatency{300};
 
 /** How often we PING the peer to check for latency and sendq probe */
 std::chrono::seconds constexpr peerTimerInterval{60};
+
+/** The timeout for a shutdown timer */
+std::chrono::seconds constexpr shutdownTimerInterval{5};
+
 }  // namespace
 
 // TODO: Remove this exclusion once unit tests are added after the hotfix
@@ -77,14 +63,17 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , sink_(app_.journal("Peer"), makePrefix(id))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id))
+    , fingerprint_(
+          getFingerprint(slot->remote_endpoint(), publicKey, to_string(id)))
+    , prefix_(makePrefix(fingerprint_))
+    , sink_(app_.journal("Peer"), prefix_)
+    , p_sink_(app_.journal("Protocol"), prefix_)
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)
-    , strand_(socket_.get_executor())
+    , strand_(boost::asio::make_strand(socket_.get_executor()))
     , timer_(waitable_timer{socket_.get_executor()})
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
@@ -126,8 +115,7 @@ PeerImp::PeerImp(
                headers_,
                FEATURE_VPRR,
                app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-        << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-        << remote_address_ << " " << id_;
+        << " tx reduce-relay enabled " << txReduceRelayEnabled_;
 }
 
 PeerImp::~PeerImp()
@@ -215,23 +203,17 @@ PeerImp::stop()
 {
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&PeerImp::stop, shared_from_this()));
-    if (socket_.is_open())
-    {
-        // The rationale for using different severity levels is that
-        // outbound connections are under our control and may be logged
-        // at a higher level, but inbound connections are more numerous and
-        // uncontrolled so to prevent log flooding the severity is reduced.
-        //
-        if (inbound_)
-        {
-            JLOG(journal_.debug()) << "Stop";
-        }
-        else
-        {
-            JLOG(journal_.info()) << "Stop";
-        }
-    }
-    close();
+
+    if (!socket_.is_open())
+        return;
+
+    // The rationale for using different severity levels is that
+    // outbound connections are under our control and may be logged
+    // at a higher level, but inbound connections are more numerous and
+    // uncontrolled so to prevent log flooding the severity is reduced.
+    JLOG(journal_.debug()) << "stop: Stop";
+
+    shutdown();
 }
 
 //------------------------------------------------------------------------------
@@ -241,10 +223,13 @@ PeerImp::send(std::shared_ptr<Message> const& m)
 {
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&PeerImp::send, shared_from_this(), m));
-    if (gracefulClose_)
+
+    if (!socket_.is_open())
         return;
-    if (detaching_)
-        return;
+
+    // we are in progress of closing the connection
+    if (shutdown_)
+        return tryAsyncShutdown();
 
     auto validator = m->getValidatorKey();
     if (validator && !squelch_.expireSquelch(*validator))
@@ -278,8 +263,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
              sink && (sendq_size % Tuning::sendQueueLogFreq) == 0)
     {
         std::string const n = name();
-        sink << (n.empty() ? remote_address_.to_string() : n)
-             << " sendq: " << sendq_size;
+        sink << n << " sendq: " << sendq_size;
     }
 
     send_queue_.push(m);
@@ -287,6 +271,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     if (sendq_size != 0)
         return;
 
+    writePending_ = true;
     boost::asio::async_write(
         stream_,
         boost::asio::buffer(
@@ -573,27 +558,18 @@ PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 //------------------------------------------------------------------------------
 
 void
-PeerImp::close()
+PeerImp::fail(std::string const& name, error_code ec)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::close : strand in this thread");
-    if (socket_.is_open())
-    {
-        detaching_ = true;  // DEPRECATED
-        error_code ec;
-        timer_.cancel(ec);
-        socket_.close(ec);
-        overlay_.incPeerDisconnect();
-        if (inbound_)
-        {
-            JLOG(journal_.debug()) << "Closed";
-        }
-        else
-        {
-            JLOG(journal_.info()) << "Closed";
-        }
-    }
+        "xrpl::PeerImp::fail : strand in this thread");
+
+    if (!socket_.is_open())
+        return;
+
+    JLOG(journal_.warn()) << name << ": " << ec.message();
+
+    shutdown();
 }
 
 void
@@ -606,45 +582,38 @@ PeerImp::fail(std::string const& reason)
                 (void(Peer::*)(std::string const&)) & PeerImp::fail,
                 shared_from_this(),
                 reason));
-    if (journal_.active(beast::severities::kWarning) && socket_.is_open())
+
+    if (!socket_.is_open())
+        return;
+
+    // Call to name() locks, log only if the message will be outputed
+    if (journal_.active(beast::severities::kWarning))
     {
         std::string const n = name();
-        JLOG(journal_.warn()) << (n.empty() ? remote_address_.to_string() : n)
-                              << " failed: " << reason;
+        JLOG(journal_.warn()) << n << " failed: " << reason;
     }
-    close();
+
+    shutdown();
 }
 
 void
-PeerImp::fail(std::string const& name, error_code ec)
+PeerImp::tryAsyncShutdown()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::fail : strand in this thread");
-    if (socket_.is_open())
-    {
-        JLOG(journal_.warn())
-            << name << " from " << toBase58(TokenType::NodePublic, publicKey_)
-            << " at " << remote_address_.to_string() << ": " << ec.message();
-    }
-    close();
-}
+        "xrpl::PeerImp::tryAsyncShutdown : strand in this thread");
 
-void
-PeerImp::gracefulClose()
-{
-    XRPL_ASSERT(
-        strand_.running_in_this_thread(),
-        "ripple::PeerImp::gracefulClose : strand in this thread");
-    XRPL_ASSERT(
-        socket_.is_open(), "ripple::PeerImp::gracefulClose : socket is open");
-    XRPL_ASSERT(
-        !gracefulClose_,
-        "ripple::PeerImp::gracefulClose : socket is not closing");
-    gracefulClose_ = true;
-    if (send_queue_.size() > 0)
+    if (!shutdown_ || shutdownStarted_)
         return;
-    setTimer();
+
+    if (readPending_ || writePending_)
+        return;
+
+    shutdownStarted_ = true;
+
+    setTimer(shutdownTimerInterval);
+
+    // gracefully shutdown the SSL socket, performing a shutdown handshake
     stream_.async_shutdown(bind_executor(
         strand_,
         std::bind(
@@ -652,61 +621,134 @@ PeerImp::gracefulClose()
 }
 
 void
-PeerImp::setTimer()
+PeerImp::shutdown()
 {
-    error_code ec;
-    timer_.expires_from_now(peerTimerInterval, ec);
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "xrpl::PeerImp::shutdown: strand in this thread");
 
+    if (!socket_.is_open() || shutdown_)
+        return;
+
+    shutdown_ = true;
+
+    boost::beast::get_lowest_layer(stream_).cancel();
+
+    tryAsyncShutdown();
+}
+
+void
+PeerImp::onShutdown(error_code ec)
+{
+    cancelTimer();
     if (ec)
     {
-        JLOG(journal_.error()) << "setTimer: " << ec.message();
-        return;
+        // - eof: the stream was cleanly closed
+        // - operation_aborted: an expired timer (slow shutdown)
+        // - stream_truncated: the tcp connection closed (no handshake) it could
+        // occur if a peer does not perform a graceful disconnect
+        // - broken_pipe: the peer is gone
+        bool shouldLog =
+            (ec != boost::asio::error::eof &&
+             ec != boost::asio::error::operation_aborted &&
+             ec.message().find("application data after close notify") ==
+                 std::string::npos);
+
+        if (shouldLog)
+        {
+            JLOG(journal_.debug()) << "onShutdown: " << ec.message();
+        }
     }
+
+    close();
+}
+
+void
+PeerImp::close()
+{
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "xrpl::PeerImp::close : strand in this thread");
+
+    if (!socket_.is_open())
+        return;
+
+    cancelTimer();
+
+    error_code ec;
+    socket_.close(ec);
+
+    overlay_.incPeerDisconnect();
+
+    // The rationale for using different severity levels is that
+    // outbound connections are under our control and may be logged
+    // at a higher level, but inbound connections are more numerous and
+    // uncontrolled so to prevent log flooding the severity is reduced.
+    JLOG((inbound_ ? journal_.debug() : journal_.info())) << "close: Closed";
+}
+
+//------------------------------------------------------------------------------
+
+void
+PeerImp::setTimer(std::chrono::seconds interval)
+{
+    try
+    {
+        timer_.expires_after(interval);
+    }
+    catch (std::exception const& ex)
+    {
+        JLOG(journal_.error()) << "setTimer: " << ex.what();
+        return shutdown();
+    }
+
     timer_.async_wait(bind_executor(
         strand_,
         std::bind(
             &PeerImp::onTimer, shared_from_this(), std::placeholders::_1)));
 }
 
-// convenience for ignoring the error code
-void
-PeerImp::cancelTimer()
-{
-    error_code ec;
-    timer_.cancel(ec);
-}
-
 //------------------------------------------------------------------------------
 
 std::string
-PeerImp::makePrefix(id_t id)
+PeerImp::makePrefix(std::string const& fingerprint)
 {
     std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << id << "] ";
+    ss << "[" << fingerprint << "] ";
     return ss.str();
 }
 
 void
 PeerImp::onTimer(error_code const& ec)
 {
-    if (!socket_.is_open())
-        return;
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "xrpl::PeerImp::onTimer : strand in this thread");
 
-    if (ec == boost::asio::error::operation_aborted)
+    if (!socket_.is_open())
         return;
 
     if (ec)
     {
+        // do not initiate shutdown, timers are frequently cancelled
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
         return close();
     }
 
-    if (large_sendq_++ >= Tuning::sendqIntervals)
+    // the timer expired before the shutdown completed
+    // force close the connection
+    if (shutdown_)
     {
-        fail("Large send queue");
-        return;
+        JLOG(journal_.debug()) << "onTimer: shutdown timer expired";
+        return close();
     }
+
+    if (large_sendq_++ >= Tuning::sendqIntervals)
+        return fail("Large send queue");
 
     if (auto const t = tracking_.load(); !inbound_ && t != Tracking::converged)
     {
@@ -723,17 +765,13 @@ PeerImp::onTimer(error_code const& ec)
              (duration > app_.config().MAX_UNKNOWN_TIME)))
         {
             overlay_.peerFinder().on_failure(slot_);
-            fail("Not useful");
-            return;
+            return fail("Not useful");
         }
     }
 
     // Already waiting for PONG
     if (lastPingSeq_)
-    {
-        fail("Ping Timeout");
-        return;
-    }
+        return fail("Ping Timeout");
 
     lastPingTime_ = clock_type::now();
     lastPingSeq_ = rand_int<std::uint32_t>();
@@ -744,22 +782,20 @@ PeerImp::onTimer(error_code const& ec)
 
     send(std::make_shared<Message>(message, protocol::mtPING));
 
-    setTimer();
+    setTimer(peerTimerInterval);
 }
 
 void
-PeerImp::onShutdown(error_code ec)
+PeerImp::cancelTimer() noexcept
 {
-    cancelTimer();
-    // If we don't get eof then something went wrong
-    if (!ec)
+    try
     {
-        JLOG(journal_.error()) << "onShutdown: expected error condition";
-        return close();
+        timer_.cancel();
     }
-    if (ec != boost::asio::error::eof)
-        return fail("onShutdown", ec);
-    close();
+    catch (std::exception const& ex)
+    {
+        JLOG(journal_.error()) << "cancelTimer: " << ex.what();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -768,9 +804,13 @@ PeerImp::doAccept()
 {
     XRPL_ASSERT(
         read_buffer_.size() == 0,
-        "ripple::PeerImp::doAccept : empty read buffer");
+        "xrpl::PeerImp::doAccept : empty read buffer");
 
-    JLOG(journal_.debug()) << "doAccept: " << remote_address_;
+    JLOG(journal_.debug()) << "doAccept";
+
+    // a shutdown was initiated before the handshake, there is nothing to do
+    if (shutdown_)
+        return tryAsyncShutdown();
 
     auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
 
@@ -779,9 +819,7 @@ PeerImp::doAccept()
     if (!sharedValue)
         return fail("makeSharedValue: Unexpected failure");
 
-    JLOG(journal_.info()) << "Protocol: " << to_string(protocol_);
-    JLOG(journal_.info()) << "Public Key: "
-                          << toBase58(TokenType::NodePublic, publicKey_);
+    JLOG(journal_.debug()) << "Protocol: " << to_string(protocol_);
 
     if (auto member = app_.cluster().member(publicKey_))
     {
@@ -822,7 +860,7 @@ PeerImp::doAccept()
                 if (!socket_.is_open())
                     return;
                 if (ec == boost::asio::error::operation_aborted)
-                    return;
+                    return tryAsyncShutdown();
                 if (ec)
                     return fail("onWriteResponse", ec);
                 if (write_buffer->size() == bytes_transferred)
@@ -851,6 +889,10 @@ PeerImp::domain() const
 void
 PeerImp::doProtocolStart()
 {
+    // a shutdown was initiated before the handshare, there is nothing to do
+    if (shutdown_)
+        return tryAsyncShutdown();
+
     onReadMessage(error_code(), 0);
 
     // Send all the validator lists that have been loaded
@@ -882,30 +924,45 @@ PeerImp::doProtocolStart()
     if (auto m = overlay_.getManifestsMessage())
         send(m);
 
-    setTimer();
+    setTimer(peerTimerInterval);
 }
 
 // Called repeatedly with protocol message data
 void
 PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 {
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "xrpl::PeerImp::onReadMessage : strand in this thread");
+
+    readPending_ = false;
+
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    if (ec == boost::asio::error::eof)
-    {
-        JLOG(journal_.info()) << "EOF";
-        return gracefulClose();
-    }
+
     if (ec)
+    {
+        if (ec == boost::asio::error::eof)
+        {
+            JLOG(journal_.debug()) << "EOF";
+            return shutdown();
+        }
+
+        if (ec == boost::asio::error::operation_aborted)
+            return tryAsyncShutdown();
+
         return fail("onReadMessage", ec);
+    }
+    // we started shutdown, no reason to process further data
+    if (shutdown_)
+        return tryAsyncShutdown();
+
     if (auto stream = journal_.trace())
     {
-        if (bytes_transferred > 0)
-            stream << "onReadMessage: " << bytes_transferred << " bytes";
-        else
-            stream << "onReadMessage";
+        stream << "onReadMessage: "
+               << (bytes_transferred > 0
+                       ? to_string(bytes_transferred) + " bytes"
+                       : "");
     }
 
     metrics_.recv.add_message(bytes_transferred);
@@ -927,16 +984,28 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
             350ms,
             journal_);
 
-        if (ec)
-            return fail("onReadMessage", ec);
         if (!socket_.is_open())
             return;
-        if (gracefulClose_)
-            return;
+
+        // the error_code is produced by invokeProtocolMessage
+        // it could be due to a bad message
+        if (ec)
+            return fail("onReadMessage", ec);
+
         if (bytes_consumed == 0)
             break;
+
         read_buffer_.consume(bytes_consumed);
     }
+
+    // check if a shutdown was initiated while processing messages
+    if (shutdown_)
+        return tryAsyncShutdown();
+
+    readPending_ = true;
+
+    XRPL_ASSERT(
+        !shutdownStarted_, "xrpl::PeerImp::onReadMessage : shutdown started");
 
     // Timeout on writes only
     stream_.async_read_some(
@@ -953,28 +1022,48 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 void
 PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 {
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "xrpl::PeerImp::onWriteMessage : strand in this thread");
+
+    writePending_ = false;
+
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
+
     if (ec)
+    {
+        if (ec == boost::asio::error::operation_aborted)
+            return tryAsyncShutdown();
+
         return fail("onWriteMessage", ec);
+    }
+
     if (auto stream = journal_.trace())
     {
-        if (bytes_transferred > 0)
-            stream << "onWriteMessage: " << bytes_transferred << " bytes";
-        else
-            stream << "onWriteMessage";
+        stream << "onWriteMessage: "
+               << (bytes_transferred > 0
+                       ? to_string(bytes_transferred) + " bytes"
+                       : "");
     }
 
     metrics_.sent.add_message(bytes_transferred);
 
     XRPL_ASSERT(
         !send_queue_.empty(),
-        "ripple::PeerImp::onWriteMessage : non-empty send buffer");
+        "xrpl::PeerImp::onWriteMessage : non-empty send buffer");
     send_queue_.pop();
+
+    if (shutdown_)
+        return tryAsyncShutdown();
+
     if (!send_queue_.empty())
     {
+        writePending_ = true;
+        XRPL_ASSERT(
+            !shutdownStarted_,
+            "xrpl::PeerImp::onWriteMessage : shutdown started");
+
         // Timeout on writes only
         return boost::asio::async_write(
             stream_,
@@ -987,16 +1076,6 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
                     shared_from_this(),
                     std::placeholders::_1,
                     std::placeholders::_2)));
-    }
-
-    if (gracefulClose_)
-    {
-        return stream_.async_shutdown(bind_executor(
-            strand_,
-            std::bind(
-                &PeerImp::onShutdown,
-                shared_from_this(),
-                std::placeholders::_1)));
     }
 }
 
@@ -1264,7 +1343,7 @@ PeerImp::handleTransaction(
 {
     XRPL_ASSERT(
         eraseTxQueue != batch,
-        ("ripple::PeerImp::handleTransaction : valid inputs"));
+        ("xrpl::PeerImp::handleTransaction : valid inputs"));
     if (tracking_.load() == Tracking::diverged)
         return;
 
@@ -1286,8 +1365,23 @@ PeerImp::handleTransaction(
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
-        if (stx->isFlag(tfInnerBatchTxn) &&
-            getCurrentTransactionRules()->enabled(featureBatch))
+        /*
+           There is no need to check whether the featureBatch amendment is
+           enabled.
+
+           * If the `tfInnerBatchTxn` flag is set, and the amendment is
+           enabled, then it's an invalid transaction because inner batch
+           transactions should not be relayed.
+           * If the `tfInnerBatchTxn` flag is set, and the amendment is *not*
+           enabled, then the transaction is malformed because it's using an
+           "unknown" flag. There's no need to waste the resources to send it
+           to the transaction engine.
+
+           We don't normally check transaction validity at this level, but
+           since we _need_ to check it when the amendment is enabled, we may as
+           well drop it if the flag is set regardless.
+        */
+        if (stx->isFlag(tfInnerBatchTxn))
         {
             JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
                                        "tfInnerBatchTxn (handleTransaction).";
@@ -2042,8 +2136,7 @@ PeerImp::onValidatorListMessage(
     // ValidatorList class rules), so charge accordingly and skip processing.
     if (blobs.empty())
     {
-        JLOG(p_journal_.warn()) << "Ignored malformed " << messageType
-                                << " from peer " << remote_address_;
+        JLOG(p_journal_.warn()) << "Ignored malformed " << messageType;
         // This shouldn't ever happen with a well-behaved peer
         fee_.update(Resource::feeHeavyBurdenPeer, "no blobs");
         return;
@@ -2051,9 +2144,7 @@ PeerImp::onValidatorListMessage(
 
     auto const hash = sha512Half(manifest, blobs, version);
 
-    JLOG(p_journal_.debug())
-        << "Received " << messageType << " from " << remote_address_.to_string()
-        << " (" << id_ << ")";
+    JLOG(p_journal_.debug()) << "Received " << messageType;
 
     if (!app_.getHashRouter().addSuppressionPeer(hash, id_))
     {
@@ -2080,8 +2171,7 @@ PeerImp::onValidatorListMessage(
         << "Processed " << messageType << " version " << version << " from "
         << (applyResult.publisherKey ? strHex(*applyResult.publisherKey)
                                      : "unknown or invalid publisher")
-        << " from " << remote_address_.to_string() << " (" << id_
-        << ") with best result " << to_string(applyResult.bestDisposition());
+        << " with best result " << to_string(applyResult.bestDisposition());
 
     // Act based on the best result
     switch (applyResult.bestDisposition())
@@ -2096,7 +2186,7 @@ PeerImp::onValidatorListMessage(
 
             XRPL_ASSERT(
                 applyResult.publisherKey,
-                "ripple::PeerImp::onValidatorListMessage : publisher key is "
+                "xrpl::PeerImp::onValidatorListMessage : publisher key is "
                 "set");
             auto const& pubKey = *applyResult.publisherKey;
 #ifndef NDEBUG
@@ -2105,7 +2195,7 @@ PeerImp::onValidatorListMessage(
             {
                 XRPL_ASSERT(
                     iter->second < applyResult.sequence,
-                    "ripple::PeerImp::onValidatorListMessage : lower sequence");
+                    "xrpl::PeerImp::onValidatorListMessage : lower sequence");
             }
 #endif
             publisherListSequences_[pubKey] = applyResult.sequence;
@@ -2118,12 +2208,12 @@ PeerImp::onValidatorListMessage(
             std::lock_guard<std::mutex> sl(recentLock_);
             XRPL_ASSERT(
                 applyResult.sequence && applyResult.publisherKey,
-                "ripple::PeerImp::onValidatorListMessage : nonzero sequence "
+                "xrpl::PeerImp::onValidatorListMessage : nonzero sequence "
                 "and set publisher key");
             XRPL_ASSERT(
                 publisherListSequences_[*applyResult.publisherKey] <=
                     applyResult.sequence,
-                "ripple::PeerImp::onValidatorListMessage : maximum sequence");
+                "xrpl::PeerImp::onValidatorListMessage : maximum sequence");
         }
 #endif  // !NDEBUG
 
@@ -2133,10 +2223,12 @@ PeerImp::onValidatorListMessage(
         case ListDisposition::invalid:
         case ListDisposition::unsupported_version:
             break;
+        // LCOV_EXCL_START
         default:
             UNREACHABLE(
-                "ripple::PeerImp::onValidatorListMessage : invalid best list "
+                "xrpl::PeerImp::onValidatorListMessage : invalid best list "
                 "disposition");
+            // LCOV_EXCL_STOP
     }
 
     // Charge based on the worst result
@@ -2177,10 +2269,12 @@ PeerImp::onValidatorListMessage(
             // If it happens frequently, that's probably bad.
             fee_.update(Resource::feeInvalidData, "version");
             break;
+        // LCOV_EXCL_START
         default:
             UNREACHABLE(
-                "ripple::PeerImp::onValidatorListMessage : invalid worst list "
+                "xrpl::PeerImp::onValidatorListMessage : invalid worst list "
                 "disposition");
+            // LCOV_EXCL_STOP
     }
 
     // Log based on all the results.
@@ -2191,56 +2285,51 @@ PeerImp::onValidatorListMessage(
             // New list
             case ListDisposition::accepted:
                 JLOG(p_journal_.debug())
-                    << "Applied " << count << " new " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "Applied " << count << " new " << messageType;
                 break;
             // Newest list is expired, and that needs to be broadcast, too
             case ListDisposition::expired:
                 JLOG(p_journal_.debug())
-                    << "Applied " << count << " expired " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "Applied " << count << " expired " << messageType;
                 break;
             // Future list
             case ListDisposition::pending:
                 JLOG(p_journal_.debug())
-                    << "Processed " << count << " future " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "Processed " << count << " future " << messageType;
                 break;
             case ListDisposition::same_sequence:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << " " << messageType
-                    << "(s) with current sequence from peer "
-                    << remote_address_;
+                    << "(s) with current sequence";
                 break;
             case ListDisposition::known_sequence:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << " " << messageType
-                    << "(s) with future sequence from peer " << remote_address_;
+                    << "(s) with future sequence";
                 break;
             case ListDisposition::stale:
                 JLOG(p_journal_.warn())
-                    << "Ignored " << count << "stale " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "Ignored " << count << "stale " << messageType;
                 break;
             case ListDisposition::untrusted:
                 JLOG(p_journal_.warn())
-                    << "Ignored " << count << " untrusted " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "Ignored " << count << " untrusted " << messageType;
                 break;
             case ListDisposition::unsupported_version:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << "unsupported version "
-                    << messageType << "(s) from peer " << remote_address_;
+                    << messageType;
                 break;
             case ListDisposition::invalid:
                 JLOG(p_journal_.warn())
-                    << "Ignored " << count << "invalid " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "Ignored " << count << "invalid " << messageType;
                 break;
+            // LCOV_EXCL_START
             default:
                 UNREACHABLE(
-                    "ripple::PeerImp::onValidatorListMessage : invalid list "
+                    "xrpl::PeerImp::onValidatorListMessage : invalid list "
                     "disposition");
+                // LCOV_EXCL_STOP
         }
     }
 }
@@ -2267,8 +2356,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
     }
     catch (std::exception const& e)
     {
-        JLOG(p_journal_.warn()) << "ValidatorList: Exception, " << e.what()
-                                << " from peer " << remote_address_;
+        JLOG(p_journal_.warn()) << "ValidatorList: Exception, " << e.what();
         using namespace std::string_literals;
         fee_.update(Resource::feeInvalidData, e.what());
     }
@@ -2307,8 +2395,8 @@ PeerImp::onMessage(
     }
     catch (std::exception const& e)
     {
-        JLOG(p_journal_.warn()) << "ValidatorListCollection: Exception, "
-                                << e.what() << " from peer " << remote_address_;
+        JLOG(p_journal_.warn())
+            << "ValidatorListCollection: Exception, " << e.what();
         using namespace std::string_literals;
         fee_.update(Resource::feeInvalidData, e.what());
     }
@@ -2851,8 +2939,23 @@ PeerImp::checkTransaction(
     {
         // charge strongly for relaying batch txns
         // LCOV_EXCL_START
-        if (stx->isFlag(tfInnerBatchTxn) &&
-            getCurrentTransactionRules()->enabled(featureBatch))
+        /*
+           There is no need to check whether the featureBatch amendment is
+           enabled.
+
+           * If the `tfInnerBatchTxn` flag is set, and the amendment is
+           enabled, then it's an invalid transaction because inner batch
+           transactions should not be relayed.
+           * If the `tfInnerBatchTxn` flag is set, and the amendment is *not*
+           enabled, then the transaction is malformed because it's using an
+           "unknown" flag. There's no need to waste the resources to send it
+           to the transaction engine.
+
+           We don't normally check transaction validity at this level, but
+           since we _need_ to check it when the amendment is enabled, we may as
+           well drop it if the flag is set regardless.
+        */
+        if (stx->isFlag(tfInnerBatchTxn))
         {
             JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
                                        "tfInnerBatchTxn (checkSignature).";
@@ -2866,6 +2969,9 @@ PeerImp::checkTransaction(
             (stx->getFieldU32(sfLastLedgerSequence) <
              app_.getLedgerMaster().getValidLedgerIndex()))
         {
+            JLOG(p_journal_.info())
+                << "Marking transaction " << stx->getTransactionID()
+                << "as BAD because it's expired";
             app_.getHashRouter().setFlags(
                 stx->getTransactionID(), HashRouterFlags::BAD);
             charge(Resource::feeUselessData, "expired tx");
@@ -2880,7 +2986,7 @@ PeerImp::checkTransaction(
             auto tx = std::make_shared<Transaction>(stx, reason, app_);
             XRPL_ASSERT(
                 tx->getStatus() == NEW,
-                "ripple::PeerImp::checkTransaction Transaction created "
+                "xrpl::PeerImp::checkTransaction Transaction created "
                 "correctly");
             if (tx->getStatus() == NEW)
             {
@@ -2922,7 +3028,7 @@ PeerImp::checkTransaction(
             {
                 if (!validReason.empty())
                 {
-                    JLOG(p_journal_.trace())
+                    JLOG(p_journal_.debug())
                         << "Exception checking transaction: " << validReason;
                 }
 
@@ -2949,7 +3055,7 @@ PeerImp::checkTransaction(
         {
             if (!reason.empty())
             {
-                JLOG(p_journal_.trace())
+                JLOG(p_journal_.debug())
                     << "Exception checking transaction: " << reason;
             }
             app_.getHashRouter().setFlags(
@@ -2983,7 +3089,7 @@ PeerImp::checkPropose(
     JLOG(p_journal_.trace())
         << "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
 
-    XRPL_ASSERT(packet, "ripple::PeerImp::checkPropose : non-null packet");
+    XRPL_ASSERT(packet, "xrpl::PeerImp::checkPropose : non-null packet");
 
     if (!cluster() && !peerPos.checkSign())
     {
@@ -3121,8 +3227,8 @@ PeerImp::sendLedgerBase(
 {
     JLOG(p_journal_.trace()) << "sendLedgerBase: Base data";
 
-    Serializer s(sizeof(LedgerInfo));
-    addRaw(ledger->info(), s);
+    Serializer s(sizeof(LedgerHeader));
+    addRaw(ledger->header(), s);
     ledgerData.add_nodes()->set_nodedata(s.getDataPtr(), s.getLength());
 
     auto const& stateMap{ledger->stateMap()};
@@ -3135,7 +3241,7 @@ PeerImp::sendLedgerBase(
         ledgerData.add_nodes()->set_nodedata(
             root.getDataPtr(), root.getLength());
 
-        if (ledger->info().txHash != beast::zero)
+        if (ledger->header().txHash != beast::zero)
         {
             auto const& txMap{ledger->txMap()};
             if (txMap.getHash() != beast::zero)
@@ -3220,7 +3326,7 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
     if (ledger)
     {
         // Validate retrieved ledger sequence
-        auto const ledgerSeq{ledger->info().seq};
+        auto const ledgerSeq{ledger->header().seq};
         if (m->has_ledgerseq())
         {
             if (ledgerSeq != m->ledgerseq())
@@ -3334,9 +3440,9 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
             return;
 
         // Fill out the reply
-        auto const ledgerHash{ledger->info().hash};
+        auto const ledgerHash{ledger->header().hash};
         ledgerData.set_ledgerhash(ledgerHash.begin(), ledgerHash.size());
-        ledgerData.set_ledgerseq(ledger->info().seq);
+        ledgerData.set_ledgerseq(ledger->header().seq);
         ledgerData.set_type(itype);
         if (m->has_requestcookie())
             ledgerData.set_requestcookie(m->requestcookie());
@@ -3549,4 +3655,4 @@ PeerImp::Metrics::total_bytes() const
     return totalBytes_;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,38 +1,19 @@
-﻿//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_RDB_RELATIONALDATABASE_H_INCLUDED
-#define RIPPLE_APP_RDB_RELATIONALDATABASE_H_INCLUDED
+#ifndef XRPL_APP_RDB_RELATIONALDATABASE_H_INCLUDED
+#define XRPL_APP_RDB_RELATIONALDATABASE_H_INCLUDED
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/DatabaseCon.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/variant.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 struct LedgerHashPair
 {
@@ -146,14 +127,14 @@ public:
      * @param ledgerSeq Ledger sequence.
      * @return The ledger if found, otherwise no value.
      */
-    virtual std::optional<LedgerInfo>
+    virtual std::optional<LedgerHeader>
     getLedgerInfoByIndex(LedgerIndex ledgerSeq) = 0;
 
     /**
      * @brief getNewestLedgerInfo Returns the info of the newest saved ledger.
      * @return Ledger info if found, otherwise no value.
      */
-    virtual std::optional<LedgerInfo>
+    virtual std::optional<LedgerHeader>
     getNewestLedgerInfo() = 0;
 
     /**
@@ -162,7 +143,7 @@ public:
      * @param ledgerHash Hash of the ledger.
      * @return Ledger if found, otherwise no value.
      */
-    virtual std::optional<LedgerInfo>
+    virtual std::optional<LedgerHeader>
     getLedgerInfoByHash(uint256 const& ledgerHash) = 0;
 
     /**
@@ -235,17 +216,19 @@ rangeCheckedCast(C c)
          std::numeric_limits<C>::is_signed &&
          c < std::numeric_limits<T>::lowest()))
     {
-        /* This should never happen */
-        UNREACHABLE("ripple::rangeCheckedCast : domain error");
+        // This should never happen
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::rangeCheckedCast : domain error");
         JLOG(debugLog().error())
             << "rangeCheckedCast domain error:"
             << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
             << " max: " << std::numeric_limits<T>::max();
+        // LCOV_EXCL_STOP
     }
 
     return static_cast<T>(c);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

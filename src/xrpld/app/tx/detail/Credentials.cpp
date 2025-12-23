@@ -1,35 +1,16 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/Credentials.h>
-#include <xrpld/ledger/ApplyView.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 
 /*
     Credentials
@@ -48,27 +29,18 @@ using namespace credentials;
 
 // ------- CREATE --------------------------
 
+std::uint32_t
+CredentialCreate::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
+}
+
 NotTEC
 CredentialCreate::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureCredentials))
-    {
-        JLOG(ctx.j.trace()) << "featureCredentials is disabled.";
-        return temDISABLED;
-    }
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const& tx = ctx.tx;
     auto& j = ctx.j;
-
-    if (ctx.rules.enabled(fixInvalidTxFlags) &&
-        (tx.getFlags() & tfUniversalMask))
-    {
-        JLOG(ctx.j.debug()) << "CredentialCreate: invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     if (!tx[sfSubject])
     {
@@ -91,7 +63,7 @@ CredentialCreate::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -126,13 +98,13 @@ CredentialCreate::doApply()
 
     auto const sleCred = std::make_shared<SLE>(credentialKey);
     if (!sleCred)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const optExp = ctx_.tx[~sfExpiration];
     if (optExp)
     {
         std::uint32_t const closeTime =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count();
+            ctx_.view().header().parentCloseTime.time_since_epoch().count();
 
         if (closeTime > *optExp)
         {
@@ -146,7 +118,7 @@ CredentialCreate::doApply()
 
     auto const sleIssuer = view().peek(keylet::account(account_));
     if (!sleIssuer)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
         STAmount const reserve{view().fees().accountReserve(
@@ -202,25 +174,17 @@ CredentialCreate::doApply()
 }
 
 // ------- DELETE --------------------------
+
+std::uint32_t
+CredentialDelete::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
+}
+
 NotTEC
 CredentialDelete::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureCredentials))
-    {
-        JLOG(ctx.j.trace()) << "featureCredentials is disabled.";
-        return temDISABLED;
-    }
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.rules.enabled(fixInvalidTxFlags) &&
-        (ctx.tx.getFlags() & tfUniversalMask))
-    {
-        JLOG(ctx.j.debug()) << "CredentialDelete: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
     auto const subject = ctx.tx[~sfSubject];
     auto const issuer = ctx.tx[~sfIssuer];
 
@@ -248,7 +212,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -275,10 +239,10 @@ CredentialDelete::doApply()
     auto const sleCred =
         view().peek(keylet::credential(subject, issuer, credType));
     if (!sleCred)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if ((subject != account_) && (issuer != account_) &&
-        !checkExpired(sleCred, ctx_.view().info().parentCloseTime))
+        !checkExpired(sleCred, ctx_.view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Can't delete non-expired credential.";
         return tecNO_PERMISSION;
@@ -289,25 +253,16 @@ CredentialDelete::doApply()
 
 // ------- APPLY --------------------------
 
+std::uint32_t
+CredentialAccept::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
+}
+
 NotTEC
 CredentialAccept::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureCredentials))
-    {
-        JLOG(ctx.j.trace()) << "featureCredentials is disabled.";
-        return temDISABLED;
-    }
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.rules.enabled(fixInvalidTxFlags) &&
-        (ctx.tx.getFlags() & tfUniversalMask))
-    {
-        JLOG(ctx.j.debug()) << "CredentialAccept: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
     if (!ctx.tx[sfIssuer])
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: Issuer field zeroed.";
@@ -322,7 +277,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -368,7 +323,7 @@ CredentialAccept::doApply()
     auto const sleIssuer = view().peek(keylet::account(issuer));
 
     if (!sleSubject || !sleIssuer)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
         STAmount const reserve{view().fees().accountReserve(
@@ -381,7 +336,7 @@ CredentialAccept::doApply()
     Keylet const credentialKey = keylet::credential(account_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
 
-    if (checkExpired(sleCred, view().info().parentCloseTime))
+    if (checkExpired(sleCred, view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed
@@ -398,4 +353,4 @@ CredentialAccept::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

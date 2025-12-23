@@ -10,7 +10,7 @@
 ## Branches
 
 For a stable release, choose the `master` branch or one of the [tagged
-releases](https://github.com/ripple/rippled/releases).
+releases](https://github.com/XRPLF/rippled/releases).
 
 ```bash
 git checkout master
@@ -33,24 +33,19 @@ git checkout develop
 
 See [System Requirements](https://xrpl.org/system-requirements.html).
 
-Building rippled generally requires git, Python, Conan, CMake, and a C++
+Building xrpld generally requires git, Python, Conan, CMake, and a C++
 compiler. Some guidance on setting up such a [C++ development environment can be
 found here](./docs/build/environment.md).
 
 - [Python 3.11](https://www.python.org/downloads/), or higher
 - [Conan 2.17](https://conan.io/downloads.html)[^1], or higher
-- [CMake 3.22](https://cmake.org/download/)[^2], or higher
+- [CMake 3.22](https://cmake.org/download/), or higher
 
 [^1]:
     It is possible to build with Conan 1.60+, but the instructions are
     significantly different, which is why we are not recommending it.
 
-[^2]:
-    CMake 4 is not yet supported by all dependencies required by this project.
-    If you are affected by this issue, follow [conan workaround for cmake
-    4](#workaround-for-cmake-4)
-
-`rippled` is written in the C++20 dialect and includes the `<concepts>` header.
+`xrpld` is written in the C++20 dialect and includes the `<concepts>` header.
 The [minimum compiler versions][2] required are:
 
 | Compiler    | Version   |
@@ -71,7 +66,7 @@ Linux](./docs/build/environment.md#linux).
 
 ### Mac
 
-Many rippled engineers use macOS for development.
+Many xrpld engineers use macOS for development.
 
 Here are [sample instructions for setting up a C++ development environment on
 macOS](./docs/build/environment.md#macos).
@@ -92,6 +87,13 @@ Conan, CMake, and a C++ compiler, you may need to set up your Conan profile.
 These instructions assume a basic familiarity with Conan and CMake. If you are
 unfamiliar with Conan, then please read [this crash course](./docs/build/conan.md) or the official
 [Getting Started][3] walkthrough.
+
+#### Conan lockfile
+
+To achieve reproducible dependencies, we use a [Conan lockfile](https://docs.conan.io/2/tutorial/versioning/lockfiles.html),
+which has to be updated every time dependencies change.
+
+Please see the [instructions on how to regenerate the lockfile](conan/lockfile/README.md).
 
 #### Default profile
 
@@ -124,7 +126,7 @@ default profile.
 ### Patched recipes
 
 The recipes in Conan Center occasionally need to be patched for compatibility
-with the latest version of `rippled`. We maintain a fork of the Conan Center
+with the latest version of `xrpld`. We maintain a fork of the Conan Center
 [here](https://github.com/XRPLF/conan-center-index/) containing the patches.
 
 To ensure our patched recipes are used, you must add our Conan remote at a
@@ -132,24 +134,44 @@ higher index than the default Conan Center remote, so it is consulted first. You
 can do this by running:
 
 ```bash
-conan remote add --index 0 xrplf "https://conan.ripplex.io"
+conan remote add --index 0 xrplf https://conan.ripplex.io
 ```
 
 Alternatively, you can pull the patched recipes into the repository and use them
 locally:
 
 ```bash
+# Extract the version number from the lockfile.
+function extract_version {
+  version=$(cat conan.lock | sed -nE "s@.+${1}/(.+)#.+@\1@p" | head -n1)
+  echo ${version}
+}
+
+# Define which recipes to export.
+recipes=(ed25519 grpc secp256k1 snappy soci)
+
+# Selectively check out the recipes from our CCI fork.
 cd external
+mkdir -p conan-center-index
+cd conan-center-index
 git init
 git remote add origin git@github.com:XRPLF/conan-center-index.git
 git sparse-checkout init
-git sparse-checkout set recipes/snappy
-git sparse-checkout add recipes/soci
+for recipe in ${recipes[@]}; do
+  echo "Checking out ${recipe}..."
+  git sparse-checkout add recipes/${recipe}/all
+done
 git fetch origin master
 git checkout master
-conan export --version 1.1.10 recipes/snappy/all
-conan export --version 4.0.3 recipes/soci/all
-rm -rf .git
+cd ../..
+
+# Export the recipes into the local cache.
+for recipe in ${recipes[@]}; do
+  version=$(extract_version ${recipe})
+  echo "Exporting ${recipe}/${version}..."
+  conan export --version $(extract_version ${recipe}) \
+    external/conan-center-index/recipes/${recipe}/all
+done
 ```
 
 In the case we switch to a newer version of a dependency that still requires a
@@ -157,6 +179,11 @@ patch, it will be necessary for you to pull in the changes and re-export the
 updated dependencies with the newer version. However, if we switch to a newer
 version that no longer requires a patch, no action is required on your part, as
 the new recipe will be automatically pulled from the official Conan Center.
+
+> [!NOTE]
+> You might need to add `--lockfile=""` to your `conan install` command
+> to avoid automatic use of the existing `conan.lock` file when you run
+> `conan export` manually on your machine
 
 ### Conan profile tweaks
 
@@ -265,7 +292,7 @@ sed -i.bak -e 's|^compiler\.libcxx=.*$|compiler.libcxx=libstdc++11|' $(conan con
 to do that is to run the shortcut "x64 Native Tools Command Prompt" for the
 version of Visual Studio that you have installed.
 
-Windows developers must also build `rippled` and its dependencies for the x64
+Windows developers must also build `xrpld` and its dependencies for the x64
 architecture:
 
 ```bash
@@ -277,21 +304,6 @@ sed -i.bak -e 's|^arch=.*$|arch=x86_64|' $(conan config home)/profiles/default
 ```bash
 sed -i.bak -e 's|^compiler\.runtime=.*$|compiler.runtime=static|' $(conan config home)/profiles/default
 ```
-
-#### Workaround for CMake 4
-
-If your system CMake is version 4 rather than 3, you may have to configure Conan
-profile to use CMake version 3 for dependencies, by adding the following two
-lines to your profile:
-
-```text
-[tool_requires]
-!cmake/*: cmake/[>=3 <4]
-```
-
-This will force Conan to download and use a locally cached CMake 3 version, and
-is needed because some of the dependencies used by this project do not support
-CMake 4.
 
 #### Clang workaround for grpc
 
@@ -389,19 +401,6 @@ tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
    `--settings build_type=$BUILD_TYPE` or in the profile itself,
    under the section `[settings]` with the key `build_type`.
 
-   If you are using a Microsoft Visual C++ compiler,
-   then you will need to ensure consistency between the `build_type` setting
-   and the `compiler.runtime` setting.
-
-   When `build_type` is `Release`, `compiler.runtime` should be `MT`.
-
-   When `build_type` is `Debug`, `compiler.runtime` should be `MTd`.
-
-   ```
-   conan install .. --output-folder . --build missing --settings build_type=Release --settings compiler.runtime=MT
-   conan install .. --output-folder . --build missing --settings build_type=Debug --settings compiler.runtime=MTd
-   ```
-
 3. Configure CMake and pass the toolchain file generated by Conan, located at
    `$OUTPUT_FOLDER/build/generators/conan_toolchain.cmake`.
 
@@ -423,9 +422,9 @@ tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dxrpld=ON -Dtests=ON  ..
    ```
 
-   **Note:** You can pass build options for `rippled` in this step.
+   **Note:** You can pass build options for `xrpld` in this step.
 
-4. Build `rippled`.
+4. Build `xrpld`.
 
    For a single-configuration generator, it will build whatever configuration
    you passed for `CMAKE_BUILD_TYPE`. For a multi-configuration generator, you
@@ -444,26 +443,26 @@ tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
    cmake --build . --config Debug
    ```
 
-5. Test rippled.
+5. Test xrpld.
 
    Single-config generators:
 
    ```
-   ./rippled --unittest --unittest-jobs N
+   ./xrpld --unittest --unittest-jobs N
    ```
 
    Multi-config generators:
 
    ```
-   ./Release/rippled --unittest --unittest-jobs N
-   ./Debug/rippled --unittest --unittest-jobs N
+   ./Release/xrpld --unittest --unittest-jobs N
+   ./Debug/xrpld --unittest --unittest-jobs N
    ```
 
    Replace the `--unittest-jobs` parameter N with the desired unit tests
    concurrency. Recommended setting is half of the number of available CPU
    cores.
 
-   The location of `rippled` binary in your build directory depends on your
+   The location of `xrpld` binary in your build directory depends on your
    CMake generator. Pass `--help` to see the rest of the command line options.
 
 ## Coverage report
@@ -482,20 +481,20 @@ Prerequisites for the coverage report:
 
 A coverage report is created when the following steps are completed, in order:
 
-1. `rippled` binary built with instrumentation data, enabled by the `coverage`
+1. `xrpld` binary built with instrumentation data, enabled by the `coverage`
    option mentioned above
-2. completed run of unit tests, which populates coverage capture data
+2. completed one or more run of the unit tests, which populates coverage capture data
 3. completed run of the `gcovr` tool (which internally invokes either `gcov` or `llvm-cov`)
    to assemble both instrumentation data and the coverage capture data into a coverage report
 
-The above steps are automated into a single target `coverage`. The instrumented
-`rippled` binary can also be used for regular development or testing work, at
+The last step of the above is automated into a single target `coverage`. The instrumented
+`xrpld` binary can also be used for regular development or testing work, at
 the cost of extra disk space utilization and a small performance hit
-(to store coverage capture). In case of a spurious failure of unit tests, it is
-possible to re-run the `coverage` target without rebuilding the `rippled` binary
-(since it is simply a dependency of the coverage report target). It is also possible
-to select only specific tests for the purpose of the coverage report, by setting
-the `coverage_test` variable in `cmake`
+(to store coverage capture data). Since `xrpld` binary is simply a dependency of the
+coverage report target, it is possible to re-run the `coverage` target without
+rebuilding the `xrpld` binary. Note, running of the unit tests before the `coverage`
+target is left to the developer. Each such run will append to the coverage data
+collected in the build directory.
 
 The default coverage report format is `html-details`, but the user
 can override it to any of the formats listed in `Builds/CMake/CodeCoverage.cmake`
@@ -503,11 +502,6 @@ by setting the `coverage_format` variable in `cmake`. It is also possible
 to generate more than one format at a time by setting the `coverage_extra_args`
 variable in `cmake`. The specific command line used to run the `gcovr` tool will be
 displayed if the `CODE_COVERAGE_VERBOSE` variable is set.
-
-By default, the code coverage tool runs parallel unit tests with `--unittest-jobs`
-set to the number of available CPU cores. This may cause spurious test
-errors on Apple. Developers can override the number of unit test jobs with
-the `coverage_test_parallelism` variable in `cmake`.
 
 Example use with some cmake variables set:
 
@@ -526,16 +520,16 @@ stored inside the build directory, as either of:
 
 ## Options
 
-| Option     | Default Value | Description                                                                |
-| ---------- | ------------- | -------------------------------------------------------------------------- |
-| `assert`   | OFF           | Enable assertions.                                                         |
-| `coverage` | OFF           | Prepare the coverage report.                                               |
-| `san`      | N/A           | Enable a sanitizer with Clang. Choices are `thread` and `address`.         |
-| `tests`    | OFF           | Build tests.                                                               |
-| `unity`    | OFF           | Configure a unity build.                                                   |
-| `xrpld`    | OFF           | Build the xrpld (`rippled`) application, and not just the libxrpl library. |
-| `werr`     | OFF           | Treat compilation warnings as errors                                       |
-| `wextra`   | OFF           | Enable additional compilation warnings                                     |
+| Option     | Default Value | Description                                                        |
+| ---------- | ------------- | ------------------------------------------------------------------ |
+| `assert`   | OFF           | Enable assertions.                                                 |
+| `coverage` | OFF           | Prepare the coverage report.                                       |
+| `san`      | N/A           | Enable a sanitizer with Clang. Choices are `thread` and `address`. |
+| `tests`    | OFF           | Build tests.                                                       |
+| `unity`    | OFF           | Configure a unity build.                                           |
+| `xrpld`    | OFF           | Build the xrpld application, and not just the libxrpl library.     |
+| `werr`     | OFF           | Treat compilation warnings as errors                               |
+| `wextra`   | OFF           | Enable additional compilation warnings                             |
 
 [Unity builds][5] may be faster for the first build
 (at the cost of much more memory) since they concatenate sources into fewer
@@ -564,7 +558,13 @@ After any updates or changes to dependencies, you may need to do the following:
    ```
 
 3. Re-run [conan export](#patched-recipes) if needed.
-4. Re-run [conan install](#build-and-test).
+4. [Regenerate lockfile](#conan-lockfile).
+5. Re-run [conan install](#build-and-test).
+
+#### ERROR: Package not resolved
+
+If you're seeing an error like `ERROR: Package 'snappy/1.1.10' not resolved: Unable to find 'snappy/1.1.10#968fef506ff261592ec30c574d4a7809%1756234314.246' in remotes.`,
+please add `xrplf` remote or re-run `conan export` for [patched recipes](#patched-recipes).
 
 ### `protobuf/port_def.inc` file not found
 
@@ -573,7 +573,7 @@ you might have generated CMake files for a different `build_type` than the
 `CMAKE_BUILD_TYPE` you passed to Conan.
 
 ```
-/rippled/.build/pb-xrpl.libpb/xrpl/proto/ripple.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found
+/xrpld/.build/pb-xrpl.libpb/xrpl/proto/xrpl.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found
    10 | #include <google/protobuf/port_def.inc>
       |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 1 error generated.

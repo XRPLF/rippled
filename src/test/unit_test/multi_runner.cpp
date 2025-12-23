@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/unit_test/multi_runner.h>
 
 #include <xrpl/beast/unit_test/amount.h>
@@ -29,8 +10,7 @@
 #include <sstream>
 #include <vector>
 
-namespace ripple {
-namespace test {
+namespace xrpl {
 
 namespace detail {
 
@@ -388,6 +368,8 @@ multi_runner_base<IsParent>::add_failures(std::size_t failures)
 
 }  // namespace detail
 
+namespace test {
+
 //------------------------------------------------------------------------------
 
 multi_runner_parent::multi_runner_parent() : os_(std::cout)
@@ -462,6 +444,8 @@ multi_runner_parent::~multi_runner_parent()
 
     continue_message_queue_ = false;
     message_queue_thread_.join();
+
+    add_failures(running_suites_.size());
 
     print_results(os_);
 
@@ -645,10 +629,11 @@ multi_runner_child::on_log(std::string const& msg)
     message_queue_send(MessageType::log, s.str());
 }
 
+}  // namespace test
+
 namespace detail {
 template class multi_runner_base<true>;
 template class multi_runner_base<false>;
 }  // namespace detail
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

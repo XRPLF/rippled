@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PEERFINDER_BOOTCACHE_H_INCLUDED
-#define RIPPLE_PEERFINDER_BOOTCACHE_H_INCLUDED
+#ifndef XRPL_PEERFINDER_BOOTCACHE_H_INCLUDED
+#define XRPL_PEERFINDER_BOOTCACHE_H_INCLUDED
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Store.h>
@@ -32,7 +13,7 @@
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Stores IP addresses useful for gaining initial connections.
@@ -87,8 +68,8 @@ private:
     using left_t = boost::bimaps::unordered_set_of<
         beast::IP::Endpoint,
         boost::hash<beast::IP::Endpoint>,
-        ripple::equal_to<beast::IP::Endpoint>>;
-    using right_t = boost::bimaps::multiset_of<Entry, ripple::less<Entry>>;
+        xrpl::equal_to<beast::IP::Endpoint>>;
+    using right_t = boost::bimaps::multiset_of<Entry, xrpl::less<Entry>>;
     using map_type = boost::bimap<left_t, right_t>;
     using value_type = map_type::value_type;
 
@@ -195,6 +176,6 @@ private:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

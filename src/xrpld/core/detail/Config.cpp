@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
@@ -45,7 +26,7 @@
 #if BOOST_OS_WINDOWS
 #include <sysinfoapi.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 [[nodiscard]] std::uint64_t
@@ -58,13 +39,13 @@ getMemorySize()
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 #endif
 
 #if BOOST_OS_LINUX
 #include <sys/sysinfo.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 [[nodiscard]] std::uint64_t
@@ -77,7 +58,7 @@ getMemorySize()
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
 
@@ -85,7 +66,7 @@ getMemorySize()
 #include <sys/sysctl.h>
 #include <sys/types.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 [[nodiscard]] std::uint64_t
@@ -102,10 +83,10 @@ getMemorySize()
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 // clang-format off
 // The configurable node sizes are "tiny", "small", "medium", "large", "huge"
@@ -269,7 +250,7 @@ void
 Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
 {
     XRPL_ASSERT(
-        NODE_SIZE == 0, "ripple::Config::setupControl : node size not set");
+        NODE_SIZE == 0, "xrpl::Config::setupControl : node size not set");
 
     QUIET = bQuiet || bSilent;
     SILENT = bSilent;
@@ -292,7 +273,7 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
 
         XRPL_ASSERT(
             ns != threshold.second.end(),
-            "ripple::Config::setupControl : valid node size");
+            "xrpl::Config::setupControl : valid node size");
 
         if (ns != threshold.second.end())
             NODE_SIZE = std::distance(threshold.second.begin(), ns);
@@ -304,7 +285,7 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
     }
 
     XRPL_ASSERT(
-        NODE_SIZE <= 4, "ripple::Config::setupControl : node size is set");
+        NODE_SIZE <= 4, "xrpl::Config::setupControl : node size is set");
 }
 
 void
@@ -1118,10 +1099,9 @@ Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
     auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
     XRPL_ASSERT(
         index < sizedItems.size(),
-        "ripple::Config::getValueFor : valid index input");
+        "xrpl::Config::getValueFor : valid index input");
     XRPL_ASSERT(
-        !node || *node <= 4,
-        "ripple::Config::getValueFor : unset or valid node");
+        !node || *node <= 4, "xrpl::Config::getValueFor : unset or valid node");
     return sizedItems.at(index).second.at(node.value_or(NODE_SIZE));
 }
 
@@ -1145,4 +1125,4 @@ setup_FeeVote(Section const& section)
     return setup;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

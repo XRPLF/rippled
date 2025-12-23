@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/JSONRPCClient.h>
 #include <test/jtx/WSClient.h>
@@ -33,6 +14,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http.hpp>
@@ -42,7 +24,7 @@
 #include <random>
 #include <regex>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ServerStatus_test : public beast::unit_test::suite,
@@ -165,12 +147,11 @@ class ServerStatus_test : public beast::unit_test::suite,
     {
         using namespace boost::asio;
         using namespace boost::beast::http;
-        io_service& ios = get_io_service();
+        io_context& ios = get_io_context();
         ip::tcp::resolver r{ios};
         boost::beast::multi_buffer sb;
 
-        auto it = r.async_resolve(
-            ip::tcp::resolver::query{host, std::to_string(port)}, yield[ec]);
+        auto it = r.async_resolve(host, std::to_string(port), yield[ec]);
         if (ec)
             return;
 
@@ -476,12 +457,11 @@ class ServerStatus_test : public beast::unit_test::suite,
         auto req_string = boost::lexical_cast<std::string>(req);
         req_string.erase(req_string.find_last_of("13"), std::string::npos);
 
-        io_service& ios = get_io_service();
+        io_context& ios = get_io_context();
         ip::tcp::resolver r{ios};
         boost::beast::multi_buffer sb;
 
-        auto it = r.async_resolve(
-            ip::tcp::resolver::query{*ip, std::to_string(*port)}, yield[ec]);
+        auto it = r.async_resolve(*ip, std::to_string(*port), yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
 
@@ -610,14 +590,13 @@ class ServerStatus_test : public beast::unit_test::suite,
             env.app().config()["port_rpc"].get<std::string>("ip").value();
 
         boost::system::error_code ec;
-        io_service& ios = get_io_service();
+        io_context& ios = get_io_context();
         ip::tcp::resolver r{ios};
 
         Json::Value jr;
         jr[jss::method] = "server_info";
 
-        auto it = r.async_resolve(
-            ip::tcp::resolver::query{ip, std::to_string(port)}, yield[ec]);
+        auto it = r.async_resolve(ip, std::to_string(port), yield[ec]);
         BEAST_EXPECT(!ec);
 
         std::vector<std::pair<ip::tcp::socket, boost::beast::multi_buffer>>
@@ -681,7 +660,7 @@ class ServerStatus_test : public beast::unit_test::suite,
             resp["Upgrade"] == "websocket");
         BEAST_EXPECT(
             resp.find("Connection") != resp.end() &&
-            resp["Connection"] == "Upgrade");
+            boost::iequals(resp["Connection"], "upgrade"));
     }
 
     void
@@ -728,11 +707,10 @@ class ServerStatus_test : public beast::unit_test::suite,
             env.app().config()["port_ws"].get<std::string>("ip").value();
         boost::system::error_code ec;
 
-        io_service& ios = get_io_service();
+        io_context& ios = get_io_context();
         ip::tcp::resolver r{ios};
 
-        auto it = r.async_resolve(
-            ip::tcp::resolver::query{ip, std::to_string(port)}, yield[ec]);
+        auto it = r.async_resolve(ip, std::to_string(port), yield[ec]);
         if (!BEAST_EXPECT(!ec))
             return;
 
@@ -864,7 +842,7 @@ class ServerStatus_test : public beast::unit_test::suite,
 
         // mark the Network as having an Amendment Warning, but won't fail
         env.app().getOPs().setAmendmentWarned();
-        env.app().getOPs().beginConsensus(env.closed()->info().hash, {});
+        env.app().getOPs().beginConsensus(env.closed()->header().hash, {});
 
         // consensus doesn't change
         BEAST_EXPECT(
@@ -995,7 +973,7 @@ class ServerStatus_test : public beast::unit_test::suite,
         // mark the Network as Amendment Blocked, but still won't fail until
         // ELB is enabled (next step)
         env.app().getOPs().setAmendmentBlocked();
-        env.app().getOPs().beginConsensus(env.closed()->info().hash, {});
+        env.app().getOPs().beginConsensus(env.closed()->header().hash, {});
 
         // consensus now sees validation disabled
         BEAST_EXPECT(
@@ -1248,7 +1226,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ServerStatus, server, ripple);
+BEAST_DEFINE_TESTSUITE(ServerStatus, server, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

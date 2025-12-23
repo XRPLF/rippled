@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/FeeVote.h>
 
@@ -24,7 +5,7 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -142,7 +123,7 @@ FeeVoteImpl::doValidation(
         };
         vote(lastFees.base, target_.reference_fee, "base fee", sfBaseFeeDrops);
         vote(
-            lastFees.accountReserve(0),
+            lastFees.reserve,
             target_.account_reserve,
             "base reserve",
             sfReserveBaseDrops);
@@ -178,7 +159,7 @@ FeeVoteImpl::doValidation(
 
         vote(lastFees.base, target_.reference_fee, to64, "base fee", sfBaseFee);
         vote(
-            lastFees.accountReserve(0),
+            lastFees.reserve,
             target_.account_reserve,
             to32,
             "base reserve",
@@ -201,13 +182,13 @@ FeeVoteImpl::doVoting(
     // LCL must be flag ledger
     XRPL_ASSERT(
         lastClosedLedger && isFlagLedger(lastClosedLedger->seq()),
-        "ripple::FeeVoteImpl::doVoting : has a flag ledger");
+        "xrpl::FeeVoteImpl::doVoting : has a flag ledger");
 
     detail::VotableValue baseFeeVote(
         lastClosedLedger->fees().base, target_.reference_fee);
 
     detail::VotableValue baseReserveVote(
-        lastClosedLedger->fees().accountReserve(0), target_.account_reserve);
+        lastClosedLedger->fees().reserve, target_.account_reserve);
 
     detail::VotableValue incReserveVote(
         lastClosedLedger->fees().increment, target_.owner_reserve);
@@ -285,7 +266,7 @@ FeeVoteImpl::doVoting(
     auto const baseReserve = baseReserveVote.getVotes();
     auto const incReserve = incReserveVote.getVotes();
 
-    auto const seq = lastClosedLedger->info().seq + 1;
+    auto const seq = lastClosedLedger->header().seq + 1;
 
     // add transactions to our position
     if (baseFee.second || baseReserve.second || incReserve.second)
@@ -342,4 +323,4 @@ make_FeeVote(FeeSetup const& setup, beast::Journal journal)
     return std::make_unique<FeeVoteImpl>(setup, journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,33 +1,15 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_JTX_ESCROW_H_INCLUDED
-#define RIPPLE_TEST_JTX_ESCROW_H_INCLUDED
+#ifndef XRPL_TEST_JTX_ESCROW_H_INCLUDED
+#define XRPL_TEST_JTX_ESCROW_H_INCLUDED
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/rate.h>
 
 #include <xrpl/protocol/Indexes.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -94,92 +76,20 @@ std::array<std::uint8_t, 39> const cb3 = {
      0x57, 0x0D, 0x15, 0x85, 0x8B, 0xD4, 0x81, 0x01, 0x04}};
 
 /** Set the "FinishAfter" time tag on a JTx */
-struct finish_time
-{
-private:
-    NetClock::time_point value_;
-
-public:
-    explicit finish_time(NetClock::time_point const& value) : value_(value)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfFinishAfter.jsonName] = value_.time_since_epoch().count();
-    }
-};
+auto const finish_time = JTxFieldWrapper<timePointField>(sfFinishAfter);
 
 /** Set the "CancelAfter" time tag on a JTx */
-struct cancel_time
-{
-private:
-    NetClock::time_point value_;
+auto const cancel_time = JTxFieldWrapper<timePointField>(sfCancelAfter);
 
-public:
-    explicit cancel_time(NetClock::time_point const& value) : value_(value)
-    {
-    }
+auto const condition = JTxFieldWrapper<blobField>(sfCondition);
 
-    void
-    operator()(jtx::Env&, jtx::JTx& jt) const
-    {
-        jt.jv[sfCancelAfter.jsonName] = value_.time_since_epoch().count();
-    }
-};
-
-struct condition
-{
-private:
-    std::string value_;
-
-public:
-    explicit condition(Slice const& cond) : value_(strHex(cond))
-    {
-    }
-
-    template <size_t N>
-    explicit condition(std::array<std::uint8_t, N> const& c)
-        : condition(makeSlice(c))
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfCondition.jsonName] = value_;
-    }
-};
-
-struct fulfillment
-{
-private:
-    std::string value_;
-
-public:
-    explicit fulfillment(Slice condition) : value_(strHex(condition))
-    {
-    }
-
-    template <size_t N>
-    explicit fulfillment(std::array<std::uint8_t, N> f)
-        : fulfillment(makeSlice(f))
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfFulfillment.jsonName] = value_;
-    }
-};
+auto const fulfillment = JTxFieldWrapper<blobField>(sfFulfillment);
 
 }  // namespace escrow
 
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

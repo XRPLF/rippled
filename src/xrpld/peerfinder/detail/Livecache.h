@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
-#define RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
+#ifndef XRPL_PEERFINDER_LIVECACHE_H_INCLUDED
+#define XRPL_PEERFINDER_LIVECACHE_H_INCLUDED
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
@@ -34,7 +15,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 template <class>
@@ -436,7 +417,7 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     //
     XRPL_ASSERT(
         ep.hops <= (Tuning::maxHops + 1),
-        "ripple::PeerFinder::Livecache::insert : maximum input hops");
+        "xrpl::PeerFinder::Livecache::insert : maximum input hops");
     auto result = m_cache.emplace(ep.address, ep);
     Element& e(result.first->second);
     if (result.second)
@@ -536,7 +517,7 @@ Livecache<Allocator>::hops_t::insert(Element& e)
 {
     XRPL_ASSERT(
         e.endpoint.hops <= Tuning::maxHops + 1,
-        "ripple::PeerFinder::Livecache::hops_t::insert : maximum input hops");
+        "xrpl::PeerFinder::Livecache::hops_t::insert : maximum input hops");
     // This has security implications without a shuffle
     m_lists[e.endpoint.hops].push_front(e);
     ++m_hist[e.endpoint.hops];
@@ -548,7 +529,7 @@ Livecache<Allocator>::hops_t::reinsert(Element& e, std::uint32_t numHops)
 {
     XRPL_ASSERT(
         numHops <= Tuning::maxHops + 1,
-        "ripple::PeerFinder::Livecache::hops_t::reinsert : maximum hops input");
+        "xrpl::PeerFinder::Livecache::hops_t::reinsert : maximum hops input");
 
     auto& list = m_lists[e.endpoint.hops];
     list.erase(list.iterator_to(e));
@@ -570,6 +551,6 @@ Livecache<Allocator>::hops_t::remove(Element& e)
 }
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

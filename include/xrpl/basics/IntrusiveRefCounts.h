@@ -1,31 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_INTRUSIVEREFCOUNTS_H_INCLUDED
-#define RIPPLE_BASICS_INTRUSIVEREFCOUNTS_H_INCLUDED
+#ifndef XRPL_BASICS_INTRUSIVEREFCOUNTS_H_INCLUDED
+#define XRPL_BASICS_INTRUSIVEREFCOUNTS_H_INCLUDED
 
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <atomic>
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 /** Action to perform when releasing a strong pointer.
 
@@ -53,7 +34,7 @@ enum class ReleaseWeakRefAction { noop, destroy };
 /** Implement the strong count, weak count, and bit flags for an intrusive
     pointer.
 
-    A class can satisfy the requirements of a ripple::IntrusivePointer by
+    A class can satisfy the requirements of a xrpl::IntrusivePointer by
     inheriting from this class.
   */
 struct IntrusiveRefCounts
@@ -276,7 +257,7 @@ IntrusiveRefCounts::releaseStrongRef() const
         RefCountPair const prevVal{prevIntVal};
         XRPL_ASSERT(
             (prevVal.strong >= strongDelta),
-            "ripple::IntrusiveRefCounts::releaseStrongRef : previous ref "
+            "xrpl::IntrusiveRefCounts::releaseStrongRef : previous ref "
             "higher than new");
         auto nextIntVal = prevIntVal - strongDelta;
         ReleaseStrongRefAction action = noop;
@@ -301,7 +282,7 @@ IntrusiveRefCounts::releaseStrongRef() const
             // twice.
             XRPL_ASSERT(
                 (action == noop) || !(prevIntVal & partialDestroyStartedMask),
-                "ripple::IntrusiveRefCounts::releaseStrongRef : not in partial "
+                "xrpl::IntrusiveRefCounts::releaseStrongRef : not in partial "
                 "destroy");
             return action;
         }
@@ -333,7 +314,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
         // can't happen twice.
         XRPL_ASSERT(
             (!prevVal.partialDestroyStartedBit),
-            "ripple::IntrusiveRefCounts::addWeakReleaseStrongRef : not in "
+            "xrpl::IntrusiveRefCounts::addWeakReleaseStrongRef : not in "
             "partial destroy");
 
         auto nextIntVal = prevIntVal + delta;
@@ -355,7 +336,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
         {
             XRPL_ASSERT(
                 (!(prevIntVal & partialDestroyStartedMask)),
-                "ripple::IntrusiveRefCounts::addWeakReleaseStrongRef : not "
+                "xrpl::IntrusiveRefCounts::addWeakReleaseStrongRef : not "
                 "started partial destroy");
             return action;
         }
@@ -427,11 +408,11 @@ inline IntrusiveRefCounts::~IntrusiveRefCounts() noexcept
     auto v = refCounts.load(std::memory_order_acquire);
     XRPL_ASSERT(
         (!(v & valueMask)),
-        "ripple::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
+        "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
     auto t = v & tagMask;
     XRPL_ASSERT(
         (!t || t == tagMask),
-        "ripple::IntrusiveRefCounts::~IntrusiveRefCounts : valid tag");
+        "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : valid tag");
 #endif
 }
 
@@ -446,7 +427,7 @@ inline IntrusiveRefCounts::RefCountPair::RefCountPair(
 {
     XRPL_ASSERT(
         (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
-        "ripple::IntrusiveRefCounts::RefCountPair(FieldType) : inputs inside "
+        "xrpl::IntrusiveRefCounts::RefCountPair(FieldType) : inputs inside "
         "range");
 }
 
@@ -457,7 +438,7 @@ inline IntrusiveRefCounts::RefCountPair::RefCountPair(
 {
     XRPL_ASSERT(
         (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
-        "ripple::IntrusiveRefCounts::RefCountPair(CountType, CountType) : "
+        "xrpl::IntrusiveRefCounts::RefCountPair(CountType, CountType) : "
         "inputs inside range");
 }
 
@@ -466,7 +447,7 @@ IntrusiveRefCounts::RefCountPair::combinedValue() const noexcept
 {
     XRPL_ASSERT(
         (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
-        "ripple::IntrusiveRefCounts::RefCountPair::combinedValue : inputs "
+        "xrpl::IntrusiveRefCounts::RefCountPair::combinedValue : inputs "
         "inside range");
     return (static_cast<IntrusiveRefCounts::FieldType>(weak)
             << IntrusiveRefCounts::StrongCountNumBits) |
@@ -484,7 +465,7 @@ partialDestructorFinished(T** o)
     XRPL_ASSERT(
         (!p.partialDestroyFinishedBit && p.partialDestroyStartedBit &&
          !p.strong),
-        "ripple::partialDestructorFinished : not a weak ref");
+        "xrpl::partialDestructorFinished : not a weak ref");
     if (!p.weak)
     {
         // There was a weak count before the partial destructor ran (or we would
@@ -498,5 +479,5 @@ partialDestructorFinished(T** o)
 }
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl
 #endif

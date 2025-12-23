@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/DeliverMax.h>
@@ -28,7 +9,6 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -38,7 +18,7 @@
 
 #include <regex>
 
-namespace ripple {
+namespace xrpl {
 
 static bool
 isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
@@ -46,7 +26,7 @@ isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
     if (!ledgerMaster.haveLedger(seq))
         return false;
 
-    if (seq > ledgerMaster.getValidatedLedger()->info().seq)
+    if (seq > ledgerMaster.getValidatedLedger()->header().seq)
         return false;
 
     return ledgerMaster.getHashBySeq(seq) == hash;
@@ -150,7 +130,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
         context.ledgerMaster.getLedgerBySeq(txn->getLedger());
 
     if (ledger && !ledger->open())
-        result.ledgerHash = ledger->info().hash;
+        result.ledgerHash = ledger->header().hash;
 
     if (ledger && meta)
     {
@@ -163,7 +143,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
             result.meta = meta;
         }
         result.validated = isValidated(
-            context.ledgerMaster, ledger->info().seq, ledger->info().hash);
+            context.ledgerMaster, ledger->header().seq, ledger->header().hash);
         if (result.validated)
             result.closeTime =
                 context.ledgerMaster.getCloseTimeBySeq(txn->getLedger());
@@ -171,7 +151,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
         // compute outgoing CTID
         if (meta->getAsObject().isFieldPresent(sfTransactionIndex))
         {
-            uint32_t lgrSeq = ledger->info().seq;
+            uint32_t lgrSeq = ledger->header().seq;
             uint32_t txnIdx =
                 meta->getAsObject().getFieldU32(sfTransactionIndex);
             uint32_t netID = context.app.config().NETWORK_ID;
@@ -256,7 +236,7 @@ populateJsonResponse(
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
             XRPL_ASSERT(
-                args.binary, "ripple::populateJsonResponse : binary is set");
+                args.binary, "xrpl::populateJsonResponse : binary is set");
             auto json_meta =
                 (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
             response[json_meta] = strHex(makeSlice(*blob));
@@ -347,4 +327,4 @@ doTxJson(RPC::JsonContext& context)
     return populateJsonResponse(res, args, context);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

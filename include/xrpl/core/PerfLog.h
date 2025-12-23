@@ -1,0 +1,192 @@
+#ifndef XRPL_CORE_PERFLOG_H
+#define XRPL_CORE_PERFLOG_H
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/core/JobTypes.h>
+#include <xrpl/json/json_value.h>
+
+#include <boost/filesystem.hpp>
+
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <string>
+
+namespace beast {
+class Journal;
+}
+
+namespace xrpl {
+class Application;
+namespace perf {
+
+/**
+ * Singleton class that maintains performance counters and optionally
+ * writes Json-formatted data to a distinct log. It should exist prior
+ * to other objects launched by Application to make it accessible for
+ * performance logging.
+ */
+
+class PerfLog
+{
+public:
+    using steady_clock = std::chrono::steady_clock;
+    using system_clock = std::chrono::system_clock;
+    using steady_time_point = std::chrono::time_point<steady_clock>;
+    using system_time_point = std::chrono::time_point<system_clock>;
+    using seconds = std::chrono::seconds;
+    using milliseconds = std::chrono::milliseconds;
+    using microseconds = std::chrono::microseconds;
+
+    /**
+     * Configuration from [perf] section of rippled.cfg.
+     */
+    struct Setup
+    {
+        boost::filesystem::path perfLog;
+        // log_interval is in milliseconds to support faster testing.
+        milliseconds logInterval{seconds(1)};
+    };
+
+    virtual ~PerfLog() = default;
+
+    virtual void
+    start()
+    {
+    }
+
+    virtual void
+    stop()
+    {
+    }
+
+    /**
+     * Log start of RPC call.
+     *
+     * @param method RPC command
+     * @param requestId Unique identifier to track command
+     */
+    virtual void
+    rpcStart(std::string const& method, std::uint64_t requestId) = 0;
+
+    /**
+     * Log successful finish of RPC call
+     *
+     * @param method RPC command
+     * @param requestId Unique identifier to track command
+     */
+    virtual void
+    rpcFinish(std::string const& method, std::uint64_t requestId) = 0;
+
+    /**
+     * Log errored RPC call
+     *
+     * @param method RPC command
+     * @param requestId Unique identifier to track command
+     */
+    virtual void
+    rpcError(std::string const& method, std::uint64_t requestId) = 0;
+
+    /**
+     * Log queued job
+     *
+     * @param type Job type
+     */
+    virtual void
+    jobQueue(JobType const type) = 0;
+
+    /**
+     * Log job executing
+     *
+     * @param type Job type
+     * @param dur Duration enqueued in microseconds
+     * @param startTime Time that execution began
+     * @param instance JobQueue worker thread instance
+     */
+    virtual void
+    jobStart(
+        JobType const type,
+        microseconds dur,
+        steady_time_point startTime,
+        int instance) = 0;
+
+    /**
+     * Log job finishing
+     *
+     * @param type Job type
+     * @param dur Duration running in microseconds
+     * @param instance Jobqueue worker thread instance
+     */
+    virtual void
+    jobFinish(JobType const type, microseconds dur, int instance) = 0;
+
+    /**
+     * Render performance counters in Json
+     *
+     * @return Counters Json object
+     */
+    virtual Json::Value
+    countersJson() const = 0;
+
+    /**
+     * Render currently executing jobs and RPC calls and durations in Json
+     *
+     * @return Current executing jobs and RPC calls and durations
+     */
+    virtual Json::Value
+    currentJson() const = 0;
+
+    /**
+     * Ensure enough room to store each currently executing job
+     *
+     * @param resize Number of JobQueue worker threads
+     */
+    virtual void
+    resizeJobs(int const resize) = 0;
+
+    /**
+     * Rotate perf log file
+     */
+    virtual void
+    rotate() = 0;
+};
+
+PerfLog::Setup
+setup_PerfLog(Section const& section, boost::filesystem::path const& configDir);
+
+std::unique_ptr<PerfLog>
+make_PerfLog(
+    PerfLog::Setup const& setup,
+    Application& app,
+    beast::Journal journal,
+    std::function<void()>&& signalStop);
+
+template <typename Func, class Rep, class Period>
+auto
+measureDurationAndLog(
+    Func&& func,
+    std::string const& actionDescription,
+    std::chrono::duration<Rep, Period> maxDelay,
+    beast::Journal const& journal)
+{
+    auto start_time = std::chrono::high_resolution_clock::now();
+
+    auto result = func();
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        end_time - start_time);
+    if (duration > maxDelay)
+    {
+        JLOG(journal.warn())
+            << actionDescription << " took " << duration.count() << " ms";
+    }
+
+    return result;
+}
+
+}  // namespace perf
+}  // namespace xrpl
+
+#endif  // XRPL_CORE_PERFLOG_H

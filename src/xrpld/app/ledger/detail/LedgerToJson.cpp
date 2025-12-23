@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/misc/DeliverMax.h>
@@ -29,7 +10,7 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -51,12 +32,11 @@ isBinary(LedgerFill const& fill)
     return fill.options & LedgerFill::binary;
 }
 
-template <class Object>
 void
 fillJson(
-    Object& json,
+    Json::Value& json,
     bool closed,
-    LedgerInfo const& info,
+    LedgerHeader const& info,
     bool bFull,
     unsigned apiVersion)
 {
@@ -97,9 +77,8 @@ fillJson(
     }
 }
 
-template <class Object>
 void
-fillJsonBinary(Object& json, bool closed, LedgerInfo const& info)
+fillJsonBinary(Json::Value& json, bool closed, LedgerHeader const& info)
 {
     if (!closed)
         json[jss::closed] = false;
@@ -166,7 +145,7 @@ fillJsonTx(
         }
 
         if (!fill.ledger.open())
-            txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
+            txJson[jss::ledger_hash] = to_string(fill.ledger.header().hash);
 
         bool const validated =
             fill.context->ledgerMaster.isValidated(fill.ledger);
@@ -226,11 +205,10 @@ fillJsonTx(
     return txJson;
 }
 
-template <class Object>
 void
-fillJsonTx(Object& json, LedgerFill const& fill)
+fillJsonTx(Json::Value& json, LedgerFill const& fill)
 {
-    auto&& txns = setArray(json, jss::transactions);
+    auto& txns = json[jss::transactions] = Json::arrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
@@ -257,12 +235,11 @@ fillJsonTx(Object& json, LedgerFill const& fill)
     }
 }
 
-template <class Object>
 void
-fillJsonState(Object& json, LedgerFill const& fill)
+fillJsonState(Json::Value& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
-    auto&& array = Json::setArray(json, jss::accountState);
+    auto& array = json[jss::accountState] = Json::arrayValue;
     auto expanded = isExpanded(fill);
     auto binary = isBinary(fill);
 
@@ -270,7 +247,7 @@ fillJsonState(Object& json, LedgerFill const& fill)
     {
         if (binary)
         {
-            auto&& obj = appendObject(array);
+            auto& obj = array.append(Json::objectValue);
             obj[jss::hash] = to_string(sle->key());
             obj[jss::tx_blob] = serializeHex(*sle);
         }
@@ -281,17 +258,16 @@ fillJsonState(Object& json, LedgerFill const& fill)
     }
 }
 
-template <class Object>
 void
-fillJsonQueue(Object& json, LedgerFill const& fill)
+fillJsonQueue(Json::Value& json, LedgerFill const& fill)
 {
-    auto&& queueData = Json::setArray(json, jss::queue_data);
+    auto& queueData = json[jss::queue_data] = Json::arrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
     for (auto const& tx : fill.txQueue)
     {
-        auto&& txJson = appendObject(queueData);
+        auto& txJson = queueData.append(Json::objectValue);
         txJson[jss::fee_level] = to_string(tx.feeLevel);
         if (tx.lastValid)
             txJson[jss::LastLedgerSequence] = *tx.lastValid;
@@ -316,20 +292,19 @@ fillJsonQueue(Object& json, LedgerFill const& fill)
     }
 }
 
-template <class Object>
 void
-fillJson(Object& json, LedgerFill const& fill)
+fillJson(Json::Value& json, LedgerFill const& fill)
 {
     // TODO: what happens if bBinary and bExtracted are both set?
     // Is there a way to report this back?
     auto bFull = isFull(fill);
     if (isBinary(fill))
-        fillJsonBinary(json, !fill.ledger.open(), fill.ledger.info());
+        fillJsonBinary(json, !fill.ledger.open(), fill.ledger.header());
     else
         fillJson(
             json,
             !fill.ledger.open(),
-            fill.ledger.info(),
+            fill.ledger.header(),
             bFull,
             (fill.context ? fill.context->apiVersion
                           : RPC::apiMaximumSupportedVersion));
@@ -346,7 +321,7 @@ fillJson(Object& json, LedgerFill const& fill)
 void
 addJson(Json::Value& json, LedgerFill const& fill)
 {
-    auto&& object = Json::addObject(json, jss::ledger);
+    auto& object = json[jss::ledger] = Json::objectValue;
     fillJson(object, fill);
 
     if ((fill.options & LedgerFill::dumpQueue) && !fill.txQueue.empty())
@@ -361,4 +336,20 @@ getJson(LedgerFill const& fill)
     return json;
 }
 
-}  // namespace ripple
+void
+copyFrom(Json::Value& to, Json::Value const& from)
+{
+    if (!to)  // Short circuit this very common case.
+        to = from;
+    else
+    {
+        // TODO: figure out if there is a way to remove this clause
+        // or check that it does/needs to do a deep copy
+        XRPL_ASSERT(from.isObjectOrNull(), "copyFrom : invalid input type");
+        auto const members = from.getMemberNames();
+        for (auto const& m : members)
+            to[m] = from[m];
+    }
+}
+
+}  // namespace xrpl

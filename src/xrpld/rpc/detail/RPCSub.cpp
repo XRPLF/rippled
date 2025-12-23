@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/RPCSub.h>
 
@@ -27,7 +8,7 @@
 
 #include <deque>
 
-namespace ripple {
+namespace xrpl {
 
 // Subscription object for JSON-RPC
 class RPCSubImp : public RPCSub
@@ -35,14 +16,14 @@ class RPCSubImp : public RPCSub
 public:
     RPCSubImp(
         InfoSub::Source& source,
-        boost::asio::io_service& io_service,
+        boost::asio::io_context& io_context,
         JobQueue& jobQueue,
         std::string const& strUrl,
         std::string const& strUsername,
         std::string const& strPassword,
         Logs& logs)
         : RPCSub(source)
-        , m_io_service(io_service)
+        , m_io_context(io_context)
         , m_jobQueue(jobQueue)
         , mUrl(strUrl)
         , mSSL(false)
@@ -155,7 +136,7 @@ private:
                     JLOG(j_.info()) << "RPCCall::fromNetwork: " << mIp;
 
                     RPCCall::fromNetwork(
-                        m_io_service,
+                        m_io_context,
                         mIp,
                         mPort,
                         mUsername,
@@ -177,7 +158,7 @@ private:
     }
 
 private:
-    boost::asio::io_service& m_io_service;
+    boost::asio::io_context& m_io_context;
     JobQueue& m_jobQueue;
 
     std::string mUrl;
@@ -207,7 +188,7 @@ RPCSub::RPCSub(InfoSub::Source& source) : InfoSub(source, Consumer())
 std::shared_ptr<RPCSub>
 make_RPCSub(
     InfoSub::Source& source,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_context,
     JobQueue& jobQueue,
     std::string const& strUrl,
     std::string const& strUsername,
@@ -216,7 +197,7 @@ make_RPCSub(
 {
     return std::make_shared<RPCSubImp>(
         std::ref(source),
-        std::ref(io_service),
+        std::ref(io_context),
         std::ref(jobQueue),
         strUrl,
         strUsername,
@@ -224,4 +205,4 @@ make_RPCSub(
         logs);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

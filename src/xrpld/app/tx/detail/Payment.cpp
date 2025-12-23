@@ -1,36 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/tx/detail/Payment.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 TxConsequences
 Payment::makeTxConsequences(PreflightContext const& ctx)
@@ -65,20 +46,33 @@ getMaxSourceAmount(
             dstAmount < beast::zero);
 }
 
-NotTEC
-Payment::preflight(PreflightContext const& ctx)
+bool
+Payment::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
         !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
-
+        return false;
     if (ctx.tx.isFieldPresent(sfDomainID) &&
         !ctx.rules.enabled(featurePermissionedDEX))
-        return temDISABLED;
+        return false;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+    return true;
+}
 
+std::uint32_t
+Payment::getFlagsMask(PreflightContext const& ctx)
+{
+    auto& tx = ctx.tx;
+
+    STAmount const dstAmount(tx.getFieldAmount(sfAmount));
+    bool const mptDirect = dstAmount.holds<MPTIssue>();
+
+    return mptDirect ? tfMPTPaymentMask : tfPaymentMask;
+}
+
+NotTEC
+Payment::preflight(PreflightContext const& ctx)
+{
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -89,14 +83,6 @@ Payment::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     std::uint32_t const txFlags = tx.getFlags();
-
-    std::uint32_t paymentMask = mptDirect ? tfMPTPaymentMask : tfPaymentMask;
-
-    if (txFlags & paymentMask)
-    {
-        JLOG(j.trace()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
 
     if (mptDirect && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
@@ -242,10 +228,10 @@ Payment::preflight(PreflightContext const& ctx)
         !isTesSuccess(err))
         return err;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
-TER
+NotTEC
 Payment::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -256,7 +242,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_DELEGATE_PERMISSION;
+        return terNO_DELEGATE_PERMISSION;
 
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
@@ -265,17 +251,23 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     loadGranularPermission(sle, ttPAYMENT, granularPermissions);
 
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
-    auto const& amountIssue = dstAmount.issue();
+    auto const& amountAsset = dstAmount.asset();
 
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountIssue) &&
-        amountIssue.account == tx[sfAccount])
+    // Granular permissions are only valid for direct payments.
+    if ((tx.isFieldPresent(sfSendMax) &&
+         tx[sfSendMax].asset() != amountAsset) ||
+        tx.isFieldPresent(sfPaths))
+        return terNO_DELEGATE_PERMISSION;
+
+    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
+        amountAsset.getIssuer() == tx[sfAccount])
         return tesSUCCESS;
 
-    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountIssue) &&
-        amountIssue.account == tx[sfDestination])
+    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
+        amountAsset.getIssuer() == tx[sfDestination])
         return tesSUCCESS;
 
-    return tecNO_DELEGATE_PERMISSION;
+    return terNO_DELEGATE_PERMISSION;
 }
 
 TER
@@ -316,7 +308,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
-        else if (dstAmount < STAmount(ctx.view.fees().accountReserve(0)))
+        else if (dstAmount < STAmount(ctx.view.fees().reserve))
         {
             // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.
@@ -406,14 +398,10 @@ Payment::doApply()
 
     if (!sleDst)
     {
-        std::uint32_t const seqno{
-            view().rules().enabled(featureDeletableAccounts) ? view().seq()
-                                                             : 1};
-
         // Create the account.
         sleDst = std::make_shared<SLE>(k);
         sleDst->setAccountID(sfAccount, dstAccountID);
-        sleDst->setFieldU32(sfSequence, seqno);
+        sleDst->setFieldU32(sfSequence, view().seq());
 
         view().insert(sleDst);
     }
@@ -425,43 +413,28 @@ Payment::doApply()
         view().update(sleDst);
     }
 
-    // Determine whether the destination requires deposit authorization.
-    bool const depositAuth = view().rules().enabled(featureDepositAuth);
-    bool const reqDepositAuth =
-        sleDst->getFlags() & lsfDepositAuth && depositAuth;
-
-    bool const depositPreauth = view().rules().enabled(featureDepositPreauth);
-
     bool const ripple =
         (hasPaths || sendMax || !dstAmount.native()) && !mptDirect;
-
-    // If the destination has lsfDepositAuth set, then only direct XRP
-    // payments (no intermediate steps) are allowed to the destination.
-    if (!depositPreauth && ripple && reqDepositAuth)
-        return tecNO_PERMISSION;
 
     if (ripple)
     {
         // Ripple payment with at least one intermediate step and uses
         // transitive balances.
 
-        if (depositPreauth && depositAuth)
-        {
-            // If depositPreauth is enabled, then an account that requires
-            // authorization has two ways to get an IOU Payment in:
-            //  1. If Account == Destination, or
-            //  2. If Account is deposit preauthorized by destination.
+        // An account that requires authorization has two ways to get an
+        // IOU Payment in:
+        //  1. If Account == Destination, or
+        //  2. If Account is deposit preauthorized by destination.
 
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx,
-                    ctx_.view(),
-                    account_,
-                    dstAccountID,
-                    sleDst,
-                    ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx,
+                ctx_.view(),
+                account_,
+                dstAccountID,
+                sleDst,
+                ctx_.journal);
+            !isTesSuccess(err))
+            return err;
 
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = partialPaymentAllowed;
@@ -596,13 +569,13 @@ Payment::doApply()
         return res;
     }
 
-    XRPL_ASSERT(dstAmount.native(), "ripple::Payment::doApply : amount is XRP");
+    XRPL_ASSERT(dstAmount.native(), "xrpl::Payment::doApply : amount is XRP");
 
     // Direct XRP payment.
 
     auto const sleSrc = view().peek(keylet::account(account_));
     if (!sleSrc)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // ownerCount is the number of entries in this ledger for this
     // account that require a reserve.
@@ -638,43 +611,40 @@ Payment::doApply()
 
     // The source account does have enough money.  Make sure the
     // source account has authority to deposit to the destination.
-    if (depositAuth)
+    // An account that requires authorization has three ways to get an XRP
+    // Payment in:
+    //  1. If Account == Destination, or
+    //  2. If Account is deposit preauthorized by destination, or
+    //  3. If the destination's XRP balance is
+    //    a. less than or equal to the base reserve and
+    //    b. the deposit amount is less than or equal to the base reserve,
+    // then we allow the deposit.
+    //
+    // Rule 3 is designed to keep an account from getting wedged
+    // in an unusable state if it sets the lsfDepositAuth flag and
+    // then consumes all of its XRP.  Without the rule if an
+    // account with lsfDepositAuth set spent all of its XRP, it
+    // would be unable to acquire more XRP required to pay fees.
+    //
+    // We choose the base reserve as our bound because it is
+    // a small number that seldom changes but is always sufficient
+    // to get the account un-wedged.
+
+    // Get the base reserve.
+    XRPAmount const dstReserve{view().fees().reserve};
+
+    if (dstAmount > dstReserve ||
+        sleDst->getFieldAmount(sfBalance) > dstReserve)
     {
-        // If depositPreauth is enabled, then an account that requires
-        // authorization has three ways to get an XRP Payment in:
-        //  1. If Account == Destination, or
-        //  2. If Account is deposit preauthorized by destination, or
-        //  3. If the destination's XRP balance is
-        //    a. less than or equal to the base reserve and
-        //    b. the deposit amount is less than or equal to the base reserve,
-        // then we allow the deposit.
-        //
-        // Rule 3 is designed to keep an account from getting wedged
-        // in an unusable state if it sets the lsfDepositAuth flag and
-        // then consumes all of its XRP.  Without the rule if an
-        // account with lsfDepositAuth set spent all of its XRP, it
-        // would be unable to acquire more XRP required to pay fees.
-        //
-        // We choose the base reserve as our bound because it is
-        // a small number that seldom changes but is always sufficient
-        // to get the account un-wedged.
-
-        // Get the base reserve.
-        XRPAmount const dstReserve{view().fees().accountReserve(0)};
-
-        if (dstAmount > dstReserve ||
-            sleDst->getFieldAmount(sfBalance) > dstReserve)
-        {
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx,
-                    ctx_.view(),
-                    account_,
-                    dstAccountID,
-                    sleDst,
-                    ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx,
+                ctx_.view(),
+                account_,
+                dstAccountID,
+                sleDst,
+                ctx_.journal);
+            !isTesSuccess(err))
+            return err;
     }
 
     // Do the arithmetic for the transfer and make the ledger change.
@@ -689,4 +659,4 @@ Payment::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

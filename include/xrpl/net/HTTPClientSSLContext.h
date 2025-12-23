@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
-#define RIPPLE_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
+#ifndef XRPL_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
+#define XRPL_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
@@ -30,7 +11,7 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/format.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 class HTTPClientSSLContext
 {
@@ -153,7 +134,7 @@ public:
             {
                 strm.set_verify_callback(
                     std::bind(
-                        &rfc2818_verify,
+                        &rfc6125_verify,
                         host,
                         std::placeholders::_1,
                         std::placeholders::_2,
@@ -167,7 +148,7 @@ public:
 
     /**
      * @brief callback invoked for name verification - just passes through
-     * to the asio rfc2818 implementation.
+     * to the asio `host_name_verification` (rfc6125) implementation.
      *
      * @param domain hostname expected
      * @param preverified passed by implementation
@@ -175,13 +156,13 @@ public:
      * @param j journal for logging
      */
     static bool
-    rfc2818_verify(
+    rfc6125_verify(
         std::string const& domain,
         bool preverified,
         boost::asio::ssl::verify_context& ctx,
         beast::Journal j)
     {
-        if (boost::asio::ssl::rfc2818_verification(domain)(preverified, ctx))
+        if (boost::asio::ssl::host_name_verification(domain)(preverified, ctx))
             return true;
 
         JLOG(j.warn()) << "Outbound SSL connection to " << domain
@@ -195,6 +176,6 @@ private:
     bool const verify_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

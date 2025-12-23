@@ -1,20 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 
@@ -26,7 +9,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Book_test : public beast::unit_test::suite
@@ -1636,6 +1619,20 @@ public:
         {
             Json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::taker] = env.master.human();
+            jvParams[jss::limit] = 0;  // must be > 0
+            jvParams[jss::taker_pays][jss::currency] = "XRP";
+            jvParams[jss::taker_gets][jss::currency] = "USD";
+            jvParams[jss::taker_gets][jss::issuer] = gw.human();
+            auto const jrr = env.rpc(
+                "json", "book_offers", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit'.");
+        }
+
+        {
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
             jvParams[jss::taker_pays][jss::currency] = "USD";
             jvParams[jss::taker_pays][jss::issuer] = gw.human();
             jvParams[jss::taker_gets][jss::currency] = "USD";
@@ -1709,11 +1706,6 @@ public:
         BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? 1u : 0u));
         // NOTE - a marker field is not returned for this method
-
-        jvParams[jss::limit] = 0u;
-        jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
-        BEAST_EXPECT(jrr[jss::offers].isArray());
-        BEAST_EXPECT(jrr[jss::offers].size() == 0u);
 
         jvParams[jss::limit] = RPC::Tuning::bookOffers.rmax + 1;
         jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
@@ -2019,7 +2011,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Book, rpc, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(Book, rpc, xrpl, 1);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

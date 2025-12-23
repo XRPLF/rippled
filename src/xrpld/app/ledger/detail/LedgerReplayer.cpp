@@ -1,27 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
 
-namespace ripple {
+namespace xrpl {
 
 LedgerReplayer::LedgerReplayer(
     Application& app,
@@ -49,7 +30,7 @@ LedgerReplayer::replay(
     XRPL_ASSERT(
         finishLedgerHash.isNonZero() && totalNumLedgers > 0 &&
             totalNumLedgers <= LedgerReplayParameters::MAX_TASK_SIZE,
-        "ripple::LedgerReplayer::replay : valid inputs");
+        "xrpl::LedgerReplayer::replay : valid inputs");
 
     LedgerReplayTask::TaskParameter parameter(
         r, finishLedgerHash, totalNumLedgers);
@@ -171,7 +152,7 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
 
 void
 LedgerReplayer::gotSkipList(
-    LedgerInfo const& info,
+    LedgerHeader const& info,
     boost::intrusive_ptr<SHAMapItem const> const& item)
 {
     std::shared_ptr<SkipListAcquire> skipList = {};
@@ -194,7 +175,7 @@ LedgerReplayer::gotSkipList(
 
 void
 LedgerReplayer::gotReplayDelta(
-    LedgerInfo const& info,
+    LedgerHeader const& info,
     std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns)
 {
     std::shared_ptr<LedgerDeltaAcquire> delta = {};
@@ -285,4 +266,4 @@ LedgerReplayer::stop()
     JLOG(j_.info()) << "Stopped";
 }
 
-}  // namespace ripple
+}  // namespace xrpl

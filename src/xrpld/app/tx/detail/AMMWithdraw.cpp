@@ -1,48 +1,30 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/tx/detail/AMMWithdraw.h>
-#include <xrpld/ledger/Sandbox.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
+
+bool
+AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return ammEnabled(ctx.rules);
+}
+
+std::uint32_t
+AMMWithdraw::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfWithdrawMask;
+}
 
 NotTEC
 AMMWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const flags = ctx.tx.getFlags();
-    if (flags & tfWithdrawMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
@@ -150,7 +132,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 static std::optional<STAmount>
@@ -195,9 +177,11 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (amountBalance <= beast::zero || amount2Balance <= beast::zero ||
         lptAMMBalance < beast::zero)
     {
+        // LCOV_EXCL_START
         JLOG(ctx.j.debug())
             << "AMM Withdraw: reserves or tokens balance is zero.";
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     auto const ammAccountID = ammSle->getAccountID(sfAccount);
@@ -907,7 +891,7 @@ AMMWithdraw::equalWithdrawLimit(
         // LCOV_EXCL_START
         XRPL_ASSERT(
             amountWithdraw <= amount,
-            "ripple::AMMWithdraw::equalWithdrawLimit : maximum amountWithdraw");
+            "xrpl::AMMWithdraw::equalWithdrawLimit : maximum amountWithdraw");
         // LCOV_EXCL_STOP
     }
     else if (amountWithdraw > amount)
@@ -1100,4 +1084,4 @@ AMMWithdraw::isWithdrawAll(STTx const& tx)
         return WithdrawAll::Yes;
     return WithdrawAll::No;
 }
-}  // namespace ripple
+}  // namespace xrpl

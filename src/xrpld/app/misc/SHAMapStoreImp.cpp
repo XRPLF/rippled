@@ -1,37 +1,18 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/SHAMapStoreImp.h>
 #include <xrpld/app/rdb/State.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpld/nodestore/Scheduler.h>
-#include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
-#include <xrpld/shamap/SHAMapMissingNode.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ripple {
+namespace xrpl {
 void
 SHAMapStoreImp::SavedStateDB::init(
     BasicConfig const& config,
@@ -46,7 +27,7 @@ SHAMapStoreImp::SavedStateDB::getCanDelete()
 {
     std::lock_guard lock(mutex_);
 
-    return ripple::getCanDelete(sqlDb_);
+    return xrpl::getCanDelete(sqlDb_);
 }
 
 LedgerIndex
@@ -54,7 +35,7 @@ SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 {
     std::lock_guard lock(mutex_);
 
-    return ripple::setCanDelete(sqlDb_, canDelete);
+    return xrpl::setCanDelete(sqlDb_, canDelete);
 }
 
 SavedState
@@ -62,21 +43,21 @@ SHAMapStoreImp::SavedStateDB::getState()
 {
     std::lock_guard lock(mutex_);
 
-    return ripple::getSavedState(sqlDb_);
+    return xrpl::getSavedState(sqlDb_);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setState(SavedState const& state)
 {
     std::lock_guard lock(mutex_);
-    ripple::setSavedState(sqlDb_, state);
+    xrpl::setSavedState(sqlDb_, state);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 {
     std::lock_guard lock(mutex_);
-    ripple::setLastRotated(sqlDb_, seq);
+    xrpl::setLastRotated(sqlDb_, seq);
 }
 
 //------------------------------------------------------------------------------
@@ -297,7 +278,7 @@ SHAMapStoreImp::run()
                 continue;
         }
 
-        LedgerIndex const validatedSeq = validatedLedger->info().seq;
+        LedgerIndex const validatedSeq = validatedLedger->header().seq;
         if (!lastRotated)
         {
             lastRotated = validatedSeq;
@@ -515,7 +496,7 @@ SHAMapStoreImp::clearSql(
 {
     XRPL_ASSERT(
         deleteInterval_,
-        "ripple::SHAMapStoreImp::clearSql : nonzero delete interval");
+        "xrpl::SHAMapStoreImp::clearSql : nonzero delete interval");
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
     {
@@ -688,4 +669,4 @@ make_SHAMapStore(
     return std::make_unique<SHAMapStoreImp>(app, scheduler, journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

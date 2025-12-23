@@ -1,26 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/VaultWithdraw.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
@@ -28,20 +9,11 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
-
-    if (auto const ter = preflight1(ctx))
-        return ter;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
     if (ctx.tx[sfVaultID] == beast::zero)
     {
         JLOG(ctx.j.debug()) << "VaultWithdraw: zero/empty vault ID.";
@@ -51,24 +23,15 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
-    if (auto const destination = ctx.tx[~sfDestination];
-        destination.has_value())
+    if (auto const destination = ctx.tx[~sfDestination])
     {
         if (*destination == beast::zero)
         {
-            JLOG(ctx.j.debug())
-                << "VaultWithdraw: zero/empty destination account.";
             return temMALFORMED;
         }
     }
-    else if (ctx.tx.isFieldPresent(sfDestinationTag))
-    {
-        JLOG(ctx.j.debug()) << "VaultWithdraw: sfDestinationTag is set but "
-                               "sfDestination is not";
-        return temMALFORMED;
-    }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -84,35 +47,15 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (assets.asset() != vaultAsset && assets.asset() != vaultShare)
         return tecWRONG_ASSET;
 
-    if (vaultAsset.native())
-        ;  // No special checks for XRP
-    else if (vaultAsset.holds<MPTIssue>())
+    auto const& vaultAccount = vault->at(sfAccount);
+    auto const& account = ctx.tx[sfAccount];
+    auto const& dstAcct = ctx.tx[~sfDestination].value_or(account);
+    if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct);
+        !isTesSuccess(ter))
     {
-        auto mptID = vaultAsset.get<MPTIssue>().getMptID();
-        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
-        if (!issuance)
-            return tecOBJECT_NOT_FOUND;
-        if (!issuance->isFlag(lsfMPTCanTransfer))
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.error())
-                << "VaultWithdraw: vault assets are non-transferable.";
-            return tecNO_AUTH;
-            // LCOV_EXCL_STOP
-        }
-    }
-    else if (vaultAsset.holds<Issue>())
-    {
-        auto const issuer =
-            ctx.view.read(keylet::account(vaultAsset.getIssuer()));
-        if (!issuer)
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.error())
-                << "VaultWithdraw: missing issuer of vault assets.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
+        JLOG(ctx.j.debug())
+            << "VaultWithdraw: vault assets are non-transferable.";
+        return ter;
     }
 
     // Enforce valid withdrawal policy
@@ -124,38 +67,14 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const account = ctx.tx[sfAccount];
-    auto const dstAcct = [&]() -> AccountID {
-        if (ctx.tx.isFieldPresent(sfDestination))
-            return ctx.tx.getAccountID(sfDestination);
-        return account;
-    }();
+    if (auto const ret = canWithdraw(ctx.view, ctx.tx))
+        return ret;
 
-    // Withdrawal to a 3rd party destination account is essentially a transfer,
-    // via shares in the vault. Enforce all the usual asset transfer checks.
-    AuthType authType = AuthType::Legacy;
-    if (account != dstAcct)
-    {
-        auto const sleDst = ctx.view.read(keylet::account(dstAcct));
-        if (sleDst == nullptr)
-            return tecNO_DST;
-
-        if (sleDst->isFlag(lsfRequireDestTag) &&
-            !ctx.tx.isFieldPresent(sfDestinationTag))
-            return tecDST_TAG_NEEDED;  // Cannot send without a tag
-
-        if (sleDst->isFlag(lsfDepositAuth))
-        {
-            if (!ctx.view.exists(keylet::depositPreauth(dstAcct, account)))
-                return tecNO_PERMISSION;
-        }
-        // The destination account must have consented to receive the asset by
-        // creating a RippleState or MPToken
-        authType = AuthType::StrongAuth;
-    }
-
-    // Destination MPToken (for an MPT) or trust line (for an IOU) must exist
-    // if not sending to Account.
+    // If sending to Account (i.e. not a transfer), we will also create (only
+    // if authorized) a trust line or MPToken as needed, in doApply().
+    // Destination MPToken or trust line must exist if _not_ sending to Account.
+    AuthType const authType =
+        account == dstAcct ? AuthType::WeakAuth : AuthType::StrongAuth;
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType);
         !isTesSuccess(ter))
         return ter;
@@ -164,6 +83,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
         return ret;
 
+    // Cannot return shares to the vault, if the underlying asset was frozen for
+    // the submitter
     if (auto const ret = checkFrozen(ctx.view, account, vaultShare))
         return ret;
 
@@ -177,7 +98,7 @@ VaultWithdraw::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const mptIssuanceID = (*vault)[sfShareMPTID];
+    auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
@@ -192,24 +113,57 @@ VaultWithdraw::doApply()
     // to deposit into it, and this means you are also indefinitely authorized
     // to withdraw from it.
 
-    auto amount = ctx_.tx[sfAmount];
-    auto const asset = vault->at(sfAsset);
-    auto const share = MPTIssue(mptIssuanceID);
-    STAmount shares, assets;
-    if (amount.asset() == asset)
+    auto const amount = ctx_.tx[sfAmount];
+    Asset const vaultAsset = vault->at(sfAsset);
+    MPTIssue const share{mptIssuanceID};
+    STAmount sharesRedeemed = {share};
+    STAmount assetsWithdrawn;
+    try
     {
-        // Fixed assets, variable shares.
-        assets = amount;
-        shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
+        if (amount.asset() == vaultAsset)
+        {
+            // Fixed assets, variable shares.
+            {
+                auto const maybeShares =
+                    assetsToSharesWithdraw(vault, sleIssuance, amount);
+                if (!maybeShares)
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
+                sharesRedeemed = *maybeShares;
+            }
+
+            if (sharesRedeemed == beast::zero)
+                return tecPRECISION_LOSS;
+            auto const maybeAssets =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
+            if (!maybeAssets)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            assetsWithdrawn = *maybeAssets;
+        }
+        else if (amount.asset() == share)
+        {
+            // Fixed shares, variable assets.
+            sharesRedeemed = amount;
+            auto const maybeAssets =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
+            if (!maybeAssets)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            assetsWithdrawn = *maybeAssets;
+        }
+        else
+            return tefINTERNAL;  // LCOV_EXCL_LINE
     }
-    else if (amount.asset() == share)
+    catch (std::overflow_error const&)
     {
-        // Fixed shares, variable assets.
-        shares = amount;
-        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        // It's easy to hit this exception from Number with large enough Scale
+        // so we avoid spamming the log and only use debug here.
+        JLOG(j_.debug())  //
+            << "VaultWithdraw: overflow error with"
+            << " scale=" << (int)vault->at(sfScale).value()  //
+            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+            << ", amount=" << amount.value();
+        return tecPATH_DRY;
     }
-    else
-        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (accountHolds(
             view(),
@@ -217,58 +171,83 @@ VaultWithdraw::doApply()
             share,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahIGNORE_AUTH,
-            j_) < shares)
+            j_) < sharesRedeemed)
     {
         JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
         return tecINSUFFICIENT_FUNDS;
     }
 
-    // The vault must have enough assets on hand. The vault may hold assets that
-    // it has already pledged. That is why we look at AssetAvailable instead of
-    // the pseudo-account balance.
-    if (*vault->at(sfAssetsAvailable) < assets)
+    auto assetsAvailable = vault->at(sfAssetsAvailable);
+    auto assetsTotal = vault->at(sfAssetsTotal);
+    [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
+    XRPL_ASSERT(
+        lossUnrealized <= (assetsTotal - assetsAvailable),
+        "xrpl::VaultWithdraw::doApply : loss and assets do balance");
+
+    // The vault must have enough assets on hand. The vault may hold assets
+    // that it has already pledged. That is why we look at AssetAvailable
+    // instead of the pseudo-account balance.
+    if (*assetsAvailable < assetsWithdrawn)
     {
         JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
         return tecINSUFFICIENT_FUNDS;
     }
 
-    vault->at(sfAssetsTotal) -= assets;
-    vault->at(sfAssetsAvailable) -= assets;
+    assetsTotal -= assetsWithdrawn;
+    assetsAvailable -= assetsWithdrawn;
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from depositor to vault.
-    if (auto ter = accountSend(
-            view(), account_, vaultAccount, shares, j_, WaiveTransferFee::Yes))
-        return ter;
-
-    auto const dstAcct = [&]() -> AccountID {
-        if (ctx_.tx.isFieldPresent(sfDestination))
-            return ctx_.tx.getAccountID(sfDestination);
-        return account_;
-    }();
-
-    // Transfer assets from vault to depositor or destination account.
-    if (auto ter = accountSend(
-            view(), vaultAccount, dstAcct, assets, j_, WaiveTransferFee::Yes))
-        return ter;
-
-    // Sanity check
-    if (accountHolds(
+    if (auto const ter = accountSend(
             view(),
+            account_,
             vaultAccount,
-            assets.asset(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_) < beast::zero)
+            sharesRedeemed,
+            j_,
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
+        return ter;
+
+    // Try to remove MPToken for shares, if the account balance is zero. Vault
+    // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
+    // Keep MPToken if holder is the vault owner.
+    if (account_ != vault->at(sfOwner))
     {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultWithdraw: negative balance of vault assets.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
+        if (auto const ter = removeEmptyHolding(
+                view(), account_, sharesRedeemed.asset(), j_);
+            isTesSuccess(ter))
+        {
+            JLOG(j_.debug())  //
+                << "VaultWithdraw: removed empty MPToken for vault shares"
+                << " MPTID=" << to_string(mptIssuanceID)  //
+                << " account=" << toBase58(account_);
+        }
+        else if (ter != tecHAS_OBLIGATIONS)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error())  //
+                << "VaultWithdraw: failed to remove MPToken for vault shares"
+                << " MPTID=" << to_string(mptIssuanceID)  //
+                << " account=" << toBase58(account_)      //
+                << " with result: " << transToken(ter);
+            return ter;
+            // LCOV_EXCL_STOP
+        }
+        // else quietly ignore, account balance is not zero
     }
 
-    return tesSUCCESS;
+    auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
+
+    return doWithdraw(
+        view(),
+        ctx_.tx,
+        account_,
+        dstAcct,
+        vaultAccount,
+        mPriorBalance,
+        assetsWithdrawn,
+        j_);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

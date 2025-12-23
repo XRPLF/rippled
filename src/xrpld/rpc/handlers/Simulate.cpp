@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/HashRouter.h>
@@ -24,15 +5,18 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 static Expected<std::uint32_t, Json::Value>
 getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
@@ -69,39 +53,23 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
 }
 
 static std::optional<Json::Value>
-autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
+autofillSignature(Json::Value& sigObject)
 {
-    if (!tx_json.isMember(jss::Fee))
-    {
-        // autofill Fee
-        // Must happen after all the other autofills happen
-        // Error handling/messaging works better that way
-        auto feeOrError = RPC::getCurrentNetworkFee(
-            context.role,
-            context.app.config(),
-            context.app.getFeeTrack(),
-            context.app.getTxQ(),
-            context.app,
-            tx_json);
-        if (feeOrError.isMember(jss::error))
-            return feeOrError;
-        tx_json[jss::Fee] = feeOrError;
-    }
-
-    if (!tx_json.isMember(jss::SigningPubKey))
+    if (!sigObject.isMember(jss::SigningPubKey))
     {
         // autofill SigningPubKey
-        tx_json[jss::SigningPubKey] = "";
+        sigObject[jss::SigningPubKey] = "";
     }
 
-    if (tx_json.isMember(jss::Signers))
+    if (sigObject.isMember(jss::Signers))
     {
-        if (!tx_json[jss::Signers].isArray())
+        if (!sigObject[jss::Signers].isArray())
             return RPC::invalid_field_error("tx.Signers");
         // check multisigned signers
-        for (unsigned index = 0; index < tx_json[jss::Signers].size(); index++)
+        for (unsigned index = 0; index < sigObject[jss::Signers].size();
+             index++)
         {
-            auto& signer = tx_json[jss::Signers][index];
+            auto& signer = sigObject[jss::Signers][index];
             if (!signer.isObject() || !signer.isMember(jss::Signer) ||
                 !signer[jss::Signer].isObject())
                 return RPC::invalid_field_error(
@@ -126,16 +94,41 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         }
     }
 
-    if (!tx_json.isMember(jss::TxnSignature))
+    if (!sigObject.isMember(jss::TxnSignature))
     {
         // autofill TxnSignature
-        tx_json[jss::TxnSignature] = "";
+        sigObject[jss::TxnSignature] = "";
     }
-    else if (tx_json[jss::TxnSignature] != "")
+    else if (sigObject[jss::TxnSignature] != "")
     {
         // Transaction must not be signed
         return rpcError(rpcTX_SIGNED);
     }
+    return std::nullopt;
+}
+
+static std::optional<Json::Value>
+autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
+{
+    if (!tx_json.isMember(jss::Fee))
+    {
+        // autofill Fee
+        // Must happen after all the other autofills happen
+        // Error handling/messaging works better that way
+        auto feeOrError = RPC::getCurrentNetworkFee(
+            context.role,
+            context.app.config(),
+            context.app.getFeeTrack(),
+            context.app.getTxQ(),
+            context.app,
+            tx_json);
+        if (feeOrError.isMember(jss::error))
+            return feeOrError;
+        tx_json[jss::Fee] = feeOrError;
+    }
+
+    if (auto error = autofillSignature(tx_json))
+        return *error;
 
     if (!tx_json.isMember(jss::Sequence))
     {
@@ -272,6 +265,17 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
         else
         {
             jvResult[jss::meta] = result.metadata->getJson(JsonOptions::none);
+            RPC::insertDeliveredAmount(
+                jvResult[jss::meta],
+                view,
+                transaction->getSTransaction(),
+                *result.metadata);
+            RPC::insertNFTSyntheticInJson(
+                jvResult, transaction->getSTransaction(), *result.metadata);
+            RPC::insertMPTokenIssuanceID(
+                jvResult[jss::meta],
+                transaction->getSTransaction(),
+                *result.metadata);
         }
     }
 
@@ -365,4 +369,4 @@ doSimulate(RPC::JsonContext& context)
     // LCOV_EXCL_STOP
 }
 
-}  // namespace ripple
+}  // namespace xrpl

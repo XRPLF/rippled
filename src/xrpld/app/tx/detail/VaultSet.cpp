@@ -1,25 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2025 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/VaultSet.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -28,29 +9,26 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
+
+bool
+VaultSet::checkExtraFeatures(PreflightContext const& ctx)
+{
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDomains))
+        return false;
+
+    return true;
+}
 
 NotTEC
 VaultSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
-
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDomains))
-        return temDISABLED;
-
-    if (auto const ter = preflight1(ctx))
-        return ter;
-
     if (ctx.tx[sfVaultID] == beast::zero)
     {
         JLOG(ctx.j.debug()) << "VaultSet: zero/empty vault ID.";
         return temMALFORMED;
     }
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
 
     if (auto const data = ctx.tx[~sfData])
     {
@@ -78,7 +56,7 @@ VaultSet::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -108,7 +86,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     if (auto const domain = ctx.tx[~sfDomainID])
     {
         // We can only set domain if private flag was originally set
-        if ((vault->getFlags() & tfVaultPrivate) == 0)
+        if (!vault->isFlag(lsfVaultPrivate))
         {
             JLOG(ctx.j.debug()) << "VaultSet: vault is not private";
             return tecNO_PERMISSION;
@@ -175,9 +153,9 @@ VaultSet::doApply()
     {
         if (*domainId != beast::zero)
         {
-            // In VaultSet::preclaim we enforce that tfVaultPrivate must have
+            // In VaultSet::preclaim we enforce that lsfVaultPrivate must have
             // been set in the vault. We currently do not support making such a
-            // vault public (i.e. removal of tfVaultPrivate flag). The
+            // vault public (i.e. removal of lsfVaultPrivate flag). The
             // sfDomainID flag must be set in the MPTokenIssuance object and can
             // be freely updated.
             sleIssuance->setFieldH256(sfDomainID, *domainId);
@@ -189,9 +167,12 @@ VaultSet::doApply()
         view().update(sleIssuance);
     }
 
+    // Note, we must update Vault object even if only DomainID is being updated
+    // in Issuance object. Otherwise it's really difficult for Vault invariants
+    // to verify the operation.
     view().update(vault);
 
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

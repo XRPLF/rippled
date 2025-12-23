@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -66,30 +47,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
-
-namespace {
-
-// Use a static inside a function to help prevent order-of-initialzation issues
-LocalValue<bool>&
-getStaticSTAmountCanonicalizeSwitchover()
-{
-    static LocalValue<bool> r{true};
-    return r;
-}
-}  // namespace
-
-bool
-getSTAmountCanonicalizeSwitchover()
-{
-    return *getStaticSTAmountCanonicalizeSwitchover();
-}
-
-void
-setSTAmountCanonicalizeSwitchover(bool v)
-{
-    *getStaticSTAmountCanonicalizeSwitchover() = v;
-}
+namespace xrpl {
 
 static std::uint64_t const tenTo14 = 100000000000000ull;
 static std::uint64_t const tenTo14m1 = tenTo14 - 1;
@@ -102,13 +60,13 @@ getInt64Value(STAmount const& amount, bool valid, char const* error)
     if (!valid)
         Throw<std::runtime_error>(error);
     XRPL_ASSERT(
-        amount.exponent() == 0, "ripple::getInt64Value : exponent is zero");
+        amount.exponent() == 0, "xrpl::getInt64Value : exponent is zero");
 
     auto ret = static_cast<std::int64_t>(amount.mantissa());
 
     XRPL_ASSERT(
         static_cast<std::uint64_t>(ret) == amount.mantissa(),
-        "ripple::getInt64Value : mantissa must roundtrip");
+        "xrpl::getInt64Value : mantissa must roundtrip");
 
     if (amount.negative())
         ret = -ret;
@@ -237,7 +195,7 @@ STAmount::STAmount(SField const& name, std::uint64_t mantissa, bool negative)
 {
     XRPL_ASSERT(
         mValue <= std::numeric_limits<std::int64_t>::max(),
-        "ripple::STAmount::STAmount(SField, std::uint64_t, bool) : maximum "
+        "xrpl::STAmount::STAmount(SField, std::uint64_t, bool) : maximum "
         "mantissa input");
 }
 
@@ -250,7 +208,7 @@ STAmount::STAmount(SField const& name, STAmount const& from)
 {
     XRPL_ASSERT(
         mValue <= std::numeric_limits<std::int64_t>::max(),
-        "ripple::STAmount::STAmount(SField, STAmount) : maximum input");
+        "xrpl::STAmount::STAmount(SField, STAmount) : maximum input");
     canonicalize();
 }
 
@@ -264,7 +222,7 @@ STAmount::STAmount(std::uint64_t mantissa, bool negative)
 {
     XRPL_ASSERT(
         mValue <= std::numeric_limits<std::int64_t>::max(),
-        "ripple::STAmount::STAmount(std::uint64_t, bool) : maximum mantissa "
+        "xrpl::STAmount::STAmount(std::uint64_t, bool) : maximum mantissa "
         "input");
 }
 
@@ -310,7 +268,7 @@ STAmount::xrp() const
             "Cannot return non-native STAmount as XRPAmount");
 
     auto drops = static_cast<XRPAmount::value_type>(mValue);
-    XRPL_ASSERT(mOffset == 0, "ripple::STAmount::xrp : amount is canonical");
+    XRPL_ASSERT(mOffset == 0, "xrpl::STAmount::xrp : amount is canonical");
 
     if (mIsNegative)
         drops = -drops;
@@ -321,7 +279,7 @@ STAmount::xrp() const
 IOUAmount
 STAmount::iou() const
 {
-    if (native() || !holds<Issue>())
+    if (integral())
         Throw<std::logic_error>("Cannot return non-IOU STAmount as IOUAmount");
 
     auto mantissa = static_cast<std::int64_t>(mValue);
@@ -340,7 +298,7 @@ STAmount::mpt() const
         Throw<std::logic_error>("Cannot return STAmount as MPTAmount");
 
     auto value = static_cast<MPTAmount::value_type>(mValue);
-    XRPL_ASSERT(mOffset == 0, "ripple::STAmount::mpt : amount is canonical");
+    XRPL_ASSERT(mOffset == 0, "xrpl::STAmount::mpt : amount is canonical");
 
     if (mIsNegative)
         value = -value;
@@ -352,8 +310,7 @@ STAmount&
 STAmount::operator=(IOUAmount const& iou)
 {
     XRPL_ASSERT(
-        native() == false,
-        "ripple::STAmount::operator=(IOUAmount) : is not XRP");
+        native() == false, "xrpl::STAmount::operator=(IOUAmount) : is not XRP");
     mOffset = iou.exponent();
     mIsNegative = iou < beast::zero;
     if (mIsNegative)
@@ -494,7 +451,7 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
             return 0;
         XRPL_ASSERT(
             (r.exponent() >= -100) && (r.exponent() <= 155),
-            "ripple::getRate : exponent inside range");
+            "xrpl::getRate : exponent inside range");
         std::uint64_t ret = r.exponent() + 100;
         return (ret << (64 - 8)) | r.mantissa();
     }
@@ -731,7 +688,7 @@ STAmount::getText() const
         return ret;
     }
 
-    XRPL_ASSERT(mOffset + 43 > 0, "ripple::STAmount::getText : minimum offset");
+    XRPL_ASSERT(mOffset + 43 > 0, "xrpl::STAmount::getText : minimum offset");
 
     size_t const pad_prefix = 27;
     size_t const pad_suffix = 23;
@@ -756,8 +713,7 @@ STAmount::getText() const
         pre_from += pad_prefix;
 
     XRPL_ASSERT(
-        post_to >= post_from,
-        "ripple::STAmount::getText : first distance check");
+        post_to >= post_from, "xrpl::STAmount::getText : first distance check");
 
     pre_from = std::find_if(pre_from, pre_to, [](char c) { return c != '0'; });
 
@@ -768,7 +724,7 @@ STAmount::getText() const
 
     XRPL_ASSERT(
         post_to >= post_from,
-        "ripple::STAmount::getText : second distance check");
+        "xrpl::STAmount::getText : second distance check");
 
     post_to = std::find_if(
                   std::make_reverse_iterator(post_to),
@@ -804,7 +760,7 @@ STAmount::add(Serializer& s) const
 {
     if (native())
     {
-        XRPL_ASSERT(mOffset == 0, "ripple::STAmount::add : zero offset");
+        XRPL_ASSERT(mOffset == 0, "xrpl::STAmount::add : zero offset");
 
         if (!mIsNegative)
             s.add64(mValue | cPositive);
@@ -872,7 +828,7 @@ STAmount::isDefault() const
 void
 STAmount::canonicalize()
 {
-    if (native() || mAsset.holds<MPTIssue>())
+    if (integral())
     {
         // native and MPT currency amounts should always have an offset of zero
         // log(2^64,10) ~ 19.2
@@ -884,18 +840,14 @@ STAmount::canonicalize()
             return;
         }
 
-        if (getSTAmountCanonicalizeSwitchover())
-        {
-            // log(cMaxNativeN, 10) == 17
-            if (native() && mOffset > 17)
-                Throw<std::runtime_error>(
-                    "Native currency amount out of range");
-            // log(maxMPTokenAmount, 10) ~ 18.96
-            if (mAsset.holds<MPTIssue>() && mOffset > 18)
-                Throw<std::runtime_error>("MPT amount out of range");
-        }
+        // log(cMaxNativeN, 10) == 17
+        if (native() && mOffset > 17)
+            Throw<std::runtime_error>("Native currency amount out of range");
+        // log(maxMPTokenAmount, 10) ~ 18.96
+        if (mAsset.holds<MPTIssue>() && mOffset > 18)
+            Throw<std::runtime_error>("MPT amount out of range");
 
-        if (getSTNumberSwitchover() && getSTAmountCanonicalizeSwitchover())
+        if (getSTNumberSwitchover())
         {
             Number num(
                 mIsNegative ? -mValue : mValue, mOffset, Number::unchecked{});
@@ -905,8 +857,10 @@ STAmount::canonicalize()
             };
             if (native())
                 set(XRPAmount{num});
-            else
+            else if (mAsset.holds<MPTIssue>())
                 set(MPTAmount{num});
+            else
+                Throw<std::runtime_error>("Unknown integral asset type");
             mOffset = 0;
         }
         else
@@ -919,16 +873,14 @@ STAmount::canonicalize()
 
             while (mOffset > 0)
             {
-                if (getSTAmountCanonicalizeSwitchover())
-                {
-                    // N.B. do not move the overflow check to after the
-                    // multiplication
-                    if (native() && mValue > cMaxNativeN)
-                        Throw<std::runtime_error>(
-                            "Native currency amount out of range");
-                    else if (!native() && mValue > maxMPTokenAmount)
-                        Throw<std::runtime_error>("MPT amount out of range");
-                }
+                // N.B. do not move the overflow check to after the
+                // multiplication
+                if (native() && mValue > cMaxNativeN)
+                    Throw<std::runtime_error>(
+                        "Native currency amount out of range");
+                else if (!native() && mValue > maxMPTokenAmount)
+                    Throw<std::runtime_error>("MPT amount out of range");
+
                 mValue *= 10;
                 --mOffset;
             }
@@ -983,13 +935,13 @@ STAmount::canonicalize()
 
     XRPL_ASSERT(
         (mValue == 0) || ((mValue >= cMinValue) && (mValue <= cMaxValue)),
-        "ripple::STAmount::canonicalize : value inside range");
+        "xrpl::STAmount::canonicalize : value inside range");
     XRPL_ASSERT(
         (mValue == 0) || ((mOffset >= cMinOffset) && (mOffset <= cMaxOffset)),
-        "ripple::STAmount::canonicalize : offset inside range");
+        "xrpl::STAmount::canonicalize : offset inside range");
     XRPL_ASSERT(
         (mValue != 0) || (mOffset != -100),
-        "ripple::STAmount::canonicalize : value or offset set");
+        "xrpl::STAmount::canonicalize : value or offset set");
 }
 
 void
@@ -1135,7 +1087,7 @@ amountFromJson(SField const& name, Json::Value const& v)
         }
         else
         {
-            parts.mantissa = -value.asInt();
+            parts.mantissa = value.asAbsUInt();
             parts.negative = true;
         }
     }
@@ -1509,6 +1461,33 @@ canonicalizeRoundStrict(
     }
 }
 
+STAmount
+roundToScale(
+    STAmount const& value,
+    std::int32_t scale,
+    Number::rounding_mode rounding)
+{
+    // Nothing to do for integral types.
+    if (value.integral())
+        return value;
+
+    // If the value's exponent is greater than or equal to the scale, then
+    // rounding will do nothing, and might even lose precision, so just return
+    // the value.
+    if (value.exponent() >= scale)
+        return value;
+
+    STAmount const referenceValue{
+        value.asset(), STAmount::cMinValue, scale, value.negative()};
+
+    NumberRoundModeGuard mg(rounding);
+    // With an IOU, the the result of addition will be truncated to the
+    // precision of the larger value, which in this case is referenceValue. Then
+    // remove the reference value via subtraction, and we're left with the
+    // rounded value.
+    return (value + referenceValue) - referenceValue;
+}
+
 namespace {
 
 // We need a class that has an interface similar to NumberRoundModeGuard
@@ -1767,4 +1746,4 @@ divRoundStrict(
     return divRoundImpl<NumberRoundModeGuard>(num, den, asset, roundUp);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -49,7 +49,7 @@ if(Git_FOUND)
 endif() #git
 
 if(thread_safety_analysis)
-  add_compile_options(-Wthread-safety -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -DRIPPLE_ENABLE_THREAD_SAFETY_ANNOTATIONS)
+  add_compile_options(-Wthread-safety -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -DXRPL_ENABLE_THREAD_SAFETY_ANNOTATIONS)
   add_compile_options("-stdlib=libc++")
   add_link_options("-stdlib=libc++")
 endif()
@@ -62,9 +62,9 @@ if (target)
   message (FATAL_ERROR "The target option has been removed - use native cmake options to control build")
 endif ()
 
-include(RippledSanity)
-include(RippledVersion)
-include(RippledSettings)
+include(XrplSanity)
+include(XrplVersion)
+include(XrplSettings)
 # this check has to remain in the top-level cmake
 # because of the early return statement
 if (packages_only)
@@ -73,11 +73,11 @@ if (packages_only)
   endif()
   return ()
 endif ()
-include(RippledCompiler)
-include(RippledInterface)
+include(XrplCompiler)
+include(XrplInterface)
 
 option(only_docs "Include only the docs target?" FALSE)
-include(RippledDocs)
+include(XrplDocs)
 if(only_docs)
   return()
 endif()
@@ -89,15 +89,7 @@ find_package(OpenSSL 1.1.1 REQUIRED)
 set_target_properties(OpenSSL::SSL PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS OPENSSL_NO_SSL2
 )
-set(SECP256K1_INSTALL TRUE)
-set(SECP256K1_BUILD_BENCHMARK FALSE)
-set(SECP256K1_BUILD_TESTS FALSE)
-set(SECP256K1_BUILD_EXHAUSTIVE_TESTS FALSE)
-set(SECP256K1_BUILD_CTIME_TESTS FALSE)
-set(SECP256K1_BUILD_EXAMPLES FALSE)
-add_subdirectory(external/secp256k1)
-add_library(secp256k1::secp256k1 ALIAS secp256k1)
-add_subdirectory(external/ed25519-donna)
+
 add_subdirectory(external/antithesis-sdk)
 find_package(gRPC REQUIRED)
 find_package(lz4 REQUIRED)
@@ -112,16 +104,18 @@ option(rocksdb "Enable RocksDB" ON)
 if(rocksdb)
   find_package(RocksDB REQUIRED)
   set_target_properties(RocksDB::rocksdb PROPERTIES
-    INTERFACE_COMPILE_DEFINITIONS RIPPLE_ROCKSDB_AVAILABLE=1
+    INTERFACE_COMPILE_DEFINITIONS XRPL_ROCKSDB_AVAILABLE=1
   )
-  target_link_libraries(ripple_libs INTERFACE RocksDB::rocksdb)
+  target_link_libraries(xrpl_libs INTERFACE RocksDB::rocksdb)
 endif()
 
-find_package(nudb REQUIRED)
 find_package(date REQUIRED)
+find_package(ed25519 REQUIRED)
+find_package(nudb REQUIRED)
+find_package(secp256k1 REQUIRED)
 find_package(xxHash REQUIRED)
 
-target_link_libraries(ripple_libs INTERFACE
+target_link_libraries(xrpl_libs INTERFACE
   ed25519::ed25519
   lz4::lz4
   OpenSSL::Crypto
@@ -139,16 +133,16 @@ elseif(TARGET NuDB::nudb)
 else()
   message(FATAL_ERROR "unknown nudb target")
 endif()
-target_link_libraries(ripple_libs INTERFACE ${nudb})
+target_link_libraries(xrpl_libs INTERFACE ${nudb})
 
 if(coverage)
-  include(RippledCov)
+  include(XrplCov)
 endif()
 
-set(PROJECT_EXPORT_SET RippleExports)
-include(RippledCore)
-include(RippledInstall)
-include(RippledValidatorKeys)
+set(PROJECT_EXPORT_SET XrplExports)
+include(XrplCore)
+include(XrplInstall)
+include(XrplValidatorKeys)
 
 if(tests)
   include(CTest)

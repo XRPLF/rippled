@@ -1,27 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2024 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class LPTokenTransfer_test : public jtx::AMMTest
@@ -287,11 +268,11 @@ class LPTokenTransfer_test : public jtx::AMMTest
             // with fixFrozenLPTokenTransfer enabled, alice's offer can no
             // longer cross with carol's offer
             BEAST_EXPECT(
-                expectLine(env, alice, STAmount{token1, 10'000'000}) &&
-                expectLine(env, alice, STAmount{token2, 10'000'000}));
+                expectHolding(env, alice, STAmount{token1, 10'000'000}) &&
+                expectHolding(env, alice, STAmount{token2, 10'000'000}));
             BEAST_EXPECT(
-                expectLine(env, carol, STAmount{token2, 10'000'000}) &&
-                expectLine(env, carol, STAmount{token1, 10'000'000}));
+                expectHolding(env, carol, STAmount{token2, 10'000'000}) &&
+                expectHolding(env, carol, STAmount{token1, 10'000'000}));
             BEAST_EXPECT(
                 expectOffers(env, alice, 1) && expectOffers(env, carol, 0));
         }
@@ -300,11 +281,11 @@ class LPTokenTransfer_test : public jtx::AMMTest
             // alice's offer still crosses with carol's offer despite carol's
             // token1 is frozen
             BEAST_EXPECT(
-                expectLine(env, alice, STAmount{token1, 10'000'100}) &&
-                expectLine(env, alice, STAmount{token2, 9'999'900}));
+                expectHolding(env, alice, STAmount{token1, 10'000'100}) &&
+                expectHolding(env, alice, STAmount{token2, 9'999'900}));
             BEAST_EXPECT(
-                expectLine(env, carol, STAmount{token2, 10'000'100}) &&
-                expectLine(env, carol, STAmount{token1, 9'999'900}));
+                expectHolding(env, carol, STAmount{token2, 10'000'100}) &&
+                expectHolding(env, carol, STAmount{token1, 9'999'900}));
             BEAST_EXPECT(
                 expectOffers(env, alice, 0) && expectOffers(env, carol, 0));
         }
@@ -481,6 +462,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LPTokenTransfer, app, ripple);
+BEAST_DEFINE_TESTSUITE(LPTokenTransfer, app, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

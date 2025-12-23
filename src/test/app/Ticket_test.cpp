@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2016 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpld/app/misc/Transaction.h>
@@ -24,7 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Ticket_test : public beast::unit_test::suite
 {
@@ -377,52 +358,6 @@ class Ticket_test : public beast::unit_test::suite
         BEAST_EXPECT(acctRootFound);
         BEAST_EXPECT(ticketsRemoved == 1);
         BEAST_EXPECT(ticketSeq < acctRootSeq);
-    }
-
-    void
-    testTicketNotEnabled()
-    {
-        testcase("Feature Not Enabled");
-
-        using namespace test::jtx;
-        Env env{*this, testable_amendments() - featureTicketBatch};
-
-        env(ticket::create(env.master, 1), ter(temDISABLED));
-        env.close();
-        env.require(owners(env.master, 0), tickets(env.master, 0));
-
-        env(noop(env.master), ticket::use(1), ter(temMALFORMED));
-        env(noop(env.master),
-            ticket::use(1),
-            seq(env.seq(env.master)),
-            ter(temMALFORMED));
-
-        // Close enough ledgers that the previous transactions are no
-        // longer retried.
-        for (int i = 0; i < 8; ++i)
-            env.close();
-
-        env.enableFeature(featureTicketBatch);
-        env.close();
-        env.require(owners(env.master, 0), tickets(env.master, 0));
-
-        std::uint32_t ticketSeq{env.seq(env.master) + 1};
-        env(ticket::create(env.master, 2));
-        checkTicketCreateMeta(env);
-        env.close();
-        env.require(owners(env.master, 2), tickets(env.master, 2));
-
-        env(noop(env.master), ticket::use(ticketSeq++));
-        checkTicketConsumeMeta(env);
-        env.close();
-        env.require(owners(env.master, 1), tickets(env.master, 1));
-
-        env(fset(env.master, asfDisableMaster),
-            ticket::use(ticketSeq++),
-            ter(tecNO_ALTERNATIVE_KEY));
-        checkTicketConsumeMeta(env);
-        env.close();
-        env.require(owners(env.master, 0), tickets(env.master, 0));
     }
 
     void
@@ -926,70 +861,43 @@ class Ticket_test : public beast::unit_test::suite
     void
     testFixBothSeqAndTicket()
     {
+        using namespace test::jtx;
+
         // It is an error if a transaction contains a non-zero Sequence field
         // and a TicketSequence field.  Verify that the error is detected.
         testcase("Fix both Seq and Ticket");
 
-        // Try the test without featureTicketBatch enabled.
-        using namespace test::jtx;
-        {
-            Env env{*this, testable_amendments() - featureTicketBatch};
-            Account alice{"alice"};
+        Env env{*this, testable_amendments()};
+        Account alice{"alice"};
 
-            env.fund(XRP(10000), alice);
-            env.close();
+        env.fund(XRP(10000), alice);
+        env.close();
 
-            // Fail to create a ticket.
-            std::uint32_t const ticketSeq = env.seq(alice) + 1;
-            env(ticket::create(alice, 1), ter(temDISABLED));
-            env.close();
-            env.require(owners(alice, 0), tickets(alice, 0));
-            BEAST_EXPECT(ticketSeq == env.seq(alice) + 1);
+        // Create a ticket.
+        std::uint32_t const ticketSeq = env.seq(alice) + 1;
+        env(ticket::create(alice, 1));
+        env.close();
+        env.require(owners(alice, 1), tickets(alice, 1));
+        BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
 
-            // Create a transaction that includes both a ticket and a non-zero
-            // sequence number.  Since a ticket is used and tickets are not yet
-            // enabled the transaction should be malformed.
-            env(noop(alice),
-                ticket::use(ticketSeq),
-                seq(env.seq(alice)),
-                ter(temMALFORMED));
-            env.close();
-        }
-        // Try the test with featureTicketBatch enabled.
-        {
-            Env env{*this, testable_amendments()};
-            Account alice{"alice"};
+        // Create a transaction that includes both a ticket and a non-zero
+        // sequence number.  The transaction fails with temSEQ_AND_TICKET.
+        env(noop(alice),
+            ticket::use(ticketSeq),
+            seq(env.seq(alice)),
+            ter(temSEQ_AND_TICKET));
+        env.close();
 
-            env.fund(XRP(10000), alice);
-            env.close();
-
-            // Create a ticket.
-            std::uint32_t const ticketSeq = env.seq(alice) + 1;
-            env(ticket::create(alice, 1));
-            env.close();
-            env.require(owners(alice, 1), tickets(alice, 1));
-            BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
-
-            // Create a transaction that includes both a ticket and a non-zero
-            // sequence number.  The transaction fails with temSEQ_AND_TICKET.
-            env(noop(alice),
-                ticket::use(ticketSeq),
-                seq(env.seq(alice)),
-                ter(temSEQ_AND_TICKET));
-            env.close();
-
-            // Verify that the transaction failed by looking at alice's
-            // sequence number and tickets.
-            env.require(owners(alice, 1), tickets(alice, 1));
-            BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
-        }
+        // Verify that the transaction failed by looking at alice's
+        // sequence number and tickets.
+        env.require(owners(alice, 1), tickets(alice, 1));
+        BEAST_EXPECT(ticketSeq + 1 == env.seq(alice));
     }
 
 public:
     void
     run() override
     {
-        testTicketNotEnabled();
         testTicketCreatePreflightFail();
         testTicketCreatePreclaimFail();
         testTicketInsufficientReserve();
@@ -1000,6 +908,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Ticket, app, ripple);
+BEAST_DEFINE_TESTSUITE(Ticket, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

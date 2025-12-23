@@ -1,29 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #ifndef BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
 #define BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
 
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/post.hpp>
 
 #include <chrono>
 #include <condition_variable>
@@ -32,7 +14,7 @@
 
 namespace beast {
 
-/** Measures handler latency on an io_service queue. */
+/** Measures handler latency on an io_context queue. */
 template <class Clock>
 class io_latency_probe
 {
@@ -44,12 +26,12 @@ private:
     std::condition_variable_any m_cond;
     std::size_t m_count;
     duration const m_period;
-    boost::asio::io_service& m_ios;
+    boost::asio::io_context& m_ios;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> m_timer;
     bool m_cancel;
 
 public:
-    io_latency_probe(duration const& period, boost::asio::io_service& ios)
+    io_latency_probe(duration const& period, boost::asio::io_context& ios)
         : m_count(1)
         , m_period(period)
         , m_ios(ios)
@@ -64,16 +46,16 @@ public:
         cancel(lock, true);
     }
 
-    /** Return the io_service associated with the latency probe. */
+    /** Return the io_context associated with the latency probe. */
     /** @{ */
-    boost::asio::io_service&
-    get_io_service()
+    boost::asio::io_context&
+    get_io_context()
     {
         return m_ios;
     }
 
-    boost::asio::io_service const&
-    get_io_service() const
+    boost::asio::io_context const&
+    get_io_context() const
     {
         return m_ios;
     }
@@ -109,8 +91,10 @@ public:
         std::lock_guard lock(m_mutex);
         if (m_cancel)
             throw std::logic_error("io_latency_probe is canceled");
-        m_ios.post(sample_op<Handler>(
-            std::forward<Handler>(handler), Clock::now(), false, this));
+        boost::asio::post(
+            m_ios,
+            sample_op<Handler>(
+                std::forward<Handler>(handler), Clock::now(), false, this));
     }
 
     /** Initiate continuous i/o latency sampling.
@@ -124,8 +108,10 @@ public:
         std::lock_guard lock(m_mutex);
         if (m_cancel)
             throw std::logic_error("io_latency_probe is canceled");
-        m_ios.post(sample_op<Handler>(
-            std::forward<Handler>(handler), Clock::now(), true, this));
+        boost::asio::post(
+            m_ios,
+            sample_op<Handler>(
+                std::forward<Handler>(handler), Clock::now(), true, this));
     }
 
 private:
@@ -236,12 +222,13 @@ private:
                     // The latency is too high to maintain the desired
                     // period so don't bother with a timer.
                     //
-                    m_probe->m_ios.post(
+                    boost::asio::post(
+                        m_probe->m_ios,
                         sample_op<Handler>(m_handler, now, m_repeat, m_probe));
                 }
                 else
                 {
-                    m_probe->m_timer.expires_from_now(when - now);
+                    m_probe->m_timer.expires_after(when - now);
                     m_probe->m_timer.async_wait(
                         sample_op<Handler>(m_handler, now, m_repeat, m_probe));
                 }
@@ -254,7 +241,8 @@ private:
             if (!m_probe)
                 return;
             typename Clock::time_point const now(Clock::now());
-            m_probe->m_ios.post(
+            boost::asio::post(
+                m_probe->m_ios,
                 sample_op<Handler>(m_handler, now, m_repeat, m_probe));
         }
     };

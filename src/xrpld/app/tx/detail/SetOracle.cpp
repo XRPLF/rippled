@@ -1,32 +1,13 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/SetOracle.h>
-#include <xrpld/ledger/Sandbox.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 static inline std::pair<Currency, Currency>
 tokenPairKey(STObject const& pair)
@@ -39,15 +20,6 @@ tokenPairKey(STObject const& pair)
 NotTEC
 SetOracle::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePriceOracle))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
     auto const& dataSeries = ctx.tx.getFieldArray(sfPriceDataSeries);
     if (dataSeries.empty())
         return temARRAY_EMPTY;
@@ -64,7 +36,7 @@ SetOracle::preflight(PreflightContext const& ctx)
         isInvalidLength(sfAssetClass, maxOracleSymbolClass))
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -79,7 +51,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
     // of the last closed ledger
     using namespace std::chrono;
     std::size_t const closeTime =
-        duration_cast<seconds>(ctx.view.info().closeTime.time_since_epoch())
+        duration_cast<seconds>(ctx.view.header().closeTime.time_since_epoch())
             .count();
     std::size_t const lastUpdateTime = ctx.tx[sfLastUpdateTime];
     if (lastUpdateTime < epoch_offset.count())
@@ -271,6 +243,11 @@ SetOracle::doApply()
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);
+        if (!sle->isFieldPresent(sfOracleDocumentID) &&
+            ctx_.view().rules().enabled(fixIncludeKeyletFields))
+        {
+            (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
+        }
 
         auto const newCount = pairs.size() > 5 ? 2 : 1;
         auto const adjust = newCount - oldCount;
@@ -285,6 +262,10 @@ SetOracle::doApply()
 
         sle = std::make_shared<SLE>(oracleID);
         sle->setAccountID(sfOwner, ctx_.tx.getAccountID(sfAccount));
+        if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+        {
+            (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
+        }
         sle->setFieldVL(sfProvider, ctx_.tx[sfProvider]);
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);
@@ -329,4 +310,4 @@ SetOracle::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

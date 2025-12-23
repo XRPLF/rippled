@@ -101,6 +101,17 @@
 # 2025-05-12, Jingchen Wu
 #     - add -fprofile-update=atomic to ensure atomic profile generation
 #
+# 2025-08-28, Bronek Kozicki
+#     - fix "At least one COMMAND must be given" CMake warning from policy CMP0175
+#
+# 2025-09-03, Jingchen Wu
+#     - remove the unused function append_coverage_compiler_flags and append_coverage_compiler_flags_to_target
+#     - add a new function add_code_coverage_to_target
+#     - remove some unused code
+#
+# 2025-11-11, Bronek Kozicki
+#     - make EXECUTABLE and EXECUTABLE_ARGS optional
+#
 # USAGE:
 #
 # 1. Copy this file into your cmake modules path.
@@ -109,10 +120,8 @@
 #    using a CMake option() to enable it just optionally):
 #      include(CodeCoverage)
 #
-# 3. Append necessary compiler flags for all supported source files:
-#      append_coverage_compiler_flags()
-#    Or for specific target:
-#      append_coverage_compiler_flags_to_target(YOUR_TARGET_NAME)
+# 3. Append necessary compiler flags and linker flags for all supported source files:
+#      add_code_coverage_to_target(<target> <PRIVATE|PUBLIC|INTERFACE>)
 #
 # 3.a (OPTIONAL) Set appropriate optimization flags, e.g. -O0, -O1 or -Og
 #
@@ -201,66 +210,68 @@ endforeach()
 
 set(COVERAGE_COMPILER_FLAGS "-g --coverage"
     CACHE INTERNAL "")
+
+set(COVERAGE_CXX_COMPILER_FLAGS "")
+set(COVERAGE_C_COMPILER_FLAGS "")
+set(COVERAGE_CXX_LINKER_FLAGS "")
+set(COVERAGE_C_LINKER_FLAGS "")
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
     include(CheckCXXCompilerFlag)
     include(CheckCCompilerFlag)
+    include(CheckLinkerFlag)
+
+    set(COVERAGE_CXX_COMPILER_FLAGS ${COVERAGE_COMPILER_FLAGS})
+    set(COVERAGE_C_COMPILER_FLAGS ${COVERAGE_COMPILER_FLAGS})
+    set(COVERAGE_CXX_LINKER_FLAGS ${COVERAGE_COMPILER_FLAGS})
+    set(COVERAGE_C_LINKER_FLAGS ${COVERAGE_COMPILER_FLAGS})
 
     check_cxx_compiler_flag(-fprofile-abs-path HAVE_cxx_fprofile_abs_path)
     if(HAVE_cxx_fprofile_abs_path)
-        set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-abs-path")
+        set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_CXX_COMPILER_FLAGS} -fprofile-abs-path")
     endif()
 
     check_c_compiler_flag(-fprofile-abs-path HAVE_c_fprofile_abs_path)
     if(HAVE_c_fprofile_abs_path)
-        set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-abs-path")
+        set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_C_COMPILER_FLAGS} -fprofile-abs-path")
     endif()
 
-    check_cxx_compiler_flag(-fprofile-update HAVE_cxx_fprofile_update)
+    check_linker_flag(CXX -fprofile-abs-path HAVE_cxx_linker_fprofile_abs_path)
+    if(HAVE_cxx_linker_fprofile_abs_path)
+        set(COVERAGE_CXX_LINKER_FLAGS "${COVERAGE_CXX_LINKER_FLAGS} -fprofile-abs-path")
+    endif()
+
+    check_linker_flag(C -fprofile-abs-path HAVE_c_linker_fprofile_abs_path)
+    if(HAVE_c_linker_fprofile_abs_path)
+        set(COVERAGE_C_LINKER_FLAGS "${COVERAGE_C_LINKER_FLAGS} -fprofile-abs-path")
+    endif()
+
+    check_cxx_compiler_flag(-fprofile-update=atomic HAVE_cxx_fprofile_update)
     if(HAVE_cxx_fprofile_update)
-        set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS}  -fprofile-update=atomic")
+        set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_CXX_COMPILER_FLAGS}  -fprofile-update=atomic")
     endif()
 
-    check_c_compiler_flag(-fprofile-update HAVE_c_fprofile_update)
+    check_c_compiler_flag(-fprofile-update=atomic HAVE_c_fprofile_update)
     if(HAVE_c_fprofile_update)
-        set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-update=atomic")
+        set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_C_COMPILER_FLAGS} -fprofile-update=atomic")
     endif()
-endif()
 
-set(CMAKE_Fortran_FLAGS_COVERAGE
-    ${COVERAGE_COMPILER_FLAGS}
-    CACHE STRING "Flags used by the Fortran compiler during coverage builds."
-    FORCE )
-set(CMAKE_CXX_FLAGS_COVERAGE
-    ${COVERAGE_COMPILER_FLAGS}
-    CACHE STRING "Flags used by the C++ compiler during coverage builds."
-    FORCE )
-set(CMAKE_C_FLAGS_COVERAGE
-    ${COVERAGE_COMPILER_FLAGS}
-    CACHE STRING "Flags used by the C compiler during coverage builds."
-    FORCE )
-set(CMAKE_EXE_LINKER_FLAGS_COVERAGE
-    ""
-    CACHE STRING "Flags used for linking binaries during coverage builds."
-    FORCE )
-set(CMAKE_SHARED_LINKER_FLAGS_COVERAGE
-    ""
-    CACHE STRING "Flags used by the shared libraries linker during coverage builds."
-    FORCE )
-mark_as_advanced(
-    CMAKE_Fortran_FLAGS_COVERAGE
-    CMAKE_CXX_FLAGS_COVERAGE
-    CMAKE_C_FLAGS_COVERAGE
-    CMAKE_EXE_LINKER_FLAGS_COVERAGE
-    CMAKE_SHARED_LINKER_FLAGS_COVERAGE )
+    check_linker_flag(CXX -fprofile-update=atomic HAVE_cxx_linker_fprofile_update)
+    if(HAVE_cxx_linker_fprofile_update)
+        set(COVERAGE_CXX_LINKER_FLAGS "${COVERAGE_CXX_LINKER_FLAGS} -fprofile-update=atomic")
+    endif()
+
+    check_linker_flag(C -fprofile-update=atomic HAVE_c_linker_fprofile_update)
+    if(HAVE_c_linker_fprofile_update)
+        set(COVERAGE_C_LINKER_FLAGS "${COVERAGE_C_LINKER_FLAGS} -fprofile-update=atomic")
+    endif()
+
+endif()
 
 get_property(GENERATOR_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR GENERATOR_IS_MULTI_CONFIG))
     message(WARNING "Code coverage results with an optimised (non-Debug) build may be misleading")
 endif() # NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR GENERATOR_IS_MULTI_CONFIG)
-
-if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-    link_libraries(gcov)
-endif()
 
 # Defines a target for running and collection code coverage information
 # Builds dependencies, runs the given executable and outputs reports.
@@ -307,6 +318,10 @@ function(setup_target_for_coverage_gcovr)
 
     if(NOT DEFINED Coverage_FORMAT)
         set(Coverage_FORMAT xml)
+    endif()
+
+    if(NOT DEFINED Coverage_EXECUTABLE AND DEFINED Coverage_EXECUTABLE_ARGS)
+        message(FATAL_ERROR "EXECUTABLE_ARGS must not be set if EXECUTABLE is not set")
     endif()
 
     if("--output" IN_LIST GCOVR_ADDITIONAL_ARGS)
@@ -390,17 +405,18 @@ function(setup_target_for_coverage_gcovr)
     endforeach()
 
     # Set up commands which will be run to generate coverage data
-    # Run tests
-    set(GCOVR_EXEC_TESTS_CMD
-        ${Coverage_EXECUTABLE} ${Coverage_EXECUTABLE_ARGS}
-    )
+    # If EXECUTABLE is not set, the user is expected to run the tests manually
+    # before running the coverage target NAME
+    if(DEFINED Coverage_EXECUTABLE)
+        set(GCOVR_EXEC_TESTS_CMD
+            ${Coverage_EXECUTABLE} ${Coverage_EXECUTABLE_ARGS}
+        )
+    endif()
 
     # Create folder
     if(DEFINED GCOVR_CREATE_FOLDER)
         set(GCOVR_FOLDER_CMD
             ${CMAKE_COMMAND} -E make_directory ${GCOVR_CREATE_FOLDER})
-    else()
-        set(GCOVR_FOLDER_CMD echo) # dummy
     endif()
 
     # Running gcovr
@@ -417,11 +433,13 @@ function(setup_target_for_coverage_gcovr)
     if(CODE_COVERAGE_VERBOSE)
         message(STATUS "Executed command report")
 
-        message(STATUS "Command to run tests: ")
-        string(REPLACE ";" " " GCOVR_EXEC_TESTS_CMD_SPACED "${GCOVR_EXEC_TESTS_CMD}")
-        message(STATUS "${GCOVR_EXEC_TESTS_CMD_SPACED}")
+        if(NOT "${GCOVR_EXEC_TESTS_CMD}" STREQUAL "")
+            message(STATUS "Command to run tests: ")
+            string(REPLACE ";" " " GCOVR_EXEC_TESTS_CMD_SPACED "${GCOVR_EXEC_TESTS_CMD}")
+            message(STATUS "${GCOVR_EXEC_TESTS_CMD_SPACED}")
+        endif()
 
-        if(NOT GCOVR_FOLDER_CMD STREQUAL "echo")
+        if(NOT "${GCOVR_FOLDER_CMD}" STREQUAL "")
             message(STATUS "Command to create a folder: ")
             string(REPLACE ";" " " GCOVR_FOLDER_CMD_SPACED "${GCOVR_FOLDER_CMD}")
             message(STATUS "${GCOVR_FOLDER_CMD_SPACED}")
@@ -446,23 +464,24 @@ function(setup_target_for_coverage_gcovr)
 
     # Show info where to find the report
     add_custom_command(TARGET ${Coverage_NAME} POST_BUILD
-        COMMAND ;
+        COMMAND echo
         COMMENT "Code coverage report saved in ${GCOVR_OUTPUT_FILE} formatted as ${Coverage_FORMAT}"
     )
 endfunction() # setup_target_for_coverage_gcovr
 
-function(append_coverage_compiler_flags)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COVERAGE_COMPILER_FLAGS}" PARENT_SCOPE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COVERAGE_COMPILER_FLAGS}" PARENT_SCOPE)
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${COVERAGE_COMPILER_FLAGS}" PARENT_SCOPE)
-    message(STATUS "Appending code coverage compiler flags: ${COVERAGE_COMPILER_FLAGS}")
-endfunction() # append_coverage_compiler_flags
+function(add_code_coverage_to_target name scope)
+    separate_arguments(COVERAGE_CXX_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_COMPILER_FLAGS}")
+    separate_arguments(COVERAGE_C_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_C_COMPILER_FLAGS}")
+    separate_arguments(COVERAGE_CXX_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_LINKER_FLAGS}")
+    separate_arguments(COVERAGE_C_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_C_LINKER_FLAGS}")
 
-# Setup coverage for specific library
-function(append_coverage_compiler_flags_to_target name)
-    separate_arguments(_flag_list NATIVE_COMMAND "${COVERAGE_COMPILER_FLAGS}")
-    target_compile_options(${name} PRIVATE ${_flag_list})
-    if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-        target_link_libraries(${name} PRIVATE gcov)
-    endif()
-endfunction()
+    # Add compiler options to the target
+    target_compile_options(${name} ${scope}
+            $<$<COMPILE_LANGUAGE:CXX>:${COVERAGE_CXX_COMPILER_FLAGS}>
+            $<$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>)
+
+    target_link_libraries (${name} ${scope}
+            $<$<LINK_LANGUAGE:CXX>:${COVERAGE_CXX_LINKER_FLAGS} gcov>
+            $<$<LINK_LANGUAGE:C>:${COVERAGE_C_LINKER_FLAGS} gcov>
+    )
+endfunction() # add_code_coverage_to_target

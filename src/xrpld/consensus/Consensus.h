@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_CONSENSUS_CONSENSUS_H_INCLUDED
-#define RIPPLE_CONSENSUS_CONSENSUS_H_INCLUDED
+#ifndef XRPL_CONSENSUS_CONSENSUS_H_INCLUDED
+#define XRPL_CONSENSUS_CONSENSUS_H_INCLUDED
 
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpld/consensus/ConsensusProposal.h>
@@ -37,7 +18,7 @@
 #include <optional>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 /** Determines whether the current ledger should close at this time.
 
@@ -916,7 +897,7 @@ Consensus<Adaptor>::gotTxSet(
         // so this txSet must differ
         XRPL_ASSERT(
             id != result_->position.position(),
-            "ripple::Consensus::gotTxSet : updated transaction set");
+            "xrpl::Consensus::gotTxSet : updated transaction set");
         bool any = false;
         for (auto const& [nodeId, peerPos] : currPeerPositions_)
         {
@@ -1066,7 +1047,7 @@ Consensus<Adaptor>::handleWrongLedger(
     CLOG(clog) << "handleWrongLedger. ";
     XRPL_ASSERT(
         lgrId != prevLedgerID_ || previousLedger_.id() != lgrId,
-        "ripple::Consensus::handleWrongLedger : have wrong ledger");
+        "xrpl::Consensus::handleWrongLedger : have wrong ledger");
 
     // Stop proposing because we are out of sync
     leaveConsensus(clog);
@@ -1368,7 +1349,7 @@ Consensus<Adaptor>::phaseEstablish(
 {
     CLOG(clog) << "phaseEstablish. ";
     // can only establish consensus if we already took a stance
-    XRPL_ASSERT(result_, "ripple::Consensus::phaseEstablish : result is set");
+    XRPL_ASSERT(result_, "xrpl::Consensus::phaseEstablish : result is set");
 
     ++peerUnchangedCounter_;
     ++establishCounter_;
@@ -1434,7 +1415,7 @@ void
 Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
 {
     // We should not be closing if we already have a position
-    XRPL_ASSERT(!result_, "ripple::Consensus::closeLedger : result is not set");
+    XRPL_ASSERT(!result_, "xrpl::Consensus::closeLedger : result is not set");
 
     phase_ = ConsensusPhase::establish;
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::establish";
@@ -1493,8 +1474,7 @@ Consensus<Adaptor>::updateOurPositions(
     std::unique_ptr<std::stringstream> const& clog)
 {
     // We must have a position if we are updating it
-    XRPL_ASSERT(
-        result_, "ripple::Consensus::updateOurPositions : result is set");
+    XRPL_ASSERT(result_, "xrpl::Consensus::updateOurPositions : result is set");
     ConsensusParms const& parms = adaptor_.parms();
 
     // Compute a cutoff time
@@ -1683,7 +1663,7 @@ Consensus<Adaptor>::haveConsensus(
     std::unique_ptr<std::stringstream> const& clog)
 {
     // Must have a stance if we are checking for consensus
-    XRPL_ASSERT(result_, "ripple::Consensus::haveConsensus : has result");
+    XRPL_ASSERT(result_, "xrpl::Consensus::haveConsensus : has result");
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -1823,7 +1803,7 @@ Consensus<Adaptor>::createDisputes(
     std::unique_ptr<std::stringstream> const& clog)
 {
     // Cannot create disputes without our stance
-    XRPL_ASSERT(result_, "ripple::Consensus::createDisputes : result is set");
+    XRPL_ASSERT(result_, "xrpl::Consensus::createDisputes : result is set");
 
     // Only create disputes if this is a new set
     auto const emplaced = result_->compares.emplace(o.id()).second;
@@ -1854,7 +1834,7 @@ Consensus<Adaptor>::createDisputes(
         XRPL_ASSERT(
             (inThisSet && result_->txns.find(txId) && !o.find(txId)) ||
                 (!inThisSet && !result_->txns.find(txId) && o.find(txId)),
-            "ripple::Consensus::createDisputes : has disputed transactions");
+            "xrpl::Consensus::createDisputes : has disputed transactions");
 
         Tx_t tx = inThisSet ? result_->txns.find(txId) : o.find(txId);
         auto txID = tx.id();
@@ -1892,7 +1872,7 @@ void
 Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
 {
     // Cannot updateDisputes without our stance
-    XRPL_ASSERT(result_, "ripple::Consensus::updateDisputes : result is set");
+    XRPL_ASSERT(result_, "xrpl::Consensus::updateDisputes : result is set");
 
     // Ensure we have created disputes against this set if we haven't seen
     // it before
@@ -1914,6 +1894,6 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
     return roundCloseTime(raw, closeResolution_);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

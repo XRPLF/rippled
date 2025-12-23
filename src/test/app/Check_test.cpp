@@ -1,28 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2017 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -86,8 +67,6 @@ public:
 
 class Check_test : public beast::unit_test::suite
 {
-    FeatureBitset const disallowIncoming{featureDisallowIncoming};
-
     static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
@@ -144,25 +123,6 @@ class Check_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Account const alice{"alice"};
-        {
-            // If the Checks amendment is not enabled, you should not be able
-            // to create, cash, or cancel checks.
-            Env env{*this, features - featureChecks};
-
-            env.fund(XRP(1000), alice);
-            env.close();
-
-            uint256 const checkId{
-                getCheckIndex(env.master, env.seq(env.master))};
-            env(check::create(env.master, alice, XRP(100)), ter(temDISABLED));
-            env.close();
-
-            env(check::cash(alice, checkId, XRP(100)), ter(temDISABLED));
-            env.close();
-
-            env(check::cancel(alice, checkId), ter(temDISABLED));
-            env.close();
-        }
         {
             // If the Checks amendment is enabled all check-related
             // facilities should be available.
@@ -296,24 +256,12 @@ class Check_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        // test flag doesn't set unless amendment enabled
-        {
-            Env env{*this, features - disallowIncoming};
-            Account const alice{"alice"};
-            env.fund(XRP(10000), alice);
-            env(fset(alice, asfDisallowIncomingCheck));
-            env.close();
-            auto const sle = env.le(alice);
-            uint32_t flags = sle->getFlags();
-            BEAST_EXPECT(!(flags & lsfDisallowIncomingCheck));
-        }
-
         Account const gw{"gateway"};
         Account const alice{"alice"};
         Account const bob{"bob"};
         IOU const USD{gw["USD"]};
 
-        Env env{*this, features | disallowIncoming};
+        Env env{*this, features};
 
         STAmount const startBalance{XRP(1000).value()};
         env.fund(startBalance, gw, alice, bob);
@@ -619,7 +567,7 @@ class Check_test : public beast::unit_test::suite
         }
         {
             // Write a check that chews into alice's reserve.
-            STAmount const reserve{env.current()->fees().accountReserve(0)};
+            STAmount const reserve{env.current()->fees().reserve};
             STAmount const checkAmount{
                 startBalance - reserve - drops(baseFeeDrops)};
             uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
@@ -657,7 +605,7 @@ class Check_test : public beast::unit_test::suite
         }
         {
             // Write a check that goes one drop past what alice can pay.
-            STAmount const reserve{env.current()->fees().accountReserve(0)};
+            STAmount const reserve{env.current()->fees().reserve};
             STAmount const checkAmount{
                 startBalance - reserve - drops(baseFeeDrops - 1)};
             uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
@@ -698,9 +646,6 @@ class Check_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        bool const cashCheckMakesTrustLine =
-            features[featureCheckCashMakesTrustLine];
-
         Account const gw{"gateway"};
         Account const alice{"alice"};
         Account const bob{"bob"};
@@ -733,26 +678,10 @@ class Check_test : public beast::unit_test::suite
             // and fails because he hasn't got a trust line for USD.
             env(pay(gw, alice, USD(0.5)));
             env.close();
-            if (!cashCheckMakesTrustLine)
-            {
-                // If cashing a check automatically creates a trustline then
-                // this returns tesSUCCESS and the check is removed from the
-                // ledger which would mess up later tests.
-                env(check::cash(bob, chkId1, USD(10)), ter(tecNO_LINE));
-                env.close();
-            }
 
             // bob sets up the trust line, but not at a high enough limit.
             env(trust(bob, USD(9.5)));
             env.close();
-            if (!cashCheckMakesTrustLine)
-            {
-                // If cashing a check is allowed to exceed the trust line
-                // limit then this returns tesSUCCESS and the check is
-                // removed from the ledger which would mess up later tests.
-                env(check::cash(bob, chkId1, USD(10)), ter(tecPATH_PARTIAL));
-                env.close();
-            }
 
             // bob sets the trust line limit high enough but asks for more
             // than the check's SendMax.
@@ -827,34 +756,31 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, alice) == 2);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
 
-            if (cashCheckMakesTrustLine)
-            {
-                // Automatic trust lines are enabled.  But one aspect of
-                // automatic trust lines is that they allow the account
-                // cashing a check to exceed their trust line limit.  Show
-                // that at work.
-                //
-                // bob's trust line limit is currently USD(10.5).  Show that
-                // a payment to bob cannot exceed that trust line, but cashing
-                // a check can.
+            // Automatic trust lines are enabled.  But one aspect of
+            // automatic trust lines is that they allow the account
+            // cashing a check to exceed their trust line limit.  Show
+            // that at work.
+            //
+            // bob's trust line limit is currently USD(10.5).  Show that
+            // a payment to bob cannot exceed that trust line, but cashing
+            // a check can.
 
-                // Payment of 20 USD fails.
-                env(pay(gw, bob, USD(20)), ter(tecPATH_PARTIAL));
-                env.close();
+            // Payment of 20 USD fails.
+            env(pay(gw, bob, USD(20)), ter(tecPATH_PARTIAL));
+            env.close();
 
-                uint256 const chkId20{getCheckIndex(gw, env.seq(gw))};
-                env(check::create(gw, bob, USD(20)));
-                env.close();
+            uint256 const chkId20{getCheckIndex(gw, env.seq(gw))};
+            env(check::create(gw, bob, USD(20)));
+            env.close();
 
-                // However cashing a check for 20 USD succeeds.
-                env(check::cash(bob, chkId20, USD(20)));
-                env.close();
-                env.require(balance(bob, USD(30)));
+            // However cashing a check for 20 USD succeeds.
+            env(check::cash(bob, chkId20, USD(20)));
+            env.close();
+            env.require(balance(bob, USD(30)));
 
-                // Clean up this most recent experiment so the rest of the
-                // tests work.
-                env(pay(bob, gw, USD(20)));
-            }
+            // Clean up this most recent experiment so the rest of the
+            // tests work.
+            env(pay(bob, gw, USD(20)));
 
             // ... so bob cancels alice's remaining check.
             env(check::cancel(bob, chkId3));
@@ -969,8 +895,7 @@ class Check_test : public beast::unit_test::suite
             env(check::create(alice, bob, USD(7)));
             env.close();
 
-            env(check::cash(bob, chkId, USD(7)),
-                ter(cashCheckMakesTrustLine ? tecNO_AUTH : tecNO_LINE));
+            env(check::cash(bob, chkId, USD(7)), ter(tecNO_AUTH));
             env.close();
 
             // Now give bob a trustline for USD.  bob still can't cash the
@@ -985,17 +910,6 @@ class Check_test : public beast::unit_test::suite
             env(trust(gw, bob["USD"](1)), txflags(tfSetfAuth));
             env.close();
 
-            // bob tries to cash the check again but fails because his trust
-            // limit is too low.
-            if (!cashCheckMakesTrustLine)
-            {
-                // If cashing a check is allowed to exceed the trust line
-                // limit then this returns tesSUCCESS and the check is
-                // removed from the ledger which would mess up later tests.
-                env(check::cash(bob, chkId, USD(7)), ter(tecPATH_PARTIAL));
-                env.close();
-            }
-
             // Two possible outcomes here depending on whether cashing a
             // check can build a trust line:
             //   o If it can't build a trust line, then since bob set his
@@ -1004,7 +918,7 @@ class Check_test : public beast::unit_test::suite
             //  o If it can build a trust line, then the check is allowed to
             //    exceed the trust limit and bob gets the full transfer.
             env(check::cash(bob, chkId, check::DeliverMin(USD(4))));
-            STAmount const bobGot = cashCheckMakesTrustLine ? USD(7) : USD(5);
+            STAmount const bobGot = USD(7);
             verifyDeliveredAmount(env, bobGot);
             env.require(balance(alice, USD(8) - bobGot));
             env.require(balance(bob, bobGot));
@@ -1016,14 +930,8 @@ class Check_test : public beast::unit_test::suite
         }
 
         // Use a regular key and also multisign to cash a check.
-        // featureMultiSignReserve changes the reserve on a SignerList, so
-        // check both before and after.
-        for (auto const& testFeatures :
-             {features - featureMultiSignReserve,
-              features | featureMultiSignReserve})
         {
-            Env env{*this, testFeatures};
-
+            Env env{*this, features};
             env.fund(XRP(1000), gw, alice, bob);
             env.close();
 
@@ -1052,11 +960,7 @@ class Check_test : public beast::unit_test::suite
             env(signers(bob, 2, {{bogie, 1}, {demon, 1}}), sig(bobby));
             env.close();
 
-            // If featureMultiSignReserve is enabled then bob's signer list
-            // has an owner count of 1, otherwise it's 4.
-            int const signersCount = {
-                testFeatures[featureMultiSignReserve] ? 1 : 4};
-            BEAST_EXPECT(ownerCount(env, bob) == signersCount + 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 2);
 
             // bob uses his regular key to cash a check.
             env(check::cash(bob, chkId1, (USD(1))), sig(bobby));
@@ -1066,7 +970,7 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 1);
             BEAST_EXPECT(ownerCount(env, alice) == 2);
-            BEAST_EXPECT(ownerCount(env, bob) == signersCount + 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 2);
 
             // bob uses multisigning to cash a check.
             XRPAmount const baseFeeDrops{env.current()->fees().base};
@@ -1079,7 +983,7 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
             BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(ownerCount(env, bob) == signersCount + 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 2);
         }
     }
 
@@ -1387,23 +1291,6 @@ class Check_test : public beast::unit_test::suite
         env(pay(gw, alice, USD(20)));
         env.close();
 
-        // Before bob gets a trustline, have him try to cash a check.
-        // Should fail.
-        {
-            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
-            env(check::create(alice, bob, USD(20)));
-            env.close();
-
-            if (!features[featureCheckCashMakesTrustLine])
-            {
-                // If cashing a check automatically creates a trustline then
-                // this returns tesSUCCESS and the check is removed from the
-                // ledger which would mess up later tests.
-                env(check::cash(bob, chkId, USD(20)), ter(tecNO_LINE));
-                env.close();
-            }
-        }
-
         // Now set up bob's trustline.
         env(trust(bob, USD(20)));
         env.close();
@@ -1675,13 +1562,8 @@ class Check_test : public beast::unit_test::suite
         Account const zoe{"zoe"};
         IOU const USD{gw["USD"]};
 
-        // featureMultiSignReserve changes the reserve on a SignerList, so
-        // check both before and after.
-        for (auto const& testFeatures :
-             {features - featureMultiSignReserve,
-              features | featureMultiSignReserve})
         {
-            Env env{*this, testFeatures};
+            Env env{*this, features};
 
             env.fund(XRP(1000), gw, alice, bob, zoe);
             env.close();
@@ -1799,16 +1681,11 @@ class Check_test : public beast::unit_test::suite
             env(signers(alice, 2, {{bogie, 1}, {demon, 1}}), sig(alie));
             env.close();
 
-            // If featureMultiSignReserve is enabled then alices's signer list
-            // has an owner count of 1, otherwise it's 4.
-            int const signersCount{
-                testFeatures[featureMultiSignReserve] ? 1 : 4};
-
             // alice uses her regular key to cancel a check.
             env(check::cancel(alice, chkIdReg), sig(alie));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 3);
-            BEAST_EXPECT(ownerCount(env, alice) == signersCount + 3);
+            BEAST_EXPECT(ownerCount(env, alice) == 4);
 
             // alice uses multisigning to cancel a check.
             XRPAmount const baseFeeDrops{env.current()->fees().base};
@@ -1817,18 +1694,18 @@ class Check_test : public beast::unit_test::suite
                 fee(3 * baseFeeDrops));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 2);
-            BEAST_EXPECT(ownerCount(env, alice) == signersCount + 2);
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
 
             // Creator and destination cancel the remaining unexpired checks.
             env(check::cancel(alice, chkId3), sig(alice));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
-            BEAST_EXPECT(ownerCount(env, alice) == signersCount + 1);
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
 
             env(check::cancel(bob, chkIdNotExp3));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(ownerCount(env, alice) == signersCount + 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
         }
     }
 
@@ -1867,49 +1744,35 @@ class Check_test : public beast::unit_test::suite
     }
 
     void
-    testFix1623Enable(FeatureBitset features)
+    testDeliveredAmountForCheckCashTxn(FeatureBitset features)
     {
-        testcase("Fix1623 enable");
+        testcase("DeliveredAmount For CheckCash Txn");
 
         using namespace test::jtx;
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
-        auto testEnable = [this](
-                              FeatureBitset const& features, bool hasFields) {
-            // Unless fix1623 is enabled a "tx" RPC command should return
-            // neither "DeliveredAmount" nor "delivered_amount" on a CheckCash
-            // transaction.
-            Account const alice{"alice"};
-            Account const bob{"bob"};
+        Env env{*this, features};
 
-            Env env{*this, features};
+        env.fund(XRP(1000), alice, bob);
+        env.close();
 
-            env.fund(XRP(1000), alice, bob);
-            env.close();
+        uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+        env(check::create(alice, bob, XRP(200)));
+        env.close();
 
-            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
-            env(check::create(alice, bob, XRP(200)));
-            env.close();
+        env(check::cash(bob, chkId, check::DeliverMin(XRP(100))));
 
-            env(check::cash(bob, chkId, check::DeliverMin(XRP(100))));
+        // Get the hash for the most recent transaction.
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
 
-            // Get the hash for the most recent transaction.
-            std::string const txHash{
-                env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+        env.close();
+        Json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
-            // DeliveredAmount and delivered_amount are either present or
-            // not present in the metadata returned by "tx" based on fix1623.
-            env.close();
-            Json::Value const meta =
-                env.rpc("tx", txHash)[jss::result][jss::meta];
-
-            BEAST_EXPECT(
-                meta.isMember(sfDeliveredAmount.jsonName) == hasFields);
-            BEAST_EXPECT(meta.isMember(jss::delivered_amount) == hasFields);
-        };
-
-        // Run both the disabled and enabled cases.
-        testEnable(features - fix1623, false);
-        testEnable(features, true);
+        // DeliveredAmount and delivered_amount are present.
+        BEAST_EXPECT(meta.isMember(sfDeliveredAmount.jsonName));
+        BEAST_EXPECT(meta.isMember(jss::delivered_amount));
     }
 
     void
@@ -2017,10 +1880,6 @@ class Check_test : public beast::unit_test::suite
     {
         // Explore automatic trust line creation when a check is cashed.
         //
-        // This capability is enabled by the featureCheckCashMakesTrustLine
-        // amendment.  So this test executes only when that amendment is
-        // active.
-        assert(features[featureCheckCashMakesTrustLine]);
 
         testcase("Trust Line Creation");
 
@@ -2052,7 +1911,7 @@ class Check_test : public beast::unit_test::suite
                 return acct;
             }
 
-            operator ripple::AccountID() const
+            operator xrpl::AccountID() const
             {
                 return acct.id();
             }
@@ -2711,7 +2570,7 @@ class Check_test : public beast::unit_test::suite
         testCashInvalid(features);
         testCancelValid(features);
         testCancelInvalid(features);
-        testFix1623Enable(features);
+        testDeliveredAmountForCheckCashTxn(features);
         testWithTickets(features);
     }
 
@@ -2721,14 +2580,11 @@ public:
     {
         using namespace test::jtx;
         auto const sa = testable_amendments();
-        testWithFeats(sa - featureCheckCashMakesTrustLine);
-        testWithFeats(sa - disallowIncoming);
         testWithFeats(sa);
-
-        testTrustLineCreation(sa);  // Test with featureCheckCashMakesTrustLine
+        testTrustLineCreation(sa);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Check, app, ripple);
+BEAST_DEFINE_TESTSUITE(Check, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

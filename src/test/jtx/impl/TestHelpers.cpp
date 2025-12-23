@@ -1,29 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>
 
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -103,7 +84,7 @@ xrpMinusFee(Env const& env, std::int64_t xrpAmount)
 };
 
 [[nodiscard]] bool
-expectLine(
+expectHolding(
     Env& env,
     AccountID const& account,
     STAmount const& value,
@@ -137,9 +118,33 @@ expectLine(
 }
 
 [[nodiscard]] bool
-expectLine(Env& env, AccountID const& account, None const& value)
+expectHolding(
+    Env& env,
+    AccountID const& account,
+    None const&,
+    Issue const& issue)
 {
-    return !env.le(keylet::line(account, value.issue));
+    return !env.le(keylet::line(account, issue));
+}
+
+[[nodiscard]] bool
+expectHolding(
+    Env& env,
+    AccountID const& account,
+    None const&,
+    MPTIssue const& mptIssue)
+{
+    return !env.le(keylet::mptoken(mptIssue.getMptID(), account));
+}
+
+[[nodiscard]] bool
+expectHolding(Env& env, AccountID const& account, None const& value)
+{
+    return std::visit(
+        [&](auto const& issue) {
+            return expectHolding(env, account, value, issue);
+        },
+        value.asset.value());
 }
 
 [[nodiscard]] bool
@@ -213,6 +218,8 @@ expectLedgerEntryRoot(
 
 /* Payment Channel */
 /******************************************************************************/
+namespace paychan {
+
 Json::Value
 create(
     AccountID const& account,
@@ -304,6 +311,8 @@ channelExists(ReadView const& view, uint256 const& chan)
     return bool(slep);
 }
 
+}  // namespace paychan
+
 /* Crossing Limits */
 /******************************************************************************/
 
@@ -347,6 +356,134 @@ allpe(AccountID const& a, Issue const& iss)
         iss.account);
 };
 
+/* LoanBroker */
+/******************************************************************************/
+
+namespace loanBroker {
+
+Json::Value
+set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanBrokerSet;
+    jv[sfAccount] = to_string(account);
+    jv[sfVaultID] = to_string(vaultId);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+Json::Value
+del(AccountID const& account, uint256 const& brokerID, uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanBrokerDelete;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanBrokerID] = to_string(brokerID);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+Json::Value
+coverDeposit(
+    AccountID const& account,
+    uint256 const& brokerID,
+    STAmount const& amount,
+    uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanBrokerCoverDeposit;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanBrokerID] = to_string(brokerID);
+    jv[sfAmount] = amount.getJson(JsonOptions::none);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+Json::Value
+coverWithdraw(
+    AccountID const& account,
+    uint256 const& brokerID,
+    STAmount const& amount,
+    uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanBrokerCoverWithdraw;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanBrokerID] = to_string(brokerID);
+    jv[sfAmount] = amount.getJson(JsonOptions::none);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+Json::Value
+coverClawback(AccountID const& account, std::uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanBrokerCoverClawback;
+    jv[sfAccount] = to_string(account);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+}  // namespace loanBroker
+
+/* Loan */
+/******************************************************************************/
+namespace loan {
+
+Json::Value
+set(AccountID const& account,
+    uint256 const& loanBrokerID,
+    Number principalRequested,
+    std::uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanSet;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanBrokerID] = to_string(loanBrokerID);
+    jv[sfPrincipalRequested] = to_string(principalRequested);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+Json::Value
+manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanManage;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanID] = to_string(loanID);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+Json::Value
+del(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanDelete;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanID] = to_string(loanID);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+Json::Value
+pay(AccountID const& account,
+    uint256 const& loanID,
+    STAmount const& amount,
+    std::uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanPay;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanID] = to_string(loanID);
+    jv[sfAmount] = amount.getJson();
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+}  // namespace loan
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
