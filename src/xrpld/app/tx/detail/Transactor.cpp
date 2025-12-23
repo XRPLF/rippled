@@ -684,19 +684,8 @@ Transactor::checkSign(
     STObject const& sigObject,
     beast::Journal const j)
 {
-    {
-        auto const sle = view.read(keylet::account(idAccount));
-
-        if (view.rules().enabled(featureLendingProtocol) &&
-            isPseudoAccount(sle))
-            // Pseudo-accounts can't sign transactions. This check is gated on
-            // the Lending Protocol amendment because that's the project it was
-            // added under, and it doesn't justify another amendment
-            return tefBAD_AUTH;
-    }
-
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
-    // Ignore signature check on batch inner transactions
+    // Ignore signature check on batch inner transactions (e.g., emitted transactions from contracts)
     if (parentBatchId && view.rules().enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
@@ -706,6 +695,17 @@ Transactor::checkSign(
             return temINVALID_FLAG;  // LCOV_EXCL_LINE
         }
         return tesSUCCESS;
+    }
+
+    {
+        auto const sle = view.read(keylet::account(idAccount));
+
+        if (view.rules().enabled(featureLendingProtocol) &&
+            isPseudoAccount(sle))
+            // Pseudo-accounts can't sign transactions. This check is gated on
+            // the Lending Protocol amendment because that's the project it was
+            // added under, and it doesn't justify another amendment
+            return tefBAD_AUTH;
     }
 
     if ((flags & tapDRY_RUN) && pkSigner.empty() &&

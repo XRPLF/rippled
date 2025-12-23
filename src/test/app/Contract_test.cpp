@@ -1534,14 +1534,7 @@ class Contract_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        // test::jtx::Env env{*this, features};
-        Env env{
-            *this,
-            envconfig(),
-            features,
-            nullptr,
-            // beast::severities::kWarning
-            beast::severities::kTrace};
+        test::jtx::Env env{*this, features};
 
         auto const alice = Account{"alice"};
         auto const bob = Account{"bob"};
@@ -2110,25 +2103,25 @@ class Contract_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        // testCreatePreflight(features);
-        // testCreatePreclaim(features);
-        // testCreateDoApply(features);
-        // // testModifyPreflight(features);
-        // // testModifyPreclaim(features);
-        // testModifyDoApply(features);
-        // // testDeletePreflight(features);
-        // // testDeletePreclaim(features);
-        // testDeleteDoApply(features);
+        testCreatePreflight(features);
+        testCreatePreclaim(features);
+        testCreateDoApply(features);
+        // testModifyPreflight(features);
+        // testModifyPreclaim(features);
+        testModifyDoApply(features);
+        // testDeletePreflight(features);
+        // testDeletePreclaim(features);
+        testDeleteDoApply(features);
         // testUserDeletePreflight(features);
         // testUserDeletePreclaim(features);
         // testUserDeleteDoApply(features);
         testContractDataSimple(features);
-        // testContractDataNested(features);
-        // testContractDataArray(features);
-        // testContractDataNestedArray(features);
-        // testInstanceParameters(features);
-        // testFunctionParameters(features);
-        // testEmit(features);
+        testContractDataNested(features);
+        testContractDataArray(features);
+        testContractDataNestedArray(features);
+        testInstanceParameters(features);
+        testFunctionParameters(features);
+        testEmit(features);
         // testEvents(features);
     }
 

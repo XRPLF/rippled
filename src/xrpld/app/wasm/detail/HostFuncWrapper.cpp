@@ -2039,7 +2039,7 @@ instanceParam_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[3].of.i32 > maxWasmDataLength)
@@ -2069,7 +2069,7 @@ functionParam_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[3].of.i32 > maxWasmDataLength)
@@ -2099,7 +2099,7 @@ getDataObjectField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmDataLength)
@@ -2139,7 +2139,7 @@ getDataNestedObjectField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmDataLength)
@@ -2194,7 +2194,7 @@ getDataArrayElementField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmDataLength)
@@ -2244,7 +2244,7 @@ getDataNestedArrayElementField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmDataLength)
@@ -2305,7 +2305,7 @@ setDataObjectField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmDataLength)
@@ -2353,7 +2353,7 @@ setDataNestedObjectField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmDataLength)
@@ -2416,7 +2416,7 @@ setDataArrayElementField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmDataLength)
@@ -2474,7 +2474,7 @@ setDataNestedArrayElementField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmDataLength)
@@ -2541,7 +2541,7 @@ setDataNestedArrayElementField_wrap(
 wasm_trap_t*
 buildTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmDataLength)
@@ -2564,7 +2564,7 @@ addTxnField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[3].of.i32 > maxWasmDataLength)
@@ -2600,7 +2600,7 @@ emitBuiltTxn_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmDataLength)
@@ -2621,7 +2621,7 @@ emitBuiltTxn_wrap(
 wasm_trap_t*
 emitTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmDataLength)
@@ -2652,7 +2652,7 @@ emitTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 wasm_trap_t*
 emitEvent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
     if (params->data[1].of.i32 > maxWasmDataLength)
