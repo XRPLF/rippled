@@ -659,6 +659,6 @@ struct STDataType_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STDataType, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STDataType, protocol, xrpl);
 
 }  // namespace xrpl

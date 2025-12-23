@@ -882,6 +882,6 @@ struct STJson_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STJson, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STJson, protocol, xrpl);
 
 }  // namespace xrpl

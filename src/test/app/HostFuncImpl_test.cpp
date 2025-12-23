@@ -2961,7 +2961,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(HostFuncImpl, app, ripple);
+BEAST_DEFINE_TESTSUITE(HostFuncImpl, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

@@ -1006,7 +1006,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(EscrowSmart, app, ripple);
+BEAST_DEFINE_TESTSUITE(EscrowSmart, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl
