@@ -3462,7 +3462,7 @@ ValidVault::finalize(
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback may only be performed "
-                            "by the asset issuer";
+                            "by the asset issuer, or by the vault owner of an empty vault";
                         return false;  // That's all we can do
                     }
                 }
@@ -3492,8 +3492,7 @@ ValidVault::finalize(
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback and assets available "
-                            "must "
-                            "add up";
+                            "must add up";
                         result = false;
                     }
                 }
