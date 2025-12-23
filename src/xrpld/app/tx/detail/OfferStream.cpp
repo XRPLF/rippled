@@ -341,7 +341,7 @@ TOfferStreamBase<TIn, TOut>::step()
             }
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::TOfferStreamBase::step::rmSmallIncreasedQOffer : XRP "
+                "xrpl::TOfferStreamBase::step::rmSmallIncreasedQOffer : XRP "
                 "vs XRP offer");
             return false;
             // LCOV_EXCL_STOP
