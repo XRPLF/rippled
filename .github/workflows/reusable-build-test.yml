@@ -8,12 +8,6 @@ name: Build and test
 on:
   workflow_call:
     inputs:
-      build_dir:
-        description: "The directory where to build."
-        required: false
-        type: string
-        default: ".build"
-
       ccache_enabled:
         description: "Whether to enable ccache."
         required: false
@@ -55,7 +49,6 @@ jobs:
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
       max-parallel: 10
     with:
-      build_dir: ${{ inputs.build_dir }}
       build_only: ${{ matrix.build_only }}
       build_type: ${{ matrix.build_type }}
       ccache_enabled: ${{ inputs.ccache_enabled }}

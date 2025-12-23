@@ -3,11 +3,6 @@ name: Build and test configuration
 on:
   workflow_call:
     inputs:
-      build_dir:
-        description: "The directory where to build."
-        required: true
-        type: string
-
       build_only:
         description: 'Whether to only build or to build and test the code ("true", "false").'
         required: true
@@ -65,6 +60,11 @@ defaults:
   run:
     shell: bash
 
+env:
+  # Conan installs the generators in the build/generators directory, see the
+  # layout() method in conanfile.py. We then run CMake from the build directory.
+  BUILD_DIR: build
+
 jobs:
   build-and-test:
     name: ${{ inputs.config_name }}
@@ -88,6 +88,7 @@ jobs:
       # header files are copied into separate directories by CMake, which will
       # otherwise result in cache misses.
       CCACHE_SLOPPINESS: include_file_ctime,include_file_mtime
+      # Determine if coverage and voidstar should be enabled.
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
     steps:
@@ -122,7 +123,6 @@ jobs:
       - name: Build dependencies
         uses: ./.github/actions/build-deps
         with:
-          build_dir: ${{ inputs.build_dir }}
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ inputs.build_type }}
           # Set the verbosity to "quiet" for Windows to avoid an excessive
@@ -130,7 +130,7 @@ jobs:
           log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
 
       - name: Configure CMake
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
@@ -143,7 +143,7 @@ jobs:
             ..
 
       - name: Build the binary
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
           BUILD_TYPE: ${{ inputs.build_type }}
@@ -161,7 +161,7 @@ jobs:
           ccache --show-stats -vv
           if [ '${{ runner.debug }}' = '1' ]; then
             cat "${CCACHE_LOGFILE}"
-            curl ${CCACHE_REMOTE_STORAGE%|*}/status
+            curl ${CCACHE_REMOTE_STORAGE%|*}/status || true
           fi
 
       - name: Upload the binary (Linux)
@@ -169,13 +169,13 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: xrpld-${{ inputs.config_name }}
-          path: ${{ inputs.build_dir }}/xrpld
+          path: ${{ env.BUILD_DIR }}/xrpld
           retention-days: 3
           if-no-files-found: error
 
       - name: Check linking (Linux)
         if: ${{ runner.os == 'Linux' }}
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
           ldd ./xrpld
           if [ "$(ldd ./xrpld | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
@@ -187,13 +187,13 @@ jobs:
 
       - name: Verify presence of instrumentation (Linux)
         if: ${{ runner.os == 'Linux' && env.VOIDSTAR_ENABLED == 'true' }}
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
           ./xrpld --version | grep libvoidstar
 
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ env.BUILD_DIR }}
         # Windows locks some of the build files while running tests, and parallel jobs can collide
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
@@ -206,7 +206,7 @@ jobs:
 
       - name: Run the embedded tests
         if: ${{ !inputs.build_only }}
-        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', inputs.build_dir, inputs.build_type) || inputs.build_dir }}
+        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
@@ -222,7 +222,7 @@ jobs:
 
       - name: Prepare coverage report
         if: ${{ !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
           BUILD_TYPE: ${{ inputs.build_type }}
@@ -240,7 +240,7 @@ jobs:
           disable_search: true
           disable_telem: true
           fail_ci_if_error: true
-          files: ${{ inputs.build_dir }}/coverage.xml
+          files: ${{ env.BUILD_DIR }}/coverage.xml
           plugins: noop
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
