@@ -931,6 +931,8 @@ PaymentComponents::trackedInterestPart() const
  *
  * Special handling for the final payment: all remaining balances are paid off
  * regardless of the periodic payment amount.
+ *
+ * Implements the pseudo-code function `compute_payment_due()`.
  */
 PaymentComponents
 computePaymentComponents(

@@ -152,9 +152,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     }
 
     auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
-    TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
     auto const paymentRemaining = loanSle->at(sfPaymentRemaining);
-    TenthBips32 const lateInterestRate{loanSle->at(sfLateInterestRate)};
 
     if (paymentRemaining == 0 || principalOutstanding == 0)
     {
@@ -268,7 +266,7 @@ LoanPay::doApply()
     // block the payment, add it to the cover balance (send it to the broker
     // pseudo account).
     //
-    // Normally freeze status is checked in preflight, but we do it here to
+    // Normally freeze status is checked in preclaim, but we do it here to
     // avoid duplicating the check. It'll claim a fee either way.
     bool const sendBrokerFeeToOwner = [&]() {
         // Round the minimum required cover up to be conservative. This ensures
