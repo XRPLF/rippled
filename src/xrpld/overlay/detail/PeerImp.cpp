@@ -1781,8 +1781,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         return;
     }
 
-    if (!stringIsUint256Sized(set.currentTxHash()) ||
-        !stringIsUint256Sized(set.previousLedger()))
+    if (!stringIsUint256Sized(set.currenttxhash()) ||
+        !stringIsUint256Sized(set.previousledger()))
     {
         JLOG(p_journal_.warn()) << "Proposal: malformed";
         fee_.update(Resource::feeMalformedRequest, "bad hashes");
@@ -1809,8 +1809,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             return;
     }
 
-    uint256 const proposeHash{set.currentTxHash()};
-    uint256 const prevLedger{set.previousLedger()};
+    uint256 const proposeHash{set.currenttxhash()};
+    uint256 const prevLedger{set.previousledger()};
 
     NetClock::time_point const closeTime{NetClock::duration{set.closetime()}};
 
