@@ -3547,13 +3547,13 @@ private:
             {
                 auto jtx = env.jt(tx, seq(1), fee(baseFee));
                 env.app().config().features.erase(featureAMM);
-                PreflightContext pf_ctx(
+                PreflightContext pfCtx(
                     env.app(),
                     *jtx.stx,
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfCtx);
                 BEAST_EXPECT(pf == temDISABLED);
                 env.app().config().features.insert(featureAMM);
             }
@@ -3562,13 +3562,13 @@ private:
                 auto jtx = env.jt(tx, seq(1), fee(baseFee));
                 jtx.jv["TxnSignature"] = "deadbeef";
                 jtx.stx = env.ust(jtx);
-                PreflightContext pf_ctx(
+                PreflightContext pfCtx(
                     env.app(),
                     *jtx.stx,
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfCtx);
                 BEAST_EXPECT(pf != tesSUCCESS);
             }
 
@@ -3577,13 +3577,13 @@ private:
                 jtx.jv["Asset2"]["currency"] = "XRP";
                 jtx.jv["Asset2"].removeMember("issuer");
                 jtx.stx = env.ust(jtx);
-                PreflightContext pf_ctx(
+                PreflightContext pfCtx(
                     env.app(),
                     *jtx.stx,
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfCtx);
                 BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
             }
         }

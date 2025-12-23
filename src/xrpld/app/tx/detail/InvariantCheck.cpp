@@ -567,7 +567,7 @@ AccountRootsDeletedClean::finalize(
         }
 
         {
-            // NFT pages. ntfpage_min and nftpage_max were already explicitly
+            // NFT pages. nftpage_min and nftpage_max were already explicitly
             // checked above as entries in directAccountKeylets. This uses
             // view.succ() to check for any NFT pages in between the two
             // endpoints.

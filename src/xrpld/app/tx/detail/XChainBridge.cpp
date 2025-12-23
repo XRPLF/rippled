@@ -324,7 +324,7 @@ onNewAttestations(
     return {std::move(r.value()), changed};
 };
 
-// Check if there is a quorurm of attestations for the given amount and
+// Check if there is a quorum of attestations for the given amount and
 // chain. If so return the reward accounts, if not return the tec code (most
 // likely tecXCHAIN_CLAIM_NO_QUORUM)
 Expected<std::vector<AccountID>, TER>

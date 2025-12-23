@@ -620,7 +620,7 @@ OverlayImpl::onManifests(
     std::shared_ptr<PeerImp> const& from)
 {
     auto const n = m->list_size();
-    auto const& journal = from->pjournal();
+    auto const& journal = from->pJournal();
 
     protocol::TMManifests relay;
 

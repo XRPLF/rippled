@@ -38,7 +38,7 @@ Number::setround(rounding_mode mode)
 
 // Guard
 
-// The Guard class is used to tempoarily add extra digits of
+// The Guard class is used to temporarily add extra digits of
 // precision to an operation.  This enables the final result
 // to be correctly rounded to the internal precision of Number.
 

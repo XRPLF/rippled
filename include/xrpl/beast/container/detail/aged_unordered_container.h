@@ -3189,11 +3189,12 @@ operator==(aged_unordered_container<
 {
     if (size() != other.size())
         return false;
-    for (auto iter(cbegin()), last(cend()), olast(other.cend()); iter != last;
+    for (auto iter(cbegin()), last(cend()), otherLast(other.cend());
+         iter != last;
          ++iter)
     {
-        auto oiter(other.find(extract(*iter)));
-        if (oiter == olast)
+        auto otherIter(other.find(extract(*iter)));
+        if (otherIter == otherLast)
             return false;
     }
     return true;

@@ -4,6 +4,9 @@ ignorePaths:
   - src/libxrpl/crypto
   - CMakeUserPresets.json
   - Doxyfile
+  - docs/**/*.puml
+  - cmake/**
+  - LICENSE.md
 language: en
 allowCompoundWords: true
 ignoreRandomStrings: true
@@ -13,59 +16,76 @@ dictionaries:
   - en_US
   - en_GB
 ignoreRegExpList:
-  - /[rs][1-9A-HJ-NP-Za-km-z]{25,34}/g # addresses and seeds
-  - /XRPL_[A-Z_]+_H_INCLUDED+/g # include guards
-  - /XRPL_[A-Z_]+_H+/g # include guards
-  - /BEAST_[A-Z_]+_H_INCLUDED+/g # include guards
-  - /BEAST_[A-Z_]+_H+/g # include guards
-  - /::[a-z:]+/g # things from other namespaces
-  - /sle[a-z]{1,3}/g # TODO: clean this up
-  - /[a-z]{1,3}obj/g # TODO: clean this up
-  - /lib[a-z]+/g # libraries
-  - /https?:\/\/[^\s"'<>]+/g # URLs
-  - /[0-9]{4}-[0-9]{2}-[0-9]{2}[,:]\s*[A-Za-z\s]+/g # copyright dates
-  - /[0-9]{4}[,:]\s*[A-Za-z\s]+/g # copy right dates (years)
-  - /\[[A-Za-z0-9]+\]\(https:\/\/github.com\/[A-Za-z0-9]+\)/g # Github links
-  - /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g # emails
-  - /-[DWw][a-zA-Z0-9_-]+=/g # compile flags
-  - /['"]-[DWw][a-zA-Z0-9_-]+['"]/g # compile flags
+  - /[rs][1-9A-HJ-NP-Za-km-z]{25,34}/g
+  - /(XRPL|BEAST)_[A-Z_0-9]+_H_INCLUDED+/g
+  - /(XRPL|BEAST)_[A-Z_0-9]+_H+/g
+  - /::[a-z:_]+/g
+  - /lib[a-z]+/g
+  - /https?:\/\/[^\s"'<>]+/g
+  - /[0-9]{4}-[0-9]{2}-[0-9]{2}[,:]\s*[A-Za-zÀ-ÖØ-öø-ÿ.\s]+/g
+  - /[0-9]{4}[,:]?\s*[A-Za-zÀ-ÖØ-öø-ÿ.\s]+/gu
+  - /\[[A-Za-zÀ-ÖØ-öø-ÿ0-9-]+\]\(https:\/\/github.com\/[A-Za-zÀ-ÖØ-öø-ÿ0-9-]+\)/g
+  - /[A-Za-zÀ-ÖØ-öø-ÿ0-9._%+-]+@[A-Za-zÀ-ÖØ-öø-ÿ0-9.-]+\.[A-Za-zÀ-ÖØ-öø-ÿ]{2,}/g
+  - /-[DWw][a-zA-Z0-9_-]+=/g
+  - /[\['"`]-[DWw][a-zA-Z0-9_-]+['"`\]]/g
 suggestWords:
   - xprl->xrpl
+  - syn
+  - unsynched->unsynced
+  - synched->synced
+  - synch->sync
 words:
   - AMMID
   - amt
   - amts
   - asynchrony
+  - attestation
   - autobridge
   - autobridged
   - autobridging
   - bimap
   - bindir
   - bookdir
+  - Bougalis
+  - Britto
   - Btrfs
+  - canonicality
   - checkme
   - chrono
   - clawback
   - clawbacks
+  - coeffs
   - coldwallet
   - compr
   - conanfile
   - conanrun
   - connectability
   - coro
+  - coros
   - cowid
   - cryptocondition
   - cryptoconditional
   - cryptoconditions
   - csprng
   - ctid
+  - currenttxhash
   - daria
+  - dearmor
+  - deleteme
+  - demultiplexer
   - deserializaton
+  - desync
+  - desynced
+  - determ
   - distro
   - doxyfile
+  - dxrpl
+  - eahennis
   - endmacro
+  - endpointv
   - evented
-  - falco
+  - exceptioned
+  - Falco
   - finalizers
   - firewalled
   - fmtdur
@@ -80,6 +100,7 @@ words:
   - insuff
   - iou
   - ious
+  - isrdc
   - jemalloc
   - jlog
   - keylet
@@ -93,9 +114,13 @@ words:
   - libpb
   - libxrpl
   - LOCALGOOD
+  - logwstream
   - lseq
   - lsmf
+  - MEMORYSTATUSEX
   - Merkle
+  - Metafuncton
+  - misprediction
   - mptbalance
   - mptflags
   - mptid
@@ -107,6 +132,7 @@ words:
   - multisig
   - multisign
   - multisigned
+  - Nakamoto
   - nftid
   - nftoffer
   - nftoken
@@ -119,11 +145,14 @@ words:
   - nudb
   - nullptr
   - nunl
+  - Nyffenegger
   - ostr
   - paychan
+  - paychans
   - permdex
   - perminute
   - permissioned
+  - pointee
   - preauth
   - preauthorization
   - preauthorize
@@ -134,16 +163,23 @@ words:
   - ptrs
   - pyenv
   - queuable
+  - Raphson
   - replayer
   - retriable
   - RIPD
+  - ripdtop
+  - rippleci
   - rippled
   - ripplerpc
   - rippletest
   - RLUSD
   - rngfill
   - rocksdb
+  - Rohrs
+  - sahyadri
+  - Satoshi
   - secp
+  - sf
   - shamap
   - shamapitem
   - sidechain
@@ -151,11 +187,16 @@ words:
   - sle
   - sles
   - soci
+  - sslws
+  - STATSDCOLLECTOR
   - stobj
+  - stobject
   - stpath
   - stpathset
   - sttx
   - stvar
+  - stvector
+  - stxchainattestations
   - superpeer
   - superpeers
   - takergets
@@ -168,21 +209,56 @@ words:
   - txn
   - txns
   - txs
+  - unacquired
+  - unambiguity
   - unauthorizing
+  - unfetched
+  - unflatten
+  - unfund
+  - unimpair
+  - unroutable
+  - unserviced
   - unshareable
   - unshares
   - unsquelch
+  - unsquelched
+  - unveto
+  - upvotes
   - USDB
   - variadics
   - venv
   - vfalco
   - vinnie
   - wptr
+  - wsrch
   - xbridge
   - xchain
   - XMACRO
+  - xrpkuwait
   - xrpl
   - xrpld
   - xrplf
   - xxhash
   - xxhasher
+  - abempty
+  - asnode
+  - citardauq
+  - dcmake
+  - ercentage
+  - gpgcheck
+  - gpgkey
+  - keyvadb
+  - leftw
+  - ltype
+  - nonxrp
+  - partitioner
+  - qalloc
+  - rerere
+  - sendq
+  - seqit
+  - statsd
+  - umant
+  - unergonomic
+  - wextra
+  - writeme
+  - wthread
