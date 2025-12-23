@@ -1395,6 +1395,9 @@ computeFullPaymentInterest(
  *
  * If paymentRemaining is 0, returns a fully zeroed-out LoanState,
  *       representing a completely paid-off loan.
+ *
+ * Implements the `calculate_true_loan_state` function from the XLS-66 spec
+ * section 3.2.4.4 Transaction Pseudo-code
  */
 LoanState
 computeRawLoanState(
