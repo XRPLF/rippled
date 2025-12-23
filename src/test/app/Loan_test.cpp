@@ -7400,7 +7400,7 @@ public:
         testLoanCoverMinimumRoundingExploit();
 #endif
         testInvalidLoanSet();
-        return;
+
         testCoverDepositWithdrawNonTransferableMPT();
         testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic();
 
