@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /** Floating point representation of amounts with high dynamic range
 
@@ -215,6 +215,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -14,7 +14,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 DeleteAccount::checkExtraFeatures(PreflightContext const& ctx)
@@ -51,7 +51,126 @@ TER
 DeleteAccount::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account{ctx.tx[sfAccount]};
-    AccountID const dest{ctx.tx[sfDestination]};
+    AccountID const dst{ctx.tx[sfDestination]};
+
+    auto sleDst = ctx.view.read(keylet::account(dst));
+
+    if (!sleDst)
+        return tecNO_DST;
+
+    if ((*sleDst)[sfFlags] & lsfRequireDestTag && !ctx.tx[~sfDestinationTag])
+        return tecDST_TAG_NEEDED;
+
+    // If credentials are provided - check them anyway
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j);
+        !isTesSuccess(err))
+        return err;
+
+    // if credentials then postpone auth check to doApply, to check for expired
+    // credentials
+    if (!ctx.tx.isFieldPresent(sfCredentialIDs))
+    {
+        // Check whether the destination account requires deposit authorization.
+        if (sleDst->getFlags() & lsfDepositAuth)
+        {
+            if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
+                return tecNO_PERMISSION;
+        }
+    }
+
+    auto sleAccount = ctx.view.read(keylet::account(account));
+    XRPL_ASSERT(sleAccount, "xrpl::DeleteAccount::preclaim : non-null account");
+    if (!sleAccount)
+        return terNO_ACCOUNT;
+
+    // If an issuer has any issued NFTs resident in the ledger then it
+    // cannot be deleted.
+    if ((*sleAccount)[~sfMintedNFTokens] != (*sleAccount)[~sfBurnedNFTokens])
+        return tecHAS_OBLIGATIONS;
+
+    // If the account owns any NFTs it cannot be deleted.
+    Keylet const first = keylet::nftpage_min(account);
+    Keylet const last = keylet::nftpage_max(account);
+
+    auto const cp = ctx.view.read(Keylet(
+        ltNFTOKEN_PAGE,
+        ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
+    if (cp)
+        return tecHAS_OBLIGATIONS;
+
+    // We don't allow an account to be deleted if its sequence number
+    // is within 256 of the current ledger.  This prevents replay of old
+    // transactions if this account is resurrected after it is deleted.
+    //
+    // We look at the account's Sequence rather than the transaction's
+    // Sequence in preparation for Tickets.
+    constexpr std::uint32_t seqDelta{255};
+    if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
+        return tecTOO_SOON;
+
+    // We don't allow an account to be deleted if
+    // <FirstNFTokenSequence + MintedNFTokens> is within 256 of the
+    // current ledger. This is to prevent having duplicate NFTokenIDs after
+    // account re-creation.
+    //
+    // Without this restriction, duplicate NFTokenIDs can be reproduced when
+    // authorized minting is involved. Because when the minter mints a NFToken,
+    // the issuer's sequence does not change. So when the issuer re-creates
+    // their account and mints a NFToken, it is possible that the
+    // NFTokenSequence of this NFToken is the same as the one that the
+    // authorized minter minted in a previous ledger.
+    if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
+            (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+        ctx.view.seq())
+        return tecTOO_SOON;
+
+    // Verify that the account does not own any objects that would prevent
+    // the account from being deleted.
+    Keylet const ownerDirKeylet{keylet::ownerDir(account)};
+    if (dirIsEmpty(ctx.view, ownerDirKeylet))
+        return tesSUCCESS;
+
+    std::shared_ptr<SLE const> sleDirNode{};
+    unsigned int uDirEntry{0};
+    uint256 dirEntry{beast::zero};
+
+    // Account has no directory at all.  This _should_ have been caught
+    // by the dirIsEmpty() check earlier, but it's okay to catch it here.
+    if (!cdirFirst(
+            ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
+        return tesSUCCESS;
+
+    std::int32_t deletableDirEntryCount{0};
+    do
+    {
+        // Make sure any directory node types that we find are the kind
+        // we can delete.
+        auto sleItem = ctx.view.read(keylet::child(dirEntry));
+        if (!sleItem)
+        {
+            // Directory node has an invalid index.  Bail out.
+            // LCOV_EXCL_START
+            JLOG(ctx.j.fatal())
+                << "DeleteAccount: directory node in ledger " << ctx.view.seq()
+                << " has index to object that is missing: "
+                << to_string(dirEntry);
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+
+        LedgerEntryType const nodeType{
+            safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
+
+        if (!nonObligationDeleter(nodeType))
+            return tecHAS_OBLIGATIONS;
+
+        // We found a deletable directory entry.  Count it.  If we find too
+        // many deletable directory entries then bail out.
+        if (++deletableDirEntryCount > maxDeletableDirEntries)
+            return tefTOO_BIG;
+
+    } while (cdirNext(
+        ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
 
     if (auto const res = deletePreclaim(ctx, 255, account, dest);
         !isTesSuccess(res))
@@ -62,12 +181,79 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
 TER
 DeleteAccount::doApply()
 {
-    AccountID const account{ctx_.tx[sfAccount]};
-    AccountID const dest{ctx_.tx[sfDestination]};
-    if (auto const res = deleteDoApply(ctx_, mSourceBalance, account, dest);
-        !isTesSuccess(res))
-        return res;
+    auto src = view().peek(keylet::account(account_));
+    XRPL_ASSERT(src, "xrpl::DeleteAccount::doApply : non-null source account");
+
+    auto const dstID = ctx_.tx[sfDestination];
+    auto dst = view().peek(keylet::account(dstID));
+    XRPL_ASSERT(
+        dst, "xrpl::DeleteAccount::doApply : non-null destination account");
+
+    if (!src || !dst)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    if (ctx_.tx.isFieldPresent(sfCredentialIDs))
+    {
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), account_, dstID, dst, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
+    }
+
+    Keylet const ownerDirKeylet{keylet::ownerDir(account_)};
+    auto const ter = cleanupOnAccountDelete(
+        view(),
+        ownerDirKeylet,
+        [&](LedgerEntryType nodeType,
+            uint256 const& dirEntry,
+            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            if (auto deleter = nonObligationDeleter(nodeType))
+            {
+                TER const result{
+                    deleter(ctx_.app, view(), account_, dirEntry, sleItem, j_)};
+
+                return {result, SkipEntry::No};
+            }
+
+            // LCOV_EXCL_START
+            UNREACHABLE(
+                "xrpl::DeleteAccount::doApply : undeletable item not found "
+                "in preclaim");
+            JLOG(j_.error()) << "DeleteAccount undeletable item not "
+                                "found in preclaim.";
+            return {tecHAS_OBLIGATIONS, SkipEntry::No};
+            // LCOV_EXCL_STOP
+        },
+        ctx_.journal);
+    if (ter != tesSUCCESS)
+        return ter;
+
+    // Transfer any XRP remaining after the fee is paid to the destination:
+    (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;
+    (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
+    ctx_.deliver(mSourceBalance);
+
+    XRPL_ASSERT(
+        (*src)[sfBalance] == XRPAmount(0),
+        "xrpl::DeleteAccount::doApply : source balance is zero");
+
+    // If there's still an owner directory associated with the source account
+    // delete it.
+    if (view().exists(ownerDirKeylet) && !view().emptyDirDelete(ownerDirKeylet))
+    {
+        JLOG(j_.error()) << "DeleteAccount cannot delete root dir node of "
+                         << toBase58(account_);
+        return tecHAS_OBLIGATIONS;
+    }
+
+    // Re-arm the password change fee if we can and need to.
+    if (mSourceBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
+        dst->clearFlag(lsfPasswordSpent);
+
+    view().update(dst);
+    view().erase(src);
+
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

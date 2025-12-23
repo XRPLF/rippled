@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 /*
 
@@ -383,6 +383,6 @@ extern SField const sfGeneric;
 #undef UNTYPED_SFIELD
 #pragma pop_macro("UNTYPED_SFIELD")
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

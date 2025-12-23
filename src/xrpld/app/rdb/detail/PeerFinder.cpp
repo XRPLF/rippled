@@ -1,6 +1,6 @@
 #include <xrpld/app/rdb/PeerFinder.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 initPeerFinderDB(
@@ -249,4 +249,4 @@ savePeerFinderDB(
     tr.commit();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Metadata for a Fixed slot. */
@@ -47,6 +47,6 @@ private:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

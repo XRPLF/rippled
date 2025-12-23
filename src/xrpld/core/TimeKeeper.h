@@ -6,7 +6,7 @@
 
 #include <atomic>
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages various times used by the server. */
 class TimeKeeper : public beast::abstract_clock<NetClock>
@@ -97,6 +97,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

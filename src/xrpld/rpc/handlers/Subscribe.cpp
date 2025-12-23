@@ -13,7 +13,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doSubscribe(RPC::JsonContext& context)
@@ -371,4 +371,4 @@ doSubscribe(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

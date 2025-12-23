@@ -13,7 +13,7 @@
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -260,7 +260,7 @@ WorkBase<Impl>::onResponse(error_code const& ec)
         return fail(ec);
 
     close();
-    XRPL_ASSERT(cb_, "ripple::detail::WorkBase::onResponse : callback is set");
+    XRPL_ASSERT(cb_, "xrpl::detail::WorkBase::onResponse : callback is set");
     cb_(ec, lastEndpoint_, std::move(res_));
     cb_ = nullptr;
 }
@@ -281,6 +281,6 @@ WorkBase<Impl>::close()
 
 }  // namespace detail
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

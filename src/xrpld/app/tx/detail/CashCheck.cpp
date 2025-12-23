@@ -11,7 +11,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 CashCheck::preflight(PreflightContext const& ctx)
@@ -475,4 +475,4 @@ CashCheck::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

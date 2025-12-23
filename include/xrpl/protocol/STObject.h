@@ -25,7 +25,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 class STArray;
 
@@ -784,7 +784,7 @@ STObject::Proxy<T>::assign(U&& u)
         t = dynamic_cast<T*>(st_->getPField(*f_, true));
     else
         t = dynamic_cast<T*>(st_->makeFieldPresent(*f_));
-    XRPL_ASSERT(t, "ripple::STObject::Proxy::assign : type cast succeeded");
+    XRPL_ASSERT(t, "xrpl::STObject::Proxy::assign : type cast succeeded");
     *t = std::forward<U>(u);
 }
 
@@ -1076,18 +1076,17 @@ STObject::at(TypedField<T> const& f) const
         return u->value();
 
     XRPL_ASSERT(
-        mType,
-        "ripple::STObject::at(TypedField auto) : field template non-null");
+        mType, "xrpl::STObject::at(TypedField auto) : field template non-null");
     XRPL_ASSERT(
         b->getSType() == STI_NOTPRESENT,
-        "ripple::STObject::at(TypedField auto) : type not present");
+        "xrpl::STObject::at(TypedField auto) : type not present");
 
     if (mType->style(f) == soeOPTIONAL)
         Throw<STObject::FieldErr>("Missing optional field: " + f.getName());
 
     XRPL_ASSERT(
         mType->style(f) == soeDEFAULT,
-        "ripple::STObject::at(TypedField auto) : template style is default");
+        "xrpl::STObject::at(TypedField auto) : template style is default");
 
     // Used to help handle the case where value_type is a const reference,
     // otherwise we would return the address of a temporary.
@@ -1107,16 +1106,16 @@ STObject::at(OptionaledField<T> const& of) const
     {
         XRPL_ASSERT(
             mType,
-            "ripple::STObject::at(OptionaledField auto) : field template "
+            "xrpl::STObject::at(OptionaledField auto) : field template "
             "non-null");
         XRPL_ASSERT(
             b->getSType() == STI_NOTPRESENT,
-            "ripple::STObject::at(OptionaledField auto) : type not present");
+            "xrpl::STObject::at(OptionaledField auto) : type not present");
         if (mType->style(*of.f) == soeOPTIONAL)
             return std::nullopt;
         XRPL_ASSERT(
             mType->style(*of.f) == soeDEFAULT,
-            "ripple::STObject::at(OptionaledField auto) : template style is "
+            "xrpl::STObject::at(OptionaledField auto) : template style is "
             "default");
         return typename T::value_type{};
     }
@@ -1276,6 +1275,6 @@ STObject::peekField(SField const& field)
     return *cf;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -10,7 +10,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class HashRouter;
@@ -147,6 +147,6 @@ applyTransaction(
     ApplyFlags flags,
     beast::Journal journal);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

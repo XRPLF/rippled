@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/KnownFormats.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages the list of known inner object formats.
  */
@@ -23,6 +23,6 @@ public:
     findSOTemplateBySField(SField const& sField) const;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

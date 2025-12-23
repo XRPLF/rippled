@@ -7,7 +7,7 @@
 
 #include <ostream>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * A serializable number.
@@ -84,6 +84,6 @@ partsFromString(std::string const& number);
 STNumber
 numberFromJson(SField const& field, Json::Value const& value);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

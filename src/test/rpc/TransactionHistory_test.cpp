@@ -8,7 +8,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 class TransactionHistory_test : public beast::unit_test::suite
 {
@@ -151,6 +151,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TransactionHistory, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(TransactionHistory, rpc, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

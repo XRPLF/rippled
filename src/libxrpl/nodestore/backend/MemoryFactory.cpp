@@ -9,7 +9,7 @@
 #include <memory>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 struct MemoryDB
@@ -122,7 +122,7 @@ public:
     fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
         XRPL_ASSERT(
-            db_, "ripple::NodeStore::MemoryBackend::fetch : non-null database");
+            db_, "xrpl::NodeStore::MemoryBackend::fetch : non-null database");
         uint256 const hash(uint256::fromVoid(key));
 
         std::lock_guard _(db_->mutex);
@@ -159,7 +159,7 @@ public:
     store(std::shared_ptr<NodeObject> const& object) override
     {
         XRPL_ASSERT(
-            db_, "ripple::NodeStore::MemoryBackend::store : non-null database");
+            db_, "xrpl::NodeStore::MemoryBackend::store : non-null database");
         std::lock_guard _(db_->mutex);
         db_->table.emplace(object->getHash(), object);
     }
@@ -181,7 +181,7 @@ public:
     {
         XRPL_ASSERT(
             db_,
-            "ripple::NodeStore::MemoryBackend::for_each : non-null database");
+            "xrpl::NodeStore::MemoryBackend::for_each : non-null database");
         for (auto const& e : db_->table)
             f(e.second);
     }
@@ -229,4 +229,4 @@ MemoryFactory::createInstance(
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

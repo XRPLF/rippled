@@ -13,7 +13,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -761,6 +761,6 @@ adjustFracByTokens(
     STAmount const& tokens,
     Number const& frac);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_APP_MISC_AMMHELPERS_H_INCLUDED

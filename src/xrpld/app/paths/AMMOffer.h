@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TER.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <typename TIn, typename TOut>
 class AMMLiquidity;
@@ -127,6 +127,6 @@ public:
     checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_APP_AMMOFFER_H_INCLUDED

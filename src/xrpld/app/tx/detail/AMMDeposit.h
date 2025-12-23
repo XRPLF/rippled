@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Sandbox;
 
@@ -229,6 +229,6 @@ private:
         std::uint16_t tfee);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_TX_AMMDEPOSIT_H_INCLUDED

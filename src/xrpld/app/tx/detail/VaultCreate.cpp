@@ -14,7 +14,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
@@ -236,4 +236,4 @@ VaultCreate::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

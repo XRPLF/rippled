@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <cstring>
 
-namespace ripple {
+namespace xrpl {
 namespace nft {
 
 // Separate taxons from regular integers.
@@ -104,6 +104,6 @@ getIssuer(uint256 const& id)
 }
 
 }  // namespace nft
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // results of adding nodes
 class SHAMapAddNode
@@ -161,6 +161,6 @@ SHAMapAddNode::get() const
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

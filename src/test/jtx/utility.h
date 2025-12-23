@@ -10,7 +10,7 @@
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -60,6 +60,6 @@ cmdToJSONRPC(
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

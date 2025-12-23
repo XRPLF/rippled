@@ -25,7 +25,7 @@
 #include <tuple>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 defaultObject_t defaultObject;
@@ -112,7 +112,7 @@ STVar::STVar(SerializedTypeID id, SField const& name)
 {
     XRPL_ASSERT(
         (id == STI_NOTPRESENT) || (id == name.fieldType),
-        "ripple::detail::STVar::STVar(SerializedTypeID) : valid type input");
+        "xrpl::detail::STVar::STVar(SerializedTypeID) : valid type input");
     constructST(id, 0, name);
 }
 
@@ -237,4 +237,4 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl

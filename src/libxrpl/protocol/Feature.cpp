@@ -19,10 +19,10 @@
 #include <optional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 inline std::size_t
-hash_value(ripple::uint256 const& feature)
+hash_value(xrpl::uint256 const& feature)
 {
     std::size_t seed = 0;
     using namespace boost;
@@ -205,7 +205,7 @@ public:
 
 FeatureCollections::FeatureCollections()
 {
-    features.reserve(ripple::detail::numFeatures);
+    features.reserve(xrpl::detail::numFeatures);
 }
 
 std::optional<uint256>
@@ -213,7 +213,7 @@ FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
     XRPL_ASSERT(
         readOnly.load(),
-        "ripple::FeatureCollections::getRegisteredFeature : startup completed");
+        "xrpl::FeatureCollections::getRegisteredFeature : startup completed");
     Feature const* feature = getByName(name);
     if (feature)
         return feature->feature;
@@ -294,7 +294,7 @@ FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 {
     XRPL_ASSERT(
         readOnly.load(),
-        "ripple::FeatureCollections::featureToBitsetIndex : startup completed");
+        "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
 
     Feature const* feature = getByFeature(f);
     if (!feature)
@@ -308,7 +308,7 @@ FeatureCollections::bitsetIndexToFeature(size_t i) const
 {
     XRPL_ASSERT(
         readOnly.load(),
-        "ripple::FeatureCollections::bitsetIndexToFeature : startup completed");
+        "xrpl::FeatureCollections::bitsetIndexToFeature : startup completed");
     Feature const& feature = getByIndex(i);
     return feature.feature;
 }
@@ -318,7 +318,7 @@ FeatureCollections::featureToName(uint256 const& f) const
 {
     XRPL_ASSERT(
         readOnly.load(),
-        "ripple::FeatureCollections::featureToName : startup completed");
+        "xrpl::FeatureCollections::featureToName : startup completed");
     Feature const* feature = getByFeature(f);
     return feature ? feature->name : to_string(f);
 }
@@ -452,4 +452,4 @@ featureToName(uint256 const& f)
 [[maybe_unused]] static bool const readOnlySet =
     featureCollections.registrationIsDone();
 
-}  // namespace ripple
+}  // namespace xrpl

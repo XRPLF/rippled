@@ -12,7 +12,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STCurrency::STCurrency(SField const& name) : STBase{name}
 {
@@ -102,4 +102,4 @@ currencyFromJson(SField const& name, Json::Value const& v)
     return STCurrency{name, currency};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

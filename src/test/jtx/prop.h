@@ -5,7 +5,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -30,6 +30,6 @@ struct prop
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

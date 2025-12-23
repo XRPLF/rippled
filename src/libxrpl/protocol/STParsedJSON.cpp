@@ -43,7 +43,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace STParsedJSONDetail {
 template <typename U, typename S>
@@ -1239,4 +1239,4 @@ STParsedJSONObject::STParsedJSONObject(
     object = parseObject(name, json, sfGeneric, 0, error);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -8,7 +8,7 @@
 
 #include <boost/program_options.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 /** The cryptographic credentials identifying this server instance.
 
@@ -20,6 +20,6 @@ getNodeIdentity(
     Application& app,
     boost::program_options::variables_map const& cmdline);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

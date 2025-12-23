@@ -1,6 +1,6 @@
 /**
  *
- * TODO: Remove ripple::basic_semaphore (and this file) and use
+ * TODO: Remove xrpl::basic_semaphore (and this file) and use
  * std::counting_semaphore.
  *
  * Background:
@@ -32,7 +32,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Mutex, class CondVar>
 class basic_semaphore
@@ -87,6 +87,6 @@ public:
 
 using semaphore = basic_semaphore<std::mutex, std::condition_variable>;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

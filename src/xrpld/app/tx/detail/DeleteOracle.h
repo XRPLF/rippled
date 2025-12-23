@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 /**
     Price Oracle is a system that acts as a bridge between
@@ -42,6 +42,6 @@ public:
 
 using OracleDelete = DeleteOracle;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_TX_DELETEORACLE_H_INCLUDED

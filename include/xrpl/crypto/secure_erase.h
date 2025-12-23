@@ -3,7 +3,7 @@
 
 #include <cstddef>
 
-namespace ripple {
+namespace xrpl {
 
 /** Attempts to clear the given blob of memory.
 
@@ -22,6 +22,6 @@ namespace ripple {
 void
 secure_erase(void* dest, std::size_t bytes);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

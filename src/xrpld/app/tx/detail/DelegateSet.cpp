@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
@@ -129,4 +129,4 @@ DelegateSet::deleteDelegate(
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -14,7 +14,7 @@
 #include <optional>
 #include <queue>
 
-namespace ripple {
+namespace xrpl {
 
 /** State information when applying a tx. */
 class ApplyContext
@@ -183,6 +183,6 @@ private:
     std::optional<uint256 const> parentBatchId_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
