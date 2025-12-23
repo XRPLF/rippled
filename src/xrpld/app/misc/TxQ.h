@@ -802,7 +802,7 @@ private:
     FeeMultiSet::iterator_type erase(FeeMultiSet::const_iterator_type);
     /** Erase and return the next entry for the account (if fee level
         is higher), or next entry in byFee_ (lower fee level).
-        Used to get the next "applyable" MaybeTx for accept().
+        Used to get the next "applicable" MaybeTx for accept().
     */
     FeeMultiSet::iterator_type eraseAndAdvance(
         FeeMultiSet::const_iterator_type);

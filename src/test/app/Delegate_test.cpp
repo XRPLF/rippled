@@ -1699,7 +1699,7 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         // map of tx and required feature.
-        // non-delegatable tx are not included.
+        // non-delegable tx are not included.
         // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer,
         // NFTokenAcceptOffer are not included, they are tested separately.
         std::unordered_map<std::string, uint256> txRequiredFeatures{

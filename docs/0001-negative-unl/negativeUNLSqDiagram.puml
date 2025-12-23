@@ -50,7 +50,7 @@ alt phase == OPEN
         deactivate CA
     end
 else phase == ESTABLISH
-    hnote over GC: receive peer postions
+    hnote over GC: receive peer positions
     GC -> GC : update our position
     GC -> CA : propose \n(if position changed)
     GC -> GC : check if have consensus

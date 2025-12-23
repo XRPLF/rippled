@@ -241,7 +241,7 @@ Reader::readToken(Token& token)
 
         case 'f':
             token.type_ = tokenFalse;
-            ok = match("alse", 4);
+            ok = match("alse", 4);  // cspell:disable-line
             break;
 
         case 'n':

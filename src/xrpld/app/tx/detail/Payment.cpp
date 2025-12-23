@@ -558,7 +558,7 @@ Payment::doApply()
 
             // If the actual amount delivered is different from the original
             // amount due to partial payment or transfer fee, we need to update
-            // DelieveredAmount using the actual delivered amount
+            // DeliveredAmount using the actual delivered amount
             if (view().rules().enabled(fixMPTDeliveredAmount) &&
                 amountDeliver != dstAmount)
                 ctx_.deliver(amountDeliver);

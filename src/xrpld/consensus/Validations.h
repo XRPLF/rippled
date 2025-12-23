@@ -455,7 +455,7 @@ private:
         are checked and any stale validations are flushed from the trie.
 
         @param lock Existing lock of mutex_
-        @param f Invokable with signature (LedgerTrie<Ledger> &)
+        @param f Invocable with signature (LedgerTrie<Ledger> &)
 
         @warning The invocable `f` is expected to be a simple transformation of
                  its arguments and will be called with mutex_ under lock.
@@ -476,9 +476,9 @@ private:
         Iterate current validations, flushing any which are stale.
 
         @param lock Existing lock of mutex_
-        @param pre Invokable with signature (std::size_t) called prior to
+        @param pre Invocable with signature (std::size_t) called prior to
                    looping.
-        @param f Invokable with signature (NodeID const &, Validations const &)
+        @param f Invocable with signature (NodeID const &, Validations const &)
                  for each current validation.
 
         @note The invocable `pre` is called _prior_ to checking for staleness
@@ -517,8 +517,8 @@ private:
 
         @param lock Existing lock on mutex_
         @param ledgerID The identifier of the ledger
-        @param pre Invokable with signature(std::size_t)
-        @param f Invokable with signature (NodeID const &, Validation const &)
+        @param pre Invocable with signature(std::size_t)
+        @param f Invocable with signature (NodeID const &, Validation const &)
 
         @note The invocable `pre` is called prior to iterating validations. The
               argument is the number of times `f` will be called.

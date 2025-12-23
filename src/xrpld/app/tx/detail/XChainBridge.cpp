@@ -434,7 +434,7 @@ transferHelper(
             auto const availableBalance = [&]() -> STAmount {
                 STAmount const curBal = (*sleSrc)[sfBalance];
                 // Checking that account == src and postFeeBalance == curBal is
-                // not strictly nessisary, but helps protect against future
+                // not strictly necessary, but helps protect against future
                 // changes
                 if (!submittingAccountInfo ||
                     submittingAccountInfo->account != src ||
@@ -1190,7 +1190,7 @@ toClaim(STTx const& tx)
 
 template <class TAttestation>
 NotTEC
-attestationpreflight(PreflightContext const& ctx)
+attestationPreflight(PreflightContext const& ctx)
 {
     if (!publicKeyType(ctx.tx[sfPublicKey]))
         return temMALFORMED;
@@ -2076,7 +2076,7 @@ XChainCreateClaimID::doApply()
 NotTEC
 XChainAddClaimAttestation::preflight(PreflightContext const& ctx)
 {
-    return attestationpreflight<Attestations::AttestationClaim>(ctx);
+    return attestationPreflight<Attestations::AttestationClaim>(ctx);
 }
 
 TER
@@ -2096,7 +2096,7 @@ XChainAddClaimAttestation::doApply()
 NotTEC
 XChainAddAccountCreateAttestation::preflight(PreflightContext const& ctx)
 {
-    return attestationpreflight<Attestations::AttestationCreateAccount>(ctx);
+    return attestationPreflight<Attestations::AttestationCreateAccount>(ctx);
 }
 
 TER

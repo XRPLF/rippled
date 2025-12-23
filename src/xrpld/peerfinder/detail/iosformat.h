@@ -60,7 +60,7 @@ struct divider
     }
 };
 
-/** Creates a padded field with an optiona fill character. */
+/** Creates a padded field with an optional fill character. */
 struct fpad
 {
     explicit fpad(int width_, int pad_ = 0, char fill_ = ' ')

@@ -515,7 +515,7 @@ are excerpts of the generic consensus implementation and of helper types that wi
 interact with the concrete implementing class.
 
 ```{.cpp}
-// Represents a transction under dispute this round
+// Represents a transaction under dispute this round
 template <class Tx_t, class NodeID_t> class DisputedTx;
 
 // Represents how the node participates in Consensus this round

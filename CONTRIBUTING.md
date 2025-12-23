@@ -876,7 +876,7 @@ git push --delete upstream-push master-next
 
 #### Special cases: point releases, hotfixes, etc.
 
-On occassion, a bug or issue is discovered in a version that already
+On occasion, a bug or issue is discovered in a version that already
 had a final release. Most of the time, development will have started
 on the next version, and will usually have changes in `develop`
 and often in `release`.

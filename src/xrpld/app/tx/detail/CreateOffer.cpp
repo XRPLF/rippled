@@ -814,7 +814,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     Book const book{saTakerPays.issue(), saTakerGets.issue(), domainID};
 
     // Add offer to order book, using the original rate
-    // before any crossing occured.
+    // before any crossing occurred.
     //
     // Regular offer - BookDirectory points to open directory
     //

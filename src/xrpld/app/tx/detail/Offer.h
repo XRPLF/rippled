@@ -121,12 +121,12 @@ public:
 
     TAmounts<TIn, TOut>
     limitOut(
-        TAmounts<TIn, TOut> const& offrAmt,
+        TAmounts<TIn, TOut> const& offerAmt,
         TOut const& limit,
         bool roundUp) const;
 
     TAmounts<TIn, TOut>
-    limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit, bool roundUp)
+    limitIn(TAmounts<TIn, TOut> const& offerAmt, TIn const& limit, bool roundUp)
         const;
 
     template <typename... Args>
@@ -218,19 +218,19 @@ TOffer<TIn, TOut>::setFieldAmounts()
 template <class TIn, class TOut>
 TAmounts<TIn, TOut>
 TOffer<TIn, TOut>::limitOut(
-    TAmounts<TIn, TOut> const& offrAmt,
+    TAmounts<TIn, TOut> const& offerAmt,
     TOut const& limit,
     bool roundUp) const
 {
     // It turns out that the ceil_out implementation has some slop in
     // it, which ceil_out_strict removes.
-    return quality().ceil_out_strict(offrAmt, limit, roundUp);
+    return quality().ceil_out_strict(offerAmt, limit, roundUp);
 }
 
 template <class TIn, class TOut>
 TAmounts<TIn, TOut>
 TOffer<TIn, TOut>::limitIn(
-    TAmounts<TIn, TOut> const& offrAmt,
+    TAmounts<TIn, TOut> const& offerAmt,
     TIn const& limit,
     bool roundUp) const
 {
@@ -240,8 +240,8 @@ TOffer<TIn, TOut>::limitIn(
         // it.  ceil_in_strict removes that slop.  But removing that slop
         // affects transaction outcomes, so the change must be made using
         // an amendment.
-        return quality().ceil_in_strict(offrAmt, limit, roundUp);
-    return m_quality.ceil_in(offrAmt, limit);
+        return quality().ceil_in_strict(offerAmt, limit, roundUp);
+    return m_quality.ceil_in(offerAmt, limit);
 }
 
 template <class TIn, class TOut>

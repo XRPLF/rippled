@@ -292,7 +292,7 @@ public:
         testcase("Parsing");
 
         // account IDs and node and account public and private
-        // keys should not be parseable as seeds.
+        // keys should not be parsable as seeds.
 
         auto const node1 = randomKeyPair(KeyType::secp256k1);
 

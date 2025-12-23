@@ -628,7 +628,7 @@ public:
                 This is a temporary measure. Once we know our own IP
                 address, the correct solution is to put it into the Livecache
                 at hops 0, and go through the regular handout path. This way
-                we avoid handing our address out too frequenty, which this code
+                we avoid handing our address out too frequently, which this code
                 suffers from.
             */
             // Add an entry for ourselves if:

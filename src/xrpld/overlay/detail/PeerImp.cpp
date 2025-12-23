@@ -586,7 +586,7 @@ PeerImp::fail(std::string const& reason)
     if (!socket_.is_open())
         return;
 
-    // Call to name() locks, log only if the message will be outputed
+    // Call to name() locks, log only if the message will be outputted
     if (journal_.active(beast::severities::kWarning))
     {
         std::string const n = name();
@@ -1782,7 +1782,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     }
 
     if (!stringIsUint256Sized(set.currenttxhash()) ||
-        !stringIsUint256Sized(set.previousledger()))
+        !stringIsUint256Sized(set.previousLedger()))
     {
         JLOG(p_journal_.warn()) << "Proposal: malformed";
         fee_.update(Resource::feeMalformedRequest, "bad hashes");
@@ -1810,7 +1810,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     }
 
     uint256 const proposeHash{set.currenttxhash()};
-    uint256 const prevLedger{set.previousledger()};
+    uint256 const prevLedger{set.previousLedger()};
 
     NetClock::time_point const closeTime{NetClock::duration{set.closetime()}};
 

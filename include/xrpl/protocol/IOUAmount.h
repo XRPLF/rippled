@@ -20,7 +20,7 @@ namespace xrpl {
 
     Arithmetic operations can throw std::overflow_error during normalization
     if the amount exceeds the largest representable amount, but underflows
-    will silently trunctate to zero.
+    will silently truncate to zero.
 */
 class IOUAmount : private boost::totally_ordered<IOUAmount>,
                   private boost::additive<IOUAmount>
