@@ -308,7 +308,7 @@ message TMSquelch {
 }
 
 enum TMLedgerMapType {
-  lmTRANASCTION = 1;    // transaction map
+  lmTRANSACTION = 1;    // transaction map
   lmACCOUNT_STATE = 2;  // account state map
 }
 
