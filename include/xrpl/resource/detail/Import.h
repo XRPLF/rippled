@@ -4,7 +4,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/detail/Entry.h>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 /** A set of imported consumer data from a gossip origin. */
@@ -31,6 +31,6 @@ struct Import
 };
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

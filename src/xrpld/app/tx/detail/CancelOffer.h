@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 class CancelOffer : public Transactor
 {
@@ -28,6 +28,6 @@ public:
 
 using OfferCancel = CancelOffer;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

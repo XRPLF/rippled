@@ -8,7 +8,7 @@
 
 #include <initializer_list>
 
-namespace ripple {
+namespace xrpl {
 
 class NFTokenBaseUtil_test : public beast::unit_test::suite
 {
@@ -57,7 +57,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     std::uint32_t
     lastClose(test::jtx::Env& env)
     {
-        return env.current()->info().parentCloseTime.time_since_epoch().count();
+        return env.current()
+            ->header()
+            .parentCloseTime.time_since_epoch()
+            .count();
     }
 
     void
@@ -7636,10 +7639,10 @@ class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBaseUtil, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDisallowIncoming, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBaseUtil, app, xrpl, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDisallowIncoming, app, xrpl, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, app, xrpl, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, app, xrpl, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, app, xrpl, 2);
 
-}  // namespace ripple
+}  // namespace xrpl

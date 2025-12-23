@@ -10,7 +10,7 @@
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ValidatorKeys_test : public beast::unit_test::suite
@@ -171,7 +171,7 @@ public:
     }
 };  // namespace test
 
-BEAST_DEFINE_TESTSUITE(ValidatorKeys, app, ripple);
+BEAST_DEFINE_TESTSUITE(ValidatorKeys, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

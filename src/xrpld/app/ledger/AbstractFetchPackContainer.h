@@ -6,7 +6,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** An interface facilitating retrieval of fetch packs without
     an application or ledgermaster object.
@@ -26,6 +26,6 @@ public:
     getFetchPack(uint256 const& nodeHash) = 0;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -7,7 +7,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 // This interface is deprecated.
 Json::Value
@@ -155,4 +155,4 @@ doRipplePathFind(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

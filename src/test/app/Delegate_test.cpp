@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Permissions.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 class Delegate_test : public beast::unit_test::suite
 {
@@ -1806,6 +1806,6 @@ class Delegate_test : public beast::unit_test::suite
         testTxReqireFeatures(all);
     }
 };
-BEAST_DEFINE_TESTSUITE(Delegate, app, ripple);
+BEAST_DEFINE_TESTSUITE(Delegate, app, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

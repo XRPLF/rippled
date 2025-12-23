@@ -4,7 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/LedgerFormats.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STLedgerEntry;
 
@@ -30,6 +30,6 @@ struct Keylet
     check(STLedgerEntry const&) const;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

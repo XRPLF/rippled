@@ -13,7 +13,7 @@
 #include <ostream>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Persistent state information for a connection session.
     These values are preserved between calls for efficiency.
@@ -111,6 +111,6 @@ public:
     websocketUpgrade() = 0;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -2,7 +2,7 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 LoanBrokerDelete::checkExtraFeatures(PreflightContext const& ctx)
@@ -194,4 +194,4 @@ LoanBrokerDelete::doApply()
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl

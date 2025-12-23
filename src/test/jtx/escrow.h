@@ -9,7 +9,7 @@
 
 #include <xrpl/protocol/Indexes.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -90,6 +90,6 @@ auto const fulfillment = JTxFieldWrapper<blobField>(sfFulfillment);
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

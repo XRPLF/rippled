@@ -7,7 +7,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STCurrency final : public STBase
 {
@@ -114,6 +114,6 @@ operator<(STCurrency const& lhs, Currency const& rhs)
     return lhs.currency() < rhs;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

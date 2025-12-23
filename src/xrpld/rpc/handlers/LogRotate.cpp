@@ -1,10 +1,10 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/PerfLog.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doLogRotate(RPC::JsonContext& context)
@@ -13,4 +13,4 @@ doLogRotate(RPC::JsonContext& context)
     return RPC::makeObjectValue(context.app.logs().rotate());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

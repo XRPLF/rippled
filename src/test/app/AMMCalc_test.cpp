@@ -6,7 +6,7 @@
 
 #include <boost/regex.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /** AMM Calculator. Uses AMM formulas to simulate the payment engine
@@ -439,7 +439,7 @@ class AMMCalc_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(AMMCalc, app, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(AMMCalc, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

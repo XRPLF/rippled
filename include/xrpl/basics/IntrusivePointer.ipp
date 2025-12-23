@@ -6,7 +6,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 template <class T>
 template <CAdoptTag TAdoptTag>
@@ -608,7 +608,7 @@ SharedWeakUnion<T>::convertToStrong()
         [[maybe_unused]] auto action = p->releaseWeakRef();
         XRPL_ASSERT(
             (action == ReleaseWeakRefAction::noop),
-            "ripple::SharedWeakUnion::convertToStrong : "
+            "xrpl::SharedWeakUnion::convertToStrong : "
             "action is noop");
         unsafeSetRawPtr(p, RefStrength::strong);
         return true;
@@ -637,7 +637,7 @@ SharedWeakUnion<T>::convertToWeak()
             // We just added a weak ref. How could we destroy?
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::SharedWeakUnion::convertToWeak : destroying freshly "
+                "xrpl::SharedWeakUnion::convertToWeak : destroying freshly "
                 "added ref");
             delete p;
             unsafeSetRawPtr(nullptr);
@@ -719,5 +719,5 @@ SharedWeakUnion<T>::unsafeReleaseNoStore()
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 #endif
