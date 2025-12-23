@@ -464,7 +464,8 @@ accountHolds(
     Currency const& currency,
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
-    beast::Journal j)
+    beast::Journal j,
+    SpendableHandling includeFullBalance)
 {
     STAmount amount;
     if (isXRP(currency))
@@ -472,11 +473,19 @@ accountHolds(
         return {xrpLiquid(view, account, 0, j)};
     }
 
+    bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
+    if (returnSpendable && account == issuer)
+        // If the account is the issuer, then their limit is effectively
+        // infinite
+        return STAmount{
+            Issue{currency, issuer}, STAmount::cMaxValue, STAmount::cMaxOffset};
+
     // IOU: Return balance on trust line modulo freeze
     SLE::const_pointer const sle =
         getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
 
-    return getTrustLineBalance(view, sle, account, currency, issuer, false, j);
+    return getTrustLineBalance(
+        view, sle, account, currency, issuer, returnSpendable, j);
 }
 
 STAmount
@@ -485,10 +494,17 @@ accountHolds(
     AccountID const& account,
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
-    beast::Journal j)
+    beast::Journal j,
+    SpendableHandling includeFullBalance)
 {
     return accountHolds(
-        view, account, issue.currency, issue.account, zeroIfFrozen, j);
+        view,
+        account,
+        issue.currency,
+        issue.account,
+        zeroIfFrozen,
+        j,
+        includeFullBalance);
 }
 
 STAmount
@@ -498,8 +514,28 @@ accountHolds(
     MPTIssue const& mptIssue,
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
-    beast::Journal j)
+    beast::Journal j,
+    SpendableHandling includeFullBalance)
 {
+    bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
+
+    if (returnSpendable && account == mptIssue.getIssuer())
+    {
+        // if the account is the issuer, and the issuance exists, their limit is
+        // the issuance limit minus the outstanding value
+        auto const issuance =
+            view.read(keylet::mptIssuance(mptIssue.getMptID()));
+
+        if (!issuance)
+        {
+            return STAmount{mptIssue};
+        }
+        return STAmount{
+            mptIssue,
+            issuance->at(~sfMaximumAmount).value_or(maxMPTokenAmount) -
+                issuance->at(sfOutstandingAmount)};
+    }
+
     STAmount amount;
 
     auto const sleMpt =
@@ -547,7 +583,8 @@ accountHolds(
     Asset const& asset,
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
-    beast::Journal j)
+    beast::Journal j,
+    SpendableHandling includeFullBalance)
 {
     return std::visit(
         [&](auto const& value) {
@@ -555,100 +592,17 @@ accountHolds(
                               std::remove_cvref_t<decltype(value)>,
                               Issue>)
             {
-                return accountHolds(view, account, value, zeroIfFrozen, j);
+                return accountHolds(
+                    view, account, value, zeroIfFrozen, j, includeFullBalance);
             }
             return accountHolds(
-                view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
-        },
-        asset.value());
-}
-
-STAmount
-accountSpendable(
-    ReadView const& view,
-    AccountID const& account,
-    Currency const& currency,
-    AccountID const& issuer,
-    FreezeHandling zeroIfFrozen,
-    beast::Journal j)
-{
-    if (isXRP(currency))
-        return accountHolds(view, account, currency, issuer, zeroIfFrozen, j);
-
-    if (account == issuer)
-        // If the account is the issuer, then their limit is effectively
-        // infinite
-        return STAmount{
-            Issue{currency, issuer}, STAmount::cMaxValue, STAmount::cMaxOffset};
-
-    // IOU: Return balance on trust line modulo freeze
-    SLE::const_pointer const sle =
-        getLineIfUsable(view, account, currency, issuer, zeroIfFrozen, j);
-
-    return getTrustLineBalance(view, sle, account, currency, issuer, true, j);
-}
-
-STAmount
-accountSpendable(
-    ReadView const& view,
-    AccountID const& account,
-    Issue const& issue,
-    FreezeHandling zeroIfFrozen,
-    beast::Journal j)
-{
-    return accountSpendable(
-        view, account, issue.currency, issue.account, zeroIfFrozen, j);
-}
-
-STAmount
-accountSpendable(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptIssue,
-    FreezeHandling zeroIfFrozen,
-    AuthHandling zeroIfUnauthorized,
-    beast::Journal j)
-{
-    if (account == mptIssue.getIssuer())
-    {
-        // if the account is the issuer, and the issuance exists, their limit is
-        // the issuance limit minus the outstanding value
-        auto const issuance =
-            view.read(keylet::mptIssuance(mptIssue.getMptID()));
-
-        if (!issuance)
-        {
-            return STAmount{mptIssue};
-        }
-        return STAmount{
-            mptIssue,
-            issuance->at(~sfMaximumAmount).value_or(maxMPTokenAmount) -
-                issuance->at(sfOutstandingAmount)};
-    }
-
-    return accountHolds(
-        view, account, mptIssue, zeroIfFrozen, zeroIfUnauthorized, j);
-}
-
-[[nodiscard]] STAmount
-accountSpendable(
-    ReadView const& view,
-    AccountID const& account,
-    Asset const& asset,
-    FreezeHandling zeroIfFrozen,
-    AuthHandling zeroIfUnauthorized,
-    beast::Journal j)
-{
-    return std::visit(
-        [&](auto const& value) {
-            if constexpr (std::is_same_v<
-                              std::remove_cvref_t<decltype(value)>,
-                              Issue>)
-            {
-                return accountSpendable(view, account, value, zeroIfFrozen, j);
-            }
-            return accountSpendable(
-                view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
+                view,
+                account,
+                value,
+                zeroIfFrozen,
+                zeroIfUnauthorized,
+                j,
+                includeFullBalance);
         },
         asset.value());
 }

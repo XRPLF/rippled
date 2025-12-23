@@ -211,13 +211,14 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     // Do not support "partial payments" - if the transaction says to pay X,
     // then the account must have X available, even if the loan payment takes
     // less.
-    if (auto const balance = accountSpendable(
+    if (auto const balance = accountHolds(
             ctx.view,
             account,
             asset,
             fhZERO_IF_FROZEN,
             ahZERO_IF_UNAUTHORIZED,
-            ctx.j);
+            ctx.j,
+            SpendableHandling::shFULL_BALANCE);
         balance < amount)
     {
         JLOG(ctx.j.warn()) << "Payment amount too large. Amount: "
@@ -485,21 +486,34 @@ LoanPay::doApply()
     }
 
 #if !NDEBUG
-    auto const accountBalanceBefore = accountSpendable(
-        view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+    auto const accountBalanceBefore = accountHolds(
+        view,
+        account_,
+        asset,
+        fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
+        j_,
+        SpendableHandling::shFULL_BALANCE);
     auto const vaultBalanceBefore = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
-        : accountSpendable(
+        : accountHolds(
               view,
               vaultPseudoAccount,
               asset,
               fhIGNORE_FREEZE,
               ahIGNORE_AUTH,
-              j_);
+              j_,
+              SpendableHandling::shFULL_BALANCE);
     auto const brokerBalanceBefore = account_ == brokerPayee
         ? STAmount{asset, 0}
-        : accountSpendable(
-              view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+        : accountHolds(
+              view,
+              brokerPayee,
+              asset,
+              fhIGNORE_FREEZE,
+              ahIGNORE_AUTH,
+              j_,
+              SpendableHandling::shFULL_BALANCE);
 #endif
 
     if (totalPaidToVaultRounded != beast::zero)
@@ -554,21 +568,34 @@ LoanPay::doApply()
         "vault pseudo balance agrees after");
 
 #if !NDEBUG
-    auto const accountBalanceAfter = accountSpendable(
-        view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+    auto const accountBalanceAfter = accountHolds(
+        view,
+        account_,
+        asset,
+        fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
+        j_,
+        SpendableHandling::shFULL_BALANCE);
     auto const vaultBalanceAfter = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
-        : accountSpendable(
+        : accountHolds(
               view,
               vaultPseudoAccount,
               asset,
               fhIGNORE_FREEZE,
               ahIGNORE_AUTH,
-              j_);
+              j_,
+              SpendableHandling::shFULL_BALANCE);
     auto const brokerBalanceAfter = account_ == brokerPayee
         ? STAmount{asset, 0}
-        : accountSpendable(
-              view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+        : accountHolds(
+              view,
+              brokerPayee,
+              asset,
+              fhIGNORE_FREEZE,
+              ahIGNORE_AUTH,
+              j_,
+              SpendableHandling::shFULL_BALANCE);
 
     XRPL_ASSERT_PARTS(
         accountBalanceBefore + vaultBalanceBefore + brokerBalanceBefore ==
