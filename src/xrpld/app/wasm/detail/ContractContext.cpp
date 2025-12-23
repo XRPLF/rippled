@@ -24,7 +24,7 @@
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/protocol/Indexes.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::vector<ParameterValueVec>
 getParameterValueVec(STArray const& functionParameters)
@@ -50,4 +50,4 @@ getParameterTypeVec(STArray const& functionParameters)
     return param_map;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

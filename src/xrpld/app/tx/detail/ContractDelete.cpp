@@ -23,7 +23,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 ContractDelete::preflight(PreflightContext const& ctx)
@@ -170,4 +170,4 @@ ContractDelete::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

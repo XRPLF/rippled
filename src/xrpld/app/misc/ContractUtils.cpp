@@ -23,7 +23,7 @@
 
 #include <xrpl/ledger/View.h>
 
-namespace ripple {
+namespace xrpl {
 namespace contract {
 
 struct BlobHash
@@ -675,4 +675,4 @@ finalizeContractData(
 }
 
 }  // namespace contract
-}  // namespace ripple
+}  // namespace xrpl

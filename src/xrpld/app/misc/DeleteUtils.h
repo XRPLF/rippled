@@ -30,7 +30,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/TER.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Define a function pointer type that can be used to delete ledger node types.
 using DeleterFuncPtr = TER (*)(
@@ -59,6 +59,6 @@ deleteDoApply(
     AccountID const& account,
     AccountID const& dest);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -39,7 +39,7 @@
 #include <cstring>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 STJson::STJson(SField const& name) : STBase{name}, data_{Map{}}
 {
@@ -796,4 +796,4 @@ STJson::move(std::size_t n, void* buf)
     return emplace(n, buf, std::move(*this));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

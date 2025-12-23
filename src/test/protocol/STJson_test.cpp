@@ -43,7 +43,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 struct STJson_test : public beast::unit_test::suite
 {
@@ -884,4 +884,4 @@ struct STJson_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(STJson, protocol, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

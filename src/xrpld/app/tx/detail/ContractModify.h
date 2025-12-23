@@ -22,7 +22,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class ContractModify : public Transactor
 {
@@ -46,6 +46,6 @@ public:
     doApply() override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

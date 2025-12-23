@@ -1391,7 +1391,7 @@ Transactor::operator()()
                                        STTx const& tx) {
             OpenView perTxBatchView(batch_view, emittedTxnsView);
 
-            auto const ret = ripple::apply(
+            auto const ret = xrpl::apply(
                 ctx_.app,
                 perTxBatchView,
                 parentBatchId,

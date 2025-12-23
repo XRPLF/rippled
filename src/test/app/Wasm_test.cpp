@@ -6,7 +6,7 @@
 
 #include <xrpld/app/wasm/HostFuncWrapper.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 bool
@@ -743,4 +743,4 @@ struct Wasm_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(Wasm, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

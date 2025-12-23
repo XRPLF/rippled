@@ -33,7 +33,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 namespace contract {
 
 /** The maximum number of data modifications in a single function. */
@@ -108,6 +108,6 @@ finalizeContractData(
     uint256 const& txnID);
 
 }  // namespace contract
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -33,7 +33,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class STData final : public STBase
 {
@@ -303,6 +303,6 @@ STData::setFieldUsingAssignment(T const& value)
 STData
 dataFromJson(SField const& field, Json::Value const& value);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

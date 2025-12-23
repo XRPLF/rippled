@@ -34,7 +34,7 @@
 #include <cstring>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 template <typename U, typename S>
 constexpr std::
@@ -1016,4 +1016,4 @@ dataFromJson(SField const& field, Json::Value const& v)
     Throw<std::runtime_error>("STData: unsupported type string: " + typeStr);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -13,7 +13,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 static void
 setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
@@ -291,4 +291,4 @@ WasmEngine::getJournal() const
 }
 // LCOV_EXCL_STOP
 
-}  // namespace ripple
+}  // namespace xrpl

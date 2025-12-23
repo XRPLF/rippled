@@ -13,7 +13,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 enum class HostFunctionError : int32_t {
     SUCCESS = 0,
@@ -638,4 +638,4 @@ struct HostFunctions
     // LCOV_EXCL_STOP
 };
 
-}  // namespace ripple
+}  // namespace xrpl

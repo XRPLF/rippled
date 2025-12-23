@@ -31,7 +31,7 @@
 #include <xrpl/protocol/detail/STVar.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 static ApplyContext
@@ -61,10 +61,10 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
         uint256 const& contractHash = uint256{1})
     {
         using namespace jtx;
-        ripple::ContractDataMap dataMap;
-        ripple::ContractEventMap eventMap;
-        std::vector<ripple::ParameterValueVec> instanceParameters;
-        std::vector<ripple::ParameterValueVec> functionParameters;
+        xrpl::ContractDataMap dataMap;
+        xrpl::ContractEventMap eventMap;
+        std::vector<xrpl::ParameterValueVec> instanceParameters;
+        std::vector<xrpl::ParameterValueVec> functionParameters;
 
         uint256 const& txId = uint256{2};
 
@@ -1463,4 +1463,4 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(ContractHostFuncImpl, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

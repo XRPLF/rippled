@@ -28,7 +28,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 /**
  * We have both transaction type emitables and granular type emitables.
  * Since we will reuse the TransactionFormats to parse the Transaction
@@ -96,6 +96,6 @@ public:
     emitableToTxType(uint32_t const& value) const;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -32,7 +32,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   contract_account: <account>,
@@ -182,4 +182,4 @@ doContractInfo(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

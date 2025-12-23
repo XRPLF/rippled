@@ -30,7 +30,7 @@
 #include <cstring>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 // TODO
 STDataType::STDataType(SField const& n) : STBase(n), inner_type_(STI_NOTPRESENT)
@@ -270,4 +270,4 @@ dataTypeFromJson(SField const& field, Json::Value const& v)
     Throw<std::runtime_error>("STData: unsupported type string: " + typeStr);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

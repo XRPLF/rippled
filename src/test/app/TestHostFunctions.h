@@ -9,7 +9,7 @@
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -1024,7 +1024,7 @@ struct PerfHostFunctions : public TestHostFunctions
         if (data.size() > maxWasmDataLength)
             return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-        ripple::detail::ApplyViewBase v(
+        xrpl::detail::ApplyViewBase v(
             env_.app().openLedger().current().get(), tapNONE);
 
         auto sle = v.peek(leKey);
@@ -1326,4 +1326,4 @@ struct PerfHostFunctions : public TestHostFunctions
 };
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

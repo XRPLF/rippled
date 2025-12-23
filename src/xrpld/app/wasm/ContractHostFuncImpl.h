@@ -23,7 +23,7 @@
 #include <xrpld/app/wasm/HostFunc.h>
 #include <xrpld/app/wasm/HostFuncImpl.h>
 
-namespace ripple {
+namespace xrpl {
 class ContractHostFunctionsImpl : public WasmHostFunctionsImpl
 {
     ContractContext& contractCtx;
@@ -40,7 +40,7 @@ public:
     }
 
     // Expected<Bytes, HostFunctionError>
-    // getFieldBytesFromSTData(ripple::STData const& funcParam, std::uint32_t
+    // getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t
     // stTypeId);
 
     Expected<Bytes, HostFunctionError>
@@ -120,4 +120,4 @@ public:
         override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl

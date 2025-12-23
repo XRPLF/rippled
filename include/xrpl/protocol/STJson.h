@@ -30,7 +30,7 @@
 #include <variant>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * STJson: Serialized Type for JSON-like structures (objects or arrays).
@@ -209,6 +209,6 @@ private:
     friend class detail::STVar;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

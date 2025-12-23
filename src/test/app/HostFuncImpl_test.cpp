@@ -4,7 +4,7 @@
 
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 static Bytes
@@ -2964,4 +2964,4 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(HostFuncImpl, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

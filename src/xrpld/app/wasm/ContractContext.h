@@ -28,10 +28,10 @@
 
 #include <queue>
 
-namespace ripple {
+namespace xrpl {
 
 class ContractDataMap
-    : public std::map<ripple::AccountID, std::pair<bool, STJson>>
+    : public std::map<xrpl::AccountID, std::pair<bool, STJson>>
 {
 public:
     uint32_t modifiedCount = 0;
@@ -43,25 +43,25 @@ class ContractEventMap : public std::map<std::string, STJson>
 
 struct ParameterValueVec
 {
-    ripple::STData const value;
+    xrpl::STData const value;
 };
 
 struct FunctionParameterValueVecWithName
 {
-    ripple::Blob const name;
-    ripple::STData const value;
+    xrpl::Blob const name;
+    xrpl::STData const value;
 };
 
 struct ParameterTypeVec
 {
-    ripple::STDataType const type;
+    xrpl::STDataType const type;
 };
 
 std::vector<ParameterValueVec>
-getParameterValueVec(ripple::STArray const& functionParameters);
+getParameterValueVec(xrpl::STArray const& functionParameters);
 
 std::vector<ParameterTypeVec>
-getParameterTypeVec(ripple::STArray const& functionParameters);
+getParameterTypeVec(xrpl::STArray const& functionParameters);
 
 enum ExitType : uint8_t {
     UNSET = 0,
@@ -72,39 +72,39 @@ enum ExitType : uint8_t {
 
 struct ContractResult
 {
-    ripple::uint256 const contractHash;   // Hash of the contract code
-    ripple::Keylet const contractKeylet;  // Keylet for the contract instance
-    ripple::Keylet const
+    xrpl::uint256 const contractHash;   // Hash of the contract code
+    xrpl::Keylet const contractKeylet;  // Keylet for the contract instance
+    xrpl::Keylet const
         contractSourceKeylet;  // Keylet for the contract source
-    ripple::Keylet const
+    xrpl::Keylet const
         contractAccountKeylet;  // Keylet for the contract account
-    ripple::AccountID const
+    xrpl::AccountID const
         contractAccount;  // AccountID of the contract account
     std::uint32_t
         nextSequence;  // Next sequence number for the contract account
-    ripple::AccountID const
+    xrpl::AccountID const
         otxnAccount;               // AccountID for the originating transaction
-    ripple::uint256 const otxnId;  // ID for the originating transaction
+    xrpl::uint256 const otxnId;  // ID for the originating transaction
     std::string exitReason{""};
     int64_t exitCode{-1};
     ContractDataMap dataMap;
     ContractEventMap eventMap;
-    std::queue<std::shared_ptr<ripple::Transaction>> emittedTxns{};
+    std::queue<std::shared_ptr<xrpl::Transaction>> emittedTxns{};
     std::size_t changedDataCount{0};
 };
 
 struct ContractContext
 {
-    ripple::ApplyContext& applyCtx;
+    xrpl::ApplyContext& applyCtx;
     std::vector<ParameterValueVec> instanceParameters;
     std::vector<ParameterValueVec> functionParameters;
     std::vector<STObject> built_txns;
     int64_t expected_etxn_count{-1};  // expected emitted transaction count
-    std::map<ripple::uint256, bool>
+    std::map<xrpl::uint256, bool>
         nonce_used{};         // nonces used in this execution
     uint32_t generation = 0;  // generation of the contract being executed
     uint64_t burden = 0;      // computational burden used
     ContractResult result;
 };
 
-}  // namespace ripple
+}  // namespace xrpl

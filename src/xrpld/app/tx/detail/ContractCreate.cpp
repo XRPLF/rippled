@@ -30,7 +30,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 XRPAmount
 ContractCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
@@ -144,7 +144,7 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
     // The ContractCode provided is invalid.
     if (ctx.tx.isFieldPresent(sfContractCode))
     {
-        ripple::Blob wasmBytes = ctx.tx.getFieldVL(sfContractCode);
+        xrpl::Blob wasmBytes = ctx.tx.getFieldVL(sfContractCode);
         if (wasmBytes.empty())
         {
             JLOG(ctx.j.trace())
@@ -152,8 +152,8 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
             return temMALFORMED;
         }
 
-        contractHash = ripple::sha512Half_s(
-            ripple::Slice(wasmBytes.data(), wasmBytes.size()));
+        contractHash = xrpl::sha512Half_s(
+            xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
         if (ctx.view.exists(keylet::contractSource(*contractHash)))
             isInstall = true;
 
@@ -208,12 +208,12 @@ ContractCreate::doApply()
     std::shared_ptr<SLE> sourceSle;
     bool isInstall = ctx_.tx.isFieldPresent(sfContractHash);
     auto contractHash = ctx_.tx[~sfContractHash];
-    ripple::Blob wasmBytes;
+    xrpl::Blob wasmBytes;
     if (ctx_.tx.isFieldPresent(sfContractCode))
     {
         wasmBytes = ctx_.tx.getFieldVL(sfContractCode);
-        contractHash = ripple::sha512Half_s(
-            ripple::Slice(wasmBytes.data(), wasmBytes.size()));
+        contractHash = xrpl::sha512Half_s(
+            xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
         if (ctx_.view().exists(keylet::contractSource(*contractHash)))
             isInstall = true;
     }
@@ -323,4 +323,4 @@ ContractCreate::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

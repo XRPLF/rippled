@@ -23,7 +23,7 @@
 #include <xrpl/protocol/STData.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct STData_test : public beast::unit_test::suite
 {
@@ -1321,4 +1321,4 @@ struct STData_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(STData, protocol, ripple);
 
-}  // namespace ripple
+}  // namespace xrpl

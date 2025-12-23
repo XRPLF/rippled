@@ -9,7 +9,7 @@
 // #define DEBUG_OUTPUT 1
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 Expected<std::int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getLedgerSqn()
@@ -1302,4 +1302,4 @@ floatLogImpl(Slice const& x, int32_t mode)
     // LCOV_EXCL_STOP
 }
 
-}  // namespace ripple
+}  // namespace xrpl

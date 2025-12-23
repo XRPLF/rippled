@@ -25,7 +25,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Contract_test : public beast::unit_test::suite
@@ -111,8 +111,8 @@ class Contract_test : public beast::unit_test::suite
     uint256
     getContractHash(Blob const& wasmBytes)
     {
-        return ripple::sha512Half_s(
-            ripple::Slice(wasmBytes.data(), wasmBytes.size()));
+        return xrpl::sha512Half_s(
+            xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
     }
 
     void
@@ -350,8 +350,8 @@ class Contract_test : public beast::unit_test::suite
         auto const wasmBytes =
             strUnHex(jt.jv[sfContractCode.jsonName].asString());
         // std::cout << "WASM Size: " << wasmBytes->size() << std::endl;
-        uint256 const contractHash = ripple::sha512Half_s(
-            ripple::Slice(wasmBytes->data(), wasmBytes->size()));
+        uint256 const contractHash = xrpl::sha512Half_s(
+            xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
         auto const accountID =
             parseBase58<AccountID>(jt.jv[sfAccount].asString());
         auto const [contractKey, sle] = contractKeyAndSle(
@@ -1252,8 +1252,8 @@ class Contract_test : public beast::unit_test::suite
 
             // new contract source exists
             auto const wasmBytes = strUnHex(Base2ContractWasm);
-            uint256 const newContractHash = ripple::sha512Half_s(
-                ripple::Slice(wasmBytes->data(), wasmBytes->size()));
+            uint256 const newContractHash = xrpl::sha512Half_s(
+                xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
             auto const [contractKey, contractSle] =
                 contractSourceKeyAndSle(*env.current(), newContractHash);
             BEAST_EXPECT(contractSle);
@@ -2138,4 +2138,4 @@ public:
 BEAST_DEFINE_TESTSUITE(Contract, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

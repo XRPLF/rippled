@@ -34,7 +34,7 @@
 
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 // Local function definitions that provides signature compatibility.
 TER
@@ -228,7 +228,7 @@ deletePreclaim(
     }
 
     auto srcSle = ctx.view.read(keylet::account(account));
-    XRPL_ASSERT(srcSle, "ripple::DeleteAccount::preclaim : non-null account");
+    XRPL_ASSERT(srcSle, "xrpl::DeleteAccount::preclaim : non-null account");
     if (!srcSle)
         return terNO_ACCOUNT;
 
@@ -334,7 +334,7 @@ deleteDoApply(
 
     auto srcSle = view.peek(keylet::account(account));
     XRPL_ASSERT(
-        srcSle, "ripple::DeleteAccount::doApply : non-null source account");
+        srcSle, "xrpl::DeleteAccount::doApply : non-null source account");
 
     if (!srcSle)
         return tefBAD_LEDGER;
@@ -342,7 +342,7 @@ deleteDoApply(
     auto destSle = view.peek(keylet::account(dest));
     XRPL_ASSERT(
         destSle,
-        "ripple::DeleteAccount::doApply : non-null destination account");
+        "xrpl::DeleteAccount::doApply : non-null destination account");
 
     if (!destSle)
         return tefBAD_LEDGER;
@@ -371,7 +371,7 @@ deleteDoApply(
             }
 
             UNREACHABLE(
-                "ripple::DeleteAccount::doApply : undeletable item not found "
+                "xrpl::DeleteAccount::doApply : undeletable item not found "
                 "in preclaim");
             JLOG(j.error()) << "DeleteAccount undeletable item not "
                                "found in preclaim.";
@@ -390,7 +390,7 @@ deleteDoApply(
     // FIX FIX FIX: DA FIX
     // XRPL_ASSERT(
     //     (*srcSle)[sfBalance] == XRPAmount(0),
-    //     "ripple::DeleteAccount::doApply : source balance is zero");
+    //     "xrpl::DeleteAccount::doApply : source balance is zero");
 
     // If there's still an owner directory associated with the source account
     // delete it.
@@ -411,4 +411,4 @@ deleteDoApply(
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

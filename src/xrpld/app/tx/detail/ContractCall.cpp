@@ -31,7 +31,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 XRPAmount
 ContractCall::calculateBaseFee(ReadView const& view, STTx const& tx)
@@ -226,7 +226,7 @@ ContractCall::doApply()
     }
 
     // ContractCall Parameters
-    std::vector<ripple::ParameterValueVec> functionParameters;
+    std::vector<xrpl::ParameterValueVec> functionParameters;
     if (ctx_.tx.isFieldPresent(sfParameters))
     {
         STArray const& funcParams = ctx_.tx.getFieldArray(sfParameters);
@@ -234,7 +234,7 @@ ContractCall::doApply()
     }
 
     // ContractSource/Contract Default Parameters
-    std::vector<ripple::ParameterValueVec> instanceParameters;
+    std::vector<xrpl::ParameterValueVec> instanceParameters;
     if (contractSle->isFieldPresent(sfInstanceParameterValues))
     {
         STArray const& instParams =
@@ -247,7 +247,7 @@ ContractCall::doApply()
     if (function->isFieldPresent(sfParameters))
     {
         STArray const& funcParamsDef = function->getFieldArray(sfParameters);
-        typeVec = ripple::getParameterTypeVec(funcParamsDef);
+        typeVec = xrpl::getParameterTypeVec(funcParamsDef);
         if (functionParameters.size() != typeVec.size())
             return tecINVALID_PARAMETERS;
     }
@@ -259,8 +259,8 @@ ContractCall::doApply()
             return tecINVALID_PARAMETERS;
     }
 
-    ripple::ContractDataMap dataMap;
-    ripple::ContractEventMap eventMap;
+    xrpl::ContractDataMap dataMap;
+    xrpl::ContractEventMap eventMap;
     ContractContext contractCtx = {
         .applyCtx = ctx_,
         .instanceParameters = instanceParameters,
@@ -357,4 +357,4 @@ ContractCall::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

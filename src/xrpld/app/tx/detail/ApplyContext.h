@@ -113,12 +113,12 @@ public:
     /** Sets the gas used in the metadata */
     void
     setEmittedTxns(
-        std::queue<std::shared_ptr<ripple::Transaction>> const emittedTxns)
+        std::queue<std::shared_ptr<xrpl::Transaction>> const emittedTxns)
     {
         emittedTxns_ = emittedTxns;
     }
 
-    std::queue<std::shared_ptr<ripple::Transaction>>
+    std::queue<std::shared_ptr<xrpl::Transaction>>
     getEmittedTxns()
     {
         return emittedTxns_;
@@ -179,7 +179,7 @@ private:
 
     std::optional<std::uint32_t> gasUsed_;
     std::optional<std::int32_t> wasmReturnCode_;
-    std::queue<std::shared_ptr<ripple::Transaction>> emittedTxns_;
+    std::queue<std::shared_ptr<xrpl::Transaction>> emittedTxns_;
     std::optional<uint256 const> parentBatchId_;
 };
 

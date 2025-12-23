@@ -27,10 +27,10 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Emitable.h>
 
-namespace ripple {
+namespace xrpl {
 
 Expected<Bytes, HostFunctionError>
-getFieldBytesFromSTData(ripple::STData const& funcParam, std::uint32_t stTypeId)
+getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
 {
     switch (stTypeId)
     {
@@ -173,7 +173,7 @@ ContractHostFunctionsImpl::instanceParam(
         return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
     }
 
-    ripple::STData const& instParam = instanceParams[index].value;
+    xrpl::STData const& instParam = instanceParams[index].value;
     return getFieldBytesFromSTData(instParam, stTypeId);
 }
 
@@ -192,12 +192,12 @@ ContractHostFunctionsImpl::functionParam(
         return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
     }
 
-    ripple::STData const& funcParam = funcParams[index].value;
+    xrpl::STData const& funcParam = funcParams[index].value;
     return getFieldBytesFromSTData(funcParam, stTypeId);
 }
 
 inline std::optional<std::reference_wrapper<std::pair<bool, STJson> const>>
-getDataCache(ContractContext& contractCtx, ripple::AccountID const& account)
+getDataCache(ContractContext& contractCtx, xrpl::AccountID const& account)
 {
     auto& dataMap = contractCtx.result.dataMap;
     if (dataMap.find(account) == dataMap.end())
@@ -1112,4 +1112,4 @@ ContractHostFunctionsImpl::emitEvent(
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

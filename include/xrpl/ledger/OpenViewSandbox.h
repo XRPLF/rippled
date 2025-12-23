@@ -24,7 +24,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 class OpenViewSandbox
 {
@@ -100,6 +100,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -5,7 +5,7 @@
 #include <wasm.h>
 #include <wasmi.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <class T, void (*Create)(T*, size_t), void (*Destroy)(T*)>
 struct WasmVec
@@ -345,4 +345,4 @@ private:
         Types&&... args);
 };
 
-}  // namespace ripple
+}  // namespace xrpl

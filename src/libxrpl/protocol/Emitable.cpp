@@ -22,7 +22,7 @@
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 Emitable::Emitable()
 {
@@ -76,7 +76,7 @@ Emitable::Emitable()
     for ([[maybe_unused]] auto const& emitable : granularEmitableMap_)
         XRPL_ASSERT(
             emitable.second > UINT16_MAX,
-            "ripple::Emitable::granularEmitableMap_ : granular emitable "
+            "xrpl::Emitable::granularEmitableMap_ : granular emitable "
             "value must not exceed the maximum uint16_t value.");
 }
 
@@ -154,7 +154,7 @@ Emitable::isEmitable(
     //     auto const txFeaturesIt = txFeatureMap_.find(txType);
     //     XRPL_ASSERT(
     //         txFeaturesIt != txFeatureMap_.end(),
-    //         "ripple::Emitables::isDelegatable : tx exists in txFeatureMap_");
+    //         "xrpl::Emitables::isDelegatable : tx exists in txFeatureMap_");
 
     //     // fixDelegateV1_1: Delegation is only allowed if the required amendment
     //     // for the transaction is enabled. For transactions that do not require
@@ -182,4 +182,4 @@ Emitable::emitableToTxType(uint32_t const& value) const
     return static_cast<TxType>(value - 1);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

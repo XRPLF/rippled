@@ -33,7 +33,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class STDataType final : public STBase
 {
@@ -105,6 +105,6 @@ STDataType::getInnerSType() const noexcept
 STDataType
 dataTypeFromJson(SField const& field, Json::Value const& value);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
