@@ -1580,14 +1580,15 @@ class Simulate_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice);
         env.close();
 
-        auto const ledgerSeq = env.current()->info().seq;
+        auto const ledgerSeq = env.current()->header().seq;
         auto const aliceSeq = env.seq(alice);
         env.close();
 
         Json::Value tx = pay(alice, env.master, XRP(700));
         env(tx);
         auto const txHash = to_string(env.tx()->getTransactionID());
-        auto const ctid = *RPC::encodeCTID(env.current()->info().seq, 0, netID);
+        auto const ctid =
+            *RPC::encodeCTID(env.current()->header().seq, 0, netID);
         env.close();
 
         {
