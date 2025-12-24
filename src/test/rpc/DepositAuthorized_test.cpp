@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class DepositAuthorized_test : public beast::unit_test::suite
@@ -557,7 +557,7 @@ public:
             // check expired credentials
             char const credType2[] = "fghijk";
             std::uint32_t const x = env.current()
-                                        ->info()
+                                        ->header()
                                         .parentCloseTime.time_since_epoch()
                                         .count() +
                 40;
@@ -622,7 +622,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DepositAuthorized, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(DepositAuthorized, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

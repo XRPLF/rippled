@@ -9,7 +9,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 // can_delete [<ledgerid>|<ledgerhash>|now|always|never]
 Json::Value
@@ -60,7 +60,7 @@ doCanDelete(RPC::JsonContext& context)
                 if (!ledger)
                     return RPC::make_error(rpcLGR_NOT_FOUND, "ledgerNotFound");
 
-                canDeleteSeq = ledger->info().seq;
+                canDeleteSeq = ledger->header().seq;
             }
             else
             {
@@ -79,4 +79,4 @@ doCanDelete(RPC::JsonContext& context)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

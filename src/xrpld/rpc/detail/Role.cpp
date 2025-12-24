@@ -5,14 +5,14 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 passwordUnrequiredOrSentCorrect(Port const& port, Json::Value const& params)
 {
     XRPL_ASSERT(
         !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()),
-        "ripple::passwordUnrequiredOrSentCorrect : non-empty admin nets");
+        "xrpl::passwordUnrequiredOrSentCorrect : non-empty admin nets");
     bool const passwordRequired =
         (!port.admin_user.empty() || !port.admin_password.empty());
 
@@ -292,4 +292,4 @@ forwardedFor(http_request_type const& request)
     return {};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

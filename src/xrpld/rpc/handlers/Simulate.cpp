@@ -18,7 +18,7 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 constexpr int const MAX_SIMULATE_TXS = 1000;
 
@@ -649,4 +649,4 @@ doSimulate(RPC::JsonContext& context)
     // LCOV_EXCL_STOP
 }
 
-}  // namespace ripple
+}  // namespace xrpl

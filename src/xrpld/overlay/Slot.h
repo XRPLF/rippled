@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 namespace reduce_relay {
 
@@ -374,7 +374,7 @@ Slot<clock_type>::update(
 
         XRPL_ASSERT(
             peers_.size() >= maxSelectedPeers_,
-            "ripple::reduce_relay::Slot::update : minimum peers");
+            "xrpl::reduce_relay::Slot::update : minimum peers");
 
         // squelch peers which are not selected and
         // not already squelched
@@ -417,7 +417,7 @@ Slot<clock_type>::getSquelchDuration(std::size_t npeers)
         JLOG(journal_.warn())
             << "getSquelchDuration: unexpected squelch duration " << npeers;
     }
-    return seconds{ripple::rand_int(MIN_UNSQUELCH_EXPIRE / 1s, m / 1s)};
+    return seconds{xrpl::rand_int(MIN_UNSQUELCH_EXPIRE / 1s, m / 1s)};
 }
 
 template <typename clock_type>
@@ -821,6 +821,6 @@ Slots<clock_type>::deleteIdlePeers()
 
 }  // namespace reduce_relay
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_OVERLAY_SLOT_H_INCLUDED

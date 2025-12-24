@@ -15,7 +15,7 @@
 #include <optional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 getFileContents(
@@ -85,4 +85,4 @@ writeFileContents(
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -9,7 +9,7 @@
 #include <random>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -92,6 +92,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

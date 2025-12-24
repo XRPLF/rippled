@@ -3,7 +3,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class CrossingLimits_test : public beast::unit_test::suite
@@ -303,7 +303,7 @@ public:
             //     offers unfunded.
             //     b. Carol's remaining 800 offers are consumed as unfunded.
             //     c. 199 of alice's XRP(1) to USD(3) offers are consumed.
-            //        A book step is allowed to consume a maxium of 1000 offers
+            //        A book step is allowed to consume a maximum of 1000 offers
             //        at a given quality, and that limit is now reached.
             //     d. Now the strand is dry, even though there are still funded
             //     XRP(1) to USD(3) offers available.
@@ -384,7 +384,7 @@ public:
             //     offers unfunded.
             //     b. Carol's remaining 800 offers are consumed as unfunded.
             //     c. 199 of alice's XRP(1) to USD(3) offers are consumed.
-            //        A book step is allowed to consume a maxium of 1000 offers
+            //        A book step is allowed to consume a maximum of 1000 offers
             //        at a given quality, and that limit is now reached.
             //     d. Now the strand is dry, even though there are still funded
             //     XRP(1) to USD(3) offers available. Bob has spent 400 EUR and
@@ -492,7 +492,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimits, app, ripple, 10);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimits, app, xrpl, 10);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -9,7 +9,7 @@
 #include <memory>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /**
    Add an `offer_id` field to the `meta` output parameter.
@@ -33,6 +33,6 @@ insertNFTokenOfferID(
     TxMeta const& transactionMeta);
 /** @} */
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 inline void
 serializePayChanAuthorization(
@@ -19,6 +19,6 @@ serializePayChanAuthorization(
     msg.add64(amt.drops());
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

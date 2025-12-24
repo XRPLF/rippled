@@ -18,7 +18,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace Attestations {
 
@@ -478,6 +478,6 @@ class XChainCreateAccountAttestations final
     using TBase::TBase;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // STXCHAINATTESTATIONS_H_

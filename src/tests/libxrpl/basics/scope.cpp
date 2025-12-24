@@ -2,7 +2,7 @@
 
 #include <doctest/doctest.h>
 
-using namespace ripple;
+using namespace xrpl;
 
 TEST_CASE("scope_exit")
 {

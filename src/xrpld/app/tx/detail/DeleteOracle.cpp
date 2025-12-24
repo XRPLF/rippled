@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 DeleteOracle::preflight(PreflightContext const& ctx)
@@ -80,4 +80,4 @@ DeleteOracle::doApply()
     return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
-}  // namespace ripple
+}  // namespace xrpl

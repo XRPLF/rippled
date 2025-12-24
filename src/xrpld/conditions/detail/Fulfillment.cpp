@@ -5,7 +5,7 @@
 
 #include <xrpl/basics/safe_cast.h>
 
-namespace ripple {
+namespace xrpl {
 namespace cryptoconditions {
 
 bool
@@ -130,4 +130,4 @@ Fulfillment::deserialize(Slice s, std::error_code& ec)
 }
 
 }  // namespace cryptoconditions
-}  // namespace ripple
+}  // namespace xrpl

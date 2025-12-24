@@ -15,7 +15,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Internal form:
 // 1: If amount is zero, then value is zero and offset is -100
@@ -347,7 +347,7 @@ STAmount::STAmount(
     // mValue is uint64, but needs to fit in the range of int64
     XRPL_ASSERT(
         mValue <= std::numeric_limits<std::int64_t>::max(),
-        "ripple::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
+        "xrpl::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
         "maximum mantissa input");
     canonicalize();
 }
@@ -748,15 +748,15 @@ canAdd(STAmount const& amt1, STAmount const& amt2);
 bool
 canSubtract(STAmount const& amt1, STAmount const& amt2);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 namespace Json {
 template <>
-inline ripple::STAmount
-getOrThrow(Json::Value const& v, ripple::SField const& field)
+inline xrpl::STAmount
+getOrThrow(Json::Value const& v, xrpl::SField const& field)
 {
-    using namespace ripple;
+    using namespace xrpl;
     Json::StaticString const& key = field.getJsonName();
     if (!v.isMember(key))
         Throw<JsonMissingKeyError>(key);

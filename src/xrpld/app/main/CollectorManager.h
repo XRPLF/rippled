@@ -4,7 +4,7 @@
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/insight/Insight.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Provides the beast::insight::Collector service. */
 class CollectorManager
@@ -22,6 +22,6 @@ public:
 std::unique_ptr<CollectorManager>
 make_CollectorManager(Section const& params, beast::Journal journal);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

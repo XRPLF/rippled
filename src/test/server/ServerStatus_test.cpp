@@ -24,7 +24,7 @@
 #include <random>
 #include <regex>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ServerStatus_test : public beast::unit_test::suite,
@@ -842,7 +842,7 @@ class ServerStatus_test : public beast::unit_test::suite,
 
         // mark the Network as having an Amendment Warning, but won't fail
         env.app().getOPs().setAmendmentWarned();
-        env.app().getOPs().beginConsensus(env.closed()->info().hash, {});
+        env.app().getOPs().beginConsensus(env.closed()->header().hash, {});
 
         // consensus doesn't change
         BEAST_EXPECT(
@@ -973,7 +973,7 @@ class ServerStatus_test : public beast::unit_test::suite,
         // mark the Network as Amendment Blocked, but still won't fail until
         // ELB is enabled (next step)
         env.app().getOPs().setAmendmentBlocked();
-        env.app().getOPs().beginConsensus(env.closed()->info().hash, {});
+        env.app().getOPs().beginConsensus(env.closed()->header().hash, {});
 
         // consensus now sees validation disabled
         BEAST_EXPECT(
@@ -1226,7 +1226,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ServerStatus, server, ripple);
+BEAST_DEFINE_TESTSUITE(ServerStatus, server, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

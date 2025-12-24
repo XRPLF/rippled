@@ -3,9 +3,9 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/CollectorManager.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
 
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/Output.h>
 #include <xrpl/server/Server.h>
 #include <xrpl/server/Session.h>
@@ -20,7 +20,7 @@
 #include <mutex>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 inline bool
 operator<(Port const& lhs, Port const& rhs)
@@ -210,6 +210,6 @@ make_ServerHandler(
     Resource::Manager&,
     CollectorManager& cm);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

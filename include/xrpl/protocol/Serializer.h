@@ -16,7 +16,7 @@
 #include <cstring>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 class Serializer
 {
@@ -38,7 +38,7 @@ public:
         {
             XRPL_ASSERT(
                 data,
-                "ripple::Serializer::Serializer(void const*) : non-null input");
+                "xrpl::Serializer::Serializer(void const*) : non-null input");
             std::memcpy(mData.data(), data, size);
         }
     }
@@ -314,8 +314,7 @@ Serializer::addVL(Iter begin, Iter end, int len)
         len -= begin->size();
 #endif
     }
-    XRPL_ASSERT(
-        len == 0, "ripple::Serializer::addVL : length matches distance");
+    XRPL_ASSERT(len == 0, "xrpl::Serializer::addVL : length matches distance");
     return ret;
 }
 
@@ -453,6 +452,6 @@ SerialIter::getBitString()
     return base_uint<Bits, Tag>::fromVoid(x);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

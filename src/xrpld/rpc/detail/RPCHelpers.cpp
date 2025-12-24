@@ -15,7 +15,7 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 std::uint64_t
@@ -355,7 +355,7 @@ chooseLedgerEntryType(Json::Value const& params)
                 rpcINVALID_PARAMS, "Invalid field 'type', not string."};
             XRPL_ASSERT(
                 result.first.type() == RPC::Status::Type::error_code_i,
-                "ripple::RPC::chooseLedgerEntryType : first valid result type");
+                "xrpl::RPC::chooseLedgerEntryType : first valid result type");
             return result;
         }
 
@@ -374,7 +374,7 @@ chooseLedgerEntryType(Json::Value const& params)
                 RPC::Status{rpcINVALID_PARAMS, "Invalid field 'type'."};
             XRPL_ASSERT(
                 result.first.type() == RPC::Status::Type::error_code_i,
-                "ripple::RPC::chooseLedgerEntryType : second valid result "
+                "xrpl::RPC::chooseLedgerEntryType : second valid result "
                 "type");
             return result;
         }
@@ -400,4 +400,4 @@ isAccountObjectsValidType(LedgerEntryType const& type)
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

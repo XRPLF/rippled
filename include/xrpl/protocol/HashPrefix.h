@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -82,6 +82,6 @@ hash_append(Hasher& h, HashPrefix const& hp) noexcept
     hash_append(h, static_cast<std::uint32_t>(hp));
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

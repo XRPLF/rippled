@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/STAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 inline STAmount
 largestAmount(STAmount const& amt)
@@ -29,6 +29,6 @@ convertAllCheck(STAmount const& a)
     return a == largestAmount(a);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
