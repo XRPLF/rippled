@@ -1400,7 +1400,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
          "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
          "-1",
          "-1",
-         "descending"},
+         "decending"},
         RPCCallTestData::bad_cast,
         R"()",
     },
