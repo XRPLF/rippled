@@ -21,13 +21,10 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-
-#include "test/jtx/Account.h"
 
 #include <optional>
 
@@ -5326,6 +5323,17 @@ class Vault_test : public beast::unit_test::suite
                 THISLINE);
             env.close();
 
+            // attempt to clawback shares while there assetsAvailable == 0 and
+            // assetsTotal > 0 fails
+            env(vault.clawback(
+                    {.issuer = owner,
+                     .id = vaultKeylet.key,
+                     .holder = depositor,
+                     .amount = share(0).value()}),
+                ter(tecNO_PERMISSION),
+                THISLINE);
+            env.close();
+
             env.close(std::chrono::seconds{120 + 10});
 
             env(manage(owner, loanKeylet.key, tfLoanDefault),
@@ -5419,7 +5427,6 @@ class Vault_test : public beast::unit_test::suite
                     THISLINE);
                 env.close();
             }
-
             {
                 testcase(
                     "VaultClawback (share) - " + prefix +
@@ -5437,6 +5444,36 @@ class Vault_test : public beast::unit_test::suite
                         .amount = share(vaultShareBalance(vaultKeylet)).value(),
                     }),
                     ter(tesSUCCESS),
+                    THISLINE);
+                env.close();
+            }
+
+            {
+                testcase(
+                    "VaultClawback (share) - " + prefix +
+                    " empty vault share clawback fails");
+                auto [vault, vaultKeylet] = setupVault(asset, owner, owner);
+                auto const& vaultSle = env.le(vaultKeylet);
+                BEAST_EXPECT(vaultSle != nullptr);
+                if (!vaultSle)
+                    return;
+                Asset share = vaultSle->at(sfShareMPTID);
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = owner,
+                        .amount = share(vaultShareBalance(vaultKeylet)).value(),
+                    }),
+                    ter(tesSUCCESS),
+                    THISLINE);
+
+                // Now the vault is empty, clawback again fails
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = owner,
+                    }),
+                    ter(tecNO_PERMISSION),
                     THISLINE);
                 env.close();
             }

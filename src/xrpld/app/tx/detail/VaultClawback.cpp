@@ -10,7 +10,6 @@
 #include <xrpl/protocol/TER.h>
 
 namespace xrpl {
-
 NotTEC
 VaultClawback::preflight(PreflightContext const& ctx)
 {
@@ -60,8 +59,8 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     }
 
     Asset const share = MPTIssue{mptIssuanceID};
-    // Ambiguous case: If the Issuer is the Vault Owner the must explicitly
-    // provide the asset
+
+    // Ambiguous case: If Issuer is Owner they must specify the asset
     if (!maybeAmount && !vaultAsset.native() &&
         vaultAsset.getIssuer() == vault->at(sfOwner))
     {
@@ -99,7 +98,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         auto const sharesTotal = sleShareIssuance->at(sfOutstandingAmount);
 
         // Owner can clawback funds when the vault has shares but no assets
-        if (sharesTotal != 0 && (assetsTotal != 0 || assetsAvailable != 0))
+        if (sharesTotal == 0 || (assetsTotal != 0 || assetsAvailable != 0))
         {
             JLOG(ctx.j.debug())
                 << "VaultClawback: vault owner can clawback shares only"
@@ -141,15 +140,6 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        auto const issuer = ctx.view.read(keylet::account(account));
-        if (!issuer)
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.error()) << "VaultClawback: missing submitter account.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-
         // Only the Asset Issuer may clawback the asset
         if (account != vaultAsset.getIssuer())
         {
@@ -166,35 +156,50 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        if (vaultAsset.holds<MPTIssue>())
-        {
-            auto const mpt = vaultAsset.get<MPTIssue>();
-            auto const mptIssue =
-                ctx.view.read(keylet::mptIssuance(mpt.getMptID()));
-            if (mptIssue == nullptr)
-                return tecOBJECT_NOT_FOUND;
+        return std::visit(
+            [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+                if constexpr (std::is_same_v<TIss, MPTIssue>)
+                {
+                    auto const mptIssue =
+                        ctx.view.read(keylet::mptIssuance(issue.getMptID()));
+                    if (mptIssue == nullptr)
+                        return tecOBJECT_NOT_FOUND;
 
-            std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
-            if (!(issueFlags & lsfMPTCanClawback))
-            {
-                JLOG(ctx.j.debug())
-                    << "VaultClawback: cannot clawback MPT vault asset.";
-                return tecNO_PERMISSION;
-            }
-        }
-        else if (vaultAsset.holds<Issue>())
-        {
-            std::uint32_t const issuerFlags = issuer->getFieldU32(sfFlags);
-            if (!(issuerFlags & lsfAllowTrustLineClawback) ||
-                (issuerFlags & lsfNoFreeze))
-            {
-                JLOG(ctx.j.debug())
-                    << "VaultClawback: cannot clawback IOU vault asset.";
-                return tecNO_PERMISSION;
-            }
-        }
+                    std::uint32_t const issueFlags =
+                        mptIssue->getFieldU32(sfFlags);
+                    if (!(issueFlags & lsfMPTCanClawback))
+                    {
+                        JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
+                                               "MPT vault asset.";
+                        return tecNO_PERMISSION;
+                    }
+                }
+                else if constexpr (std::is_same_v<TIss, Issue>)
+                {
+                    auto const issuerSle =
+                        ctx.view.read(keylet::account(account));
+                    if (!issuerSle)
+                    {
+                        // LCOV_EXCL_START
+                        JLOG(ctx.j.error())
+                            << "VaultClawback: missing submitter account.";
+                        return tefINTERNAL;
+                        // LCOV_EXCL_STOP
+                    }
 
-        return tesSUCCESS;
+                    std::uint32_t const issuerFlags =
+                        issuerSle->getFieldU32(sfFlags);
+                    if (!(issuerFlags & lsfAllowTrustLineClawback) ||
+                        (issuerFlags & lsfNoFreeze))
+                    {
+                        JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
+                                               "IOU vault asset.";
+                        return tecNO_PERMISSION;
+                    }
+                }
+                return tesSUCCESS;
+            },
+            vaultAsset.value());
     }
 
     // Invalid asset
@@ -210,9 +215,11 @@ VaultClawback::assetsToClawback(
 {
     if (clawbackAmount.asset() != vault->at(sfAsset))
     {
-        // preclaim should have blocked this case, this is now an internal error
+        // preclaim should have blocked this , now it's an internal error
+        // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultClawback: asset mismatch in clawback.";
-        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+        return Unexpected(tecINTERNAL);
+        // LCOV_EXCL_STOP
     }
 
     auto const assetsAvailable = vault->at(sfAssetsAvailable);
@@ -372,10 +379,8 @@ VaultClawback::doApply()
         if (!clawbackParts)
             return clawbackParts.error();
 
-        auto const [assets, shares] = *clawbackParts;
-
-        sharesDestroyed = shares;
-        assetsRecovered = assets;
+        assetsRecovered = clawbackParts->first;
+        sharesDestroyed = clawbackParts->second;
     }
 
     if (sharesDestroyed == beast::zero)
