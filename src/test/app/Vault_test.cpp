@@ -1906,18 +1906,20 @@ class Vault_test : public beast::unit_test::suite
             env.close();
 
             {
-                auto tx = vault.clawback(
-                    {.issuer = depositor,
-                     .id = keylet.key,
-                     .holder = depositor});
+                auto tx = vault.clawback({
+                    .issuer = depositor,
+                    .id = keylet.key,
+                    .holder = depositor,
+                });
                 env(tx, ter(tecNO_PERMISSION));
             }
 
             {
-                auto tx = vault.clawback(
-                    {.issuer = owner,
-                     .id = keylet.key,
-                     .holder = depositor});
+                auto tx = vault.clawback({
+                    .issuer = owner,
+                    .id = keylet.key,
+                    .holder = depositor,
+                });
                 env(tx, ter(tecNO_PERMISSION));
             }
         });
