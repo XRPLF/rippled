@@ -1553,7 +1553,7 @@ struct Escrow_test : public beast::unit_test::suite
                 escrow::finish_time(env.now() + 50s));
             env.close();
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
@@ -1635,7 +1635,7 @@ struct Escrow_test : public beast::unit_test::suite
                     escrow::finish_time(env.now() + 1s));
                 env.close();
 
-                // Bob require preauthorization
+                // Bob require pre-authorization
                 env(fset(bob, asfDepositAuth));
                 env.close();
                 env(deposit::authCredentials(bob, {{zelda, credType}}));

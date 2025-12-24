@@ -115,7 +115,7 @@ class MPToken_test : public beast::unit_test::suite
                  .metadata = "",
                  .err = temMALFORMED});
 
-            // MaximumAmout of 0 returns error
+            // MaximumAmount of 0 returns error
             mptAlice.create(
                 {.maxAmt = 0,
                  .assetScale = 1,
@@ -400,7 +400,7 @@ class MPToken_test : public beast::unit_test::suite
             // a mptoken yet
             mptAlice.authorize({.holder = bob, .err = tecOBJECT_NOT_FOUND});
 
-            // alice specifys a holder acct that doesn't exist
+            // alice specifies a holder acct that doesn't exist
             mptAlice.authorize({.holder = cindy, .err = tecNO_DST});
 
             // bob now holds a mptoken object
@@ -1805,7 +1805,7 @@ class MPToken_test : public beast::unit_test::suite
             // alice authorizes bob to hold funds
             mptAlice.authorize({.account = alice, .holder = bob});
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
@@ -1884,7 +1884,7 @@ class MPToken_test : public beast::unit_test::suite
             // alice authorizes bob to hold funds
             mptAlice.authorize({.account = alice, .holder = bob});
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
