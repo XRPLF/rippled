@@ -1912,6 +1912,14 @@ class Vault_test : public beast::unit_test::suite
                      .holder = depositor});
                 env(tx, ter(tecNO_PERMISSION));
             }
+
+            {
+                auto tx = vault.clawback(
+                    {.issuer = owner,
+                     .id = keylet.key,
+                     .holder = depositor});
+                env(tx, ter(tecNO_PERMISSION));
+            }
         });
 
         testCase(
