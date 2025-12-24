@@ -3462,7 +3462,8 @@ ValidVault::finalize(
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback may only be performed "
-                            "by the asset issuer, or by the vault owner of an empty vault";
+                            "by the asset issuer, or by the vault owner of an "
+                            "empty vault";
                         return false;  // That's all we can do
                     }
                 }
