@@ -210,7 +210,7 @@ public:
 
 private:
     // The ceil_in and ceil_out methods that deal in TAmount all convert
-    // their arguments to STAoumout and convert the result back to TAmount.
+    // their arguments to STAmount and convert the result back to TAmount.
     // This helper function takes care of all the conversion operations.
     template <
         class In,

@@ -15,7 +15,7 @@ reserve(jtx::Env& env, std::uint32_t count)
     return env.current()->fees().accountReserve(count);
 }
 
-// Helper function that returns true if acct has the lsfDepostAuth flag set.
+// Helper function that returns true if acct has the lsfDepositAuth flag set.
 static bool
 hasDepositAuth(jtx::Env const& env, jtx::Account const& acct)
 {
@@ -512,7 +512,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         env.require(owners(carol, 1));
         env.require(owners(becky, 0));
 
-        // But carol can't meet the reserve for another preauthorization.
+        // But carol can't meet the reserve for another pre-authorization.
         env(deposit::auth(carol, alice), ter(tecINSUFFICIENT_RESERVE));
         env.close();
         env.require(owners(carol, 1));
@@ -724,7 +724,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env.fund(XRP(5000), issuer, bob, alice);
             env.close();
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
@@ -737,7 +737,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env(deposit::auth(bob, alice));
             env.close();
 
-            // And alice can't pay with any credentials, amendement is not
+            // And alice can't pay with any credentials, amendment is not
             // enabled
             std::string const invalidIdx =
                 "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
@@ -765,11 +765,11 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 credentials::ledgerEntry(env, alice, issuer, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
-            // Bob will accept payements from accounts with credentials signed
+            // Bob will accept payments from accounts with credentials signed
             // by 'issuer'
             env(deposit::authCredentials(bob, {{issuer, credType}}));
             env.close();
@@ -838,12 +838,12 @@ struct DepositPreauth_test : public beast::unit_test::suite
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
             {
-                // Success as destination didn't enable preauthorization so
+                // Success as destination didn't enable pre-authorization so
                 // valid credentials will not fail
                 env(pay(alice, bob, XRP(100)), credentials::ids({credIdx}));
             }
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
@@ -1141,7 +1141,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             jv = credentials::ledgerEntry(env, alice, issuer, credType2);
             std::string const credIdx2 = jv[jss::result][jss::index].asString();
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
             // Bob setup DepositPreauth object
@@ -1268,7 +1268,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             jv = credentials::ledgerEntry(env, zelda, issuer, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
             // Bob setup DepositPreauth object
