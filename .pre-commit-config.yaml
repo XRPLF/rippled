@@ -13,10 +13,16 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
     hooks:
+      # https://github.com/pre-commit/pre-commit-hooks/issues/1229
+      # regarding ruamel.yaml version
       - id: trailing-whitespace
+        additional_dependencies: [ruamel.yaml<0.19]
       - id: end-of-file-fixer
+        additional_dependencies: [ruamel.yaml<0.19]
       - id: mixed-line-ending
+        additional_dependencies: [ruamel.yaml<0.19]
       - id: check-merge-conflict
+        additional_dependencies: [ruamel.yaml<0.19]
         args: [--assume-in-merge]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
