@@ -11,6 +11,9 @@ runs:
         echo 'Checking environment variables.'
         set
 
+        echo 'Checking ccache version.'
+        ccache --version
+
         echo 'Checking CMake version.'
         cmake --version
 
