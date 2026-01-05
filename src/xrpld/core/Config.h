@@ -68,6 +68,7 @@ class Config : public BasicConfig
 public:
     // Settings related to the configuration file location and directories
     static char const* const configFileName;
+    static char const* const configLegacyName;
     static char const* const databaseDirName;
     static char const* const validatorsFileName;
 
