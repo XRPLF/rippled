@@ -851,6 +851,38 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testStartFunctionLoop()
+    {
+        testcase("infinite loop in start function");
+
+        using namespace test::jtx;
+        Env env(*this);
+
+        auto wasmStr = boost::algorithm::unhex(startLoopHex);
+        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        TestLedgerDataProvider ledgerDataProvider(env);
+        ImportVec imports;
+
+        auto& engine = WasmEngine::instance();
+        auto checkRes = engine.check(
+            wasm, "finish", {}, imports, &ledgerDataProvider, env.journal);
+        BEAST_EXPECTS(
+            checkRes == tesSUCCESS, std::to_string(TERtoInt(checkRes)));
+
+        auto re = engine.run(
+            wasm,
+            ESCROW_FUNCTION_NAME,
+            {},
+            imports,
+            &ledgerDataProvider,
+            1'000'000,
+            env.journal);
+        BEAST_EXPECTS(
+            re.error() == tecFAILED_PROCESSING,
+            std::to_string(TERtoInt(re.error())));
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -878,6 +910,7 @@ struct Wasm_test : public beast::unit_test::suite
         testWasmWasi();
         testWasmSectionCorruption();
 
+        testStartFunctionLoop();
         // perfTest();
     }
 };

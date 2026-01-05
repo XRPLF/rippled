@@ -249,9 +249,9 @@ ModuleWrapper::ModuleWrapper(
     : module_(init(s, wasmBin, j)), j_(j)
 {
     wasm_module_exports(module_.get(), &exportTypes_.vec_);
+    auto wimports = buildImports(s, imports);
     if (instantiate)
     {
-        auto wimports = buildImports(s, imports);
         addInstance(s, wimports);
     }
 }
@@ -425,6 +425,26 @@ FuncInfo
 ModuleWrapper::getFunc(std::string_view funcName) const
 {
     return instanceWrap_.getFunc(funcName, exportTypes_);
+}
+
+wasm_functype_t*
+ModuleWrapper::getFuncType(std::string_view funcName) const
+{
+    for (size_t i = 0; i < exportTypes_.vec_.size; i++)
+    {
+        auto const* exp_type(exportTypes_.vec_.data[i]);
+        wasm_name_t const* name = wasm_exporttype_name(exp_type);
+        wasm_externtype_t const* exn_type = wasm_exporttype_type(exp_type);
+        if (wasm_externtype_kind(exn_type) == WASM_EXTERN_FUNC &&
+            funcName == std::string_view(name->data, name->size))
+        {
+            return wasm_externtype_as_functype(
+                const_cast<wasm_externtype_t*>(exn_type));
+        }
+    }
+
+    throw std::runtime_error(
+        "can't find function <" + std::string(funcName) + ">");
 }
 
 wmem
@@ -889,13 +909,14 @@ WasmiEngine::checkHlp(
     if (wasmCode.empty())
         throw std::runtime_error("empty nodule");
 
-    int const m = addModule(wasmCode, true, -1, imports);
-    if ((m < 0) || !moduleWrap_ || !moduleWrap_->instanceWrap_)
-        throw std::runtime_error("no instance");  // LCOV_EXCL_LINE
+    int const m = addModule(wasmCode, false, -1, imports);
+    if ((m < 0) || !moduleWrap_)
+        throw std::runtime_error("no module");  // LCOV_EXCL_LINE
 
     // Looking for a func and compare parameter types
-    auto const f = getFunc(!funcName.empty() ? funcName : "_start");
-    auto const* ftp = wasm_functype_params(f.second);
+    auto const f =
+        moduleWrap_->getFuncType(!funcName.empty() ? funcName : "_start");
+    auto const* ftp = wasm_functype_params(f);
     auto const p = convertParams(params);
 
     if (int const comp = compareParamTypes(ftp, p); comp >= 0)
