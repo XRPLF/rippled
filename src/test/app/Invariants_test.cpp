@@ -1336,6 +1336,10 @@ class Invariants_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         bool const fixPDEnabled = features[fixPermissionedDomainInvariant];
+        std::initializer_list<TER> badTers = {
+            tecINVARIANT_FAILED, tecINVARIANT_FAILED};
+        std::initializer_list<TER> failTers = {
+            tecINVARIANT_FAILED, tefINVARIANT_FAILED};
 
         testcase << "PermissionedDomain" +
                 std::string(fixPDEnabled ? " fix" : "");
@@ -1348,7 +1352,7 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixPDEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain 2";
 
@@ -1362,7 +1366,7 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixPDEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain 3";
         doInvariantCheck(
@@ -1389,7 +1393,7 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixPDEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain 4";
         doInvariantCheck(
@@ -1412,7 +1416,7 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixPDEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain Set 1";
         doInvariantCheck(
@@ -1433,7 +1437,7 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixPDEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain Set 2";
         doInvariantCheck(
@@ -1467,7 +1471,7 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixPDEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain Set 3";
         doInvariantCheck(
@@ -1500,7 +1504,7 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixPDEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain Set 4";
         doInvariantCheck(
@@ -1529,16 +1533,12 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixPDEnabled ? failTers : badTers);
 
         std::initializer_list<TER> goodTers = {tesSUCCESS, tesSUCCESS};
-        std::initializer_list<TER> badTers = {
-            tecINVARIANT_FAILED, tecINVARIANT_FAILED};
-        std::initializer_list<TER> failTers = {
-            tecINVARIANT_FAILED, tefINVARIANT_FAILED};
 
         std::vector<std::string> badMoreThan1{
-            {"transaction affected more than 1 entry."}};
+            {"transaction affected more than 1 permissioned domain entry."}};
         std::vector<std::string> emptyV;
         std::vector<std::string> badNoDomains{
             {"no domain objects affected by"}};

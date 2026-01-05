@@ -1716,14 +1716,16 @@ ValidPermissionedDomain::finalize(
 
     if (view.rules().enabled(fixPermissionedDomainInvariant))
     {
-        // Nothing was changed by a failed tx. All good.
-        if (result != tesSUCCESS && sleStatus_.size() == 0)
-            return true;
+        // No permissioned domains should be affected if the transaction failed
+        if (result != tesSUCCESS)
+            // If nothing changed, all is good. If there were changes, that's
+            // bad.
+            return sleStatus_.empty();
 
         if (sleStatus_.size() > 1)
         {
-            JLOG(j.fatal())
-                << "Invariant failed: transaction affected more than 1 entry.";
+            JLOG(j.fatal()) << "Invariant failed: transaction affected more "
+                               "than 1 permissioned domain entry.";
             return false;
         }
 
@@ -1745,12 +1747,6 @@ ValidPermissionedDomain::finalize(
                                        "deleted by PermissionedDomainSet";
                     return false;
                 }
-
-                // Failed 1st check. Here it means that failure is not critical
-                // (something wrong with credentials list). Lets include tx into
-                // ledger and take fee.
-                if (result == tecINVARIANT_FAILED)
-                    return true;
                 return check(sleStatus, j);
             }
             case ttPERMISSIONED_DOMAIN_DELETE: {
