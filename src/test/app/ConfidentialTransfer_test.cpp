@@ -46,16 +46,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.convert({
             .account = bob,
-            .amt = 10,
+            .amt = 0,
             //    .proof = "123",
             .holderPubKey = mptAlice.getPubKey(bob),
         });
 
-        // mptAlice.convert({
-        //     .account = bob,
-        //     .amt = 20,
-        //     //   .proof = "123",
-        // });
+        mptAlice.convert({
+            .account = bob,
+            .amt = 20,
+            //   .proof = "123",
+        });
 
         // mptAlice.convert({
         //     .account = bob,

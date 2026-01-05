@@ -126,8 +126,6 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         ctx.tx[sfAccount],
         ctx.tx.getTxnType());
 
-    std::cout << "\nIN transactor context hash : " << strHex(contextHash)
-              << std::endl;
     std::vector<Buffer> zkps;
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
     if (!getProofs(ctx.tx[sfZKProof], hasAuditor, zkps))

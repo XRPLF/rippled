@@ -980,8 +980,6 @@ MPTTester::convert(MPTConvert const& arg)
             holderCiphertext,
             issuerCiphertext,
             {});
-        std::cout << "\nIN genegate context hash : " << strHex(ctxHash)
-                  << std::endl;
         jv[sfZKProof] = strHex(proof);
     }
 
