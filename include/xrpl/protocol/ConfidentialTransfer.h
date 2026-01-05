@@ -27,12 +27,11 @@ addCommonZKPFields(
     std::uint64_t amount);
 
 uint256
-getClawbackContextHash(
-    AccountID const& account,
-    std::uint32_t sequence,
+getContextHash(
     uint192 const& issuanceID,
     std::uint64_t amount,
-    AccountID const& holder);
+    AccountID const& holder,
+    TxType const& txType);
 
 /**
  * @brief Generates a new secp256k1 key pair.
@@ -117,63 +116,6 @@ generate_canonical_encrypted_zero(
     unsigned char const* mpt_issuance_id  // 24 bytes
 );
 
-// breaks a 66-byte encrypted amount into two 33-byte components
-// then parses each 33-byte component into 64-byte secp256k1_pubkey format
-bool
-makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2);
-
-// serialize two secp256k1_pubkey components back into compressed 66-byte form
-bool
-serializeEcPair(
-    secp256k1_pubkey const& in1,
-    secp256k1_pubkey const& in2,
-    Buffer& buffer);
-
-/**
- * @brief Verifies that a buffer contains two valid, parsable EC public keys.
- * @param buffer The input buffer containing two concatenated components.
- * @return true if both components can be parsed successfully, false otherwise.
- */
-bool
-isValidCiphertext(Slice const& buffer);
-
-TER
-homomorphicAdd(Slice const& a, Slice const& b, Buffer& out);
-
-TER
-homomorphicSubtract(Slice const& a, Slice const& b, Buffer& out);
-
-TER
-proveEquality(
-    Slice const& proof,
-    Slice const& encAmt,  // encrypted amount
-    Slice const& pubkey,
-    uint64_t const amount,
-    uint256 const& txHash,  // Transaction context data
-    std::uint32_t const spendVersion);
-
-Buffer
-encryptAmount(uint64_t amt, Slice const& pubKeySlice);
-
-Buffer
-encryptCanonicalZeroAmount(
-    Slice const& pubKeySlice,
-    AccountID const& account,
-    MPTID const& mptId);
-
-TER
-verifyConfidentialSendProof(
-    Slice const& proof,
-    Slice const& encSenderBalance,
-    Slice const& encSenderAmt,
-    Slice const& encDestAmt,
-    Slice const& encIssuerAmt,
-    Slice const& senderPubKey,
-    Slice const& destPubKey,
-    Slice const& issuerPubKey,
-    std::uint32_t const version,
-    uint256 const& txHash);
-
 /**
  * Generates a cryptographically secure 32-byte scalar (private key).
  * @return 1 on success, 0 on failure.
@@ -249,6 +191,71 @@ secp256k1_equality_plaintext_verify(
     secp256k1_pubkey const* pk_recipient,
     uint64_t amount,
     unsigned char const* tx_context_id);
+
+// breaks a 66-byte encrypted amount into two 33-byte components
+// then parses each 33-byte component into 64-byte secp256k1_pubkey format
+bool
+makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2);
+
+// serialize two secp256k1_pubkey components back into compressed 66-byte form
+bool
+serializeEcPair(
+    secp256k1_pubkey const& in1,
+    secp256k1_pubkey const& in2,
+    Buffer& buffer);
+
+/**
+ * @brief Verifies that a buffer contains two valid, parsable EC public keys.
+ * @param buffer The input buffer containing two concatenated components.
+ * @return true if both components can be parsed successfully, false otherwise.
+ */
+bool
+isValidCiphertext(Slice const& buffer);
+
+TER
+homomorphicAdd(Slice const& a, Slice const& b, Buffer& out);
+
+TER
+homomorphicSubtract(Slice const& a, Slice const& b, Buffer& out);
+
+TER
+proveEquality(
+    Slice const& proof,
+    Slice const& encAmt,  // encrypted amount
+    Slice const& pubkey,
+    uint64_t const amount,
+    uint256 const& txHash,  // Transaction context data
+    std::uint32_t const spendVersion);
+
+Buffer
+encryptAmount(uint64_t amt, Slice const& pubKeySlice);
+
+Buffer
+encryptCanonicalZeroAmount(
+    Slice const& pubKeySlice,
+    AccountID const& account,
+    MPTID const& mptId);
+
+TER
+verifyConfidentialSendProof(
+    Slice const& proof,
+    Slice const& encSenderBalance,
+    Slice const& encSenderAmt,
+    Slice const& encDestAmt,
+    Slice const& encIssuerAmt,
+    Slice const& senderPubKey,
+    Slice const& destPubKey,
+    Slice const& issuerPubKey,
+    std::uint32_t const version,
+    uint256 const& txHash);
+
+TER
+verifyEqualityProof(
+    uint64_t const amount,
+    Slice const& proof,
+    Slice const& pubKeySlice,
+    Slice const& ciphertext,
+    uint256 const& contextHash);
 
 }  // namespace ripple
 

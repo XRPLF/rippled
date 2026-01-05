@@ -131,7 +131,8 @@ MPTTester::MPTTester(MPTInitDef const& arg)
 {
 }
 
-MPTTester::operator MPT() const
+MPTTester::
+operator MPT() const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -665,7 +666,8 @@ MPTTester::mpt(std::int64_t amount) const
     return ripple::test::jtx::MPT(issuer_.name(), *id_)(amount);
 }
 
-MPTTester::operator Asset() const
+MPTTester::
+operator Asset() const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -1095,10 +1097,9 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
         jv[sfZKProof] = *arg.proof;
     else
     {
-        std::uint32_t const seq = env_.seq(account);
-        uint256 const ctxHash = getClawbackContextHash(
-            account.id(), seq, *id_, *arg.amt, arg.holder->id());
-        Buffer proof = getClawbackProof(
+        uint256 const ctxHash = getContextHash(
+            *id_, *arg.amt, arg.holder->id(), ttCONFIDENTIAL_CLAWBACK);
+        Buffer proof = getClawbackEqualityProof(
             *arg.holder, *arg.amt, getPrivKey(account), ctxHash);
 
         jv[sfZKProof] = strHex(proof);

@@ -98,18 +98,21 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     //     ? ctx.tx[sfHolderElGamalPublicKey]
     //     : (*sleMptoken)[sfHolderElGamalPublicKey];
 
-    // todo: check zkproof/well formed
+    // auto const contextHash = getContextHash(
+    //     ctx.tx[sfMPTokenIssuanceID],
+    //     ctx.tx[sfMPTAmount],
+    //     ctx.tx[sfAccount],
+    //     ctx.tx.getTxnType());
 
-    // check equality proof
+    // // check equality proof
     // auto checkEqualityProof = [&](auto const& encryptedAmount,
     //                               auto const& pubKey) -> TER {
-    //     return proveEquality(
-    //         ctx.tx[sfZKProof],
-    //         encryptedAmount,
-    //         pubKey,
+    //     return verifyEqualityProof(
     //         ctx.tx[sfMPTAmount],
-    //         ctx.tx.getTransactionID(),
-    //         (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0));
+    //         ctx.tx[sfZKProof],
+    //         pubKey,
+    //         encryptedAmount,
+    //         contextHash);
     // };
 
     // if (!isTesSuccess(checkEqualityProof(
