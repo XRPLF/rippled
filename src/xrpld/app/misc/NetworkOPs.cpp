@@ -1260,7 +1260,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
         return false;
     }
 
-    // NOTE eahennis - I think this check is redundant,
+    // NOTE ximinez - I think this check is redundant,
     // but I'm not 100% sure yet.
     // If so, only cost is looking up HashRouter flags.
     auto const [validity, reason] =

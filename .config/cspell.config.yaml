@@ -84,11 +84,8 @@ words:
   - distro
   - doxyfile
   - dxrpl
-  - eahennis
   - endmacro
   - endpointv
-  - ercentage
-  - evented
   - exceptioned
   - Falco
   - finalizers
@@ -267,6 +264,7 @@ words:
   - wthread
   - xbridge
   - xchain
+  - ximinez
   - XMACRO
   - xrpkuwait
   - xrpl

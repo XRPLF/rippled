@@ -95,7 +95,7 @@ public:
             allowing more than `maximumTxnInLedger` "cheap" transactions into
             the open ledger.
 
-            @todo eahennis. This setting seems to go against our goals and
+            @todo ximinez. This setting seems to go against our goals and
                 values. Can it be removed?
         */
         std::optional<std::uint32_t> maximumTxnInLedger;
