@@ -37,10 +37,32 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
         ctx.tx[sfHolderElGamalPublicKey].length() != ecPubKeyLength)
         return temMALFORMED;
 
-    // if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
-    //     return temMALFORMED;
+    bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
+    if (!hasAuditor && ctx.tx[sfZKProof].length() != ecEqualityProofLength * 2)
+        return temMALFORMED;
+    if (hasAuditor && ctx.tx[sfZKProof].length() != ecEqualityProofLength * 3)
+        return temMALFORMED;
 
     return tesSUCCESS;
+}
+
+bool
+getProofs(Slice const& zkp, bool const hasAuditor, std::vector<Buffer>& zkps)
+{
+    Buffer holderZkp{zkp.data(), ecEqualityProofLength};
+    zkps.push_back(holderZkp);
+
+    Buffer issuerZkp{zkp.data() + ecEqualityProofLength, ecEqualityProofLength};
+    zkps.push_back(issuerZkp);
+
+    if (hasAuditor)
+    {
+        Buffer auditorZkp{
+            zkp.data() + ecEqualityProofLength * 2, ecEqualityProofLength};
+        zkps.push_back(auditorZkp);
+    }
+
+    return true;
 }
 
 TER
@@ -94,35 +116,56 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
         return tecDUPLICATE;
 
-    // auto const holderPubKey = ctx.tx.isFieldPresent(sfHolderElGamalPublicKey)
-    //     ? ctx.tx[sfHolderElGamalPublicKey]
-    //     : (*sleMptoken)[sfHolderElGamalPublicKey];
+    auto const holderPubKey = ctx.tx.isFieldPresent(sfHolderElGamalPublicKey)
+        ? ctx.tx[sfHolderElGamalPublicKey]
+        : (*sleMptoken)[sfHolderElGamalPublicKey];
 
-    // auto const contextHash = getContextHash(
-    //     ctx.tx[sfMPTokenIssuanceID],
-    //     ctx.tx[sfMPTAmount],
-    //     ctx.tx[sfAccount],
-    //     ctx.tx.getTxnType());
+    auto const contextHash = getContextHash(
+        ctx.tx[sfMPTokenIssuanceID],
+        ctx.tx[sfMPTAmount],
+        ctx.tx[sfAccount],
+        ctx.tx.getTxnType());
 
-    // // check equality proof
-    // auto checkEqualityProof = [&](auto const& encryptedAmount,
-    //                               auto const& pubKey) -> TER {
-    //     return verifyEqualityProof(
-    //         ctx.tx[sfMPTAmount],
-    //         ctx.tx[sfZKProof],
-    //         pubKey,
-    //         encryptedAmount,
-    //         contextHash);
-    // };
+    std::cout << "\nIN transactor context hash : " << strHex(contextHash)
+              << std::endl;
+    std::vector<Buffer> zkps;
+    bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
+    if (!getProofs(ctx.tx[sfZKProof], hasAuditor, zkps))
+        return tecBAD_PROOF;
 
-    // if (!isTesSuccess(checkEqualityProof(
-    //         ctx.tx[sfHolderEncryptedAmount], holderPubKey)) ||
-    //     !isTesSuccess(checkEqualityProof(
-    //         ctx.tx[sfIssuerEncryptedAmount],
-    //         (*sleIssuance)[sfIssuerElGamalPublicKey])))
-    // {
-    //     return tecBAD_PROOF;
-    // }
+    for (auto const zkp : zkps)
+    {
+        std::cout << "\nIN transactor zkp : " << strHex(zkp) << std::endl;
+    }
+    // check equality proof
+    auto checkEqualityProof = [&](auto const& encryptedAmount,
+                                  auto const& pubKey,
+                                  auto const& zkp) -> TER {
+        return verifyEqualityProof(
+            ctx.tx[sfMPTAmount], zkp, pubKey, encryptedAmount, contextHash);
+    };
+    auto test = ctx.tx[sfHolderEncryptedAmount];
+    if (!isTesSuccess(checkEqualityProof(
+            ctx.tx[sfHolderEncryptedAmount], holderPubKey, zkps[0])) ||
+        !isTesSuccess(checkEqualityProof(
+            ctx.tx[sfIssuerEncryptedAmount],
+            (*sleIssuance)[sfIssuerElGamalPublicKey],
+            zkps[1])))
+    {
+        return tecBAD_PROOF;
+    }
+
+    if (hasAuditor && zkps.size() == 2)
+        return tecBAD_PROOF;
+
+    if (hasAuditor &&
+        !isTesSuccess(checkEqualityProof(
+            ctx.tx[sfAuditorEncryptedAmount],
+            (*sleIssuance)[sfAuditorElGamalPublicKey],
+            zkps[2])))
+    {
+        return tecBAD_PROOF;
+    }
 
     return tesSUCCESS;
 }

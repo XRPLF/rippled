@@ -89,7 +89,7 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
 
     auto const contextHash =
         getContextHash(mptIssuanceID, amount, holder, ctx.tx.getTxnType());
-    return verifyEqualityProof(
+    return verifyClawbackEqualityProof(
         amount, ctx.tx[sfZKProof], pubKeySlice, ciphertext, contextHash);
 }
 

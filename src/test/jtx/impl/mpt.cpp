@@ -775,6 +775,133 @@ MPTTester::getClawbackProof(
     return proof;
 }
 
+Buffer
+MPTTester::getConvertProof(
+    Account const& holder,
+    std::uint64_t amount,
+    uint256 const& ctxHash,
+    MPTConvert txArgs) const
+{
+    if (!id_)
+        Throw<std::runtime_error>("MPT has not been created");
+
+    auto const sleHolder = env_.le(keylet::mptoken(*id_, holder.id()));
+    auto const sleIssuance = env_.le(keylet::mptIssuance(*id_));
+
+    if (!sleHolder)
+        Throw<std::runtime_error>("Mptoken object not found");
+
+    if (!sleIssuance)
+        Throw<std::runtime_error>("Issuance object not found");
+
+    auto const generateProof =
+        [amount, ctxHash](Slice const& ciphertext, Slice const& pubKey) {
+            secp256k1_pubkey c1, c2;
+            auto const ctx = secp256k1Context();
+            if (!secp256k1_ec_pubkey_parse(
+                    ctx, &c1, ciphertext.data(), ecGamalEncryptedLength) ||
+                !secp256k1_ec_pubkey_parse(
+                    ctx,
+                    &c2,
+                    ciphertext.data() + ecGamalEncryptedLength,
+                    ecGamalEncryptedLength))
+            {
+                Throw<std::runtime_error>("Invalid Ciphertext");
+            }
+
+            secp256k1_pubkey pk;
+            std::memcpy(pk.data, pubKey.data(), ecPubKeyLength);
+            Buffer proof(ecEqualityProofLength);
+
+            unsigned char blindingFactor[32];
+            if (RAND_bytes(blindingFactor, 32) != 1)
+                Throw<std::runtime_error>("Failed to generate random number");
+            if (secp256k1_equality_plaintext_prove(
+                    ctx,
+                    proof.data(),
+                    &c1,
+                    &c2,
+                    &pk,
+                    amount,
+                    blindingFactor,
+                    ctxHash.data()) != 1)
+            {
+                Throw<std::runtime_error>("Proof generation failed");
+            }
+            return proof;
+        };
+
+    // helper to generate a dummy proof, so that other preclaim tests can
+    // proceed
+    auto const getDummyProof = []() {
+        Buffer dummy(ecEqualityProofLength);
+        std::memset(dummy.data(), 0, ecEqualityProofLength);
+        return dummy;
+    };
+
+    size_t const zkpSize =
+        sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey) ? 3 : 2;
+
+    Buffer zkp(ecEqualityProofLength * zkpSize);
+
+    Buffer const holderPubKey = txArgs.holderPubKey
+        ? *txArgs.holderPubKey
+        : Buffer(
+              (*sleHolder)[sfHolderElGamalPublicKey].data(),
+              (*sleHolder)[sfHolderElGamalPublicKey].size());
+    ;
+
+    Buffer holderZkp = generateProof(*txArgs.holderEncryptedAmt, holderPubKey);
+    std::cout << " \nHOlderzkp " << strHex(holderZkp) << std::endl;
+    std::cout << " holder ciphertext " << strHex(*txArgs.holderEncryptedAmt)
+              << std::endl;
+    std::cout << " holder pubkey " << strHex(holderPubKey) << std::endl;
+
+    Buffer issuerZkp;
+    if (txArgs.issuerEncryptedAmt &&
+        sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
+    {
+        Buffer issuerPubKey(
+            sleIssuance->getFieldVL(sfIssuerElGamalPublicKey).data(),
+            sleIssuance->getFieldVL(sfIssuerElGamalPublicKey).size());
+
+        issuerZkp = generateProof(*txArgs.issuerEncryptedAmt, issuerPubKey);
+        std::cout << " \nissuerzkp " << strHex(issuerZkp) << std::endl;
+        std::cout << " issuer ciphertext " << strHex(*txArgs.issuerEncryptedAmt)
+                  << std::endl;
+        std::cout << " issuer pubkey " << strHex(issuerPubKey) << std::endl;
+    }
+    else
+    {
+        issuerZkp = getDummyProof();
+    }
+
+    // std::optional<Slice> auditorZkp;
+    // if (auditor)
+    // {
+    //     Slice auditorPubKey(
+    //         sleIssuance->getFieldVL(sfAuditorElGamalPublicKey).data(),
+    //         sleIssuance->getFieldVL(sfAuditorElGamalPublicKey).size());
+    //     Buffer auditorZkp = txArgs.auditorEncryptedAmt &&
+    //             sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey)
+    //         ? generateProof(*txArgs.issuerEncryptedAmt, issuerPubKey)
+    //         : getDummyProof();
+    // }
+
+    // Pointer arithmetic to copy data into place
+    std::uint8_t* ptr = zkp.data();
+
+    // Copy Holder
+    std::memcpy(ptr, holderZkp.data(), holderZkp.size());
+    ptr += holderZkp.size();
+
+    // Copy Issuer
+    std::memcpy(ptr, issuerZkp.data(), issuerZkp.size());
+    ptr += issuerZkp.size();
+
+    return zkp;
+}
+
 std::optional<Buffer>
 MPTTester::getEncryptedBalance(
     Account const& account,
@@ -832,7 +959,7 @@ MPTTester::operator()(std::uint64_t amount) const
 }
 
 void
-MPTTester::convert(MPTConvert const& arg)
+MPTTester::convert(MPTConvert arg)
 {
     Json::Value jv;
     if (arg.account)
@@ -858,17 +985,30 @@ MPTTester::convert(MPTConvert const& arg)
     if (arg.holderEncryptedAmt)
         jv[sfHolderEncryptedAmount.jsonName] = strHex(*arg.holderEncryptedAmt);
     else
-        jv[sfHolderEncryptedAmount.jsonName] =
-            strHex(encryptAmount(*arg.account, *arg.amt));
+    {
+        arg.holderEncryptedAmt = encryptAmount(*arg.account, *arg.amt);
+        jv[sfHolderEncryptedAmount.jsonName] = strHex(*arg.holderEncryptedAmt);
+    }
 
     if (arg.issuerEncryptedAmt)
         jv[sfIssuerEncryptedAmount.jsonName] = strHex(*arg.issuerEncryptedAmt);
     else
-        jv[sfIssuerEncryptedAmount.jsonName] =
-            strHex(encryptAmount(issuer_, *arg.amt));
+    {
+        arg.issuerEncryptedAmt = encryptAmount(issuer_, *arg.amt);
+        jv[sfIssuerEncryptedAmount.jsonName] = strHex(*arg.issuerEncryptedAmt);
+    }
 
     if (arg.proof)
         jv[sfZKProof.jsonName] = *arg.proof;
+    else
+    {
+        uint256 const ctxHash = getContextHash(
+            *id_, *arg.amt, arg.account->id(), ttCONFIDENTIAL_CONVERT);
+        Buffer proof = getConvertProof(*arg.account, *arg.amt, ctxHash, arg);
+        std::cout << "\nIN genegate context hash : " << strHex(ctxHash)
+                  << std::endl;
+        jv[sfZKProof] = strHex(proof);
+    }
 
     auto const holderAmt = getBalance(*arg.account);
     auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();

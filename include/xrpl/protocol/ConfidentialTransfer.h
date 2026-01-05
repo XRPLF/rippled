@@ -257,6 +257,14 @@ verifyEqualityProof(
     Slice const& ciphertext,
     uint256 const& contextHash);
 
+TER
+verifyClawbackEqualityProof(
+    uint64_t const amount,
+    Slice const& proof,
+    Slice const& pubKeySlice,
+    Slice const& ciphertext,
+    uint256 const& contextHash);
+
 }  // namespace ripple
 
 #endif

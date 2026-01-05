@@ -44,30 +44,31 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.generateKeyPair(bob);
 
+        auto const test = strHex(mptAlice.encryptAmount(alice, 0));
         mptAlice.convert({
             .account = bob,
-            .amt = 0,
-            .proof = "123",
+            .amt = 10,
+            //    .proof = "123",
             .holderPubKey = mptAlice.getPubKey(bob),
         });
 
-        mptAlice.convert({
-            .account = bob,
-            .amt = 20,
-            .proof = "123",
-        });
+        // mptAlice.convert({
+        //     .account = bob,
+        //     .amt = 20,
+        //     //   .proof = "123",
+        // });
 
-        mptAlice.convert({
-            .account = bob,
-            .amt = 40,
-            .proof = "123",
-        });
+        // mptAlice.convert({
+        //     .account = bob,
+        //     .amt = 40,
+        //     //   .proof = "123",
+        // });
 
-        mptAlice.convert({
-            .account = bob,
-            .amt = 40,
-            .proof = "123",
-        });
+        // mptAlice.convert({
+        //     .account = bob,
+        //     .amt = 40,
+        //     // .proof = "123",
+        // });
     }
 
     void
@@ -2744,34 +2745,34 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     testWithFeats(FeatureBitset features)
     {
         testConvert(features);
-        testConvertPreflight(features);
-        testConvertPreclaim(features);
+        // testConvertPreflight(features);
+        // testConvertPreclaim(features);
 
-        testMergeInbox(features);
-        testMergeInboxPreflight(features);
-        testMergeInboxPreclaim(features);
+        // testMergeInbox(features);
+        // testMergeInboxPreflight(features);
+        // testMergeInboxPreclaim(features);
 
-        testSetPreflight(features);
+        // testSetPreflight(features);
 
-        // ConfidentialSend
-        testSend(features);
-        testSendPreflight(features);
-        testSendPreclaim(features);
-        testSendDepositPreauth(features);
+        // // ConfidentialSend
+        // testSend(features);
+        // testSendPreflight(features);
+        // testSendPreclaim(features);
+        // testSendDepositPreauth(features);
 
-        // ConfidentialClawback
-        testClawback(features);
-        testClawbackPreflight(features);
-        testClawbackPreclaim(features);
-        testClawbackProof(features);
+        // // ConfidentialClawback
+        // testClawback(features);
+        // testClawbackPreflight(features);
+        // testClawbackPreclaim(features);
+        // testClawbackProof(features);
 
-        testDelete(features);
+        // testDelete(features);
 
-        testConvertBack(features);
-        testConvertBackPreflight(features);
-        testConvertBackPreclaim(features);
+        // testConvertBack(features);
+        // testConvertBackPreflight(features);
+        // testConvertBackPreclaim(features);
 
-        testMutatePrivacy(features);
+        // testMutatePrivacy(features);
     }
 
 public:

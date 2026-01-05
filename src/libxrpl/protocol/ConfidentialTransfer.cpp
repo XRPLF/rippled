@@ -978,6 +978,36 @@ verifyEqualityProof(
     if (secp256k1_equality_plaintext_verify(
             secp256k1Context(),
             proof.data(),
+            &c1,
+            &c2,
+            &pubKey,
+            amount,
+            contextHash.data()) != 1)
+    {
+        return tecBAD_PROOF;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+verifyClawbackEqualityProof(
+    uint64_t const amount,
+    Slice const& proof,
+    Slice const& pubKeySlice,
+    Slice const& ciphertext,
+    uint256 const& contextHash)
+{
+    secp256k1_pubkey c1, c2;
+    if (!makeEcPair(ciphertext, c1, c2))
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    secp256k1_pubkey pubKey;
+    std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
+
+    if (secp256k1_equality_plaintext_verify(
+            secp256k1Context(),
+            proof.data(),
             &pubKey,
             &c2,
             &c1,

@@ -175,6 +175,7 @@ struct MPTConvert
     std::optional<Buffer> holderPubKey = std::nullopt;
     std::optional<Buffer> holderEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
+    std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -291,7 +292,7 @@ public:
     setjv(MPTSet const& set = {});
 
     void
-    convert(MPTConvert const& arg = MPTConvert{});
+    convert(MPTConvert arg = MPTConvert{});
 
     void
     mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
@@ -420,6 +421,13 @@ public:
         std::uint64_t amount,
         Buffer const& privateKey,
         uint256 const& txHash) const;
+
+    Buffer
+    getConvertProof(
+        Account const& holder,
+        std::uint64_t amount,
+        uint256 const& ctxHash,
+        MPTConvert txArgs) const;
 
 private:
     using SLEP = SLE::const_pointer;
