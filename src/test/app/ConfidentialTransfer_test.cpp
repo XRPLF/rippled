@@ -44,7 +44,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.generateKeyPair(bob);
 
-        auto const test = strHex(mptAlice.encryptAmount(alice, 0));
         mptAlice.convert({
             .account = bob,
             .amt = 10,

@@ -133,10 +133,6 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     if (!getProofs(ctx.tx[sfZKProof], hasAuditor, zkps))
         return tecBAD_PROOF;
 
-    for (auto const zkp : zkps)
-    {
-        std::cout << "\nIN transactor zkp : " << strHex(zkp) << std::endl;
-    }
     // check equality proof
     auto checkEqualityProof = [&](auto const& encryptedAmount,
                                   auto const& pubKey,
@@ -144,7 +140,7 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         return verifyEqualityProof(
             ctx.tx[sfMPTAmount], zkp, pubKey, encryptedAmount, contextHash);
     };
-    auto test = ctx.tx[sfHolderEncryptedAmount];
+
     if (!isTesSuccess(checkEqualityProof(
             ctx.tx[sfHolderEncryptedAmount], holderPubKey, zkps[0])) ||
         !isTesSuccess(checkEqualityProof(
@@ -239,7 +235,8 @@ ConfidentialConvert::doApply()
         {
             // encrypt sfConfidentialBalanceSpending with zero balance
             Buffer out;
-            out = encryptAmount(0, (*sleMptoken)[sfHolderElGamalPublicKey]);
+            out =
+                encryptAmount(0, (*sleMptoken)[sfHolderElGamalPublicKey]).first;
             (*sleMptoken)[sfConfidentialBalanceSpending] = out;
         }
         catch (std::exception const& e)

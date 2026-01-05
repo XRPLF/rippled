@@ -227,7 +227,8 @@ proveEquality(
     uint256 const& txHash,  // Transaction context data
     std::uint32_t const spendVersion);
 
-Buffer
+// returns ciphertext and the blinding factor used
+std::pair<Buffer, Buffer>
 encryptAmount(uint64_t amt, Slice const& pubKeySlice);
 
 Buffer

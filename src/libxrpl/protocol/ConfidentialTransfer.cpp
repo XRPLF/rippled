@@ -836,7 +836,7 @@ proveEquality(
     return tesSUCCESS;
 }
 
-Buffer
+std::pair<Buffer, Buffer>
 encryptAmount(uint64_t amt, Slice const& pubKeySlice)
 {
     Buffer buf(ecGamalEncryptedTotalLength);
@@ -864,7 +864,7 @@ encryptAmount(uint64_t amt, Slice const& pubKeySlice)
         Throw<std::runtime_error>(
             "Failed to serialize into 66 byte compressed format");
 
-    return buf;
+    return std::make_pair(buf, Buffer(blindingFactor, 32));
 }
 
 Buffer

@@ -292,7 +292,7 @@ public:
     setjv(MPTSet const& set = {});
 
     void
-    convert(MPTConvert arg = MPTConvert{});
+    convert(MPTConvert const& arg = MPTConvert{});
 
     void
     mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
@@ -401,7 +401,7 @@ public:
     Buffer
     getPrivKey(Account const& account) const;
 
-    Buffer
+    std::pair<Buffer, Buffer>
     encryptAmount(Account const& account, uint64_t amt) const;
 
     uint64_t
@@ -427,7 +427,9 @@ public:
         Account const& holder,
         std::uint64_t amount,
         uint256 const& ctxHash,
-        MPTConvert txArgs) const;
+        std::pair<Buffer, Buffer> holderCiphertext,
+        std::pair<Buffer, Buffer> issuerCiphertext,
+        std::optional<std::pair<Buffer, Buffer>> auditorCiphertext) const;
 
 private:
     using SLEP = SLE::const_pointer;
