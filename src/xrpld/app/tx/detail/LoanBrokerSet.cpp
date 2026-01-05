@@ -117,6 +117,15 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         }
         if (auto const ter = canAddHolding(ctx.view, sleVault->at(sfAsset)))
             return ter;
+
+        if (auto const ter = checkFrozen(
+                ctx.view,
+                sleVault->at(sfAccount),
+                sleVault->at(sfAsset)))
+        {
+            JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
+            return ter;
+        }
     }
     return tesSUCCESS;
 }
