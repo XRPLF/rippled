@@ -87,29 +87,10 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
     auto const ciphertext = (*sleHolderMPToken)[sfIssuerEncryptedBalance];
     auto const pubKeySlice = (*sleIssuance)[sfIssuerElGamalPublicKey];
 
-    secp256k1_pubkey c1, c2;
-    if (!makeEcPair(ciphertext, c1, c2))
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    secp256k1_pubkey pubKey;
-    std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
-
     auto const contextHash =
         getContextHash(mptIssuanceID, amount, holder, ctx.tx.getTxnType());
-
-    if (secp256k1_equality_plaintext_verify(
-            secp256k1Context(),
-            ctx.tx[sfZKProof].data(),
-            &pubKey,
-            &c2,
-            &c1,
-            amount,
-            contextHash.data()) != 1)
-    {
-        return tecBAD_PROOF;
-    }
-
-    return tesSUCCESS;
+    return verifyEqualityProof(
+        amount, ctx.tx[sfZKProof], pubKeySlice, ciphertext, contextHash);
 }
 
 TER

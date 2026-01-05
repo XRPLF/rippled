@@ -1099,7 +1099,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
     {
         uint256 const ctxHash = getContextHash(
             *id_, *arg.amt, arg.holder->id(), ttCONFIDENTIAL_CLAWBACK);
-        Buffer proof = getClawbackEqualityProof(
+        Buffer proof = getClawbackProof(
             *arg.holder, *arg.amt, getPrivKey(account), ctxHash);
 
         jv[sfZKProof] = strHex(proof);
