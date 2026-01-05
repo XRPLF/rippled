@@ -130,7 +130,7 @@ newer versions of RocksDB (TBD).
 ## Discussion
 
 RocksDBQuickFactory is intended to provide a testbed for comparing potential
-rocksdb performance with the existing recommended configuration in rippled.cfg.
+rocksdb performance with the existing recommended configuration in xrpld.cfg.
 Through various executions and profiling some conclusions are presented below.
 
 - If the write ahead log is enabled, insert speed soon clogs up under load. The
