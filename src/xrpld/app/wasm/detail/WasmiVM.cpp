@@ -51,54 +51,45 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
 
 InstancePtr
 InstanceWrapper::init(
-    wasm_store_t* s,
-    wasm_module_t* m,
-    wasm_extern_vec_t* expt,
-    wasm_extern_vec_t const& imports,
+    StorePtr& s,
+    ModulePtr& m,
+    WasmExternVec& expt,
+    WasmExternVec const& imports,
     beast::Journal j)
 {
     wasm_trap_t* trap = nullptr;
     InstancePtr mi = InstancePtr(
-        wasm_instance_new(s, m, &imports, &trap), &wasm_instance_delete);
+        wasm_instance_new(s.get(), m.get(), &imports.vec_, &trap),
+        &wasm_instance_delete);
 
     if (!mi || trap)
     {
         print_wasm_error("can't create instance", trap, j);
         throw std::runtime_error("can't create instance");
     }
-    wasm_instance_exports(mi.get(), expt);
+    wasm_instance_exports(mi.get(), &expt.vec_);
     return mi;
 }
 
-InstanceWrapper::InstanceWrapper()
-    : exports_{0, nullptr}, instance_(nullptr, &wasm_instance_delete)
+InstanceWrapper::InstanceWrapper() : instance_(nullptr, &wasm_instance_delete)
 {
 }
 
 // LCOV_EXCL_START
 InstanceWrapper::InstanceWrapper(InstanceWrapper&& o)
-    : exports_{0, nullptr}, instance_(nullptr, &wasm_instance_delete)
+    : instance_(nullptr, &wasm_instance_delete)
 {
     *this = std::move(o);
 }
 // LCOV_EXCL_STOP
 
 InstanceWrapper::InstanceWrapper(
-    wasm_store_t* s,
-    wasm_module_t* m,
-    wasm_extern_vec_t const& imports,
+    StorePtr& s,
+    ModulePtr& m,
+    WasmExternVec const& imports,
     beast::Journal j)
-    : store_(s)
-    , exports_ WASM_EMPTY_VEC
-    , instance_(init(s, m, &exports_, imports, j))
-    , j_(j)
+    : store_(s.get()), instance_(init(s, m, exports_, imports, j)), j_(j)
 {
-}
-
-InstanceWrapper::~InstanceWrapper()
-{
-    if (exports_.size)
-        wasm_extern_vec_delete(&exports_);
 }
 
 InstanceWrapper&
@@ -109,11 +100,7 @@ InstanceWrapper::operator=(InstanceWrapper&& o)
 
     store_ = o.store_;
     o.store_ = nullptr;
-    if (exports_.size)
-        wasm_extern_vec_delete(&exports_);  // LCOV_EXCL_LINE
-    exports_ = o.exports_;
-    o.exports_ = {0, nullptr};
-
+    exports_ = std::move(o.exports_);
     instance_ = std::move(o.instance_);
 
     j_ = o.j_;
@@ -129,39 +116,37 @@ InstanceWrapper::operator bool() const
 FuncInfo
 InstanceWrapper::getFunc(
     std::string_view funcName,
-    wasm_exporttype_vec_t const& export_types) const
+    WasmExporttypeVec const& exportTypes) const
 {
-    wasm_func_t* f = nullptr;
-    wasm_functype_t* ft = nullptr;
+    wasm_func_t const* f = nullptr;
+    wasm_functype_t const* ft = nullptr;
 
     if (!instance_)
         throw std::runtime_error("no instance");  // LCOV_EXCL_LINE
 
-    if (!export_types.size)
+    if (!exportTypes.vec_.size)
         throw std::runtime_error("no export");  // LCOV_EXCL_LINE
-    if (export_types.size != exports_.size)
+    if (exportTypes.vec_.size != exports_.vec_.size)
         throw std::runtime_error("invalid export");  // LCOV_EXCL_LINE
 
-    for (unsigned i = 0; i < export_types.size; ++i)
+    for (unsigned i = 0; i < exportTypes.vec_.size; ++i)
     {
-        auto const* exp_type(export_types.data[i]);
+        auto const* expType(exportTypes.vec_.data[i]);
 
-        wasm_name_t const* name = wasm_exporttype_name(exp_type);
-        wasm_externtype_t const* exn_type = wasm_exporttype_type(exp_type);
-        if (wasm_externtype_kind(exn_type) == WASM_EXTERN_FUNC)
+        wasm_name_t const* name = wasm_exporttype_name(expType);
+        wasm_externtype_t const* exnType = wasm_exporttype_type(expType);
+        if (wasm_externtype_kind(exnType) == WASM_EXTERN_FUNC)
         {
-            if (funcName == std::string_view(name->data, name->size))
-            {
-                auto* exn(exports_.data[i]);
-                if (wasm_extern_kind(exn) != WASM_EXTERN_FUNC)
-                    throw std::runtime_error(
-                        "invalid export");  // LCOV_EXCL_LINE
+            if (funcName != std::string_view(name->data, name->size))
+                continue;
 
-                ft = wasm_externtype_as_functype(
-                    const_cast<wasm_externtype_t*>(exn_type));
-                f = wasm_extern_as_func(exn);
-                break;
-            }
+            auto const* exn(exports_.vec_.data[i]);
+            if (wasm_extern_kind(exn) != WASM_EXTERN_FUNC)
+                throw std::runtime_error("invalid export");  // LCOV_EXCL_LINE
+
+            ft = wasm_externtype_as_functype_const(exnType);
+            f = wasm_extern_as_func_const(exn);
+            break;
         }
     }
 
@@ -179,9 +164,9 @@ InstanceWrapper::getMem() const
         throw std::runtime_error("no instance");  // LCOV_EXCL_LINE
 
     wasm_memory_t* mem = nullptr;
-    for (unsigned i = 0; i < exports_.size; ++i)
+    for (unsigned i = 0; i < exports_.vec_.size; ++i)
     {
-        auto* e(exports_.data[i]);
+        auto* e(exports_.vec_.data[i]);
         if (wasm_extern_kind(e) == WASM_EXTERN_MEMORY)
         {
             mem = wasm_extern_as_memory(e);
@@ -219,9 +204,11 @@ InstanceWrapper::setGas(std::int64_t gas) const
         wasm_store_set_fuel(store_, static_cast<std::uint64_t>(gas));
     if (err)
     {
-        print_wasm_error(
-            "Can't set instance gas", nullptr, j_);          // LCOV_EXCL_LINE
-        throw std::runtime_error("Can't set instance gas");  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        print_wasm_error("Can't set instance gas", nullptr, j_);
+        wasmi_error_delete(err);
+        throw std::runtime_error("Can't set instance gas");
+        // LCOV_EXCL_STOP
     }
 
     return gas;
@@ -230,10 +217,11 @@ InstanceWrapper::setGas(std::int64_t gas) const
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ModulePtr
-ModuleWrapper::init(wasm_store_t* s, Bytes const& wasmBin, beast::Journal j)
+ModuleWrapper::init(StorePtr& s, Bytes const& wasmBin, beast::Journal j)
 {
     wasm_byte_vec_t const code{wasmBin.size(), (char*)(wasmBin.data())};
-    ModulePtr m = ModulePtr(wasm_module_new(s, &code), &wasm_module_delete);
+    ModulePtr m =
+        ModulePtr(wasm_module_new(s.get(), &code), &wasm_module_delete);
     if (!m)
         throw std::runtime_error("can't create module");
 
@@ -241,39 +229,31 @@ ModuleWrapper::init(wasm_store_t* s, Bytes const& wasmBin, beast::Journal j)
 }
 
 // LCOV_EXCL_START
-ModuleWrapper::ModuleWrapper()
-    : module_(nullptr, &wasm_module_delete), exportTypes_{0, nullptr}
+ModuleWrapper::ModuleWrapper() : module_(nullptr, &wasm_module_delete)
 {
 }
 
 ModuleWrapper::ModuleWrapper(ModuleWrapper&& o)
-    : module_(nullptr, &wasm_module_delete), exportTypes_{0, nullptr}
+    : module_(nullptr, &wasm_module_delete)
 {
     *this = std::move(o);
 }
 // LCOV_EXCL_STOP
 
 ModuleWrapper::ModuleWrapper(
-    wasm_store_t* s,
+    StorePtr& s,
     Bytes const& wasmBin,
     bool instantiate,
     ImportVec const& imports,
     beast::Journal j)
-    : module_(init(s, wasmBin, j)), exportTypes_{0, nullptr}, j_(j)
+    : module_(init(s, wasmBin, j)), j_(j)
 {
-    wasm_module_exports(module_.get(), &exportTypes_);
+    wasm_module_exports(module_.get(), &exportTypes_.vec_);
     if (instantiate)
     {
         auto wimports = buildImports(s, imports);
         addInstance(s, wimports);
-        wasm_extern_vec_delete(&wimports);
     }
-}
-
-ModuleWrapper::~ModuleWrapper()
-{
-    if (exportTypes_.size)
-        wasm_exporttype_vec_delete(&exportTypes_);
 }
 
 // LCOV_EXCL_START
@@ -285,10 +265,7 @@ ModuleWrapper::operator=(ModuleWrapper&& o)
 
     module_ = std::move(o.module_);
     instanceWrap_ = std::move(o.instanceWrap_);
-    if (exportTypes_.size)
-        wasm_exporttype_vec_delete(&exportTypes_);
-    exportTypes_ = o.exportTypes_;
-    o.exportTypes_ = {0, nullptr};
+    exportTypes_ = std::move(o.exportTypes_);
     j_ = o.j_;
 
     return *this;
@@ -301,27 +278,25 @@ ModuleWrapper::operator bool() const
 
 // LCOV_EXCL_STOP
 
-void
-ModuleWrapper::makeImpParams(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
+static WasmValtypeVec
+makeImpParams(WasmImportFunc const& imp)
 {
     auto const paramSize = imp.params.size();
+    if (!paramSize)
+        return {};
 
-    if (paramSize)
-    {
-        wasm_valtype_vec_new_uninitialized(&v, paramSize);
-    }
-    else
-        v = WASM_EMPTY_VEC;
+    WasmValtypeVec v(paramSize);
+
     for (unsigned i = 0; i < paramSize; ++i)
     {
         auto const vt = imp.params[i];
         switch (vt)
         {
             case WT_I32:
-                v.data[i] = wasm_valtype_new_i32();
+                v.vec_.data[i] = wasm_valtype_new_i32();
                 break;
             case WT_I64:
-                v.data[i] = wasm_valtype_new_i64();
+                v.vec_.data[i] = wasm_valtype_new_i64();
                 break;
                 // LCOV_EXCL_START
             default:
@@ -329,59 +304,55 @@ ModuleWrapper::makeImpParams(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
                 // LCOV_EXCL_STOP
         }
     }
+    return v;
 }
 
-void
-ModuleWrapper::makeImpReturn(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
+static WasmValtypeVec
+makeImpReturn(WasmImportFunc const& imp)
 {
-    if (imp.result)
+    if (!imp.result)
+        return {};  // LCOV_EXCL_LINE
+
+    WasmValtypeVec v(1);
+    switch (*imp.result)
     {
-        wasm_valtype_vec_new_uninitialized(&v, 1);
-        switch (*imp.result)
-        {
-            case WT_I32:
-                v.data[0] = wasm_valtype_new_i32();
-                break;
-                // LCOV_EXCL_START
-            case WT_I64:
-                v.data[0] = wasm_valtype_new_i64();
-                break;
-            default:
-                throw std::runtime_error("invalid return type");
-                // LCOV_EXCL_STOP
-        }
+        case WT_I32:
+            v.vec_.data[0] = wasm_valtype_new_i32();
+            break;
+            // LCOV_EXCL_START
+        case WT_I64:
+            v.vec_.data[0] = wasm_valtype_new_i64();
+            break;
+        default:
+            throw std::runtime_error("invalid return type");
+            // LCOV_EXCL_STOP
     }
-    else
-        v = WASM_EMPTY_VEC;  // LCOV_EXCL_LINE
+    return v;
 }
 
-wasm_extern_vec_t
-ModuleWrapper::buildImports(wasm_store_t* s, ImportVec const& imports)
+WasmExternVec
+ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports)
 {
-    wasm_importtype_vec_t importTypes = WASM_EMPTY_VEC;
-    wasm_module_imports(module_.get(), &importTypes);
-    std::
-        unique_ptr<wasm_importtype_vec_t, decltype(&wasm_importtype_vec_delete)>
-            itDeleter(&importTypes, &wasm_importtype_vec_delete);
+    WasmImporttypeVec importTypes;
+    wasm_module_imports(module_.get(), &importTypes.vec_);
 
-    wasm_extern_vec_t wimports = WASM_EMPTY_VEC;
-    if (!importTypes.size)
-        return wimports;
+    if (!importTypes.vec_.size)
+        return {};
 
-    wasm_extern_vec_new_uninitialized(&wimports, importTypes.size);
+    WasmExternVec wimports(importTypes.vec_.size);
 
     unsigned impCnt = 0;
-    for (unsigned i = 0; i < importTypes.size; ++i)
+    for (unsigned i = 0; i < importTypes.vec_.size; ++i)
     {
-        wasm_importtype_t const* importtype = importTypes.data[i];
+        wasm_importtype_t const* importType = importTypes.vec_.data[i];
 
         // wasm_name_t const* mn = wasm_importtype_module(importtype);
         // auto modName = std::string_view(mn->data, mn->num_elems);
-        wasm_name_t const* fn = wasm_importtype_name(importtype);
+        wasm_name_t const* fn = wasm_importtype_name(importType);
         auto fieldName = std::string_view(fn->data, fn->size);
 
         wasm_externkind_t const itype =
-            wasm_externtype_kind(wasm_importtype_type(importtype));
+            wasm_externtype_kind(wasm_importtype_type(importType));
         if ((itype) != WASM_EXTERN_FUNC)
             throw std::runtime_error(
                 "Invalid import type " +
@@ -398,17 +369,19 @@ ModuleWrapper::buildImports(wasm_store_t* s, ImportVec const& imports)
             if (imp.name != fieldName)
                 continue;
 
-            wasm_valtype_vec_t params = WASM_EMPTY_VEC,
-                               results = WASM_EMPTY_VEC;
-            makeImpReturn(results, imp);
-            makeImpParams(params, imp);
+            WasmValtypeVec params(makeImpParams(imp));
+            WasmValtypeVec results(makeImpReturn(imp));
 
-            using ftype_ptr = std::
-                unique_ptr<wasm_functype_t, decltype(&wasm_functype_delete)>;
-            ftype_ptr ftype(
-                wasm_functype_new(&params, &results), &wasm_functype_delete);
+            std::unique_ptr<wasm_functype_t, decltype(&wasm_functype_delete)>
+                ftype(
+                    wasm_functype_new(&params.vec_, &results.vec_),
+                    &wasm_functype_delete);
+
+            params.release();
+            results.release();
+
             wasm_func_t* func = wasm_func_new_with_env(
-                s,
+                s.get(),
                 ftype.get(),
                 reinterpret_cast<wasm_func_callback_with_env_t>(imp.wrap),
                 (void*)&obj,
@@ -421,7 +394,7 @@ ModuleWrapper::buildImports(wasm_store_t* s, ImportVec const& imports)
                 // LCOV_EXCL_STOP
             }
 
-            wimports.data[i] = wasm_func_as_extern(func);
+            wimports.vec_.data[i] = wasm_func_as_extern(func);
             ++impCnt;
             impSet = true;
 
@@ -435,11 +408,11 @@ ModuleWrapper::buildImports(wasm_store_t* s, ImportVec const& imports)
         }
     }
 
-    if (impCnt != importTypes.size)
+    if (impCnt != importTypes.vec_.size)
     {
         print_wasm_error(
             std::string("Imports not finished: ") + std::to_string(impCnt) +
-                "/" + std::to_string(importTypes.size),
+                "/" + std::to_string(importTypes.vec_.size),
             nullptr,
             j_);
     }
@@ -466,9 +439,9 @@ ModuleWrapper::getInstance(int) const
 }
 
 int
-ModuleWrapper::addInstance(wasm_store_t* s, wasm_extern_vec_t const& imports)
+ModuleWrapper::addInstance(StorePtr& s, WasmExternVec const& imports)
 {
-    instanceWrap_ = {s, module_.get(), imports, j_};
+    instanceWrap_ = {s, module_, imports, j_};
     return 0;
 }
 
@@ -547,12 +520,13 @@ WasmiEngine::addModule(
     {
         // LCOV_EXCL_START
         print_wasm_error("Error setting gas", nullptr, j_);
+        wasmi_error_delete(err);
         throw std::runtime_error("can't set gas");
         // LCOV_EXCL_STOP
     }
 
     moduleWrap_ = std::make_unique<ModuleWrapper>(
-        store_.get(), wasmCode, instantiate, imports, j_);
+        store_, wasmCode, instantiate, imports, j_);
 
     if (!moduleWrap_)
         throw std::runtime_error(
@@ -697,7 +671,7 @@ WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
     auto const start = usecs();
 #endif
 
-    wasm_trap_t* trap = wasm_func_call(f.first, &inv, &ret.r);
+    wasm_trap_t* trap = wasm_func_call(f.first, &inv, &ret.r.vec_);
 
 #ifdef SHOW_CALL_TIME
     auto const finish = usecs();
@@ -849,16 +823,16 @@ WasmiEngine::runHlp(
 
     if (res.f)
         throw std::runtime_error("<" + std::string(funcName) + "> failure");
-    else if (!res.r.size)
+    else if (!res.r.vec_.size)
         throw std::runtime_error(
             "<" + std::string(funcName) +
             "> return nothing");  // LCOV_EXCL_LINE
 
-    assert(res.r.data[0].kind == WASM_I32);
+    assert(res.r.vec_.data[0].kind == WASM_I32);
     if (gas == -1)
         gas = std::numeric_limits<decltype(gas)>::max();
     WasmResult<int32_t> const ret{
-        res.r.data[0].of.i32, gas - moduleWrap_->getGas()};
+        res.r.vec_.data[0].of.i32, gas - moduleWrap_->getGas()};
 
     // #ifdef DEBUG_OUTPUT
     //     auto& j = std::cerr;
@@ -957,11 +931,11 @@ WasmiEngine::allocate(int32_t sz)
 {
     auto res = call<1>(W_ALLOC, static_cast<int32_t>(sz));
 
-    if (res.f || !res.r.size || (res.r.data[0].kind != WASM_I32) ||
-        !res.r.data[0].of.i32)
+    if (res.f || !res.r.vec_.size || (res.r.vec_.data[0].kind != WASM_I32) ||
+        !res.r.vec_.data[0].of.i32)
         throw std::runtime_error(
             "can't allocate memory, " + std::to_string(sz) + " bytes");
-    return res.r.data[0].of.i32;
+    return res.r.vec_.data[0].of.i32;
 }
 
 wasm_trap_t*
@@ -973,7 +947,12 @@ WasmiEngine::newTrap(std::string const& txt)
     if (!txt.empty())
         wasm_name_new(&msg, txt.size() + 1, txt.c_str());  // include 0
 
-    return wasm_trap_new(store_.get(), &msg);
+    wasm_trap_t* trap = wasm_trap_new(store_.get(), &msg);
+
+    if (!txt.empty())
+        wasm_byte_vec_delete(&msg);
+
+    return trap;
 }
 
 // LCOV_EXCL_START

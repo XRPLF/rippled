@@ -7,42 +7,93 @@
 
 namespace ripple {
 
-struct WasmiResult
+template <class T, void (*Create)(T*, size_t), void (*Destroy)(T*)>
+struct WasmVec
 {
-    wasm_val_vec_t r;
-    bool f;  // failure flag
+    T vec_;
 
-    WasmiResult(unsigned N = 0) : r{0, nullptr}, f(false)
+    WasmVec(size_t s = 0) : vec_ WASM_EMPTY_VEC
     {
-        if (N)
-            wasm_val_vec_new_uninitialized(&r, N);
+        if (s > 0)
+            Create(&vec_, s);  // zeroes memory
     }
 
-    ~WasmiResult()
+    ~WasmVec()
     {
-        if (r.size)
-            wasm_val_vec_delete(&r);
+        clear();
     }
 
-    WasmiResult(WasmiResult const&) = delete;
-    WasmiResult&
-    operator=(WasmiResult const&) = delete;
+    WasmVec(WasmVec const&) = delete;
+    WasmVec&
+    operator=(WasmVec const&) = delete;
 
-    WasmiResult(WasmiResult&& o)
+    WasmVec(WasmVec&& other) noexcept : vec_ WASM_EMPTY_VEC
     {
-        *this = std::move(o);
+        *this = std::move(other);
     }
 
-    WasmiResult&
-    operator=(WasmiResult&& o)
+    WasmVec&
+    operator=(WasmVec&& other) noexcept
     {
-        r = o.r;
-        o.r = {0, nullptr};
-        f = o.f;
-        o.f = false;
+        if (this != &other)
+        {
+            clear();
+            vec_ = other.vec_;
+            other.vec_ = WASM_EMPTY_VEC;
+        }
         return *this;
     }
-    // operator wasm_val_vec_t &() {return r;}
+
+    void
+    clear()
+    {
+        Destroy(&vec_);  // call destructor for every elements too
+        vec_ = WASM_EMPTY_VEC;
+    }
+
+    T
+    release()
+    {
+        T result = vec_;
+        vec_ = WASM_EMPTY_VEC;
+        return result;
+    }
+};
+
+using WasmValtypeVec = WasmVec<
+    wasm_valtype_vec_t,
+    &wasm_valtype_vec_new_uninitialized,
+    &wasm_valtype_vec_delete>;
+using WasmValVec = WasmVec<
+    wasm_val_vec_t,
+    &wasm_val_vec_new_uninitialized,
+    &wasm_val_vec_delete>;
+using WasmExternVec = WasmVec<
+    wasm_extern_vec_t,
+    &wasm_extern_vec_new_uninitialized,
+    &wasm_extern_vec_delete>;
+using WasmExporttypeVec = WasmVec<
+    wasm_exporttype_vec_t,
+    &wasm_exporttype_vec_new_uninitialized,
+    &wasm_exporttype_vec_delete>;
+using WasmImporttypeVec = WasmVec<
+    wasm_importtype_vec_t,
+    &wasm_importtype_vec_new_uninitialized,
+    &wasm_importtype_vec_delete>;
+
+struct WasmiResult
+{
+    WasmValVec r;
+    bool f;  // failure flag
+
+    WasmiResult(unsigned N = 0) : r(N), f(false)
+    {
+    }
+
+    ~WasmiResult() = default;
+    WasmiResult(WasmiResult&& o) = default;
+    WasmiResult&
+    operator=(WasmiResult&& o) = default;
 };
 
 using ModulePtr = std::unique_ptr<wasm_module_t, decltype(&wasm_module_delete)>;
@@ -56,17 +107,17 @@ using FuncInfo = std::pair<wasm_func_t const*, wasm_functype_t const*>;
 struct InstanceWrapper
 {
     wasm_store_t* store_ = nullptr;
-    wasm_extern_vec_t exports_;
+    WasmExternVec exports_;
     InstancePtr instance_;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
 private:
     static InstancePtr
     init(
-        wasm_store_t* s,
-        wasm_module_t* m,
-        wasm_extern_vec_t* expt,
-        wasm_extern_vec_t const& imports,
+        StorePtr& s,
+        ModulePtr& m,
+        WasmExternVec& expt,
+        WasmExternVec const& imports,
         beast::Journal j);
 
 public:
@@ -78,19 +129,18 @@ public:
     operator=(InstanceWrapper&& o);
 
     InstanceWrapper(
-        wasm_store_t* s,
-        wasm_module_t* m,
-        wasm_extern_vec_t const& imports,
+        StorePtr& s,
+        ModulePtr& m,
+        WasmExternVec const& imports,
         beast::Journal j);
 
-    ~InstanceWrapper();
+    ~InstanceWrapper() = default;
 
     operator bool() const;
 
     FuncInfo
-    getFunc(
-        std::string_view funcName,
-        wasm_exporttype_vec_t const& export_types) const;
+    getFunc(std::string_view funcName, WasmExporttypeVec const& exportTypes)
+        const;
 
     wmem
     getMem() const;
@@ -105,12 +155,12 @@ struct ModuleWrapper
 {
     ModulePtr module_;
     InstanceWrapper instanceWrap_;
-    wasm_exporttype_vec_t exportTypes_;
+    WasmExporttypeVec exportTypes_;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
 private:
     static ModulePtr
-    init(wasm_store_t* s, Bytes const& wasmBin, beast::Journal j);
+    init(StorePtr& s, Bytes const& wasmBin, beast::Journal j);
 
 public:
     ModuleWrapper();
@@ -118,12 +168,12 @@ public:
     ModuleWrapper&
     operator=(ModuleWrapper&& o);
     ModuleWrapper(
-        wasm_store_t* s,
+        StorePtr& s,
         Bytes const& wasmBin,
         bool instantiate,
         ImportVec const& imports,
         beast::Journal j);
-    ~ModuleWrapper();
+    ~ModuleWrapper() = default;
 
     operator bool() const;
 
@@ -136,20 +186,14 @@ public:
     getInstance(int i = 0) const;
 
     int
-    addInstance(
-        wasm_store_t* s,
-        wasm_extern_vec_t const& imports = WASM_EMPTY_VEC);
+    addInstance(StorePtr& s, WasmExternVec const& imports);
 
     std::int64_t
     getGas();
 
 private:
-    static void
-    makeImpParams(wasm_valtype_vec_t& v, WasmImportFunc const& imp);
-    static void
-    makeImpReturn(wasm_valtype_vec_t& v, WasmImportFunc const& imp);
-    wasm_extern_vec_t
-    buildImports(wasm_store_t* s, ImportVec const& imports);
+    WasmExternVec
+    buildImports(StorePtr& s, ImportVec const& imports);
 };
 
 class WasmiEngine
@@ -237,9 +281,7 @@ private:
     runFunc(std::string_view const funcName, int32_t p);
 
     int32_t
-    makeModule(
-        Bytes const& wasmCode,
-        wasm_extern_vec_t const& imports = WASM_EMPTY_VEC);
+    makeModule(Bytes const& wasmCode, WasmExternVec const& imports = {});
 
     FuncInfo
     getFunc(std::string_view funcName);

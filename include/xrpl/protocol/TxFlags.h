@@ -266,6 +266,32 @@ constexpr std::uint32_t tfIndependent                  = 0x00080000;
 constexpr std::uint32_t const tfBatchMask =
     ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent) | tfInnerBatchTxn;
 
+// LoanSet and LoanPay flags:
+// LoanSet: True, indicates the loan supports overpayments
+// LoanPay: True, indicates any excess in this payment can be used
+// as an overpayment. False, no overpayments will be taken.
+constexpr std::uint32_t const tfLoanOverpayment = 0x00010000;
+// LoanPay exclusive flags:
+// tfLoanFullPayment: True, indicates that the payment is an early
+// full payment. It must pay the entire loan including close
+// interest and fees, or it will fail. False: Not a full payment.
+constexpr std::uint32_t const tfLoanFullPayment = 0x00020000;
+// tfLoanLatePayment: True, indicates that the payment is late,
+// and includes late iterest and fees. If the loan is not late,
+// it will fail. False: not a late payment. If the current payment
+// is overdue, the transaction will fail.
+constexpr std::uint32_t const tfLoanLatePayment = 0x00040000;
+constexpr std::uint32_t const tfLoanSetMask = ~(tfUniversal |
+    tfLoanOverpayment);
+constexpr std::uint32_t const tfLoanPayMask = ~(tfUniversal |
+    tfLoanOverpayment | tfLoanFullPayment | tfLoanLatePayment);
+
+// LoanManage flags:
+constexpr std::uint32_t const tfLoanDefault = 0x00010000;
+constexpr std::uint32_t const tfLoanImpair = 0x00020000;
+constexpr std::uint32_t const tfLoanUnimpair = 0x00040000;
+constexpr std::uint32_t const tfLoanManageMask = ~(tfUniversal | tfLoanDefault | tfLoanImpair | tfLoanUnimpair);
+
 // clang-format on
 
 }  // namespace ripple

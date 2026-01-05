@@ -23,13 +23,10 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
-    if (auto const destination = ctx.tx[~sfDestination];
-        destination.has_value())
+    if (auto const destination = ctx.tx[~sfDestination])
     {
         if (*destination == beast::zero)
         {
-            JLOG(ctx.j.debug())
-                << "VaultWithdraw: zero/empty destination account.";
             return temMALFORMED;
         }
     }
@@ -50,35 +47,15 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (assets.asset() != vaultAsset && assets.asset() != vaultShare)
         return tecWRONG_ASSET;
 
-    if (vaultAsset.native())
-        ;  // No special checks for XRP
-    else if (vaultAsset.holds<MPTIssue>())
+    auto const& vaultAccount = vault->at(sfAccount);
+    auto const& account = ctx.tx[sfAccount];
+    auto const& dstAcct = ctx.tx[~sfDestination].value_or(account);
+    if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct);
+        !isTesSuccess(ter))
     {
-        auto mptID = vaultAsset.get<MPTIssue>().getMptID();
-        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
-        if (!issuance)
-            return tecOBJECT_NOT_FOUND;
-        if (!issuance->isFlag(lsfMPTCanTransfer))
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.error())
-                << "VaultWithdraw: vault assets are non-transferable.";
-            return tecNO_AUTH;
-            // LCOV_EXCL_STOP
-        }
-    }
-    else if (vaultAsset.holds<Issue>())
-    {
-        auto const issuer =
-            ctx.view.read(keylet::account(vaultAsset.getIssuer()));
-        if (!issuer)
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.error())
-                << "VaultWithdraw: missing issuer of vault assets.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
+        JLOG(ctx.j.debug())
+            << "VaultWithdraw: vault assets are non-transferable.";
+        return ter;
     }
 
     // Enforce valid withdrawal policy
@@ -90,23 +67,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const account = ctx.tx[sfAccount];
-    auto const dstAcct = ctx.tx[~sfDestination].value_or(account);
-    auto const sleDst = ctx.view.read(keylet::account(dstAcct));
-    if (sleDst == nullptr)
-        return account == dstAcct ? tecINTERNAL : tecNO_DST;
-
-    if (sleDst->isFlag(lsfRequireDestTag) &&
-        !ctx.tx.isFieldPresent(sfDestinationTag))
-        return tecDST_TAG_NEEDED;  // Cannot send without a tag
-
-    // Withdrawal to a 3rd party destination account is essentially a transfer,
-    // via shares in the vault. Enforce all the usual asset transfer checks.
-    if (account != dstAcct && sleDst->isFlag(lsfDepositAuth))
-    {
-        if (!ctx.view.exists(keylet::depositPreauth(dstAcct, account)))
-            return tecNO_PERMISSION;
-    }
+    if (auto const ret = canWithdraw(ctx.view, ctx.tx))
+        return ret;
 
     // If sending to Account (i.e. not a transfer), we will also create (only
     // if authorized) a trust line or MPToken as needed, in doApply().
@@ -276,43 +238,16 @@ VaultWithdraw::doApply()
     }
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
-    if (!vaultAsset.native() &&               //
-        dstAcct != vaultAsset.getIssuer() &&  //
-        dstAcct == account_)
-    {
-        if (auto const ter = addEmptyHolding(
-                view(), account_, mPriorBalance, vaultAsset, j_);
-            !isTesSuccess(ter) && ter != tecDUPLICATE)
-            return ter;
-    }
 
-    // Transfer assets from vault to depositor or destination account.
-    if (auto const ter = accountSend(
-            view(),
-            vaultAccount,
-            dstAcct,
-            assetsWithdrawn,
-            j_,
-            WaiveTransferFee::Yes);
-        !isTesSuccess(ter))
-        return ter;
-
-    // Sanity check
-    if (accountHolds(
-            view(),
-            vaultAccount,
-            assetsWithdrawn.asset(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_) < beast::zero)
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultWithdraw: negative balance of vault assets.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
-
-    return tesSUCCESS;
+    return doWithdraw(
+        view(),
+        ctx_.tx,
+        account_,
+        dstAcct,
+        vaultAccount,
+        mPriorBalance,
+        assetsWithdrawn,
+        j_);
 }
 
 }  // namespace ripple
