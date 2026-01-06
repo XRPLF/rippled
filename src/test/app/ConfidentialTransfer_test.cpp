@@ -47,27 +47,23 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert({
             .account = bob,
             .amt = 0,
-            //    .proof = "123",
             .holderPubKey = mptAlice.getPubKey(bob),
         });
 
         mptAlice.convert({
             .account = bob,
             .amt = 20,
-            //   .proof = "123",
         });
 
-        // mptAlice.convert({
-        //     .account = bob,
-        //     .amt = 40,
-        //     //   .proof = "123",
-        // });
+        mptAlice.convert({
+            .account = bob,
+            .amt = 40,
+        });
 
-        // mptAlice.convert({
-        //     .account = bob,
-        //     .amt = 40,
-        //     // .proof = "123",
-        // });
+        mptAlice.convert({
+            .account = bob,
+            .amt = 40,
+        });
     }
 
     void
@@ -76,104 +72,113 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testcase("Convert preflight");
         using namespace test::jtx;
 
-        Env env{*this, features - featureConfidentialTransfer};
-        Account const alice("alice");
-        Account const bob("bob");
-        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        {
+            Env env{*this, features - featureConfidentialTransfer};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-        mptAlice.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanTransfer | tfMPTCanLock});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
 
-        mptAlice.authorize({.account = bob});
-        env.close();
-        mptAlice.pay(alice, bob, 100);
-        env.close();
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
 
-        mptAlice.generateKeyPair(alice);
-        mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
 
-        mptAlice.set(
-            {.account = alice,
-             .pubKey = mptAlice.getPubKey(alice),
-             .err = temDISABLED});
+            mptAlice.set(
+                {.account = alice,
+                 .pubKey = mptAlice.getPubKey(alice),
+                 .err = temDISABLED});
 
-        mptAlice.convert(
-            {.account = bob,
-             .amt = 10,
-             .proof = "123",
-             .holderPubKey = mptAlice.getPubKey(bob),
-             .err = temDISABLED});
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = temDISABLED});
+        }
 
-        env.close();
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-        env.enableFeature(featureConfidentialTransfer);
-        env.close();
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock});
 
-        mptAlice.convert(
-            {.account = alice,
-             .amt = 10,
-             .proof = "123",
-             .holderPubKey = mptAlice.getPubKey(bob),
-             .err = temMALFORMED});
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
 
-        mptAlice.convert(
-            {.account = bob,
-             .amt = 10,
-             .proof = "123",
-             .holderPubKey = mptAlice.getPubKey(bob),
-             .holderEncryptedAmt = Buffer{},
-             .err = temBAD_CIPHERTEXT});
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
 
-        mptAlice.convert(
-            {.account = bob,
-             .amt = 10,
-             .proof = "123",
-             .holderPubKey = mptAlice.getPubKey(bob),
-             .issuerEncryptedAmt = Buffer{},
-             .err = temBAD_CIPHERTEXT});
+            mptAlice.convert(
+                {.account = alice,
+                 .amt = 10,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = temMALFORMED});
 
-        mptAlice.convert(
-            {.account = bob,
-             .amt = maxMPTokenAmount + 1,
-             .proof = "123",
-             .holderPubKey = mptAlice.getPubKey(bob),
-             .err = temBAD_AMOUNT});
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .holderEncryptedAmt = Buffer{},
+                 .err = temBAD_CIPHERTEXT});
 
-        mptAlice.convert(
-            {.account = bob,
-             .amt = 1,
-             .proof = "123",
-             .holderPubKey = mptAlice.getPubKey(bob),
-             .holderEncryptedAmt =
-                 Buffer{badCiphertext, ecGamalEncryptedTotalLength},
-             .err = temBAD_CIPHERTEXT});
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .issuerEncryptedAmt = Buffer{},
+                 .err = temBAD_CIPHERTEXT});
 
-        mptAlice.convert(
-            {.account = bob,
-             .amt = 1,
-             .proof = "123",
-             .holderPubKey = mptAlice.getPubKey(bob),
-             .issuerEncryptedAmt =
-                 Buffer{badCiphertext, ecGamalEncryptedTotalLength},
-             .err = temBAD_CIPHERTEXT});
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = maxMPTokenAmount + 1,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .err = temBAD_AMOUNT});
 
-        // invalid pub key
-        mptAlice.convert(
-            {.account = bob,
-             .amt = 10,
-             .proof = "123",
-             .holderPubKey = Buffer{},
-             .err = temMALFORMED});
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 1,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .holderEncryptedAmt =
+                     Buffer{badCiphertext, ecGamalEncryptedTotalLength},
+                 .err = temBAD_CIPHERTEXT});
 
-        // todo: change to to check proof size
-        // mptAlice.convert(
-        //     {.account = bob,
-        //      .amt = 10,
-        //      .proof = "123",
-        //      .holderPubKey = mptAlice.getPubKey(bob),
-        //      .err = temMALFORMED});
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 1,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .issuerEncryptedAmt =
+                     Buffer{badCiphertext, ecGamalEncryptedTotalLength},
+                 .err = temBAD_CIPHERTEXT});
+
+            // invalid pub key
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .holderPubKey = Buffer{},
+                 .err = temMALFORMED});
+
+            // todo: change to to check proof size
+            // mptAlice.convert(
+            //     {.account = bob,
+            //      .amt = 10,
+            //      .proof = "123",
+            //      .holderPubKey = mptAlice.getPubKey(bob),
+            //      .err = temMALFORMED});
+        }
     }
 
     void
@@ -288,7 +293,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .err = tecNO_PERMISSION});
         }
@@ -316,7 +320,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .err = tecNO_PERMISSION});
         }
@@ -345,7 +348,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .err = tecOBJECT_NOT_FOUND});
         }
@@ -371,7 +373,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .err = tecOBJECT_NOT_FOUND});
         }
@@ -403,7 +404,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 200,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .err = tecINSUFFICIENT_FUNDS});
         }
@@ -435,14 +435,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob)});
 
             // cannot upload pk again
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .err = tecDUPLICATE});
         }
@@ -476,7 +474,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .err = tecINSUFFICIENT_FUNDS});
 
@@ -486,7 +483,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = bob,
                 .amt = 10,
-                .proof = "123",
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
         }
@@ -524,7 +520,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .err = tecINSUFFICIENT_FUNDS});
 
@@ -537,7 +532,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = bob,
                 .amt = 10,
-                .proof = "123",
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
         }
@@ -574,7 +568,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert({
             .account = bob,
             .amt = 40,
-            .proof = "123",
             .holderPubKey = mptAlice.getPubKey(bob),
         });
 
@@ -612,7 +605,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert({
             .account = bob,
             .amt = 40,
-            .proof = "123",
             .holderPubKey = mptAlice.getPubKey(bob),
         });
 
@@ -757,7 +749,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert(
             {.account = bob,
              .amt = 60,
-             .proof = "123",
              .holderPubKey = mptAlice.getPubKey(bob),
              .err = tesSUCCESS});
 
@@ -780,7 +771,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert(
             {.account = carol,
              .amt = 20,
-             .proof = "123",
              .holderPubKey = mptAlice.getPubKey(carol),
              .err = tesSUCCESS});
 
@@ -1032,13 +1022,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert(
             {.account = bob,
              .amt = 60,
-             .proof = "123",
              .holderPubKey = mptAlice.getPubKey(bob),
              .err = tesSUCCESS});
         mptAlice.convert(
             {.account = carol,
              .amt = 20,
-             .proof = "123",
              .holderPubKey = mptAlice.getPubKey(carol),
              .err = tesSUCCESS});
 
@@ -1252,7 +1240,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 60,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .err = tesSUCCESS});
 
@@ -1264,7 +1251,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = carol,
                  .amt = 20,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(carol),
                  .err = tesSUCCESS});
 
@@ -1316,7 +1302,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = bob,
                 .amt = 100,
-                .proof = "123",
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
 
@@ -1356,14 +1341,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = bob,
                 .amt = 100,
-                .proof = "123",
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
 
             mptAlice.convert({
                 .account = carol,
                 .amt = 0,
-                .proof = "123",
                 .holderPubKey = mptAlice.getPubKey(carol),
             });
 
@@ -1400,7 +1383,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = bob,
                 .amt = 0,
-                .proof = "123",
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
 
@@ -1437,7 +1419,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = bob,
                 .amt = 0,
-                .proof = "123",
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
 
@@ -1480,7 +1461,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert({
             .account = bob,
             .amt = 40,
-            .proof = "123",
             .holderPubKey = mptAlice.getPubKey(bob),
         });
 
@@ -1559,7 +1539,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = bob,
                 .amt = 40,
-                .proof = "123",
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
 
@@ -1765,7 +1744,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = bob,
                 .amt = 40,
-                .proof = "123",
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
 
@@ -1776,7 +1754,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = carol,
                 .amt = 40,
-                .proof = "123",
                 .holderPubKey = mptAlice.getPubKey(carol),
             });
 
@@ -1816,7 +1793,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = bob,
                 .amt = 40,
-                .proof = "123",
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
             mptAlice.mergeInbox({.account = bob});
@@ -1892,13 +1868,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert(
             {.account = carol,
              .amt = 50,
-             .proof = "123",
              .holderPubKey = mptAlice.getPubKey(carol),
              .err = tesSUCCESS});
         mptAlice.convert(
             {.account = bob,
              .amt = 50,
-             .proof = "123",
              .holderPubKey = mptAlice.getPubKey(bob),
              .err = tesSUCCESS});
 
@@ -2021,7 +1995,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 60,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob)});
 
             // bob merge inbox
@@ -2037,7 +2010,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = carol,
                  .amt = 120,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(carol)});
 
             // carol merge inbox
@@ -2052,7 +2024,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert(
             {.account = dave,
              .amt = 200,
-             .proof = "123",
              .holderPubKey = mptAlice.getPubKey(dave)});
 
         // setup: carol confidential send 50 to bob.
@@ -2215,7 +2186,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert({
                 .account = bob,
                 .amt = 60,
-                .proof = "123",
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
             mptAlice.mergeInbox({
@@ -2338,7 +2308,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 60,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob)});
             mptAlice.mergeInbox({
                 .account = bob,
@@ -2465,7 +2434,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 500,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob)});
             mptAlice.mergeInbox({
                 .account = bob,
@@ -2474,7 +2442,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = carol,
                  .amt = 1000,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(carol)});
 
             // verify proof fails with invalid clawback amount
@@ -2506,7 +2473,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 300,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob)});
             mptAlice.mergeInbox({
                 .account = bob,
@@ -2514,7 +2480,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = carol,
                  .amt = 400,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(carol)});
             mptAlice.mergeInbox({
                 .account = carol,
@@ -2625,14 +2590,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                     mptAlice.convert(
                         {.account = bob,
                          .amt = amt,
-                         .proof = "123",
                          .holderPubKey = mptAlice.getPubKey(bob),
                          .err = expectedResult});
                 else
                     mptAlice.convert({
                         .account = bob,
                         .amt = amt,
-                        .proof = "123",
                         .err = expectedResult,
                     });
 
@@ -2697,7 +2660,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 50,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob)});
 
             // set or clear lsfMPTCanPrivacy should fail because of
@@ -2729,14 +2691,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
-                 .proof = "123",
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .err = tecNO_PERMISSION});
 
             // can set lsfMPTCanPrivacy again when there's no confidential
             // outstanding balance
             mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetPrivacy});
-            mptAlice.convert({.account = bob, .amt = 10, .proof = "123"});
+            mptAlice.convert({
+                .account = bob,
+                .amt = 10,
+            });
         }
     }
 
@@ -2744,34 +2708,34 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     testWithFeats(FeatureBitset features)
     {
         testConvert(features);
-        // testConvertPreflight(features);
-        // testConvertPreclaim(features);
+        testConvertPreflight(features);
+        testConvertPreclaim(features);
 
-        // testMergeInbox(features);
-        // testMergeInboxPreflight(features);
-        // testMergeInboxPreclaim(features);
+        testMergeInbox(features);
+        testMergeInboxPreflight(features);
+        testMergeInboxPreclaim(features);
 
-        // testSetPreflight(features);
+        testSetPreflight(features);
 
-        // // ConfidentialSend
-        // testSend(features);
-        // testSendPreflight(features);
-        // testSendPreclaim(features);
-        // testSendDepositPreauth(features);
+        // ConfidentialSend
+        testSend(features);
+        testSendPreflight(features);
+        testSendPreclaim(features);
+        testSendDepositPreauth(features);
 
-        // // ConfidentialClawback
-        // testClawback(features);
-        // testClawbackPreflight(features);
-        // testClawbackPreclaim(features);
-        // testClawbackProof(features);
+        // ConfidentialClawback
+        testClawback(features);
+        testClawbackPreflight(features);
+        testClawbackPreclaim(features);
+        testClawbackProof(features);
 
-        // testDelete(features);
+        testDelete(features);
 
-        // testConvertBack(features);
-        // testConvertBackPreflight(features);
-        // testConvertBackPreclaim(features);
+        testConvertBack(features);
+        testConvertBackPreflight(features);
+        testConvertBackPreclaim(features);
 
-        // testMutatePrivacy(features);
+        testMutatePrivacy(features);
     }
 
 public:

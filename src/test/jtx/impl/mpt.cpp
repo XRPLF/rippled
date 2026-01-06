@@ -790,11 +790,11 @@ MPTTester::getConvertProof(
     auto const sleHolder = env_.le(keylet::mptoken(*id_, holder.id()));
     auto const sleIssuance = env_.le(keylet::mptIssuance(*id_));
 
-    if (!sleHolder)
-        Throw<std::runtime_error>("Mptoken object not found");
-
-    if (!sleIssuance)
-        Throw<std::runtime_error>("Issuance object not found");
+    if (!sleHolder || !sleIssuance || holderCiphertext.first.size() == 0 ||
+        issuerCiphertext.first.size() == 0)
+        return Buffer(
+            auditorCiphertext ? 3 * ecEqualityProofLength
+                              : ecEqualityProofLength * 2);
 
     auto const generateProof = [amount, ctxHash](
                                    Slice const& ciphertext,

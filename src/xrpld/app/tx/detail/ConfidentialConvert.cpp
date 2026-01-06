@@ -46,9 +46,10 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-bool
+static void
 getProofs(Slice const& zkp, bool const hasAuditor, std::vector<Buffer>& zkps)
 {
+    // size checks already done in preflight
     Buffer holderZkp{zkp.data(), ecEqualityProofLength};
     zkps.push_back(holderZkp);
 
@@ -61,8 +62,6 @@ getProofs(Slice const& zkp, bool const hasAuditor, std::vector<Buffer>& zkps)
             zkp.data() + ecEqualityProofLength * 2, ecEqualityProofLength};
         zkps.push_back(auditorZkp);
     }
-
-    return true;
 }
 
 TER
@@ -128,8 +127,8 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
 
     std::vector<Buffer> zkps;
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
-    if (!getProofs(ctx.tx[sfZKProof], hasAuditor, zkps))
-        return tecBAD_PROOF;
+
+    getProofs(ctx.tx[sfZKProof], hasAuditor, zkps);
 
     // check equality proof
     auto checkEqualityProof = [&](auto const& encryptedAmount,
