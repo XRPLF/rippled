@@ -354,12 +354,8 @@ VaultClawback::doApply()
     STAmount assetsRecovered = {vault->at(sfAsset)};
 
     // The Owner is burning shares
-    if (account_ == vault->at(sfOwner))
+    if (account_ == vault->at(sfOwner) && amount.asset() == share)
     {
-        XRPL_ASSERT(
-            amount.asset() == share,
-            "xrpl::VaultClawback::doApply : matching share");
-
         sharesDestroyed = accountHolds(
             view(),
             holder,

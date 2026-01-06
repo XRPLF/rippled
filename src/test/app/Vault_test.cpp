@@ -5369,14 +5369,19 @@ class Vault_test : public beast::unit_test::suite
                     "VaultClawback (share) - " + prefix +
                     " owner asset clawback fails");
                 auto [vault, vaultKeylet] = setupVault(asset, owner, depositor);
-
                 env(vault.clawback({
                         .issuer = owner,
                         .id = vaultKeylet.key,
                         .holder = depositor,
-                        .amount = asset(1).value(),
+                        .amount = asset(100).value(),
                     }),
-                    asset.native() ? ter(temMALFORMED) : ter(tecNO_PERMISSION),
+                    // when asset is XRP or owner is not issuer clawback fail
+                    // when owner is issuer precision loss occurs as vault is
+                    // empty
+                    asset.native() ? ter(temMALFORMED)
+                        : asset.raw().getIssuer() != owner.id()
+                        ? ter(tecNO_PERMISSION)
+                        : ter(tecPRECISION_LOSS),
                     THISLINE);
                 env.close();
             }
@@ -5405,14 +5410,17 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase(
                     "VaultClawback (share) - " + prefix +
-                    " owner implicit complete share clawback succeeds");
+                    " owner implicit complete share clawback");
                 auto [vault, vaultKeylet] = setupVault(asset, owner, depositor);
                 env(vault.clawback({
                         .issuer = owner,
                         .id = vaultKeylet.key,
                         .holder = depositor,
                     }),
-                    ter(tesSUCCESS),
+                    // when owner is issuer implicit clawback fails
+                    asset.native() || asset.raw().getIssuer() != owner.id()
+                        ? ter(tesSUCCESS)
+                        : ter(tecWRONG_ASSET),
                     THISLINE);
                 env.close();
             }
@@ -5464,8 +5472,7 @@ class Vault_test : public beast::unit_test::suite
                     " empty vault share clawback fails");
                 auto [vault, vaultKeylet] = setupVault(asset, owner, owner);
                 auto const& vaultSle = env.le(vaultKeylet);
-                BEAST_EXPECT(vaultSle != nullptr);
-                if (!vaultSle)
+                if (BEAST_EXPECT(vaultSle != nullptr))
                     return;
                 Asset share = vaultSle->at(sfShareMPTID);
                 env(vault.clawback({
@@ -5499,16 +5506,20 @@ class Vault_test : public beast::unit_test::suite
         // Test XRP
         PrettyAsset xrp = xrpIssue();
         testCase(xrp, "XRP", owner, depositor);
-        testCase(xrp, "XRP", owner, owner);
+        testCase(xrp, "XRP (depositor is owner)", owner, owner);
 
         // Test IOU
         PrettyAsset IOU = issuer["IOU"];
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
         env.trust(IOU(1000), owner);
         env.trust(IOU(1000), depositor);
         env(pay(issuer, owner, IOU(100)));
         env(pay(issuer, depositor, IOU(100)));
         env.close();
         testCase(IOU, "IOU", owner, depositor);
+        testCase(IOU, "IOU (owner is issuer)", issuer, depositor);
 
         // Test MPT
         MPTTester mptt{env, issuer, mptInitNoFund};
@@ -5521,6 +5532,7 @@ class Vault_test : public beast::unit_test::suite
         env(pay(issuer, depositor, MPT(1000)));
         env.close();
         testCase(MPT, "MPT", owner, depositor);
+        testCase(MPT, "MPT (owner is issuer)", issuer, depositor);
     }
 
     void
@@ -5529,7 +5541,7 @@ class Vault_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace loanBroker;
         using namespace loan;
-        Env env(*this, beast::severities::kWarning);
+        Env env(*this);
 
         auto const setupVault =
             [&](PrettyAsset const& asset,
@@ -5586,154 +5598,153 @@ class Vault_test : public beast::unit_test::suite
                     }),
                     ter(tecNO_PERMISSION),
                     THISLINE);
+                return;
             }
-            else
+
             {
-                {
-                    testcase(
-                        "VaultClawback (asset) - " + prefix +
-                        " clawback for different asset fails");
-                    auto [vault, vaultKeylet] =
-                        setupVault(asset, owner, depositor, issuer);
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " clawback for different asset fails");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
 
-                    Account issuer2{"issuer2"};
-                    PrettyAsset asset2 = issuer2["FOO"];
-                    env(vault.clawback({
-                            .issuer = issuer,
-                            .id = vaultKeylet.key,
-                            .holder = depositor,
-                            .amount = asset2(1).value(),
-                        }),
-                        ter(tecWRONG_ASSET),
-                        THISLINE);
-                }
+                Account issuer2{"issuer2"};
+                PrettyAsset asset2 = issuer2["FOO"];
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = asset2(1).value(),
+                    }),
+                    ter(tecWRONG_ASSET),
+                    THISLINE);
+            }
 
-                {
-                    testcase(
-                        "VaultClawback (asset) - " + prefix +
-                        " ambiguous owner/issuer asset clawback fails");
-                    auto [vault, vaultKeylet] =
-                        setupVault(asset, issuer, depositor, issuer);
-                    env(vault.clawback({
-                            .issuer = issuer,
-                            .id = vaultKeylet.key,
-                            .holder = issuer,
-                        }),
-                        ter(tecWRONG_ASSET),
-                        THISLINE);
-                }
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " ambiguous owner/issuer asset clawback fails");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, issuer, depositor, issuer);
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = issuer,
+                    }),
+                    ter(tecWRONG_ASSET),
+                    THISLINE);
+            }
 
-                {
-                    testcase(
-                        "VaultClawback (asset) - " + prefix +
-                        " non-issuer asset clawback fails");
-                    auto [vault, vaultKeylet] =
-                        setupVault(asset, owner, depositor, issuer);
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " non-issuer asset clawback fails");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
 
-                    env(vault.clawback({
-                            .issuer = owner,
-                            .id = vaultKeylet.key,
-                            .holder = depositor,
-                        }),
-                        ter(tecNO_PERMISSION),
-                        THISLINE);
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                    }),
+                    ter(tecNO_PERMISSION),
+                    THISLINE);
 
-                    env(vault.clawback({
-                            .issuer = owner,
-                            .id = vaultKeylet.key,
-                            .holder = depositor,
-                            .amount = asset(1).value(),
-                        }),
-                        ter(tecNO_PERMISSION),
-                        THISLINE);
-                }
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = asset(1).value(),
+                    }),
+                    ter(tecNO_PERMISSION),
+                    THISLINE);
+            }
 
-                {
-                    testcase(
-                        "VaultClawback (asset) - " + prefix +
-                        " issuer clawback from self fails");
-                    auto [vault, vaultKeylet] =
-                        setupVault(asset, owner, issuer, issuer);
-                    env(vault.clawback({
-                            .issuer = issuer,
-                            .id = vaultKeylet.key,
-                            .holder = issuer,
-                        }),
-                        ter(tecNO_PERMISSION),
-                        THISLINE);
-                }
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " issuer clawback from self fails");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, issuer, issuer);
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = issuer,
+                    }),
+                    ter(tecNO_PERMISSION),
+                    THISLINE);
+            }
 
-                {
-                    testcase(
-                        "VaultClawback (asset) - " + prefix +
-                        " issuer share clawback fails");
-                    auto [vault, vaultKeylet] =
-                        setupVault(asset, owner, depositor, issuer);
-                    auto const& vaultSle = env.le(vaultKeylet);
-                    BEAST_EXPECT(vaultSle != nullptr);
-                    if (!vaultSle)
-                        return;
-                    Asset share = vaultSle->at(sfShareMPTID);
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " issuer share clawback fails");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
+                auto const& vaultSle = env.le(vaultKeylet);
+                BEAST_EXPECT(vaultSle != nullptr);
+                if (!vaultSle)
+                    return;
+                Asset share = vaultSle->at(sfShareMPTID);
 
-                    env(vault.clawback({
-                            .issuer = issuer,
-                            .id = vaultKeylet.key,
-                            .holder = depositor,
-                            .amount = share(1).value(),
-                        }),
-                        ter(tecNO_PERMISSION),
-                        THISLINE);
-                }
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = share(1).value(),
+                    }),
+                    ter(tecNO_PERMISSION),
+                    THISLINE);
+            }
 
-                {
-                    testcase(
-                        "VaultClawback (asset) - " + prefix +
-                        " partial issuer asset clawback succeeds");
-                    auto [vault, vaultKeylet] =
-                        setupVault(asset, owner, depositor, issuer);
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " partial issuer asset clawback succeeds");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
 
-                    env(vault.clawback({
-                            .issuer = issuer,
-                            .id = vaultKeylet.key,
-                            .holder = depositor,
-                            .amount = asset(1).value(),
-                        }),
-                        ter(tesSUCCESS),
-                        THISLINE);
-                }
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = asset(1).value(),
+                    }),
+                    ter(tesSUCCESS),
+                    THISLINE);
+            }
 
-                {
-                    testcase(
-                        "VaultClawback (asset) - " + prefix +
-                        " full issuer asset clawback succeeds");
-                    auto [vault, vaultKeylet] =
-                        setupVault(asset, owner, depositor, issuer);
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " full issuer asset clawback succeeds");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
 
-                    env(vault.clawback({
-                            .issuer = issuer,
-                            .id = vaultKeylet.key,
-                            .holder = depositor,
-                            .amount = asset(100).value(),
-                        }),
-                        ter(tesSUCCESS),
-                        THISLINE);
-                }
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = asset(100).value(),
+                    }),
+                    ter(tesSUCCESS),
+                    THISLINE);
+            }
 
-                {
-                    testcase(
-                        "VaultClawback (asset) - " + prefix +
-                        " implicit full issuer asset clawback succeeds");
-                    auto [vault, vaultKeylet] =
-                        setupVault(asset, owner, depositor, issuer);
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " implicit full issuer asset clawback succeeds");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
 
-                    env(vault.clawback({
-                            .issuer = issuer,
-                            .id = vaultKeylet.key,
-                            .holder = depositor,
-                        }),
-                        ter(tesSUCCESS),
-                        THISLINE);
-                }
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                    }),
+                    ter(tesSUCCESS),
+                    THISLINE);
             }
         };
 
