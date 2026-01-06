@@ -1906,41 +1906,19 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
     }
 
-    // env test logs don't check severity, so we add it.
-    class SuiteJournalSink2 : public SuiteJournalSink
-    {
-    public:
-        SuiteJournalSink2(
-            std::string const& partition,
-            beast::severities::Severity threshold,
-            beast::unit_test::suite& suite)
-            : SuiteJournalSink(partition, threshold, suite)
-        {
-        }
-        inline bool
-        active(beast::severities::Severity level) const override
-        {
-            return level >= threshold();
-        }
-    };
-
     class SuiteLogs2 : public Logs
     {
-        beast::unit_test::suite& suite_;
-
     public:
-        explicit SuiteLogs2(beast::unit_test::suite& suite)
-            : Logs(beast::severities::kError), suite_(suite)
+        explicit SuiteLogs2(beast::unit_test::suite&)
+            : Logs(beast::severities::kError)
         {
         }
         ~SuiteLogs2() override = default;
         std::unique_ptr<beast::Journal::Sink>
-        makeSink(
-            std::string const& partition,
-            beast::severities::Severity threshold) override
+        makeSink(std::string const&, beast::severities::Severity threshold)
+            override
         {
-            return std::make_unique<SuiteJournalSink2>(
-                partition, threshold, suite_);
+            return std::make_unique<StreamSink>(threshold);
         }
     };
 
