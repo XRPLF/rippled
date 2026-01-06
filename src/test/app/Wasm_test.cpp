@@ -468,6 +468,24 @@ struct Wasm_test : public beast::unit_test::suite
         }
 
         {
+            // infinite loop
+            auto const wasmStr = boost::algorithm::unhex(infiniteLoopWasmHex);
+            Bytes wasm(wasmStr.begin(), wasmStr.end());
+            std::string const funcName("loop");
+            TestHostFunctions hfs(env, 0);
+
+            {
+                // infinite loop should be caught and fail
+                auto const re =
+                    runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000);
+                if (BEAST_EXPECT(!re.has_value()))
+                {
+                    BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+                }
+            }
+        }
+
+        {
             // expected import not provided
             auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
             Bytes wasm(wasmStr.begin(), wasmStr.end());
@@ -733,29 +751,6 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
-    testInfiniteLoop()
-    {
-        testcase("infinite loop");
-
-        using namespace test::jtx;
-        Env env{*this};
-
-        auto const wasmStr = boost::algorithm::unhex(infiniteLoopWasmHex);
-        Bytes wasm(wasmStr.begin(), wasmStr.end());
-        std::string const funcName("loop");
-        TestHostFunctions hfs(env, 0);
-
-        {
-            // infinite loop should be caught and fail
-            auto const re = runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000);
-            if (BEAST_EXPECT(!re.has_value()))
-            {
-                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
-            }
-        }
-    }
-
-    void
     testWasmMemory()
     {
         testcase("Wasm additional memory limit tests");
@@ -857,7 +852,6 @@ struct Wasm_test : public beast::unit_test::suite
 
         testCodecovWasm();
         testDisabledFloat();
-        testInfiniteLoop();
 
         testWasmMemory();
         testWasmTable();
