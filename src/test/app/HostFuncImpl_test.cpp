@@ -1952,7 +1952,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // logs disabled (trace < error)
             auto logs = std::make_unique<SuiteLogs2>(*this);
-            Env env(*this, envconfig(), std::move(logs));
+            Env env(
+                *this, envconfig(), std::move(logs), beast::severities::kError);
             OpenView ov{*env.current()};
             ApplyContext ac = createApplyContext(env, ov);
 
@@ -1993,7 +1994,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // logs disabled
             auto logs = std::make_unique<SuiteLogs2>(*this);
-            Env env(*this, envconfig(), std::move(logs));
+            Env env(
+                *this, envconfig(), std::move(logs), beast::severities::kError);
             OpenView ov{*env.current()};
             ApplyContext ac = createApplyContext(env, ov);
 
@@ -2036,7 +2038,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // logs disabled
             auto logs = std::make_unique<SuiteLogs2>(*this);
-            Env env(*this, envconfig(), std::move(logs));
+            Env env(
+                *this, envconfig(), std::move(logs), beast::severities::kError);
             OpenView ov{*env.current()};
             ApplyContext ac = createApplyContext(env, ov);
 
@@ -2098,7 +2101,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // logs disabled
             auto logs = std::make_unique<SuiteLogs2>(*this);
-            Env env(*this, envconfig(), std::move(logs));
+            Env env(
+                *this, envconfig(), std::move(logs), beast::severities::kError);
             OpenView ov{*env.current()};
             ApplyContext ac = createApplyContext(env, ov);
 
@@ -2173,7 +2177,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // logs disabled
             auto logs = std::make_unique<SuiteLogs2>(*this);
-            Env env(*this, envconfig(), std::move(logs));
+            Env env(
+                *this, envconfig(), std::move(logs), beast::severities::kError);
             OpenView ov{*env.current()};
             ApplyContext ac = createApplyContext(env, ov);
 
