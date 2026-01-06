@@ -305,8 +305,7 @@ Batch::preflight(PreflightContext const& ctx)
             }
         }
 
-        // Check that the fee is zero before calling preflight
-        // This ensures consistent error reporting for non-zero fees
+        // Check that the Fee is native asset (XRP) and zero
         if (auto const fee = stx.getFieldAmount(sfFee);
             !fee.native() || fee.xrp() != beast::zero)
         {

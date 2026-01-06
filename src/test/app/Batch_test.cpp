@@ -402,7 +402,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temBAD_FEE: Inner txn with negative fee (issue #6058)
+        // temBAD_FEE: Inner txn with negative fee
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -415,17 +415,23 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temBAD_FEE: Inner txn with fractional fee (issue #6058)
+        // temBAD_FEE: Inner txn with non-integer fee
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
             tx1[jss::Fee] = "1.5";
-            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                tx1,
-                batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-                ter(temBAD_FEE));
-            env.close();
+            try
+            {
+                env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                    tx1,
+                    batch::inner(pay(alice, bob, XRP(2)), seq + 2));
+                fail("Expected parse_error for fractional fee");
+            }
+            catch (jtx::parse_error const&)
+            {
+                BEAST_EXPECT(true);
+            }
         }
 
         // temSEQ_AND_TICKET: Batch: inner txn cannot have both Sequence
