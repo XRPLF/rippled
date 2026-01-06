@@ -402,6 +402,32 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
+        // temBAD_FEE: Inner txn with negative fee (issue #6058)
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
+            tx1[jss::Fee] = "-1";
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                tx1,
+                batch::inner(pay(alice, bob, XRP(2)), seq + 2),
+                ter(temBAD_FEE));
+            env.close();
+        }
+
+        // temBAD_FEE: Inner txn with fractional fee (issue #6058)
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
+            tx1[jss::Fee] = "1.5";
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                tx1,
+                batch::inner(pay(alice, bob, XRP(2)), seq + 2),
+                ter(temBAD_FEE));
+            env.close();
+        }
+
         // temSEQ_AND_TICKET: Batch: inner txn cannot have both Sequence
         // and TicketSequence.
         {
