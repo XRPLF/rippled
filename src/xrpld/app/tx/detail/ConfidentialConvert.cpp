@@ -120,6 +120,8 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         : (*sleMptoken)[sfHolderElGamalPublicKey];
 
     auto const contextHash = getContextHash(
+        ctx.tx[sfAccount],
+        ctx.tx[sfSequence],
         ctx.tx[sfMPTokenIssuanceID],
         ctx.tx[sfMPTAmount],
         ctx.tx[sfAccount],

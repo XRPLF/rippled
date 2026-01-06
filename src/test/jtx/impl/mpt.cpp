@@ -972,7 +972,12 @@ MPTTester::convert(MPTConvert const& arg)
     else
     {
         uint256 const ctxHash = getContextHash(
-            *id_, *arg.amt, arg.account->id(), ttCONFIDENTIAL_CONVERT);
+            arg.account->id(),
+            env_.seq(*arg.account),
+            *id_,
+            *arg.amt,
+            arg.account->id(),
+            ttCONFIDENTIAL_CONVERT);
         Buffer proof = getConvertProof(
             *arg.account,
             *arg.amt,
@@ -1211,8 +1216,9 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
         jv[sfZKProof] = *arg.proof;
     else
     {
-        uint256 const ctxHash = getContextHash(
-            *id_, *arg.amt, arg.holder->id(), ttCONFIDENTIAL_CLAWBACK);
+        std::uint32_t const seq = env_.seq(account);
+        uint256 const ctxHash = getClawbackContextHash(
+            account.id(), seq, *id_, *arg.amt, arg.holder->id());
         Buffer proof = getClawbackProof(
             *arg.holder, *arg.amt, getPrivKey(account), ctxHash);
 

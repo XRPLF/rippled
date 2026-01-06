@@ -27,7 +27,17 @@ addCommonZKPFields(
     std::uint64_t amount);
 
 uint256
+getClawbackContextHash(
+    AccountID const& account,
+    std::uint32_t sequence,
+    uint192 const& issuanceID,
+    std::uint64_t amount,
+    AccountID const& holder);
+
+uint256
 getContextHash(
+    AccountID const& account,
+    std::uint32_t sequence,
     uint192 const& issuanceID,
     std::uint64_t amount,
     AccountID const& holder,
