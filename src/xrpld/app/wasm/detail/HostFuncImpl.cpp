@@ -314,7 +314,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(
     return getAnyFieldData(r.value());
 }
 
-static inlineExpected<int32_t, HostFunctionError>
+static inline Expected<int32_t, HostFunctionError>
 getArrayLen(STBase const* field)
 {
     if (field->getSType() == STI_VECTOR256)
