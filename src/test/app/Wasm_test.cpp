@@ -467,21 +467,17 @@ struct Wasm_test : public beast::unit_test::suite
             BEAST_EXPECT(countSubstr(s, "exception: <finish> failure") > 0);
         }
 
-        {
-            // infinite loop
+        {  // infinite loop
             auto const wasmStr = boost::algorithm::unhex(infiniteLoopWasmHex);
             Bytes wasm(wasmStr.begin(), wasmStr.end());
             std::string const funcName("loop");
             TestHostFunctions hfs(env, 0);
 
+            // infinite loop should be caught and fail
+            auto const re = runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000);
+            if (BEAST_EXPECT(!re.has_value()))
             {
-                // infinite loop should be caught and fail
-                auto const re =
-                    runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000);
-                if (BEAST_EXPECT(!re.has_value()))
-                {
-                    BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
-                }
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
             }
         }
 
