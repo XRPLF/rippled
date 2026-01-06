@@ -4048,7 +4048,6 @@ protected:
 
         createJson["CloseInterestRate"] = 55374;
         createJson["ClosePaymentFee"] = "3825205248";
-        createJson["GracePeriod"] = 0;
         createJson["LatePaymentFee"] = "237";
         createJson["LoanOriginationFee"] = "0";
         createJson["OverpaymentFee"] = 35167;
@@ -4724,7 +4723,30 @@ protected:
                         jtx::fee const& loanSetFee,
                         Number const& debtMaximumRequest) {
             // first temBAD_SIGNER: TODO
+            // invalid grace period
+            {
+                // zero grace period
+                env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+                    sig(sfCounterpartySignature, lender),
+                    gracePeriod(0),
+                    loanSetFee,
+                    ter(temINVALID));
 
+                // grace period less than default minimum
+                env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+                    sig(sfCounterpartySignature, lender),
+                    gracePeriod(LoanSet::defaultGracePeriod - 1),
+                    loanSetFee,
+                    ter(temINVALID));
+
+                // grace period greater than payment interval
+                env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+                    sig(sfCounterpartySignature, lender),
+                    paymentInterval(120),
+                    gracePeriod(121),
+                    loanSetFee,
+                    ter(temINVALID));
+            }
             // empty/zero broker ID
             {
                 auto jv = set(borrower, uint256{}, debtMaximumRequest);
@@ -5025,7 +5047,6 @@ protected:
 
         createJson["CloseInterestRate"] = 47299;
         createJson["ClosePaymentFee"] = "3985819770";
-        createJson["GracePeriod"] = 0;
         createJson["InterestRate"] = 92;
         createJson["LatePaymentFee"] = "3866894865";
         createJson["LoanOriginationFee"] = "0";
@@ -5178,7 +5199,6 @@ protected:
             json(sfCounterpartySignature, Json::objectValue));
 
         createJson["ClosePaymentFee"] = "0";
-        createJson["GracePeriod"] = 0;
         createJson["InterestRate"] = 24346;
         createJson["LateInterestRate"] = 65535;
         createJson["LatePaymentFee"] = "0";
@@ -5298,7 +5318,6 @@ protected:
             json(sfCounterpartySignature, Json::objectValue));
 
         createJson["ClosePaymentFee"] = "0";
-        createJson["GracePeriod"] = 0;
         createJson["InterestRate"] = 12833;
         createJson["LateInterestRate"] = 77048;
         createJson["LatePaymentFee"] = "0";
@@ -5392,7 +5411,7 @@ protected:
                 set(borrower, broker.brokerID, Number{55524'81, -2}),
                 fee(loanSetFee),
                 closePaymentFee(0),
-                gracePeriod(0),
+                gracePeriod(LoanSet::defaultGracePeriod),
                 interestRate(TenthBips32(12833)),
                 lateInterestRate(TenthBips32(77048)),
                 latePaymentFee(0),
@@ -6482,8 +6501,7 @@ protected:
             .lateFee = Number{200, -6},
             .interest = TenthBips32{50'000},
             .payTotal = 10,
-            .payInterval = 150,
-            .gracePd = 0};
+            .payInterval = 150};
 
         auto const assetType = AssetType::XRP;
 
@@ -6504,9 +6522,6 @@ protected:
         auto state = getCurrentState(env, broker, loanKeylet);
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
-            // log << "loan after create: " << to_string(loan->getJson())
-            //     << std::endl;
-
             env.close(tp{d{
                 loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
@@ -6521,16 +6536,10 @@ protected:
 
         {
             auto const submitParam = to_string(jv);
-            // log << "about to submit: " << submitParam << std::endl;
             auto const jr = env.rpc("submit", borrower.name(), submitParam);
 
-            // log << jr << std::endl;
             BEAST_EXPECT(jr.isMember(jss::result));
             auto const jResult = jr[jss::result];
-            // BEAST_EXPECT(jResult[jss::error] == "invalidTransaction");
-            // BEAST_EXPECT(
-            //     jResult[jss::error_exception] ==
-            //     "fails local checks: Transaction has bad signature.");
         }
 
         env.close();
@@ -6566,8 +6575,7 @@ protected:
             .counter = borrower,
             .principalRequest = Number{100'000, -4},
             .interest = TenthBips32{100'000},
-            .payTotal = 10,
-            .gracePd = 0};
+            .payTotal = 10};
 
         auto const assetType = AssetType::MPT;
 
@@ -7484,6 +7492,8 @@ public:
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif
+        testInvalidLoanSet();
+
         testCoverDepositWithdrawNonTransferableMPT();
         testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic();
 
@@ -7498,7 +7508,6 @@ public:
         testInvalidLoanDelete();
         testInvalidLoanManage();
         testInvalidLoanPay();
-        testInvalidLoanSet();
 
         testBatchBypassCounterparty();
         testLoanPayComputePeriodicPaymentValidRateInvariant();
