@@ -88,10 +88,12 @@ LoanSet::preflight(PreflightContext const& ctx)
     if (auto const paymentInterval = tx[~sfPaymentInterval];
         !validNumericMinimum(paymentInterval, LoanSet::minPaymentInterval))
         return temINVALID;
-
-    else if (!validNumericRange(
-                 tx[~sfGracePeriod],
-                 paymentInterval.value_or(LoanSet::defaultPaymentInterval)))
+    // Grace period is between min default value and payment interval
+    else if (auto const gracePeriod = tx[~sfGracePeriod];  //
+             !validNumericRange(
+                 gracePeriod,
+                 paymentInterval.value_or(LoanSet::defaultPaymentInterval),
+                 defaultGracePeriod))
         return temINVALID;
 
     // Copied from preflight2
@@ -423,7 +425,7 @@ LoanSet::doApply()
     auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
     XRPL_ASSERT_PARTS(
         vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
-        "ripple::LoanSet::doApply",
+        "xrpl::LoanSet::doApply",
         "Vault is below maximum limit");
     if (vaultMaximum != 0 && state.interestDue > vaultMaximum - vaultTotalProxy)
     {
