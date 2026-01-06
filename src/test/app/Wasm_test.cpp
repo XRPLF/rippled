@@ -740,34 +740,7 @@ struct Wasm_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        /*
-            int
-            loop()
-            {
-                int volatile x = 0;
-                while (1)
-                    x++;
-                return x;
-            }
-        */
-        static std::string const infiniteWasmHex =
-            "0061736d010000000108026000006000017f030302000105030100020638097f00"
-            "4180080b7f004180080b7f004180080b7f00418088040b7f004180080b7f004180"
-            "88040b7f00418080080b7f0041000b7f0041010b07a8010c066d656d6f72790200"
-            "115f5f7761736d5f63616c6c5f63746f72730000046c6f6f7000010c5f5f64736f"
-            "5f68616e646c6503000a5f5f646174615f656e6403010b5f5f737461636b5f6c6f"
-            "7703020c5f5f737461636b5f6869676803030d5f5f676c6f62616c5f6261736503"
-            "040b5f5f686561705f6261736503050a5f5f686561705f656e6403060d5f5f6d65"
-            "6d6f72795f6261736503070c5f5f7461626c655f6261736503080a270202000b22"
-            "0041fc87044100360200034041fc870441fc870428020041016a3602000c000b00"
-            "0b007f0970726f647563657273010c70726f6365737365642d62790105636c616e"
-            "675f31392e312e352d776173692d73646b202868747470733a2f2f676974687562"
-            "2e636f6d2f6c6c766d2f6c6c766d2d70726f6a6563742061623462356132646235"
-            "383239353861663165653330386137393063666462343262643234373230290049"
-            "0f7461726765745f6665617475726573042b0f6d757461626c652d676c6f62616c"
-            "732b087369676e2d6578742b0f7265666572656e63652d74797065732b0a6d756c"
-            "746976616c7565";
-        auto const wasmStr = boost::algorithm::unhex(infiniteWasmHex);
+        auto const wasmStr = boost::algorithm::unhex(infiniteLoopWasmHex);
         Bytes wasm(wasmStr.begin(), wasmStr.end());
         std::string const funcName("loop");
         TestHostFunctions hfs(env, 0);
