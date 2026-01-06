@@ -29,6 +29,7 @@
 #include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/core/DatabaseCon.h>
+#include <xrpld/core/ServiceRegistryImpl.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/PeerReservationTable.h>
 #include <xrpld/overlay/PeerSet.h>
@@ -216,6 +217,9 @@ public:
     io_latency_sampler m_io_latency_sampler;
 
     std::unique_ptr<GRPCServer> grpcServer_;
+
+    // ServiceRegistry implementation that delegates to this Application
+    std::unique_ptr<ServiceRegistryImpl> serviceRegistry_;
 
     //--------------------------------------------------------------------------
 
@@ -453,6 +457,7 @@ public:
               std::chrono::milliseconds(100),
               get_io_context())
         , grpcServer_(std::make_unique<GRPCServer>(*this))
+        , serviceRegistry_(std::make_unique<ServiceRegistryImpl>(*this))
     {
         initAccountIdCache(config_->getValueFor(SizedItem::accountIdCacheSize));
 
@@ -806,6 +811,16 @@ public:
             mWalletDB,
             "xrpl::ApplicationImp::getWalletDB : non-null wallet database");
         return *mWalletDB;
+    }
+
+    ServiceRegistry&
+    getServiceRegistry() override
+    {
+        XRPL_ASSERT(
+            serviceRegistry_,
+            "xrpl::ApplicationImp::getServiceRegistry : non-null service "
+            "registry");
+        return *serviceRegistry_;
     }
 
     bool

@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 
@@ -256,6 +257,9 @@ public:
 
     virtual std::optional<uint256> const&
     trapTxID() const = 0;
+
+    virtual ServiceRegistry&
+    getServiceRegistry() = 0;
 };
 
 std::unique_ptr<Application>
