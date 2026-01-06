@@ -423,7 +423,7 @@ LoanSet::doApply()
     auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
     XRPL_ASSERT_PARTS(
         vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
-        "ripple::LoanSet::doApply",
+        "xrpl::LoanSet::doApply",
         "Vault is below maximum limit");
     if (vaultMaximum != 0 && state.interestDue > vaultMaximum - vaultTotalProxy)
     {

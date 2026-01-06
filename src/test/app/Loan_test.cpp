@@ -7532,7 +7532,7 @@ protected:
             paymentTotal(12),
             loan::paymentInterval(loanPaymentInterval),
             loan::gracePeriod(loanGracePeriod),
-            fee(1000));  // Sufficient fee for multi-sig transaction
+            fee(XRP(10)));  // Sufficient fee for multi-sig transaction
         env(loanATx);
         env.close();
 
@@ -7546,7 +7546,7 @@ protected:
             paymentTotal(12),
             loan::paymentInterval(loanPaymentInterval),
             loan::gracePeriod(loanGracePeriod),
-            fee(1000));  // Sufficient fee for multi-sig transaction
+            fee(XRP(10)));  // Sufficient fee for multi-sig transaction
         env(loanBTx);
         env.close();
 
