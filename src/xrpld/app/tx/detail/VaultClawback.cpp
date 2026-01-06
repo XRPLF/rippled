@@ -9,6 +9,8 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 
+#include <optional>
+
 namespace xrpl {
 NotTEC
 VaultClawback::preflight(PreflightContext const& ctx)
@@ -33,6 +35,22 @@ VaultClawback::preflight(PreflightContext const& ctx)
     }
 
     return tesSUCCESS;
+}
+
+[[nodiscard]] STAmount
+clawbackAmount(
+    std::shared_ptr<SLE const> const& vault,
+    std::optional<STAmount> const& maybeAmount,
+    AccountID const& account)
+{
+    if (maybeAmount)
+        return *maybeAmount;
+
+    Asset const share = MPTIssue{vault->at(sfShareMPTID)};
+    if (account == vault->at(sfOwner))
+        return STAmount{share};
+
+    return STAmount{vault->at(sfAsset)};
 }
 
 TER
@@ -69,15 +87,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
     }
 
-    auto const amount = [&]() {
-        if (maybeAmount)
-            return *maybeAmount;
-
-        if (account == vault->at(sfOwner))
-            return STAmount{share};
-
-        return STAmount{vaultAsset};
-    }();
+    auto const amount = clawbackAmount(vault, maybeAmount, account);
 
     // There is a special case that allows the VaultOwner to use clawback to
     // burn shares when Vault assets total and available are zero, but
@@ -330,16 +340,7 @@ VaultClawback::doApply()
     MPTIssue const share{mptIssuanceID};
 
     Asset const vaultAsset = vault->at(sfAsset);
-    STAmount const amount = [&]() {
-        auto const maybeAmount = tx[~sfAmount];
-        if (maybeAmount)
-            return *maybeAmount;
-
-        if (account_ == vault->at(sfOwner))
-            return STAmount{share};
-
-        return STAmount{vaultAsset};
-    }();
+    STAmount const amount = clawbackAmount(vault, tx[~sfAmount], account_);
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
