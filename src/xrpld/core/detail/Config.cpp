@@ -221,11 +221,12 @@ getSingleSection(
 
 //------------------------------------------------------------------------------
 //
-// Config (DEPRECATED)
+// Config
 //
 //------------------------------------------------------------------------------
 
-char const* const Config::configFileName = "rippled.cfg";
+char const* const Config::configFileName = "xrpld.cfg";
+char const* const Config::configLegacyName = "rippled.cfg";
 char const* const Config::databaseDirName = "db";
 char const* const Config::validatorsFileName = "validators.txt";
 
@@ -295,76 +296,78 @@ Config::setup(
     bool bSilent,
     bool bStandalone)
 {
-    boost::filesystem::path dataDir;
-    std::string strDbPath, strConfFile;
+    setupControl(bQuiet, bSilent, bStandalone);
 
     // Determine the config and data directories.
     // If the config file is found in the current working
     // directory, use the current working directory as the
     // config directory and that with "db" as the data
     // directory.
-
-    setupControl(bQuiet, bSilent, bStandalone);
-
-    strDbPath = databaseDirName;
-
-    if (!strConf.empty())
-        strConfFile = strConf;
-    else
-        strConfFile = configFileName;
+    boost::filesystem::path dataDir;
 
     if (!strConf.empty())
     {
         // --conf=<path> : everything is relative that file.
-        CONFIG_FILE = strConfFile;
+        CONFIG_FILE = strConf;
         CONFIG_DIR = boost::filesystem::absolute(CONFIG_FILE);
         CONFIG_DIR.remove_filename();
-        dataDir = CONFIG_DIR / strDbPath;
+        dataDir = CONFIG_DIR / databaseDirName;
     }
     else
     {
-        CONFIG_DIR = boost::filesystem::current_path();
-        CONFIG_FILE = CONFIG_DIR / strConfFile;
-        dataDir = CONFIG_DIR / strDbPath;
-
-        // Construct XDG config and data home.
-        // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-        auto const strHome = getEnvVar("HOME");
-        auto strXdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
-        auto strXdgDataHome = getEnvVar("XDG_DATA_HOME");
-
-        if (boost::filesystem::exists(CONFIG_FILE)
-            // Can we figure out XDG dirs?
-            || (strHome.empty() &&
-                (strXdgConfigHome.empty() || strXdgDataHome.empty())))
+        do
         {
-            // Current working directory is fine, put dbs in a subdir.
-        }
-        else
-        {
-            if (strXdgConfigHome.empty())
+            // Check if either of the config files exist in the current working
+            // directory, in which case the databases will be stored in a
+            // subdirectory.
+            CONFIG_DIR = boost::filesystem::current_path();
+            dataDir = CONFIG_DIR / databaseDirName;
+            CONFIG_FILE = CONFIG_DIR / configFileName;
+            if (boost::filesystem::exists(CONFIG_FILE))
+                break;
+            CONFIG_FILE = CONFIG_DIR / configLegacyName;
+            if (boost::filesystem::exists(CONFIG_FILE))
+                break;
+
+            // Check if the home directory is set, and optionally the XDG config
+            // and/or data directories, as the config may be there. See
+            // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html.
+            auto const strHome = getEnvVar("HOME");
+            if (!strHome.empty())
             {
-                // $XDG_CONFIG_HOME was not set, use default based on $HOME.
-                strXdgConfigHome = strHome + "/.config";
+                auto strXdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
+                auto strXdgDataHome = getEnvVar("XDG_DATA_HOME");
+                if (strXdgConfigHome.empty())
+                {
+                    // $XDG_CONFIG_HOME was not set, use default based on $HOME.
+                    strXdgConfigHome = strHome + "/.config";
+                }
+                if (strXdgDataHome.empty())
+                {
+                    // $XDG_DATA_HOME was not set, use default based on $HOME.
+                    strXdgDataHome = strHome + "/.local/share";
+                }
+
+                // Check if either of the config files exist in the XDG config
+                // dir.
+                dataDir = strXdgDataHome + "/" + systemName();
+                CONFIG_DIR = strXdgConfigHome + "/" + systemName();
+                CONFIG_FILE = CONFIG_DIR / configFileName;
+                if (boost::filesystem::exists(CONFIG_FILE))
+                    break;
+                CONFIG_FILE = CONFIG_DIR / configLegacyName;
+                if (boost::filesystem::exists(CONFIG_FILE))
+                    break;
             }
 
-            if (strXdgDataHome.empty())
-            {
-                // $XDG_DATA_HOME was not set, use default based on $HOME.
-                strXdgDataHome = strHome + "/.local/share";
-            }
-
-            CONFIG_DIR = strXdgConfigHome + "/" + systemName();
-            CONFIG_FILE = CONFIG_DIR / strConfFile;
-            dataDir = strXdgDataHome + "/" + systemName();
-
-            if (!boost::filesystem::exists(CONFIG_FILE))
-            {
-                CONFIG_DIR = "/etc/opt/" + systemName();
-                CONFIG_FILE = CONFIG_DIR / strConfFile;
-                dataDir = "/var/opt/" + systemName();
-            }
-        }
+            // As a last resort, check the system config directory.
+            dataDir = "/var/opt/" + systemName();
+            CONFIG_DIR = "/etc/opt/" + systemName();
+            CONFIG_FILE = CONFIG_DIR / configFileName;
+            if (boost::filesystem::exists(CONFIG_FILE))
+                break;
+            CONFIG_FILE = CONFIG_DIR / configLegacyName;
+        } while (false);
     }
 
     // Update default values
@@ -374,11 +377,9 @@ Config::setup(
         std::string const dbPath(legacy("database_path"));
         if (!dbPath.empty())
             dataDir = boost::filesystem::path(dbPath);
-        else if (RUN_STANDALONE)
-            dataDir.clear();
     }
 
-    if (!dataDir.empty())
+    if (!RUN_STANDALONE)
     {
         boost::system::error_code ec;
         boost::filesystem::create_directories(dataDir, ec);
