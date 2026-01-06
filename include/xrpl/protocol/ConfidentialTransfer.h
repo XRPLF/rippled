@@ -27,11 +27,12 @@ addCommonZKPFields(
     std::uint64_t amount);
 
 uint256
-getContextHash(
+getClawbackContextHash(
+    AccountID const& account,
+    std::uint32_t sequence,
     uint192 const& issuanceID,
     std::uint64_t amount,
-    AccountID const& holder,
-    TxType const& txType);
+    AccountID const& holder);
 
 /**
  * @brief Generates a new secp256k1 key pair.

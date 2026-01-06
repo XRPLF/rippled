@@ -87,8 +87,8 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
     auto const ciphertext = (*sleHolderMPToken)[sfIssuerEncryptedBalance];
     auto const pubKeySlice = (*sleIssuance)[sfIssuerElGamalPublicKey];
 
-    auto const contextHash =
-        getContextHash(mptIssuanceID, amount, holder, ctx.tx.getTxnType());
+    auto const contextHash = getClawbackContextHash(
+        account, ctx.tx[sfSequence], mptIssuanceID, amount, holder);
     return verifyEqualityProof(
         amount, ctx.tx[sfZKProof], pubKeySlice, ciphertext, contextHash);
 }

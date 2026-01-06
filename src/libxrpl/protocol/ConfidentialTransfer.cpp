@@ -10,23 +10,29 @@ void
 addCommonZKPFields(
     Serializer& s,
     std::uint16_t txType,
+    AccountID const& account,
+    std::uint32_t sequence,
     uint192 const& issuanceID,
     std::uint64_t amount)
 {
     s.add16(txType);
+    s.addBitString(account);
+    s.add32(sequence);
     s.addBitString(issuanceID);
     s.add64(amount);
 }
 
 uint256
-getContextHash(
+getClawbackContextHash(
+    AccountID const& account,
+    std::uint32_t sequence,
     uint192 const& issuanceID,
     std::uint64_t amount,
-    AccountID const& holder,
-    TxType const& txType)
+    AccountID const& holder)
 {
     Serializer s;
-    addCommonZKPFields(s, txType, issuanceID, amount);
+    addCommonZKPFields(
+        s, ttCONFIDENTIAL_CLAWBACK, account, sequence, issuanceID, amount);
 
     s.addBitString(holder);
 
