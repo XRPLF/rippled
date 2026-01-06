@@ -2,7 +2,7 @@
 
 #include <xrpld/app/wasm/WasmiVM.h>
 
-namespace ripple {
+namespace xrpl {
 
 using getLedgerSqn_proto = int32_t();
 wasm_trap_t*
@@ -531,4 +531,4 @@ using floatLog_proto =
 wasm_trap_t*
 floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace compression_algorithms {
 
@@ -144,6 +144,6 @@ lz4Decompress(
 
 }  // namespace compression_algorithms
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_COMPRESSIONALGORITHMS_H_INCLUDED

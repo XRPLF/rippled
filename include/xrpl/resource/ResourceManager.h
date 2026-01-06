@@ -11,7 +11,7 @@
 
 #include <boost/utility/string_view.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 /** Tracks load and resource consumption. */
@@ -66,6 +66,6 @@ make_Manager(
     beast::Journal journal);
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

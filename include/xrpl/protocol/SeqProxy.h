@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <ostream>
 
-namespace ripple {
+namespace xrpl {
 
 /** A type that represents either a sequence value or a ticket value.
 
@@ -146,6 +146,6 @@ public:
         return os;
     }
 };
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 //------------------------------------------------------------------------------
 
@@ -492,5 +492,5 @@ dynamic_pointer_cast(TT const& v)
     return SharedPtr<T>(DynamicCastTagSharedIntrusive{}, v);
 }
 }  // namespace intr_ptr
-}  // namespace ripple
+}  // namespace xrpl
 #endif

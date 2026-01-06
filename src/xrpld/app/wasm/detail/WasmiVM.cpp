@@ -9,7 +9,7 @@
 #endif
 // #define SHOW_CALL_TIME 1
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -963,4 +963,4 @@ WasmiEngine::getJournal() const
 }
 // LCOV_EXCL_STOP
 
-}  // namespace ripple
+}  // namespace xrpl

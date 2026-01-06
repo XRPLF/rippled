@@ -380,7 +380,7 @@ public:
         float max_lf{0};
         for (auto i = 0; i < items; ++i)
         {
-            eps.insert(randomEP(ripple::rand_int(0, 1) == 1));
+            eps.insert(randomEP(xrpl::rand_int(0, 1) == 1));
             max_lf = std::max(max_lf, eps.load_factor());
         }
         BEAST_EXPECT(eps.bucket_count() >= items);

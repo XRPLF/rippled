@@ -8,7 +8,7 @@
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -265,6 +265,6 @@ private:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(tx_reduce_relay, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(tx_reduce_relay, overlay, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

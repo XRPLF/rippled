@@ -6,7 +6,7 @@
 
 #include <boost/asio/io_context.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 class ResolverAsio : public Resolver
 {
@@ -17,6 +17,6 @@ public:
     New(boost::asio::io_context&, beast::Journal);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

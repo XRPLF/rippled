@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // VFALCO DEPRECATED in favor of the BasicConfig interface
 struct ConfigSection
@@ -78,6 +78,6 @@ struct ConfigSection
 #define SECTION_VETO_AMENDMENTS "veto_amendments"
 #define SECTION_WORKERS "workers"
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

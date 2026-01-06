@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <ostream>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents a pair of input and output currencies.
 
@@ -281,7 +281,7 @@ public:
     {
         XRPL_ASSERT(
             q1.m_value > 0 && q2.m_value > 0,
-            "ripple::Quality::relativeDistance : minimum inputs");
+            "xrpl::Quality::relativeDistance : minimum inputs");
 
         if (q1.m_value == q2.m_value)  // make expected common case fast
             return 0;
@@ -395,6 +395,6 @@ Quality::ceil_out_strict(
 Quality
 composed_quality(Quality const& lhs, Quality const& rhs);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

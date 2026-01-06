@@ -10,7 +10,7 @@
 #include <memory>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 class CheckpointersCollection
 {
@@ -215,7 +215,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
             }
             XRPL_ASSERT(
                 result->size() == 3,
-                "ripple::setup_DatabaseCon::globalPragma : result size is 3");
+                "xrpl::setup_DatabaseCon::globalPragma : result size is 3");
             return result;
         }();
     }
@@ -265,4 +265,4 @@ DatabaseCon::setupCheckpointing(JobQueue* q, Logs& l)
     checkpointer_ = checkpointers.create(session_, *q, l);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

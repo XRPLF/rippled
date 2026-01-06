@@ -3,7 +3,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -143,7 +143,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ServerDefinitions, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(ServerDefinitions, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

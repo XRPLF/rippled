@@ -7,7 +7,7 @@
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 class InboundLedgers;
 class Ledger;
 class LedgerDeltaAcquire;
@@ -161,6 +161,6 @@ private:
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

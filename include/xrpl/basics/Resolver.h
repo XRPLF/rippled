@@ -6,7 +6,7 @@
 #include <functional>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class Resolver
 {
@@ -47,6 +47,6 @@ public:
     /** @} */
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

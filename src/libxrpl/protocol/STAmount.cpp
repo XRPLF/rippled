@@ -47,7 +47,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 static std::uint64_t const tenTo14 = 100000000000000ull;
 static std::uint64_t const tenTo14m1 = tenTo14 - 1;
@@ -60,13 +60,13 @@ getInt64Value(STAmount const& amount, bool valid, char const* error)
     if (!valid)
         Throw<std::runtime_error>(error);
     XRPL_ASSERT(
-        amount.exponent() == 0, "ripple::getInt64Value : exponent is zero");
+        amount.exponent() == 0, "xrpl::getInt64Value : exponent is zero");
 
     auto ret = static_cast<std::int64_t>(amount.mantissa());
 
     XRPL_ASSERT(
         static_cast<std::uint64_t>(ret) == amount.mantissa(),
-        "ripple::getInt64Value : mantissa must roundtrip");
+        "xrpl::getInt64Value : mantissa must roundtrip");
 
     if (amount.negative())
         ret = -ret;
@@ -195,7 +195,7 @@ STAmount::STAmount(SField const& name, std::uint64_t mantissa, bool negative)
 {
     XRPL_ASSERT(
         mValue <= std::numeric_limits<std::int64_t>::max(),
-        "ripple::STAmount::STAmount(SField, std::uint64_t, bool) : maximum "
+        "xrpl::STAmount::STAmount(SField, std::uint64_t, bool) : maximum "
         "mantissa input");
 }
 
@@ -208,7 +208,7 @@ STAmount::STAmount(SField const& name, STAmount const& from)
 {
     XRPL_ASSERT(
         mValue <= std::numeric_limits<std::int64_t>::max(),
-        "ripple::STAmount::STAmount(SField, STAmount) : maximum input");
+        "xrpl::STAmount::STAmount(SField, STAmount) : maximum input");
     canonicalize();
 }
 
@@ -222,7 +222,7 @@ STAmount::STAmount(std::uint64_t mantissa, bool negative)
 {
     XRPL_ASSERT(
         mValue <= std::numeric_limits<std::int64_t>::max(),
-        "ripple::STAmount::STAmount(std::uint64_t, bool) : maximum mantissa "
+        "xrpl::STAmount::STAmount(std::uint64_t, bool) : maximum mantissa "
         "input");
 }
 
@@ -268,7 +268,7 @@ STAmount::xrp() const
             "Cannot return non-native STAmount as XRPAmount");
 
     auto drops = static_cast<XRPAmount::value_type>(mValue);
-    XRPL_ASSERT(mOffset == 0, "ripple::STAmount::xrp : amount is canonical");
+    XRPL_ASSERT(mOffset == 0, "xrpl::STAmount::xrp : amount is canonical");
 
     if (mIsNegative)
         drops = -drops;
@@ -298,7 +298,7 @@ STAmount::mpt() const
         Throw<std::logic_error>("Cannot return STAmount as MPTAmount");
 
     auto value = static_cast<MPTAmount::value_type>(mValue);
-    XRPL_ASSERT(mOffset == 0, "ripple::STAmount::mpt : amount is canonical");
+    XRPL_ASSERT(mOffset == 0, "xrpl::STAmount::mpt : amount is canonical");
 
     if (mIsNegative)
         value = -value;
@@ -310,8 +310,7 @@ STAmount&
 STAmount::operator=(IOUAmount const& iou)
 {
     XRPL_ASSERT(
-        native() == false,
-        "ripple::STAmount::operator=(IOUAmount) : is not XRP");
+        native() == false, "xrpl::STAmount::operator=(IOUAmount) : is not XRP");
     mOffset = iou.exponent();
     mIsNegative = iou < beast::zero;
     if (mIsNegative)
@@ -452,7 +451,7 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
             return 0;
         XRPL_ASSERT(
             (r.exponent() >= -100) && (r.exponent() <= 155),
-            "ripple::getRate : exponent inside range");
+            "xrpl::getRate : exponent inside range");
         std::uint64_t ret = r.exponent() + 100;
         return (ret << (64 - 8)) | r.mantissa();
     }
@@ -689,7 +688,7 @@ STAmount::getText() const
         return ret;
     }
 
-    XRPL_ASSERT(mOffset + 43 > 0, "ripple::STAmount::getText : minimum offset");
+    XRPL_ASSERT(mOffset + 43 > 0, "xrpl::STAmount::getText : minimum offset");
 
     size_t const pad_prefix = 27;
     size_t const pad_suffix = 23;
@@ -714,8 +713,7 @@ STAmount::getText() const
         pre_from += pad_prefix;
 
     XRPL_ASSERT(
-        post_to >= post_from,
-        "ripple::STAmount::getText : first distance check");
+        post_to >= post_from, "xrpl::STAmount::getText : first distance check");
 
     pre_from = std::find_if(pre_from, pre_to, [](char c) { return c != '0'; });
 
@@ -726,7 +724,7 @@ STAmount::getText() const
 
     XRPL_ASSERT(
         post_to >= post_from,
-        "ripple::STAmount::getText : second distance check");
+        "xrpl::STAmount::getText : second distance check");
 
     post_to = std::find_if(
                   std::make_reverse_iterator(post_to),
@@ -762,7 +760,7 @@ STAmount::add(Serializer& s) const
 {
     if (native())
     {
-        XRPL_ASSERT(mOffset == 0, "ripple::STAmount::add : zero offset");
+        XRPL_ASSERT(mOffset == 0, "xrpl::STAmount::add : zero offset");
 
         if (!mIsNegative)
             s.add64(mValue | cPositive);
@@ -937,13 +935,13 @@ STAmount::canonicalize()
 
     XRPL_ASSERT(
         (mValue == 0) || ((mValue >= cMinValue) && (mValue <= cMaxValue)),
-        "ripple::STAmount::canonicalize : value inside range");
+        "xrpl::STAmount::canonicalize : value inside range");
     XRPL_ASSERT(
         (mValue == 0) || ((mOffset >= cMinOffset) && (mOffset <= cMaxOffset)),
-        "ripple::STAmount::canonicalize : offset inside range");
+        "xrpl::STAmount::canonicalize : offset inside range");
     XRPL_ASSERT(
         (mValue != 0) || (mOffset != -100),
-        "ripple::STAmount::canonicalize : value or offset set");
+        "xrpl::STAmount::canonicalize : value or offset set");
 }
 
 void
@@ -1748,4 +1746,4 @@ divRoundStrict(
     return divRoundImpl<NumberRoundModeGuard>(num, den, asset, roundUp);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

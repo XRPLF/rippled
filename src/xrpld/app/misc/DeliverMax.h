@@ -7,7 +7,7 @@ namespace Json {
 class Value;
 }
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -26,6 +26,6 @@ insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion);
 /** @} */
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

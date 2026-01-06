@@ -25,7 +25,7 @@ jobs:
         env:
           MESSAGE: |
 
-            The dependency relationships between the modules in rippled have
+            The dependency relationships between the modules in xrpld have
             changed, which may be an improvement or a regression.
 
             A rule of thumb is that if your changes caused something to be

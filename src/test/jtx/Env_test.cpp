@@ -14,7 +14,7 @@
 #include <optional>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Env_test : public beast::unit_test::suite
@@ -928,7 +928,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Env, jtx, ripple);
+BEAST_DEFINE_TESTSUITE(Env, jtx, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

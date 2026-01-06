@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class LoanManage : public Transactor
 {
@@ -61,6 +61,6 @@ public:
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

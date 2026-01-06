@@ -9,7 +9,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/XChainAttestations.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -237,6 +237,6 @@ struct XChainBridgeObjects
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

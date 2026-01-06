@@ -5,7 +5,7 @@
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 /** Data format for exchanging consumption information across peers. */
@@ -26,6 +26,6 @@ struct Gossip
 };
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
