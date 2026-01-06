@@ -6,7 +6,7 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 
 /**  Possible ledger close time resolutions.
 
@@ -149,5 +149,5 @@ effCloseTime(
         roundCloseTime(closeTime, resolution), (priorCloseTime + 1s));
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 #endif

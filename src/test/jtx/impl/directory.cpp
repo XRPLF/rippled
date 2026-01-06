@@ -2,7 +2,7 @@
 
 #include <xrpl/ledger/Sandbox.h>
 
-namespace ripple::test::jtx {
+namespace xrpl::test::jtx {
 
 /** Directory operations. */
 namespace directory {
@@ -123,4 +123,4 @@ adjustOwnerNode(ApplyView& view, uint256 key, std::uint64_t page)
 
 }  // namespace directory
 
-}  // namespace ripple::test::jtx
+}  // namespace xrpl::test::jtx

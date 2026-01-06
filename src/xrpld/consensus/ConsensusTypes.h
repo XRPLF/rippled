@@ -9,7 +9,7 @@
 #include <chrono>
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents how a node currently participates in Consensus.
 
@@ -200,7 +200,7 @@ struct ConsensusResult
     {
         XRPL_ASSERT(
             txns.id() == position.position(),
-            "ripple::ConsensusResult : valid inputs");
+            "xrpl::ConsensusResult : valid inputs");
     }
 
     //! The set of transactions consensus agrees go in the ledger
@@ -225,6 +225,6 @@ struct ConsensusResult
     // The number of peers proposing during the round
     std::size_t proposers = 0;
 };
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

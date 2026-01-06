@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class Rules;
 
@@ -68,6 +68,7 @@ class Config : public BasicConfig
 public:
     // Settings related to the configuration file location and directories
     static char const* const configFileName;
+    static char const* const configLegacyName;
     static char const* const databaseDirName;
     static char const* const validatorsFileName;
 
@@ -362,6 +363,6 @@ public:
 FeeSetup
 setup_FeeVote(Section const& section);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

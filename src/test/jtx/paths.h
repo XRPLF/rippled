@@ -7,7 +7,7 @@
 
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -94,6 +94,6 @@ path::append(T const& t, Args const&... args)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

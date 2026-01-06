@@ -1,6 +1,6 @@
 #include <test/jtx/balance.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -74,4 +74,4 @@ balance::operator()(Env& env) const
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

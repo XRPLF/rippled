@@ -1,6 +1,6 @@
 #include <xrpld/app/main/NodeStoreScheduler.h>
 
-namespace ripple {
+namespace xrpl {
 
 NodeStoreScheduler::NodeStoreScheduler(JobQueue& jobQueue) : jobQueue_(jobQueue)
 {
@@ -44,4 +44,4 @@ NodeStoreScheduler::onBatchWrite(NodeStore::BatchWriteReport const& report)
     jobQueue_.addLoadEvents(jtNS_WRITE, report.writeCount, report.elapsed);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

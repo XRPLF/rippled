@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class FixNFTokenPageLinks_test : public beast::unit_test::suite
 {
@@ -642,6 +642,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FixNFTokenPageLinks, app, ripple);
+BEAST_DEFINE_TESTSUITE(FixNFTokenPageLinks, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

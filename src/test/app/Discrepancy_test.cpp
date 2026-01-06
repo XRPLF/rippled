@@ -8,7 +8,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Discrepancy_test : public beast::unit_test::suite
 {
@@ -133,6 +133,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Discrepancy, app, ripple);
+BEAST_DEFINE_TESTSUITE(Discrepancy, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

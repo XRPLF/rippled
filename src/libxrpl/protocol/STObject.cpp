@@ -39,7 +39,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 STObject::STObject(STObject&& other)
     : STBase(other.getFName()), v_(std::move(other.v_)), mType(other.mType)
@@ -904,7 +904,7 @@ STObject::add(Serializer& s, WhichFields whichFields) const
         XRPL_ASSERT(
             (sType != STI_OBJECT) ||
                 (field->getFName().fieldType == STI_OBJECT),
-            "ripple::STObject::add : valid field type");
+            "xrpl::STObject::add : valid field type");
         field->addFieldID(s);
         field->add(s);
         if (sType == STI_ARRAY || sType == STI_OBJECT)
@@ -937,4 +937,4 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
     return sf;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -5,7 +5,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Serialize an object to a blob. */
 template <class Object>
@@ -24,6 +24,6 @@ serializeHex(STObject const& o)
     return strHex(serializeBlob(o));
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

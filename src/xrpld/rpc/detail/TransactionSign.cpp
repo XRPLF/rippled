@@ -24,7 +24,7 @@
 #include <iterator>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 namespace detail {
 
@@ -277,7 +277,7 @@ checkPayment(
                     app);
                 if (pf.findPaths(app.config().PATH_SEARCH_OLD))
                 {
-                    // 4 is the maxium paths
+                    // 4 is the maximum paths
                     pf.computePathRanks(4);
                     STPath fullLiquidityPath;
                     STPathSet paths;
@@ -654,7 +654,7 @@ transactionPreProcessImpl(
     {
         Serializer s = buildMultiSigningData(*stTx, signingArgs.getSigner());
 
-        auto multisig = ripple::sign(pk, sk, s.slice());
+        auto multisig = xrpl::sign(pk, sk, s.slice());
 
         signingArgs.moveMultiSignature(std::move(multisig));
     }
@@ -1078,7 +1078,11 @@ checkMultiSignFields(Json::Value const& jvRequest)
     if (!tx_json.isMember(sfSigningPubKey.getJsonName()))
         return RPC::missing_field_error("tx_json.SigningPubKey");
 
-    if (!tx_json[sfSigningPubKey.getJsonName()].asString().empty())
+    // Multi-signing into a signature_target object field is fine,
+    // because it means the signature is not for the transaction
+    // Account.
+    if (!jvRequest.isMember(jss::signature_target) &&
+        !tx_json[sfSigningPubKey.getJsonName()].asString().empty())
         return RPC::make_error(
             rpcINVALID_PARAMS,
             "When multi-signing 'tx_json.SigningPubKey' must be empty.");
@@ -1202,7 +1206,7 @@ transactionSignFor(
 
     XRPL_ASSERT(
         signForParams.validMultiSign(),
-        "ripple::RPC::transactionSignFor : valid multi-signature");
+        "xrpl::RPC::transactionSignFor : valid multi-signature");
 
     {
         std::shared_ptr<SLE const> account_state =
@@ -1448,4 +1452,4 @@ transactionSubmitMultiSigned(
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

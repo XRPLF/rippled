@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 LedgerStateFix::preflight(PreflightContext const& ctx)
@@ -67,4 +67,4 @@ LedgerStateFix::doApply()
     return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
-}  // namespace ripple
+}  // namespace xrpl

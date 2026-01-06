@@ -3,11 +3,6 @@ name: Build and test configuration
 on:
   workflow_call:
     inputs:
-      build_dir:
-        description: "The directory where to build."
-        required: true
-        type: string
-
       build_only:
         description: 'Whether to only build or to build and test the code ("true", "false").'
         required: true
@@ -59,6 +54,11 @@ defaults:
   run:
     shell: bash
 
+env:
+  # Conan installs the generators in the build/generators directory, see the
+  # layout() method in conanfile.py. We then run CMake from the build directory.
+  BUILD_DIR: build
+
 jobs:
   build-and-test:
     name: ${{ inputs.config_name }}
@@ -71,13 +71,13 @@ jobs:
     steps:
       - name: Cleanup workspace (macOS and Windows)
         if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
-        uses: XRPLF/actions/.github/actions/cleanup-workspace@01b244d2718865d427b499822fbd3f15e7197fcc
+        uses: XRPLF/actions/cleanup-workspace@2ece4ec6ab7de266859a6f053571425b2bd684b6
 
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/.github/actions/prepare-runner@99685816bb60a95a66852f212f382580e180df3a
+        uses: XRPLF/actions/prepare-runner@2ece4ec6ab7de266859a6f053571425b2bd684b6
         with:
           disable_ccache: false
 
@@ -85,7 +85,7 @@ jobs:
         uses: ./.github/actions/print-env
 
       - name: Get number of processors
-        uses: XRPLF/actions/.github/actions/get-nproc@046b1620f6bfd6cd0985dc82c3df02786801fe0a
+        uses: XRPLF/actions/get-nproc@2ece4ec6ab7de266859a6f053571425b2bd684b6
         id: nproc
         with:
           subtract: ${{ inputs.nproc_subtract }}
@@ -96,7 +96,6 @@ jobs:
       - name: Build dependencies
         uses: ./.github/actions/build-deps
         with:
-          build_dir: ${{ inputs.build_dir }}
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ inputs.build_type }}
           # Set the verbosity to "quiet" for Windows to avoid an excessive
@@ -104,7 +103,7 @@ jobs:
           log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
 
       - name: Configure CMake
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
@@ -117,7 +116,7 @@ jobs:
             ..
 
       - name: Build the binary
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
           BUILD_TYPE: ${{ inputs.build_type }}
@@ -129,23 +128,21 @@ jobs:
             --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
 
-      - name: Upload rippled artifact (Linux)
+      - name: Upload the binary (Linux)
         if: ${{ github.repository_owner == 'XRPLF' && runner.os == 'Linux' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        env:
-          BUILD_DIR: ${{ inputs.build_dir }}
         with:
-          name: rippled-${{ inputs.config_name }}
-          path: ${{ env.BUILD_DIR }}/rippled
+          name: xrpld-${{ inputs.config_name }}
+          path: ${{ env.BUILD_DIR }}/xrpld
           retention-days: 3
           if-no-files-found: error
 
       - name: Check linking (Linux)
         if: ${{ runner.os == 'Linux' }}
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
-          ldd ./rippled
-          if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+          ldd ./xrpld
+          if [ "$(ldd ./xrpld | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
             echo 'The binary is statically linked.'
           else
             echo 'The binary is dynamically linked.'
@@ -154,13 +151,13 @@ jobs:
 
       - name: Verify presence of instrumentation (Linux)
         if: ${{ runner.os == 'Linux' && env.ENABLED_VOIDSTAR == 'true' }}
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
-          ./rippled --version | grep libvoidstar
+          ./xrpld --version | grep libvoidstar
 
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ env.BUILD_DIR }}
         # Windows locks some of the build files while running tests, and parallel jobs can collide
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
@@ -173,11 +170,11 @@ jobs:
 
       - name: Run the embedded tests
         if: ${{ !inputs.build_only }}
-        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', inputs.build_dir, inputs.build_type) || inputs.build_dir }}
+        working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
-          ./rippled --unittest --unittest-jobs "${BUILD_NPROC}"
+          ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}"
 
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
@@ -189,7 +186,7 @@ jobs:
 
       - name: Prepare coverage report
         if: ${{ !inputs.build_only && env.ENABLED_COVERAGE == 'true' }}
-        working-directory: ${{ inputs.build_dir }}
+        working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
           BUILD_TYPE: ${{ inputs.build_type }}
@@ -207,7 +204,7 @@ jobs:
           disable_search: true
           disable_telem: true
           fail_ci_if_error: true
-          files: ${{ inputs.build_dir }}/coverage.xml
+          files: ${{ env.BUILD_DIR }}/coverage.xml
           plugins: noop
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true

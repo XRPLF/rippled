@@ -17,7 +17,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 DeleteAccount::checkExtraFeatures(PreflightContext const& ctx)
@@ -237,8 +237,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
-    XRPL_ASSERT(
-        sleAccount, "ripple::DeleteAccount::preclaim : non-null account");
+    XRPL_ASSERT(sleAccount, "xrpl::DeleteAccount::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
 
@@ -338,13 +337,12 @@ TER
 DeleteAccount::doApply()
 {
     auto src = view().peek(keylet::account(account_));
-    XRPL_ASSERT(
-        src, "ripple::DeleteAccount::doApply : non-null source account");
+    XRPL_ASSERT(src, "xrpl::DeleteAccount::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
     auto dst = view().peek(keylet::account(dstID));
     XRPL_ASSERT(
-        dst, "ripple::DeleteAccount::doApply : non-null destination account");
+        dst, "xrpl::DeleteAccount::doApply : non-null destination account");
 
     if (!src || !dst)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
@@ -374,7 +372,7 @@ DeleteAccount::doApply()
 
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::DeleteAccount::doApply : undeletable item not found "
+                "xrpl::DeleteAccount::doApply : undeletable item not found "
                 "in preclaim");
             JLOG(j_.error()) << "DeleteAccount undeletable item not "
                                 "found in preclaim.";
@@ -392,7 +390,7 @@ DeleteAccount::doApply()
 
     XRPL_ASSERT(
         (*src)[sfBalance] == XRPAmount(0),
-        "ripple::DeleteAccount::doApply : source balance is zero");
+        "xrpl::DeleteAccount::doApply : source balance is zero");
 
     // If there's still an owner directory associated with the source account
     // delete it.
@@ -413,4 +411,4 @@ DeleteAccount::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

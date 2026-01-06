@@ -234,7 +234,7 @@ inline void
 check(bool condition, std::string const& message)
 {
     if (!condition)
-        ripple::Throw<std::logic_error>(message);
+        xrpl::Throw<std::logic_error>(message);
 }
 
 }  // namespace Json

@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <forward_list>
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages a list of known formats.
 
@@ -183,6 +183,6 @@ private:
     boost::container::flat_map<KeyType, Item const*> types_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

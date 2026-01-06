@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 JsonPropertyStream::JsonPropertyStream() : m_top(Json::objectValue)
 {
@@ -161,4 +161,4 @@ JsonPropertyStream::add(std::string const& v)
     m_stack.back()->append(v);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

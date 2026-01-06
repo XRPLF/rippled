@@ -13,7 +13,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ripple {
+namespace xrpl {
 void
 SHAMapStoreImp::SavedStateDB::init(
     BasicConfig const& config,
@@ -28,7 +28,7 @@ SHAMapStoreImp::SavedStateDB::getCanDelete()
 {
     std::lock_guard lock(mutex_);
 
-    return ripple::getCanDelete(sqlDb_);
+    return xrpl::getCanDelete(sqlDb_);
 }
 
 LedgerIndex
@@ -36,7 +36,7 @@ SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 {
     std::lock_guard lock(mutex_);
 
-    return ripple::setCanDelete(sqlDb_, canDelete);
+    return xrpl::setCanDelete(sqlDb_, canDelete);
 }
 
 SavedState
@@ -44,21 +44,21 @@ SHAMapStoreImp::SavedStateDB::getState()
 {
     std::lock_guard lock(mutex_);
 
-    return ripple::getSavedState(sqlDb_);
+    return xrpl::getSavedState(sqlDb_);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setState(SavedState const& state)
 {
     std::lock_guard lock(mutex_);
-    ripple::setSavedState(sqlDb_, state);
+    xrpl::setSavedState(sqlDb_, state);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 {
     std::lock_guard lock(mutex_);
-    ripple::setLastRotated(sqlDb_, seq);
+    xrpl::setLastRotated(sqlDb_, seq);
 }
 
 //------------------------------------------------------------------------------
@@ -279,7 +279,7 @@ SHAMapStoreImp::run()
                 continue;
         }
 
-        LedgerIndex const validatedSeq = validatedLedger->info().seq;
+        LedgerIndex const validatedSeq = validatedLedger->header().seq;
         if (!lastRotated)
         {
             lastRotated = validatedSeq;
@@ -497,7 +497,7 @@ SHAMapStoreImp::clearSql(
 {
     XRPL_ASSERT(
         deleteInterval_,
-        "ripple::SHAMapStoreImp::clearSql : nonzero delete interval");
+        "xrpl::SHAMapStoreImp::clearSql : nonzero delete interval");
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
     {
@@ -674,4 +674,4 @@ make_SHAMapStore(
     return std::make_unique<SHAMapStoreImp>(app, scheduler, journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
