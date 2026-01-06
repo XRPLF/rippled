@@ -37,9 +37,17 @@ ConfidentialSend::preflight(PreflightContext const& ctx)
         ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
+    bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
+    if (hasAuditor &&
+        ctx.tx[sfHolderEncryptedAmount].length() != ecGamalEncryptedTotalLength)
+        return temBAD_CIPHERTEXT;
+
     if (!isValidCiphertext(ctx.tx[sfSenderEncryptedAmount]) ||
         !isValidCiphertext(ctx.tx[sfDestinationEncryptedAmount]) ||
         !isValidCiphertext(ctx.tx[sfIssuerEncryptedAmount]))
+        return temBAD_CIPHERTEXT;
+
+    if (hasAuditor && !isValidCiphertext(ctx.tx[sfAuditorEncryptedAmount]))
         return temBAD_CIPHERTEXT;
 
     // if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
@@ -77,6 +85,12 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
 
     // Check if issuance has issuer ElGamal public key
     if (!sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
+        return tecNO_PERMISSION;
+
+    // tx must include auditor ciphertext if the issuance has enabled auditing
+    bool const requiresAuditor =
+        sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
+    if (requiresAuditor && !ctx.tx.isFieldPresent(sfAuditorEncryptedAmount))
         return tecNO_PERMISSION;
 
     // already checked in preflight, but should also check that issuer on the
@@ -175,6 +189,11 @@ ConfidentialSend::doApply()
     Slice const senderEc = ctx_.tx[sfSenderEncryptedAmount];
     Slice const destEc = ctx_.tx[sfDestinationEncryptedAmount];
     Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
+    bool const hasAuditor = ctx_.tx.isFieldPresent(sfAuditorEncryptedAmount);
+
+    std::optional<Slice> const auditorEc = hasAuditor
+        ? std::optional<Slice>{ctx_.tx[sfAuditorEncryptedAmount]}
+        : std::nullopt;
 
     // Subtract from sender's spending balance
     {
@@ -200,6 +219,20 @@ ConfidentialSend::doApply()
             return tecINTERNAL;
 
         (*sleSender)[sfIssuerEncryptedBalance] = newIssuerEnc;
+    }
+
+    // Subtract from issuer's balance
+    if (hasAuditor && auditorEc)
+    {
+        Slice const curAuditorEnc = (*sleSender)[sfAuditorEncryptedBalance];
+        Buffer newAuditorEnc(ecGamalEncryptedTotalLength);
+
+        if (TER const ter =
+                homomorphicSubtract(curAuditorEnc, *auditorEc, newAuditorEnc);
+            !isTesSuccess(ter))
+            return tecINTERNAL;
+
+        (*sleSender)[sfAuditorEncryptedBalance] = newAuditorEnc;
     }
 
     // Increment version
@@ -229,6 +262,21 @@ ConfidentialSend::doApply()
             return tecINTERNAL;
 
         (*sleDestination)[sfIssuerEncryptedBalance] = newIssuerEnc;
+    }
+
+    // Add to auditor's balance
+    if (hasAuditor && auditorEc)
+    {
+        Slice const curAuditorEnc =
+            (*sleDestination)[sfAuditorEncryptedBalance];
+        Buffer newAuditorEnc(ecGamalEncryptedTotalLength);
+
+        if (TER const ter =
+                homomorphicAdd(curAuditorEnc, *auditorEc, newAuditorEnc);
+            !isTesSuccess(ter))
+            return tecINTERNAL;
+
+        (*sleDestination)[sfAuditorEncryptedBalance] = newAuditorEnc;
     }
 
     view().update(sleSender);

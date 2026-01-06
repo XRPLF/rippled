@@ -25,11 +25,19 @@ ConfidentialConvertBack::preflight(PreflightContext const& ctx)
         ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
+    bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
+    if (hasAuditor &&
+        ctx.tx[sfHolderEncryptedAmount].length() != ecGamalEncryptedTotalLength)
+        return temBAD_CIPHERTEXT;
+
     if (ctx.tx[sfMPTAmount] == 0 || ctx.tx[sfMPTAmount] > maxMPTokenAmount)
         return temBAD_AMOUNT;
 
     if (!isValidCiphertext(ctx.tx[sfHolderEncryptedAmount]) ||
         !isValidCiphertext(ctx.tx[sfIssuerEncryptedAmount]))
+        return temBAD_CIPHERTEXT;
+
+    if (hasAuditor && !isValidCiphertext(ctx.tx[sfAuditorEncryptedAmount]))
         return temBAD_CIPHERTEXT;
 
     // todo: update with correct size of proof since it might also contain range
@@ -52,8 +60,14 @@ ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance->isFlag(lsfMPTCanPrivacy))
         return tecNO_PERMISSION;
 
-    // already checked in preflight, but should also check that issuer on the
-    // issuance isn't the account either
+    // tx must include auditor ciphertext if the issuance has enabled auditing
+    bool const requiresAuditor =
+        sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
+    if (requiresAuditor && !ctx.tx.isFieldPresent(sfAuditorEncryptedAmount))
+        return tecNO_PERMISSION;
+
+    // already checked in preflight, but should also check that issuer on
+    // the issuance isn't the account either
     if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -144,6 +158,12 @@ ConfidentialConvertBack::doApply()
     (*sleMptoken)[sfConfidentialBalanceVersion] =
         (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
 
+    bool const hasAuditor = ctx_.tx.isFieldPresent(sfAuditorEncryptedAmount);
+
+    std::optional<Slice> const auditorEc = hasAuditor
+        ? std::optional<Slice>{ctx_.tx[sfAuditorEncryptedAmount]}
+        : std::nullopt;
+
     // homomorphically subtract holder's encrypted balance
     {
         Buffer res(ecGamalEncryptedTotalLength);
@@ -168,6 +188,19 @@ ConfidentialConvertBack::doApply()
             return tecINTERNAL;
 
         (*sleMptoken)[sfIssuerEncryptedBalance] = res;
+    }
+
+    if (hasAuditor && auditorEc)
+    {
+        Buffer res(ecGamalEncryptedTotalLength);
+        if (TER const ter = homomorphicSubtract(
+                (*sleMptoken)[sfAuditorEncryptedBalance],
+                ctx_.tx[sfAuditorEncryptedAmount],
+                res);
+            !isTesSuccess(ter))
+            return tecINTERNAL;
+
+        (*sleMptoken)[sfAuditorEncryptedBalance] = res;
     }
 
     view().update(sleIssuance);

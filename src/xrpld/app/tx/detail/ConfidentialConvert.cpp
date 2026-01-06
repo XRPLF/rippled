@@ -26,6 +26,11 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
         ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
+    bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
+    if (hasAuditor &&
+        ctx.tx[sfHolderEncryptedAmount].length() != ecGamalEncryptedTotalLength)
+        return temBAD_CIPHERTEXT;
+
     if (ctx.tx[sfMPTAmount] > maxMPTokenAmount)
         return temBAD_AMOUNT;
 
@@ -33,11 +38,13 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
         !isValidCiphertext(ctx.tx[sfIssuerEncryptedAmount]))
         return temBAD_CIPHERTEXT;
 
+    if (hasAuditor && !isValidCiphertext(ctx.tx[sfAuditorEncryptedAmount]))
+        return temBAD_CIPHERTEXT;
+
     if (ctx.tx.isFieldPresent(sfHolderElGamalPublicKey) &&
         ctx.tx[sfHolderElGamalPublicKey].length() != ecPubKeyLength)
         return temMALFORMED;
 
-    bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
     if (!hasAuditor && ctx.tx[sfZKProof].length() != ecEqualityProofLength * 2)
         return temMALFORMED;
     if (hasAuditor && ctx.tx[sfZKProof].length() != ecEqualityProofLength * 3)
@@ -83,6 +90,12 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
 
     // issuer has not uploaded their pub key yet
     if (!sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
+        return tecNO_PERMISSION;
+
+    // tx must include auditor ciphertext if the issuance has enabled auditing
+    bool const requiresAuditor =
+        sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
+    if (requiresAuditor && !ctx.tx.isFieldPresent(sfAuditorEncryptedAmount))
         return tecNO_PERMISSION;
 
     auto const sleMptoken = ctx.view.read(
@@ -192,9 +205,14 @@ ConfidentialConvert::doApply()
 
     Slice const holderEc = ctx_.tx[sfHolderEncryptedAmount];
     Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
+    bool const hasAuditor = ctx_.tx.isFieldPresent(sfAuditorEncryptedAmount);
 
-    // todo: we should check sfConfidentialBalanceSpending depending on if we
-    // encrypt zero amount
+    std::optional<Slice> const auditorEc = hasAuditor
+        ? std::optional<Slice>{ctx_.tx[sfAuditorEncryptedAmount]}
+        : std::nullopt;
+
+    // todo: we should check sfConfidentialBalanceSpending depending on
+    // if we encrypt zero amount
     if (sleMptoken->isFieldPresent(sfIssuerEncryptedBalance) &&
         sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) &&
         sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
@@ -220,6 +238,18 @@ ConfidentialConvert::doApply()
 
             (*sleMptoken)[sfIssuerEncryptedBalance] = sum;
         }
+
+        // homomorphically add auditor's encrypted balance
+        if (hasAuditor && auditorEc)
+        {
+            Buffer sum(ecGamalEncryptedTotalLength);
+            if (TER const ter = homomorphicAdd(
+                    *auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance], sum);
+                !isTesSuccess(ter))
+                return tecINTERNAL;
+
+            (*sleMptoken)[sfAuditorEncryptedBalance] = sum;
+        }
     }
     else if (
         !sleMptoken->isFieldPresent(sfIssuerEncryptedBalance) &&
@@ -229,6 +259,9 @@ ConfidentialConvert::doApply()
         (*sleMptoken)[sfConfidentialBalanceInbox] = holderEc;
         (*sleMptoken)[sfIssuerEncryptedBalance] = issuerEc;
         (*sleMptoken)[sfConfidentialBalanceVersion] = 0;
+
+        if (hasAuditor && auditorEc)
+            (*sleMptoken)[sfAuditorEncryptedBalance] = *auditorEc;
 
         try
         {

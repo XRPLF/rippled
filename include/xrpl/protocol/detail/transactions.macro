@@ -723,6 +723,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     {sfTransferFee, soeOPTIONAL},
     {sfMutableFlags, soeOPTIONAL},
     {sfIssuerElGamalPublicKey, soeOPTIONAL},
+    {sfAuditorElGamalPublicKey, soeOPTIONAL},
 }))
 
 /** This transaction type authorizes a MPToken instance */
@@ -1073,6 +1074,7 @@ TRANSACTION(ttCONFIDENTIAL_CONVERT, 85, ConfidentialConvert,
     {sfHolderElGamalPublicKey, soeOPTIONAL},
     {sfHolderEncryptedAmount, soeREQUIRED},
     {sfIssuerEncryptedAmount, soeREQUIRED},
+    {sfAuditorEncryptedAmount, soeOPTIONAL},
     {sfZKProof, soeREQUIRED},
 }))
 
@@ -1101,6 +1103,7 @@ TRANSACTION(ttCONFIDENTIAL_CONVERT_BACK, 87, ConfidentialConvertBack,
     {sfMPTAmount, soeREQUIRED},
     {sfHolderEncryptedAmount, soeREQUIRED},
     {sfIssuerEncryptedAmount, soeREQUIRED},
+    {sfAuditorEncryptedAmount, soeOPTIONAL},
     {sfZKProof, soeREQUIRED},
 }))
 
@@ -1119,6 +1122,7 @@ TRANSACTION(ttCONFIDENTIAL_SEND, 88, ConfidentialSend,
     {sfIssuerEncryptedAmount, soeREQUIRED},
     {sfZKProof, soeREQUIRED},
     {sfCredentialIDs, soeOPTIONAL},
+    {sfAuditorEncryptedAmount, soeOPTIONAL},
 }))
 
 #if TRANSACTION_INCLUDE

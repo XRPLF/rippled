@@ -399,6 +399,7 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfDomainID,                 soeOPTIONAL},
     {sfMutableFlags,             soeDEFAULT},
     {sfIssuerElGamalPublicKey,   soeOPTIONAL},
+    {sfAuditorElGamalPublicKey,  soeOPTIONAL},
     {sfConfidentialOutstandingAmount, soeDEFAULT},
 }))
 
@@ -417,6 +418,7 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfConfidentialBalanceSpending, soeOPTIONAL},
     {sfConfidentialBalanceVersion, soeDEFAULT},
     {sfIssuerEncryptedBalance,   soeOPTIONAL},
+    {sfAuditorEncryptedBalance,   soeOPTIONAL},
     {sfHolderElGamalPublicKey,   soeOPTIONAL},
 }))
 
