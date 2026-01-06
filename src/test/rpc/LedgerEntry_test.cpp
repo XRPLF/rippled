@@ -32,6 +32,8 @@ enum class FieldType {
     CurrencyField,
     HashField,
     HashOrObjectField,
+    FixedHashField,
+    IssueField,
     ObjectField,
     StringField,
     TwoAccountArrayField,
@@ -42,6 +44,8 @@ enum class FieldType {
 std::vector<std::pair<Json::StaticString, FieldType>> mappings{
     {jss::account, FieldType::AccountField},
     {jss::accounts, FieldType::TwoAccountArrayField},
+    {jss::asset, FieldType::IssueField},
+    {jss::asset2, FieldType::IssueField},
     {jss::authorize, FieldType::AccountField},
     {jss::authorized, FieldType::AccountField},
     {jss::credential_type, FieldType::BlobField},
@@ -76,24 +80,27 @@ getTypeName(FieldType typeID)
 {
     switch (typeID)
     {
-        case FieldType::UInt32Field:
-            return "number";
-        case FieldType::UInt64Field:
-            return "number";
-        case FieldType::HashField:
-            return "hex string";
         case FieldType::AccountField:
             return "AccountID";
+        case FieldType::ArrayField:
+            return "array";
         case FieldType::BlobField:
             return "hex string";
         case FieldType::CurrencyField:
             return "Currency";
-        case FieldType::ArrayField:
-            return "array";
+        case FieldType::HashField:
+        case FieldType::FixedHashField:
+            return "hex string";
         case FieldType::HashOrObjectField:
             return "hex string or object";
+        case FieldType::IssueField:
+            return "Issue";
         case FieldType::TwoAccountArrayField:
             return "length-2 array of Accounts";
+        case FieldType::UInt32Field:
+            return "number";
+        case FieldType::UInt64Field:
+            return "number";
         default:
             Throw<std::runtime_error>(
                 "unknown type " + std::to_string(static_cast<uint8_t>(typeID)));
@@ -194,34 +201,40 @@ class LedgerEntry_test : public beast::unit_test::suite
             return values;
         };
 
-        static auto const& badUInt32Values = remove({2, 3});
-        static auto const& badUInt64Values = remove({2, 3});
-        static auto const& badHashValues = remove({2, 3, 7, 8, 16});
         static auto const& badAccountValues = remove({12});
+        static auto const& badArrayValues = remove({17, 20});
         static auto const& badBlobValues = remove({3, 7, 8, 16});
         static auto const& badCurrencyValues = remove({14});
-        static auto const& badArrayValues = remove({17, 20});
+        static auto const& badHashValues = remove({2, 3, 7, 8, 16});
+        static auto const& badFixedHashValues = remove({1, 2, 3, 4, 7, 8, 16});
         static auto const& badIndexValues = remove({12, 16, 18, 19});
+        static auto const& badUInt32Values = remove({2, 3});
+        static auto const& badUInt64Values = remove({2, 3});
+        static auto const& badIssueValues = remove({});
 
         switch (fieldType)
         {
-            case FieldType::UInt32Field:
-                return badUInt32Values;
-            case FieldType::UInt64Field:
-                return badUInt64Values;
-            case FieldType::HashField:
-                return badHashValues;
             case FieldType::AccountField:
                 return badAccountValues;
+            case FieldType::ArrayField:
+            case FieldType::TwoAccountArrayField:
+                return badArrayValues;
             case FieldType::BlobField:
                 return badBlobValues;
             case FieldType::CurrencyField:
                 return badCurrencyValues;
-            case FieldType::ArrayField:
-            case FieldType::TwoAccountArrayField:
-                return badArrayValues;
+            case FieldType::HashField:
+                return badHashValues;
             case FieldType::HashOrObjectField:
                 return badIndexValues;
+            case FieldType::FixedHashField:
+                return badFixedHashValues;
+            case FieldType::IssueField:
+                return badIssueValues;
+            case FieldType::UInt32Field:
+                return badUInt32Values;
+            case FieldType::UInt64Field:
+                return badUInt64Values;
             default:
                 Throw<std::runtime_error>(
                     "unknown type " +
@@ -238,30 +251,37 @@ class LedgerEntry_test : public beast::unit_test::suite
             arr[1u] = "r4MrUGTdB57duTnRs6KbsRGQXgkseGb1b5";
             return arr;
         }();
+        static Json::Value const issueObject = []() {
+            Json::Value arr(Json::objectValue);
+            arr[jss::currency] = "XRP";
+            return arr;
+        }();
 
         auto const typeID = getFieldType(fieldName);
         switch (typeID)
         {
-            case FieldType::UInt32Field:
-                return 1;
-            case FieldType::UInt64Field:
-                return 1;
-            case FieldType::HashField:
-                return "5233D68B4D44388F98559DE42903767803EFA7C1F8D01413FC16EE6"
-                       "B01403D6D";
             case FieldType::AccountField:
                 return "r4MrUGTdB57duTnRs6KbsRGQXgkseGb1b5";
+            case FieldType::ArrayField:
+                return Json::arrayValue;
             case FieldType::BlobField:
                 return "ABCDEF";
             case FieldType::CurrencyField:
                 return "USD";
-            case FieldType::ArrayField:
-                return Json::arrayValue;
+            case FieldType::HashField:
+                return "5233D68B4D44388F98559DE42903767803EFA7C1F8D01413FC16EE6"
+                       "B01403D6D";
+            case FieldType::IssueField:
+                return issueObject;
             case FieldType::HashOrObjectField:
                 return "5233D68B4D44388F98559DE42903767803EFA7C1F8D01413FC16EE6"
                        "B01403D6D";
             case FieldType::TwoAccountArrayField:
                 return twoAccountArray;
+            case FieldType::UInt32Field:
+                return 1;
+            case FieldType::UInt64Field:
+                return 1;
             default:
                 Throw<std::runtime_error>(
                     "unknown type " +
@@ -446,7 +466,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryInvalid()
+    testInvalid()
     {
         testcase("Invalid requests");
         using namespace test::jtx;
@@ -528,7 +548,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryAccountRoot()
+    testAccountRoot()
     {
         testcase("AccountRoot");
         using namespace test::jtx;
@@ -634,7 +654,152 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryCheck()
+    testAmendments()
+    {
+        testcase("Amendments");
+        using namespace test::jtx;
+        Env env{*this};
+
+        // positive test
+        {
+            Keylet const keylet = keylet::amendments();
+
+            // easier to hack an object into the ledger than generate it
+            // legitimately
+            {
+                auto const amendments = [&](OpenView& view,
+                                            beast::Journal) -> bool {
+                    auto const sle = std::make_shared<SLE>(keylet);
+
+                    // Create Amendments vector (enabled amendments)
+                    std::vector<uint256> enabledAmendments;
+                    enabledAmendments.push_back(
+                        uint256::fromVoid("42426C4D4F1009EE67080A9B7965B44656D7"
+                                          "714D104A72F9B4369F97ABF044EE"));
+                    enabledAmendments.push_back(
+                        uint256::fromVoid("4C97EBA926031A7CF7D7B36FDE3ED66DDA54"
+                                          "21192D63DE53FFB46E43B9DC8373"));
+                    enabledAmendments.push_back(
+                        uint256::fromVoid("03BDC0099C4E14163ADA272C1B6F6FABB448"
+                                          "CC3E51F522F978041E4B57D9158C"));
+                    enabledAmendments.push_back(
+                        uint256::fromVoid("35291ADD2D79EB6991343BDA0912269C817D"
+                                          "0F094B02226C1C14AD2858962ED4"));
+                    sle->setFieldV256(
+                        sfAmendments, STVector256(enabledAmendments));
+
+                    // Create Majorities array
+                    STArray majorities;
+
+                    auto majority1 = STObject::makeInnerObject(sfMajority);
+                    majority1.setFieldH256(
+                        sfAmendment,
+                        uint256::fromVoid("7BB62DC13EC72B775091E9C71BF8CF97E122"
+                                          "647693B50C5E87A80DFD6FCFAC50"));
+                    majority1.setFieldU32(sfCloseTime, 779561310);
+                    majorities.push_back(std::move(majority1));
+
+                    auto majority2 = STObject::makeInnerObject(sfMajority);
+                    majority2.setFieldH256(
+                        sfAmendment,
+                        uint256::fromVoid("755C971C29971C9F20C6F080F2ED96F87884"
+                                          "E40AD19554A5EBECDCEC8A1F77FE"));
+                    majority2.setFieldU32(sfCloseTime, 779561310);
+                    majorities.push_back(std::move(majority2));
+
+                    sle->setFieldArray(sfMajorities, majorities);
+
+                    view.rawInsert(sle);
+                    return true;
+                };
+                env.app().openLedger().modify(amendments);
+            }
+
+            Json::Value jvParams;
+            jvParams[jss::amendments] = to_string(keylet.key);
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Amendments);
+        }
+
+        // negative tests
+        testMalformedField(
+            env,
+            Json::Value{},
+            jss::amendments,
+            FieldType::FixedHashField,
+            "malformedRequest");
+    }
+
+    void
+    testAMM()
+    {
+        testcase("AMM");
+        using namespace test::jtx;
+        Env env{*this};
+
+        // positive test
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+        AMM amm(env, alice, XRP(10), alice["USD"](1000));
+        env.close();
+
+        {
+            Json::Value jvParams;
+            jvParams[jss::amm] = to_string(amm.ammID());
+            auto const result =
+                env.rpc("json", "ledger_entry", to_string(jvParams));
+            BEAST_EXPECT(
+                result.isObject() && result.isMember(jss::result) &&
+                !result[jss::result].isMember(jss::error) &&
+                result[jss::result].isMember(jss::node) &&
+                result[jss::result][jss::node].isMember(
+                    sfLedgerEntryType.jsonName) &&
+                result[jss::result][jss::node][sfLedgerEntryType.jsonName] ==
+                    jss::AMM);
+        }
+
+        {
+            Json::Value jvParams;
+            Json::Value ammParams(Json::objectValue);
+            {
+                Json::Value obj(Json::objectValue);
+                obj[jss::currency] = "XRP";
+                ammParams[jss::asset] = obj;
+            }
+            {
+                Json::Value obj(Json::objectValue);
+                obj[jss::currency] = "USD";
+                obj[jss::issuer] = alice.human();
+                ammParams[jss::asset2] = obj;
+            }
+            jvParams[jss::amm] = ammParams;
+            auto const result =
+                env.rpc("json", "ledger_entry", to_string(jvParams));
+            BEAST_EXPECT(
+                result.isObject() && result.isMember(jss::result) &&
+                !result[jss::result].isMember(jss::error) &&
+                result[jss::result].isMember(jss::node) &&
+                result[jss::result][jss::node].isMember(
+                    sfLedgerEntryType.jsonName) &&
+                result[jss::result][jss::node][sfLedgerEntryType.jsonName] ==
+                    jss::AMM);
+        }
+
+        // negative tests
+        runLedgerEntryTest(
+            env,
+            jss::amm,
+            {
+                {jss::asset, "malformedRequest"},
+                {jss::asset2, "malformedRequest"},
+            });
+    }
+
+    void
+    testCheck()
     {
         testcase("Check");
         using namespace test::jtx;
@@ -686,7 +851,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryCredentials()
+    testCredentials()
     {
         testcase("Credentials");
 
@@ -754,7 +919,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryDelegate()
+    testDelegate()
     {
         testcase("Delegate");
 
@@ -809,7 +974,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryDepositPreauth()
+    testDepositPreauth()
     {
         testcase("Deposit Preauth");
 
@@ -870,7 +1035,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryDepositPreauthCred()
+    testDepositPreauthCred()
     {
         testcase("Deposit Preauth with credentials");
 
@@ -1151,7 +1316,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryDirectory()
+    testDirectory()
     {
         testcase("Directory");
         using namespace test::jtx;
@@ -1305,7 +1470,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryEscrow()
+    testEscrow()
     {
         testcase("Escrow");
         using namespace test::jtx;
@@ -1367,7 +1532,192 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryOffer()
+    testFeeSettings()
+    {
+        testcase("Fee Settings");
+        using namespace test::jtx;
+        Env env{*this};
+
+        // positive test
+        {
+            Keylet const keylet = keylet::fees();
+            Json::Value jvParams;
+            jvParams[jss::fee] = to_string(keylet.key);
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::FeeSettings);
+        }
+
+        // negative tests
+        testMalformedField(
+            env,
+            Json::Value{},
+            jss::fee,
+            FieldType::FixedHashField,
+            "malformedRequest");
+    }
+
+    void
+    testLedgerHashes()
+    {
+        testcase("Ledger Hashes");
+        using namespace test::jtx;
+        Env env{*this};
+
+        // positive test
+        {
+            Keylet const keylet = keylet::skip();
+            Json::Value jvParams;
+            jvParams[jss::hashes] = to_string(keylet.key);
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] ==
+                jss::LedgerHashes);
+        }
+
+        // negative tests
+        testMalformedField(
+            env,
+            Json::Value{},
+            jss::hashes,
+            FieldType::FixedHashField,
+            "malformedRequest");
+    }
+
+    void
+    testNFTokenOffer()
+    {
+        testcase("NFT Offer");
+        using namespace test::jtx;
+        Env env{*this};
+
+        // positive test
+        Account const issuer{"issuer"};
+        Account const buyer{"buyer"};
+        env.fund(XRP(1000), issuer, buyer);
+
+        uint256 const nftokenID0 =
+            token::getNextID(env, issuer, 0, tfTransferable);
+        env(token::mint(issuer, 0), txflags(tfTransferable));
+        env.close();
+        uint256 const offerID = keylet::nftoffer(issuer, env.seq(issuer)).key;
+        env(token::createOffer(issuer, nftokenID0, drops(1)),
+            token::destination(buyer),
+            txflags(tfSellNFToken));
+
+        {
+            Json::Value jvParams;
+            jvParams[jss::nft_offer] = to_string(offerID);
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] ==
+                jss::NFTokenOffer);
+            BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == issuer.human());
+            BEAST_EXPECT(
+                jrr[jss::node][sfNFTokenID.jsonName] == to_string(nftokenID0));
+            BEAST_EXPECT(jrr[jss::node][sfAmount.jsonName] == "1");
+        }
+
+        // negative tests
+        runLedgerEntryTest(env, jss::nft_offer);
+    }
+
+    void
+    testNFTokenPage()
+    {
+        testcase("NFT Page");
+        using namespace test::jtx;
+        Env env{*this};
+
+        // positive test
+        Account const issuer{"issuer"};
+        env.fund(XRP(1000), issuer);
+
+        env(token::mint(issuer, 0), txflags(tfTransferable));
+        env.close();
+
+        auto const nftpage = keylet::nftpage_max(issuer);
+        BEAST_EXPECT(env.le(nftpage) != nullptr);
+
+        {
+            Json::Value jvParams;
+            jvParams[jss::nft_page] = to_string(nftpage.key);
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::NFTokenPage);
+        }
+
+        // negative tests
+        runLedgerEntryTest(env, jss::nft_page);
+    }
+
+    void
+    testNegativeUNL()
+    {
+        testcase("Negative UNL");
+        using namespace test::jtx;
+        Env env{*this};
+
+        // positive test
+        {
+            Keylet const keylet = keylet::negativeUNL();
+
+            // easier to hack an object into the ledger than generate it
+            // legitimately
+            {
+                auto const nUNL = [&](OpenView& view, beast::Journal) -> bool {
+                    auto const sle = std::make_shared<SLE>(keylet);
+
+                    // Create DisabledValidators array
+                    STArray disabledValidators;
+                    auto disabledValidator =
+                        STObject::makeInnerObject(sfDisabledValidator);
+                    auto pubKeyBlob = strUnHex(
+                        "ED58F6770DB5DD77E59D28CB650EC3816E2FC95021BB56E720C9A1"
+                        "2DA79C58A3AB");
+                    disabledValidator.setFieldVL(sfPublicKey, *pubKeyBlob);
+                    disabledValidator.setFieldU32(
+                        sfFirstLedgerSequence, 91371264);
+                    disabledValidators.push_back(std::move(disabledValidator));
+
+                    sle->setFieldArray(
+                        sfDisabledValidators, disabledValidators);
+                    sle->setFieldH256(
+                        sfPreviousTxnID,
+                        uint256::fromVoid("8D47FFE664BE6C335108DF689537625855A6"
+                                          "A95160CC6D351341B9"
+                                          "2624D9C5E3"));
+                    sle->setFieldU32(sfPreviousTxnLgrSeq, 91442944);
+
+                    view.rawInsert(sle);
+                    return true;
+                };
+                env.app().openLedger().modify(nUNL);
+            }
+
+            Json::Value jvParams;
+            jvParams[jss::nunl] = to_string(keylet.key);
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::NegativeUNL);
+        }
+
+        // negative tests
+        testMalformedField(
+            env,
+            Json::Value{},
+            jss::nunl,
+            FieldType::FixedHashField,
+            "malformedRequest");
+    }
+
+    void
+    testOffer()
     {
         testcase("Offer");
         using namespace test::jtx;
@@ -1415,7 +1765,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryPayChan()
+    testPayChan()
     {
         testcase("Pay Chan");
         using namespace test::jtx;
@@ -1477,7 +1827,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryRippleState()
+    testRippleState()
     {
         testcase("RippleState");
         using namespace test::jtx;
@@ -1628,7 +1978,16 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryTicket()
+    testSignerList()
+    {
+        testcase("Signer List");
+        using namespace test::jtx;
+        Env env{*this};
+        runLedgerEntryTest(env, jss::signer_list);
+    }
+
+    void
+    testTicket()
     {
         testcase("Ticket");
         using namespace test::jtx;
@@ -1713,7 +2072,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryDID()
+    testDID()
     {
         testcase("DID");
         using namespace test::jtx;
@@ -1850,7 +2209,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryMPT()
+    testMPT()
     {
         testcase("MPT");
         using namespace test::jtx;
@@ -1933,7 +2292,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryPermissionedDomain()
+    testPermissionedDomain()
     {
         testcase("PermissionedDomain");
 
@@ -2013,7 +2372,7 @@ class LedgerEntry_test : public beast::unit_test::suite
 
     /// Test the ledger entry types that don't take parameters
     void
-    testLedgerEntryFixed()
+    testFixed()
     {
         using namespace test::jtx;
 
@@ -2080,7 +2439,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                         Json::StaticString const& expectedType,
                         Keylet const& expectedKey,
                         bool good) {
-            testcase << "ledger_entry " << expectedType.c_str()
+            testcase << expectedType.c_str()
                      << (good ? "" : " not") << " found";
 
             auto const hexKey = strHex(expectedKey.key);
@@ -2179,7 +2538,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryHashes()
+    testHashes()
     {
         using namespace test::jtx;
 
@@ -2252,7 +2611,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                         Keylet const& expectedKey,
                         bool good,
                         int expectedCount = 0) {
-            testcase << "ledger_entry LedgerHashes: seq: "
+            testcase << "LedgerHashes: seq: "
                      << env.current()->header().seq
                      << " \"hashes\":" << to_string(ledger)
                      << (good ? "" : " not") << " found";
@@ -2376,7 +2735,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
-    testLedgerEntryCLI()
+    testCLI()
     {
         testcase("command-line");
         using namespace test::jtx;
@@ -2406,27 +2765,35 @@ public:
     void
     run() override
     {
-        testLedgerEntryInvalid();
-        testLedgerEntryAccountRoot();
-        testLedgerEntryCheck();
-        testLedgerEntryCredentials();
-        testLedgerEntryDelegate();
-        testLedgerEntryDepositPreauth();
-        testLedgerEntryDepositPreauthCred();
-        testLedgerEntryDirectory();
-        testLedgerEntryEscrow();
-        testLedgerEntryOffer();
-        testLedgerEntryPayChan();
-        testLedgerEntryRippleState();
-        testLedgerEntryTicket();
-        testLedgerEntryDID();
+        testInvalid();
+        testAccountRoot();
+        testAmendments();
+        testAMM();
+        testCheck();
+        testCredentials();
+        testDelegate();
+        testDepositPreauth();
+        testDepositPreauthCred();
+        testDirectory();
+        testEscrow();
+        testFeeSettings();
+        testLedgerHashes();
+        testNFTokenOffer();
+        testNFTokenPage();
+        testNegativeUNL();
+        testOffer();
+        testPayChan();
+        testRippleState();
+        testSignerList();
+        testTicket();
+        testDID();
         testInvalidOracleLedgerEntry();
         testOracleLedgerEntry();
-        testLedgerEntryMPT();
-        testLedgerEntryPermissionedDomain();
-        testLedgerEntryFixed();
-        testLedgerEntryHashes();
-        testLedgerEntryCLI();
+        testMPT();
+        testPermissionedDomain();
+        testFixed();
+        testHashes();
+        testCLI();
     }
 };
 
@@ -2454,7 +2821,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
     }
 
     void
-    testLedgerEntryBridge()
+    testBridge()
     {
         testcase("ledger_entry: bridge");
         using namespace test::jtx;
@@ -2545,7 +2912,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
     }
 
     void
-    testLedgerEntryClaimID()
+    testClaimID()
     {
         testcase("ledger_entry: xchain_claim_id");
         using namespace test::jtx;
@@ -2603,7 +2970,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
     }
 
     void
-    testLedgerEntryCreateAccountClaimID()
+    testCreateAccountClaimID()
     {
         testcase("ledger_entry: xchain_create_account_claim_id");
         using namespace test::jtx;
@@ -2730,9 +3097,9 @@ public:
     void
     run() override
     {
-        testLedgerEntryBridge();
-        testLedgerEntryClaimID();
-        testLedgerEntryCreateAccountClaimID();
+        testBridge();
+        testClaimID();
+        testCreateAccountClaimID();
     }
 };
 

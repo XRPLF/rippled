@@ -116,16 +116,17 @@ parseAMM(
         return Unexpected(value.error());
     }
 
-    try
-    {
-        auto const issue = issueFromJson(params[jss::asset]);
-        auto const issue2 = issueFromJson(params[jss::asset2]);
-        return keylet::amm(issue, issue2).key;
-    }
-    catch (std::runtime_error const&)
-    {
-        return LedgerEntryHelpers::malformedError("malformedRequest", "");
-    }
+    auto const asset = LedgerEntryHelpers::requiredIssue(
+        params, jss::asset, "malformedRequest");
+    if (!asset)
+        return Unexpected(asset.error());
+
+    auto const asset2 = LedgerEntryHelpers::requiredIssue(
+        params, jss::asset2, "malformedRequest");
+    if (!asset2)
+        return Unexpected(asset2.error());
+
+    return keylet::amm(*asset, *asset2).key;
 }
 
 static Expected<uint256, Json::Value>
@@ -527,7 +528,7 @@ parseLoan(
     }
 
     auto const id = LedgerEntryHelpers::requiredUInt256(
-        params, jss::loan_broker_id, "malformedOwner");
+        params, jss::loan_broker_id, "malformedLoanBrokerID");
     if (!id)
         return Unexpected(id.error());
     auto const seq = LedgerEntryHelpers::requiredUInt32(
