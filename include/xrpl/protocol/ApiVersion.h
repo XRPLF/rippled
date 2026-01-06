@@ -58,14 +58,14 @@ static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
 static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
 static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
 
-template <class JsonObject>
-void
-setVersion(JsonObject& parent, unsigned int apiVersion, bool betaEnabled)
+inline void
+setVersion(Json::Value& parent, unsigned int apiVersion, bool betaEnabled)
 {
     XRPL_ASSERT(
         apiVersion != apiInvalidVersion,
         "xrpl::RPC::setVersion : input is valid");
-    auto& retObj = addObject(parent, jss::version);
+
+    auto& retObj = parent[jss::version] = Json::objectValue;
 
     if (apiVersion == apiVersionIfUnspecified)
     {
