@@ -4,7 +4,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 
-namespace ripple {
+namespace xrpl {
 
 static uint256 const&
 depthMask(unsigned int depth)
@@ -39,10 +39,10 @@ SHAMapNodeID::SHAMapNodeID(unsigned int depth, uint256 const& hash)
 {
     XRPL_ASSERT(
         depth <= SHAMap::leafDepth,
-        "ripple::SHAMapNodeID::SHAMapNodeID : maximum depth input");
+        "xrpl::SHAMapNodeID::SHAMapNodeID : maximum depth input");
     XRPL_ASSERT(
         id_ == (id_ & depthMask(depth)),
-        "ripple::SHAMapNodeID::SHAMapNodeID : hash and depth inputs do match");
+        "xrpl::SHAMapNodeID::SHAMapNodeID : hash and depth inputs do match");
 }
 
 std::string
@@ -59,7 +59,7 @@ SHAMapNodeID::getChildNodeID(unsigned int m) const
 {
     XRPL_ASSERT(
         m < SHAMap::branchFactor,
-        "ripple::SHAMapNodeID::getChildNodeID : valid branch input");
+        "xrpl::SHAMapNodeID::getChildNodeID : valid branch input");
 
     // A SHAMap has exactly 65 levels, so nodes must not exceed that
     // depth; if they do, this breaks the invariant of never allowing
@@ -71,7 +71,7 @@ SHAMapNodeID::getChildNodeID(unsigned int m) const
     // constructing a child node from them would break the above invariant.
     XRPL_ASSERT(
         depth_ <= SHAMap::leafDepth,
-        "ripple::SHAMapNodeID::getChildNodeID : maximum leaf depth");
+        "xrpl::SHAMapNodeID::getChildNodeID : maximum leaf depth");
 
     if (depth_ >= SHAMap::leafDepth)
         Throw<std::logic_error>(
@@ -117,7 +117,7 @@ selectBranch(SHAMapNodeID const& id, uint256 const& hash)
         branch >>= 4;
 
     XRPL_ASSERT(
-        branch < SHAMap::branchFactor, "ripple::selectBranch : maximum result");
+        branch < SHAMap::branchFactor, "xrpl::selectBranch : maximum result");
     return branch;
 }
 
@@ -126,8 +126,8 @@ SHAMapNodeID::createID(int depth, uint256 const& key)
 {
     XRPL_ASSERT(
         (depth >= 0) && (depth < 65),
-        "ripple::SHAMapNodeID::createID : valid branch input");
+        "xrpl::SHAMapNodeID::createID : valid branch input");
     return SHAMapNodeID(depth, key & depthMask(depth));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

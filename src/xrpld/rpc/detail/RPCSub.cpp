@@ -8,7 +8,7 @@
 
 #include <deque>
 
-namespace ripple {
+namespace xrpl {
 
 // Subscription object for JSON-RPC
 class RPCSubImp : public RPCSub
@@ -205,4 +205,4 @@ make_RPCSub(
         logs);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

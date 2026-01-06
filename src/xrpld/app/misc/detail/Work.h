@@ -4,7 +4,7 @@
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/string_body.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -25,6 +25,6 @@ public:
 
 }  // namespace detail
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

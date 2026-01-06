@@ -9,7 +9,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -74,6 +74,6 @@ using offers = owner_count<ltOFFER>;
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

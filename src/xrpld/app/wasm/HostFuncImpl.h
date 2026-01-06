@@ -3,7 +3,7 @@
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpld/app/wasm/HostFunc.h>
 
-namespace ripple {
+namespace xrpl {
 class WasmHostFunctionsImpl : public HostFunctions
 {
     ApplyContext& ctx;
@@ -271,4 +271,4 @@ public:
     floatLog(Slice const& x, int32_t mode) override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl

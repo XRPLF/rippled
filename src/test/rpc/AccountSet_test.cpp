@@ -8,7 +8,7 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class AccountSet_test : public beast::unit_test::suite
 {
@@ -565,8 +565,7 @@ public:
         stx->at(sfSigningPubKey) = makeSlice(std::string("badkey"));
 
         env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
-            auto const result =
-                ripple::apply(env.app(), view, *stx, tapNONE, j);
+            auto const result = xrpl::apply(env.app(), view, *stx, tapNONE, j);
             BEAST_EXPECT(result.ter == temBAD_SIGNATURE);
             BEAST_EXPECT(!result.applied);
             return result.applied;
@@ -593,6 +592,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AccountSet, rpc, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(AccountSet, rpc, xrpl, 1);
 
-}  // namespace ripple
+}  // namespace xrpl

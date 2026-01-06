@@ -578,7 +578,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     //   The unrounded true total value of the loan.
     //
     // - TrueTotalPrincialOutstanding can be computed using the algorithm
-    //   in the ripple::detail::loanPrincipalFromPeriodicPayment function.
+    //   in the xrpl::detail::loanPrincipalFromPeriodicPayment function.
     //
     // - TrueTotalInterestOutstanding = TrueTotalLoanValue -
     //      TrueTotalPrincipalOutstanding

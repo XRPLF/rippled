@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -118,6 +118,6 @@ using siglists = owner_count<ltSIGNER_LIST>;
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

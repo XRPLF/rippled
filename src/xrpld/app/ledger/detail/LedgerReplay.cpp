@@ -1,7 +1,7 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 
-namespace ripple {
+namespace xrpl {
 
 LedgerReplay::LedgerReplay(
     std::shared_ptr<Ledger const> parent,
@@ -26,4 +26,4 @@ LedgerReplay::LedgerReplay(
 {
 }
 
-}  // namespace ripple
+}  // namespace xrpl

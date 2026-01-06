@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // Helper function that returns the reserve on an account based on
@@ -1107,7 +1107,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             // Current time in ripple epoch.
             // Every time ledger close, unittest timer increase by 10s
             uint32_t const t = env.current()
-                                   ->info()
+                                   ->header()
                                    .parentCloseTime.time_since_epoch()
                                    .count() +
                 60;
@@ -1122,7 +1122,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             // Create credential which not expired
             jv = credentials::create(alice, issuer, credType2);
             uint32_t const t2 = env.current()
-                                    ->info()
+                                    ->header()
                                     .parentCloseTime.time_since_epoch()
                                     .count() +
                 1000;
@@ -1199,7 +1199,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             {
                 auto jv = credentials::create(gw, issuer, credType);
                 uint32_t const t = env.current()
-                                       ->info()
+                                       ->header()
                                        .parentCloseTime.time_since_epoch()
                                        .count() +
                     40;
@@ -1252,7 +1252,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             // Create credentials
             auto jv = credentials::create(zelda, issuer, credType);
             uint32_t const t = env.current()
-                                   ->info()
+                                   ->header()
                                    .parentCloseTime.time_since_epoch()
                                    .count() +
                 50;
@@ -1462,8 +1462,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DepositAuth, app, ripple);
-BEAST_DEFINE_TESTSUITE(DepositPreauth, app, ripple);
+BEAST_DEFINE_TESTSUITE(DepositAuth, app, xrpl);
+BEAST_DEFINE_TESTSUITE(DepositPreauth, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

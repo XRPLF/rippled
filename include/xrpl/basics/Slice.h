@@ -15,7 +15,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** An immutable linear range of bytes.
 
@@ -87,7 +87,7 @@ public:
     {
         XRPL_ASSERT(
             i < size_,
-            "ripple::Slice::operator[](std::size_t) const : valid input");
+            "xrpl::Slice::operator[](std::size_t) const : valid input");
         return data_[i];
     }
 
@@ -243,6 +243,6 @@ makeSlice(std::basic_string<char, Traits, Alloc> const& s)
     return Slice(s.data(), s.size());
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

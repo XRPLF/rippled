@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Clawback_test : public beast::unit_test::suite
 {
@@ -937,5 +937,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Clawback, app, ripple);
-}  // namespace ripple
+BEAST_DEFINE_TESTSUITE(Clawback, app, xrpl);
+}  // namespace xrpl

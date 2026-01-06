@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct MPTAuthorizeArgs
 {
@@ -43,6 +43,6 @@ public:
     doApply() override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

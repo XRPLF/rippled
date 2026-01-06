@@ -1,7 +1,7 @@
 #ifndef XRPL_PEERFINDER_STORE_H_INCLUDED
 #define XRPL_PEERFINDER_STORE_H_INCLUDED
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Abstract persistence for PeerFinder data. */
@@ -30,6 +30,6 @@ public:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

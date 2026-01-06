@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 /** Transaction flags.
 
@@ -294,6 +294,6 @@ constexpr std::uint32_t const tfLoanManageMask = ~(tfUniversal | tfLoanDefault |
 
 // clang-format on
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

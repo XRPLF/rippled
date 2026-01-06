@@ -15,7 +15,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Batch_test : public beast::unit_test::suite
@@ -547,7 +547,7 @@ class Batch_test : public beast::unit_test::suite
             Serializer msg;
             serializeBatch(
                 msg, tfAllOrNothing, jt.stx->getBatchTransactionIDs());
-            auto const sig = ripple::sign(bob.pk(), bob.sk(), msg.slice());
+            auto const sig = xrpl::sign(bob.pk(), bob.sk(), msg.slice());
             jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName]
                  [sfAccount.jsonName] = bob.human();
             jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName]
@@ -1378,7 +1378,7 @@ class Batch_test : public beast::unit_test::suite
             env.app().openLedger().modify(
                 [&](OpenView& view, beast::Journal j) {
                     auto const result =
-                        ripple::apply(env.app(), view, *jt.stx, tapNONE, j);
+                        xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
                     BEAST_EXPECT(
                         !result.applied && result.ter == temARRAY_TOO_LARGE);
                     return result.applied;
@@ -1424,7 +1424,7 @@ class Batch_test : public beast::unit_test::suite
             env.app().openLedger().modify(
                 [&](OpenView& view, beast::Journal j) {
                     auto const result =
-                        ripple::apply(env.app(), view, *jt.stx, tapNONE, j);
+                        xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
                     BEAST_EXPECT(
                         !result.applied && result.ter == temARRAY_TOO_LARGE);
                     return result.applied;
@@ -3592,7 +3592,7 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(!passesLocalChecks(stx, reason));
         BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
         env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
-            auto const result = ripple::apply(env.app(), view, stx, tapNONE, j);
+            auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
             BEAST_EXPECT(!result.applied && result.ter == temINVALID_FLAG);
             return result.applied;
         });
@@ -4356,7 +4356,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Batch, app, ripple);
+BEAST_DEFINE_TESTSUITE(Batch, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

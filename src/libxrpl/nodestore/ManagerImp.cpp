@@ -3,7 +3,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 namespace NodeStore {
 
@@ -18,8 +18,8 @@ void
 ManagerImp::missing_backend()
 {
     Throw<std::runtime_error>(
-        "Your rippled.cfg is missing a [node_db] entry, "
-        "please see the rippled-example.cfg file!");
+        "Your xrpld.cfg is missing a [node_db] entry, "
+        "please see the xrpld-example.cfg file!");
 }
 
 // We shouldn't rely on global variables for lifetime management because their
@@ -95,7 +95,7 @@ ManagerImp::erase(Factory& factory)
         });
     XRPL_ASSERT(
         iter != list_.end(),
-        "ripple::NodeStore::ManagerImp::erase : valid input");
+        "xrpl::NodeStore::ManagerImp::erase : valid input");
     list_.erase(iter);
 }
 
@@ -121,4 +121,4 @@ Manager::instance()
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

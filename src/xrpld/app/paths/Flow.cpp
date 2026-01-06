@@ -9,7 +9,7 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <class FlowResult>
 static auto
@@ -172,7 +172,7 @@ flow(
                 flowDebugInfo));
     }
 
-    XRPL_ASSERT(!srcIsXRP && !dstIsXRP, "ripple::flow : neither is XRP");
+    XRPL_ASSERT(!srcIsXRP && !dstIsXRP, "xrpl::flow : neither is XRP");
     return finishFlow(
         sb,
         srcIssue,
@@ -190,4 +190,4 @@ flow(
             flowDebugInfo));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

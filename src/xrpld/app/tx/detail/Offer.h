@@ -11,7 +11,7 @@
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 template <class TIn, class TOut>
 class TOfferBase
@@ -208,7 +208,7 @@ TOffer<TIn, TOut>::setFieldAmounts()
 {
     // LCOV_EXCL_START
 #ifdef _MSC_VER
-    UNREACHABLE("ripple::TOffer::setFieldAmounts : must be specialized");
+    UNREACHABLE("xrpl::TOffer::setFieldAmounts : must be specialized");
 #else
     static_assert(sizeof(TOut) == -1, "Must be specialized");
 #endif
@@ -319,6 +319,6 @@ operator<<(std::ostream& os, TOffer<TIn, TOut> const& offer)
     return os << offer.id();
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

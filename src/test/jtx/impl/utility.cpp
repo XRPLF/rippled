@@ -3,7 +3,6 @@
 #include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/json/Object.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
@@ -11,7 +10,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -31,7 +30,7 @@ sign(Json::Value& jv, Account const& account, Json::Value& sigObject)
     Serializer ss;
     ss.add32(HashPrefix::txSign);
     parse(jv).addWithoutSigningFields(ss);
-    auto const sig = ripple::sign(account.pk(), account.sk(), ss.slice());
+    auto const sig = xrpl::sign(account.pk(), account.sk(), ss.slice());
     sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
 }
 
@@ -83,7 +82,7 @@ cmdToJSONRPC(
     // If paramsObj is not empty, put it in a [params] array.
     if (paramsObj.begin() != paramsObj.end())
     {
-        auto& paramsArray = Json::setArray(jv, jss::params);
+        auto& paramsArray = jv[jss::params] = Json::arrayValue;
         paramsArray.append(paramsObj);
     }
     if (paramsObj.isMember(jss::jsonrpc))
@@ -97,4 +96,4 @@ cmdToJSONRPC(
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
