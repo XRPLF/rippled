@@ -4722,7 +4722,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Sponsor, app, ripple);
+BEAST_DEFINE_TESTSUITE(Sponsor, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

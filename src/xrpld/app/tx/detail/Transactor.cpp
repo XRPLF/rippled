@@ -437,7 +437,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         {
             XRPL_ASSERT(
                 sponsorSle->getType() == ltSPONSORSHIP,
-                "ripple::Transactor::checkFee : could not get sponsorship");
+                "xrpl::Transactor::checkFee : could not get sponsorship");
 
             XRPAmount feeAmount = sponsorSle->isFieldPresent(result.field)
                 ? sponsorSle->getFieldAmount(result.field).xrp()
@@ -460,14 +460,14 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
         XRPL_ASSERT(
             sle->getType() == ltACCOUNT_ROOT,
-            "ripple::Transactor::checkFee : could not get account");
+            "xrpl::Transactor::checkFee : could not get account");
 
         availableBalance = (*sle)[result.field].xrp();
     }
 
     XRPL_ASSERT(
         availableBalance,
-        "ripple::Transactor::checkFee : could not get balance for fee");
+        "xrpl::Transactor::checkFee : could not get balance for fee");
 
     if (*availableBalance < feePaid)
     {
