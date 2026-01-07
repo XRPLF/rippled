@@ -108,14 +108,13 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
 
-    std::vector<Buffer> zkps = getEqualityProofs(ctx.tx[sfZKProof]);
+    std::vector<Buffer> const zkps = getEqualityProofs(ctx.tx[sfZKProof]);
 
     auto const& amount = ctx.tx[sfMPTAmount];
 
     // we already checked proof size in preflight, still do sanity check here
     // since we are going to access individual vector entries
-    auto const expectedCount =
-        ctx.tx.isFieldPresent(sfAuditorEncryptedAmount) ? 3 : 2;
+    auto const expectedCount = hasAuditor ? 3 : 2;
     if (zkps.size() != expectedCount)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
