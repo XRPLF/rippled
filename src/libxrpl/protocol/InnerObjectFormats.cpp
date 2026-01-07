@@ -2,7 +2,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 
-namespace ripple {
+namespace xrpl {
 
 InnerObjectFormats::InnerObjectFormats()
 {
@@ -154,6 +154,14 @@ InnerObjectFormats::InnerObjectFormats()
             {sfBookNode, soeREQUIRED},
         });
 
+    add(sfCounterpartySignature.jsonName,
+        sfCounterpartySignature.getCode(),
+        {
+            {sfSigningPubKey, soeOPTIONAL},
+            {sfTxnSignature, soeOPTIONAL},
+            {sfSigners, soeOPTIONAL},
+        });
+
     add(sfSponsor.jsonName.c_str(),
         sfSponsor.getCode(),
         {
@@ -187,4 +195,4 @@ InnerObjectFormats::findSOTemplateBySField(SField const& sField) const
     return nullptr;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

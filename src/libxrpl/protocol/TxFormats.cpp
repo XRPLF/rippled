@@ -5,7 +5,7 @@
 
 #include <initializer_list>
 
-namespace ripple {
+namespace xrpl {
 
 TxFormats::TxFormats()
 {
@@ -57,4 +57,4 @@ TxFormats::getInstance()
     return instance;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** Describes how an account was found in a path, and how to find the next set
 of paths. "Outgoing" is defined as the source account, or an account found via a
@@ -227,6 +227,6 @@ private:
     Rate highQualityOut_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

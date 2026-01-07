@@ -12,7 +12,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 static void
 textTime(
@@ -126,4 +126,4 @@ doGetCounts(RPC::JsonContext& context)
     return getCountsJson(context.app, minCount);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

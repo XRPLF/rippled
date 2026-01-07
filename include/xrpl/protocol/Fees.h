@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Reflects the fee settings for a particular ledger.
 
@@ -41,6 +41,6 @@ struct Fees
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

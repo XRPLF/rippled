@@ -9,7 +9,7 @@
 
 #include <cstring>
 
-namespace ripple {
+namespace xrpl {
 
 // variable length byte string
 class STBlob : public STBase, public CountedObject<STBlob>
@@ -126,6 +126,6 @@ STBlob::setValue(Buffer&& b)
     value_ = std::move(b);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

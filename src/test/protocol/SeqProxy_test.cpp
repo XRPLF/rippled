@@ -4,7 +4,7 @@
 #include <limits>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 struct SeqProxy_test : public beast::unit_test::suite
 {
@@ -217,6 +217,6 @@ struct SeqProxy_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SeqProxy, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(SeqProxy, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -8,7 +8,7 @@
 #include <string>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
 /** Identifies a node inside a SHAMap */
 class SHAMapNodeID : public CountedObject<SHAMapNodeID>
@@ -139,6 +139,6 @@ deserializeSHAMapNodeID(std::string const& s)
 [[nodiscard]] unsigned int
 selectBranch(SHAMapNodeID const& id, uint256 const& hash);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

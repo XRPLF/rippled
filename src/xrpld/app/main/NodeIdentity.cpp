@@ -4,7 +4,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::pair<PublicKey, SecretKey>
 getNodeIdentity(
@@ -46,4 +46,4 @@ getNodeIdentity(
     return getNodeIdentity(*db);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -5,7 +5,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/SignerUtils.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -92,6 +92,6 @@ ledgerEntry(
 }  // namespace sponsor
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

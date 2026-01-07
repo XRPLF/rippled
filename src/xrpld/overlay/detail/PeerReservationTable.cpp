@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 auto
 PeerReservation::toJson() const -> Json::Value
@@ -111,4 +111,4 @@ PeerReservationTable::erase(PublicKey const& nodeId)
     return previous;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

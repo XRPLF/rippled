@@ -18,7 +18,7 @@
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -113,7 +113,7 @@ invoke_preflight(PreflightContext const& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preflight: " << e.txnType;
-        UNREACHABLE("ripple::invoke_preflight : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_preflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
         // LCOV_EXCL_STOP
     }
@@ -181,7 +181,7 @@ invoke_preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preclaim: " << e.txnType;
-        UNREACHABLE("ripple::invoke_preclaim : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_preclaim : unknown transaction type");
         return temUNKNOWN;
         // LCOV_EXCL_STOP
     }
@@ -215,8 +215,7 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
     catch (UnknownTxnType const& e)
     {
         // LCOV_EXCL_START
-        UNREACHABLE(
-            "ripple::invoke_calculateBaseFee : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_calculateBaseFee : unknown transaction type");
         return XRPAmount{0};
         // LCOV_EXCL_STOP
     }
@@ -231,7 +230,7 @@ TxConsequences::TxConsequences(NotTEC pfresult)
 {
     XRPL_ASSERT(
         !isTesSuccess(pfresult),
-        "ripple::TxConsequences::TxConsequences : is not tesSUCCESS");
+        "xrpl::TxConsequences::TxConsequences : is not tesSUCCESS");
 }
 
 TxConsequences::TxConsequences(STTx const& tx)
@@ -279,7 +278,7 @@ invoke_apply(ApplyContext& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.journal.fatal())
             << "Unknown transaction type in apply: " << e.txnType;
-        UNREACHABLE("ripple::invoke_apply : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_apply : unknown transaction type");
         return {temUNKNOWN, false};
         // LCOV_EXCL_STOP
     }
@@ -430,4 +429,4 @@ doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -11,7 +11,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class MPToken_test : public beast::unit_test::suite
@@ -1152,7 +1152,7 @@ class MPToken_test : public beast::unit_test::suite
                 env(credentials::accept(bob, credIssuer1, credType));
                 env.close();
 
-                MPTTester mptAlice(env, alice, {});
+                MPTTester mptAlice(env, alice);
                 env.close();
 
                 mptAlice.create({
@@ -1194,7 +1194,7 @@ class MPToken_test : public beast::unit_test::suite
                 env(credentials::accept(bob, credIssuer1, credType));
                 env.close();
 
-                MPTTester mptAlice(env, alice, {});
+                MPTTester mptAlice(env, alice);
                 env.close();
 
                 mptAlice.create({
@@ -1274,7 +1274,7 @@ class MPToken_test : public beast::unit_test::suite
                 env(credentials::accept(carol, credIssuer2, credType));
                 env.close();
 
-                MPTTester mptAlice(env, alice, {});
+                MPTTester mptAlice(env, alice);
                 env.close();
 
                 mptAlice.create({
@@ -2358,7 +2358,7 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
 
             auto const USD = alice["USD"];
-            auto const mpt = ripple::test::jtx::MPT(
+            auto const mpt = xrpl::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             env(claw(alice, bob["USD"](5), bob), ter(temMALFORMED));
@@ -2381,7 +2381,7 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
 
             auto const USD = alice["USD"];
-            auto const mpt = ripple::test::jtx::MPT(
+            auto const mpt = xrpl::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             // clawing back IOU from a MPT holder fails
@@ -2440,7 +2440,7 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            auto const fakeMpt = ripple::test::jtx::MPT(
+            auto const fakeMpt = xrpl::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             // issuer tries to clawback MPT where issuance doesn't exist
@@ -2479,7 +2479,7 @@ class MPToken_test : public beast::unit_test::suite
             env.fund(XRP(1000), alice, bob);
             env.close();
 
-            auto const mpt = ripple::test::jtx::MPT(
+            auto const mpt = xrpl::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             Json::Value jv = claw(alice, mpt(1), bob);
@@ -3684,7 +3684,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(MPToken, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(MPToken, app, xrpl, 2);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

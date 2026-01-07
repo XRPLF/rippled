@@ -7,7 +7,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 CreateCheck::preflight(PreflightContext const& ctx)
@@ -213,4 +213,4 @@ CreateCheck::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

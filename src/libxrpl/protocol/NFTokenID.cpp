@@ -17,7 +17,7 @@
 #include <optional>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 canHaveNFTokenID(
@@ -184,4 +184,4 @@ insertNFTokenID(
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

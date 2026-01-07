@@ -6,7 +6,7 @@
 #include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct MPTCreateArgs
 {
@@ -51,6 +51,6 @@ public:
         MPTCreateArgs const& args);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

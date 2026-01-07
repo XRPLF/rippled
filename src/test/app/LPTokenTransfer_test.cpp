@@ -2,7 +2,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class LPTokenTransfer_test : public jtx::AMMTest
@@ -462,6 +462,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LPTokenTransfer, app, ripple);
+BEAST_DEFINE_TESTSUITE(LPTokenTransfer, app, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

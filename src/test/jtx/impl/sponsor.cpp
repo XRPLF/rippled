@@ -6,7 +6,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -116,4 +116,4 @@ ledgerEntry(
 }  // namespace sponsor
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

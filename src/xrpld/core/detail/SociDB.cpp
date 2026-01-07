@@ -16,7 +16,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 static auto checkpointPageCount = 1000;
 
@@ -206,7 +206,7 @@ public:
     {
         if (auto p = session_.lock())
         {
-            return {ripple::getConnection(*p), p};
+            return {xrpl::getConnection(*p), p};
         }
         return {nullptr, std::shared_ptr<soci::session>{}};
     }
@@ -324,7 +324,7 @@ makeCheckpointer(
         id, std::move(session), queue, logs);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #if defined(__clang__)
 #pragma clang diagnostic pop

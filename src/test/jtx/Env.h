@@ -39,7 +39,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -232,7 +232,9 @@ public:
      *
      * @param suite_ the current unit_test::suite
      */
-    Env(beast::unit_test::suite& suite_) : Env(suite_, envconfig())
+    Env(beast::unit_test::suite& suite_,
+        beast::severities::Severity thresh = beast::severities::kError)
+        : Env(suite_, envconfig(), nullptr, thresh)
     {
     }
 
@@ -835,6 +837,6 @@ Env::rpc(std::string const& cmd, Args&&... args)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

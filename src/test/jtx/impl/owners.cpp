@@ -1,6 +1,6 @@
 #include <test/jtx/owners.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 std::uint32_t
@@ -59,4 +59,4 @@ sponsoring_account_count::operator()(Env& env) const
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

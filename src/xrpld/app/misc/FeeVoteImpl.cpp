@@ -5,7 +5,7 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -182,7 +182,7 @@ FeeVoteImpl::doVoting(
     // LCL must be flag ledger
     XRPL_ASSERT(
         lastClosedLedger && isFlagLedger(lastClosedLedger->seq()),
-        "ripple::FeeVoteImpl::doVoting : has a flag ledger");
+        "xrpl::FeeVoteImpl::doVoting : has a flag ledger");
 
     detail::VotableValue baseFeeVote(
         lastClosedLedger->fees().base, target_.reference_fee);
@@ -266,7 +266,7 @@ FeeVoteImpl::doVoting(
     auto const baseReserve = baseReserveVote.getVotes();
     auto const incReserve = incReserveVote.getVotes();
 
-    auto const seq = lastClosedLedger->info().seq + 1;
+    auto const seq = lastClosedLedger->header().seq + 1;
 
     // add transactions to our position
     if (baseFee.second || baseReserve.second || incReserve.second)
@@ -323,4 +323,4 @@ make_FeeVote(FeeSetup const& setup, beast::Journal journal)
     return std::make_unique<FeeVoteImpl>(setup, journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -4,7 +4,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Status.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 struct JsonContext;
@@ -17,6 +17,6 @@ Role
 roleRequired(unsigned int version, bool betaEnabled, std::string const& method);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

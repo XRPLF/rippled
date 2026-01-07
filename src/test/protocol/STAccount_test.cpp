@@ -1,7 +1,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/STAccount.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct STAccount_test : public beast::unit_test::suite
 {
@@ -127,6 +127,6 @@ struct STAccount_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STAccount, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STAccount, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

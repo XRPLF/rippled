@@ -7,7 +7,7 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
@@ -925,7 +925,7 @@ AMMWithdraw::equalWithdrawLimit(
         // LCOV_EXCL_START
         XRPL_ASSERT(
             amountWithdraw <= amount,
-            "ripple::AMMWithdraw::equalWithdrawLimit : maximum amountWithdraw");
+            "xrpl::AMMWithdraw::equalWithdrawLimit : maximum amountWithdraw");
         // LCOV_EXCL_STOP
     }
     else if (amountWithdraw > amount)
@@ -1125,4 +1125,4 @@ AMMWithdraw::isWithdrawAll(STTx const& tx)
         return WithdrawAll::Yes;
     return WithdrawAll::No;
 }
-}  // namespace ripple
+}  // namespace xrpl

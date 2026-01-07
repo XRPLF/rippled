@@ -3,7 +3,7 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Serializer.h>
 
-namespace ripple {
+namespace xrpl {
 
 inline void
 addSerializeSponsorData(
@@ -15,4 +15,4 @@ addSerializeSponsorData(
     msg.add32(flags);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class SponsorshipSet : public Transactor
 {
@@ -37,6 +37,6 @@ public:
         beast::Journal j);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

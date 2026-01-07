@@ -13,7 +13,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 /*
     PaymentChannel
@@ -136,7 +136,7 @@ closeChannel(
 
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance],
-        "ripple::closeChannel : minimum channel amount");
+        "xrpl::closeChannel : minimum channel amount");
     (*sle)[sfBalance] =
         (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     auto const sponsor = getLedgerEntryReserveSponsor(view, slep);
@@ -234,7 +234,7 @@ PayChanCreate::doApply()
 
     if (ctx_.view().rules().enabled(fixPayChanCancelAfter))
     {
-        auto const closeTime = ctx_.view().info().parentCloseTime;
+        auto const closeTime = ctx_.view().header().parentCloseTime;
         if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
             return tecEXPIRED;
     }
@@ -330,7 +330,7 @@ PayChanFund::doApply()
     {
         auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count();
+            ctx_.view().header().parentCloseTime.time_since_epoch().count();
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (expiration && closeTime >= *expiration))
             return closeChannel(
@@ -344,7 +344,7 @@ PayChanFund::doApply()
     if (auto extend = ctx_.tx[~sfExpiration])
     {
         auto minExpiration =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() +
+            ctx_.view().header().parentCloseTime.time_since_epoch().count() +
             (*slep)[sfSettleDelay];
         if (expiration && *expiration < minExpiration)
             minExpiration = *expiration;
@@ -494,7 +494,7 @@ PayChanClaim::doApply()
     {
         auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count();
+            ctx_.view().header().parentCloseTime.time_since_epoch().count();
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (curExpiration && closeTime >= *curExpiration))
             return closeChannel(
@@ -540,7 +540,7 @@ PayChanClaim::doApply()
         XRPAmount const reqDelta = reqBalance - chanBalance;
         XRPL_ASSERT(
             reqDelta >= beast::zero,
-            "ripple::PayChanClaim::doApply : minimum balance delta");
+            "xrpl::PayChanClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
         ctx_.view().update(slep);
@@ -562,7 +562,7 @@ PayChanClaim::doApply()
                 slep, ctx_.view(), k.key, ctx_.app.journal("View"));
 
         auto const settleExpiration =
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() +
+            ctx_.view().header().parentCloseTime.time_since_epoch().count() +
             (*slep)[sfSettleDelay];
 
         if (!curExpiration || *curExpiration > settleExpiration)
@@ -575,4 +575,4 @@ PayChanClaim::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -10,7 +10,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 SponsorshipTransfer::preflight(PreflightContext const& ctx)
@@ -396,4 +396,4 @@ SponsorshipTransfer::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

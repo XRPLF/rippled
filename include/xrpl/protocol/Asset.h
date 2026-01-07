@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Asset;
 class STAmount;
@@ -81,7 +81,27 @@ public:
     bool
     native() const
     {
-        return holds<Issue>() && get<Issue>().native();
+        return std::visit(
+            [&]<ValidIssueType TIss>(TIss const& issue) {
+                if constexpr (std::is_same_v<TIss, Issue>)
+                    return issue.native();
+                if constexpr (std::is_same_v<TIss, MPTIssue>)
+                    return false;
+            },
+            issue_);
+    }
+
+    bool
+    integral() const
+    {
+        return std::visit(
+            [&]<ValidIssueType TIss>(TIss const& issue) {
+                if constexpr (std::is_same_v<TIss, Issue>)
+                    return issue.native();
+                if constexpr (std::is_same_v<TIss, MPTIssue>)
+                    return true;
+            },
+            issue_);
     }
 
     friend constexpr bool
@@ -213,6 +233,6 @@ validJSONAsset(Json::Value const& jv);
 Asset
 assetFromJson(Json::Value const& jv);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_PROTOCOL_ASSET_H_INCLUDED

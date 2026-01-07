@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/KnownFormats.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Identifiers for on-ledger objects.
 
@@ -189,6 +189,11 @@ enum LedgerSpecificFlags {
     // ltVAULT
     lsfVaultPrivate = 0x00010000,
 
+    // ltLOAN
+    lsfLoanDefault = 0x00010000,
+    lsfLoanImpaired = 0x00020000,
+    lsfLoanOverpayment = 0x00040000, // True, loan allows overpayments
+
     // ltSPONSORSHIP
     lsfSponsorshipRequireSignForFee     = 0x00010000,
     lsfSponsorshipRequireSignForReserve = 0x00020000,
@@ -211,6 +216,6 @@ public:
     getInstance();
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

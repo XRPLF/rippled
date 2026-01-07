@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 AcceptedLedger::AcceptedLedger(
     std::shared_ptr<ReadView const> const& ledger,
@@ -28,4 +28,4 @@ AcceptedLedger::AcceptedLedger(
         });
 }
 
-}  // namespace ripple
+}  // namespace xrpl

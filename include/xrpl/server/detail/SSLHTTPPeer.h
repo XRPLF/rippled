@@ -12,7 +12,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Handler>
 class SSLHTTPPeer : public BaseHTTPPeer<Handler, SSLHTTPPeer<Handler>>,
@@ -204,6 +204,6 @@ SSLHTTPPeer<Handler>::on_shutdown(error_code ec)
     stream_.next_layer().close();
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

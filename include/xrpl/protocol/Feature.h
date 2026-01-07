@@ -63,7 +63,7 @@
  *
  */
 
-namespace ripple {
+namespace xrpl {
 
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
 enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
@@ -177,7 +177,7 @@ public:
     {
         XRPL_ASSERT(
             b.count() == count(),
-            "ripple::FeatureBitset::FeatureBitset(base) : count match");
+            "xrpl::FeatureBitset::FeatureBitset(base) : count match");
     }
 
     template <class... Fs>
@@ -186,7 +186,7 @@ public:
         initFromFeatures(f, std::forward<Fs>(fs)...);
         XRPL_ASSERT(
             count() == (sizeof...(fs) + 1),
-            "ripple::FeatureBitset::FeatureBitset(uint256) : count and "
+            "xrpl::FeatureBitset::FeatureBitset(uint256) : count and "
             "sizeof... do match");
     }
 
@@ -197,7 +197,7 @@ public:
             set(featureToBitsetIndex(f));
         XRPL_ASSERT(
             fs.size() == count(),
-            "ripple::FeatureBitset::FeatureBitset(Container auto) : count and "
+            "xrpl::FeatureBitset::FeatureBitset(Container auto) : count and "
             "size do match");
     }
 
@@ -365,6 +365,6 @@ foreachFeature(FeatureBitset bs, F&& f)
 #undef XRPL_FEATURE
 #pragma pop_macro("XRPL_FEATURE")
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

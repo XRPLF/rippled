@@ -7,7 +7,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Indexes.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Batch : public Transactor
 {
@@ -35,8 +35,26 @@ public:
 
     TER
     doApply() override;
+
+    static constexpr auto disabledTxTypes = std::to_array<TxType>({
+        ttVAULT_CREATE,
+        ttVAULT_SET,
+        ttVAULT_DELETE,
+        ttVAULT_DEPOSIT,
+        ttVAULT_WITHDRAW,
+        ttVAULT_CLAWBACK,
+        ttLOAN_BROKER_SET,
+        ttLOAN_BROKER_DELETE,
+        ttLOAN_BROKER_COVER_DEPOSIT,
+        ttLOAN_BROKER_COVER_WITHDRAW,
+        ttLOAN_BROKER_COVER_CLAWBACK,
+        ttLOAN_SET,
+        ttLOAN_DELETE,
+        ttLOAN_MANAGE,
+        ttLOAN_PAY,
+    });
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

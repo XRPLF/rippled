@@ -4,7 +4,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 SponsorshipSet::getFlagsMask(PreflightContext const& ctx)
@@ -393,4 +393,4 @@ SponsorshipSet::deleteSponsorship(
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

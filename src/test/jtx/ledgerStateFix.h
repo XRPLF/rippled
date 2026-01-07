@@ -4,7 +4,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -20,6 +20,6 @@ nftPageLinks(jtx::Account const& acct, jtx::Account const& owner);
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

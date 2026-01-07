@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents a particular version of the peer-to-peer protocol.
 
@@ -58,6 +58,6 @@ supportedProtocolVersions();
 bool
 isProtocolSupported(ProtocolVersion const& v);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

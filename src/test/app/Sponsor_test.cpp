@@ -7,7 +7,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 static STAmount
@@ -3354,7 +3354,7 @@ public:
                 jv[jss::OracleDocumentID] = 1;
                 jv[jss::LastUpdateTime] = to_string(
                     duration_cast<seconds>(
-                        env.current()->info().closeTime.time_since_epoch())
+                        env.current()->header().closeTime.time_since_epoch())
                         .count() +
                     epoch_offset.count() + 100);
                 jv[jss::PriceDataSeries] = Json::arrayValue;
@@ -4706,4 +4706,4 @@ public:
 BEAST_DEFINE_TESTSUITE(Sponsor, app, ripple);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

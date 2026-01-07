@@ -35,7 +35,7 @@
 #include <optional>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 /** A listening socket. */
 template <class Handler>
@@ -500,6 +500,6 @@ Door<Handler>::should_throttle_for_fds()
 #endif
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

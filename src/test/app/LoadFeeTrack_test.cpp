@@ -4,7 +4,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/ledger/ReadView.h>
 
-namespace ripple {
+namespace xrpl {
 
 class LoadFeeTrack_test : public beast::unit_test::suite
 {
@@ -68,6 +68,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LoadFeeTrack, app, ripple);
+BEAST_DEFINE_TESTSUITE(LoadFeeTrack, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

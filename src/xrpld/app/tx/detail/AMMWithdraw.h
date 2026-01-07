@@ -5,7 +5,7 @@
 
 #include <xrpl/ledger/View.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Sandbox;
 
@@ -301,6 +301,6 @@ private:
     isWithdrawAll(STTx const& tx);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_TX_AMMWITHDRAW_H_INCLUDED
