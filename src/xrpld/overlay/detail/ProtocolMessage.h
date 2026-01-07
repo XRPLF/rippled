@@ -114,7 +114,7 @@ struct MessageHeader
     std::uint16_t message_type = 0;
 
     /** Indicates which compression algorithm the payload is compressed with.
-     * Currenly only lz4 is supported. If None then the message is not
+     * Currently only lz4 is supported. If None then the message is not
      * compressed.
      */
     compression::Algorithm algorithm = compression::Algorithm::None;
@@ -340,8 +340,8 @@ invokeProtocolMessage(
     // whose size exceeds this may result in the connection being dropped. A
     // larger message size may be supported in the future or negotiated as
     // part of a protocol upgrade.
-    if (header->payload_wire_size > maximiumMessageSize ||
-        header->uncompressed_size > maximiumMessageSize)
+    if (header->payload_wire_size > maximumMessageSize ||
+        header->uncompressed_size > maximumMessageSize)
     {
         result.second = make_error_code(boost::system::errc::message_size);
         return result;

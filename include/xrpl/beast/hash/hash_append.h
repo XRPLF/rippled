@@ -203,7 +203,7 @@ struct is_contiguously_hashable<T[N], HashAlgorithm>
         Throws:
             Never
         Effect:
-            Returns the reslting hash of all the input data.
+            Returns the resulting hash of all the input data.
 */
 /** @{ */
 
