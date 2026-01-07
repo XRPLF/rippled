@@ -523,7 +523,9 @@ splitMessageParts(
         if (blob.has_manifest())
             smallMsg.set_manifest(blob.manifest());
 
-        XRPL_ASSERT("xrpl::splitMessageParts : maximum message size");
+        XRPL_ASSERT(
+            Message::totalSize(smallMsg) <= maximumMessageSize,
+            "xrpl::splitMessageParts : maximum message size");
 
         messages.emplace_back(
             std::make_shared<Message>(smallMsg, protocol::mtVALIDATORLIST),
