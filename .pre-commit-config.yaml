@@ -40,6 +40,7 @@ repos:
     rev: v9.2.0
     hooks:
       - id: cspell # Spell check changed files
+        exclude: .config/cspell.config.yaml
       - id: cspell # Spell check the commit message
         name: check commit message spelling
         args:

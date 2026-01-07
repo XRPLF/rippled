@@ -92,6 +92,7 @@ words:
   - funclets
   - gcov
   - gcovr
+  - ghead
   - Gnutella
   - gpgcheck
   - gpgkey
@@ -221,6 +222,7 @@ words:
   - takergets
   - takerpays
   - ters
+  - trixie
   - tx
   - txid
   - txids
