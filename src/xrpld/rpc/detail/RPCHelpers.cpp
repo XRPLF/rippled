@@ -95,7 +95,7 @@ readLimitField(
     Tuning::LimitRange const& range,
     JsonContext const& context)
 {
-    limit = range.rdefault;
+    limit = range.rDefault;
     if (!context.params.isMember(jss::limit) ||
         context.params[jss::limit].isNull())
         return std::nullopt;

@@ -34,7 +34,7 @@ struct SingleMetrics
     std::uint64_t rollingAvg{0};
     std::uint32_t N{0};
     bool perTimeUnit{true};
-    boost::circular_buffer<std::uint64_t> rollingAvgAggreg{30, 0ull};
+    boost::circular_buffer<std::uint64_t> rollingAvgAggregate{30, 0ull};
     /** Add metrics value
      * @param val metrics value, either bytes or count
      */

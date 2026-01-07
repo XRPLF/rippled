@@ -537,12 +537,12 @@ private:
         /** Cached result of the `preflight` operation. Because
             `preflight` is expensive, minimize the number of times
             it needs to be done.
-            @invariant `pfresult` is never allowed to be empty. The
+            @invariant `pfResult` is never allowed to be empty. The
                 `std::optional` is leveraged to allow `emplace`d
                 construction and replacement without a copy
                 assignment operation.
         */
-        std::optional<PreflightResult const> pfresult;
+        std::optional<PreflightResult const> pfResult;
 
         /** Starting retry count for newly queued transactions.
 
@@ -577,7 +577,7 @@ private:
             TxID const& txID,
             FeeLevel64 feeLevel,
             ApplyFlags const flags,
-            PreflightResult const& pfresult);
+            PreflightResult const& pfResult);
 
         /// Attempt to apply the queued transaction to the open ledger.
         ApplyResult
@@ -588,7 +588,7 @@ private:
         TxConsequences const&
         consequences() const
         {
-            return pfresult->consequences;
+            return pfResult->consequences;
         }
 
         /// Return a TxDetails based on contained information.
@@ -603,7 +603,7 @@ private:
                 seqProxy,
                 txn,
                 retriesRemaining,
-                pfresult->ter,
+                pfResult->ter,
                 lastResult};
         }
     };
@@ -802,7 +802,7 @@ private:
     FeeMultiSet::iterator_type erase(FeeMultiSet::const_iterator_type);
     /** Erase and return the next entry for the account (if fee level
         is higher), or next entry in byFee_ (lower fee level).
-        Used to get the next "applyable" MaybeTx for accept().
+        Used to get the next "applicable" MaybeTx for accept().
     */
     FeeMultiSet::iterator_type eraseAndAdvance(
         FeeMultiSet::const_iterator_type);
@@ -826,7 +826,7 @@ private:
         AccountMap::iterator const& accountIter,
         TxQAccount::TxMap::iterator,
         FeeLevel64 feeLevelPaid,
-        PreflightResult const& pfresult,
+        PreflightResult const& pfResult,
         std::size_t const txExtraCount,
         ApplyFlags flags,
         FeeMetrics::Snapshot const& metricsSnapshot,

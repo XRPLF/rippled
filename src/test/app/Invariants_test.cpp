@@ -1862,7 +1862,7 @@ class Invariants_test : public beast::unit_test::suite
             for (auto const& mod : mods)
             {
                 doInvariantCheck(
-                    {{"changed an unchangable field"}},
+                    {{"changed an unchangeable field"}},
                     [&](Account const& A1, Account const&, ApplyContext& ac) {
                         auto sle = ac.view().peek(loanBrokerKeylet);
                         if (!sle)
@@ -1892,7 +1892,7 @@ class Invariants_test : public beast::unit_test::suite
             for (auto const& mod : mods)
             {
                 doInvariantCheck(
-                    {{"changed an unchangable field"}},
+                    {{"changed an unchangeable field"}},
                     [&](Account const& A1, Account const&, ApplyContext& ac) {
                         auto sle = ac.view().peek(keylet::account(A1.id()));
                         if (!sle)

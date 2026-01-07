@@ -277,7 +277,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             if (actualQ != theoreticalQ && !compareClose(actualQ, theoreticalQ))
             {
                 BEAST_EXPECT(actualQ == theoreticalQ);  // get the failure
-                log << "\nAcutal != Theoretical\n";
+                log << "\nActual != Theoretical\n";
                 log << "\nTQ: " << prettyQuality(theoreticalQ) << "\n";
                 log << "AQ: " << prettyQuality(actualQ) << "\n";
                 logStrand(log, strand);

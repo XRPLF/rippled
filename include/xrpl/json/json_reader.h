@@ -66,7 +66,7 @@ public:
      * error occurred during parsing.
      */
     std::string
-    getFormatedErrorMessages() const;
+    getFormattedErrorMessages() const;
 
     static constexpr unsigned nest_limit{25};
 
