@@ -271,13 +271,9 @@ SponsorshipSet::doApply()
             (*newSle)[sfFeeAmount] = *feeAmount;
         }
         if (maxFee)
-        {
             (*newSle)[sfMaxFee] = *maxFee;
-        }
         if (reserveCount)
-        {
             (*newSle)[sfReserveCount] = *reserveCount;
-        }
 
         auto flags = 0;
         if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForFee))

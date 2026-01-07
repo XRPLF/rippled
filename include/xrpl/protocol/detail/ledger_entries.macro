@@ -150,9 +150,9 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfAMMID,                soeOPTIONAL}, // pseudo-account designator
     {sfVaultID,              soeOPTIONAL}, // pseudo-account designator
     {sfLoanBrokerID,         soeOPTIONAL}, // pseudo-account designator
-    {sfSponsoredOwnerCount,  soeOPTIONAL},
-    {sfSponsoringOwnerCount, soeOPTIONAL},
-    {sfSponsoringAccountCount,soeOPTIONAL},
+    {sfSponsoredOwnerCount,  soeDEFAULT},
+    {sfSponsoringOwnerCount, soeDEFAULT},
+    {sfSponsoringAccountCount,soeDEFAULT},
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -616,9 +616,9 @@ LEDGER_ENTRY(ltSPONSORSHIP, 0x0090, Sponsorship, sponsorship, ({
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
     {sfOwner,                soeREQUIRED},
     {sfSponsee,              soeREQUIRED},
-    {sfFeeAmount,            soeOPTIONAL},
+    {sfFeeAmount,            soeDEFAULT},
     {sfMaxFee,               soeOPTIONAL},
-    {sfReserveCount,         soeOPTIONAL},
+    {sfReserveCount,         soeDEFAULT},
     {sfOwnerNode,            soeREQUIRED},
     {sfSponseeNode,          soeREQUIRED},
 }))

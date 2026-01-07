@@ -501,8 +501,14 @@ Transactor::payFee()
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    sle->setFieldAmount(
-        result.field, sle->getFieldAmount(result.field) - feePaid);
+    auto const feeAmountAfter = sle->getFieldAmount(result.field) - feePaid;
+
+    if (feeAmountAfter == beast::zero &&
+        result.field.fieldMeta == SField::sMD_Default)
+        // for ltSponsorship.sfFeeAmount
+        sle->makeFieldAbsent(result.field);
+    else
+        sle->setFieldAmount(result.field, feeAmountAfter);
 
     view().update(sle);
 

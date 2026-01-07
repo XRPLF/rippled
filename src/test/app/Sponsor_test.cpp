@@ -990,7 +990,7 @@ public:
                     auto sponsorFee = sponsorFeeBalance(sponsor, alice);
 
                     env(pay(alice, bob, XRP(100)),
-                        fee(XRP(100) + drops(1)),
+                        fee(XRP(90) + drops(1)),
                         sponsor::as(sponsor, tfSponsorFee),
                         ter(terINSUF_FEE_B));
                     env.close();
@@ -1000,6 +1000,25 @@ public:
                     BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
                     BEAST_EXPECT(
                         sponsorFeeBalance(sponsor, alice) == sponsorFee);
+                }
+                // use all FeeAmount
+                {
+                    // = FeeAmount
+                    auto aliceBalance = env.balance(alice);
+                    auto bobBalance = env.balance(bob);
+                    auto sponsorBalance = env.balance(sponsor);
+
+                    env(pay(alice, bob, XRP(100)),
+                        fee(XRP(90)),
+                        sponsor::as(sponsor, tfSponsorFee),
+                        ter(tesSUCCESS));
+                    env.close();
+
+                    BEAST_EXPECT(env.balance(alice) == aliceBalance - XRP(100));
+                    BEAST_EXPECT(env.balance(bob) == bobBalance + XRP(100));
+                    BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
+                    BEAST_EXPECT(!env.le(keylet::sponsor(sponsor, alice))
+                                      ->isFieldPresent(sfFeeAmount));
                 }
 
                 // reset FeeAmount and MaxFee

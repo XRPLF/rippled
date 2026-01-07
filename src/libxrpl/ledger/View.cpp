@@ -1387,7 +1387,10 @@ adjustOwnerCount(
                 currentReserveCount >= amount,
                 "xrpl::adjustOwnerCount : enough reserve count");
 
-            sle->setFieldU32(sfReserveCount, currentReserveCount - amount);
+            if (currentReserveCount - amount > 0)
+                sle->setFieldU32(sfReserveCount, currentReserveCount - amount);
+            else
+                sle->makeFieldAbsent(sfReserveCount);
             view.update(sle);
         }
     }
