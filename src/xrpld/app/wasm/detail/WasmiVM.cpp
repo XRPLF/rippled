@@ -951,13 +951,24 @@ WasmiEngine::getRT(int m, int i)
 int32_t
 WasmiEngine::allocate(int32_t sz)
 {
-    auto res = call<1>(W_ALLOC, static_cast<int32_t>(sz));
-
-    if (res.f || !res.r.vec_.size || (res.r.vec_.data[0].kind != WASM_I32) ||
-        !res.r.vec_.data[0].of.i32)
+    if (sz <= 0)
         throw std::runtime_error(
             "can't allocate memory, " + std::to_string(sz) + " bytes");
-    return res.r.vec_.data[0].of.i32;
+
+    auto res = call<1>(W_ALLOC, static_cast<int32_t>(sz));
+
+    if (res.f || !res.r.vec_.size || (res.r.vec_.data[0].kind != WASM_I32))
+        throw std::runtime_error(
+            "can't allocate memory, " + std::to_string(sz) +
+            " bytes");  // LCOV_EXCL_LINE
+
+    int32_t const p = res.r.vec_.data[0].of.i32;
+    auto const mem = getMem();
+    if (p <= 0 || p + sz > mem.s)
+        throw std::runtime_error(
+            "invalid memory allocation, " + std::to_string(sz) + " bytes");
+
+    return p;
 }
 
 wasm_trap_t*

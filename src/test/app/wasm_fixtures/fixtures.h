@@ -78,3 +78,5 @@ extern std::string const localVariableBombHex;
 
 extern std::string const infiniteLoopWasmHex;
 extern std::string const startLoopHex;
+
+extern std::string const badAllocHex;
