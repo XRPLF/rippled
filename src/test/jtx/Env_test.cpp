@@ -599,9 +599,6 @@ public:
         env(noop("alice"), memodata("data"));
         env(noop("alice"), memoformat("format"));
         env(noop("alice"), memotype("type"));
-        env(noop("alice"), memondata("format", "type"));
-        env(noop("alice"), memonformat("data", "type"));
-        env(noop("alice"), memontype("data", "format"));
         env(noop("alice"), memo("data", "format", "type"));
         env(noop("alice"),
             memo("data1", "format1", "type1"),

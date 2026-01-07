@@ -74,54 +74,6 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-class memondata
-{
-private:
-    std::string format_;
-    std::string type_;
-
-public:
-    memondata(std::string const& format, std::string const& type)
-        : format_(format), type_(type)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const;
-};
-
-class memonformat
-{
-private:
-    std::string data_;
-    std::string type_;
-
-public:
-    memonformat(std::string const& data, std::string const& type)
-        : data_(data), type_(type)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const;
-};
-
-class memontype
-{
-private:
-    std::string data_;
-    std::string format_;
-
-public:
-    memontype(std::string const& data, std::string const& format)
-        : data_(data), format_(format)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const;
-};
-
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
