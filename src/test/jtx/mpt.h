@@ -163,6 +163,7 @@ struct MPTSet
     std::optional<Account> delegate = std::nullopt;
     std::optional<uint256> domainID = std::nullopt;
     std::optional<Buffer> pubKey = std::nullopt;
+    std::optional<Buffer> auditorPubKey = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -203,6 +204,7 @@ struct MPTConfidentialSend
     std::optional<Buffer> senderEncryptedAmt = std::nullopt;
     std::optional<Buffer> destEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
+    std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
     std::optional<std::vector<std::string>> credentials = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
@@ -218,6 +220,7 @@ struct MPTConvertBack
     std::optional<std::string> proof = std::nullopt;
     std::optional<Buffer> holderEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
+    std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -242,6 +245,7 @@ class MPTTester
     Env& env_;
     Account const issuer_;
     std::unordered_map<std::string, Account> const holders_;
+    std::optional<Account> const auditor_;
     std::optional<MPTID> id_;
     bool close_;
     std::unordered_map<AccountID, Buffer> pubKeys;
@@ -342,6 +346,13 @@ public:
     {
         return issuer_;
     }
+
+    std::optional<Account> const
+    auditor() const
+    {
+        return auditor_;
+    }
+
     Account const&
     holder(std::string const& h) const;
 

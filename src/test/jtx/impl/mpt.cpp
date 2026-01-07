@@ -967,6 +967,19 @@ MPTTester::convert(MPTConvert const& arg)
         jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerCiphertext.first);
     }
 
+    std::optional<std::pair<Buffer, Buffer>> auditorCiphertext;
+    if (arg.auditorEncryptedAmt)
+        jv[sfAuditorEncryptedAmount.jsonName] =
+            strHex(*arg.auditorEncryptedAmt);
+    else if (auditor())
+    {
+        auditorCiphertext = encryptAmount(*auditor(), *arg.amt);
+        jv[sfAuditorEncryptedAmount.jsonName] =
+            strHex(auditorCiphertext->first);
+    }
+    else
+        Throw<std::runtime_error>("Auditor not specified");
+
     if (arg.proof)
         jv[sfZKProof.jsonName] = *arg.proof;
     else
