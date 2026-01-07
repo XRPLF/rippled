@@ -35,13 +35,11 @@ getClawbackContextHash(
     AccountID const& holder);
 
 uint256
-getContextHash(
+getConvertContextHash(
     AccountID const& account,
     std::uint32_t sequence,
     uint192 const& issuanceID,
-    std::uint64_t amount,
-    AccountID const& holder,
-    TxType const& txType);
+    std::uint64_t amount);
 
 /**
  * @brief Generates a new secp256k1 key pair.
@@ -275,6 +273,9 @@ verifyClawbackEqualityProof(
     Slice const& pubKeySlice,
     Slice const& ciphertext,
     uint256 const& contextHash);
+
+std::vector<Buffer>
+getEqualityProofs(Slice const& zkp);
 
 }  // namespace ripple
 

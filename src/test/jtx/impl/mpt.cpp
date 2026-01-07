@@ -790,11 +790,12 @@ MPTTester::getConvertProof(
     auto const sleHolder = env_.le(keylet::mptoken(*id_, holder.id()));
     auto const sleIssuance = env_.le(keylet::mptIssuance(*id_));
 
+    size_t const zkpSize = auditorCiphertext ? 3 : 2;
+    size_t const zkpByteLength = zkpSize * ecEqualityProofLength;
+
     if (!sleHolder || !sleIssuance || holderCiphertext.first.size() == 0 ||
         issuerCiphertext.first.size() == 0)
-        return Buffer(
-            auditorCiphertext ? 3 * ecEqualityProofLength
-                              : ecEqualityProofLength * 2);
+        return Buffer(zkpByteLength);
 
     auto const generateProof = [amount, ctxHash](
                                    Slice const& ciphertext,
@@ -832,10 +833,7 @@ MPTTester::getConvertProof(
         return proof;
     };
 
-    size_t const zkpSize =
-        sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey) ? 3 : 2;
-
-    Buffer zkp(ecEqualityProofLength * zkpSize);
+    Buffer zkp(zkpByteLength);
 
     Buffer holderZkp = generateProof(
         holderCiphertext.first, getPubKey(holder), holderCiphertext.second);
@@ -977,20 +975,13 @@ MPTTester::convert(MPTConvert const& arg)
         jv[sfAuditorEncryptedAmount.jsonName] =
             strHex(auditorCiphertext->first);
     }
-    else
-        Throw<std::runtime_error>("Auditor not specified");
 
     if (arg.proof)
         jv[sfZKProof.jsonName] = *arg.proof;
     else
     {
-        uint256 const ctxHash = getContextHash(
-            arg.account->id(),
-            env_.seq(*arg.account),
-            *id_,
-            *arg.amt,
-            arg.account->id(),
-            ttCONFIDENTIAL_CONVERT);
+        uint256 const ctxHash = getConvertContextHash(
+            arg.account->id(), env_.seq(*arg.account), *id_, *arg.amt);
         Buffer proof = getConvertProof(
             *arg.account,
             *arg.amt,
