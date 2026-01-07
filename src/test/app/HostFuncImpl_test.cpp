@@ -299,9 +299,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testcase("getTxField");
         using namespace test::jtx;
 
-        static std::string const credIdHex =
+        std::string const credIdHex =
             "0011223344556677889900112233445566778899001122334455667788990011";
-        static uint256 credId;
+        uint256 credId;
         BEAST_EXPECT(credId.parseHex(credIdHex));
 
         Env env{*this};
@@ -551,9 +551,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         Env env{*this};
         OpenView ov{*env.current()};
 
-        static std::string const credIdHex =
+        std::string const credIdHex =
             "0011223344556677889900112233445566778899001122334455667788990011";
-        static uint256 credId;
+        uint256 credId;
         BEAST_EXPECT(credId.parseHex(credIdHex));
 
         // Create a transaction with a nested array field

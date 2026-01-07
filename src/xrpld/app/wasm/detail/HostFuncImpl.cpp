@@ -266,8 +266,7 @@ locateField(STObject const& obj, Slice const& locator)
             auto const* v = static_cast<STVector256 const*>(field);
             if (sfieldCode >= v->size())
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
-            return std::variant<STBase const*, uint256 const*>(
-                &(v->operator[](sfieldCode)));
+            return STBaseOrUInt256(&(v->operator[](sfieldCode)));
         }
         else  // simple field must be the last one
         {
@@ -278,7 +277,7 @@ locateField(STObject const& obj, Slice const& locator)
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
     }
 
-    return std::variant<STBase const*, uint256 const*>(field);
+    return STBaseOrUInt256(field);
 }
 
 Expected<Bytes, HostFunctionError>
@@ -393,7 +392,7 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
     if (!r)
         return Unexpected(r.error());
 
-    auto const field = r.value();
+    auto const& field = r.value();
     return getArrayLen(field);
 }
 
@@ -407,7 +406,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
     if (!r)
         return Unexpected(r.error());
 
-    auto const field = r.value();
+    auto const& field = r.value();
     return getArrayLen(field);
 }
 
@@ -424,7 +423,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
     if (!r)
         return Unexpected(r.error());
 
-    auto const field = r.value();
+    auto const& field = r.value();
     return getArrayLen(field);
 }
 
