@@ -829,6 +829,28 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testWasmSectionCorruption()
+    {
+        testcase("Wasm Section Corruption tests");
+        BEAST_EXPECT(runFinishFunction(badMagicNumberHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(badVersionNumberHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(lyingHeaderHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(neverEndingNumberHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(vectorLieHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(sectionOrderingHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(ghostPayloadHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(junkAfterSectionHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(invalidSectionIdHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(localVariableBombHex).has_value() == false);
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -854,6 +876,8 @@ struct Wasm_test : public beast::unit_test::suite
         testWasmProposal();
         testWasmTrap();
         testWasmWasi();
+        testWasmSectionCorruption();
+
         // perfTest();
     }
 };

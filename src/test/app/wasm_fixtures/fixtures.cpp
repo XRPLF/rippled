@@ -1209,6 +1209,122 @@ extern std::string const wasiPrintHex =
     "45047f410105417f0b0b0b1e030041100b0648656c6c6f0a0041000b04100000000041040b"
     "0406000000";
 
+// The following several wasm hex strings are for testing wasm section
+// corruption cases. They are illegal hence do not have corresponding
+// rust or wat sources.
+// Wasm code magic number is "0061736d", and the only valid version is 1.
+
+extern std::string const badMagicNumberHex = "1061736d01000000";
+extern std::string const badVersionNumberHex = "0061736d02000000";
+
+// Corruption Test: lyingHeader
+// Scenario: A section declares it is 2GB long, but the file ends immediately.
+// Attack: Buffer pre-allocation DoS (OOM).
+// # Magic (00 61 73 6d) + Version (01 00 00 00)
+// data = b'\x00\x61\x73\x6d\x01\x00\x00\x00'
+// # Type Section (ID 1)
+// # Size: LEB128 encoded 2GB (0x80 0x80 0x80 0x80 0x08)
+// data += b'\x01\x80\x80\x80\x80\x08'
+extern std::string const lyingHeaderHex = "0061736d01000000018080808008";
+
+// Corruption Test: neverEndingNumber
+// Scenario: An LEB128 integer that never has a stop bit (byte < 0x80).
+// Attack: Infinite loop in parser or read out of bounds.
+// data = b'\x00\x61\x73\x6d\x01\x00\x00\x00'
+// # Type Section (ID 1), Size 5
+// data += b'\x01\x05'
+// # Vector count: Infinite stream of 0x80 (100 bytes)
+// data += b'\x80' * 100
+extern std::string const neverEndingNumberHex =
+    "0061736d010000000105808080808080808080808080808080808080808080808080808080"
+    "80808080808080808080808080808080808080808080808080808080808080808080808080"
+    "808080808080808080808080808080808080808080808080808080808080808080808080";
+
+// Corruption Test: vectorLie
+// Scenario: A vector declares it has 4 billion items, but provides none.
+// Attack: Vector pre-allocation DoS (OOM).
+// data = b'\x00\x61\x73\x6d\x01\x00\x00\x00'
+// # Type Section (ID 1)
+// # Size 5 (just enough for the count bytes)
+// data += b'\x01\x05'
+// # Vector Count: 0xFF 0xFF 0xFF 0xFF 0x0F (4,294,967,295 items)
+// data += b'\xff\xff\xff\xff\x0f'
+// # No actual items follow...
+extern std::string const vectorLieHex = "0061736d010000000105ffffffff0f";
+
+// Corruption Test: sectionOrdering
+// Scenario: Sections appear out of order
+//           (Code section before Function section).
+// Attack: Parser state confusion / potential null pointer deref.
+// data = b'\x00\x61\x73\x6d\x01\x00\x00\x00'
+// # Code Section (ID 10) - usually last
+// # Size 2, Count 0
+// data += b'\x0a\x02\x00\x0b'
+// # Function Section (ID 3) - usually 3rd
+// data += b'\x03\x02\x00\x00'
+extern std::string const sectionOrderingHex =
+    "0061736d010000000a02000b03020000";
+
+// Corruption Test: ghostPayload
+// Scenario: Valid headers, but file is truncated in the middle of a payload.
+// Attack: Read out of bounds panic.
+// data = b'\x00\x61\x73\x6d\x01\x00\x00\x00'
+// # Type Section (ID 1), Size 10
+// data += b'\x01\x0a'
+// # Content: Count 1
+// data += b'\x01'
+// # Start of a type definition (0x60 = func)
+// data += b'\x60'
+// # File ends abruptly here (missing params/results)
+extern std::string const ghostPayloadHex = "0061736d01000000010a0160";
+
+// Corruption Test: junkAfterSection
+// Scenario: Section declares size X, but logical content finishes at X-5.
+// Attack: Validation bypass if parser stops early,
+//         or panic if strict check missing.
+// data = b'\x00\x61\x73\x6d\x01\x00\x00\x00'
+// # Type Section (ID 1), Size 10 bytes
+// data += b'\x01\x0a'
+// # Real content: Count 1, (func -> void) = 4 bytes
+// # \x01 (count) \x60 (func) \x00 (0 params) \x00 (0 results)
+// data += b'\x01\x60\x00\x00'
+// # Remaining 6 bytes are junk padding within the section size
+// data += b'\x00' * 6
+extern std::string const junkAfterSectionHex =
+    "0061736d01000000010a01600000000000000000";
+
+// Corruption Test: invalidSectionId
+// Scenario: A section ID that doesn't exist (0xFF).
+// Attack: Default case handling / unhandled enum variant.
+// data = b'\x00\x61\x73\x6d\x01\x00\x00\x00'
+// # Section ID 0xFF, Size 1
+// data += b'\xff\x01\x00'
+extern std::string const invalidSectionIdHex = "0061736d01000000ff0100";
+
+// Corruption Test: localVariableBomb
+// Scenario: A function declares 4 billion local variables.
+// Attack: Stack Overflow / OOM during function init (memset).
+// data = b'\x00\x61\x73\x6d\x01\x00\x00\x00'
+// # 1. Type Section: (func) -> ()
+// data += b'\x01\x04\x01\x60\x00\x00'
+// # 3. Function Section: 1 function of type 0
+// data += b'\x03\x02\x01\x00'
+// # 10. Code Section
+// # ID 10, Size 15 (estimated), Count 1
+// data += b'\x0a\x0f\x01'
+// # Function Body Size: 13 bytes
+// data += b'\x0d'
+// # Local Declarations Count: 1 entry
+// data += b'\x01'
+// # The Bomb: 4,294,967,295 locals of type i32
+// # Count: 0xFF 0xFF 0xFF 0xFF 0x0F
+// # Type: 0x7F (i32)
+// data += b'\xff\xff\xff\xff\x0f\x7f'
+// # Instruction: end (0x0b)
+// data += b'\x0b'
+extern std::string const localVariableBombHex =
+    "0061736d01000000010401600000030201000a0f010d01ffffffff0f7f0b";
+
 extern std::string const infiniteLoopWasmHex =
     "0061736d010000000108026000006000017f030302000105030100020638097f004180080b"
     "7f004180080b7f004180080b7f00418088040b7f004180080b7f00418088040b7f00418080"
