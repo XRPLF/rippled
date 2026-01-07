@@ -523,9 +523,7 @@ splitMessageParts(
         if (blob.has_manifest())
             smallMsg.set_manifest(blob.manifest());
 
-        XRPL_ASSERT(
-            Message::totalSize(smallMsg) <= maximiumMessageSize,
-            "xrpl::splitMessageParts : maximum message size");
+        XRPL_ASSERT("xrpl::splitMessageParts : maximum message size");
 
         messages.emplace_back(
             std::make_shared<Message>(smallMsg, protocol::mtVALIDATORLIST),
@@ -588,7 +586,7 @@ buildValidatorListMessage(
     msg.set_version(version);
 
     XRPL_ASSERT(
-        Message::totalSize(msg) <= maximiumMessageSize,
+        Message::totalSize(msg) <= maximumMessageSize,
         "xrpl::buildValidatorListMessage(ValidatorBlobInfo) : maximum "
         "message size");
     messages.emplace_back(
@@ -658,7 +656,7 @@ ValidatorList::buildValidatorListMessages(
     std::string const& rawManifest,
     std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
     std::vector<ValidatorList::MessageWithHash>& messages,
-    std::size_t maxSize /*= maximiumMessageSize*/)
+    std::size_t maxSize /*= maximumMessageSize*/)
 {
     XRPL_ASSERT(
         !blobInfos.empty(),
