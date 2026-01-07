@@ -40,18 +40,15 @@ getClawbackContextHash(
 }
 
 uint256
-getContextHash(
+getConvertContextHash(
     AccountID const& account,
     std::uint32_t sequence,
     uint192 const& issuanceID,
-    std::uint64_t amount,
-    AccountID const& holder,
-    TxType const& txType)
+    std::uint64_t amount)
 {
     Serializer s;
-    addCommonZKPFields(s, txType, account, sequence, issuanceID, amount);
-
-    s.addBitString(holder);
+    addCommonZKPFields(
+        s, ttCONFIDENTIAL_CONVERT, account, sequence, issuanceID, amount);
 
     return s.getSHA512Half();
 }
@@ -1042,4 +1039,22 @@ verifyClawbackEqualityProof(
 
     return tesSUCCESS;
 }
+
+std::vector<Buffer>
+getEqualityProofs(Slice const& zkp)
+{
+    if (zkp.size() % ecEqualityProofLength != 0)
+        return {};
+    auto const count = zkp.size() / ecEqualityProofLength;
+
+    std::vector<Buffer> zkps;
+    zkps.reserve(count);
+
+    for (size_t i = 0; i < count; ++i)
+        zkps.emplace_back(
+            zkp.data() + (i * ecEqualityProofLength), ecEqualityProofLength);
+
+    return zkps;
+}
+
 }  // namespace ripple
