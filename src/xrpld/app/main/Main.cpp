@@ -1,39 +1,25 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/rdb/Vacuum.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
-#include <xrpld/net/RPCCall.h>
+#include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/protocol/BuildInfo.h>
+
+#include <boost/asio/io_context.hpp>
+#include <boost/process/v1/args.hpp>
+#include <boost/process/v1/child.hpp>
+#include <boost/process/v1/exe.hpp>
 
 #ifdef ENABLE_TESTS
 #include <test/unit_test/multi_runner.h>
 
 #include <xrpl/beast/unit_test/match.h>
 #endif  // ENABLE_TESTS
-#include <boost/process.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
 
 #include <google/protobuf/stubs/common.h>
@@ -67,7 +53,7 @@
 
 namespace po = boost::program_options;
 
-namespace ripple {
+namespace xrpl {
 
 bool
 adjustDescriptorLimit(int needed, beast::Journal j)
@@ -168,7 +154,7 @@ printHelp(po::options_description const& desc)
            "     server_state [counters]\n"
            "     sign <private_key> <tx_json> [offline]\n"
            "     sign_for <signer_address> <signer_private_key> <tx_json> "
-           "[offline]\n"
+           "[offline] [<signature_field>]\n"
            "     stop\n"
            "     simulate [<tx_blob>|<tx_json>] [<binary>]\n"
            "     submit <tx_blob>|[<private_key> <tx_json>]\n"
@@ -262,9 +248,9 @@ runUnitTests(
     char** argv)
 {
     using namespace beast::unit_test;
-    using namespace ripple::test;
+    using namespace xrpl::test;
 
-    ripple::test::envUseIPv4 = (!ipv6);
+    xrpl::test::envUseIPv4 = (!ipv6);
 
     if (!child && num_jobs == 1)
     {
@@ -283,7 +269,7 @@ runUnitTests(
     if (!child)
     {
         multi_runner_parent parent_runner;
-        std::vector<boost::process::child> children;
+        std::vector<boost::process::v1::child> children;
 
         std::string const exe_name = argv[0];
         std::vector<std::string> args;
@@ -296,7 +282,8 @@ runUnitTests(
 
         for (std::size_t i = 0; i < num_jobs; ++i)
             children.emplace_back(
-                boost::process::exe = exe_name, boost::process::args = args);
+                boost::process::v1::exe = exe_name,
+                boost::process::v1::args = args);
 
         int bad_child_exits = 0;
         int terminated_child_exits = 0;
@@ -842,7 +829,7 @@ run(int argc, char** argv)
     // LCOV_EXCL_STOP
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 int
 main(int argc, char** argv)
@@ -867,5 +854,5 @@ main(int argc, char** argv)
 
     atexit(&google::protobuf::ShutdownProtobufLibrary);
 
-    return ripple::run(argc, argv);
+    return xrpl::run(argc, argv);
 }

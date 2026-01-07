@@ -1,27 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class AccountOffers_test : public beast::unit_test::suite
@@ -190,12 +171,6 @@ public:
         }
 
         {
-            // now make a limit (= 0) query for the same data
-            // since we operate on the admin port, the limit
-            // value of 0 is not adjusted into tuned ranges for admin requests
-            // so we literally get 0 elements in that case. For non-admin
-            // requests, we get limit defaults applied thus all our results
-            // come back (we are below the min results limit)
             Json::Value jvParams;
             jvParams[jss::account] = bob.human();
             jvParams[jss::limit] = 0u;
@@ -203,18 +178,7 @@ public:
                 "json",
                 "account_offers",
                 jvParams.toStyledString())[jss::result];
-            auto const& jro = jrr[jss::offers];
-            if (asAdmin)
-            {
-                // limit == 0 is invalid
-                BEAST_EXPECT(jrr.isMember(jss::error_message));
-            }
-            else
-            {
-                // Call should enforce min limit of 10
-                BEAST_EXPECT(checkArraySize(jro, 3u));
-                BEAST_EXPECT(!jrr.isMember(jss::marker));
-            }
+            BEAST_EXPECT(jrr.isMember(jss::error_message));
         }
     }
 
@@ -356,7 +320,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

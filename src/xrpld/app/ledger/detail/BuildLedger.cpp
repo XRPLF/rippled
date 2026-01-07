@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2018 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/BuildLedger.h>
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
@@ -26,7 +7,7 @@
 
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 
 /* Generic buildLedgerImpl that dispatches to ApplyTxs invocable with signature
     void(OpenView&, std::shared_ptr<Ledger> const&)
@@ -47,7 +28,7 @@ buildLedgerImpl(
 {
     auto built = std::make_shared<Ledger>(*parent, closeTime);
 
-    if (built->isFlagLedger() && built->rules().enabled(featureNegativeUNL))
+    if (built->isFlagLedger())
     {
         built->updateNegativeUNL();
     }
@@ -58,7 +39,7 @@ buildLedgerImpl(
     {
         OpenView accum(&*built);
         XRPL_ASSERT(
-            !accum.open(), "ripple::buildLedgerImpl : valid ledger state");
+            !accum.open(), "xrpl::buildLedgerImpl : valid ledger state");
         applyTxs(accum, built);
         accum.apply(*built);
     }
@@ -77,9 +58,9 @@ buildLedgerImpl(
 
     // Accept ledger
     XRPL_ASSERT(
-        built->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        built->header().seq < XRP_LEDGER_EARLIEST_FEES ||
             built->read(keylet::fees()),
-        "ripple::buildLedgerImpl : valid ledger fees");
+        "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
     return built;
@@ -173,7 +154,7 @@ applyTransactions(
     // tried them in at least one final pass
     XRPL_ASSERT(
         txns.empty() || !certainRetry,
-        "ripple::applyTransactions : retry transactions");
+        "xrpl::applyTransactions : retry transactions");
     return count;
 }
 
@@ -232,13 +213,13 @@ buildLedger(
 {
     auto const& replayLedger = replayData.replay();
 
-    JLOG(j.debug()) << "Report: Replay Ledger " << replayLedger->info().hash;
+    JLOG(j.debug()) << "Report: Replay Ledger " << replayLedger->header().hash;
 
     return buildLedgerImpl(
         replayData.parent(),
-        replayLedger->info().closeTime,
-        ((replayLedger->info().closeFlags & sLCF_NoConsensusTime) == 0),
-        replayLedger->info().closeTimeResolution,
+        replayLedger->header().closeTime,
+        ((replayLedger->header().closeFlags & sLCF_NoConsensusTime) == 0),
+        replayLedger->header().closeTimeResolution,
         app,
         j,
         [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
@@ -247,4 +228,4 @@ buildLedger(
         });
 }
 
-}  // namespace ripple
+}  // namespace xrpl

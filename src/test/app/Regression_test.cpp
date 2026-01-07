@@ -1,20 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/check.h>
 #include <test/jtx/envconfig.h>
@@ -28,7 +11,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct Regression_test : public beast::unit_test::suite
@@ -67,7 +50,7 @@ struct Regression_test : public beast::unit_test::suite
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto expectedDrops = INITIAL_XRP;
-        BEAST_EXPECT(closed->info().drops == expectedDrops);
+        BEAST_EXPECT(closed->header().drops == expectedDrops);
 
         auto const aliceXRP = 400;
         auto const aliceAmount = XRP(aliceXRP);
@@ -80,14 +63,14 @@ struct Regression_test : public beast::unit_test::suite
             OpenView accum(&*next);
 
             auto const result =
-                ripple::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
+                xrpl::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
             BEAST_EXPECT(result.ter == tesSUCCESS);
             BEAST_EXPECT(result.applied);
 
             accum.apply(*next);
         }
         expectedDrops -= next->fees().base;
-        BEAST_EXPECT(next->info().drops == expectedDrops);
+        BEAST_EXPECT(next->header().drops == expectedDrops);
         {
             auto const sle = next->read(keylet::account(Account("alice").id()));
             BEAST_EXPECT(sle);
@@ -104,7 +87,7 @@ struct Regression_test : public beast::unit_test::suite
             OpenView accum(&*next);
 
             auto const result =
-                ripple::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
+                xrpl::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
             BEAST_EXPECT(result.ter == tecINSUFF_FEE);
             BEAST_EXPECT(result.applied);
 
@@ -118,7 +101,7 @@ struct Regression_test : public beast::unit_test::suite
             BEAST_EXPECT(balance == XRP(0));
         }
         expectedDrops -= aliceXRP * dropsPerXRP;
-        BEAST_EXPECT(next->info().drops == expectedDrops);
+        BEAST_EXPECT(next->header().drops == expectedDrops);
     }
 
     void
@@ -340,7 +323,7 @@ struct Regression_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Regression, app, ripple);
+BEAST_DEFINE_TESTSUITE(Regression, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

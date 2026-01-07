@@ -1,37 +1,18 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
-#include <xrpld/ledger/PaymentSandbox.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 TxConsequences
 CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 {
@@ -43,29 +24,35 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
 }
 
-NotTEC
-CreateOffer::preflight(PreflightContext const& ctx)
+bool
+CreateOffer::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfDomainID) &&
         !ctx.rules.enabled(featurePermissionedDEX))
-        return temDISABLED;
+        return false;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+    return true;
+}
 
+std::uint32_t
+CreateOffer::getFlagsMask(PreflightContext const& ctx)
+{
+    // The tfOfferCreateMask is built assuming that PermissionedDEX is
+    // enabled
+    if (ctx.rules.enabled(featurePermissionedDEX))
+        return tfOfferCreateMask;
+    // If PermissionedDEX is not enabled, add tfHybrid to the mask,
+    // indicating it is not allowed.
+    return tfOfferCreateMask | tfHybrid;
+}
+
+NotTEC
+CreateOffer::preflight(PreflightContext const& ctx)
+{
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
     std::uint32_t const uTxFlags = tx.getFlags();
-
-    if (uTxFlags & tfOfferCreateMask)
-    {
-        JLOG(j.debug()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
-
-    if (!ctx.rules.enabled(featurePermissionedDEX) && tx.isFlag(tfHybrid))
-        return temINVALID_FLAG;
 
     if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
         return temINVALID_FLAG;
@@ -136,7 +123,7 @@ CreateOffer::preflight(PreflightContext const& ctx)
         return temBAD_ISSUER;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -190,13 +177,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     {
         // Note that this will get checked again in applyGuts, but it saves
         // us a call to checkAcceptAsset and possible false negative.
-        //
-        // The return code change is attached to featureDepositPreauth as a
-        // convenience, as the change is not big enough to deserve its own
-        // amendment.
-        return ctx.view.rules().enabled(featureDepositPreauth)
-            ? TER{tecEXPIRED}
-            : TER{tesSUCCESS};
+        return tecEXPIRED;
     }
 
     // Make sure that we are authorized to hold what the taker will pay us.
@@ -235,7 +216,7 @@ CreateOffer::checkAcceptAsset(
     // Only valid for custom currencies
     XRPL_ASSERT(
         !isXRP(issue.currency),
-        "ripple::CreateOffer::checkAcceptAsset : input is not XRP");
+        "xrpl::CreateOffer::checkAcceptAsset : input is not XRP");
 
     auto const issuerAccount = view.read(keylet::account(issue.account));
 
@@ -248,10 +229,7 @@ CreateOffer::checkAcceptAsset(
         return (flags & tapRETRY) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
 
-    // This code is attached to the DepositPreauth amendment as a matter of
-    // convenience.  The change is not significant enough to deserve its
-    // own amendment.
-    if (view.rules().enabled(featureDepositPreauth) && (issue.account == id))
+    if (issue.account == id)
         // An account can always accept its own issuance.
         return tesSUCCESS;
 
@@ -471,22 +449,8 @@ CreateOffer::flowCross(
                         // what is a good threshold to check?
                         afterCross.in.clear();
 
-                    afterCross.out = [&]() {
-                        // Careful analysis showed that rounding up this
-                        // divRound result could lead to placing a reduced
-                        // offer in the ledger that blocks order books.  So
-                        // the fixReducedOffersV1 amendment changes the
-                        // behavior to round down instead.
-                        if (psb.rules().enabled(fixReducedOffersV1))
-                            return divRoundStrict(
-                                afterCross.in,
-                                rate,
-                                takerAmount.out.issue(),
-                                false);
-
-                        return divRound(
-                            afterCross.in, rate, takerAmount.out.issue(), true);
-                    }();
+                    afterCross.out = divRoundStrict(
+                        afterCross.in, rate, takerAmount.out.issue(), false);
                 }
                 else
                 {
@@ -496,7 +460,7 @@ CreateOffer::flowCross(
                     afterCross.out -= result.actualAmountOut;
                     XRPL_ASSERT(
                         afterCross.out >= beast::zero,
-                        "ripple::CreateOffer::flowCross : minimum offer");
+                        "xrpl::CreateOffer::flowCross : minimum offer");
                     if (afterCross.out < beast::zero)
                         afterCross.out.clear();
                     afterCross.in = mulRound(
@@ -626,13 +590,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         // If the offer has expired, the transaction has successfully
         // done nothing, so short circuit from here.
-        //
-        // The return code change is attached to featureDepositPreauth as a
-        // convenience.  The change is not big enough to deserve a fix code.
-        TER const ter{
-            sb.rules().enabled(featureDepositPreauth) ? TER{tecEXPIRED}
-                                                      : TER{tesSUCCESS}};
-        return {ter, true};
+        return {tecEXPIRED, true};
     }
 
     bool const bOpenLedger = sb.open();
@@ -715,7 +673,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // or give a tec.
         XRPL_ASSERT(
             result == tesSUCCESS || isTecClaim(result),
-            "ripple::CreateOffer::applyGuts : result is tesSUCCESS or "
+            "xrpl::CreateOffer::applyGuts : result is tesSUCCESS or "
             "tecCLAIM");
 
         if (auto stream = j_.trace())
@@ -736,10 +694,10 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
         XRPL_ASSERT(
             saTakerGets.issue() == place_offer.in.issue(),
-            "ripple::CreateOffer::applyGuts : taker gets issue match");
+            "xrpl::CreateOffer::applyGuts : taker gets issue match");
         XRPL_ASSERT(
             saTakerPays.issue() == place_offer.out.issue(),
-            "ripple::CreateOffer::applyGuts : taker pays issue match");
+            "xrpl::CreateOffer::applyGuts : taker pays issue match");
 
         if (takerAmount != place_offer)
             crossed = true;
@@ -769,7 +727,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     XRPL_ASSERT(
         saTakerPays > zero && saTakerGets > zero,
-        "ripple::CreateOffer::applyGuts : taker pays and gets positive");
+        "xrpl::CreateOffer::applyGuts : taker pays and gets positive");
 
     if (result != tesSUCCESS)
     {
@@ -789,9 +747,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (bFillOrKill)
     {
         JLOG(j_.trace()) << "Fill or Kill: offer killed";
-        if (sb.rules().enabled(fix1578))
-            return {tecKILLED, false};
-        return {tesSUCCESS, false};
+        return {tecKILLED, false};
     }
 
     // For 'immediate or cancel' offers, the amount remaining doesn't get
@@ -799,9 +755,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (bImmediateOrCancel)
     {
         JLOG(j_.trace()) << "Immediate or cancel: offer canceled";
-        if (!crossed && sb.rules().enabled(featureImmediateOfferKilled))
-            // If the ImmediateOfferKilled amendment is enabled, any
-            // ImmediateOrCancel offer that transfers absolutely no funds
+        if (!crossed)
+            // Any ImmediateOrCancel offer that transfers absolutely no funds
             // returns tecKILLED rather than tesSUCCESS.  Motivation for the
             // change is here: https://github.com/ripple/rippled/issues/4115
             return {tecKILLED, false};
@@ -842,9 +797,11 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     if (!ownerNode)
     {
+        // LCOV_EXCL_START
         JLOG(j_.debug())
             << "final result: failed to add offer to owner's directory";
         return {tecDIR_FULL, true};
+        // LCOV_EXCL_STOP
     }
 
     // Update owner count.
@@ -888,8 +845,10 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     if (!bookNode)
     {
+        // LCOV_EXCL_START
         JLOG(j_.debug()) << "final result: failed to add offer to book";
         return {tecDIR_FULL, true};
+        // LCOV_EXCL_STOP
     }
 
     auto sleOffer = std::make_shared<SLE>(offer_index);
@@ -948,4 +907,4 @@ CreateOffer::doApply()
     return result.first;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

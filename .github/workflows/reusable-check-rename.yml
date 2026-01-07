@@ -1,0 +1,52 @@
+# This workflow checks if the codebase is properly renamed, see more info in
+# .github/scripts/rename/README.md.
+name: Check rename
+
+# This workflow can only be triggered by other workflows.
+on: workflow_call
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-rename
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: Check definitions
+        run: .github/scripts/rename/definitions.sh .
+      - name: Check copyright notices
+        run: .github/scripts/rename/copyright.sh .
+      - name: Check CMake configs
+        run: .github/scripts/rename/cmake.sh .
+      - name: Check binary name
+        run: .github/scripts/rename/binary.sh .
+      - name: Check namespaces
+        run: .github/scripts/rename/namespace.sh .
+      - name: Check config name
+        run: .github/scripts/rename/config.sh .
+      - name: Check for differences
+        env:
+          MESSAGE: |
+
+            One or more files contain changes that do not adhere to new naming
+            conventions.
+
+            Run the scripts in '.github/scripts/rename/' in your repo, commit
+            and push the changes. See .github/scripts/rename/README.md for
+            more info.
+        run: |
+          DIFF=$(git status --porcelain)
+          if [ -n "${DIFF}" ]; then
+            # Print the differences to give the contributor a hint about what to
+            # expect when running the renaming scripts on their own machine.
+            git diff
+            echo "${MESSAGE}"
+            exit 1
+          fi

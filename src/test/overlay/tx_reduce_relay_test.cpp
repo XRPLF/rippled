@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 
@@ -27,7 +8,7 @@
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -174,16 +155,16 @@ private:
                   makeFeaturesRequestHeader(false, false, true, false))
             : (void)nDisabled--;
         auto stream_ptr = std::make_unique<stream_type>(
-            socket_type(std::forward<boost::asio::io_service&>(
-                env.app().getIOService())),
+            socket_type(std::forward<boost::asio::io_context&>(
+                env.app().getIOContext())),
             *context_);
         beast::IP::Endpoint local(
-            beast::IP::Address::from_string("172.1.1." + std::to_string(lid_)));
+            boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
         beast::IP::Endpoint remote(
-            beast::IP::Address::from_string("172.1.1." + std::to_string(rid_)));
+            boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
         PublicKey key(std::get<0>(randomKeyPair(KeyType::ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
-        auto slot = overlay.peerFinder().new_inbound_slot(local, remote);
+        auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
         auto const peer = std::make_shared<PeerTest>(
             env.app(),
             slot,
@@ -264,7 +245,7 @@ private:
         // (20+0.25*(60-20)-5=25), queue the rest, skip counts towards relayed
         // (60-25-5=30)
         testRelay("skip", true, 60, 0, 20, 25, 25, 30, skip);
-        // relay to minPeers + disabled + 25% of (nPeers - minPeers - disalbed)
+        // relay to minPeers + disabled + 25% of (nPeers - minPeers - disabled)
         // (20+10+0.25*(70-20-10)=40), queue the rest (30)
         testRelay("disabled", true, 70, 10, 20, 25, 40, 30);
         // relay to minPeers + disabled-not-in-skip + 25% of (nPeers - minPeers
@@ -284,6 +265,6 @@ private:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(tx_reduce_relay, ripple_data, ripple);
+BEAST_DEFINE_TESTSUITE(tx_reduce_relay, overlay, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

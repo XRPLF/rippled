@@ -1,29 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // Helper class to track the expected number `delivered_amount` results.
@@ -329,16 +311,99 @@ class DeliveredAmount_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testMPTDeliveredAmountRPC(FeatureBitset features)
+    {
+        testcase("MPT DeliveredAmount");
+
+        using namespace jtx;
+        Account const alice("alice");
+        Account const carol("carol");
+        Account const bob("bob");
+        Env env{*this, features};
+
+        MPTTester mptAlice(
+            env, alice, {.holders = {bob, carol}, .close = false});
+
+        mptAlice.create(
+            {.transferFee = 25000,
+             .ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer});
+        auto const MPT = mptAlice["MPT"];
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        // issuer to holder
+        mptAlice.pay(alice, bob, 10000);
+
+        // holder to holder
+        env(pay(bob, carol, mptAlice.mpt(1000)), txflags(tfPartialPayment));
+        env.close();
+
+        // Get the hash for the most recent transaction.
+        std::string txHash{
+            env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+        Json::Value meta = env.rpc("tx", txHash)[jss::result][jss::meta];
+
+        if (features[fixMPTDeliveredAmount])
+        {
+            BEAST_EXPECT(
+                meta[sfDeliveredAmount.jsonName] ==
+                STAmount{MPT(800)}.getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                meta[jss::delivered_amount] ==
+                STAmount{MPT(800)}.getJson(JsonOptions::none));
+        }
+        else
+        {
+            BEAST_EXPECT(!meta.isMember(sfDeliveredAmount.jsonName));
+            BEAST_EXPECT(
+                meta[jss::delivered_amount] = Json::Value("unavailable"));
+        }
+
+        env(pay(bob, carol, MPT(1000)),
+            sendmax(MPT(1200)),
+            txflags(tfPartialPayment));
+        env.close();
+
+        txHash = env.tx()->getJson(JsonOptions::none)[jss::hash].asString();
+        meta = env.rpc("tx", txHash)[jss::result][jss::meta];
+
+        if (features[fixMPTDeliveredAmount])
+        {
+            BEAST_EXPECT(
+                meta[sfDeliveredAmount.jsonName] ==
+                STAmount{MPT(960)}.getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                meta[jss::delivered_amount] ==
+                STAmount{MPT(960)}.getJson(JsonOptions::none));
+        }
+        else
+        {
+            BEAST_EXPECT(!meta.isMember(sfDeliveredAmount.jsonName));
+            BEAST_EXPECT(
+                meta[jss::delivered_amount] = Json::Value("unavailable"));
+        }
+    }
+
 public:
     void
     run() override
     {
+        using namespace test::jtx;
+        FeatureBitset const all{testable_amendments()};
+
         testTxDeliveredAmountRPC();
         testAccountDeliveredAmountSubscribe();
+
+        testMPTDeliveredAmountRPC(all - fixMPTDeliveredAmount);
+        testMPTDeliveredAmountRPC(all);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DeliveredAmount, app, ripple);
+BEAST_DEFINE_TESTSUITE(DeliveredAmount, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

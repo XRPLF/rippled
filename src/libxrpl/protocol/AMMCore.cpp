@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -37,7 +18,7 @@
 #include <optional>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 Currency
 ammLPTCurrency(Currency const& cur1, Currency const& cur2)
@@ -112,7 +93,7 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
     auto const expiration = auctionSlot[sfExpiration];
     XRPL_ASSERT(
         expiration >= TOTAL_TIME_SLOT_SECS,
-        "ripple::ammAuctionTimeSlot : minimum expiration");
+        "xrpl::ammAuctionTimeSlot : minimum expiration");
     if (expiration >= TOTAL_TIME_SLOT_SECS)
     {
         if (auto const start = expiration - TOTAL_TIME_SLOT_SECS;
@@ -131,4 +112,4 @@ ammEnabled(Rules const& rules)
     return rules.enabled(featureAMM) && rules.enabled(fixUniversalNumber);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

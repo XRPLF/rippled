@@ -1,80 +1,24 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/applySteps.h>
-#include <xrpld/app/tx/detail/AMMBid.h>
-#include <xrpld/app/tx/detail/AMMClawback.h>
-#include <xrpld/app/tx/detail/AMMCreate.h>
-#include <xrpld/app/tx/detail/AMMDelete.h>
-#include <xrpld/app/tx/detail/AMMDeposit.h>
-#include <xrpld/app/tx/detail/AMMVote.h>
-#include <xrpld/app/tx/detail/AMMWithdraw.h>
-#include <xrpld/app/tx/detail/ApplyContext.h>
-#include <xrpld/app/tx/detail/Batch.h>
-#include <xrpld/app/tx/detail/CancelCheck.h>
-#include <xrpld/app/tx/detail/CancelOffer.h>
-#include <xrpld/app/tx/detail/CashCheck.h>
-#include <xrpld/app/tx/detail/Change.h>
-#include <xrpld/app/tx/detail/Clawback.h>
-#include <xrpld/app/tx/detail/CreateCheck.h>
-#include <xrpld/app/tx/detail/CreateOffer.h>
-#include <xrpld/app/tx/detail/CreateTicket.h>
-#include <xrpld/app/tx/detail/Credentials.h>
-#include <xrpld/app/tx/detail/DID.h>
-#include <xrpld/app/tx/detail/DelegateSet.h>
-#include <xrpld/app/tx/detail/DeleteAccount.h>
-#include <xrpld/app/tx/detail/DeleteOracle.h>
-#include <xrpld/app/tx/detail/DepositPreauth.h>
-#include <xrpld/app/tx/detail/Escrow.h>
-#include <xrpld/app/tx/detail/LedgerStateFix.h>
-#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
-#include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
-#include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
-#include <xrpld/app/tx/detail/MPTokenIssuanceSet.h>
-#include <xrpld/app/tx/detail/NFTokenAcceptOffer.h>
-#include <xrpld/app/tx/detail/NFTokenBurn.h>
-#include <xrpld/app/tx/detail/NFTokenCancelOffer.h>
-#include <xrpld/app/tx/detail/NFTokenCreateOffer.h>
-#include <xrpld/app/tx/detail/NFTokenMint.h>
-#include <xrpld/app/tx/detail/NFTokenModify.h>
-#include <xrpld/app/tx/detail/PayChan.h>
-#include <xrpld/app/tx/detail/Payment.h>
-#include <xrpld/app/tx/detail/PermissionedDomainDelete.h>
-#include <xrpld/app/tx/detail/PermissionedDomainSet.h>
-#include <xrpld/app/tx/detail/SetAccount.h>
-#include <xrpld/app/tx/detail/SetOracle.h>
-#include <xrpld/app/tx/detail/SetRegularKey.h>
-#include <xrpld/app/tx/detail/SetSignerList.h>
-#include <xrpld/app/tx/detail/SetTrust.h>
-#include <xrpld/app/tx/detail/VaultClawback.h>
-#include <xrpld/app/tx/detail/VaultCreate.h>
-#include <xrpld/app/tx/detail/VaultDelete.h>
-#include <xrpld/app/tx/detail/VaultDeposit.h>
-#include <xrpld/app/tx/detail/VaultSet.h>
-#include <xrpld/app/tx/detail/VaultWithdraw.h>
-#include <xrpld/app/tx/detail/XChainBridge.h>
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
+
+// Do nothing
+#define TRANSACTION(...)
+#define TRANSACTION_INCLUDE 1
+
+#include <xrpl/protocol/detail/transactions.macro>
+
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
+
+// DO NOT INCLUDE TRANSACTOR HEADER FILES HERE.
+// See the instructions at the top of transactions.macro instead.
 
 #include <xrpl/protocol/TxFormats.h>
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -97,8 +41,8 @@ with_txn_type(TxType txnType, F&& f)
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, fields) \
-    case tag:                                              \
+#define TRANSACTION(tag, value, name, ...) \
+    case tag:                              \
         return f.template operator()<name>();
 
 #include <xrpl/protocol/detail/transactions.macro>
@@ -156,7 +100,7 @@ invoke_preflight(PreflightContext const& ctx)
     try
     {
         return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
-            auto const tec = T::preflight(ctx);
+            auto const tec = Transactor::invokePreflight<T>(ctx);
             return std::make_pair(
                 tec,
                 isTesSuccess(tec) ? consequences_helper<T>(ctx)
@@ -166,10 +110,12 @@ invoke_preflight(PreflightContext const& ctx)
     catch (UnknownTxnType const& e)
     {
         // Should never happen
+        // LCOV_EXCL_START
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preflight: " << e.txnType;
-        UNREACHABLE("ripple::invoke_preflight : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_preflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
+        // LCOV_EXCL_STOP
     }
 }
 
@@ -180,37 +126,45 @@ invoke_preclaim(PreclaimContext const& ctx)
     {
         // use name hiding to accomplish compile-time polymorphism of static
         // class functions for Transactor and derived classes.
-        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
-            // If the transactor requires a valid account and the transaction
-            // doesn't list one, preflight will have already a flagged a
-            // failure.
+        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() -> TER {
+            // preclaim functionality is divided into two sections:
+            // 1. Up to and including the signature check: returns NotTEC.
+            //    All transaction checks before and including checkSign
+            //    MUST return NotTEC, or something more restrictive.
+            //    Allowing tec results in these steps risks theft or
+            //    destruction of funds, as a fee will be charged before the
+            //    signature is checked.
+            // 2. After the signature check: returns TER.
+
+            // If the transactor requires a valid account and the
+            // transaction doesn't list one, preflight will have already
+            // a flagged a failure.
             auto const id = ctx.tx.getAccountID(sfAccount);
 
             if (id != beast::zero)
             {
-                TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+                if (NotTEC const preSigResult = [&]() -> NotTEC {
+                        if (NotTEC const result =
+                                T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
+                            return result;
 
-                if (result != tesSUCCESS)
-                    return result;
+                        if (NotTEC const result =
+                                T::checkPriorTxAndLastLedger(ctx))
+                            return result;
 
-                result = T::checkPriorTxAndLastLedger(ctx);
+                        if (NotTEC const result =
+                                T::checkPermission(ctx.view, ctx.tx))
+                            return result;
 
-                if (result != tesSUCCESS)
-                    return result;
+                        if (NotTEC const result = T::checkSign(ctx))
+                            return result;
 
-                result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+                        return tesSUCCESS;
+                    }())
+                    return preSigResult;
 
-                if (result != tesSUCCESS)
-                    return result;
-
-                result = T::checkPermission(ctx.view, ctx.tx);
-
-                if (result != tesSUCCESS)
-                    return result;
-
-                result = T::checkSign(ctx);
-
-                if (result != tesSUCCESS)
+                if (TER const result =
+                        T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx)))
                     return result;
             }
 
@@ -220,10 +174,12 @@ invoke_preclaim(PreclaimContext const& ctx)
     catch (UnknownTxnType const& e)
     {
         // Should never happen
+        // LCOV_EXCL_START
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preclaim: " << e.txnType;
-        UNREACHABLE("ripple::invoke_preclaim : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_preclaim : unknown transaction type");
         return temUNKNOWN;
+        // LCOV_EXCL_STOP
     }
 }
 
@@ -254,9 +210,10 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
     }
     catch (UnknownTxnType const& e)
     {
-        UNREACHABLE(
-            "ripple::invoke_calculateBaseFee : unknown transaction type");
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::invoke_calculateBaseFee : unknown transaction type");
         return XRPAmount{0};
+        // LCOV_EXCL_STOP
     }
 }
 
@@ -269,7 +226,7 @@ TxConsequences::TxConsequences(NotTEC pfresult)
 {
     XRPL_ASSERT(
         !isTesSuccess(pfresult),
-        "ripple::TxConsequences::TxConsequences : is not tesSUCCESS");
+        "xrpl::TxConsequences::TxConsequences : is not tesSUCCESS");
 }
 
 TxConsequences::TxConsequences(STTx const& tx)
@@ -314,10 +271,12 @@ invoke_apply(ApplyContext& ctx)
     catch (UnknownTxnType const& e)
     {
         // Should never happen
+        // LCOV_EXCL_START
         JLOG(ctx.journal.fatal())
             << "Unknown transaction type in apply: " << e.txnType;
-        UNREACHABLE("ripple::invoke_apply : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_apply : unknown transaction type");
         return {temUNKNOWN, false};
+        // LCOV_EXCL_STOP
     }
 }
 
@@ -466,4 +425,4 @@ doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

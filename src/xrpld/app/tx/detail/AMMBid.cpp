@@ -1,50 +1,25 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/tx/detail/AMMBid.h>
-#include <xrpld/ledger/Sandbox.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
+
+bool
+AMMBid::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return ammEnabled(ctx.rules);
+}
 
 NotTEC
 AMMBid::preflight(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Bid: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
     if (auto const res = invalidAMMAssetPair(
             ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
     {
@@ -95,7 +70,7 @@ AMMBid::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -198,14 +173,14 @@ applyBid(
     {
         XRPL_ASSERT(
             ammSle->isFieldPresent(sfAuctionSlot),
-            "ripple::applyBid : has auction slot");
+            "xrpl::applyBid : has auction slot");
         if (!ammSle->isFieldPresent(sfAuctionSlot))
             return {tecINTERNAL, false};
     }
     auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auto const current =
         duration_cast<seconds>(
-            ctx_.view().info().parentCloseTime.time_since_epoch())
+            ctx_.view().header().parentCloseTime.time_since_epoch())
             .count();
     // Auction slot discounted fee
     auto const discountedFee =
@@ -253,10 +228,12 @@ applyBid(
         if (saBurn >= lptAMMBalance)
         {
             // This error case should never occur.
+            // LCOV_EXCL_START
             JLOG(ctx_.journal.fatal())
                 << "AMM Bid: LP Token burn exceeds AMM balance " << burn << " "
                 << lptAMMBalance;
             return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
         auto res =
             redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
@@ -323,7 +300,7 @@ applyBid(
     {
         // Price the slot was purchased at.
         STAmount const pricePurchased = auctionSlot[sfPrice];
-        XRPL_ASSERT(timeSlot, "ripple::applyBid : timeSlot is set");
+        XRPL_ASSERT(timeSlot, "xrpl::applyBid : timeSlot is set");
         auto const fractionUsed =
             (Number(*timeSlot) + 1) / AUCTION_SLOT_TIME_INTERVALS;
         auto const fractionRemaining = Number(1) - fractionUsed;
@@ -385,4 +362,4 @@ AMMBid::doApply()
     return result.first;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

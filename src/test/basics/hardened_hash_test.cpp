@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/unit_test.h>
 
@@ -26,7 +7,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 template <class T>
@@ -70,11 +51,11 @@ public:
 };
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -167,11 +148,11 @@ using sha256_t = unsigned_integer<256, std::size_t>;
 static_assert(sha256_t::bits == 256, "sha256_t must have 256 bits");
 #endif
 
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 
-namespace ripple {
+namespace xrpl {
 
 class hardened_hash_test : public beast::unit_test::suite
 {
@@ -253,6 +234,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(hardened_hash, basics, ripple);
+BEAST_DEFINE_TESTSUITE(hardened_hash, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

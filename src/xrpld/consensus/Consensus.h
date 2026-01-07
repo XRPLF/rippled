@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_CONSENSUS_CONSENSUS_H_INCLUDED
-#define RIPPLE_CONSENSUS_CONSENSUS_H_INCLUDED
+#ifndef XRPL_CONSENSUS_CONSENSUS_H_INCLUDED
+#define XRPL_CONSENSUS_CONSENSUS_H_INCLUDED
 
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpld/consensus/ConsensusProposal.h>
@@ -37,7 +18,7 @@
 #include <optional>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 /** Determines whether the current ledger should close at this time.
 
@@ -84,8 +65,8 @@ shouldCloseLedger(
                             agree
     @param stalled the network appears to be stalled, where
            neither we nor our peers have changed their vote on any disputes in a
-           while. This is undesirable, and will cause us to end consensus
-           without 80% agreement.
+           while. This is undesirable, and should be rare, and will cause us to
+           end consensus without 80% agreement.
     @param parms            Consensus constant parameters
     @param proposing        whether we should count ourselves
     @param j                journal for logging
@@ -916,7 +897,7 @@ Consensus<Adaptor>::gotTxSet(
         // so this txSet must differ
         XRPL_ASSERT(
             id != result_->position.position(),
-            "ripple::Consensus::gotTxSet : updated transaction set");
+            "xrpl::Consensus::gotTxSet : updated transaction set");
         bool any = false;
         for (auto const& [nodeId, peerPos] : currPeerPositions_)
         {
@@ -1066,7 +1047,7 @@ Consensus<Adaptor>::handleWrongLedger(
     CLOG(clog) << "handleWrongLedger. ";
     XRPL_ASSERT(
         lgrId != prevLedgerID_ || previousLedger_.id() != lgrId,
-        "ripple::Consensus::handleWrongLedger : have wrong ledger");
+        "xrpl::Consensus::handleWrongLedger : have wrong ledger");
 
     // Stop proposing because we are out of sync
     leaveConsensus(clog);
@@ -1121,8 +1102,8 @@ Consensus<Adaptor>::checkLedger(std::unique_ptr<std::stringstream> const& clog)
 
     auto netLgr =
         adaptor_.getPrevLedger(prevLedgerID_, previousLedger_, mode_.get());
-    CLOG(clog) << "network ledgerid " << netLgr << ",  " << "previous ledger "
-               << prevLedgerID_ << ". ";
+    CLOG(clog) << "network ledgerid " << netLgr << ",  "
+               << "previous ledger " << prevLedgerID_ << ". ";
 
     if (netLgr != prevLedgerID_)
     {
@@ -1213,7 +1194,8 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
         adaptor_.parms().ledgerIDLE_INTERVAL,
         2 * previousLedger_.closeTimeResolution());
     CLOG(clog) << "idle interval set to " << idleInterval.count()
-               << "ms based on " << "ledgerIDLE_INTERVAL: "
+               << "ms based on "
+               << "ledgerIDLE_INTERVAL: "
                << adaptor_.parms().ledgerIDLE_INTERVAL.count()
                << ", previous ledger close time resolution: "
                << previousLedger_.closeTimeResolution().count() << "ms. ";
@@ -1261,7 +1243,8 @@ Consensus<Adaptor>::shouldPause(
          << "roundTime: " << result_->roundTime.read().count() << ", "
          << "max consensus time: " << parms.ledgerMAX_CONSENSUS.count() << ", "
          << "validators: " << totalValidators << ", "
-         << "laggards: " << laggards << ", " << "offline: " << offline << ", "
+         << "laggards: " << laggards << ", "
+         << "offline: " << offline << ", "
          << "quorum: " << quorum << ")";
 
     if (!ahead || !laggards || !totalValidators || !adaptor_.validator() ||
@@ -1366,7 +1349,7 @@ Consensus<Adaptor>::phaseEstablish(
 {
     CLOG(clog) << "phaseEstablish. ";
     // can only establish consensus if we already took a stance
-    XRPL_ASSERT(result_, "ripple::Consensus::phaseEstablish : result is set");
+    XRPL_ASSERT(result_, "xrpl::Consensus::phaseEstablish : result is set");
 
     ++peerUnchangedCounter_;
     ++establishCounter_;
@@ -1432,7 +1415,7 @@ void
 Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
 {
     // We should not be closing if we already have a position
-    XRPL_ASSERT(!result_, "ripple::Consensus::closeLedger : result is not set");
+    XRPL_ASSERT(!result_, "xrpl::Consensus::closeLedger : result is not set");
 
     phase_ = ConsensusPhase::establish;
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::establish";
@@ -1491,8 +1474,7 @@ Consensus<Adaptor>::updateOurPositions(
     std::unique_ptr<std::stringstream> const& clog)
 {
     // We must have a position if we are updating it
-    XRPL_ASSERT(
-        result_, "ripple::Consensus::updateOurPositions : result is set");
+    XRPL_ASSERT(result_, "xrpl::Consensus::updateOurPositions : result is set");
     ConsensusParms const& parms = adaptor_.parms();
 
     // Compute a cutoff time
@@ -1622,8 +1604,8 @@ Consensus<Adaptor>::updateOurPositions(
         if (!haveCloseTimeConsensus_)
         {
             JLOG(j_.debug())
-                << "No CT consensus:" << " Proposers:"
-                << currPeerPositions_.size()
+                << "No CT consensus:"
+                << " Proposers:" << currPeerPositions_.size()
                 << " Mode:" << to_string(mode_.get())
                 << " Thresh:" << threshConsensus
                 << " Pos:" << consensusCloseTime.time_since_epoch().count();
@@ -1681,7 +1663,7 @@ Consensus<Adaptor>::haveConsensus(
     std::unique_ptr<std::stringstream> const& clog)
 {
     // Must have a stance if we are checking for consensus
-    XRPL_ASSERT(result_, "ripple::Consensus::haveConsensus : has result");
+    XRPL_ASSERT(result_, "xrpl::Consensus::haveConsensus : has result");
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -1710,15 +1692,29 @@ Consensus<Adaptor>::haveConsensus(
                      << ", disagree=" << disagree;
 
     ConsensusParms const& parms = adaptor_.parms();
-    // Stalling is BAD
+    // Stalling is BAD. It means that we have a consensus on the close time, so
+    // peers are talking, but we have disputed transactions that peers are
+    // unable or unwilling to come to agreement on one way or the other.
     bool const stalled = haveCloseTimeConsensus_ &&
+        !result_->disputes.empty() &&
         std::ranges::all_of(result_->disputes,
-                            [this, &parms](auto const& dispute) {
+                            [this, &parms, &clog](auto const& dispute) {
                                 return dispute.second.stalled(
                                     parms,
                                     mode_.get() == ConsensusMode::proposing,
-                                    peerUnchangedCounter_);
+                                    peerUnchangedCounter_,
+                                    j_,
+                                    clog);
                             });
+    if (stalled)
+    {
+        std::stringstream ss;
+        ss << "Consensus detects as stalled with " << (agree + disagree) << "/"
+           << prevProposers_ << " proposers, and " << result_->disputes.size()
+           << " stalled disputed transactions.";
+        JLOG(j_.error()) << ss.str();
+        CLOG(clog) << ss.str();
+    }
 
     // Determine if we actually have consensus or not
     result_->state = checkConsensus(
@@ -1807,7 +1803,7 @@ Consensus<Adaptor>::createDisputes(
     std::unique_ptr<std::stringstream> const& clog)
 {
     // Cannot create disputes without our stance
-    XRPL_ASSERT(result_, "ripple::Consensus::createDisputes : result is set");
+    XRPL_ASSERT(result_, "xrpl::Consensus::createDisputes : result is set");
 
     // Only create disputes if this is a new set
     auto const emplaced = result_->compares.emplace(o.id()).second;
@@ -1838,7 +1834,7 @@ Consensus<Adaptor>::createDisputes(
         XRPL_ASSERT(
             (inThisSet && result_->txns.find(txId) && !o.find(txId)) ||
                 (!inThisSet && !result_->txns.find(txId) && o.find(txId)),
-            "ripple::Consensus::createDisputes : has disputed transactions");
+            "xrpl::Consensus::createDisputes : has disputed transactions");
 
         Tx_t tx = inThisSet ? result_->txns.find(txId) : o.find(txId);
         auto txID = tx.id();
@@ -1876,7 +1872,7 @@ void
 Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
 {
     // Cannot updateDisputes without our stance
-    XRPL_ASSERT(result_, "ripple::Consensus::updateDisputes : result is set");
+    XRPL_ASSERT(result_, "xrpl::Consensus::updateDisputes : result is set");
 
     // Ensure we have created disputes against this set if we haven't seen
     // it before
@@ -1898,6 +1894,6 @@ Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
     return roundCloseTime(raw, closeResolution_);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

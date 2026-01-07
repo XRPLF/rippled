@@ -1,27 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2021 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
-#include <xrpld/ledger/Dir.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/algorithm.h>
+#include <xrpl/ledger/Dir.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -30,7 +11,7 @@
 #include <functional>
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 namespace nft {
 
@@ -142,32 +123,26 @@ getPageForToken(
         // equivalent tokens.  This requires special handling.
         if (splitIter == narr.begin())
         {
-            // Prior to fixNFTokenDirV1 we simply stopped.
-            if (!view.rules().enabled(fixNFTokenDirV1))
-                return nullptr;
-            else
+            auto const relation{(id & nft::pageMask) <=> cmp};
+            if (relation == 0)
             {
-                auto const relation{(id & nft::pageMask) <=> cmp};
-                if (relation == 0)
-                {
-                    // If the passed in id belongs exactly on this (full) page
-                    // this account simply cannot store the NFT.
-                    return nullptr;
-                }
-
-                if (relation > 0)
-                {
-                    // We need to leave the entire contents of this page in
-                    // narr so carr stays empty.  The new NFT will be
-                    // inserted in carr.  This keeps the NFTs that must be
-                    // together all on their own page.
-                    splitIter = narr.end();
-                }
-
-                // If neither of those conditions apply then put all of
-                // narr into carr and produce an empty narr where the new NFT
-                // will be inserted.  Leave the split at narr.begin().
+                // If the passed in id belongs exactly on this (full) page
+                // this account simply cannot store the NFT.
+                return nullptr;
             }
+
+            if (relation > 0)
+            {
+                // We need to leave the entire contents of this page in
+                // narr so carr stays empty.  The new NFT will be
+                // inserted in carr.  This keeps the NFTs that must be
+                // together all on their own page.
+                splitIter = narr.end();
+            }
+
+            // If neither of those conditions apply then put all of
+            // narr into carr and produce an empty narr where the new NFT
+            // will be inserted.  Leave the split at narr.begin().
         }
 
         // Split narr at splitIter.
@@ -178,9 +153,7 @@ getPageForToken(
         std::swap(carr, newCarr);
     }
 
-    // Determine the ID for the page index.  This decision is conditional on
-    // fixNFTokenDirV1 being enabled.  But the condition for the decision
-    // is not possible unless fixNFTokenDirV1 is enabled.
+    // Determine the ID for the page index.
     //
     // Note that we use uint256::next() because there's a subtlety in the way
     // NFT pages are structured.  The low 96-bits of NFT ID must be strictly
@@ -194,7 +167,7 @@ getPageForToken(
     auto np = std::make_shared<SLE>(keylet::nftpage(base, tokenIDForNewPage));
     XRPL_ASSERT(
         np->key() > base.key,
-        "ripple::nft::getPageForToken : valid NFT page index");
+        "xrpl::nft::getPageForToken : valid NFT page index");
     np->setFieldArray(sfNFTokens, narr);
     np->setFieldH256(sfNextPageMin, cp->key());
 
@@ -216,13 +189,6 @@ getPageForToken(
     view.update(cp);
 
     createCallback(view, owner);
-
-    // fixNFTokenDirV1 corrects a bug in the initial implementation that
-    // would put an NFT in the wrong page.  The problem was caused by an
-    // off-by-one subtlety that the NFT can only be stored in the first page
-    // with a key that's strictly greater than `first`
-    if (!view.rules().enabled(fixNFTokenDirV1))
-        return (first.key <= np->key()) ? np : cp;
 
     return (first.key < np->key()) ? np : cp;
 }
@@ -247,7 +213,7 @@ changeTokenURI(
     ApplyView& view,
     AccountID const& owner,
     uint256 const& nftokenID,
-    std::optional<ripple::Slice> const& uri)
+    std::optional<xrpl::Slice> const& uri)
 {
     std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
 
@@ -281,7 +247,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
 {
     XRPL_ASSERT(
         nft.isFieldPresent(sfNFTokenID),
-        "ripple::nft::insertToken : has NFT token");
+        "xrpl::nft::insertToken : has NFT token");
 
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
@@ -823,7 +789,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
 
     XRPL_ASSERT(
         nextPage,
-        "ripple::nft::repairNFTokenDirectoryLinks : next page is available");
+        "xrpl::nft::repairNFTokenDirectoryLinks : next page is available");
     if (nextPage->isFieldPresent(sfNextPageMin))
     {
         didRepair = true;
@@ -844,7 +810,7 @@ tokenOfferCreatePreflight(
     std::optional<AccountID> const& owner,
     std::uint32_t txFlags)
 {
-    if (amount.negative() && rules.enabled(fixNFTokenNegOffer))
+    if (amount.negative())
         // An offer for a negative amount makes no sense.
         return temBAD_AMOUNT;
 
@@ -874,21 +840,10 @@ tokenOfferCreatePreflight(
     if (owner && owner == acctID)
         return temMALFORMED;
 
-    if (dest)
+    // The destination can't be the account executing the transaction.
+    if (dest && dest == acctID)
     {
-        // Some folks think it makes sense for a buy offer to specify a
-        // specific broker using the Destination field.  This change doesn't
-        // deserve it's own amendment, so we're piggy-backing on
-        // fixNFTokenNegOffer.
-        //
-        // Prior to fixNFTokenNegOffer any use of the Destination field on
-        // a buy offer was malformed.
-        if (!isSellOffer && !rules.enabled(fixNFTokenNegOffer))
-            return temMALFORMED;
-
-        // The destination can't be the account executing the transaction.
-        if (dest == acctID)
-            return temMALFORMED;
+        return temMALFORMED;
     }
     return tesSUCCESS;
 }
@@ -932,7 +887,7 @@ tokenOfferCreatePreclaim(
     {
         auto const root = view.read(keylet::account(nftIssuer));
         XRPL_ASSERT(
-            root, "ripple::nft::tokenOfferCreatePreclaim : non-null account");
+            root, "xrpl::nft::tokenOfferCreatePreclaim : non-null account");
 
         if (auto minter = (*root)[~sfNFTokenMinter]; minter != acctID)
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
@@ -946,23 +901,10 @@ tokenOfferCreatePreclaim(
     // offer may later become unfunded.
     if ((txFlags & tfSellNFToken) == 0)
     {
-        // After this amendment, we allow an IOU issuer to make a buy offer
+        // We allow an IOU issuer to make a buy offer
         // using their own currency.
-        if (view.rules().enabled(fixNonFungibleTokensV1_2))
-        {
-            if (accountFunds(
-                    view, acctID, amount, FreezeHandling::fhZERO_IF_FROZEN, j)
-                    .signum() <= 0)
-                return tecUNFUNDED_OFFER;
-        }
-        else if (
-            accountHolds(
-                view,
-                acctID,
-                amount.getCurrency(),
-                amount.getIssuer(),
-                FreezeHandling::fhZERO_IF_FROZEN,
-                j)
+        if (accountFunds(
+                view, acctID, amount, FreezeHandling::fhZERO_IF_FROZEN, j)
                 .signum() <= 0)
             return tecUNFUNDED_OFFER;
     }
@@ -977,31 +919,21 @@ tokenOfferCreatePreclaim(
             return tecNO_DST;
 
         // check if the destination has disallowed incoming offers
-        if (view.rules().enabled(featureDisallowIncoming))
-        {
-            // flag cannot be set unless amendment is enabled but
-            // out of an abundance of caution check anyway
-
-            if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
-                return tecNO_PERMISSION;
-        }
+        if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
+            return tecNO_PERMISSION;
     }
 
     if (owner)
     {
-        // Check if the owner (buy offer) has disallowed incoming offers
-        if (view.rules().enabled(featureDisallowIncoming))
-        {
-            auto const sleOwner = view.read(keylet::account(*owner));
+        auto const sleOwner = view.read(keylet::account(*owner));
 
-            // defensively check
-            // it should not be possible to specify owner that doesn't exist
-            if (!sleOwner)
-                return tecNO_TARGET;
+        // defensively check
+        // it should not be possible to specify owner that doesn't exist
+        if (!sleOwner)
+            return tecNO_TARGET;
 
-            if (sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
-                return tecNO_PERMISSION;
-        }
+        if (sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
+            return tecNO_PERMISSION;
     }
 
     if (view.rules().enabled(fixEnforceNFTokenTrustlineV2) && !amount.native())
@@ -1046,7 +978,7 @@ tokenOfferCreateApply(
             keylet::ownerDir(acctID), offerID, describeOwnerDir(acctID));
 
         if (!ownerNode)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         bool const isSellOffer = txFlags & tfSellNFToken;
 
@@ -1063,7 +995,7 @@ tokenOfferCreateApply(
             });
 
         if (!offerNode)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         std::uint32_t sleFlags = 0;
 
@@ -1103,14 +1035,14 @@ checkTrustlineAuthorized(
     // Only valid for custom currencies
     XRPL_ASSERT(
         !isXRP(issue.currency),
-        "ripple::nft::checkTrustlineAuthorized : valid to check.");
+        "xrpl::nft::checkTrustlineAuthorized : valid to check.");
 
     if (view.rules().enabled(fixEnforceNFTokenTrustlineV2))
     {
         auto const issuerAccount = view.read(keylet::account(issue.account));
         if (!issuerAccount)
         {
-            JLOG(j.debug()) << "ripple::nft::checkTrustlineAuthorized: can't "
+            JLOG(j.debug()) << "xrpl::nft::checkTrustlineAuthorized: can't "
                                "receive IOUs from non-existent issuer: "
                             << to_string(issue.account);
 
@@ -1159,14 +1091,14 @@ checkTrustlineDeepFrozen(
     // Only valid for custom currencies
     XRPL_ASSERT(
         !isXRP(issue.currency),
-        "ripple::nft::checkTrustlineDeepFrozen : valid to check.");
+        "xrpl::nft::checkTrustlineDeepFrozen : valid to check.");
 
     if (view.rules().enabled(featureDeepFreeze))
     {
         auto const issuerAccount = view.read(keylet::account(issue.account));
         if (!issuerAccount)
         {
-            JLOG(j.debug()) << "ripple::nft::checkTrustlineDeepFrozen: can't "
+            JLOG(j.debug()) << "xrpl::nft::checkTrustlineDeepFrozen: can't "
                                "receive IOUs from non-existent issuer: "
                             << to_string(issue.account);
 
@@ -1204,4 +1136,4 @@ checkTrustlineDeepFrozen(
 }
 
 }  // namespace nft
-}  // namespace ripple
+}  // namespace xrpl

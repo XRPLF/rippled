@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
-#define RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
+#ifndef XRPL_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
+#define XRPL_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -32,7 +13,7 @@
 #include <stack>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** The tip of a span of ledger ancestry
  */
@@ -64,7 +45,7 @@ public:
     ID
     ancestor(Seq const& s) const
     {
-        XRPL_ASSERT(s <= seq, "ripple::SpanTip::ancestor : valid input");
+        XRPL_ASSERT(s <= seq, "xrpl::SpanTip::ancestor : valid input");
         return ledger[s];
     }
 
@@ -91,7 +72,7 @@ public:
     {
         // Require default ledger to be genesis seq
         XRPL_ASSERT(
-            ledger_.seq() == start_, "ripple::Span::Span : ledger is genesis");
+            ledger_.seq() == start_, "xrpl::Span::Span : ledger is genesis");
     }
 
     Span(Ledger ledger)
@@ -160,7 +141,7 @@ private:
         : start_{start}, end_{end}, ledger_{l}
     {
         // Spans cannot be empty
-        XRPL_ASSERT(start < end, "ripple::Span::Span : non-empty span input");
+        XRPL_ASSERT(start < end, "xrpl::Span::Span : non-empty span input");
     }
 
     Seq
@@ -233,7 +214,7 @@ struct Node
             [child](std::unique_ptr<Node> const& curr) {
                 return curr.get() == child;
             });
-        XRPL_ASSERT(it != children.end(), "ripple::Node::erase : valid input");
+        XRPL_ASSERT(it != children.end(), "xrpl::Node::erase : valid input");
         std::swap(*it, children.back());
         children.pop_back();
     }
@@ -374,7 +355,7 @@ class LedgerTrie
         Node* curr = root.get();
 
         // Root is always defined and is in common with all ledgers
-        XRPL_ASSERT(curr, "ripple::LedgerTrie::find : non-null root");
+        XRPL_ASSERT(curr, "xrpl::LedgerTrie::find : non-null root");
         Seq pos = curr->span.diff(ledger);
 
         bool done = false;
@@ -455,7 +436,7 @@ public:
         auto const [loc, diffSeq] = find(ledger);
 
         // There is always a place to insert
-        XRPL_ASSERT(loc, "ripple::LedgerTrie::insert : valid input ledger");
+        XRPL_ASSERT(loc, "xrpl::LedgerTrie::insert : valid input ledger");
 
         // Node from which to start incrementing branchSupport
         Node* incNode = loc;
@@ -492,12 +473,12 @@ public:
             newNode->children = std::move(loc->children);
             XRPL_ASSERT(
                 loc->children.empty(),
-                "ripple::LedgerTrie::insert : moved-from children");
+                "xrpl::LedgerTrie::insert : moved-from children");
             for (std::unique_ptr<Node>& child : newNode->children)
                 child->parent = newNode.get();
 
             // Loc truncates to prefix and newNode is its child
-            XRPL_ASSERT(prefix, "ripple::LedgerTrie::insert : prefix is set");
+            XRPL_ASSERT(prefix, "xrpl::LedgerTrie::insert : prefix is set");
             loc->span = *prefix;
             newNode->parent = loc;
             loc->children.emplace_back(std::move(newNode));
@@ -552,7 +533,7 @@ public:
         auto const it = seqSupport.find(ledger.seq());
         XRPL_ASSERT(
             it != seqSupport.end() && it->second >= count,
-            "ripple::LedgerTrie::remove : valid input ledger");
+            "xrpl::LedgerTrie::remove : valid input ledger");
         it->second -= count;
         if (it->second == 0)
             seqSupport.erase(it->first);
@@ -849,5 +830,5 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 #endif

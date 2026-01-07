@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -36,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 Logs::Sink::Sink(
     std::string const& partition,
@@ -239,9 +220,11 @@ Logs::fromSeverity(beast::severities::Severity level)
         case kError:
             return lsERROR;
 
+        // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::fromSeverity : invalid severity");
+            UNREACHABLE("xrpl::Logs::fromSeverity : invalid severity");
             [[fallthrough]];
+        // LCOV_EXCL_STOP
         case kFatal:
             break;
     }
@@ -265,9 +248,11 @@ Logs::toSeverity(LogSeverity level)
             return kWarning;
         case lsERROR:
             return kError;
+        // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::toSeverity : invalid severity");
+            UNREACHABLE("xrpl::Logs::toSeverity : invalid severity");
             [[fallthrough]];
+        // LCOV_EXCL_STOP
         case lsFATAL:
             break;
     }
@@ -292,9 +277,11 @@ Logs::toString(LogSeverity s)
             return "Error";
         case lsFATAL:
             return "Fatal";
+        // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::toString : invalid severity");
+            UNREACHABLE("xrpl::Logs::toString : invalid severity");
             return "Unknown";
+            // LCOV_EXCL_STOP
     }
 }
 
@@ -356,9 +343,11 @@ Logs::format(
         case kError:
             output += "ERR ";
             break;
+        // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::format : invalid severity");
+            UNREACHABLE("xrpl::Logs::format : invalid severity");
             [[fallthrough]];
+        // LCOV_EXCL_STOP
         case kFatal:
             output += "FTL ";
             break;
@@ -470,4 +459,4 @@ debugLog()
     return beast::Journal(debugSink().get());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

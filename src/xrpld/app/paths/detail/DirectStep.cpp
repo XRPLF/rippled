@@ -1,28 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/paths/Credit.h>
 #include <xrpld/app/paths/detail/StepChecks.h>
 #include <xrpld/app/paths/detail/Steps.h>
-#include <xrpld/ledger/PaymentSandbox.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
@@ -32,7 +13,7 @@
 #include <numeric>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 template <class TDerived>
 class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI<TDerived>>
@@ -205,7 +186,8 @@ protected:
     logStringImpl(char const* name) const
     {
         std::ostringstream ostr;
-        ostr << name << ": " << "\nSrc: " << src_ << "\nDst: " << dst_;
+        ostr << name << ": "
+             << "\nSrc: " << src_ << "\nDst: " << dst_;
         return ostr.str();
     }
 
@@ -422,7 +404,7 @@ DirectIPaymentStep::check(
             !((*sleLine)[sfFlags] & authField) &&
             (*sleLine)[sfBalance] == beast::zero)
         {
-            JLOG(j_.warn())
+            JLOG(j_.debug())
                 << "DirectStepI: can't receive IOUs from issuer without auth."
                 << " src: " << src_;
             return terNO_AUTH;
@@ -517,7 +499,7 @@ DirectStepI<TDerived>::revImp(
         qualities(sb, srcDebtDir, StrandDirection::reverse);
     XRPL_ASSERT(
         static_cast<TDerived const*>(this)->verifyDstQualityIn(dstQIn),
-        "ripple::DirectStepI : valid destination quality");
+        "xrpl::DirectStepI : valid destination quality");
 
     Issue const srcToDstIss(currency_, redeems(srcDebtDir) ? dst_ : src_);
 
@@ -636,7 +618,7 @@ DirectStepI<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& /*ofrsToRm*/,
     IOUAmount const& in)
 {
-    XRPL_ASSERT(cache_, "ripple::DirectStepI::fwdImp : cache is set");
+    XRPL_ASSERT(cache_, "xrpl::DirectStepI::fwdImp : cache is set");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -723,7 +705,7 @@ DirectStepI<TDerived>::validFwd(
 
     auto const savCache = *cache_;
 
-    XRPL_ASSERT(!in.native, "ripple::DirectStepI::validFwd : input is not XRP");
+    XRPL_ASSERT(!in.native, "xrpl::DirectStepI::validFwd : input is not XRP");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -790,7 +772,7 @@ DirectStepI<TDerived>::qualitiesSrcIssues(
     XRPL_ASSERT(
         static_cast<TDerived const*>(this)->verifyPrevStepDebtDirection(
             prevStepDebtDirection),
-        "ripple::DirectStepI::qualitiesSrcIssues : will prevStepDebtDirection "
+        "xrpl::DirectStepI::qualitiesSrcIssues : will prevStepDebtDirection "
         "issue");
 
     std::uint32_t const srcQOut = redeems(prevStepDebtDirection)
@@ -842,24 +824,6 @@ DirectStepI<TDerived>::qualityUpperBound(
     DebtDirection prevStepDir) const
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
-
-    if (!v.rules().enabled(fixQualityUpperBound))
-    {
-        std::uint32_t const srcQOut = [&]() -> std::uint32_t {
-            if (redeems(prevStepDir) && issues(dir))
-                return transferRate(v, src_).value;
-            return QUALITY_ONE;
-        }();
-        auto dstQIn = static_cast<TDerived const*>(this)->quality(
-            v, QualityDirection::in);
-
-        if (isLast_ && dstQIn > QUALITY_ONE)
-            dstQIn = QUALITY_ONE;
-        Issue const iss{currency_, src_};
-        return {
-            Quality(getRate(STAmount(iss, srcQOut), STAmount(iss, dstQIn))),
-            dir};
-    }
 
     auto const [srcQOut, dstQIn] = redeems(dir)
         ? qualitiesSrcRedeems(v)
@@ -930,10 +894,12 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         {
             if (!ctx.prevStep)
             {
+                // LCOV_EXCL_START
                 UNREACHABLE(
-                    "ripple::DirectStepI::check : prev seen book without a "
+                    "xrpl::DirectStepI::check : prev seen book without a "
                     "prev step");
                 return temBAD_PATH_LOOP;
+                // LCOV_EXCL_STOP
             }
 
             // This is OK if the previous step is a book step that outputs this
@@ -1009,4 +975,4 @@ make_DirectStepI(
     return {tesSUCCESS, std::move(r)};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

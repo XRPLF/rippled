@@ -1,58 +1,13 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2014, Howard Hinnant <howard.hinnant@gmail.com>,
-        Vinnie Falco <vinnie.falco@gmail.com
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #ifndef BEAST_HASH_HASH_APPEND_H_INCLUDED
 #define BEAST_HASH_HASH_APPEND_H_INCLUDED
 
 #include <boost/container/flat_set.hpp>
 #include <boost/endian/conversion.hpp>
 
-/*
-
-Workaround for overzealous clang warning, which trips on libstdc++ headers
-
-  In file included from
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/stl_algo.h:61:
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/stl_tempbuf.h:263:8:
-  error: 'get_temporary_buffer<std::pair<ripple::Quality, const
-  std::vector<std::unique_ptr<ripple::Step>> *>>' is deprecated
-  [-Werror,-Wdeprecated-declarations] 263 |
-  std::get_temporary_buffer<value_type>(_M_original_len));
-       ^
-*/
-
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated"
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#endif
-
-#include <functional>
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-
 #include <array>
 #include <chrono>
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <string>
 #include <system_error>

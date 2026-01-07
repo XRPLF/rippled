@@ -1,43 +1,23 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/HashRouter.h>
-#include <xrpld/app/misc/WasmHostFuncImpl.h>
-#include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
+#include <xrpld/app/wasm/HostFuncImpl.h>
+#include <xrpld/app/wasm/WasmVM.h>
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
-#include <xrpld/ledger/ApplyView.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <algorithm>
-namespace ripple {
+namespace xrpl {
 
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
@@ -84,8 +64,8 @@ constexpr HashRouterFlags SF_CF_VALID = HashRouterFlags::PRIVATE6;
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{
-        ctx.tx, isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
+    auto const amount = ctx.tx[sfAmount];
+    return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::zero};
 }
 
 template <ValidIssueType T>
@@ -127,28 +107,27 @@ EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
     XRPAmount txnFees{Transactor::calculateBaseFee(view, tx)};
     if (tx.isFieldPresent(sfFinishFunction))
     {
-        // TODO: make this fee increase based on the extra compute run
-        txnFees += 1000;
+        // 10 base fees for the transaction (1 is in
+        // `Transactor::calculateBaseFee`), plus 5 drops per byte
+        txnFees += 9 * view.fees().base + 5 * tx[sfFinishFunction].size();
     }
     return txnFees;
+}
+
+bool
+EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
+{
+    if ((ctx.tx.isFieldPresent(sfFinishFunction) ||
+         ctx.tx.isFieldPresent(sfData)) &&
+        !ctx.rules.enabled(featureSmartEscrow))
+        return false;
+
+    return true;
 }
 
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfFinishFunction) &&
-        !ctx.rules.enabled(featureSmartEscrow))
-    {
-        JLOG(ctx.j.debug()) << "SmartEscrow not enabled";
-        return temDISABLED;
-    }
-
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     STAmount const amount{ctx.tx[sfAmount]};
     if (!isXRP(amount))
     {
@@ -183,24 +162,21 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         !ctx.tx.isFieldPresent(sfCancelAfter))
         return temBAD_EXPIRATION;
 
-    if (ctx.rules.enabled(fix1571))
+    // In the absence of a FinishAfter, the escrow can be finished
+    // immediately, which can be confusing. When creating an escrow,
+    // we want to ensure that either a FinishAfter time is explicitly
+    // specified or a completion condition is attached.
+    if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition] &&
+        !ctx.tx[~sfFinishFunction])
     {
-        // In the absence of a FinishAfter, the escrow can be finished
-        // immediately, which can be confusing. When creating an escrow,
-        // we want to ensure that either a FinishAfter time is explicitly
-        // specified or a completion condition is attached.
-        if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition] &&
-            !ctx.tx[~sfFinishFunction])
-        {
-            JLOG(ctx.j.debug()) << "Must have at least one of FinishAfter, "
-                                   "Condition, or FinishFunction.";
-            return temMALFORMED;
-        }
+        JLOG(ctx.j.debug()) << "Must have at least one of FinishAfter, "
+                               "Condition, or FinishFunction.";
+        return temMALFORMED;
     }
 
     if (auto const cb = ctx.tx[~sfCondition])
     {
-        using namespace ripple::cryptoconditions;
+        using namespace xrpl::cryptoconditions;
 
         std::error_code ec;
 
@@ -212,12 +188,22 @@ EscrowCreate::preflight(PreflightContext const& ctx)
                 << ec.message();
             return temMALFORMED;
         }
+    }
 
-        // Conditions other than PrefixSha256 require the
-        // "CryptoConditionsSuite" amendment:
-        if (condition->type != Type::preimageSha256 &&
-            !ctx.rules.enabled(featureCryptoConditionsSuite))
-            return temDISABLED;
+    if (ctx.tx.isFieldPresent(sfData))
+    {
+        if (!ctx.tx.isFieldPresent(sfFinishFunction))
+        {
+            JLOG(ctx.j.debug())
+                << "EscrowCreate with Data requires FinishFunction";
+            return temMALFORMED;
+        }
+        auto const data = ctx.tx.getFieldVL(sfData);
+        if (data.size() > maxWasmDataLength)
+        {
+            JLOG(ctx.j.debug()) << "EscrowCreate.Data bad size " << data.size();
+            return temMALFORMED;
+        }
     }
 
     if (ctx.tx.isFieldPresent(sfFinishFunction))
@@ -231,9 +217,8 @@ EscrowCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
 
-        HostFunctions mock;
-        auto const re =
-            preflightEscrowWasm(code, ESCROW_FUNCTION_NAME, {}, &mock, ctx.j);
+        HostFunctions mock(ctx.j);
+        auto const re = preflightEscrowWasm(code, mock, ESCROW_FUNCTION_NAME);
         if (!isTesSuccess(re))
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";
@@ -241,7 +226,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 template <ValidIssueType T>
@@ -465,10 +450,8 @@ escrowLockApplyHelper<Issue>(
     beast::Journal journal)
 {
     // Defensive: Issuer cannot create an escrow
-    // LCOV_EXCL_START
     if (issuer == sender)
-        return tecINTERNAL;
-    // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const ter = rippleCredit(
         view,
@@ -492,10 +475,8 @@ escrowLockApplyHelper<MPTIssue>(
     beast::Journal journal)
 {
     // Defensive: Issuer cannot create an escrow
-    // LCOV_EXCL_START
     if (issuer == sender)
-        return tecINTERNAL;
-    // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const ter = rippleLockEscrowMPT(view, sender, amount, journal);
     if (ter != tesSUCCESS)
@@ -503,42 +484,27 @@ escrowLockApplyHelper<MPTIssue>(
     return tesSUCCESS;
 }
 
+template <class T>
+static uint32_t
+calculateAdditionalReserve(T const& finishFunction)
+{
+    if (!finishFunction)
+        return 1;
+    // First 500 bytes included in the normal reserve
+    // Each additional 500 bytes requires an additional reserve
+    return 1 + (finishFunction->size() / 500);
+}
+
 TER
 EscrowCreate::doApply()
 {
-    auto const closeTime = ctx_.view().info().parentCloseTime;
+    auto const closeTime = ctx_.view().header().parentCloseTime;
 
-    // Prior to fix1571, the cancel and finish times could be greater
-    // than or equal to the parent ledgers' close time.
-    //
-    // With fix1571, we require that they both be strictly greater
-    // than the parent ledgers' close time.
-    if (ctx_.view().rules().enabled(fix1571))
-    {
-        if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
-            return tecNO_PERMISSION;
+    if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
+        return tecNO_PERMISSION;
 
-        if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
-            return tecNO_PERMISSION;
-    }
-    else
-    {
-        if (ctx_.tx[~sfCancelAfter])
-        {
-            auto const cancelAfter = ctx_.tx[sfCancelAfter];
-
-            if (closeTime.time_since_epoch().count() >= cancelAfter)
-                return tecNO_PERMISSION;
-        }
-
-        if (ctx_.tx[~sfFinishAfter])
-        {
-            auto const finishAfter = ctx_.tx[sfFinishAfter];
-
-            if (closeTime.time_since_epoch().count() >= finishAfter)
-                return tecNO_PERMISSION;
-        }
-    }
+    if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
+        return tecNO_PERMISSION;
 
     auto const sle = ctx_.view().peek(keylet::account(account_));
     if (!sle)
@@ -546,9 +512,11 @@ EscrowCreate::doApply()
 
     // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
+    auto const reserveToAdd =
+        calculateAdditionalReserve(ctx_.tx[~sfFinishFunction]);
 
     auto const reserve =
-        ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
+        ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + reserveToAdd);
 
     if (mSourceBalance < reserve)
         return tecINSUFFICIENT_RESERVE;
@@ -565,16 +533,10 @@ EscrowCreate::doApply()
         auto const sled =
             ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
         if (!sled)
-            return tecNO_DST;
+            return tecNO_DST;  // LCOV_EXCL_LINE
         if (((*sled)[sfFlags] & lsfRequireDestTag) &&
             !ctx_.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
-
-        // Obeying the lsfDissalowXRP flag was a bug.  Piggyback on
-        // featureDepositAuth to remove the bug.
-        if (!ctx_.view().rules().enabled(featureDepositAuth) &&
-            ((*sled)[sfFlags] & lsfDisallowXRP))
-            return tecNO_TARGET;
     }
 
     // Create escrow in ledger.  Note that we we use the value from the
@@ -591,6 +553,11 @@ EscrowCreate::doApply()
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
     (*slep)[~sfFinishFunction] = ctx_.tx[~sfFinishFunction];
     (*slep)[~sfData] = ctx_.tx[~sfData];
+
+    if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+    {
+        (*slep)[sfSequence] = ctx_.tx.getSeqValue();
+    }
 
     if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))
     {
@@ -649,16 +616,13 @@ EscrowCreate::doApply()
                 },
                 amount.asset().value());
             !isTesSuccess(ret))
+        {
             return ret;  // LCOV_EXCL_LINE
+        }
     }
 
     // increment owner count
-    // TODO: determine actual reserve based on FinishFunction size
-    adjustOwnerCount(
-        ctx_.view(),
-        sle,
-        ctx_.tx.isFieldPresent(sfFinishFunction) ? 2 : 1,
-        ctx_.journal);
+    adjustOwnerCount(ctx_.view(), sle, reserveToAdd, ctx_.journal);
     ctx_.view().update(sle);
     return tesSUCCESS;
 }
@@ -668,7 +632,7 @@ EscrowCreate::doApply()
 static bool
 checkCondition(Slice f, Slice c)
 {
-    using namespace ripple::cryptoconditions;
+    using namespace xrpl::cryptoconditions;
 
     std::error_code ec;
 
@@ -683,26 +647,24 @@ checkCondition(Slice f, Slice c)
     return validate(*fulfillment, *condition);
 }
 
-NotTEC
-EscrowFinish::preflight(PreflightContext const& ctx)
+bool
+EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
     if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
         !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
+        return false;
 
     if (ctx.tx.isFieldPresent(sfComputationAllowance) &&
         !ctx.rules.enabled(featureSmartEscrow))
     {
-        JLOG(ctx.j.debug()) << "SmartEscrow not enabled";
-        return temDISABLED;
+        return false;
     }
+    return true;
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
+NotTEC
+EscrowFinish::preflight(PreflightContext const& ctx)
+{
     auto const cb = ctx.tx[~sfCondition];
     auto const fb = ctx.tx[~sfFulfillment];
 
@@ -714,13 +676,14 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    // Verify the transaction signature. If it doesn't work
-    // then don't do any more work.
-    {
-        auto const ret = preflight2(ctx);
-        if (!isTesSuccess(ret))
-            return ret;
-    }
+    return tesSUCCESS;
+}
+
+NotTEC
+EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
+{
+    auto const cb = ctx.tx[~sfCondition];
+    auto const fb = ctx.tx[~sfFulfillment];
 
     if (cb && fb)
     {
@@ -771,9 +734,15 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
-    if (auto const allowance = tx[~sfComputationAllowance]; allowance)
+    if (std::optional<uint64_t> const allowance = tx[~sfComputationAllowance];
+        allowance)
     {
-        extraFee += (*allowance) * view.fees().gasPrice / MICRO_DROPS_PER_DROP;
+        // The extra fee is the allowance in drops, rounded up to the nearest
+        // whole drop.
+        // Integer math rounds down by default, so we add 1 to round up.
+        uint64_t const allowanceFee =
+            ((*allowance) * view.fees().gasPrice) / MICRO_DROPS_PER_DROP + 1;
+        extraFee += allowanceFee;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
@@ -939,10 +908,8 @@ escrowUnlockApplyHelper<Issue>(
     bool const receiverIssuer = issuer == receiver;
     bool const issuerHigh = issuer > receiver;
 
-    // LCOV_EXCL_START
     if (senderIssuer)
-        return tecINTERNAL;
-    // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (receiverIssuer)
         return tesSUCCESS;
@@ -1120,8 +1087,13 @@ escrowUnlockApplyHelper<MPTIssue>(
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }
-
-    return rippleUnlockEscrowMPT(view, sender, receiver, finalAmt, journal);
+    return rippleUnlockEscrowMPT(
+        view,
+        sender,
+        receiver,
+        finalAmt,
+        view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
+        journal);
 }
 
 TER
@@ -1139,46 +1111,16 @@ EscrowFinish::doApply()
     }
 
     // If a cancel time is present, a finish operation should only succeed prior
-    // to that time. fix1571 corrects a logic error in the check that would make
-    // a finish only succeed strictly after the cancel time.
-    if (ctx_.view().rules().enabled(fix1571))
-    {
-        auto const now = ctx_.view().info().parentCloseTime;
+    // to that time.
+    auto const now = ctx_.view().header().parentCloseTime;
 
-        // Too soon: can't execute before the finish time
-        if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
-        {
-            JLOG(j_.debug()) << "Too soon";
-            return tecNO_PERMISSION;
-        }
+    // Too soon: can't execute before the finish time
+    if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
+        return tecNO_PERMISSION;
 
-        // Too late: can't execute after the cancel time
-        if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
-        {
-            JLOG(j_.debug()) << "Too late";
-            return tecNO_PERMISSION;
-        }
-    }
-    else
-    {
-        // Too soon?
-        if ((*slep)[~sfFinishAfter] &&
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-                (*slep)[sfFinishAfter])
-        {
-            JLOG(j_.debug()) << "Too soon?";
-            return tecNO_PERMISSION;
-        }
-
-        // Too late?
-        if ((*slep)[~sfCancelAfter] &&
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-                (*slep)[sfCancelAfter])
-        {
-            JLOG(j_.debug()) << "Too late?";
-            return tecNO_PERMISSION;
-        }
-    }
+    // Too late: can't execute after the cancel time
+    if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
+        return tecNO_PERMISSION;
 
     AccountID const destID = (*slep)[sfDestination];
     auto const sled = ctx_.view().peek(keylet::account(destID));
@@ -1188,13 +1130,10 @@ EscrowFinish::doApply()
         if (!sled)
             return tecNO_DST;
 
-        if (ctx_.view().rules().enabled(featureDepositAuth))
-        {
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
     }
 
     // Check cryptocondition fulfillment
@@ -1209,6 +1148,7 @@ EscrowFinish::doApply()
         // simply re-run the check.
         if (cb && !any(flags & (SF_CF_INVALID | SF_CF_VALID)))
         {
+            // LCOV_EXCL_START
             auto const fb = ctx_.tx[~sfFulfillment];
 
             if (!fb)
@@ -1220,6 +1160,7 @@ EscrowFinish::doApply()
                 flags = SF_CF_INVALID;
 
             ctx_.app.getHashRouter().setFlags(id, flags);
+            // LCOV_EXCL_STOP
         }
 
         // If the check failed, then simply return an error
@@ -1250,13 +1191,10 @@ EscrowFinish::doApply()
         if (!sled)
             return tecNO_DST;
 
-        if (ctx_.view().rules().enabled(featureDepositAuth))
-        {
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
     }
 
     // Execute custom release function
@@ -1277,16 +1215,28 @@ EscrowFinish::doApply()
         }
         std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
         auto re = runEscrowWasm(
-            wasm, ESCROW_FUNCTION_NAME, {}, &ledgerDataProvider, allowance);
+            wasm, ledgerDataProvider, ESCROW_FUNCTION_NAME, {}, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
+
+        if (auto const& data = ledgerDataProvider.getData(); data.has_value())
+        {
+            slep->setFieldVL(sfData, makeSlice(*data));
+            ctx_.view().update(slep);
+        }
+
         if (re.has_value())
         {
             auto reValue = re.value().result;
-            ctx_.setWasmReturnCode(reValue);
-            // TODO: better error handling for this conversion
-            ctx_.setGasUsed(static_cast<uint32_t>(re.value().cost));
+            auto reCost = re.value().cost;
             JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue)
-                             << ", cost: " << re.value().cost;
+                             << ", cost: " << reCost;
+
+            ctx_.setWasmReturnCode(reValue);
+
+            if (reCost < 0 || reCost > std::numeric_limits<uint32_t>::max())
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            ctx_.setGasUsed(static_cast<uint32_t>(reCost));
+
             if (reValue <= 0)
             {
                 return tecWASM_REJECTED;
@@ -1307,8 +1257,10 @@ EscrowFinish::doApply()
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(account), page, k.key, true))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete Escrow from owner.";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 
@@ -1318,8 +1270,10 @@ EscrowFinish::doApply()
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(destID), *optPage, k.key, true))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 
@@ -1333,7 +1287,7 @@ EscrowFinish::doApply()
             return temDISABLED;  // LCOV_EXCL_LINE
 
         Rate lockedRate = slep->isFieldPresent(sfTransferRate)
-            ? ripple::Rate(slep->getFieldU32(sfTransferRate))
+            ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
             : parityRate;
         auto const issuer = amount.getIssuer();
         bool const createAsset = destID == account_;
@@ -1361,21 +1315,22 @@ EscrowFinish::doApply()
             if (!ctx_.view().dirRemove(
                     keylet::ownerDir(issuer), *optPage, k.key, true))
             {
+                // LCOV_EXCL_START
                 JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
-                return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+                return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
             }
         }
     }
 
     ctx_.view().update(sled);
 
+    auto const reserveToSubtract =
+        calculateAdditionalReserve((*slep)[~sfFinishFunction]);
+
     // Adjust source owner count
     auto const sle = ctx_.view().peek(keylet::account(account));
-    adjustOwnerCount(
-        ctx_.view(),
-        sle,
-        slep->isFieldPresent(sfFinishFunction) ? -2 : -1,
-        ctx_.journal);
+    adjustOwnerCount(ctx_.view(), sle, -1 * reserveToSubtract, ctx_.journal);
     ctx_.view().update(sle);
 
     // Remove escrow from ledger
@@ -1388,13 +1343,7 @@ EscrowFinish::doApply()
 NotTEC
 EscrowCancel::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 template <ValidIssueType T>
@@ -1495,26 +1444,15 @@ EscrowCancel::doApply()
         return tecNO_TARGET;
     }
 
-    if (ctx_.view().rules().enabled(fix1571))
-    {
-        auto const now = ctx_.view().info().parentCloseTime;
+    auto const now = ctx_.view().header().parentCloseTime;
 
-        // No cancel time specified: can't execute at all.
-        if (!(*slep)[~sfCancelAfter])
-            return tecNO_PERMISSION;
+    // No cancel time specified: can't execute at all.
+    if (!(*slep)[~sfCancelAfter])
+        return tecNO_PERMISSION;
 
-        // Too soon: can't execute before the cancel time.
-        if (!after(now, (*slep)[sfCancelAfter]))
-            return tecNO_PERMISSION;
-    }
-    else
-    {
-        // Too soon?
-        if (!(*slep)[~sfCancelAfter] ||
-            ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
-                (*slep)[sfCancelAfter])
-            return tecNO_PERMISSION;
-    }
+    // Too soon: can't execute before the cancel time.
+    if (!after(now, (*slep)[sfCancelAfter]))
+        return tecNO_PERMISSION;
 
     AccountID const account = (*slep)[sfAccount];
 
@@ -1524,8 +1462,10 @@ EscrowCancel::doApply()
         if (!ctx_.view().dirRemove(
                 keylet::ownerDir(account), page, k.key, true))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete Escrow from owner.";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 
@@ -1538,8 +1478,10 @@ EscrowCancel::doApply()
                 k.key,
                 true))
         {
+            // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
             return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
         }
     }
 
@@ -1580,17 +1522,17 @@ EscrowCancel::doApply()
             if (!ctx_.view().dirRemove(
                     keylet::ownerDir(issuer), *optPage, k.key, true))
             {
+                // LCOV_EXCL_START
                 JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
-                return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+                return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
             }
         }
     }
 
-    adjustOwnerCount(
-        ctx_.view(),
-        sle,
-        slep->isFieldPresent(sfFinishFunction) ? -2 : -1,
-        ctx_.journal);
+    auto const reserveToSubtract =
+        calculateAdditionalReserve((*slep)[~sfFinishFunction]);
+    adjustOwnerCount(ctx_.view(), sle, -1 * reserveToSubtract, ctx_.journal);
     ctx_.view().update(sle);
 
     // Remove escrow from ledger
@@ -1599,4 +1541,4 @@ EscrowCancel::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

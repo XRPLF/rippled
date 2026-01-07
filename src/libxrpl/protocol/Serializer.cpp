@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -37,7 +18,7 @@
 #include <string>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 int
 Serializer::add16(std::uint16_t i)
@@ -89,12 +70,6 @@ Serializer::addInteger(std::int32_t i)
 {
     return add32(i);
 }
-template <>
-int
-Serializer::addInteger(std::int64_t i)
-{
-    return add64(i);
-}
 
 int
 Serializer::addRaw(Blob const& vector)
@@ -134,7 +109,7 @@ Serializer::addFieldID(int type, int name)
     int ret = mData.size();
     XRPL_ASSERT(
         (type > 0) && (type < 256) && (name > 0) && (name < 256),
-        "ripple::Serializer::addFieldID : inputs inside range");
+        "xrpl::Serializer::addFieldID : inputs inside range");
 
     if (type < 16)
     {
@@ -206,7 +181,7 @@ Serializer::addVL(Blob const& vector)
     XRPL_ASSERT(
         mData.size() ==
             (ret + vector.size() + encodeLengthLength(vector.size())),
-        "ripple::Serializer::addVL : size matches expected");
+        "xrpl::Serializer::addVL : size matches expected");
     return ret;
 }
 
@@ -511,7 +486,7 @@ SerialIter::getVLDataLength()
     else
     {
         XRPL_ASSERT(
-            lenLen == 3, "ripple::SerialIter::getVLDataLength : lenLen is 3");
+            lenLen == 3, "xrpl::SerialIter::getVLDataLength : lenLen is 3");
         int b2 = get8();
         int b3 = get8();
         datLen = Serializer::decodeVLLength(b1, b2, b3);
@@ -544,4 +519,4 @@ SerialIter::getVLBuffer()
     return getRawHelper<Buffer>(getVLDataLength());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

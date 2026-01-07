@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
-#define RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
+#ifndef XRPL_PEERFINDER_MANAGER_H_INCLUDED
+#define XRPL_PEERFINDER_MANAGER_H_INCLUDED
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/Slot.h>
@@ -28,7 +9,9 @@
 
 #include <boost/asio/ip/tcp.hpp>
 
-namespace ripple {
+#include <string_view>
+
+namespace xrpl {
 namespace PeerFinder {
 
 using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
@@ -103,10 +86,13 @@ struct Config
      */
     static Config
     makeConfig(
-        ripple::Config const& config,
+        xrpl::Config const& config,
         std::uint16_t port,
         bool validationPublicKey,
         int ipLimit);
+
+    friend bool
+    operator==(Config const& lhs, Config const& rhs);
 };
 
 //------------------------------------------------------------------------------
@@ -134,7 +120,47 @@ using Endpoints = std::vector<Endpoint>;
 //------------------------------------------------------------------------------
 
 /** Possible results from activating a slot. */
-enum class Result { duplicate, full, success };
+enum class Result {
+    inboundDisabled,
+    duplicatePeer,
+    ipLimitExceeded,
+    full,
+    success
+};
+
+/**
+ * @brief Converts a `Result` enum value to its string representation.
+ *
+ * This function provides a human-readable string for a given `Result` enum,
+ * which is useful for logging, debugging, or displaying status messages.
+ *
+ * @param result The `Result` enum value to convert.
+ * @return A `std::string_view` representing the enum value. Returns "unknown"
+ * if the enum value is not explicitly handled.
+ *
+ * @note This function returns a `std::string_view` for performance.
+ * A `std::string` would need to allocate memory on the heap and copy the
+ * string literal into it every time the function is called.
+ */
+inline std::string_view
+to_string(Result result) noexcept
+{
+    switch (result)
+    {
+        case Result::inboundDisabled:
+            return "inbound disabled";
+        case Result::duplicatePeer:
+            return "peer already connected";
+        case Result::ipLimitExceeded:
+            return "ip limit exceeded";
+        case Result::full:
+            return "slots full";
+        case Result::success:
+            return "success";
+    }
+
+    return "unknown";
+}
 
 /** Maintains a set of IP addresses used for getting into the network. */
 class Manager : public beast::PropertyStream::Source
@@ -202,7 +228,7 @@ public:
         If nullptr is returned, then the slot could not be assigned.
         Usually this is because of a detected self-connection.
     */
-    virtual std::shared_ptr<Slot>
+    virtual std::pair<std::shared_ptr<Slot>, Result>
     new_inbound_slot(
         beast::IP::Endpoint const& local_endpoint,
         beast::IP::Endpoint const& remote_endpoint) = 0;
@@ -211,7 +237,7 @@ public:
         If nullptr is returned, then the slot could not be assigned.
         Usually this is because of a duplicate connection.
     */
-    virtual std::shared_ptr<Slot>
+    virtual std::pair<std::shared_ptr<Slot>, Result>
     new_outbound_slot(beast::IP::Endpoint const& remote_endpoint) = 0;
 
     /** Called when mtENDPOINTS is received. */
@@ -277,6 +303,6 @@ public:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

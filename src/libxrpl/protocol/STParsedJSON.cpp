@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -60,7 +41,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace STParsedJSONDetail {
 template <typename U, typename S>
@@ -83,7 +64,8 @@ constexpr std::
     return static_cast<U1>(value);
 }
 
-static std::string
+// LCOV_EXCL_START
+static inline std::string
 make_name(std::string const& object, std::string const& field)
 {
     if (field.empty())
@@ -92,7 +74,7 @@ make_name(std::string const& object, std::string const& field)
     return object + "." + field;
 }
 
-static Json::Value
+static inline Json::Value
 not_an_object(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -100,20 +82,20 @@ not_an_object(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' is not a JSON object.");
 }
 
-static Json::Value
+static inline Json::Value
 not_an_object(std::string const& object)
 {
     return not_an_object(object, "");
 }
 
-static Json::Value
+static inline Json::Value
 not_an_array(std::string const& object)
 {
     return RPC::make_error(
         rpcINVALID_PARAMS, "Field '" + object + "' is not a JSON array.");
 }
 
-static Json::Value
+static inline Json::Value
 unknown_field(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -121,7 +103,7 @@ unknown_field(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' is unknown.");
 }
 
-static Json::Value
+static inline Json::Value
 out_of_range(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -129,7 +111,7 @@ out_of_range(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' is out of range.");
 }
 
-static Json::Value
+static inline Json::Value
 bad_type(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -137,7 +119,7 @@ bad_type(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' has bad type.");
 }
 
-static Json::Value
+static inline Json::Value
 invalid_data(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -145,13 +127,13 @@ invalid_data(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' has invalid data.");
 }
 
-static Json::Value
+static inline Json::Value
 invalid_data(std::string const& object)
 {
     return invalid_data(object, "");
 }
 
-static Json::Value
+static inline Json::Value
 array_expected(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -159,7 +141,7 @@ array_expected(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' must be a JSON array.");
 }
 
-static Json::Value
+static inline Json::Value
 string_expected(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -167,7 +149,7 @@ string_expected(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' must be a string.");
 }
 
-static Json::Value
+static inline Json::Value
 too_deep(std::string const& object)
 {
     return RPC::make_error(
@@ -175,7 +157,7 @@ too_deep(std::string const& object)
         "Field '" + object + "' exceeds nesting depth limit.");
 }
 
-static Json::Value
+static inline Json::Value
 singleton_expected(std::string const& object, unsigned int index)
 {
     return RPC::make_error(
@@ -184,7 +166,7 @@ singleton_expected(std::string const& object, unsigned int index)
             "]' must be an object with a single key/object value.");
 }
 
-static Json::Value
+static inline Json::Value
 template_mismatch(SField const& sField)
 {
     return RPC::make_error(
@@ -193,13 +175,183 @@ template_mismatch(SField const& sField)
             "' contents did not meet requirements for that type.");
 }
 
-static Json::Value
+static inline Json::Value
 non_object_in_array(std::string const& item, Json::UInt index)
 {
     return RPC::make_error(
         rpcINVALID_PARAMS,
         "Item '" + item + "' at index " + std::to_string(index) +
             " is not an object.  Arrays may only contain objects.");
+}
+// LCOV_EXCL_STOP
+
+template <class STResult, class Integer>
+static std::optional<detail::STVar>
+parseUnsigned(
+    SField const& field,
+    std::string const& json_name,
+    std::string const& fieldName,
+    SField const* name,
+    Json::Value const& value,
+    Json::Value& error)
+{
+    std::optional<detail::STVar> ret;
+
+    try
+    {
+        if (value.isString())
+        {
+            ret = detail::make_stvar<STResult>(
+                field,
+                safe_cast<typename STResult::value_type>(
+                    beast::lexicalCastThrow<Integer>(value.asString())));
+        }
+        else if (value.isInt())
+        {
+            ret = detail::make_stvar<STResult>(
+                field,
+                to_unsigned<typename STResult::value_type>(value.asInt()));
+        }
+        else if (value.isUInt())
+        {
+            ret = detail::make_stvar<STResult>(
+                field,
+                to_unsigned<typename STResult::value_type>(value.asUInt()));
+        }
+        else
+        {
+            error = bad_type(json_name, fieldName);
+            return ret;
+        }
+    }
+    catch (std::exception const&)
+    {
+        error = invalid_data(json_name, fieldName);
+        return ret;
+    }
+
+    return ret;
+}
+
+template <class STResult, class Integer = std::uint16_t>
+static std::optional<detail::STVar>
+parseUint16(
+    SField const& field,
+    std::string const& json_name,
+    std::string const& fieldName,
+    SField const* name,
+    Json::Value const& value,
+    Json::Value& error)
+{
+    std::optional<detail::STVar> ret;
+
+    try
+    {
+        if (value.isString())
+        {
+            std::string const strValue = value.asString();
+
+            if (!strValue.empty() &&
+                ((strValue[0] < '0') || (strValue[0] > '9')))
+            {
+                if (field == sfTransactionType)
+                {
+                    ret = detail::make_stvar<STResult>(
+                        field,
+                        safe_cast<typename STResult::value_type>(
+                            static_cast<Integer>(
+                                TxFormats::getInstance().findTypeByName(
+                                    strValue))));
+
+                    if (*name == sfGeneric)
+                        name = &sfTransaction;
+                }
+                else if (field == sfLedgerEntryType)
+                {
+                    ret = detail::make_stvar<STResult>(
+                        field,
+                        safe_cast<typename STResult::value_type>(
+                            static_cast<Integer>(
+                                LedgerFormats::getInstance().findTypeByName(
+                                    strValue))));
+
+                    if (*name == sfGeneric)
+                        name = &sfLedgerEntry;
+                }
+                else
+                {
+                    error = invalid_data(json_name, fieldName);
+                    return ret;
+                }
+            }
+        }
+        if (!ret)
+            return parseUnsigned<STResult, Integer>(
+                field, json_name, fieldName, name, value, error);
+    }
+    catch (std::exception const&)
+    {
+        error = invalid_data(json_name, fieldName);
+        return ret;
+    }
+
+    return ret;
+}
+
+template <class STResult, class Integer = std::uint32_t>
+static std::optional<detail::STVar>
+parseUint32(
+    SField const& field,
+    std::string const& json_name,
+    std::string const& fieldName,
+    SField const* name,
+    Json::Value const& value,
+    Json::Value& error)
+{
+    std::optional<detail::STVar> ret;
+
+    try
+    {
+        if (value.isString())
+        {
+            if (field == sfPermissionValue)
+            {
+                std::string const strValue = value.asString();
+                auto const granularPermission =
+                    Permission::getInstance().getGranularValue(strValue);
+                if (granularPermission)
+                {
+                    ret = detail::make_stvar<STResult>(
+                        field, *granularPermission);
+                }
+                else
+                {
+                    auto const& txType =
+                        TxFormats::getInstance().findTypeByName(strValue);
+                    ret = detail::make_stvar<STResult>(
+                        field,
+                        Permission::getInstance().txToPermissionType(txType));
+                }
+            }
+            else
+            {
+                ret = detail::make_stvar<STResult>(
+                    field,
+                    safe_cast<typename STResult::value_type>(
+                        beast::lexicalCastThrow<Integer>(value.asString())));
+            }
+        }
+        if (!ret)
+            return parseUnsigned<STResult, Integer>(
+                field, json_name, fieldName, name, value, error);
+    }
+    catch (std::exception const&)
+    {
+        error = invalid_data(json_name, fieldName);
+        return ret;
+    }
+
+    return ret;
 }
 
 // This function is used by parseObject to parse any JSON type that doesn't
@@ -216,10 +368,13 @@ parseLeaf(
 
     auto const& field = SField::getField(fieldName);
 
+    // checked in parseObject
     if (field == sfInvalid)
     {
+        // LCOV_EXCL_START
         error = unknown_field(json_name, fieldName);
         return ret;
+        // LCOV_EXCL_STOP
     }
 
     switch (field.fieldType)
@@ -302,130 +457,18 @@ parseLeaf(
             break;
 
         case STI_UINT16:
-            try
-            {
-                if (value.isString())
-                {
-                    std::string const strValue = value.asString();
-
-                    if (!strValue.empty() &&
-                        ((strValue[0] < '0') || (strValue[0] > '9')))
-                    {
-                        if (field == sfTransactionType)
-                        {
-                            ret = detail::make_stvar<STUInt16>(
-                                field,
-                                static_cast<std::uint16_t>(
-                                    TxFormats::getInstance().findTypeByName(
-                                        strValue)));
-
-                            if (*name == sfGeneric)
-                                name = &sfTransaction;
-                        }
-                        else if (field == sfLedgerEntryType)
-                        {
-                            ret = detail::make_stvar<STUInt16>(
-                                field,
-                                static_cast<std::uint16_t>(
-                                    LedgerFormats::getInstance().findTypeByName(
-                                        strValue)));
-
-                            if (*name == sfGeneric)
-                                name = &sfLedgerEntry;
-                        }
-                        else
-                        {
-                            error = invalid_data(json_name, fieldName);
-                            return ret;
-                        }
-                    }
-                    else
-                    {
-                        ret = detail::make_stvar<STUInt16>(
-                            field,
-                            beast::lexicalCastThrow<std::uint16_t>(strValue));
-                    }
-                }
-                else if (value.isInt())
-                {
-                    ret = detail::make_stvar<STUInt16>(
-                        field, to_unsigned<std::uint16_t>(value.asInt()));
-                }
-                else if (value.isUInt())
-                {
-                    ret = detail::make_stvar<STUInt16>(
-                        field, to_unsigned<std::uint16_t>(value.asUInt()));
-                }
-                else
-                {
-                    error = bad_type(json_name, fieldName);
-                    return ret;
-                }
-            }
-            catch (std::exception const&)
-            {
-                error = invalid_data(json_name, fieldName);
+            ret = parseUint16<STUInt16>(
+                field, json_name, fieldName, name, value, error);
+            if (!ret)
                 return ret;
-            }
 
             break;
 
         case STI_UINT32:
-            try
-            {
-                if (value.isString())
-                {
-                    if (field == sfPermissionValue)
-                    {
-                        std::string const strValue = value.asString();
-                        auto const granularPermission =
-                            Permission::getInstance().getGranularValue(
-                                strValue);
-                        if (granularPermission)
-                        {
-                            ret = detail::make_stvar<STUInt32>(
-                                field, *granularPermission);
-                        }
-                        else
-                        {
-                            auto const& txType =
-                                TxFormats::getInstance().findTypeByName(
-                                    strValue);
-                            ret = detail::make_stvar<STUInt32>(
-                                field,
-                                Permission::getInstance().txToPermissionType(
-                                    txType));
-                        }
-                    }
-                    else
-                    {
-                        ret = detail::make_stvar<STUInt32>(
-                            field,
-                            beast::lexicalCastThrow<std::uint32_t>(
-                                value.asString()));
-                    }
-                }
-                else if (value.isInt())
-                {
-                    ret = detail::make_stvar<STUInt32>(
-                        field, to_unsigned<std::uint32_t>(value.asInt()));
-                }
-                else if (value.isUInt())
-                {
-                    ret = detail::make_stvar<STUInt32>(
-                        field, safe_cast<std::uint32_t>(value.asUInt()));
-                }
-                else
-                {
-                    error = bad_type(json_name, fieldName);
-                    return ret;
-                }
-            }
-            catch (std::exception const&)
-            {
-                error = invalid_data(json_name, fieldName);
+            ret = parseUint32<STUInt32>(
+                field, json_name, fieldName, name, value, error);
+            if (!ret)
                 return ret;
-            }
 
             break;
 
@@ -585,11 +628,17 @@ parseLeaf(
                 }
                 else if (value.isInt())
                 {
+                    // future-proofing - a static assert failure if the JSON
+                    // library ever supports larger ints
+                    // In such case, we will need additional bounds checks here
+                    static_assert(
+                        std::is_same_v<decltype(value.asInt()), std::int32_t>);
                     ret = detail::make_stvar<STInt32>(field, value.asInt());
                 }
                 else if (value.isUInt())
                 {
-                    if (value.asUInt() >
+                    auto const uintValue = value.asUInt();
+                    if (uintValue >
                         static_cast<std::uint32_t>(
                             std::numeric_limits<std::int32_t>::max()))
                     {
@@ -597,7 +646,7 @@ parseLeaf(
                         return ret;
                     }
                     ret = detail::make_stvar<STInt32>(
-                        field, safe_cast<std::int32_t>(value.asInt()));
+                        field, static_cast<std::int32_t>(uintValue));
                 }
                 else
                 {
@@ -742,6 +791,12 @@ parseLeaf(
                         bool hasCurrency = false;
                         AccountID uAccount, uIssuer;
                         Currency uCurrency;
+
+                        if (!account && !currency && !issuer)
+                        {
+                            error = invalid_data(element_name);
+                            return ret;
+                        }
 
                         if (account)
                         {
@@ -1135,24 +1190,4 @@ STParsedJSONObject::STParsedJSONObject(
     object = parseObject(name, json, sfGeneric, 0, error);
 }
 
-//------------------------------------------------------------------------------
-
-STParsedJSONArray::STParsedJSONArray(
-    std::string const& name,
-    Json::Value const& json)
-{
-    using namespace STParsedJSONDetail;
-    auto arr = parseArray(name, json, sfGeneric, 0, error);
-    if (!arr)
-        array.reset();
-    else
-    {
-        auto p = dynamic_cast<STArray*>(&arr->get());
-        if (p == nullptr)
-            array.reset();
-        else
-            array = std::move(*p);
-    }
-}
-
-}  // namespace ripple
+}  // namespace xrpl

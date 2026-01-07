@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
@@ -33,7 +14,7 @@
 #include <optional>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -125,6 +106,38 @@ class Simulate_test : public beast::unit_test::suite
             validate(env.rpc("simulate", tx_blob), tx);
             validate(env.rpc("simulate", tx_blob, "binary"), tx);
         }
+
+        BEAST_EXPECTS(
+            env.current()->txCount() == 0,
+            std::to_string(env.current()->txCount()));
+    }
+
+    void
+    testTxJsonMetadataField(
+        jtx::Env& env,
+        Json::Value const& tx,
+        std::function<void(
+            Json::Value const&,
+            Json::Value const&,
+            Json::Value const&,
+            Json::Value const&)> const& validate,
+        Json::Value const& expectedMetadataKey,
+        Json::Value const& expectedMetadataValue)
+    {
+        env.close();
+
+        Json::Value params;
+        params[jss::tx_json] = tx;
+        validate(
+            env.rpc("json", "simulate", to_string(params)),
+            tx,
+            expectedMetadataKey,
+            expectedMetadataValue);
+        validate(
+            env.rpc("simulate", to_string(tx)),
+            tx,
+            expectedMetadataKey,
+            expectedMetadataValue);
 
         BEAST_EXPECTS(
             env.current()->txCount() == 0,
@@ -1014,7 +1027,7 @@ class Simulate_test : public beast::unit_test::suite
 
         auto jv = credentials::create(subject, issuer, credType);
         uint32_t const t =
-            env.current()->info().parentCloseTime.time_since_epoch().count();
+            env.current()->header().parentCloseTime.time_since_epoch().count();
         jv[sfExpiration.jsonName] = t;
         env(jv);
         env.close();
@@ -1186,6 +1199,103 @@ class Simulate_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testSuccessfulTransactionAdditionalMetadata()
+    {
+        testcase("Successful transaction with additional metadata");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
+                    cfg->NETWORK_ID = 1025;
+                    return cfg;
+                })};
+
+        Account const alice("alice");
+        Account const bob("bob");
+
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+        // deliver_amount is unavailable in the metadata before 2014-02-01
+        // so proceed to 2014-02-01
+        env.close(NetClock::time_point{446000000s});
+
+        {
+            auto validateOutput =
+                [&](Json::Value const& resp,
+                    Json::Value const& tx,
+                    Json::Value const& expectedMetadataKey,
+                    Json::Value const& expectedMetadataValue) {
+                    auto result = resp[jss::result];
+
+                    BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+                    BEAST_EXPECT(result[jss::engine_result_code] == 0);
+                    BEAST_EXPECT(
+                        result[jss::engine_result_message] ==
+                        "The simulated transaction would have been applied.");
+
+                    if (BEAST_EXPECT(
+                            result.isMember(jss::meta) ||
+                            result.isMember(jss::meta_blob)))
+                    {
+                        Json::Value const metadata = getJsonMetadata(result);
+
+                        BEAST_EXPECT(
+                            metadata[sfTransactionIndex.jsonName] == 0);
+                        BEAST_EXPECT(
+                            metadata[sfTransactionResult.jsonName] ==
+                            "tesSUCCESS");
+                        BEAST_EXPECT(
+                            metadata.isMember(expectedMetadataKey.asString()));
+                        BEAST_EXPECT(
+                            metadata[expectedMetadataKey.asString()] ==
+                            expectedMetadataValue);
+                    }
+                };
+
+            {
+                Json::Value tx;
+                tx[jss::Account] = alice.human();
+                tx[jss::TransactionType] = jss::Payment;
+                tx[sfDestination] = bob.human();
+                tx[sfAmount] = "100";
+
+                // test delivered amount
+                testTxJsonMetadataField(
+                    env, tx, validateOutput, jss::delivered_amount, "100");
+            }
+
+            {
+                Json::Value tx;
+                tx[jss::Account] = alice.human();
+                tx[jss::TransactionType] = jss::NFTokenMint;
+                tx[sfNFTokenTaxon] = 1;
+
+                Json::Value nftokenId =
+                    to_string(token::getNextID(env, alice, 1));
+                // test nft synthetic
+                testTxJsonMetadataField(
+                    env, tx, validateOutput, jss::nftoken_id, nftokenId);
+            }
+
+            {
+                Json::Value tx;
+                tx[jss::Account] = alice.human();
+                tx[jss::TransactionType] = jss::MPTokenIssuanceCreate;
+
+                Json::Value mptIssuanceId =
+                    to_string(makeMptID(env.seq(alice), alice));
+                // test mpt issuance id
+                testTxJsonMetadataField(
+                    env,
+                    tx,
+                    validateOutput,
+                    jss::mpt_issuance_id,
+                    mptIssuanceId);
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -1202,11 +1312,12 @@ public:
         testMultisignedBadPubKey();
         testDeleteExpiredCredentials();
         testSuccessfulTransactionNetworkID();
+        testSuccessfulTransactionAdditionalMetadata();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Simulate, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Simulate, rpc, xrpl);
 
 }  // namespace test
 
-}  // namespace ripple
+}  // namespace xrpl

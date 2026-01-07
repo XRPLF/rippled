@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_OVERLAY_SLOT_H_INCLUDED
-#define RIPPLE_OVERLAY_SLOT_H_INCLUDED
+#ifndef XRPL_OVERLAY_SLOT_H_INCLUDED
+#define XRPL_OVERLAY_SLOT_H_INCLUDED
 
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/Peer.h>
@@ -39,7 +20,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 namespace reduce_relay {
 
@@ -393,7 +374,7 @@ Slot<clock_type>::update(
 
         XRPL_ASSERT(
             peers_.size() >= maxSelectedPeers_,
-            "ripple::reduce_relay::Slot::update : minimum peers");
+            "xrpl::reduce_relay::Slot::update : minimum peers");
 
         // squelch peers which are not selected and
         // not already squelched
@@ -436,7 +417,7 @@ Slot<clock_type>::getSquelchDuration(std::size_t npeers)
         JLOG(journal_.warn())
             << "getSquelchDuration: unexpected squelch duration " << npeers;
     }
-    return seconds{ripple::rand_int(MIN_UNSQUELCH_EXPIRE / 1s, m / 1s)};
+    return seconds{xrpl::rand_int(MIN_UNSQUELCH_EXPIRE / 1s, m / 1s)};
 }
 
 template <typename clock_type>
@@ -446,6 +427,8 @@ Slot<clock_type>::deletePeer(PublicKey const& validator, id_t id, bool erase)
     auto it = peers_.find(id);
     if (it != peers_.end())
     {
+        std::vector<Peer::id_t> toUnsquelch;
+
         JLOG(journal_.trace())
             << "deletePeer: " << Slice(validator) << " " << id << " selected "
             << (it->second.state == PeerState::Selected) << " considered "
@@ -457,7 +440,7 @@ Slot<clock_type>::deletePeer(PublicKey const& validator, id_t id, bool erase)
             for (auto& [k, v] : peers_)
             {
                 if (v.state == PeerState::Squelched)
-                    handler_.unsquelch(validator, k);
+                    toUnsquelch.push_back(k);
                 v.state = PeerState::Counting;
                 v.count = 0;
                 v.expire = now;
@@ -479,6 +462,10 @@ Slot<clock_type>::deletePeer(PublicKey const& validator, id_t id, bool erase)
 
         if (erase)
             peers_.erase(it);
+
+        // Must be after peers_.erase(it)
+        for (auto const& k : toUnsquelch)
+            handler_.unsquelch(validator, k);
     }
 }
 
@@ -834,6 +821,6 @@ Slots<clock_type>::deleteIdlePeers()
 
 }  // namespace reduce_relay
 
-}  // namespace ripple
+}  // namespace xrpl
 
-#endif  // RIPPLE_OVERLAY_SLOT_H_INCLUDED
+#endif  // XRPL_OVERLAY_SLOT_H_INCLUDED

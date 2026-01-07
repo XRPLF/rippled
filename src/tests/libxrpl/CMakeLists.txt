@@ -1,4 +1,4 @@
-include(xrpl_add_test)
+include(XrplAddTest)
 
 # Test requirements.
 find_package(doctest REQUIRED)
@@ -14,11 +14,19 @@ file(GLOB_RECURSE WASM_SOURCE_FILES
 set(RUST_WASM_OUTPUT_DIR
     ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures/target/wasm32-unknown-unknown/release)
 
+# Ensure the wasm32-unknown-unknown target is installed
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/.wasm_target_installed
+    COMMAND rustup target add wasm32-unknown-unknown
+    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/.wasm_target_installed
+    COMMENT "Ensuring wasm32-unknown-unknown Rust target is installed"
+)
+
 add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/wasm
     COMMAND cargo build --release --target wasm32-unknown-unknown --workspace
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures
-    DEPENDS ${WASM_SOURCE_FILES}
+    DEPENDS ${WASM_SOURCE_FILES} ${CMAKE_BINARY_DIR}/.wasm_target_installed
     COMMENT "Building Rust WASM module"
 )
 
@@ -61,8 +69,11 @@ add_custom_target(embed_wasm_header ALL
   DEPENDS ${EMBED_HEADER}
 )
 
-add_dependencies(rippled embed_wasm_header)
-target_include_directories(rippled PRIVATE ${CMAKE_BINARY_DIR})
+add_dependencies(xrpld embed_wasm_header)
+target_include_directories(xrpld PRIVATE ${CMAKE_BINARY_DIR})
+
+# Custom target for all tests defined in this file
+add_custom_target(xrpl.tests)
 
 # Common library dependencies for the rest of the tests.
 add_library(xrpl.imports.test INTERFACE)
@@ -71,5 +82,19 @@ target_link_libraries(xrpl.imports.test INTERFACE doctest::doctest xrpl.libxrpl)
 # One test for each module.
 xrpl_add_test(basics)
 target_link_libraries(xrpl.test.basics PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.basics)
+
 xrpl_add_test(crypto)
 target_link_libraries(xrpl.test.crypto PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.crypto)
+
+xrpl_add_test(json)
+target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.json)
+
+# Network unit tests are currently not supported on Windows
+if(NOT WIN32)
+  xrpl_add_test(net)
+  target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
+  add_dependencies(xrpl.tests xrpl.test.net)
+endif()

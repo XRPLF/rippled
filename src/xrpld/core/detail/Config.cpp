@@ -1,25 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpld/net/HTTPClient.h>
 
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
@@ -27,6 +7,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SystemParameters.h>
 
@@ -45,7 +26,7 @@
 #if BOOST_OS_WINDOWS
 #include <sysinfoapi.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 [[nodiscard]] std::uint64_t
@@ -58,13 +39,13 @@ getMemorySize()
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 #endif
 
 #if BOOST_OS_LINUX
 #include <sys/sysinfo.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 [[nodiscard]] std::uint64_t
@@ -77,7 +58,7 @@ getMemorySize()
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
 
@@ -85,7 +66,7 @@ getMemorySize()
 #include <sys/sysctl.h>
 #include <sys/types.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 [[nodiscard]] std::uint64_t
@@ -102,10 +83,10 @@ getMemorySize()
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 // clang-format off
 // The configurable node sizes are "tiny", "small", "medium", "large", "huge"
@@ -240,11 +221,12 @@ getSingleSection(
 
 //------------------------------------------------------------------------------
 //
-// Config (DEPRECATED)
+// Config
 //
 //------------------------------------------------------------------------------
 
-char const* const Config::configFileName = "rippled.cfg";
+char const* const Config::configFileName = "xrpld.cfg";
+char const* const Config::configLegacyName = "rippled.cfg";
 char const* const Config::databaseDirName = "db";
 char const* const Config::validatorsFileName = "validators.txt";
 
@@ -269,7 +251,7 @@ void
 Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
 {
     XRPL_ASSERT(
-        NODE_SIZE == 0, "ripple::Config::setupControl : node size not set");
+        NODE_SIZE == 0, "xrpl::Config::setupControl : node size not set");
 
     QUIET = bQuiet || bSilent;
     SILENT = bSilent;
@@ -292,7 +274,7 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
 
         XRPL_ASSERT(
             ns != threshold.second.end(),
-            "ripple::Config::setupControl : valid node size");
+            "xrpl::Config::setupControl : valid node size");
 
         if (ns != threshold.second.end())
             NODE_SIZE = std::distance(threshold.second.begin(), ns);
@@ -304,7 +286,7 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
     }
 
     XRPL_ASSERT(
-        NODE_SIZE <= 4, "ripple::Config::setupControl : node size is set");
+        NODE_SIZE <= 4, "xrpl::Config::setupControl : node size is set");
 }
 
 void
@@ -314,76 +296,78 @@ Config::setup(
     bool bSilent,
     bool bStandalone)
 {
-    boost::filesystem::path dataDir;
-    std::string strDbPath, strConfFile;
+    setupControl(bQuiet, bSilent, bStandalone);
 
     // Determine the config and data directories.
     // If the config file is found in the current working
     // directory, use the current working directory as the
     // config directory and that with "db" as the data
     // directory.
-
-    setupControl(bQuiet, bSilent, bStandalone);
-
-    strDbPath = databaseDirName;
-
-    if (!strConf.empty())
-        strConfFile = strConf;
-    else
-        strConfFile = configFileName;
+    boost::filesystem::path dataDir;
 
     if (!strConf.empty())
     {
         // --conf=<path> : everything is relative that file.
-        CONFIG_FILE = strConfFile;
+        CONFIG_FILE = strConf;
         CONFIG_DIR = boost::filesystem::absolute(CONFIG_FILE);
         CONFIG_DIR.remove_filename();
-        dataDir = CONFIG_DIR / strDbPath;
+        dataDir = CONFIG_DIR / databaseDirName;
     }
     else
     {
-        CONFIG_DIR = boost::filesystem::current_path();
-        CONFIG_FILE = CONFIG_DIR / strConfFile;
-        dataDir = CONFIG_DIR / strDbPath;
-
-        // Construct XDG config and data home.
-        // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-        auto const strHome = getEnvVar("HOME");
-        auto strXdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
-        auto strXdgDataHome = getEnvVar("XDG_DATA_HOME");
-
-        if (boost::filesystem::exists(CONFIG_FILE)
-            // Can we figure out XDG dirs?
-            || (strHome.empty() &&
-                (strXdgConfigHome.empty() || strXdgDataHome.empty())))
+        do
         {
-            // Current working directory is fine, put dbs in a subdir.
-        }
-        else
-        {
-            if (strXdgConfigHome.empty())
+            // Check if either of the config files exist in the current working
+            // directory, in which case the databases will be stored in a
+            // subdirectory.
+            CONFIG_DIR = boost::filesystem::current_path();
+            dataDir = CONFIG_DIR / databaseDirName;
+            CONFIG_FILE = CONFIG_DIR / configFileName;
+            if (boost::filesystem::exists(CONFIG_FILE))
+                break;
+            CONFIG_FILE = CONFIG_DIR / configLegacyName;
+            if (boost::filesystem::exists(CONFIG_FILE))
+                break;
+
+            // Check if the home directory is set, and optionally the XDG config
+            // and/or data directories, as the config may be there. See
+            // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html.
+            auto const strHome = getEnvVar("HOME");
+            if (!strHome.empty())
             {
-                // $XDG_CONFIG_HOME was not set, use default based on $HOME.
-                strXdgConfigHome = strHome + "/.config";
+                auto strXdgConfigHome = getEnvVar("XDG_CONFIG_HOME");
+                auto strXdgDataHome = getEnvVar("XDG_DATA_HOME");
+                if (strXdgConfigHome.empty())
+                {
+                    // $XDG_CONFIG_HOME was not set, use default based on $HOME.
+                    strXdgConfigHome = strHome + "/.config";
+                }
+                if (strXdgDataHome.empty())
+                {
+                    // $XDG_DATA_HOME was not set, use default based on $HOME.
+                    strXdgDataHome = strHome + "/.local/share";
+                }
+
+                // Check if either of the config files exist in the XDG config
+                // dir.
+                dataDir = strXdgDataHome + "/" + systemName();
+                CONFIG_DIR = strXdgConfigHome + "/" + systemName();
+                CONFIG_FILE = CONFIG_DIR / configFileName;
+                if (boost::filesystem::exists(CONFIG_FILE))
+                    break;
+                CONFIG_FILE = CONFIG_DIR / configLegacyName;
+                if (boost::filesystem::exists(CONFIG_FILE))
+                    break;
             }
 
-            if (strXdgDataHome.empty())
-            {
-                // $XDG_DATA_HOME was not set, use default based on $HOME.
-                strXdgDataHome = strHome + "/.local/share";
-            }
-
-            CONFIG_DIR = strXdgConfigHome + "/" + systemName();
-            CONFIG_FILE = CONFIG_DIR / strConfFile;
-            dataDir = strXdgDataHome + "/" + systemName();
-
-            if (!boost::filesystem::exists(CONFIG_FILE))
-            {
-                CONFIG_DIR = "/etc/opt/" + systemName();
-                CONFIG_FILE = CONFIG_DIR / strConfFile;
-                dataDir = "/var/opt/" + systemName();
-            }
-        }
+            // As a last resort, check the system config directory.
+            dataDir = "/var/opt/" + systemName();
+            CONFIG_DIR = "/etc/opt/" + systemName();
+            CONFIG_FILE = CONFIG_DIR / configFileName;
+            if (boost::filesystem::exists(CONFIG_FILE))
+                break;
+            CONFIG_FILE = CONFIG_DIR / configLegacyName;
+        } while (false);
     }
 
     // Update default values
@@ -393,11 +377,9 @@ Config::setup(
         std::string const dbPath(legacy("database_path"));
         if (!dbPath.empty())
             dataDir = boost::filesystem::path(dbPath);
-        else if (RUN_STANDALONE)
-            dataDir.clear();
     }
 
-    if (!dataDir.empty())
+    if (!RUN_STANDALONE)
     {
         boost::system::error_code ec;
         boost::filesystem::create_directories(dataDir, ec);
@@ -409,7 +391,8 @@ Config::setup(
         legacy("database_path", boost::filesystem::absolute(dataDir).string());
     }
 
-    HTTPClient::initializeSSLContext(*this, j_);
+    HTTPClient::initializeSSLContext(
+        this->SSL_VERIFY_DIR, this->SSL_VERIFY_FILE, this->SSL_VERIFY, j_);
 
     if (RUN_STANDALONE)
         LEDGER_HISTORY = 0;
@@ -1117,10 +1100,9 @@ Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
     auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
     XRPL_ASSERT(
         index < sizedItems.size(),
-        "ripple::Config::getValueFor : valid index input");
+        "xrpl::Config::getValueFor : valid index input");
     XRPL_ASSERT(
-        !node || *node <= 4,
-        "ripple::Config::getValueFor : unset or valid node");
+        !node || *node <= 4, "xrpl::Config::getValueFor : unset or valid node");
     return sizedItems.at(index).second.at(node.value_or(NODE_SIZE));
 }
 
@@ -1150,4 +1132,4 @@ setup_FeeVote(Section const& section)
     return setup;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

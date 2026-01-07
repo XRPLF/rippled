@@ -1,24 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
-#define RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
+#ifndef XRPL_PROTOCOL_B58_UTILS_H_INCLUDED
+#define XRPL_PROTOCOL_B58_UTILS_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -31,7 +12,7 @@
 #include <system_error>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
 template <class T>
 using Result = boost::outcome_v2::result<T, std::error_code>;
@@ -129,10 +110,12 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
     {
         // should never happen, but if it does then it seems natural to define
         // the a null set of numbers to be zero, so the remainder is also zero.
+        // LCOV_EXCL_START
         UNREACHABLE(
-            "ripple::b58_fast::detail::inplace_bigint_div_rem : empty "
+            "xrpl::b58_fast::detail::inplace_bigint_div_rem : empty "
             "numerator");
         return 0;
+        // LCOV_EXCL_STOP
     }
 
     auto to_u128 = [](std::uint64_t high,
@@ -149,11 +132,11 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
         unsigned __int128 const r = num - (denom128 * d);
         XRPL_ASSERT(
             d >> 64 == 0,
-            "ripple::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
+            "xrpl::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
             "valid division result");
         XRPL_ASSERT(
             r >> 64 == 0,
-            "ripple::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
+            "xrpl::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
             "valid remainder");
         return {static_cast<std::uint64_t>(d), static_cast<std::uint64_t>(r)};
     };
@@ -180,7 +163,7 @@ b58_10_to_b58_be(std::uint64_t input)
         430804206899405824;  // 58^10;
     XRPL_ASSERT(
         input < B_58_10,
-        "ripple::b58_fast::detail::b58_10_to_b58_be : valid input");
+        "xrpl::b58_fast::detail::b58_10_to_b58_be : valid input");
     constexpr std::size_t resultSize = 10;
     std::array<std::uint8_t, resultSize> result{};
     int i = 0;
@@ -198,5 +181,5 @@ b58_10_to_b58_be(std::uint64_t input)
 }  // namespace b58_fast
 #endif
 
-}  // namespace ripple
-#endif  // RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
+}  // namespace xrpl
+#endif  // XRPL_PROTOCOL_B58_UTILS_H_INCLUDED

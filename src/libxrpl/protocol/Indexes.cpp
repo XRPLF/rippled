@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
@@ -44,7 +25,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Type-specific prefix for calculating ledger indices.
 
@@ -96,6 +77,8 @@ enum class LedgerNameSpace : std::uint16_t {
     PERMISSIONED_DOMAIN = 'm',
     DELEGATE = 'E',
     VAULT = 'V',
+    LOAN_BROKER = 'l',  // lower-case L
+    LOAN = 'L',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -114,8 +97,7 @@ indexHash(LedgerNameSpace space, Args const&... args)
 uint256
 getBookBase(Book const& book)
 {
-    XRPL_ASSERT(
-        isConsistent(book), "ripple::getBookBase : input is consistent");
+    XRPL_ASSERT(isConsistent(book), "xrpl::getBookBase : input is consistent");
 
     auto const index = book.domain ? indexHash(
                                          LedgerNameSpace::BOOK_DIR,
@@ -162,7 +144,7 @@ getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
 uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
 {
-    XRPL_ASSERT(ticketSeq.isTicket(), "ripple::getTicketIndex : valid input");
+    XRPL_ASSERT(ticketSeq.isTicket(), "xrpl::getTicketIndex : valid input");
     return getTicketIndex(account, ticketSeq.value());
 }
 
@@ -249,7 +231,7 @@ line(
     // There is code in SetTrust that calls us with id0 == id1, to allow users
     // to locate and delete such "weird" trustlines. If we remove that code, we
     // could enable this assert:
-    // XRPL_ASSERT(id0 != id1, "ripple::keylet::line : accounts must be
+    // XRPL_ASSERT(id0 != id1, "xrpl::keylet::line : accounts must be
     // different");
 
     // A trust line is shared between two accounts; while we typically think
@@ -280,7 +262,7 @@ Keylet
 quality(Keylet const& k, std::uint64_t q) noexcept
 {
     XRPL_ASSERT(
-        k.type == ltDIR_NODE, "ripple::keylet::quality : valid input type");
+        k.type == ltDIR_NODE, "xrpl::keylet::quality : valid input type");
 
     // Indexes are stored in big endian format: they print as hex as stored.
     // Most significant bytes are first and the least significant bytes
@@ -300,7 +282,7 @@ next_t::operator()(Keylet const& k) const
 {
     XRPL_ASSERT(
         k.type == ltDIR_NODE,
-        "ripple::keylet::next_t::operator() : valid input type");
+        "xrpl::keylet::next_t::operator() : valid input type");
     return {ltDIR_NODE, getQualityNext(k.key)};
 }
 
@@ -419,7 +401,7 @@ Keylet
 nftpage(Keylet const& k, uint256 const& token)
 {
     XRPL_ASSERT(
-        k.type == ltNFTOKEN_PAGE, "ripple::keylet::nftpage : valid input type");
+        k.type == ltNFTOKEN_PAGE, "xrpl::keylet::nftpage : valid input type");
     return {ltNFTOKEN_PAGE, (k.key & ~nft::pageMask) + (token & nft::pageMask)};
 }
 
@@ -567,6 +549,18 @@ vault(AccountID const& owner, std::uint32_t seq) noexcept
 }
 
 Keylet
+loanbroker(AccountID const& owner, std::uint32_t seq) noexcept
+{
+    return loanbroker(indexHash(LedgerNameSpace::LOAN_BROKER, owner, seq));
+}
+
+Keylet
+loan(uint256 const& loanBrokerID, std::uint32_t loanSeq) noexcept
+{
+    return loan(indexHash(LedgerNameSpace::LOAN, loanBrokerID, loanSeq));
+}
+
+Keylet
 permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept
 {
     return {
@@ -582,4 +576,4 @@ permissionedDomain(uint256 const& domainID) noexcept
 
 }  // namespace keylet
 
-}  // namespace ripple
+}  // namespace xrpl

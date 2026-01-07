@@ -1,6 +1,3 @@
-//
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
@@ -46,7 +43,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(print, unit_test, beast);
+BEAST_DEFINE_TESTSUITE_MANUAL(print, beast, beast);
 
 }  // namespace unit_test
 }  // namespace beast

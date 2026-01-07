@@ -3,29 +3,29 @@
 | These instructions assume you have a C++ development environment ready with Git, Python, Conan, CMake, and a C++ compiler. For help setting one up on Linux, macOS, or Windows, [see this guide](./docs/build/environment.md). |
 
 > These instructions also assume a basic familiarity with Conan and CMake.
-> If you are unfamiliar with Conan,
-> you can read our [crash course](./docs/build/conan.md)
-> or the official [Getting Started][3] walkthrough.
+> If you are unfamiliar with Conan, you can read our
+> [crash course](./docs/build/conan.md) or the official [Getting Started][3]
+> walkthrough.
 
 ## Branches
 
 For a stable release, choose the `master` branch or one of the [tagged
-releases](https://github.com/ripple/rippled/releases).
+releases](https://github.com/XRPLF/rippled/releases).
 
-```
+```bash
 git checkout master
 ```
 
 For the latest release candidate, choose the `release` branch.
 
-```
+```bash
 git checkout release
 ```
 
 For the latest set of untested features, or to contribute, choose the `develop`
 branch.
 
-```
+```bash
 git checkout develop
 ```
 
@@ -33,159 +33,334 @@ git checkout develop
 
 See [System Requirements](https://xrpl.org/system-requirements.html).
 
-Building rippled generally requires git, Python, Conan, CMake, and a C++ compiler. Some guidance on setting up such a [C++ development environment can be found here](./docs/build/environment.md).
+Building xrpld generally requires git, Python, Conan, CMake, and a C++
+compiler. Some guidance on setting up such a [C++ development environment can be
+found here](./docs/build/environment.md).
 
-- [Python 3.7](https://www.python.org/downloads/)
-- [Conan 1.60](https://conan.io/downloads.html)[^1]
-- [CMake 3.16](https://cmake.org/download/)
+- [Python 3.11](https://www.python.org/downloads/), or higher
+- [Conan 2.17](https://conan.io/downloads.html)[^1], or higher
+- [CMake 3.22](https://cmake.org/download/), or higher
 
 [^1]:
-    It is possible to build with Conan 2.x,
-    but the instructions are significantly different,
-    which is why we are not recommending it yet.
-    Notably, the `conan profile update` command is removed in 2.x.
-    Profiles must be edited by hand.
+    It is possible to build with Conan 1.60+, but the instructions are
+    significantly different, which is why we are not recommending it.
 
-`rippled` is written in the C++20 dialect and includes the `<concepts>` header.
+`xrpld` is written in the C++20 dialect and includes the `<concepts>` header.
 The [minimum compiler versions][2] required are:
 
-| Compiler    | Version |
-| ----------- | ------- |
-| GCC         | 11      |
-| Clang       | 13      |
-| Apple Clang | 13.1.6  |
-| MSVC        | 19.23   |
+| Compiler    | Version   |
+| ----------- | --------- |
+| GCC         | 12        |
+| Clang       | 16        |
+| Apple Clang | 16        |
+| MSVC        | 19.44[^3] |
 
 ### Linux
 
-The Ubuntu operating system has received the highest level of
-quality assurance, testing, and support.
+The Ubuntu Linux distribution has received the highest level of quality
+assurance, testing, and support. We also support Red Hat and use Debian
+internally.
 
-Here are [sample instructions for setting up a C++ development environment on Linux](./docs/build/environment.md#linux).
+Here are [sample instructions for setting up a C++ development environment on
+Linux](./docs/build/environment.md#linux).
 
 ### Mac
 
-Many rippled engineers use macOS for development.
+Many xrpld engineers use macOS for development.
 
-Here are [sample instructions for setting up a C++ development environment on macOS](./docs/build/environment.md#macos).
+Here are [sample instructions for setting up a C++ development environment on
+macOS](./docs/build/environment.md#macos).
 
 ### Windows
 
-Windows is not recommended for production use at this time.
+Windows is used by some engineers for development only.
 
-- Additionally, 32-bit Windows development is not supported.
-
-[Boost]: https://www.boost.org/
+[^3]: Windows is not recommended for production use.
 
 ## Steps
 
 ### Set Up Conan
 
-After you have a [C++ development environment](./docs/build/environment.md) ready with Git, Python, Conan, CMake, and a C++ compiler, you may need to set up your Conan profile.
+After you have a [C++ development environment](./docs/build/environment.md) ready with Git, Python,
+Conan, CMake, and a C++ compiler, you may need to set up your Conan profile.
 
-These instructions assume a basic familiarity with Conan and CMake.
+These instructions assume a basic familiarity with Conan and CMake. If you are
+unfamiliar with Conan, then please read [this crash course](./docs/build/conan.md) or the official
+[Getting Started][3] walkthrough.
 
-If you are unfamiliar with Conan, then please read [this crash course](./docs/build/conan.md) or the official [Getting Started][3] walkthrough.
+#### Conan lockfile
 
-You'll need at least one Conan profile:
+To achieve reproducible dependencies, we use a [Conan lockfile](https://docs.conan.io/2/tutorial/versioning/lockfiles.html),
+which has to be updated every time dependencies change.
 
-```
-conan profile new default --detect
-```
+Please see the [instructions on how to regenerate the lockfile](conan/lockfile/README.md).
 
-Update the compiler settings:
+#### Default profile
 
-```
-conan profile update settings.compiler.cppstd=20 default
-```
+We recommend that you import the provided `conan/profiles/default` profile:
 
-Configure Conan (1.x only) to use recipe revisions:
-
-```
-conan config set general.revisions_enabled=1
+```bash
+conan config install conan/profiles/ -tf $(conan config home)/profiles/
 ```
 
-**Linux** developers will commonly have a default Conan [profile][] that compiles
-with GCC and links with libstdc++.
-If you are linking with libstdc++ (see profile setting `compiler.libcxx`),
-then you will need to choose the `libstdc++11` ABI:
+You can check your Conan profile by running:
 
-```
-conan profile update settings.compiler.libcxx=libstdc++11 default
+```bash
+conan profile show
 ```
 
-Ensure inter-operability between `boost::string_view` and `std::string_view` types:
+#### Custom profile
 
-```
-conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_BEAST_USE_STD_STRING_VIEW"]' default
-conan profile update 'env.CXXFLAGS="-DBOOST_BEAST_USE_STD_STRING_VIEW"' default
-```
+If the default profile does not work for you and you do not yet have a Conan
+profile, you can create one by running:
 
-If you have other flags in the `conf.tools.build` or `env.CXXFLAGS` sections, make sure to retain the existing flags and append the new ones. You can check them with:
-
-```
-conan profile show default
+```bash
+conan profile detect
 ```
 
-**Windows** developers may need to use the x64 native build tools.
-An easy way to do that is to run the shortcut "x64 Native Tools Command
-Prompt" for the version of Visual Studio that you have installed.
+You may need to make changes to the profile to suit your environment. You can
+refer to the provided `conan/profiles/default` profile for inspiration, and you
+may also need to apply the required [tweaks](#conan-profile-tweaks) to this
+default profile.
 
-Windows developers must also build `rippled` and its dependencies for the x64
+### Patched recipes
+
+The recipes in Conan Center occasionally need to be patched for compatibility
+with the latest version of `xrpld`. We maintain a fork of the Conan Center
+[here](https://github.com/XRPLF/conan-center-index/) containing the patches.
+
+To ensure our patched recipes are used, you must add our Conan remote at a
+higher index than the default Conan Center remote, so it is consulted first. You
+can do this by running:
+
+```bash
+conan remote add --index 0 xrplf https://conan.ripplex.io
+```
+
+Alternatively, you can pull the patched recipes into the repository and use them
+locally:
+
+```bash
+# Extract the version number from the lockfile.
+function extract_version {
+  version=$(cat conan.lock | sed -nE "s@.+${1}/(.+)#.+@\1@p" | head -n1)
+  echo ${version}
+}
+
+# Define which recipes to export.
+recipes=(ed25519 grpc secp256k1 snappy soci)
+
+# Selectively check out the recipes from our CCI fork.
+cd external
+mkdir -p conan-center-index
+cd conan-center-index
+git init
+git remote add origin git@github.com:XRPLF/conan-center-index.git
+git sparse-checkout init
+for recipe in ${recipes[@]}; do
+  echo "Checking out ${recipe}..."
+  git sparse-checkout add recipes/${recipe}/all
+done
+git fetch origin master
+git checkout master
+cd ../..
+
+# Export the recipes into the local cache.
+for recipe in ${recipes[@]}; do
+  version=$(extract_version ${recipe})
+  echo "Exporting ${recipe}/${version}..."
+  conan export --version $(extract_version ${recipe}) \
+    external/conan-center-index/recipes/${recipe}/all
+done
+```
+
+In the case we switch to a newer version of a dependency that still requires a
+patch, it will be necessary for you to pull in the changes and re-export the
+updated dependencies with the newer version. However, if we switch to a newer
+version that no longer requires a patch, no action is required on your part, as
+the new recipe will be automatically pulled from the official Conan Center.
+
+> [!NOTE]
+> You might need to add `--lockfile=""` to your `conan install` command
+> to avoid automatic use of the existing `conan.lock` file when you run
+> `conan export` manually on your machine
+
+### Conan profile tweaks
+
+#### Missing compiler version
+
+If you see an error similar to the following after running `conan profile show`:
+
+```bash
+ERROR: Invalid setting '17' is not a valid 'settings.compiler.version' value.
+Possible values are ['5.0', '5.1', '6.0', '6.1', '7.0', '7.3', '8.0', '8.1',
+'9.0', '9.1', '10.0', '11.0', '12.0', '13', '13.0', '13.1', '14', '14.0', '15',
+'15.0', '16', '16.0']
+Read "http://docs.conan.io/2/knowledge/faq.html#error-invalid-setting"
+```
+
+you need to amend the list of compiler versions in
+`$(conan config home)/settings.yml`, by appending the required version number(s)
+to the `version` array specific for your compiler. For example:
+
+```yaml
+apple-clang:
+  version:
+    [
+      "5.0",
+      "5.1",
+      "6.0",
+      "6.1",
+      "7.0",
+      "7.3",
+      "8.0",
+      "8.1",
+      "9.0",
+      "9.1",
+      "10.0",
+      "11.0",
+      "12.0",
+      "13",
+      "13.0",
+      "13.1",
+      "14",
+      "14.0",
+      "15",
+      "15.0",
+      "16",
+      "16.0",
+      "17",
+      "17.0",
+    ]
+```
+
+#### Multiple compilers
+
+If you have multiple compilers installed, make sure to select the one to use in
+your default Conan configuration **before** running `conan profile detect`, by
+setting the `CC` and `CXX` environment variables.
+
+For example, if you are running MacOS and have [homebrew
+LLVM@18](https://formulae.brew.sh/formula/llvm@18), and want to use it as a
+compiler in the new Conan profile:
+
+```bash
+export CC=$(brew --prefix llvm@18)/bin/clang
+export CXX=$(brew --prefix llvm@18)/bin/clang++
+conan profile detect
+```
+
+You should also explicitly set the path to the compiler in the profile file,
+which helps to avoid errors when `CC` and/or `CXX` are set and disagree with the
+selected Conan profile. For example:
+
+```text
+[conf]
+tools.build:compiler_executables={'c':'/usr/bin/gcc','cpp':'/usr/bin/g++'}
+```
+
+#### Multiple profiles
+
+You can manage multiple Conan profiles in the directory
+`$(conan config home)/profiles`, for example renaming `default` to a different
+name and then creating a new `default` profile for a different compiler.
+
+#### Select language
+
+The default profile created by Conan will typically select different C++ dialect
+than C++20 used by this project. You should set `20` in the profile line
+starting with `compiler.cppstd=`. For example:
+
+```bash
+sed -i.bak -e 's|^compiler\.cppstd=.*$|compiler.cppstd=20|' $(conan config home)/profiles/default
+```
+
+#### Select standard library in Linux
+
+**Linux** developers will commonly have a default Conan [profile][] that
+compiles with GCC and links with libstdc++. If you are linking with libstdc++
+(see profile setting `compiler.libcxx`), then you will need to choose the
+`libstdc++11` ABI:
+
+```bash
+sed -i.bak -e 's|^compiler\.libcxx=.*$|compiler.libcxx=libstdc++11|' $(conan config home)/profiles/default
+```
+
+#### Select architecture and runtime in Windows
+
+**Windows** developers may need to use the x64 native build tools. An easy way
+to do that is to run the shortcut "x64 Native Tools Command Prompt" for the
+version of Visual Studio that you have installed.
+
+Windows developers must also build `xrpld` and its dependencies for the x64
 architecture:
 
-```
-conan profile update settings.arch=x86_64 default
-```
-
-### Multiple compilers
-
-When `/usr/bin/g++` exists on a platform, it is the default cpp compiler. This
-default works for some users.
-
-However, if this compiler cannot build rippled or its dependencies, then you can
-install another compiler and set Conan and CMake to use it.
-Update the `conf.tools.build:compiler_executables` setting in order to set the correct variables (`CMAKE_<LANG>_COMPILER`) in the
-generated CMake toolchain file.
-For example, on Ubuntu 20, you may have gcc at `/usr/bin/gcc` and g++ at `/usr/bin/g++`; if that is the case, you can select those compilers with:
-
-```
-conan profile update 'conf.tools.build:compiler_executables={"c": "/usr/bin/gcc", "cpp": "/usr/bin/g++"}' default
+```bash
+sed -i.bak -e 's|^arch=.*$|arch=x86_64|' $(conan config home)/profiles/default
 ```
 
-Replace `/usr/bin/gcc` and `/usr/bin/g++` with paths to the desired compilers.
+**Windows** developers also must select static runtime:
 
-It should choose the compiler for dependencies as well,
-but not all of them have a Conan recipe that respects this setting (yet).
-For the rest, you can set these environment variables.
-Replace `<path>` with paths to the desired compilers:
-
-- `conan profile update env.CC=<path> default`
-- `conan profile update env.CXX=<path> default`
-
-Export our [Conan recipe for Snappy](./external/snappy).
-It does not explicitly link the C++ standard library,
-which allows you to statically link it with GCC, if you want.
-
-```
-# Conan 2.x
-conan export --version 1.1.10 external/snappy
+```bash
+sed -i.bak -e 's|^compiler\.runtime=.*$|compiler.runtime=static|' $(conan config home)/profiles/default
 ```
 
-Export our [Conan recipe for SOCI](./external/soci).
-It patches their CMake to correctly import its dependencies.
+#### Clang workaround for grpc
 
-```
-# Conan 2.x
-conan export --version 4.0.3 external/soci
+If your compiler is clang, version 19 or later, or apple-clang, version 17 or
+later, you may encounter a compilation error while building the `grpc`
+dependency:
+
+```text
+In file included from .../lib/promise/try_seq.h:26:
+.../lib/promise/detail/basic_seq.h:499:38: error: a template argument list is expected after a name prefixed by the template keyword [-Wmissing-template-arg-list-after-template-kw]
+  499 |                     Traits::template CallSeqFactory(f_, *cur_, std::move(arg)));
+      |                                      ^
 ```
 
-Export our [Conan recipe for WAMR](./external/wamr).
-It add metering and expose some internal structures.
+The workaround for this error is to add two lines to profile:
 
+```text
+[conf]
+tools.build:cxxflags=['-Wno-missing-template-arg-list-after-template-kw']
 ```
-# Conan 2.x
-conan export --version 2.4.1 external/wamr
+
+#### Workaround for gcc 12
+
+If your compiler is gcc, version 12, and you have enabled `werr` option, you may
+encounter a compilation error such as:
+
+```text
+/usr/include/c++/12/bits/char_traits.h:435:56: error: 'void* __builtin_memcpy(void*, const void*, long unsigned int)' accessing 9223372036854775810 or more bytes at offsets [2, 9223372036854775807] and 1 may overlap up to 9223372036854775813 bytes at offset -3 [-Werror=restrict]
+  435 |         return static_cast<char_type*>(__builtin_memcpy(__s1, __s2, __n));
+      |                                        ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~
+cc1plus: all warnings being treated as errors
+```
+
+The workaround for this error is to add two lines to your profile:
+
+```text
+[conf]
+tools.build:cxxflags=['-Wno-restrict']
+```
+
+#### Workaround for clang 16
+
+If your compiler is clang, version 16, you may encounter compilation error such
+as:
+
+```text
+In file included from .../boost/beast/websocket/stream.hpp:2857:
+.../boost/beast/websocket/impl/read.hpp:695:17: error: call to 'async_teardown' is ambiguous
+                async_teardown(impl.role, impl.stream(),
+                ^~~~~~~~~~~~~~
+```
+
+The workaround for this error is to add two lines to your profile:
+
+```text
+[conf]
+tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
 ```
 
 ### Build and Test
@@ -226,19 +401,6 @@ conan export --version 2.4.1 external/wamr
    `--settings build_type=$BUILD_TYPE` or in the profile itself,
    under the section `[settings]` with the key `build_type`.
 
-   If you are using a Microsoft Visual C++ compiler,
-   then you will need to ensure consistency between the `build_type` setting
-   and the `compiler.runtime` setting.
-
-   When `build_type` is `Release`, `compiler.runtime` should be `MT`.
-
-   When `build_type` is `Debug`, `compiler.runtime` should be `MTd`.
-
-   ```
-   conan install .. --output-folder . --build missing --settings build_type=Release --settings compiler.runtime=MT
-   conan install .. --output-folder . --build missing --settings build_type=Debug --settings compiler.runtime=MTd
-   ```
-
 3. Configure CMake and pass the toolchain file generated by Conan, located at
    `$OUTPUT_FOLDER/build/generators/conan_toolchain.cmake`.
 
@@ -260,18 +422,18 @@ conan export --version 2.4.1 external/wamr
    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dxrpld=ON -Dtests=ON  ..
    ```
 
-   **Note:** You can pass build options for `rippled` in this step.
+   **Note:** You can pass build options for `xrpld` in this step.
 
-4. Build `rippled`.
+4. Build `xrpld`.
 
    For a single-configuration generator, it will build whatever configuration
-   you passed for `CMAKE_BUILD_TYPE`. For a multi-configuration generator,
-   you must pass the option `--config` to select the build configuration.
+   you passed for `CMAKE_BUILD_TYPE`. For a multi-configuration generator, you
+   must pass the option `--config` to select the build configuration.
 
    Single-config generators:
 
    ```
-   cmake --build . -j $(nproc)
+   cmake --build .
    ```
 
    Multi-config generators:
@@ -281,23 +443,27 @@ conan export --version 2.4.1 external/wamr
    cmake --build . --config Debug
    ```
 
-5. Test rippled.
+5. Test xrpld.
 
    Single-config generators:
 
    ```
-   ./rippled --unittest
+   ./xrpld --unittest --unittest-jobs N
    ```
 
    Multi-config generators:
 
    ```
-   ./Release/rippled --unittest
-   ./Debug/rippled --unittest
+   ./Release/xrpld --unittest --unittest-jobs N
+   ./Debug/xrpld --unittest --unittest-jobs N
    ```
 
-   The location of `rippled` in your build directory depends on your CMake
-   generator. Pass `--help` to see the rest of the command line options.
+   Replace the `--unittest-jobs` parameter N with the desired unit tests
+   concurrency. Recommended setting is half of the number of available CPU
+   cores.
+
+   The location of `xrpld` binary in your build directory depends on your
+   CMake generator. Pass `--help` to see the rest of the command line options.
 
 ## Coverage report
 
@@ -315,20 +481,20 @@ Prerequisites for the coverage report:
 
 A coverage report is created when the following steps are completed, in order:
 
-1. `rippled` binary built with instrumentation data, enabled by the `coverage`
+1. `xrpld` binary built with instrumentation data, enabled by the `coverage`
    option mentioned above
-2. completed run of unit tests, which populates coverage capture data
+2. completed one or more run of the unit tests, which populates coverage capture data
 3. completed run of the `gcovr` tool (which internally invokes either `gcov` or `llvm-cov`)
    to assemble both instrumentation data and the coverage capture data into a coverage report
 
-The above steps are automated into a single target `coverage`. The instrumented
-`rippled` binary can also be used for regular development or testing work, at
+The last step of the above is automated into a single target `coverage`. The instrumented
+`xrpld` binary can also be used for regular development or testing work, at
 the cost of extra disk space utilization and a small performance hit
-(to store coverage capture). In case of a spurious failure of unit tests, it is
-possible to re-run the `coverage` target without rebuilding the `rippled` binary
-(since it is simply a dependency of the coverage report target). It is also possible
-to select only specific tests for the purpose of the coverage report, by setting
-the `coverage_test` variable in `cmake`
+(to store coverage capture data). Since `xrpld` binary is simply a dependency of the
+coverage report target, it is possible to re-run the `coverage` target without
+rebuilding the `xrpld` binary. Note, running of the unit tests before the `coverage`
+target is left to the developer. Each such run will append to the coverage data
+collected in the build directory.
 
 The default coverage report format is `html-details`, but the user
 can override it to any of the formats listed in `Builds/CMake/CodeCoverage.cmake`
@@ -336,11 +502,6 @@ by setting the `coverage_format` variable in `cmake`. It is also possible
 to generate more than one format at a time by setting the `coverage_extra_args`
 variable in `cmake`. The specific command line used to run the `gcovr` tool will be
 displayed if the `CODE_COVERAGE_VERBOSE` variable is set.
-
-By default, the code coverage tool runs parallel unit tests with `--unittest-jobs`
-set to the number of available CPU cores. This may cause spurious test
-errors on Apple. Developers can override the number of unit test jobs with
-the `coverage_test_parallelism` variable in `cmake`.
 
 Example use with some cmake variables set:
 
@@ -354,19 +515,21 @@ cmake --build . --target coverage
 After the `coverage` target is completed, the generated coverage report will be
 stored inside the build directory, as either of:
 
-- file named `coverage.`_extension_ , with a suitable extension for the report format, or
+- file named `coverage.`_extension_, with a suitable extension for the report format, or
 - directory named `coverage`, with the `index.html` and other files inside, for the `html-details` or `html-nested` report formats.
 
 ## Options
 
-| Option     | Default Value | Description                                                                |
-| ---------- | ------------- | -------------------------------------------------------------------------- |
-| `assert`   | OFF           | Enable assertions.                                                         |
-| `coverage` | OFF           | Prepare the coverage report.                                               |
-| `san`      | N/A           | Enable a sanitizer with Clang. Choices are `thread` and `address`.         |
-| `tests`    | OFF           | Build tests.                                                               |
-| `unity`    | ON            | Configure a unity build.                                                   |
-| `xrpld`    | OFF           | Build the xrpld (`rippled`) application, and not just the libxrpl library. |
+| Option     | Default Value | Description                                                        |
+| ---------- | ------------- | ------------------------------------------------------------------ |
+| `assert`   | OFF           | Enable assertions.                                                 |
+| `coverage` | OFF           | Prepare the coverage report.                                       |
+| `san`      | N/A           | Enable a sanitizer with Clang. Choices are `thread` and `address`. |
+| `tests`    | OFF           | Build tests.                                                       |
+| `unity`    | OFF           | Configure a unity build.                                           |
+| `xrpld`    | OFF           | Build the xrpld application, and not just the libxrpl library.     |
+| `werr`     | OFF           | Treat compilation warnings as errors                               |
+| `wextra`   | OFF           | Enable additional compilation warnings                             |
 
 [Unity builds][5] may be faster for the first build
 (at the cost of much more memory) since they concatenate sources into fewer
@@ -380,15 +543,37 @@ and can be helpful for detecting `#include` omissions.
 After any updates or changes to dependencies, you may need to do the following:
 
 1. Remove your build directory.
-2. Remove the Conan cache: `conan remove "*" -c`
-3. Re-run [conan install](#build-and-test).
+2. Remove individual libraries from the Conan cache, e.g.
 
-### 'protobuf/port_def.inc' file not found
+   ```bash
+   conan remove 'grpc/*'
+   ```
 
-If `cmake --build .` results in an error due to a missing a protobuf file, then you might have generated CMake files for a different `build_type` than the `CMAKE_BUILD_TYPE` you passed to conan.
+   **or**
+
+   Remove all libraries from Conan cache:
+
+   ```bash
+   conan remove '*'
+   ```
+
+3. Re-run [conan export](#patched-recipes) if needed.
+4. [Regenerate lockfile](#conan-lockfile).
+5. Re-run [conan install](#build-and-test).
+
+#### ERROR: Package not resolved
+
+If you're seeing an error like `ERROR: Package 'snappy/1.1.10' not resolved: Unable to find 'snappy/1.1.10#968fef506ff261592ec30c574d4a7809%1756234314.246' in remotes.`,
+please add `xrplf` remote or re-run `conan export` for [patched recipes](#patched-recipes).
+
+### `protobuf/port_def.inc` file not found
+
+If `cmake --build .` results in an error due to a missing a protobuf file, then
+you might have generated CMake files for a different `build_type` than the
+`CMAKE_BUILD_TYPE` you passed to Conan.
 
 ```
-/rippled/.build/pb-xrpl.libpb/xrpl/proto/ripple.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found
+/xrpld/.build/pb-xrpl.libpb/xrpl/proto/xrpl.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found
    10 | #include <google/protobuf/port_def.inc>
       |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 1 error generated.

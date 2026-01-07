@@ -1,34 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright(c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
-#define RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
+#ifndef XRPL_SERVER_BASEHTTPPEER_H_INCLUDED
+#define XRPL_SERVER_BASEHTTPPEER_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/server/Session.h>
+#include <xrpl/server/detail/Spawn.h>
 #include <xrpl/server/detail/io_list.h>
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/ssl/stream.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/http/dynamic_body.hpp>
@@ -43,7 +26,7 @@
 #include <mutex>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents an active connection. */
 template <class Handler, class Impl>
@@ -215,8 +198,8 @@ BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
     ConstBufferSequence const& buffers)
     : port_(port)
     , handler_(handler)
-    , work_(executor)
-    , strand_(executor)
+    , work_(boost::asio::make_work_guard(executor))
+    , strand_(boost::asio::make_strand(executor))
     , remote_address_(remote_address)
     , journal_(journal)
 {
@@ -356,7 +339,7 @@ BaseHTTPPeer<Handler, Impl>::on_write(
         return;
     if (graceful_)
         return do_close();
-    boost::asio::spawn(
+    util::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_read,
@@ -375,7 +358,7 @@ BaseHTTPPeer<Handler, Impl>::do_writer(
     {
         auto const p = impl().shared_from_this();
         resume = std::function<void(void)>([this, p, writer, keep_alive]() {
-            boost::asio::spawn(
+            util::spawn(
                 strand_,
                 std::bind(
                     &BaseHTTPPeer<Handler, Impl>::do_writer,
@@ -406,7 +389,7 @@ BaseHTTPPeer<Handler, Impl>::do_writer(
     if (!keep_alive)
         return do_close();
 
-    boost::asio::spawn(
+    util::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_read,
@@ -448,14 +431,14 @@ BaseHTTPPeer<Handler, Impl>::write(
     std::shared_ptr<Writer> const& writer,
     bool keep_alive)
 {
-    boost::asio::spawn(bind_executor(
+    util::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_writer,
             impl().shared_from_this(),
             writer,
             keep_alive,
-            std::placeholders::_1)));
+            std::placeholders::_1));
 }
 
 // DEPRECATED
@@ -490,12 +473,12 @@ BaseHTTPPeer<Handler, Impl>::complete()
     }
 
     // keep-alive
-    boost::asio::spawn(bind_executor(
+    util::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_read,
             impl().shared_from_this(),
-            std::placeholders::_1)));
+            std::placeholders::_1));
 }
 
 // DEPRECATED
@@ -528,6 +511,6 @@ BaseHTTPPeer<Handler, Impl>::close(bool graceful)
     boost::beast::get_lowest_layer(impl().stream_).close();
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

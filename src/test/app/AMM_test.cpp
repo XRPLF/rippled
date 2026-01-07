@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
@@ -40,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /**
@@ -97,8 +78,8 @@ private:
             AMM ammAlice(env, alice, USD(20'000), BTC(0.5));
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(20'000), BTC(0.5), IOUAmount{100, 0}));
-            BEAST_EXPECT(expectLine(env, alice, USD(0)));
-            BEAST_EXPECT(expectLine(env, alice, BTC(0)));
+            BEAST_EXPECT(expectHolding(env, alice, USD(0)));
+            BEAST_EXPECT(expectHolding(env, alice, BTC(0)));
         }
 
         // Require authorization is set, account is authorized
@@ -1394,7 +1375,7 @@ private:
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11'000), USD(11'000), IOUAmount{11'000'000, 0}));
             // 30,000 less deposited 1,000
-            BEAST_EXPECT(expectLine(env, carol, USD(29'000)));
+            BEAST_EXPECT(expectHolding(env, carol, USD(29'000)));
             // 30,000 less deposited 1,000 and 10 drops tx fee
             BEAST_EXPECT(expectLedgerEntryRoot(
                 env, carol, XRPAmount{29'000'000'000 - baseFee}));
@@ -1449,7 +1430,8 @@ private:
                     IOUAmount{1, 7} + newLPTokens));
 
                 // 30,000 less deposited depositUSD
-                BEAST_EXPECT(expectLine(env, carol, USD(30'000) - depositUSD));
+                BEAST_EXPECT(
+                    expectHolding(env, carol, USD(30'000) - depositUSD));
                 // 30,000 less deposited depositXRP and 10 drops tx fee
                 BEAST_EXPECT(expectLedgerEntryRoot(
                     env, carol, XRP(30'000) - depositXRP - txfee(env, 1)));
@@ -1553,15 +1535,15 @@ private:
             AMM ammAlice(env, alice, USD(20'000), BTC(0.5));
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(20'000), BTC(0.5), IOUAmount{100, 0}));
-            BEAST_EXPECT(expectLine(env, alice, USD(0)));
-            BEAST_EXPECT(expectLine(env, alice, BTC(0)));
+            BEAST_EXPECT(expectHolding(env, alice, USD(0)));
+            BEAST_EXPECT(expectHolding(env, alice, BTC(0)));
             fund(env, gw, {carol}, {USD(2'000), BTC(0.05)}, Fund::Acct);
             // no transfer fee on deposit
             ammAlice.deposit(carol, 10);
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(22'000), BTC(0.55), IOUAmount{110, 0}));
-            BEAST_EXPECT(expectLine(env, carol, USD(0)));
-            BEAST_EXPECT(expectLine(env, carol, BTC(0)));
+            BEAST_EXPECT(expectHolding(env, carol, USD(0)));
+            BEAST_EXPECT(expectHolding(env, carol, BTC(0)));
         }
 
         // Tiny deposits
@@ -2281,7 +2263,7 @@ private:
             BEAST_EXPECT(
                 ammAlice.expectLPTokens(carol, IOUAmount{1'000'000, 0}));
             // 30,000 less deposited 1,000
-            BEAST_EXPECT(expectLine(env, carol, USD(29'000)));
+            BEAST_EXPECT(expectHolding(env, carol, USD(29'000)));
             // 30,000 less deposited 1,000 and 10 drops tx fee
             BEAST_EXPECT(expectLedgerEntryRoot(
                 env, carol, XRPAmount{29'000'000'000 - baseFee}));
@@ -2290,7 +2272,7 @@ private:
             ammAlice.withdraw(carol, 1'000'000);
             BEAST_EXPECT(
                 ammAlice.expectLPTokens(carol, IOUAmount(beast::Zero())));
-            BEAST_EXPECT(expectLine(env, carol, USD(30'000)));
+            BEAST_EXPECT(expectHolding(env, carol, USD(30'000)));
             BEAST_EXPECT(expectLedgerEntryRoot(
                 env, carol, XRPAmount{30'000'000'000 - 2 * baseFee}));
         });
@@ -2525,22 +2507,22 @@ private:
             AMM ammAlice(env, alice, USD(20'000), BTC(0.5));
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(20'000), BTC(0.5), IOUAmount{100, 0}));
-            BEAST_EXPECT(expectLine(env, alice, USD(0)));
-            BEAST_EXPECT(expectLine(env, alice, BTC(0)));
+            BEAST_EXPECT(expectHolding(env, alice, USD(0)));
+            BEAST_EXPECT(expectHolding(env, alice, BTC(0)));
             fund(env, gw, {carol}, {USD(2'000), BTC(0.05)}, Fund::Acct);
             // no transfer fee on deposit
             ammAlice.deposit(carol, 10);
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(22'000), BTC(0.55), IOUAmount{110, 0}));
-            BEAST_EXPECT(expectLine(env, carol, USD(0)));
-            BEAST_EXPECT(expectLine(env, carol, BTC(0)));
+            BEAST_EXPECT(expectHolding(env, carol, USD(0)));
+            BEAST_EXPECT(expectHolding(env, carol, BTC(0)));
             // no transfer fee on withdraw
             ammAlice.withdraw(carol, 10);
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(20'000), BTC(0.5), IOUAmount{100, 0}));
             BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{0, 0}));
-            BEAST_EXPECT(expectLine(env, carol, USD(2'000)));
-            BEAST_EXPECT(expectLine(env, carol, BTC(0.05)));
+            BEAST_EXPECT(expectHolding(env, carol, USD(2'000)));
+            BEAST_EXPECT(expectHolding(env, carol, BTC(0.05)));
         }
 
         // Tiny withdraw
@@ -3527,7 +3509,7 @@ private:
             // Alice doesn't have anymore lp tokens
             env(amm.bid({.account = alice, .bidMin = 500}));
             BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{500}));
-            BEAST_EXPECT(expectLine(env, alice, STAmount{lpIssue, 0}));
+            BEAST_EXPECT(expectHolding(env, alice, STAmount{lpIssue, 0}));
             // But trades with the discounted fee since she still owns the slot.
             // Alice pays 10011 drops in fees
             env(pay(alice, bob, USD(10)), path(~USD), sendmax(XRP(11)));
@@ -3571,7 +3553,7 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = AMMBid::preflight(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
                 BEAST_EXPECT(pf == temDISABLED);
                 env.app().config().features.insert(featureAMM);
             }
@@ -3586,7 +3568,7 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = AMMBid::preflight(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
                 BEAST_EXPECT(pf != tesSUCCESS);
             }
 
@@ -3601,7 +3583,7 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = AMMBid::preflight(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
                 BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
             }
         }
@@ -3664,8 +3646,8 @@ private:
             auto const pk = carol.pk();
             auto const settleDelay = 100s;
             NetClock::time_point const cancelAfter =
-                env.current()->info().parentCloseTime + 200s;
-            env(create(
+                env.current()->header().parentCloseTime + 200s;
+            env(paychan::create(
                     carol,
                     ammAlice.ammAccount(),
                     XRP(1'000),
@@ -3790,7 +3772,7 @@ private:
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRP(10'100), USD(10'000), ammAlice.tokens()));
                 // Initial balance 30,000 + 100
-                BEAST_EXPECT(expectLine(env, carol, USD(30'100)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(30'100)));
                 // Initial balance 30,000 - 100(sendmax) - 10(tx fee)
                 BEAST_EXPECT(expectLedgerEntryRoot(
                     env, bob, XRP(30'000) - XRP(100) - txfee(env, 1)));
@@ -3810,7 +3792,7 @@ private:
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRP(10'100), USD(10'000), ammAlice.tokens()));
                 // Initial balance 30,000 + 100
-                BEAST_EXPECT(expectLine(env, carol, USD(30'100)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(30'100)));
                 // Initial balance 30,000 - 100(sendmax) - 10(tx fee)
                 BEAST_EXPECT(expectLedgerEntryRoot(
                     env, bob, XRP(30'000) - XRP(100) - txfee(env, 1)));
@@ -3831,7 +3813,7 @@ private:
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRP(10'100), USD(10'000), ammAlice.tokens()));
                 // Initial balance 30,000 + 100
-                BEAST_EXPECT(expectLine(env, carol, USD(30'100)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(30'100)));
                 // Initial balance 30,000 - 100(sendmax) - 10(tx fee)
                 BEAST_EXPECT(expectLedgerEntryRoot(
                     env, bob, XRP(30'000) - XRP(100) - txfee(env, 1)));
@@ -3857,7 +3839,7 @@ private:
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRP(10'010), USD(10'000), ammAlice.tokens()));
                 // Initial balance 30,000 + 10(limited by limitQuality)
-                BEAST_EXPECT(expectLine(env, carol, USD(30'010)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(30'010)));
                 // Initial balance 30,000 - 10(limited by limitQuality) - 10(tx
                 // fee)
                 BEAST_EXPECT(expectLedgerEntryRoot(
@@ -3897,7 +3879,7 @@ private:
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRP(10'010), USD(10'000), ammAlice.tokens()));
                 // 10USD - 10% transfer fee
-                BEAST_EXPECT(expectLine(
+                BEAST_EXPECT(expectHolding(
                     env,
                     carol,
                     STAmount{USD, UINT64_C(30'009'09090909091), -11}));
@@ -3984,7 +3966,7 @@ private:
                 BEAST_EXPECT(expectOffers(env, alice, 1, {{expectedAmounts}}));
             }
             // Initial 30,000 + 100
-            BEAST_EXPECT(expectLine(env, carol, STAmount{USD, 30'100}));
+            BEAST_EXPECT(expectHolding(env, carol, STAmount{USD, 30'100}));
             // Initial 1,000 - 30082730(AMM pool) - 70798251(offer) - 10(tx fee)
             BEAST_EXPECT(expectLedgerEntryRoot(
                 env,
@@ -4027,7 +4009,7 @@ private:
                           STAmount(EUR, UINT64_C(49'98750312422), -11),
                           STAmount(USD, UINT64_C(49'98750312422), -11)}}}));
                 // Initial 30,000 + 99.99999999999
-                BEAST_EXPECT(expectLine(
+                BEAST_EXPECT(expectHolding(
                     env,
                     carol,
                     STAmount{USD, UINT64_C(30'099'99999999999), -11}));
@@ -4061,7 +4043,7 @@ private:
                     BEAST_EXPECT(ammAlice.expectBalances(
                         XRP(10'100), USD(10'000), ammAlice.tokens()));
                     // Initial 30,000 + 200
-                    BEAST_EXPECT(expectLine(env, carol, USD(30'200)));
+                    BEAST_EXPECT(expectHolding(env, carol, USD(30'200)));
                 }
                 else
                 {
@@ -4069,7 +4051,7 @@ private:
                         XRP(10'100),
                         STAmount(USD, UINT64_C(10'000'00000000001), -11),
                         ammAlice.tokens()));
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         carol,
                         STAmount(USD, UINT64_C(30'199'99999999999), -11)));
@@ -4104,7 +4086,7 @@ private:
             env.close();
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(1'050), USD(1'000), ammAlice.tokens()));
-            BEAST_EXPECT(expectLine(env, carol, USD(2'200)));
+            BEAST_EXPECT(expectHolding(env, carol, USD(2'200)));
             BEAST_EXPECT(expectOffers(env, bob, 0));
         }
 
@@ -4118,7 +4100,7 @@ private:
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRP(10'100), USD(10'000), ammAlice.tokens()));
                 // Initial 1,000 + 100
-                BEAST_EXPECT(expectLine(env, bob, USD(1'100)));
+                BEAST_EXPECT(expectHolding(env, bob, USD(1'100)));
                 // Initial 30,000 - 100(offer) - 10(tx fee)
                 BEAST_EXPECT(expectLedgerEntryRoot(
                     env, bob, XRP(30'000) - XRP(100) - txfee(env, 1)));
@@ -4145,9 +4127,9 @@ private:
                 BEAST_EXPECT(ammAlice.expectBalances(
                     GBP(1'100), EUR(1'000), ammAlice.tokens()));
                 // Initial 30,000 - 100(offer) - 25% transfer fee
-                BEAST_EXPECT(expectLine(env, carol, GBP(29'875)));
+                BEAST_EXPECT(expectHolding(env, carol, GBP(29'875)));
                 // Initial 30,000 + 100(offer)
-                BEAST_EXPECT(expectLine(env, carol, EUR(30'100)));
+                BEAST_EXPECT(expectHolding(env, carol, EUR(30'100)));
                 BEAST_EXPECT(expectOffers(env, bob, 0));
             },
             {{GBP(1'000), EUR(1'100)}},
@@ -4285,12 +4267,12 @@ private:
                     //     = 58.825 = ~29941.17
                     // carol bought ~72.93EUR at the cost of ~70.68GBP
                     // the offer is partially consumed
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         carol,
                         STAmount{GBP, UINT64_C(29'941'16770347333), -11}));
                     // Initial 30,000 + ~49.3(offers = 39.3(AMM) + 10(LOB))
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         carol,
                         STAmount{EUR, UINT64_C(30'049'31517120716), -11}));
@@ -4324,20 +4306,20 @@ private:
                     //     = 88.35 = ~29911.64
                     // carol bought ~72.93EUR at the cost of ~70.68GBP
                     // the offer is partially consumed
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         carol,
                         STAmount{GBP, UINT64_C(29'911'64396400896), -11}));
                     // Initial 30,000 + ~72.93(offers = 62.93(AMM) + 10(LOB))
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         carol,
                         STAmount{EUR, UINT64_C(30'072'93416277865), -11}));
                 }
                 // Initial 2000 + 10 = 2010
-                BEAST_EXPECT(expectLine(env, bob, GBP(2'010)));
+                BEAST_EXPECT(expectHolding(env, bob, GBP(2'010)));
                 // Initial 2000 - 10 * 1.25 = 1987.5
-                BEAST_EXPECT(expectLine(env, ed, EUR(1'987.5)));
+                BEAST_EXPECT(expectHolding(env, ed, EUR(1'987.5)));
             },
             {{GBP(1'000), EUR(1'100)}},
             0,
@@ -4363,8 +4345,8 @@ private:
                 env.close();
                 BEAST_EXPECT(ammAlice.expectBalances(
                     GBP(1'100), EUR(1'000), ammAlice.tokens()));
-                BEAST_EXPECT(expectLine(env, bob, GBP(75)));
-                BEAST_EXPECT(expectLine(env, carol, EUR(30'080)));
+                BEAST_EXPECT(expectHolding(env, bob, GBP(75)));
+                BEAST_EXPECT(expectHolding(env, carol, EUR(30'080)));
             },
             {{GBP(1'000), EUR(1'100)}},
             0,
@@ -4401,12 +4383,12 @@ private:
                     sendmax(CAN(195.3125)),
                     txflags(tfPartialPayment));
                 env.close();
-                BEAST_EXPECT(expectLine(env, bob, CAN(0)));
-                BEAST_EXPECT(expectLine(env, dan, CAN(356.25), GBP(43.75)));
+                BEAST_EXPECT(expectHolding(env, bob, CAN(0)));
+                BEAST_EXPECT(expectHolding(env, dan, CAN(356.25), GBP(43.75)));
                 BEAST_EXPECT(ammAlice.expectBalances(
                     GBP(10'125), EUR(10'000), ammAlice.tokens()));
-                BEAST_EXPECT(expectLine(env, ed, EUR(300), USD(100)));
-                BEAST_EXPECT(expectLine(env, carol, USD(80)));
+                BEAST_EXPECT(expectHolding(env, ed, EUR(300), USD(100)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(80)));
             },
             {{GBP(10'000), EUR(10'125)}},
             0,
@@ -4523,7 +4505,7 @@ private:
             BEAST_EXPECT(btc_usd.expectBalances(
                 BTC(10'100), USD(10'000), btc_usd.tokens()));
 
-            BEAST_EXPECT(expectLine(env, carol, USD(300)));
+            BEAST_EXPECT(expectHolding(env, carol, USD(300)));
         }
 
         // Dependent AMM
@@ -4594,7 +4576,7 @@ private:
                     STAmount{EUR, UINT64_C(10'917'2945958102), -10},
                     eth_eur.tokens()));
             }
-            BEAST_EXPECT(expectLine(env, carol, USD(300)));
+            BEAST_EXPECT(expectHolding(env, carol, USD(300)));
         }
 
         // AMM offers limit
@@ -4620,7 +4602,7 @@ private:
                         XRP(10'030),
                         STAmount{USD, UINT64_C(9'970'089730807577), -12},
                         ammAlice.tokens()));
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         carol,
                         STAmount{USD, UINT64_C(30'029'91026919241), -11}));
@@ -4631,7 +4613,7 @@ private:
                         XRP(10'030),
                         STAmount{USD, UINT64_C(9'970'089730807827), -12},
                         ammAlice.tokens()));
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         carol,
                         STAmount{USD, UINT64_C(30'029'91026919217), -11}));
@@ -4663,14 +4645,14 @@ private:
                 if (!features[fixAMMv1_1])
                 {
                     // Carol gets ~100USD
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         carol,
                         STAmount{USD, UINT64_C(30'099'99999999999), -11}));
                 }
                 else
                 {
-                    BEAST_EXPECT(expectLine(env, carol, USD(30'100)));
+                    BEAST_EXPECT(expectHolding(env, carol, USD(30'100)));
                 }
                 BEAST_EXPECT(expectOffers(
                     env,
@@ -4717,7 +4699,7 @@ private:
                     1,
                     {{{XRPAmount{50'074'628},
                        STAmount{USD, UINT64_C(50'07512950697), -11}}}}));
-                BEAST_EXPECT(expectLine(env, carol, USD(30'100)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(30'100)));
             }
         }
 
@@ -4809,11 +4791,11 @@ private:
             env(offer(carol, STAmount{token2, 100}, STAmount{token1, 100}));
             env.close();
             BEAST_EXPECT(
-                expectLine(env, alice, STAmount{token1, 10'000'100}) &&
-                expectLine(env, alice, STAmount{token2, 9'999'900}));
+                expectHolding(env, alice, STAmount{token1, 10'000'100}) &&
+                expectHolding(env, alice, STAmount{token2, 9'999'900}));
             BEAST_EXPECT(
-                expectLine(env, carol, STAmount{token2, 1'000'100}) &&
-                expectLine(env, carol, STAmount{token1, 999'900}));
+                expectHolding(env, carol, STAmount{token2, 1'000'100}) &&
+                expectHolding(env, carol, STAmount{token1, 999'900}));
             BEAST_EXPECT(
                 expectOffers(env, alice, 0) && expectOffers(env, carol, 0));
         });
@@ -5034,7 +5016,7 @@ private:
                 BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{1'000}));
                 ammAlice.withdrawAll(carol, USD(3'000));
                 BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{0}));
-                BEAST_EXPECT(expectLine(env, carol, USD(30'000)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(30'000)));
                 // Set fee to 1%
                 ammAlice.vote(alice, 1'000);
                 BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
@@ -5043,12 +5025,12 @@ private:
                 ammAlice.deposit(carol, USD(3'000));
                 BEAST_EXPECT(ammAlice.expectLPTokens(
                     carol, IOUAmount{994'981155689671, -12}));
-                BEAST_EXPECT(expectLine(env, carol, USD(27'000)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(27'000)));
                 // Set fee to 0
                 ammAlice.vote(alice, 0);
                 ammAlice.withdrawAll(carol, USD(0));
                 // Carol gets back less than the original deposit
-                BEAST_EXPECT(expectLine(
+                BEAST_EXPECT(expectHolding(
                     env,
                     carol,
                     STAmount{USD, UINT64_C(29'994'96220068281), -11}));
@@ -5109,13 +5091,13 @@ private:
                 ammAlice.deposit(carol, USD(3'000));
 
                 BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{1'000}));
-                BEAST_EXPECT(expectLine(env, carol, USD(27'000)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(27'000)));
                 // Set fee to 1%
                 ammAlice.vote(alice, 1'000);
                 BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
                 // Single withdrawal. Carol gets ~5USD less than deposited.
                 ammAlice.withdrawAll(carol, USD(0));
-                BEAST_EXPECT(expectLine(
+                BEAST_EXPECT(expectHolding(
                     env,
                     carol,
                     STAmount{USD, UINT64_C(29'994'97487437186), -11}));
@@ -5189,9 +5171,9 @@ private:
                     {USD(1'000), EUR(1'000)},
                     Fund::Acct);
                 // Alice contributed 1010EUR and 1000USD to the pool
-                BEAST_EXPECT(expectLine(env, alice, EUR(28'990)));
-                BEAST_EXPECT(expectLine(env, alice, USD(29'000)));
-                BEAST_EXPECT(expectLine(env, carol, USD(30'000)));
+                BEAST_EXPECT(expectHolding(env, alice, EUR(28'990)));
+                BEAST_EXPECT(expectHolding(env, alice, USD(29'000)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(30'000)));
                 // Carol pays to Alice with no fee
                 env(pay(carol, alice, EUR(10)),
                     path(~EUR),
@@ -5199,9 +5181,9 @@ private:
                     txflags(tfNoRippleDirect));
                 env.close();
                 // Alice has 10EUR more and Carol has 10USD less
-                BEAST_EXPECT(expectLine(env, alice, EUR(29'000)));
-                BEAST_EXPECT(expectLine(env, alice, USD(29'000)));
-                BEAST_EXPECT(expectLine(env, carol, USD(29'990)));
+                BEAST_EXPECT(expectHolding(env, alice, EUR(29'000)));
+                BEAST_EXPECT(expectHolding(env, alice, USD(29'000)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(29'990)));
 
                 // Set fee to 1%
                 ammAlice.vote(alice, 1'000);
@@ -5213,10 +5195,10 @@ private:
                     txflags(tfNoRippleDirect));
                 env.close();
                 // Bob sends 10.1~EUR to pay 10USD
-                BEAST_EXPECT(expectLine(
+                BEAST_EXPECT(expectHolding(
                     env, bob, STAmount{EUR, UINT64_C(989'8989898989899), -13}));
                 // Carol got 10USD
-                BEAST_EXPECT(expectLine(env, carol, USD(30'000)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(30'000)));
                 BEAST_EXPECT(ammAlice.expectBalances(
                     USD(1'000),
                     STAmount{EUR, UINT64_C(1'010'10101010101), -11},
@@ -5233,8 +5215,8 @@ private:
                 // No fee
                 env(offer(carol, EUR(10), USD(10)));
                 env.close();
-                BEAST_EXPECT(expectLine(env, carol, USD(29'990)));
-                BEAST_EXPECT(expectLine(env, carol, EUR(30'010)));
+                BEAST_EXPECT(expectHolding(env, carol, USD(29'990)));
+                BEAST_EXPECT(expectHolding(env, carol, EUR(30'010)));
                 // Change pool composition back
                 env(offer(carol, USD(10), EUR(10)));
                 env.close();
@@ -5245,11 +5227,11 @@ private:
                 env.close();
                 // Alice gets fewer ~4.97EUR for ~5.02USD, the difference goes
                 // to the pool
-                BEAST_EXPECT(expectLine(
+                BEAST_EXPECT(expectHolding(
                     env,
                     carol,
                     STAmount{USD, UINT64_C(29'995'02512562814), -11}));
-                BEAST_EXPECT(expectLine(
+                BEAST_EXPECT(expectHolding(
                     env,
                     carol,
                     STAmount{EUR, UINT64_C(30'004'97487437186), -11}));
@@ -5299,16 +5281,16 @@ private:
                 path(~USD),
                 sendmax(EUR(15)),
                 txflags(tfNoRippleDirect));
-            BEAST_EXPECT(expectLine(env, ed, USD(2'010)));
+            BEAST_EXPECT(expectHolding(env, ed, USD(2'010)));
             if (!features[fixAMMv1_1])
             {
-                BEAST_EXPECT(expectLine(env, bob, EUR(1'990)));
+                BEAST_EXPECT(expectHolding(env, bob, EUR(1'990)));
                 BEAST_EXPECT(ammAlice.expectBalances(
                     USD(1'000), EUR(1'005), ammAlice.tokens()));
             }
             else
             {
-                BEAST_EXPECT(expectLine(
+                BEAST_EXPECT(expectHolding(
                     env, bob, STAmount(EUR, UINT64_C(1989'999999999999), -12)));
                 BEAST_EXPECT(ammAlice.expectBalances(
                     USD(1'000),
@@ -5336,10 +5318,10 @@ private:
                 path(~USD),
                 sendmax(EUR(15)),
                 txflags(tfNoRippleDirect));
-            BEAST_EXPECT(expectLine(env, ed, USD(2'010)));
+            BEAST_EXPECT(expectHolding(env, ed, USD(2'010)));
             if (!features[fixAMMv1_1])
             {
-                BEAST_EXPECT(expectLine(
+                BEAST_EXPECT(expectHolding(
                     env,
                     bob,
                     STAmount{EUR, UINT64_C(1'989'987453007618), -12}));
@@ -5350,7 +5332,7 @@ private:
             }
             else
             {
-                BEAST_EXPECT(expectLine(
+                BEAST_EXPECT(expectHolding(
                     env,
                     bob,
                     STAmount{EUR, UINT64_C(1'989'987453007628), -12}));
@@ -5381,8 +5363,8 @@ private:
                 path(~USD),
                 sendmax(EUR(15)),
                 txflags(tfNoRippleDirect));
-            BEAST_EXPECT(expectLine(env, ed, USD(2'010)));
-            BEAST_EXPECT(expectLine(env, bob, EUR(1'990)));
+            BEAST_EXPECT(expectHolding(env, ed, USD(2'010)));
+            BEAST_EXPECT(expectHolding(env, bob, EUR(1'990)));
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(1'005), EUR(1'000), ammAlice.tokens()));
             BEAST_EXPECT(expectOffers(env, carol, 0));
@@ -5408,8 +5390,8 @@ private:
                 path(~USD),
                 sendmax(EUR(15)),
                 txflags(tfNoRippleDirect));
-            BEAST_EXPECT(expectLine(env, ed, USD(2'010)));
-            BEAST_EXPECT(expectLine(
+            BEAST_EXPECT(expectHolding(env, ed, USD(2'010)));
+            BEAST_EXPECT(expectHolding(
                 env, bob, STAmount{EUR, UINT64_C(1'989'993923296712), -12}));
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(1'004),
@@ -5480,47 +5462,47 @@ private:
                 else
                     BEAST_EXPECT(ammAlice.expectBalances(
                         XRP(10'000), USD(10'000), IOUAmount{10'000'000}));
-                BEAST_EXPECT(expectLine(env, ben, USD(1'500'000)));
-                BEAST_EXPECT(expectLine(env, simon, USD(1'500'000)));
-                BEAST_EXPECT(expectLine(env, chris, USD(1'500'000)));
-                BEAST_EXPECT(expectLine(env, dan, USD(1'500'000)));
+                BEAST_EXPECT(expectHolding(env, ben, USD(1'500'000)));
+                BEAST_EXPECT(expectHolding(env, simon, USD(1'500'000)));
+                BEAST_EXPECT(expectHolding(env, chris, USD(1'500'000)));
+                BEAST_EXPECT(expectHolding(env, dan, USD(1'500'000)));
                 if (!features[fixAMMv1_1] && !features[fixAMMv1_3])
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         carol,
                         STAmount{USD, UINT64_C(30'000'00000000001), -11}));
                 else if (features[fixAMMv1_1] && !features[fixAMMv1_3])
-                    BEAST_EXPECT(expectLine(env, carol, USD(30'000)));
+                    BEAST_EXPECT(expectHolding(env, carol, USD(30'000)));
                 else
-                    BEAST_EXPECT(expectLine(env, carol, USD(30'000)));
-                BEAST_EXPECT(expectLine(env, ed, USD(1'500'000)));
-                BEAST_EXPECT(expectLine(env, paul, USD(1'500'000)));
+                    BEAST_EXPECT(expectHolding(env, carol, USD(30'000)));
+                BEAST_EXPECT(expectHolding(env, ed, USD(1'500'000)));
+                BEAST_EXPECT(expectHolding(env, paul, USD(1'500'000)));
                 if (!features[fixAMMv1_1] && !features[fixAMMv1_3])
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         nataly,
                         STAmount{USD, UINT64_C(1'500'000'000000002), -9}));
                 else if (features[fixAMMv1_1] && !features[fixAMMv1_3])
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         nataly,
                         STAmount{USD, UINT64_C(1'500'000'000000005), -9}));
                 else
-                    BEAST_EXPECT(expectLine(env, nataly, USD(1'500'000)));
+                    BEAST_EXPECT(expectHolding(env, nataly, USD(1'500'000)));
                 ammAlice.withdrawAll(alice);
                 BEAST_EXPECT(!ammAlice.ammExists());
                 if (!features[fixAMMv1_1])
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         alice,
                         STAmount{USD, UINT64_C(30'000'0000000013), -10}));
                 else if (features[fixAMMv1_3])
-                    BEAST_EXPECT(expectLine(
+                    BEAST_EXPECT(expectHolding(
                         env,
                         alice,
                         STAmount{USD, UINT64_C(30'000'0000000003), -10}));
                 else
-                    BEAST_EXPECT(expectLine(env, alice, USD(30'000)));
+                    BEAST_EXPECT(expectHolding(env, alice, USD(30'000)));
                 // alice XRP balance is 30,000initial - 50 ammcreate fee -
                 // 10drops fee
                 BEAST_EXPECT(
@@ -5883,7 +5865,7 @@ private:
                         BEAST_EXPECT(amm->expectBalances(
                             USD(1'000), ETH(1'000), amm->tokens()));
                     }
-                    BEAST_EXPECT(expectLine(env, bob, USD(2'100)));
+                    BEAST_EXPECT(expectHolding(env, bob, USD(2'100)));
                     q[i] = Quality(Amounts{
                         ETH(2'000) - env.balance(carol, ETH),
                         env.balance(bob, USD) - USD(2'000)});
@@ -6056,7 +6038,7 @@ private:
                                         -13}}}}));
                         }
                     }
-                    BEAST_EXPECT(expectLine(env, bob, USD(2'100)));
+                    BEAST_EXPECT(expectHolding(env, bob, USD(2'100)));
                     q[i] = Quality(Amounts{
                         ETH(2'000) - env.balance(carol, ETH),
                         env.balance(bob, USD) - USD(2'000)});
@@ -6203,7 +6185,7 @@ private:
                         sendmax(ETH(600)));
                     env.close();
 
-                    BEAST_EXPECT(expectLine(env, bob, USD(2'100)));
+                    BEAST_EXPECT(expectHolding(env, bob, USD(2'100)));
 
                     if (i == 2 && !features[fixAMMv1_1])
                     {
@@ -7499,7 +7481,7 @@ private:
             for (int i = 0; i < 256; ++i)
             {
                 AccountID const accountId =
-                    ripple::pseudoAccountAddress(*env.current(), keylet.key);
+                    xrpl::pseudoAccountAddress(*env.current(), keylet.key);
 
                 env(pay(env.master.id(), accountId, XRP(1000)),
                     seq(autofill),
@@ -7970,7 +7952,7 @@ private:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AMM, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(AMM, app, xrpl, 1);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

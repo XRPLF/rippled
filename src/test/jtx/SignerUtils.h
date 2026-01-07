@@ -1,11 +1,11 @@
-#ifndef RIPPLE_TEST_JTX_SIGNERUTILS_H_INCLUDED
-#define RIPPLE_TEST_JTX_SIGNERUTILS_H_INCLUDED
+#ifndef XRPL_TEST_JTX_SIGNERUTILS_H_INCLUDED
+#define XRPL_TEST_JTX_SIGNERUTILS_H_INCLUDED
 
 #include <test/jtx/Account.h>
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -51,6 +51,6 @@ sortSigners(std::vector<Reg>& signers)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
