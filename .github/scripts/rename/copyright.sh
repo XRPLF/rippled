@@ -50,7 +50,7 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
       # Handle the cases where the copyright notice is enclosed in /* ... */
       # and usually surrounded by //---- and //======.
       ${SED_COMMAND} -z -i -E 's@^//-------+\n+@@' "${FILE}"
-      ${SED_COMMAND} -z -i -E 's@^.*Copyright.+(Ripple|Bougalis|Falco|Hinnant|Null|Ritchford|XRPLF).+PERFORMANCE OF THIS SOFTWARE\.\n\*/\n+@@' "${FILE}" # cspell: ignore Bougalis Falco Hinnant Richford
+      ${SED_COMMAND} -z -i -E 's@^.*Copyright.+(Ripple|Bougalis|Falco|Hinnant|Null|Ritchford|XRPLF).+PERFORMANCE OF THIS SOFTWARE\.\n\*/\n+@@' "${FILE}" # cspell: ignore Bougalis Falco Hinnant Ritchford
       ${SED_COMMAND} -z -i -E 's@^//=======+\n+@@' "${FILE}"
 
       # Handle the cases where the copyright notice is commented out with //.
