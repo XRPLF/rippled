@@ -5,15 +5,15 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/digest.h>
 
+#include <variant>
+
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
 #endif
 
 namespace xrpl {
 
-// =========================================================
-// SECTION: LEDGER HEADER FUNCTIONS
-// =========================================================
+typedef std::variant<STBase const*, uint256 const*> STBaseOrUInt256;
 
 Expected<std::int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getLedgerSqn()
@@ -61,10 +61,6 @@ WasmHostFunctionsImpl::isAmendmentEnabled(std::string_view const& amendmentName)
     auto const amendment = table.find(std::string(amendmentName));
     return ctx.view().rules().enabled(amendment);
 }
-
-// =========================================================
-// SECTION: LEDGER ENTRY FUNCTIONS
-// =========================================================
 
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
@@ -174,6 +170,21 @@ getAnyFieldData(STBase const* obj)
     return data;
 }
 
+static Expected<Bytes, HostFunctionError>
+getAnyFieldData(STBaseOrUInt256 const& variantObj)
+{
+    if (STBase const* const* obj = std::get_if<STBase const*>(&variantObj))
+    {
+        return getAnyFieldData(*obj);
+    }
+    else if (uint256 const* const* u = std::get_if<uint256 const*>(&variantObj))
+    {
+        return Bytes((*u)->begin(), (*u)->end());
+    }
+
+    return Unexpected(HostFunctionError::INTERNAL);
+}
+
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getTxField(SField const& fname)
 {
@@ -205,7 +216,7 @@ noField(STBase const* field)
         (STI_UNKNOWN == field->getSType());
 }
 
-static Expected<STBase const*, HostFunctionError>
+static Expected<STBaseOrUInt256, HostFunctionError>
 locateField(STObject const& obj, Slice const& locator)
 {
     if (locator.empty() || (locator.size() & 3))  // must be multiple of 4
@@ -255,12 +266,8 @@ locateField(STObject const& obj, Slice const& locator)
             auto const* v = static_cast<STVector256 const*>(field);
             if (sfieldCode >= v->size())
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
-            // STVector256::operator[] returns uint256&, not STBase*
-            // We need to wrap it in an STUInt256 to get an STBase pointer
-            // Use the value-only constructor to avoid field type mismatch
-            static thread_local STUInt256 tempUInt256;
-            tempUInt256 = STUInt256(v->operator[](sfieldCode));
-            field = &tempUInt256;
+            return std::variant<STBase const*, uint256 const*>(
+                &(v->operator[](sfieldCode)));
         }
         else  // simple field must be the last one
         {
@@ -271,7 +278,7 @@ locateField(STObject const& obj, Slice const& locator)
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
     }
 
-    return field;
+    return std::variant<STBase const*, uint256 const*>(field);
 }
 
 Expected<Bytes, HostFunctionError>
@@ -315,12 +322,17 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(
 }
 
 static inline Expected<int32_t, HostFunctionError>
-getArrayLen(STBase const* field)
+getArrayLen(STBaseOrUInt256 const& variantField)
 {
-    if (field->getSType() == STI_VECTOR256)
-        return static_cast<STVector256 const*>(field)->size();
-    if (field->getSType() == STI_ARRAY)
-        return static_cast<STArray const*>(field)->size();
+    if (STBase const* const* field = std::get_if<STBase const*>(&variantField))
+    {
+        if ((*field)->getSType() == STI_VECTOR256)
+            return static_cast<STVector256 const*>(*field)->size();
+
+        if ((*field)->getSType() == STI_ARRAY)
+            return static_cast<STArray const*>(*field)->size();
+    }
+    // uint256 is not an array so that variant should still return NO_ARRAY
 
     return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
 }
@@ -381,7 +393,7 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
     if (!r)
         return Unexpected(r.error());
 
-    auto const* field = r.value();
+    auto const field = r.value();
     return getArrayLen(field);
 }
 
@@ -395,7 +407,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
     if (!r)
         return Unexpected(r.error());
 
-    auto const* field = r.value();
+    auto const field = r.value();
     return getArrayLen(field);
 }
 
@@ -412,7 +424,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
     if (!r)
         return Unexpected(r.error());
 
-    auto const* field = r.value();
+    auto const field = r.value();
     return getArrayLen(field);
 }
 
