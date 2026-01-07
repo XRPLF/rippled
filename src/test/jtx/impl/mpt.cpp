@@ -997,7 +997,7 @@ MPTTester::convert(MPTConvert const& arg)
             ctxHash,
             holderCiphertext,
             issuerCiphertext,
-            {});
+            auditorCiphertext);
         jv[sfZKProof] = strHex(proof);
     }
 
