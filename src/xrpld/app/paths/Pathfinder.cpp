@@ -1301,7 +1301,7 @@ Pathfinder::initPathTable()
 
     mPathTable.clear();
     fillPaths(pt_XRP_to_XRP, {});
-    /* spell-checker: disable */
+    /* cspell: disable */
 
     fillPaths(
         pt_XRP_to_nonXRP,
@@ -1358,7 +1358,7 @@ Pathfinder::initPathTable()
             {8, "saafad"},
             {9, "safaad"},
         });
-    /* spell-checker: enable */
+    /* cspell: enable */
 }
 
 }  // namespace xrpl

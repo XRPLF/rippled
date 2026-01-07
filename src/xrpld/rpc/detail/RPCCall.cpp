@@ -1295,7 +1295,7 @@ public:
             {"wallet_propose", &RPCParser::parseWalletPropose, 0, 1},
             {"internal", &RPCParser::parseInternal, 1, -1},
 
-            // Evented methods
+            // Event methods
             {"path_find", &RPCParser::parseEvented, -1, -1},
             {"subscribe", &RPCParser::parseEvented, -1, -1},
             {"unsubscribe", &RPCParser::parseEvented, -1, -1},
