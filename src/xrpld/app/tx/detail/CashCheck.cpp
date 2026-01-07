@@ -348,9 +348,6 @@ CashCheck::doApply()
                 STAmount initialBalance(flowDeliver.issue());
                 initialBalance.setIssuer(noAccount());
 
-                auto const isSponsorCoSigning =
-                    isSponsorReserveCoSigning(ctx_.tx);
-
                 // clang-format off
                 if (TER const ter = trustCreate(
                         psb,                            // payment sandbox
@@ -368,7 +365,6 @@ CashCheck::doApply()
                         0,                              // quality in
                         0,                              // quality out
                         sponsorAcc,                     // sponsor
-                        isSponsorCoSigning,             // is sponsor co-signing
                         viewJ);                         // journal
                     !isTesSuccess(ter))
                 {

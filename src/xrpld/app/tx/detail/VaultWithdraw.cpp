@@ -199,7 +199,6 @@ VaultWithdraw::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
-    auto const isSponsorCoSigning = isSponsorReserveCoSigning(ctx_.tx);
 
     // Transfer shares from depositor to vault.
     if (auto const ter = accountSend(
@@ -209,7 +208,6 @@ VaultWithdraw::doApply()
             sharesRedeemed,
             j_,
             sponsor,
-            isSponsorCoSigning,
             WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;

@@ -145,7 +145,6 @@ LoanBrokerDelete::doApply()
                 coverAvailable,
                 j_,
                 {},
-                false,
                 WaiveTransferFee::Yes))
             return ter;
     }

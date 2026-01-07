@@ -104,10 +104,7 @@ public:
     send(Args&&... args)
     {
         return accountSend(
-            std::forward<Args>(args)...,
-            std::nullopt,
-            false,
-            WaiveTransferFee::Yes);
+            std::forward<Args>(args)..., std::nullopt, WaiveTransferFee::Yes);
     }
 
     bool

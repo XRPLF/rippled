@@ -545,7 +545,6 @@ LoanSet::doApply()
     }
 
     auto const sponsorAccount = getTxReserveSponsorAccountID(tx);
-    auto const isSponsorCoSigning = isSponsorReserveCoSigning(tx);
 
     if (auto const ter = accountSendMulti(
             view,
@@ -554,7 +553,6 @@ LoanSet::doApply()
             {{borrower, loanAssetsToBorrower}, {brokerOwner, originationFee}},
             j_,
             sponsorAccount,
-            isSponsorCoSigning,
             WaiveTransferFee::Yes))
         return ter;
 

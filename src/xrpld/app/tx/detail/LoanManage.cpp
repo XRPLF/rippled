@@ -290,7 +290,6 @@ LoanManage::defaultLoan(
         STAmount{vaultAsset, defaultCovered},
         j,
         {},
-        false,
         WaiveTransferFee::Yes);
 }
 

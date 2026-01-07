@@ -926,7 +926,6 @@ trustCreate(
     std::uint32_t uSrcQualityIn,
     std::uint32_t uSrcQualityOut,
     std::optional<AccountID> const& sponsorAccountID,
-    bool const isSponsorCoSigning,
     beast::Journal j);
 
 [[nodiscard]] TER
@@ -1029,7 +1028,6 @@ accountSend(
     STAmount const& saAmount,
     beast::Journal j,
     std::optional<AccountID> const& sponsorAcc = std::nullopt,
-    bool isSponsorCoSigning = false,
     WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
 using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
@@ -1047,7 +1045,6 @@ accountSendMulti(
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
     std::optional<AccountID> const& sponsorAccount,
-    bool isSponsorCoSigning,
     WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
 [[nodiscard]] TER

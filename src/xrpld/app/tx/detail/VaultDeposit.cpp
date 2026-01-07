@@ -262,7 +262,6 @@ VaultDeposit::doApply()
             assetsDeposited,
             j_,
             std::nullopt,
-            false,
             WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
@@ -283,7 +282,6 @@ VaultDeposit::doApply()
     }
 
     auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
-    auto const isSponsorCoSigning = ctx_.tx.isFieldPresent(sfSponsorSignature);
 
     // Transfer shares from vault to depositor.
     if (auto const ter = accountSend(
@@ -293,7 +291,6 @@ VaultDeposit::doApply()
             sharesCreated,
             j_,
             sponsor,
-            isSponsorCoSigning,
             WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;

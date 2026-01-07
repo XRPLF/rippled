@@ -1681,7 +1681,6 @@ doWithdraw(
     }
 
     auto const sponsorAcc = getTxReserveSponsorAccountID(tx);
-    auto const isSponsorCoSigning = isSponsorReserveCoSigning(tx);
 
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
@@ -1692,7 +1691,6 @@ doWithdraw(
         amount,
         j,
         sponsorAcc,
-        isSponsorCoSigning,
         WaiveTransferFee::Yes);
 }
 
@@ -1730,7 +1728,6 @@ addEmptyHolding(
     auto const& sponsorAccountID = !isPseudoAccount(sleDst)
         ? getTxReserveSponsorAccountID(tx)
         : std::nullopt;
-    auto const isSponsorCoSigning = tx.isFieldPresent(sfSponsorSignature);
 
     // Can the account cover the trust line reserve ?
     if (auto const ret = checkInsufficientReserve(
@@ -1761,7 +1758,6 @@ addEmptyHolding(
         /*qualityIn=*/0,
         /*qualityOut=*/0,
         sponsorAccountID,
-        isSponsorCoSigning,
         journal);
 }
 
@@ -1938,7 +1934,6 @@ trustCreate(
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
     std::optional<AccountID> const& sponsorAccountID,
-    bool const isSponsorCoSigning,
     beast::Journal j)
 {
     JLOG(j.trace()) << "trustCreate: " << to_string(uSrcAccountID) << ", "
@@ -2274,7 +2269,6 @@ rippleCreditIOU(
     STAmount const& saAmount,
     bool bCheckIssuer,
     std::optional<AccountID> const& sponsorAccount,
-    bool isSponsorCoSigning,
     beast::Journal j)
 {
     AccountID const& issuer = saAmount.getIssuer();
@@ -2429,7 +2423,6 @@ rippleCreditIOU(
         0,
         0,
         sponsorAccount,
-        isSponsorCoSigning,
         j);
 }
 
@@ -2445,7 +2438,6 @@ rippleSendIOU(
     STAmount& saActual,
     beast::Journal j,
     std::optional<AccountID> const& sponsorAccount,
-    bool isSponsorCoSigning,
     WaiveTransferFee waiveFee)
 {
     auto const& issuer = saAmount.getIssuer();
@@ -2461,14 +2453,7 @@ rippleSendIOU(
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         auto const ter = rippleCreditIOU(
-            view,
-            uSenderID,
-            uReceiverID,
-            saAmount,
-            false,
-            sponsorAccount,
-            isSponsorCoSigning,
-            j);
+            view, uSenderID, uReceiverID, saAmount, false, sponsorAccount, j);
         if (ter != tesSUCCESS)
             return ter;
         saActual = saAmount;
@@ -2489,25 +2474,11 @@ rippleSendIOU(
                     << " cost=" << saActual.getFullText();
 
     TER terResult = rippleCreditIOU(
-        view,
-        issuer,
-        uReceiverID,
-        saAmount,
-        true,
-        sponsorAccount,
-        isSponsorCoSigning,
-        j);
+        view, issuer, uReceiverID, saAmount, true, sponsorAccount, j);
 
     if (tesSUCCESS == terResult)
         terResult = rippleCreditIOU(
-            view,
-            uSenderID,
-            issuer,
-            saActual,
-            true,
-            sponsorAccount,
-            isSponsorCoSigning,
-            j);
+            view, uSenderID, issuer, saActual, true, sponsorAccount, j);
 
     return terResult;
 }
@@ -2524,7 +2495,6 @@ rippleSendMultiIOU(
     STAmount& actual,
     beast::Journal j,
     std::optional<AccountID> const& sponsorAccount,
-    bool isSponsorCoSigning,
     WaiveTransferFee waiveFee)
 {
     auto const& issuer = issue.getIssuer();
@@ -2562,7 +2532,6 @@ rippleSendMultiIOU(
                     amount,
                     false,
                     sponsorAccount,
-                    isSponsorCoSigning,
                     j))
                 return ter;
             actual += amount;
@@ -2588,14 +2557,7 @@ rippleSendMultiIOU(
                         << " cost=" << actual.getFullText();
 
         if (TER const terResult = rippleCreditIOU(
-                view,
-                issuer,
-                receiverID,
-                amount,
-                true,
-                sponsorAccount,
-                isSponsorCoSigning,
-                j))
+                view, issuer, receiverID, amount, true, sponsorAccount, j))
             return terResult;
     }
 
@@ -2608,7 +2570,6 @@ rippleSendMultiIOU(
                 takeFromSender,
                 true,
                 sponsorAccount,
-                isSponsorCoSigning,
                 j))
             return terResult;
     }
@@ -2624,7 +2585,6 @@ accountSendIOU(
     STAmount const& saAmount,
     beast::Journal j,
     std::optional<AccountID> const& sponsorAccount,
-    bool isSponsorCoSigning,
     WaiveTransferFee waiveFee)
 {
     if (view.rules().enabled(fixAMMv1_1))
@@ -2665,7 +2625,6 @@ accountSendIOU(
             saActual,
             j,
             sponsorAccount,
-            isSponsorCoSigning,
             waiveFee);
     }
 
@@ -2758,7 +2717,6 @@ accountSendMultiIOU(
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
     std::optional<AccountID> const& sponsorAccount,
-    bool isSponsorCoSigning,
     WaiveTransferFee waiveFee)
 {
     XRPL_ASSERT_PARTS(
@@ -2780,7 +2738,6 @@ accountSendMultiIOU(
             actual,
             j,
             sponsorAccount,
-            isSponsorCoSigning,
             waiveFee);
     }
 
@@ -3170,7 +3127,6 @@ accountSend(
     STAmount const& saAmount,
     beast::Journal j,
     std::optional<AccountID> const& sponsorAcc,
-    bool isSponsorCoSigning,
     WaiveTransferFee waiveFee)
 {
     return std::visit(
@@ -3183,7 +3139,6 @@ accountSend(
                     saAmount,
                     j,
                     sponsorAcc,
-                    isSponsorCoSigning,
                     waiveFee);
             else
                 return accountSendMPT(
@@ -3200,7 +3155,6 @@ accountSendMulti(
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
     std::optional<AccountID> const& sponsorAccount,
-    bool isSponsorCoSigning,
     WaiveTransferFee waiveFee)
 {
     XRPL_ASSERT_PARTS(
@@ -3217,7 +3171,6 @@ accountSendMulti(
                     receivers,
                     j,
                     sponsorAccount,
-                    isSponsorCoSigning,
                     waiveFee);
             else
                 return accountSendMultiMPT(
@@ -3384,7 +3337,6 @@ issueIOU(
         0,
         0,
         std::nullopt,
-        false,
         j);
 }
 
@@ -3951,7 +3903,6 @@ rippleCredit(
                     saAmount,
                     bCheckIssuer,
                     std::nullopt,
-                    false,
                     j);
             }
             else

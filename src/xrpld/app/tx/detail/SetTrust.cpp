@@ -722,8 +722,6 @@ SetTrust::doApply()
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: "
                          << to_string(k.key);
 
-        auto const isSponsorCoSigning = isSponsorReserveCoSigning(ctx_.tx);
-
         // Create a new ripple line.
         terResult = trustCreate(
             view(),
@@ -741,7 +739,6 @@ SetTrust::doApply()
             uQualityIn,
             uQualityOut,
             txSponsorAcc,
-            isSponsorCoSigning,
             viewJ);
     }
 

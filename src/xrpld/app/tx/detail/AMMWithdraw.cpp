@@ -610,8 +610,6 @@ AMMWithdraw::withdraw(
     if (auto const err = sufficientReserve(amountWithdrawActual.issue()))
         return {err, STAmount{}, STAmount{}, STAmount{}};
 
-    auto const isSponsorCoSigning = isSponsorReserveCoSigning(tx);
-
     // Withdraw amountWithdraw
     auto res = accountSend(
         view,
@@ -620,7 +618,6 @@ AMMWithdraw::withdraw(
         amountWithdrawActual,
         journal,
         sponsor,
-        isSponsorCoSigning,
         WaiveTransferFee::Yes);
     if (res != tesSUCCESS)
     {
@@ -645,7 +642,6 @@ AMMWithdraw::withdraw(
             *amount2WithdrawActual,
             journal,
             sponsor,
-            isSponsorCoSigning,
             WaiveTransferFee::Yes);
         if (res != tesSUCCESS)
         {

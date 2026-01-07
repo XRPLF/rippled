@@ -338,7 +338,6 @@ LoanBrokerCoverClawback::doApply()
         clawAmount,
         j_,
         {},
-        false,
         WaiveTransferFee::Yes);
 }
 

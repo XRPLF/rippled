@@ -797,8 +797,6 @@ escrowUnlockApplyHelper<Issue>(
         STAmount initialBalance(amount.issue());
         initialBalance.setIssuer(noAccount());
 
-        auto const isSponsorCoSigning = isSponsorReserveCoSigning(tx);
-
         // clang-format off
         if (TER const ter = trustCreate(
                 view,                           // payment sandbox
@@ -816,7 +814,6 @@ escrowUnlockApplyHelper<Issue>(
                 0,                              // quality in
                 0,                              // quality out
                 sponeorAcc,                     // sponsor
-                isSponsorCoSigning,             // is sponsor co-signing
                 journal);                       // journal
             !isTesSuccess(ter))
         {
