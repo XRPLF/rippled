@@ -503,9 +503,10 @@ Transactor::payFee()
 
     auto const feeAmountAfter = sle->getFieldAmount(result.field) - feePaid;
 
-    if (feeAmountAfter == beast::zero &&
-        result.field.fieldMeta == SField::sMD_Default)
-        // for ltSponsorship.sfFeeAmount
+    if (feeAmountAfter == beast::zero && result.field == sfFeeAmount)
+        // Because ltSponsorship.sfFeeAmount is soeDEFAULT
+        // TODO: Use whether the field is soeDEFAULT instead of sfFeeAmount in
+        // the condition.
         sle->makeFieldAbsent(result.field);
     else
         sle->setFieldAmount(result.field, feeAmountAfter);

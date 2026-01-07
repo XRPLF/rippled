@@ -297,7 +297,10 @@ SponsorshipTransfer::doApply()
                 auto const newCount =
                     ownerSle->getFieldU32(sfSponsoredOwnerCount) +
                     ownerCountDelta;
-                ownerSle->setFieldU32(sfSponsoredOwnerCount, newCount);
+                if (newCount == 0)
+                    ownerSle->makeFieldAbsent(sfSponsoredOwnerCount);
+                else
+                    ownerSle->setFieldU32(sfSponsoredOwnerCount, newCount);
                 view().update(ownerSle);
             }
             // increment new sponsoring count
