@@ -1373,25 +1373,28 @@ adjustOwnerCount(
             view.update(accountSle);
         }
 
-        auto sle = view.peek(keylet::sponsor(sponsorAcc, account));
+        auto sponsorObjSle = view.peek(keylet::sponsor(sponsorAcc, account));
 
-        if (sle && amount > 0)
+        if (sponsorObjSle && amount > 0)
         {
             // pre funded
             // update the pre-funded ReserveCount on Sponsorship ledger object
             XRPL_ASSERT(
-                sle, "xrpl::adjustOwnerCount : co-signing sponsor exists");
+                sponsorObjSle,
+                "xrpl::adjustOwnerCount : co-signing sponsor exists");
 
-            auto const currentReserveCount = sle->getFieldU32(sfReserveCount);
+            auto const currentReserveCount =
+                sponsorObjSle->getFieldU32(sfReserveCount);
             XRPL_ASSERT(
                 currentReserveCount >= amount,
                 "xrpl::adjustOwnerCount : enough reserve count");
 
             if (currentReserveCount - amount > 0)
-                sle->setFieldU32(sfReserveCount, currentReserveCount - amount);
+                sponsorObjSle->setFieldU32(
+                    sfReserveCount, currentReserveCount - amount);
             else
-                sle->makeFieldAbsent(sfReserveCount);
-            view.update(sle);
+                sponsorObjSle->makeFieldAbsent(sfReserveCount);
+            view.update(sponsorObjSle);
         }
     }
     std::uint32_t const current{accountSle->getFieldU32(sfOwnerCount)};
