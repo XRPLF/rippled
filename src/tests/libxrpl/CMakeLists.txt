@@ -4,15 +4,15 @@ include(XrplAddTest)
 find_package(doctest REQUIRED)
 
 file(GLOB_RECURSE WASM_SOURCE_FILES
-  ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures/Cargo.toml
-  ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures/**/*.rs
-  ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures/**/Cargo.toml
-  ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures/**/Cargo.lock
+  ${CMAKE_SOURCE_DIR}/src/test/app/wasm_fixtures/Cargo.toml
+  ${CMAKE_SOURCE_DIR}/src/test/app/wasm_fixtures/**/*.rs
+  ${CMAKE_SOURCE_DIR}/src/test/app/wasm_fixtures/**/Cargo.toml
+  ${CMAKE_SOURCE_DIR}/src/test/app/wasm_fixtures/**/Cargo.lock
 )
 
 # Build Rust WASM fixtures and pass them into wasm_test_fixtures.h
 set(RUST_WASM_OUTPUT_DIR
-    ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures/target/wasm32-unknown-unknown/release)
+    ${CMAKE_SOURCE_DIR}/src/test/app/wasm_fixtures/target/wasm32-unknown-unknown/release)
 
 # Ensure the wasm32-unknown-unknown target is installed
 add_custom_command(
@@ -25,7 +25,7 @@ add_custom_command(
 add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/wasm
     COMMAND cargo build --release --target wasm32-unknown-unknown --workspace
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/test/app/wasm_fixtures
     DEPENDS ${WASM_SOURCE_FILES} ${CMAKE_BINARY_DIR}/.wasm_target_installed
     COMMENT "Building Rust WASM module"
 )
@@ -61,7 +61,7 @@ foreach(wasm_file ${WASM_FILES})
   add_custom_command(
     OUTPUT ${EMBED_HEADER}
     APPEND
-    COMMAND xxd -i -n wasm_${wasm_name} ${wasm_file} >> ${EMBED_HEADER}
+    COMMAND xxd -i -n ${wasm_name}WasmHex ${wasm_file} >> ${EMBED_HEADER}
   )
 endforeach()
 
