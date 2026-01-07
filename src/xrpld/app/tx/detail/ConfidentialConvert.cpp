@@ -114,7 +114,7 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
 
     // we already checked proof size in preflight, still do sanity check here
     // since we are going to access individual vector entries
-    auto const expectedCount = hasAuditor ? 3 : 2;
+    auto const expectedCount = ctx.tx[sfZKProof].size() / ecEqualityProofLength;
     if (zkps.size() != expectedCount)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
