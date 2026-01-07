@@ -72,7 +72,7 @@ jobs:
       - name: Prepare runner
         uses: XRPLF/actions/prepare-runner@2ece4ec6ab7de266859a6f053571425b2bd684b6
         with:
-          disable_ccache: false
+          disable_ccache: true
 
       - name: Print build environment
         uses: ./.github/actions/print-env
@@ -92,7 +92,6 @@ jobs:
       - name: Build dependencies
         uses: ./.github/actions/build-deps
         with:
-          build_dir: .build
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ matrix.build_type }}
           force_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
