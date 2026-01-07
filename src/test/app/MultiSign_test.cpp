@@ -708,7 +708,7 @@ public:
     void
     testHeterogeneousSigners(FeatureBitset features)
     {
-        testcase("Heterogenious Signers");
+        testcase("Heterogenous Signers");
 
         using namespace jtx;
         Env env{*this, features};

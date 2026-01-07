@@ -1614,12 +1614,12 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
             env.close();
 
-            // Succeed, Bob doesn't require preauthorization
+            // Succeed, Bob doesn't require pre-authorization
             env(escrow::finish(carol, alice, seq), credentials::ids({credIdx}));
             env.close();
 
             {
-                char const credType2[] = "fghijk";
+                char const credType2[] = "random";
 
                 env(credentials::create(bob, zelda, credType2));
                 env.close();

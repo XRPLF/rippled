@@ -324,7 +324,7 @@ onNewAttestations(
     return {std::move(r.value()), changed};
 };
 
-// Check if there is a quorurm of attestations for the given amount and
+// Check if there is a quorum of attestations for the given amount and
 // chain. If so return the reward accounts, if not return the tec code (most
 // likely tecXCHAIN_CLAIM_NO_QUORUM)
 Expected<std::vector<AccountID>, TER>
@@ -434,7 +434,7 @@ transferHelper(
             auto const availableBalance = [&]() -> STAmount {
                 STAmount const curBal = (*sleSrc)[sfBalance];
                 // Checking that account == src and postFeeBalance == curBal is
-                // not strictly nessisary, but helps protect against future
+                // not strictly necessary, but helps protect against future
                 // changes
                 if (!submittingAccountInfo ||
                     submittingAccountInfo->account != src ||
@@ -622,7 +622,7 @@ finalizeClaimHelper(
         // If distributing the reward pool fails, the mainFunds transfer should
         // be rolled back
         //
-        // If the claimid is removed, the rewards should be distributed
+        // If the claim ID is removed, the rewards should be distributed
         // even if the mainFunds fails.
         //
         // If OnTransferFail::removeClaim, the claim should be removed even if
@@ -1190,7 +1190,7 @@ toClaim(STTx const& tx)
 
 template <class TAttestation>
 NotTEC
-attestationpreflight(PreflightContext const& ctx)
+attestationPreflight(PreflightContext const& ctx)
 {
     if (!publicKeyType(ctx.tx[sfPublicKey]))
         return temMALFORMED;
@@ -2076,7 +2076,7 @@ XChainCreateClaimID::doApply()
 NotTEC
 XChainAddClaimAttestation::preflight(PreflightContext const& ctx)
 {
-    return attestationpreflight<Attestations::AttestationClaim>(ctx);
+    return attestationPreflight<Attestations::AttestationClaim>(ctx);
 }
 
 TER
@@ -2096,7 +2096,7 @@ XChainAddClaimAttestation::doApply()
 NotTEC
 XChainAddAccountCreateAttestation::preflight(PreflightContext const& ctx)
 {
-    return attestationpreflight<Attestations::AttestationCreateAccount>(ctx);
+    return attestationPreflight<Attestations::AttestationCreateAccount>(ctx);
 }
 
 TER

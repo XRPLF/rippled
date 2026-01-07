@@ -206,8 +206,8 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
 nHUPDdcdb2Y5DZAJne4c2iabFuAP3F34xZUgYQT2NH7qfkdapgnz
 
 [validator_list_sites]
-recommendedxrplvalidators.com
-morexrplvalidators.net
+recommended-xrpl-validators.com
+more-xrpl-validators.net
 
 [validator_list_keys]
 03E74EE14CB525AFBB9F1B7D86CD58ECC4B91452294B42AB4E78F260BD905C091D

@@ -3461,10 +3461,10 @@ NetworkOPsImp::pubAccountTransaction(
                     }
                 }
 
-                if (auto histoIt = mSubAccountHistory.find(affectedAccount);
-                    histoIt != mSubAccountHistory.end())
+                if (auto historyIt = mSubAccountHistory.find(affectedAccount);
+                    historyIt != mSubAccountHistory.end())
                 {
-                    auto& subs = histoIt->second;
+                    auto& subs = historyIt->second;
                     auto it = subs.begin();
                     while (it != subs.end())
                     {
@@ -3487,7 +3487,7 @@ NetworkOPsImp::pubAccountTransaction(
                         }
                     }
                     if (subs.empty())
-                        mSubAccountHistory.erase(histoIt);
+                        mSubAccountHistory.erase(historyIt);
                 }
             }
         }

@@ -323,7 +323,7 @@ public:
     virtual ~PeerImp();
 
     beast::Journal const&
-    pjournal() const
+    pJournal() const
     {
         return p_journal_;
     }
