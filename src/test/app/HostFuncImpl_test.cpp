@@ -62,17 +62,21 @@ static ApplyContext
 createApplyContext(
     test::jtx::Env& env,
     OpenView& ov,
+    beast::Journal j,
     STTx const& tx = STTx(ttESCROW_FINISH, [](STObject&) {}))
 {
     ApplyContext ac{
-        env.app(),
-        ov,
-        tx,
-        tesSUCCESS,
-        env.current()->fees().base,
-        tapNONE,
-        env.journal};
+        env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, tapNONE, j};
     return ac;
+}
+
+static ApplyContext
+createApplyContext(
+    test::jtx::Env& env,
+    OpenView& ov,
+    STTx const& tx = STTx(ttESCROW_FINISH, [](STObject&) {}))
+{
+    return createApplyContext(env, ov, env.journal, tx);
 }
 
 struct HostFuncImpl_test : public beast::unit_test::suite
@@ -1906,22 +1910,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
     }
 
-    class SuiteLogs2 : public Logs
-    {
-    public:
-        explicit SuiteLogs2(beast::unit_test::suite&)
-            : Logs(beast::severities::kError)
-        {
-        }
-        ~SuiteLogs2() override = default;
-        std::unique_ptr<beast::Journal::Sink>
-        makeSink(std::string const&, beast::severities::Severity threshold)
-            override
-        {
-            return std::make_unique<StreamSink>(threshold);
-        }
-    };
-
     void
     testTrace()
     {
@@ -1951,11 +1939,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // logs disabled (trace < error)
-            auto logs = std::make_unique<SuiteLogs2>(*this);
-            Env env(
-                *this, envconfig(), std::move(logs), beast::severities::kError);
+            Env env(*this);
             OpenView ov{*env.current()};
-            ApplyContext ac = createApplyContext(env, ov);
+            test::StreamSink sink{beast::severities::kError};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow =
                 keylet::escrow(env.master, env.seq(env.master));
@@ -1966,6 +1954,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const slice = Slice(data.data(), data.size());
             auto const result = hfs.trace(msg, slice, false);
             BEAST_EXPECT(result && *result == msg.size() + data.size());
+            auto const messages = sink.messages().str();
+            BEAST_EXPECT(messages.empty());
         }
     }
 
@@ -1993,11 +1983,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // logs disabled
-            auto logs = std::make_unique<SuiteLogs2>(*this);
-            Env env(
-                *this, envconfig(), std::move(logs), beast::severities::kError);
+            Env env(*this);
             OpenView ov{*env.current()};
-            ApplyContext ac = createApplyContext(env, ov);
+            test::StreamSink sink{beast::severities::kError};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow =
                 keylet::escrow(env.master, env.seq(env.master));
@@ -2007,6 +1997,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             int64_t num = 123456789;
             auto const result = hfs.traceNum(msg, num);
             BEAST_EXPECT(result && *result == msg.size() + sizeof(int64_t));
+            auto const messages = sink.messages().str();
+            BEAST_EXPECT(messages.empty());
         }
     }
 
@@ -2037,11 +2029,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // logs disabled
-            auto logs = std::make_unique<SuiteLogs2>(*this);
-            Env env(
-                *this, envconfig(), std::move(logs), beast::severities::kError);
+            Env env(*this);
             OpenView ov{*env.current()};
-            ApplyContext ac = createApplyContext(env, ov);
+            test::StreamSink sink{beast::severities::kError};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow =
                 keylet::escrow(env.master, env.seq(env.master));
@@ -2050,6 +2042,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const result = hfs.traceAccount(msg, env.master.id());
             BEAST_EXPECT(
                 result && *result == msg.size() + env.master.id().size());
+            auto const messages = sink.messages().str();
+            BEAST_EXPECT(messages.empty());
         }
     }
 
@@ -2100,11 +2094,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // logs disabled
-            auto logs = std::make_unique<SuiteLogs2>(*this);
-            Env env(
-                *this, envconfig(), std::move(logs), beast::severities::kError);
+            Env env(*this);
             OpenView ov{*env.current()};
-            ApplyContext ac = createApplyContext(env, ov);
+            test::StreamSink sink{beast::severities::kError};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow =
                 keylet::escrow(env.master, env.seq(env.master));
@@ -2114,6 +2108,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             STAmount amount = XRP(12345);
             auto const result = hfs.traceAmount(msg, amount);
             BEAST_EXPECT(result && *result == msg.size());
+            auto const messages = sink.messages().str();
+            BEAST_EXPECT(messages.empty());
         }
     }
 
@@ -2176,11 +2172,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             // logs disabled
-            auto logs = std::make_unique<SuiteLogs2>(*this);
-            Env env(
-                *this, envconfig(), std::move(logs), beast::severities::kError);
+            Env env(*this);
             OpenView ov{*env.current()};
-            ApplyContext ac = createApplyContext(env, ov);
+            test::StreamSink sink{beast::severities::kError};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow =
                 keylet::escrow(env.master, env.seq(env.master));
@@ -2188,12 +2184,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             std::string msg = "trace float";
 
-            {
-                auto const result = hfs.traceFloat(msg, makeSlice(invalid));
-                BEAST_EXPECT(
-                    result &&
-                    *result == msg.size() + makeSlice(invalid).size());
-            }
+            auto const result = hfs.traceFloat(msg, makeSlice(invalid));
+            BEAST_EXPECT(
+                result && *result == msg.size() + makeSlice(invalid).size());
+            auto const messages = sink.messages().str();
+            BEAST_EXPECT(messages.empty());
         }
     }
 
