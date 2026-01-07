@@ -649,7 +649,7 @@ encodeBase58Token(
     return detail::b256_to_b58_be(b58Span, out);
 }
 // Convert from base 58 to base 256, largest coefficients first
-// The input is encoded in XPRL format, with the token in the first
+// The input is encoded in XRPL format, with the token in the first
 // byte and the checksum in the last four bytes.
 // The decoded base 256 value does not include the token type or checksum.
 // It is an error if the token type or checksum does not match.

@@ -173,7 +173,7 @@ Handler const handlerArray[]{
     {"validator_info", byRef(&doValidatorInfo), Role::ADMIN, NO_CONDITION},
     {"vault_info", byRef(&doVaultInfo), Role::USER, NO_CONDITION},
     {"wallet_propose", byRef(&doWalletPropose), Role::ADMIN, NO_CONDITION},
-    // Evented methods
+    // Event methods
     {"subscribe", byRef(&doSubscribe), Role::USER, NO_CONDITION},
     {"unsubscribe", byRef(&doUnsubscribe), Role::USER, NO_CONDITION},
 };

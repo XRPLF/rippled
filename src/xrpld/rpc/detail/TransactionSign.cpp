@@ -277,7 +277,7 @@ checkPayment(
                     app);
                 if (pf.findPaths(app.config().PATH_SEARCH_OLD))
                 {
-                    // 4 is the maxium paths
+                    // 4 is the maximum paths
                     pf.computePathRanks(4);
                     STPath fullLiquidityPath;
                     STPathSet paths;
@@ -1043,7 +1043,7 @@ transactionSubmit(
     // Finally, submit the transaction.
     try
     {
-        // FIXME: For performance, should use asynch interface
+        // FIXME: For performance, should use async interface
         processTransaction(txn.second, isUnlimited(role), true, failType);
     }
     catch (std::exception&)
@@ -1439,7 +1439,7 @@ transactionSubmitMultiSigned(
     // Finally, submit the transaction.
     try
     {
-        // FIXME: For performance, should use asynch interface
+        // FIXME: For performance, should use async interface
         processTransaction(txn.second, isUnlimited(role), true, failType);
     }
     catch (std::exception&)

@@ -22,7 +22,7 @@ defaults:
     shell: bash
 
 env:
-  BUILD_DIR: .build
+  BUILD_DIR: build
   NPROC_SUBTRACT: 2
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Get number of processors
-        uses: XRPLF/actions/.github/actions/get-nproc@046b1620f6bfd6cd0985dc82c3df02786801fe0a
+        uses: XRPLF/actions/get-nproc@2ece4ec6ab7de266859a6f053571425b2bd684b6
         id: nproc
         with:
           subtract: ${{ env.NPROC_SUBTRACT }}

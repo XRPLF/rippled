@@ -16,6 +16,7 @@ check(std::string const& in, std::string const& out)
 
 TEST_CASE("base64")
 {
+    // cspell: disable
     check("", "");
     check("f", "Zg==");
     check("fo", "Zm8=");
@@ -23,6 +24,7 @@ TEST_CASE("base64")
     check("foob", "Zm9vYg==");
     check("fooba", "Zm9vYmE=");
     check("foobar", "Zm9vYmFy");
+    // cspell: enable
 
     check(
         "Man is distinguished, not only by his reason, but by this "

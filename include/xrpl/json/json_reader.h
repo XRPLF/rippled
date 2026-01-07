@@ -1,8 +1,6 @@
 #ifndef XRPL_JSON_JSON_READER_H_INCLUDED
 #define XRPL_JSON_JSON_READER_H_INCLUDED
 
-#define CPPTL_JSON_READER_H_INCLUDED
-
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
@@ -231,4 +229,4 @@ operator>>(std::istream&, Value&);
 
 }  // namespace Json
 
-#endif  // CPPTL_JSON_READER_H_INCLUDED
+#endif  // XRPL_JSON_JSON_READER_H_INCLUDED

@@ -18,7 +18,7 @@ namespace beast {
 
 namespace detail {
 
-// These specializatons get called by the non-member functions to do the work
+// These specializations get called by the non-member functions to do the work
 template <class Out, class In>
 struct LexicalCast;
 

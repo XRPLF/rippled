@@ -1292,7 +1292,7 @@ fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 // 1 = include trivial paths to make common cases work
 // 4 = normal fast search level
 // 7 = normal slow search level
-// 10 = most agressive
+// 10 = most aggressive
 
 void
 Pathfinder::initPathTable()
@@ -1301,6 +1301,7 @@ Pathfinder::initPathTable()
 
     mPathTable.clear();
     fillPaths(pt_XRP_to_XRP, {});
+    /* cspell: disable */
 
     fillPaths(
         pt_XRP_to_nonXRP,
@@ -1357,6 +1358,7 @@ Pathfinder::initPathTable()
             {8, "saafad"},
             {9, "safaad"},
         });
+    /* cspell: enable */
 }
 
 }  // namespace xrpl

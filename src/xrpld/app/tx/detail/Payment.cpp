@@ -316,7 +316,7 @@ Payment::preclaim(PreclaimContext const& ctx)
                 << "Delay transaction: Destination account does not exist. "
                 << "Insufficent payment to create account.";
 
-            // TODO: dedupe
+            // TODO: de-dupe
             // Another transaction could create the account and then this
             // transaction would succeed.
             return tecNO_DST_INSUF_XRP;
@@ -558,7 +558,7 @@ Payment::doApply()
 
             // If the actual amount delivered is different from the original
             // amount due to partial payment or transfer fee, we need to update
-            // DelieveredAmount using the actual delivered amount
+            // DeliveredAmount using the actual delivered amount
             if (view().rules().enabled(fixMPTDeliveredAmount) &&
                 amountDeliver != dstAmount)
                 ctx_.deliver(amountDeliver);

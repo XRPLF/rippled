@@ -682,4 +682,4 @@ public:
 
 }  // namespace Json
 
-#endif  // CPPTL_JSON_H_INCLUDED
+#endif  // XRPL_JSON_JSON_VALUE_H_INCLUDED

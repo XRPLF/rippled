@@ -254,7 +254,7 @@ class RCLValidations_test : public beast::unit_test::suite
         BEAST_EXPECT(trie.branchSupport(ledg_258) == 4);
 
         // Move three of the s258 ledgers to s259, which splits the trie
-        // due to the 256 ancestory limit
+        // due to the 256 ancestry limit
         BEAST_EXPECT(trie.remove(ledg_258, 3));
         trie.insert(ledg_259, 3);
         trie.getPreferred(1);
@@ -275,7 +275,7 @@ class RCLValidations_test : public beast::unit_test::suite
         // then verify the remove call works
         // past bug: remove had assumed the first child of a node in the trie
         //      which matches is the *only* child in the trie which matches.
-        //      This is **NOT** true with the limited 256 ledger ancestory
+        //      This is **NOT** true with the limited 256 ledger ancestry
         //      quirk of RCLValidation and prevents deleting the old support
         //      for ledger 257
 
