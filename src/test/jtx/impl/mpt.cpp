@@ -841,18 +841,6 @@ MPTTester::getConvertProof(
     Buffer issuerZkp = generateProof(
         issuerCiphertext.first, getPubKey(issuer_), issuerCiphertext.second);
 
-    // std::optional<Slice> auditorZkp;
-    // if (auditor)
-    // {
-    //     Slice auditorPubKey(
-    //         sleIssuance->getFieldVL(sfAuditorElGamalPublicKey).data(),
-    //         sleIssuance->getFieldVL(sfAuditorElGamalPublicKey).size());
-    //     Buffer auditorZkp = txArgs.auditorEncryptedAmt &&
-    //             sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey)
-    //         ? generateProof(*txArgs.issuerEncryptedAmt, issuerPubKey)
-    //         : getDummyProof();
-    // }
-
     // Pointer arithmetic to copy data into place
     std::uint8_t* ptr = zkp.data();
 
@@ -863,6 +851,26 @@ MPTTester::getConvertProof(
     // Copy Issuer
     std::memcpy(ptr, issuerZkp.data(), issuerZkp.size());
     ptr += issuerZkp.size();
+
+    if (auditorCiphertext)
+    {
+        Buffer auditorZkp(ecEqualityProofLength);
+
+        if (sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey))
+        {
+            Slice const auditorPubKey(
+                sleIssuance->getFieldVL(sfAuditorElGamalPublicKey).data(),
+                sleIssuance->getFieldVL(sfAuditorElGamalPublicKey).size());
+            auditorZkp = generateProof(
+                auditorCiphertext->first,
+                auditorPubKey,
+                auditorCiphertext->second);
+        }
+
+        // Copy auditor
+        std::memcpy(ptr, auditorZkp.data(), auditorZkp.size());
+        ptr += auditorZkp.size();
+    }
 
     return zkp;
 }
