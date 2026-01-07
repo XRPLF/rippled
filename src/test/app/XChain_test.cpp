@@ -2566,7 +2566,7 @@ struct XChain_test : public beast::unit_test::suite,
             }
             {
                 // --B5: missing sfAttestationSignerAccount field
-                // Then submit the one with the field. Should resarch quorum.
+                // Then submit the one with the field. Should reach quorum.
                 auto att = claim_attestation(
                     scAttester,
                     jvb,
