@@ -1,3 +1,6 @@
+#ifndef XRPL_PROTOCOL_SPONSOR_H_INCLUDED
+#define XRPL_PROTOCOL_SPONSOR_H_INCLUDED
+
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/STVector256.h>
@@ -16,3 +19,5 @@ addSerializeSponsorData(
 }
 
 }  // namespace xrpl
+
+#endif
