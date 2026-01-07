@@ -1,5 +1,4 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/rdb/Vacuum.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
@@ -8,6 +7,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/server/Vacuum.h>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/process/v1/args.hpp>
@@ -642,7 +642,7 @@ run(int argc, char** argv)
 
     if (vm.count("start"))
     {
-        config->START_UP = Config::FRESH;
+        config->START_UP = StartUpType::FRESH;
     }
 
     if (vm.count("import"))
@@ -653,7 +653,7 @@ run(int argc, char** argv)
         config->START_LEDGER = vm["ledger"].as<std::string>();
         if (vm.count("replay"))
         {
-            config->START_UP = Config::REPLAY;
+            config->START_UP = StartUpType::REPLAY;
             if (vm.count("trap_tx_hash"))
             {
                 uint256 tmp = {};
@@ -672,16 +672,16 @@ run(int argc, char** argv)
             }
         }
         else
-            config->START_UP = Config::LOAD;
+            config->START_UP = StartUpType::LOAD;
     }
     else if (vm.count("ledgerfile"))
     {
         config->START_LEDGER = vm["ledgerfile"].as<std::string>();
-        config->START_UP = Config::LOAD_FILE;
+        config->START_UP = StartUpType::LOAD_FILE;
     }
     else if (vm.count("load") || config->FAST_LOAD)
     {
-        config->START_UP = Config::LOAD;
+        config->START_UP = StartUpType::LOAD;
     }
 
     if (vm.count("trap_tx_hash") && vm.count("replay") == 0)
@@ -693,15 +693,15 @@ run(int argc, char** argv)
 
     if (vm.count("net") && !config->FAST_LOAD)
     {
-        if ((config->START_UP == Config::LOAD) ||
-            (config->START_UP == Config::REPLAY))
+        if ((config->START_UP == StartUpType::LOAD) ||
+            (config->START_UP == StartUpType::REPLAY))
         {
             std::cerr << "Net and load/replay options are incompatible"
                       << std::endl;
             return -1;
         }
 
-        config->START_UP = Config::NETWORK;
+        config->START_UP = StartUpType::NETWORK;
     }
 
     if (vm.count("valid"))

@@ -148,6 +148,23 @@ public:
     perf::PerfLog&
     getPerfLog() override;
 
+    // Configuration and state
+    bool
+    isStopping() const override;
+
+    beast::Journal
+    journal(std::string const& name) override;
+
+    boost::asio::io_context&
+    getIOContext() override;
+
+    Logs&
+    logs() override;
+
+    // Temporary: Get the underlying Application
+    Application&
+    app() override;
+
 private:
     Application& app_;
 };

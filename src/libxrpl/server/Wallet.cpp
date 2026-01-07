@@ -1,4 +1,5 @@
-#include <xrpld/app/rdb/Wallet.h>
+#include <xrpl/rdb/DBInit.h>
+#include <xrpl/server/Wallet.h>
 
 #include <boost/format.hpp>
 

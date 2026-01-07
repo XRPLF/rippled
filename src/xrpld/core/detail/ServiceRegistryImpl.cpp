@@ -242,4 +242,35 @@ ServiceRegistryImpl::getPerfLog()
     return app_.getPerfLog();
 }
 
+// Configuration and state
+bool
+ServiceRegistryImpl::isStopping() const
+{
+    return app_.isStopping();
+}
+
+beast::Journal
+ServiceRegistryImpl::journal(std::string const& name)
+{
+    return app_.journal(name);
+}
+
+boost::asio::io_context&
+ServiceRegistryImpl::getIOContext()
+{
+    return app_.getIOContext();
+}
+
+Logs&
+ServiceRegistryImpl::logs()
+{
+    return app_.logs();
+}
+
+Application&
+ServiceRegistryImpl::app()
+{
+    return app_;
+}
+
 }  // namespace xrpl

@@ -4,11 +4,10 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpld/core/DatabaseCon.h>
-
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/rdb/DatabaseCon.h>
 
 namespace xrpl {
 

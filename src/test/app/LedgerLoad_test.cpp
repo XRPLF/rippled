@@ -21,7 +21,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         std::unique_ptr<Config> cfg,
         std::string const& dbPath,
         std::string const& ledger,
-        Config::StartUpType type,
+        StartUpType type,
         std::optional<uint256> trapTxHash)
     {
         cfg->START_LEDGER = ledger;
@@ -113,7 +113,7 @@ class LedgerLoad_test : public beast::unit_test::suite
                 ledgerConfig,
                 sd.dbPath,
                 sd.ledgerFile,
-                Config::LOAD_FILE,
+                StartUpType::LOAD_FILE,
                 std::nullopt),
             nullptr,
             beast::severities::kDisabled);
@@ -138,7 +138,7 @@ class LedgerLoad_test : public beast::unit_test::suite
                     ledgerConfig,
                     sd.dbPath,
                     "",
-                    Config::LOAD_FILE,
+                    StartUpType::LOAD_FILE,
                     std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
@@ -152,7 +152,7 @@ class LedgerLoad_test : public beast::unit_test::suite
                     ledgerConfig,
                     sd.dbPath,
                     "badfile.json",
-                    Config::LOAD_FILE,
+                    StartUpType::LOAD_FILE,
                     std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
@@ -183,7 +183,7 @@ class LedgerLoad_test : public beast::unit_test::suite
                     ledgerConfig,
                     sd.dbPath,
                     ledgerFileCorrupt.string(),
-                    Config::LOAD_FILE,
+                    StartUpType::LOAD_FILE,
                     std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
@@ -205,7 +205,7 @@ class LedgerLoad_test : public beast::unit_test::suite
                 ledgerConfig,
                 sd.dbPath,
                 ledgerHash,
-                Config::LOAD,
+                StartUpType::LOAD,
                 std::nullopt),
             nullptr,
             beast::severities::kDisabled);
@@ -231,7 +231,7 @@ class LedgerLoad_test : public beast::unit_test::suite
                 ledgerConfig,
                 sd.dbPath,
                 ledgerHash,
-                Config::REPLAY,
+                StartUpType::REPLAY,
                 std::nullopt),
             nullptr,
             beast::severities::kDisabled);
@@ -262,7 +262,7 @@ class LedgerLoad_test : public beast::unit_test::suite
                 ledgerConfig,
                 sd.dbPath,
                 ledgerHash,
-                Config::REPLAY,
+                StartUpType::REPLAY,
                 sd.trapTxHash),
             nullptr,
             beast::severities::kDisabled);
@@ -297,7 +297,7 @@ class LedgerLoad_test : public beast::unit_test::suite
                     ledgerConfig,
                     sd.dbPath,
                     ledgerHash,
-                    Config::REPLAY,
+                    StartUpType::REPLAY,
                     ~sd.trapTxHash),
                 nullptr,
                 beast::severities::kDisabled);
@@ -323,7 +323,11 @@ class LedgerLoad_test : public beast::unit_test::suite
         Env env(
             *this,
             envconfig(
-                ledgerConfig, sd.dbPath, "latest", Config::LOAD, std::nullopt),
+                ledgerConfig,
+                sd.dbPath,
+                "latest",
+                StartUpType::LOAD,
+                std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -342,7 +346,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         Env env(
             *this,
             envconfig(
-                ledgerConfig, sd.dbPath, "43", Config::LOAD, std::nullopt),
+                ledgerConfig, sd.dbPath, "43", StartUpType::LOAD, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];

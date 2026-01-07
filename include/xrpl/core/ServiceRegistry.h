@@ -7,6 +7,8 @@
 #include <xrpl/ledger/CachedSLEs.h>
 #include <xrpl/protocol/Protocol.h>
 
+#include <boost/asio.hpp>
+
 #include <cstdint>
 #include <memory>
 
@@ -200,6 +202,24 @@ public:
 
     virtual perf::PerfLog&
     getPerfLog() = 0;
+
+    // Configuration and state
+    virtual bool
+    isStopping() const = 0;
+
+    virtual beast::Journal
+    journal(std::string const& name) = 0;
+
+    virtual boost::asio::io_context&
+    getIOContext() = 0;
+
+    virtual Logs&
+    logs() = 0;
+
+    // Temporary: Get the underlying Application for functions that haven't
+    // been migrated yet. This should be removed once all code is migrated.
+    virtual Application&
+    app() = 0;
 };
 
 }  // namespace xrpl

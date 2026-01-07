@@ -1,7 +1,7 @@
 #ifndef XRPL_APP_RDB_VACUUM_H_INCLUDED
 #define XRPL_APP_RDB_VACUUM_H_INCLUDED
 
-#include <xrpld/core/DatabaseCon.h>
+#include <xrpl/rdb/DatabaseCon.h>
 
 namespace xrpl {
 

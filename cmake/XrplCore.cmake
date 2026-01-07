@@ -114,22 +114,32 @@ target_link_libraries(xrpl.libxrpl.net PUBLIC
   xrpl.libxrpl.resource
 )
 
-add_module(xrpl server)
-target_link_libraries(xrpl.libxrpl.server PUBLIC xrpl.libxrpl.protocol)
-
 add_module(xrpl nodestore)
 target_link_libraries(xrpl.libxrpl.nodestore PUBLIC
-        xrpl.libxrpl.basics
-        xrpl.libxrpl.json
-        xrpl.libxrpl.protocol
+  xrpl.libxrpl.basics
+  xrpl.libxrpl.json
+  xrpl.libxrpl.protocol
 )
 
 add_module(xrpl shamap)
 target_link_libraries(xrpl.libxrpl.shamap PUBLIC
-        xrpl.libxrpl.basics
-        xrpl.libxrpl.crypto
-        xrpl.libxrpl.protocol
-        xrpl.libxrpl.nodestore
+  xrpl.libxrpl.basics
+  xrpl.libxrpl.crypto
+  xrpl.libxrpl.protocol
+  xrpl.libxrpl.nodestore
+)
+
+add_module(xrpl rdb)
+target_link_libraries(xrpl.libxrpl.rdb PUBLIC
+  xrpl.libxrpl.basics
+  xrpl.libxrpl.core
+)
+
+add_module(xrpl server)
+target_link_libraries(xrpl.libxrpl.server PUBLIC
+  xrpl.libxrpl.protocol
+  xrpl.libxrpl.core
+  xrpl.libxrpl.rdb
 )
 
 add_module(xrpl ledger)
@@ -137,6 +147,7 @@ target_link_libraries(xrpl.libxrpl.ledger PUBLIC
   xrpl.libxrpl.basics
   xrpl.libxrpl.json
   xrpl.libxrpl.protocol
+  xrpl.libxrpl.rdb
 )
 
 add_library(xrpl.libxrpl)
@@ -152,15 +163,16 @@ target_sources(xrpl.libxrpl PRIVATE ${sources})
 target_link_modules(xrpl PUBLIC
   basics
   beast
-  core
   crypto
   json
   protocol
+  core
   resource
-  server
+  net
   nodestore
   shamap
-  net
+  rdb
+  server
   ledger
 )
 

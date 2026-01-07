@@ -3,12 +3,10 @@
 #pragma clang diagnostic ignored "-Wdeprecated"
 #endif
 
-#include <xrpld/core/Config.h>
-#include <xrpld/core/DatabaseCon.h>
-#include <xrpld/core/SociDB.h>
-
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/rdb/SociDB.h>
 
 #include <boost/filesystem.hpp>
 
