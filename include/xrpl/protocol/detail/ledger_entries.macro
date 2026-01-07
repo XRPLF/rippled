@@ -612,6 +612,8 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     \sa keylet::sponsor
  */
 LEDGER_ENTRY(ltSPONSORSHIP, 0x0090, Sponsorship, sponsorship, ({
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
     {sfOwner,                soeREQUIRED},
     {sfSponsee,              soeREQUIRED},
     {sfFeeAmount,            soeOPTIONAL},
