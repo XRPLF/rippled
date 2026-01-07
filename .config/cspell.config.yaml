@@ -83,7 +83,6 @@ words:
   - doxyfile
   - dxrpl
   - endmacro
-  - endpointv
   - exceptioned
   - Falco
   - finalizers
@@ -222,6 +221,7 @@ words:
   - takergets
   - takerpays
   - ters
+  - TMEndpointv2
   - trixie
   - tx
   - txid
