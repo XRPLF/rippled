@@ -347,7 +347,7 @@ StyledWriter::writeArrayValue(Value const& value)
         pushValue("[]");
     else
     {
-        bool isArrayMultiLine = isMultineArray(value);
+        bool isArrayMultiLine = isMultilineArray(value);
 
         if (isArrayMultiLine)
         {
@@ -398,7 +398,7 @@ StyledWriter::writeArrayValue(Value const& value)
 }
 
 bool
-StyledWriter::isMultineArray(Value const& value)
+StyledWriter::isMultilineArray(Value const& value)
 {
     int size = value.size();
     bool isMultiLine = size * 3 >= rightMargin_;
@@ -573,7 +573,7 @@ StyledStreamWriter::writeArrayValue(Value const& value)
         pushValue("[]");
     else
     {
-        bool isArrayMultiLine = isMultineArray(value);
+        bool isArrayMultiLine = isMultilineArray(value);
 
         if (isArrayMultiLine)
         {
@@ -624,7 +624,7 @@ StyledStreamWriter::writeArrayValue(Value const& value)
 }
 
 bool
-StyledStreamWriter::isMultineArray(Value const& value)
+StyledStreamWriter::isMultilineArray(Value const& value)
 {
     int size = value.size();
     bool isMultiLine = size * 3 >= rightMargin_;

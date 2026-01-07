@@ -40,7 +40,7 @@ final paths and the estimated cost are returned.
 The engine permits the search depth to be selected and the paths table
 includes the depth at which each path type is found.  A search depth of zero
 causes no searching to be done.  Extra paths can also be injected, and this
-should be used to preserve previously-found paths across invokations for the
+should be used to preserve previously-found paths across invocations for the
 same path request (particularly if the search depth may change).
 
 */

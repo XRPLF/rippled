@@ -44,7 +44,7 @@ enum ValueType {
 class StaticString
 {
 public:
-    constexpr explicit StaticString(char const* czstring) : str_(czstring)
+    constexpr explicit StaticString(char const* czString) : str_(czString)
     {
     }
 
