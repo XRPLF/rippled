@@ -193,7 +193,7 @@ public:
     }
 
 private:
-    // JSON collections are either arrrays, or objects.
+    // JSON collections are either arrays, or objects.
     struct Collection
     {
         explicit Collection() = default;

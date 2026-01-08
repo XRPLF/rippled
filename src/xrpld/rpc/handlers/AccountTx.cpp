@@ -340,7 +340,7 @@ populateJsonResponse(
                         // LCOV_EXCL_START
                         UNREACHABLE(
                             "xrpl::populateJsonResponse : missing "
-                            "transaction medatata");
+                            "transaction metadata");
                         // LCOV_EXCL_STOP
                     }
                 }

@@ -15,7 +15,7 @@ public:
     void
     run() override
     {
-        testcase("Require Fully Canonicial Signature");
+        testcase("Require Fully Canonical Signature");
         testFullyCanonicalSigs();
     }
 

@@ -155,7 +155,7 @@ private:
     Application& app_;
     bool const useTxTables_;
     beast::Journal j_;
-    std::unique_ptr<DatabaseCon> lgrdb_, txdb_;
+    std::unique_ptr<DatabaseCon> ledgerDb_, txdb_;
 
     /**
      * @brief makeLedgerDBs Opens ledger and transaction databases for the node
@@ -178,7 +178,7 @@ private:
     bool
     existsLedger()
     {
-        return static_cast<bool>(lgrdb_);
+        return static_cast<bool>(ledgerDb_);
     }
 
     /**
@@ -200,7 +200,7 @@ private:
     auto
     checkoutLedger()
     {
-        return lgrdb_->checkoutDb();
+        return ledgerDb_->checkoutDb();
     }
 
     /**
@@ -224,7 +224,7 @@ SQLiteDatabaseImp::makeLedgerDBs(
     auto [lgr, tx, res] =
         detail::makeLedgerDBs(config, setup, checkpointerSetup, j_);
     txdb_ = std::move(tx);
-    lgrdb_ = std::move(lgr);
+    ledgerDb_ = std::move(lgr);
     return res;
 }
 
@@ -392,7 +392,8 @@ SQLiteDatabaseImp::saveValidatedLedger(
 {
     if (existsLedger())
     {
-        if (!detail::saveValidatedLedger(*lgrdb_, txdb_, app_, ledger, current))
+        if (!detail::saveValidatedLedger(
+                *ledgerDb_, txdb_, app_, ledger, current))
             return false;
     }
 
@@ -789,7 +790,7 @@ SQLiteDatabaseImp::getKBUsedAll()
 {
     if (existsLedger())
     {
-        return xrpl::getKBUsedAll(lgrdb_->getSession());
+        return xrpl::getKBUsedAll(ledgerDb_->getSession());
     }
 
     return 0;
@@ -800,7 +801,7 @@ SQLiteDatabaseImp::getKBUsedLedger()
 {
     if (existsLedger())
     {
-        return xrpl::getKBUsedDB(lgrdb_->getSession());
+        return xrpl::getKBUsedDB(ledgerDb_->getSession());
     }
 
     return 0;
@@ -823,7 +824,7 @@ SQLiteDatabaseImp::getKBUsedTransaction()
 void
 SQLiteDatabaseImp::closeLedgerDB()
 {
-    lgrdb_.reset();
+    ledgerDb_.reset();
 }
 
 void

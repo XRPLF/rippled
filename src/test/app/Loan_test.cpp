@@ -11,6 +11,8 @@
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/SField.h>
 
+#include <chrono>
+
 namespace xrpl {
 namespace test {
 
@@ -7485,6 +7487,125 @@ protected:
         env.close();
     }
 
+    void
+    testSequentialFLCDepletion()
+    {
+        testcase << "First-Loss Capital Depletion on Sequential Defaults";
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace loanBroker;
+
+        Env env(*this, all);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrowerA{"borrowerA"};
+        Account const borrowerB{"borrowerB"};
+
+        env.fund(XRP(1'000'000), issuer, lender, borrowerA, borrowerB);
+        env.close();
+
+        PrettyAsset const asset = xrpIssue();
+        auto const vaultDepositAmount =
+            asset(200'000);  // Enough for 2 x 50k loans plus interest/fees
+
+        auto const brokerInfo = createVaultAndBroker(
+            env,
+            asset,
+            lender,
+            {
+                .vaultDeposit = vaultDepositAmount.value(),
+                .debtMax = 0,
+                .coverRateMin = TenthBips32(20000),  // 20%
+                .coverDeposit = 21'000,
+                .managementFeeRate = TenthBips16(100),  // 0.1%
+                .coverRateLiquidation = TenthBips32(100000),
+            });
+        auto const brokerKeylet = brokerInfo.brokerKeylet();
+
+        // Create two identical loans: each 50,000 XRP principal (scaled down to
+        // avoid funding issues) Total DebtTotal will be ~100,000 XRP (principal
+        // + interest) Formula will calculate cover as: 100% × (20% × 100,000) =
+        // 20,000 XRP So we need FLC = 20,000 XRP to be fully consumed by first
+        // default
+        auto const principalAmount = Number(50'000);
+        auto const loanPaymentInterval = 2592000;  // 30 days
+        auto const loanGracePeriod = 604800;       // 7 days
+
+        // Create Loan A
+        auto loanATx = env.jt(
+            set(borrowerA, brokerKeylet.key, principalAmount),
+            sig(sfCounterpartySignature, lender),
+            interestRate(TenthBips32(500)),  // 5%
+            paymentTotal(12),
+            loan::paymentInterval(loanPaymentInterval),
+            loan::gracePeriod(loanGracePeriod),
+            fee(XRP(10)));  // Sufficient fee for multi-sig transaction
+        env(loanATx);
+        env.close();
+
+        auto const loanAKeylet = keylet::loan(brokerKeylet.key, 1);
+
+        // Create Loan B
+        auto loanBTx = env.jt(
+            set(borrowerB, brokerKeylet.key, principalAmount),
+            sig(sfCounterpartySignature, lender),
+            interestRate(TenthBips32(500)),  // 5%
+            paymentTotal(12),
+            loan::paymentInterval(loanPaymentInterval),
+            loan::gracePeriod(loanGracePeriod),
+            fee(XRP(10)));  // Sufficient fee for multi-sig transaction
+        env(loanBTx);
+        env.close();
+
+        auto const loanBKeylet = keylet::loan(brokerKeylet.key, 2);
+
+        auto loanASle = env.le(loanAKeylet);
+        if (!BEAST_EXPECT(loanASle))
+            return;
+
+        // Advance time past grace period for both loans to be defaultable
+        auto const loanANextDue = loanASle->at(sfNextPaymentDueDate);
+        auto const loanAGrace = loanASle->at(sfGracePeriod);
+        env.close(std::chrono::seconds{loanANextDue + loanAGrace + 60});
+
+        env(manage(lender, loanAKeylet.key, tfLoanDefault), ter(tesSUCCESS));
+        env.close();
+
+        // Verify Loan A is defaulted
+        loanASle = env.le(loanAKeylet);
+        if (!BEAST_EXPECT(loanASle))
+            return;
+        BEAST_EXPECT(loanASle->isFlag(lsfLoanDefault));
+        BEAST_EXPECT(loanASle->at(sfPaymentRemaining) == 0);
+
+        // Check broker state after first default (from committed ledger)
+        auto brokerSle = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const afterFirstDebtTotal = brokerSle->at(sfDebtTotal);
+        auto const afterFirstCoverAvailable = brokerSle->at(sfCoverAvailable);
+
+        // DebtTotal should have decreased by Loan A's debt
+        BEAST_EXPECT(afterFirstDebtTotal == 50'134);
+
+        // CoverAvailable should have decreased significantly
+        BEAST_EXPECT(afterFirstCoverAvailable == 946);
+
+        env(manage(lender, loanBKeylet.key, tfLoanDefault), ter(tesSUCCESS));
+
+        brokerSle = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const afterSecondDebtTotal = brokerSle->at(sfDebtTotal);
+        auto const afterSecondCoverAvailable = brokerSle->at(sfCoverAvailable);
+
+        BEAST_EXPECT(afterSecondDebtTotal == 0);
+
+        BEAST_EXPECT(afterSecondCoverAvailable == 0);
+    }
+
 public:
     void
     run() override
@@ -7537,6 +7658,7 @@ public:
         testLoanPayBrokerOwnerUnauthorizedMPT();
         testLoanPayBrokerOwnerNoPermissionedDomainMPT();
         testLoanSetBrokerOwnerNoPermissionedDomainMPT();
+        testSequentialFLCDepletion();
     }
 };
 

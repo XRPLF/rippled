@@ -413,7 +413,7 @@ GRPCServerImpl::handleRpcs()
     // tells us whether there is any kind of event or cq_ is shutting down.
     // When cq_.Next(...) returns false, all work has been completed and the
     // loop can exit. When the server is shutdown, each CallData object that is
-    // listening for a request is forceably cancelled, and is returned by
+    // listening for a request is forcibly cancelled, and is returned by
     // cq_->Next() with ok set to false. Then, each CallData object processing
     // a request must complete (by sending data to the client), each of which
     // will be returned from cq_->Next() with ok set to true. After all
