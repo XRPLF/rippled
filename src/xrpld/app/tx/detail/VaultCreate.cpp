@@ -30,6 +30,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -248,6 +249,8 @@ VaultCreate::doApply()
             !isTesSuccess(err))
             return err;
     }
+
+    associateAsset(*vault, asset);
 
     return tesSUCCESS;
 }

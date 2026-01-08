@@ -352,8 +352,8 @@ STAmount&
 STAmount::operator=(IOUAmount const& iou)
 {
     XRPL_ASSERT(
-        native() == false,
-        "ripple::STAmount::operator=(IOUAmount) : is not XRP");
+        integral() == false,
+        "xrpl::STAmount::operator=(IOUAmount) : is not integral");
     mOffset = iou.exponent();
     mIsNegative = iou < beast::zero;
     if (mIsNegative)
@@ -897,11 +897,11 @@ STAmount::canonicalize()
 
         if (getSTNumberSwitchover() && getSTAmountCanonicalizeSwitchover())
         {
-            Number num(
-                mIsNegative ? -mValue : mValue, mOffset, Number::unchecked{});
+            Number num(mIsNegative, mValue, mOffset, Number::unchecked{});
             auto set = [&](auto const& val) {
-                mIsNegative = val.value() < 0;
-                mValue = mIsNegative ? -val.value() : val.value();
+                auto const value = val.value();
+                mIsNegative = value < 0;
+                mValue = mIsNegative ? -value : value;
             };
             if (native())
                 set(XRPAmount{num});
@@ -1373,7 +1373,7 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
     if (getSTNumberSwitchover())
     {
         auto const r = Number{v1} * Number{v2};
-        return STAmount{asset, r.mantissa(), r.exponent()};
+        return STAmount{asset, r};
     }
 
     std::uint64_t value1 = v1.mantissa();
@@ -1519,6 +1519,10 @@ roundToScale(
 {
     // Nothing to do for integral types.
     if (value.integral())
+        return value;
+
+    // Nothing to do for zero.
+    if (value == beast::zero)
         return value;
 
     // If the value's exponent is greater than or equal to the scale, then

@@ -141,7 +141,7 @@ toAmount(
     {
         if (isXRP(issue))
             return STAmount(issue, static_cast<std::int64_t>(n));
-        return STAmount(issue, n.mantissa(), n.exponent());
+        return STAmount(issue, n);
     }
     else
     {

@@ -154,7 +154,10 @@ public:
         sMD_Always = 0x10,   // value when node containing it is affected at all
         sMD_BaseTen = 0x20,  // value is treated as base 10, overriding behavior
         sMD_PseudoAccount = 0x40,  // if this field is set in an ACCOUNT_ROOT
-        // _only_, then it is a pseudo-account
+                                   // _only_, then it is a pseudo-account
+        sMD_NeedsAsset = 0x80,     // This field needs to be associated with an
+                                   // asset before it is serialized as a ledger
+                                   // object. Intended for STNumber.
         sMD_Default =
             sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create
     };

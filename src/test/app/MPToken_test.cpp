@@ -1613,7 +1613,7 @@ class MPToken_test : public beast::unit_test::suite
             jv[jss::secret] = alice.name();
             jv[jss::tx_json] = pay(alice, bob, mpt);
             jv[jss::tx_json][jss::Amount][jss::value] =
-                to_string(maxMPTokenAmount + 1);
+                std::to_string(maxMPTokenAmount + 1);
             auto const jrr = env.rpc("json", "submit", to_string(jv));
             BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
         }
@@ -2493,7 +2493,7 @@ class MPToken_test : public beast::unit_test::suite
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             Json::Value jv = claw(alice, mpt(1), bob);
-            jv[jss::Amount][jss::value] = to_string(maxMPTokenAmount + 1);
+            jv[jss::Amount][jss::value] = std::to_string(maxMPTokenAmount + 1);
             Json::Value jv1;
             jv1[jss::secret] = alice.name();
             jv1[jss::tx_json] = jv;

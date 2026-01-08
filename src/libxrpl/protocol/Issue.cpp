@@ -69,6 +69,12 @@ Issue::native() const
 }
 
 bool
+Issue::integral() const
+{
+    return native();
+}
+
+bool
 isConsistent(Issue const& ac)
 {
     return isXRP(ac.currency) == isXRP(ac.account);

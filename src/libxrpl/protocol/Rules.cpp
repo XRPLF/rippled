@@ -17,13 +17,16 @@
 */
 //==============================================================================
 
+#include <xrpl/protocol/Rules.h>
+// Do not remove. Forces Rules.h to stay first, to verify it can compile
+// without any hidden dependencies
 #include <xrpl/basics/LocalValue.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STVector256.h>
 
 #include <memory>
@@ -52,6 +55,15 @@ getCurrentTransactionRules()
 void
 setCurrentTransactionRules(std::optional<Rules> r)
 {
+    // Make global changes associated with the rules before the value is moved.
+    // Push the appropriate setting, instead of having the class pull every time
+    // the value is needed. That could get expensive fast.
+    bool enableLargeNumbers = !r ||
+        (r->enabled(featureSingleAssetVault) ||
+         r->enabled(featureLendingProtocol));
+    Number::setMantissaScale(
+        enableLargeNumbers ? MantissaRange::large : MantissaRange::small);
+
     *getCurrentTransactionRulesRef() = std::move(r);
 }
 

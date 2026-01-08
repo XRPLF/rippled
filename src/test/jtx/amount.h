@@ -280,6 +280,12 @@ struct XRP_t
         return xrpIssue();
     }
 
+    bool
+    integral() const
+    {
+        return true;
+    }
+
     /** Returns an amount of XRP as PrettyAmount,
         which is trivially convertible to STAmount
 
@@ -419,6 +425,11 @@ public:
     {
         return issue();
     }
+    bool
+    integral() const
+    {
+        return issue().integral();
+    }
 
     /** Implicit conversion to Issue or Asset.
 
@@ -508,6 +519,11 @@ public:
     asset() const
     {
         return mptIssue();
+    }
+    bool
+    integral() const
+    {
+        return true;
     }
 
     /** Implicit conversion to MPTIssue or asset.

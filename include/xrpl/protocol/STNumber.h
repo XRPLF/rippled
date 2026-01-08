@@ -23,6 +23,7 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STTakesAsset.h>
 
 #include <ostream>
 
@@ -39,7 +40,7 @@ namespace ripple {
  * without paying the storage cost of duplicating asset information
  * that may be deduced from the context.
  */
-class STNumber : public STBase, public CountedObject<STNumber>
+class STNumber : public STTakesAsset, public CountedObject<STNumber>
 {
 private:
     Number value_;
@@ -74,6 +75,9 @@ public:
     isEquivalent(STBase const& t) const override;
     bool
     isDefault() const override;
+
+    void
+    associateAsset(Asset const& a) override;
 
     operator Number() const
     {

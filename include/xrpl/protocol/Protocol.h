@@ -252,6 +252,7 @@ std::size_t constexpr maxMPTokenMetadataLength = 1024;
 
 /** The maximum amount of MPTokenIssuance */
 std::uint64_t constexpr maxMPTokenAmount = 0x7FFF'FFFF'FFFF'FFFFull;
+static_assert(Number::maxRep >= maxMPTokenAmount);
 
 /** The maximum length of Data payload */
 std::size_t constexpr maxDataPayloadLength = 256;

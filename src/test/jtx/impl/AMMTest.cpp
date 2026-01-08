@@ -124,9 +124,14 @@ AMMTestBase::testAMM(
 
     for (auto const& features : arg.features)
     {
+        // Use small Number mantissas for the life of this test.
+        NumberMantissaScaleGuard const sg{ripple::MantissaRange::small};
+
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
         Env env{
             *this,
-            features,
+            features - featureSingleAssetVault - featureLendingProtocol,
             arg.noLog ? std::make_unique<CaptureLogs>(&logs) : nullptr};
 
         auto const [asset1, asset2] =

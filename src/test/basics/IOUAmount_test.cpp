@@ -160,15 +160,28 @@ public:
     {
         testcase("IOU strings");
 
-        BEAST_EXPECT(to_string(IOUAmount(-2, 0)) == "-2");
-        BEAST_EXPECT(to_string(IOUAmount(0, 0)) == "0");
-        BEAST_EXPECT(to_string(IOUAmount(2, 0)) == "2");
-        BEAST_EXPECT(to_string(IOUAmount(25, -3)) == "0.025");
-        BEAST_EXPECT(to_string(IOUAmount(-25, -3)) == "-0.025");
-        BEAST_EXPECT(to_string(IOUAmount(25, 1)) == "250");
-        BEAST_EXPECT(to_string(IOUAmount(-25, 1)) == "-250");
-        BEAST_EXPECT(to_string(IOUAmount(2, 20)) == "2000000000000000e5");
-        BEAST_EXPECT(to_string(IOUAmount(-2, -20)) == "-2000000000000000e-35");
+        auto test = [this](IOUAmount const& n, std::string const& expected) {
+            auto const result = to_string(n);
+            std::stringstream ss;
+            ss << "to_string(" << result << "). Expected: " << expected;
+            BEAST_EXPECTS(result == expected, ss.str());
+        };
+
+        for (auto const mantissaSize :
+             {MantissaRange::small, MantissaRange::large})
+        {
+            NumberMantissaScaleGuard mg(mantissaSize);
+
+            test(IOUAmount(-2, 0), "-2");
+            test(IOUAmount(0, 0), "0");
+            test(IOUAmount(2, 0), "2");
+            test(IOUAmount(25, -3), "0.025");
+            test(IOUAmount(-25, -3), "-0.025");
+            test(IOUAmount(25, 1), "250");
+            test(IOUAmount(-25, 1), "-250");
+            test(IOUAmount(2, 20), "2e20");
+            test(IOUAmount(-2, -20), "-2e-20");
+        }
     }
 
     void

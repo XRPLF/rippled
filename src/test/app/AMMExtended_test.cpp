@@ -45,6 +45,9 @@ namespace test {
  */
 struct AMMExtended_test : public jtx::AMMTest
 {
+    // Use small Number mantissas for the life of this test.
+    NumberMantissaScaleGuard const sg_{ripple::MantissaRange::small};
+
 private:
     void
     testRmFundedOffer(FeatureBitset features)
@@ -61,6 +64,7 @@ private:
         // funded and not used for the payment.
 
         using namespace jtx;
+
         Env env{*this, features};
 
         fund(
@@ -1447,7 +1451,12 @@ private:
     testOffers()
     {
         using namespace jtx;
-        FeatureBitset const all{testable_amendments()};
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        FeatureBitset const all{
+            testable_amendments() - featureSingleAssetVault -
+            featureLendingProtocol};
+
         testRmFundedOffer(all);
         testRmFundedOffer(all - fixAMMv1_1 - fixAMMv1_3);
         testEnforceNoRipple(all);
@@ -3789,7 +3798,11 @@ private:
     testFlow()
     {
         using namespace jtx;
-        FeatureBitset const all{testable_amendments()};
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas in the transaction engine
+        FeatureBitset const all{
+            testable_amendments() - featureSingleAssetVault -
+            featureLendingProtocol};
 
         testFalseDry(all);
         testBookStep(all);
@@ -3803,7 +3816,11 @@ private:
     testCrossingLimits()
     {
         using namespace jtx;
-        FeatureBitset const all{testable_amendments()};
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas in the transaction engine
+        FeatureBitset const all{
+            testable_amendments() - featureSingleAssetVault -
+            featureLendingProtocol};
         testStepLimit(all);
         testStepLimit(all - fixAMMv1_1 - fixAMMv1_3);
     }
@@ -3812,7 +3829,11 @@ private:
     testDeliverMin()
     {
         using namespace jtx;
-        FeatureBitset const all{testable_amendments()};
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas in the transaction engine
+        FeatureBitset const all{
+            testable_amendments() - featureSingleAssetVault -
+            featureLendingProtocol};
         test_convert_all_of_an_asset(all);
         test_convert_all_of_an_asset(all - fixAMMv1_1 - fixAMMv1_3);
     }
@@ -3820,9 +3841,12 @@ private:
     void
     testDepositAuth()
     {
-        auto const supported{jtx::testable_amendments()};
-        testPayment(supported - featureDepositPreauth);
-        testPayment(supported);
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas in the transaction engine
+        FeatureBitset const all{
+            jtx::testable_amendments() - featureSingleAssetVault -
+            featureLendingProtocol};
+        testPayment(all);
         testPayIOU();
     }
 
@@ -3830,7 +3854,11 @@ private:
     testFreeze()
     {
         using namespace test::jtx;
-        auto const sa = testable_amendments();
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas in the transaction engine
+        FeatureBitset const sa{
+            testable_amendments() - featureSingleAssetVault -
+            featureLendingProtocol};
         testRippleState(sa);
         testGlobalFreeze(sa);
         testOffersWhenFrozen(sa);
