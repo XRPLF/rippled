@@ -23,47 +23,95 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     {
         testcase("Convert");
         using namespace test::jtx;
-        Env env{*this, features};
-        Account const alice("alice");
-        Account const bob("bob");
-        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-        mptAlice.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
-        mptAlice.authorize({.account = bob});
-        env.close();
-        mptAlice.pay(alice, bob, 100);
-        env.close();
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
 
-        mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(alice);
 
-        mptAlice.set({.account = alice, .pubKey = mptAlice.getPubKey(alice)});
+            mptAlice.set(
+                {.account = alice, .pubKey = mptAlice.getPubKey(alice)});
 
-        mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(bob);
 
-        mptAlice.convert({
-            .account = bob,
-            .amt = 0,
-            .holderPubKey = mptAlice.getPubKey(bob),
-        });
+            mptAlice.convert({
+                .account = bob,
+                .amt = 0,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
 
-        mptAlice.convert({
-            .account = bob,
-            .amt = 20,
-        });
+            mptAlice.convert({
+                .account = bob,
+                .amt = 20,
+            });
 
-        mptAlice.convert({
-            .account = bob,
-            .amt = 40,
-        });
+            mptAlice.convert({
+                .account = bob,
+                .amt = 40,
+            });
 
-        mptAlice.convert({
-            .account = bob,
-            .amt = 40,
-        });
+            mptAlice.convert({
+                .account = bob,
+                .amt = 40,
+            });
+        }
+
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const auditor("auditor");
+            MPTTester mptAlice(
+                env, alice, {.holders = {bob}, .auditor = auditor});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+            mptAlice.authorize({.account = bob});
+            env.close();
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(auditor);
+
+            mptAlice.set(
+                {.account = alice,
+                 .pubKey = mptAlice.getPubKey(alice),
+                 .auditorPubKey = mptAlice.getPubKey(auditor)});
+
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 0,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 20,
+            });
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 30,
+            });
+        }
     }
 
     void
