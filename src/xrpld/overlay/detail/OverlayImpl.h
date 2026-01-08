@@ -461,7 +461,7 @@ private:
 
     /** Handles validator list requests.
         Using a /vl/<hex-encoded public key> URL, will retrieve the
-        latest valdiator list (or UNL) that this node has for that
+        latest validator list (or UNL) that this node has for that
         public key, if the node trusts that public key.
 
         @return true if the request was handled.

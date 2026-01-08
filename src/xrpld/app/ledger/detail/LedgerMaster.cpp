@@ -2204,7 +2204,7 @@ LedgerMaster::makeFetchPack(
     catch (std::exception const& ex)
     {
         JLOG(m_journal.warn())
-            << "Exception building fetch pach. Exception: " << ex.what();
+            << "Exception building fetch pack. Exception: " << ex.what();
     }
 }
 

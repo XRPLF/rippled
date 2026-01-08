@@ -974,7 +974,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 return coverWithdraw(alice, brokerKeylet.key, asset(10));
             });
 
-            // preclaim: tecWRONG_ASSSET
+            // preclaim: tecWRONG_ASSET
             env(coverWithdraw(alice, brokerKeylet.key, issuer["BAD"](10)),
                 ter(tecWRONG_ASSET),
                 THISLINE);

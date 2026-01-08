@@ -218,7 +218,7 @@ public:
 
             // multiply and divide by values that would overflow if done
             // naively, and check that it gives the correct answer
-            big -= 0xf;  // Subtract a little so it's divisable by 4
+            big -= 0xf;  // Subtract a little so it's divisible by 4
             BEAST_EXPECT(
                 mulRatio(big, 3, 4, false).value() == (big.value() / 4) * 3);
             BEAST_EXPECT(
