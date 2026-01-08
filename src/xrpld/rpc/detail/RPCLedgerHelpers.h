@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>

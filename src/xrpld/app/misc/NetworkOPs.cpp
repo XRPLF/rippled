@@ -197,7 +197,7 @@ class NetworkOPsImp final : public NetworkOPs
 
 public:
     NetworkOPsImp(
-        Application& app,
+        ServiceRegistry& registry,
         NetworkOPs::clock_type& clock,
         bool standalone,
         std::size_t minPeerCount,
@@ -208,7 +208,7 @@ public:
         boost::asio::io_context& io_svc,
         beast::Journal journal,
         beast::insight::Collector::ptr const& collector)
-        : app_(app)
+        : app_(registry.app())
         , m_journal(journal)
         , m_localTX(make_LocalTxs())
         , mMode(start_valid ? OperatingMode::FULL : OperatingMode::DISCONNECTED)
@@ -216,11 +216,13 @@ public:
         , clusterTimer_(io_svc)
         , accountHistoryTxTimer_(io_svc)
         , mConsensus(
-              app,
-              make_FeeVote(setup_FeeVote(app_.config().section("voting")), app_.logs().journal("FeeVote")),
+              app_,
+              make_FeeVote(
+                  setup_FeeVote(app_.config().section("voting")),
+                  app_.logs().journal("FeeVote")),
               ledgerMaster,
               *m_localTX,
-              app.getInboundTransactions(),
+              registry.getInboundTransactions(),
               beast::get_abstract_clock<std::chrono::steady_clock>(),
               validatorKeys,
               app_.logs().journal("LedgerConsensus"))
@@ -4413,7 +4415,7 @@ NetworkOPsImp::StateAccounting::json(Json::Value& obj) const
 
 std::unique_ptr<NetworkOPs>
 make_NetworkOPs(
-    Application& app,
+    ServiceRegistry& registry,
     NetworkOPs::clock_type& clock,
     bool standalone,
     std::size_t minPeerCount,
@@ -4426,7 +4428,7 @@ make_NetworkOPs(
     beast::insight::Collector::ptr const& collector)
 {
     return std::make_unique<NetworkOPsImp>(
-        app,
+        registry,
         clock,
         standalone,
         minPeerCount,

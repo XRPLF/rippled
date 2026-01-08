@@ -1,9 +1,9 @@
 #pragma once
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
-#include <xrpld/app/ledger/Ledger.h>
 
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TER.h>
@@ -251,7 +251,7 @@ public:
 
 std::unique_ptr<NetworkOPs>
 make_NetworkOPs(
-    Application& app,
+    ServiceRegistry& registry,
     NetworkOPs::clock_type& clock,
     bool standalone,
     std::size_t minPeerCount,
