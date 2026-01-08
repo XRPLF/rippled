@@ -1,9 +1,8 @@
 #ifndef XRPL_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
 #define XRPL_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
 
-#include <xrpld/rpc/InfoSub.h>
-
 #include <xrpl/protocol/MultiApiJson.h>
+#include <xrpl/server/InfoSub.h>
 
 #include <memory>
 #include <mutex>

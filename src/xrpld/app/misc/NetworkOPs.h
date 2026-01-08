@@ -3,12 +3,12 @@
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/rpc/InfoSub.h>
 
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/messages.h>
+#include <xrpl/server/InfoSub.h>
 
 #include <boost/asio.hpp>
 

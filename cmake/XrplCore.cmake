@@ -140,6 +140,7 @@ target_link_libraries(xrpl.libxrpl.server PUBLIC
   xrpl.libxrpl.protocol
   xrpl.libxrpl.core
   xrpl.libxrpl.rdb
+  xrpl.libxrpl.resource
 )
 
 add_module(xrpl ledger)

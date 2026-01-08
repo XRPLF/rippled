@@ -1,11 +1,11 @@
 #ifndef XRPL_RPC_CONTEXT_H_INCLUDED
 #define XRPL_RPC_CONTEXT_H_INCLUDED
 
-#include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/Role.h>
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/server/InfoSub.h>
 
 namespace xrpl {
 

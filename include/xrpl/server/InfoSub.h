@@ -1,5 +1,5 @@
-#ifndef XRPL_NET_INFOSUB_H_INCLUDED
-#define XRPL_NET_INFOSUB_H_INCLUDED
+#ifndef XRPL_SERVER_INFOSUB_H_INCLUDED
+#define XRPL_SERVER_INFOSUB_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/json/json_value.h>
@@ -147,6 +147,7 @@ public:
 
         virtual bool
         subPeerStatus(ref ispListener) = 0;
+
         virtual bool
         unsubPeerStatus(std::uint64_t uListener) = 0;
         virtual void
