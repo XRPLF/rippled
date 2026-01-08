@@ -1534,7 +1534,7 @@ public:
     {
         FeatureBitset const all{jtx::testable_amendments()};
 
-        // Test domain offer (w/o hyrbid)
+        // Test domain offer (w/o hybrid)
         testOfferCreate(all);
         testPayment(all);
         testBookStep(all);

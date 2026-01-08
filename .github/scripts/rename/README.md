@@ -19,7 +19,7 @@ run from the repository root.
 1. `.github/scripts/rename/definitions.sh`: This script will rename all
    definitions, such as include guards, from `RIPPLE_XXX` and `RIPPLED_XXX` to
    `XRPL_XXX`.
-2. `.github/scripts/rename/copyright.sh`: This script will remove superflous
+2. `.github/scripts/rename/copyright.sh`: This script will remove superfluous
    copyright notices.
 3. `.github/scripts/rename/cmake.sh`: This script will rename all CMake files
    from `RippleXXX.cmake` or `RippledXXX.cmake` to `XrplXXX.cmake`, and any

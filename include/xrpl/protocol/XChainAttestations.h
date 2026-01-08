@@ -33,12 +33,12 @@ struct AttestationBase
     // Account on the sending chain that triggered the event (sent the
     // transaction)
     AccountID sendingAccount;
-    // Amount transfered on the sending chain
+    // Amount transferred on the sending chain
     STAmount sendingAmount;
     // Account on the destination chain that collects a share of the attestation
     // reward
     AccountID rewardAccount;
-    // Amount was transfered on the locking chain
+    // Amount was transferred on the locking chain
     bool wasLockingChainSend;
 
     explicit AttestationBase(
@@ -354,7 +354,7 @@ struct XChainCreateAccountAttestation
         XChainCreateAccountAttestation const& rhs);
 };
 
-// Attestations from witness servers for a particular claimid and bridge.
+// Attestations from witness servers for a particular claim ID and bridge.
 // Only one attestation per signature is allowed.
 template <class TAttestation>
 class XChainAttestationsBase

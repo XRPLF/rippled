@@ -165,14 +165,14 @@ protected:
 /** The Livecache holds the short-lived relayed Endpoint messages.
 
     Since peers only advertise themselves when they have open slots,
-    we want these messags to expire rather quickly after the peer becomes
+    we want these messages to expire rather quickly after the peer becomes
     full.
 
     Addresses added to the cache are not connection-tested to see if
-    they are connectible (with one small exception regarding neighbors).
+    they are connectable (with one small exception regarding neighbors).
     Therefore, these addresses are not suitable for persisting across
     launches or for bootstrapping, because they do not have verifiable
-    and locally observed uptime and connectibility information.
+    and locally observed uptime and connectability information.
 */
 template <class Allocator = std::allocator<char>>
 class Livecache : protected detail::LivecacheBase

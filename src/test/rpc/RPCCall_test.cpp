@@ -3921,7 +3921,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"log_level: partiton_name.",
+    {"log_level: partition_name.",
      __LINE__,
      {"log_level", "partition_name", "fatal"},
      RPCCallTestData::no_exception,

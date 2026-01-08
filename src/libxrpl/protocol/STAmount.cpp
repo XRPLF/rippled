@@ -662,7 +662,7 @@ STAmount::getFullText() const
 std::string
 STAmount::getText() const
 {
-    // keep full internal accuracy, but make more human friendly if posible
+    // keep full internal accuracy, but make more human friendly if possible
     if (*this == beast::zero)
         return "0";
 
