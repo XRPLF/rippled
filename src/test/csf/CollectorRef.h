@@ -8,7 +8,7 @@ namespace xrpl {
 namespace test {
 namespace csf {
 
-/** Holds a type-erased reference to an arbitray collector.
+/** Holds a type-erased reference to an arbitrary collector.
 
     A collector is any class that implements
 

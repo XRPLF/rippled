@@ -763,7 +763,7 @@ struct PayChan_test : public beast::unit_test::suite
                 BEAST_EXPECT(env.balance(bob) == preBob + delta - baseFee);
             }
             {
-                // Explore the limits of deposit preauthorization.
+                // Explore the limits of deposit pre-authorization.
                 auto const delta = XRP(600).value();
                 auto const sig = signClaimAuth(pk, alice.sk(), chan, delta);
 
@@ -799,7 +799,7 @@ struct PayChan_test : public beast::unit_test::suite
                     env.balance(bob) == preBob + delta - (3 * baseFee));
             }
             {
-                // bob removes preauthorization of alice.  Once again she
+                // bob removes pre-authorization of alice.  Once again she
                 // cannot submit a claim.
                 auto const delta = XRP(800).value();
 
@@ -874,7 +874,7 @@ struct PayChan_test : public beast::unit_test::suite
                 credentials::ledgerEntry(env, alice, carol, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 

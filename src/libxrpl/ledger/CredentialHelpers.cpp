@@ -290,7 +290,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
         if (!ins)
         {
             JLOG(j.trace()) << "Malformed transaction: "
-                               "duplicates in credenentials.";
+                               "duplicates in credentials.";
             return temMALFORMED;
         }
     }

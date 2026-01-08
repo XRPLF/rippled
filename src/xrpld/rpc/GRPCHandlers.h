@@ -14,7 +14,7 @@ namespace xrpl {
  * nested inside RPC::GRPCContext<T>, where T is the request type
  * The return value is the response type, as well as a status
  * If the status is not Status::OK (meaning an error occurred), then only
- * the status will be sent to the client, and the response will be ommitted
+ * the status will be sent to the client, and the response will be omitted
  */
 
 std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>

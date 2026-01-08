@@ -237,7 +237,7 @@ class ValidatorList
     // config file under the title of SECTION_VALIDATORS or [validators].
     // This list is not associated with the masterKey of any publisher.
 
-    // Appropos PublisherListCollection fields, localPublisherList does not
+    // Apropos PublisherListCollection fields, localPublisherList does not
     // have any "remaining" manifests. It is assumed to be perennially
     // "available". The "validUntil" field is set to the highest possible
     // value of the field, hence this list is always valid.
@@ -365,7 +365,7 @@ public:
         std::string const& rawManifest,
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         std::vector<MessageWithHash>& messages,
-        std::size_t maxSize = maximiumMessageSize);
+        std::size_t maxSize = maximumMessageSize);
 
     /** Apply multiple published lists of public keys, then broadcast it to all
         peers that have not seen it or sent it.

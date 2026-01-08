@@ -1149,7 +1149,7 @@ class ServerStatus_test : public beast::unit_test::suite,
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(
                 resp.result() == boost::beast::http::status::bad_request);
-            BEAST_EXPECT(resp.body() == "params unparseable\r\n");
+            BEAST_EXPECT(resp.body() == "params unparsable\r\n");
         }
 
         {
@@ -1159,7 +1159,7 @@ class ServerStatus_test : public beast::unit_test::suite,
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(
                 resp.result() == boost::beast::http::status::bad_request);
-            BEAST_EXPECT(resp.body() == "params unparseable\r\n");
+            BEAST_EXPECT(resp.body() == "params unparsable\r\n");
         }
     }
 
