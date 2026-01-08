@@ -1,13 +1,12 @@
 #ifndef XRPL_APP_RDB_RELATIONALDATABASE_H_INCLUDED
 #define XRPL_APP_RDB_RELATIONALDATABASE_H_INCLUDED
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/protocol/LedgerShortcut.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
 #include <boost/filesystem.hpp>
@@ -71,7 +70,6 @@ public:
 
     using LedgerSequence = uint32_t;
     using LedgerHash = uint256;
-    using LedgerShortcut = RPC::LedgerShortcut;
     using LedgerSpecifier =
         std::variant<LedgerRange, LedgerShortcut, LedgerSequence, LedgerHash>;
 

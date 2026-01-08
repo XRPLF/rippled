@@ -8,6 +8,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
+#include <xrpl/protocol/LedgerShortcut.h>
 
 #include <optional>
 
@@ -19,8 +20,6 @@ class Transaction;
 namespace RPC {
 
 struct JsonContext;
-
-enum class LedgerShortcut { Current, Closed, Validated };
 
 /**
  * @brief Retrieves a ledger by its hash.

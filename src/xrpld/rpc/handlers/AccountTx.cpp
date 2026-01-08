@@ -26,8 +26,6 @@ using TxnsDataBinary = RelationalDatabase::MetaTxsList;
 using TxnDataBinary = RelationalDatabase::txnMetaLedgerType;
 using AccountTxArgs = RelationalDatabase::AccountTxArgs;
 using AccountTxResult = RelationalDatabase::AccountTxResult;
-
-using LedgerShortcut = RelationalDatabase::LedgerShortcut;
 using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
 
 // parses args into a ledger specifier, or returns a Json object on error
