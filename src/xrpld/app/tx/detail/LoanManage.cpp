@@ -223,11 +223,13 @@ LoanManage::defaultLoan(
         }
         if (*vaultAvailableProxy > *vaultTotalProxy)
         {
-            JLOG(j.warn()) << "Vault assets available must not be greater "
-                              "than assets outstanding. Available: "
-                           << *vaultAvailableProxy
-                           << ", Total: " << *vaultTotalProxy;
-            return tecLIMIT_EXCEEDED;
+            // LCOV_EXCL_START
+            JLOG(j.fatal())
+                << "Vault assets available must not be greater "
+                   "than assets outstanding. Available: "
+                << *vaultAvailableProxy << ", Total: " << *vaultTotalProxy;
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
 
         // The loss has been realized
@@ -338,7 +340,7 @@ LoanManage::impairLoan(
     return tesSUCCESS;
 }
 
-TER
+[[nodiscard]] TER
 LoanManage::unimpairLoan(
     ApplyView& view,
     SLE::ref loanSle,
@@ -372,7 +374,8 @@ LoanManage::unimpairLoan(
     loanSle->clearFlag(lsfLoanImpaired);
     auto const paymentInterval = loanSle->at(sfPaymentInterval);
     auto const normalPaymentDueDate =
-        std::max(loanSle->at(sfPreviousPaymentDate), loanSle->at(sfStartDate)) +
+        std::max(
+            loanSle->at(sfPreviousPaymentDueDate), loanSle->at(sfStartDate)) +
         paymentInterval;
     if (!hasExpired(view, normalPaymentDueDate))
     {

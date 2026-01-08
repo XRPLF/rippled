@@ -17,7 +17,7 @@ namespace BuildInfo {
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
 // clang-format off
-char const* const versionString = "3.1.0-b0"
+char const* const versionString = "3.2.0-b0"
 // clang-format on
 
 #if defined(DEBUG) || defined(SANITIZER)
@@ -34,7 +34,7 @@ char const* const versionString = "3.1.0-b0"
 #endif
 
 #ifdef SANITIZER
-    BOOST_PP_STRINGIZE(SANITIZER)
+    BOOST_PP_STRINGIZE(SANITIZER)  // cspell: disable-line
 #endif
 #endif
 

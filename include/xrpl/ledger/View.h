@@ -655,7 +655,7 @@ createPseudoAccount(
     uint256 const& pseudoOwnerKey,
     SField const& ownerField);
 
-// Returns true iff sleAcct is a pseudo-account or specific
+// Returns true if and only if sleAcct is a pseudo-account or specific
 // pseudo-accounts in pseudoFieldFilter.
 //
 // Returns false if sleAcct is

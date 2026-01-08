@@ -1024,6 +1024,12 @@ class LoanBroker_test : public beast::unit_test::suite
                 destination(dest),
                 ter(tecFROZEN),
                 THISLINE);
+
+            // preclaim: tecPSEUDO_ACCOUNT
+            env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
+                destination(vaultInfo.pseudoAccount),
+                ter(tecPSEUDO_ACCOUNT),
+                THISLINE);
         }
 
         if (brokerTest == CoverClawback)
@@ -1437,6 +1443,159 @@ class LoanBroker_test : public beast::unit_test::suite
     }
 
     void
+    testLoanBrokerSetDebtMaximum()
+    {
+        testcase("testLoanBrokerSetDebtMaximum");
+        using namespace jtx;
+        using namespace loanBroker;
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Env env(*this);
+        Vault vault{env};
+
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        PrettyAsset const asset = [&]() {
+            env(trust(alice, issuer["IOU"](1'000'000)), THISLINE);
+            env.close();
+            return PrettyAsset(issuer["IOU"]);
+        }();
+
+        env(pay(issuer, alice, asset(100'000)), THISLINE);
+        env.close();
+
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx, THISLINE);
+        env.close();
+        auto const le = env.le(vaultKeylet);
+        VaultInfo vaultInfo = [&]() {
+            if (BEAST_EXPECT(le))
+                return VaultInfo{asset, vaultKeylet.key, le->at(sfAccount)};
+            return VaultInfo{asset, {}, {}};
+        }();
+        if (vaultInfo.vaultID == uint256{})
+            return;
+
+        env(vault.deposit(
+                {.depositor = alice,
+                 .id = vaultKeylet.key,
+                 .amount = asset(50)}),
+            THISLINE);
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultInfo.vaultID), THISLINE);
+        env.close();
+
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000), borrower);
+        env(loan::set(borrower, brokerKeylet.key, asset(50).value()),
+            sig(sfCounterpartySignature, alice),
+            fee(env.current()->fees().base * 2),
+            THISLINE);
+        auto const broker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(broker))
+            return;
+
+        BEAST_EXPECT(broker->at(sfDebtTotal) == 50);
+        auto debtTotal = broker->at(sfDebtTotal);
+
+        auto tx2 = set(alice, vaultInfo.vaultID);
+        tx2[sfLoanBrokerID] = to_string(brokerKeylet.key);
+        tx2[sfDebtMaximum] = debtTotal - 1;
+        env(tx2, ter(tecLIMIT_EXCEEDED), THISLINE);
+
+        tx2[sfDebtMaximum] = debtTotal + 1;
+        env(tx2, ter(tesSUCCESS), THISLINE);
+
+        tx2[sfDebtMaximum] = 0;
+        env(tx2, ter(tesSUCCESS), THISLINE);
+    }
+
+    void
+    testRIPD4323()
+    {
+        testcase << "RIPD-4323";
+        using namespace jtx;
+        Account const issuer("issuer");
+        Account const holder("holder");
+        Account const& broker = issuer;
+
+        auto test = [&](auto&& getToken) {
+            Env env(*this);
+
+            env.fund(XRP(1'000), issuer, holder);
+            env.close();
+
+            auto const [token, deposit, err] = getToken(env);
+
+            Vault vault(env);
+            auto const [tx, keylet] =
+                vault.create({.owner = broker, .asset = token.asset()});
+            env(tx);
+            env.close();
+
+            env(vault.deposit(
+                    {.depositor = broker, .id = keylet.key, .amount = deposit}),
+                ter(err));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanbroker(broker, env.seq(broker));
+
+            env(loanBroker::set(broker, keylet.key));
+            env.close();
+
+            env(loanBroker::coverDeposit(broker, brokerKeylet.key, deposit),
+                ter(err));
+            env.close();
+        };
+
+        test([&](Env&) {
+            // issuer can issue any amount
+            auto const token = issuer["IOU"];
+            return std::make_tuple(token, token(1'000), tesSUCCESS);
+        });
+        std::vector<std::tuple<
+            std::uint64_t,                 // pay to holder
+            std::optional<std::uint64_t>,  // max amount
+            std::uint64_t,                 // deposit amount
+            TER>>                          // expected error
+            mptTests = {
+                // issuer can issue up to 2'000 tokens
+                {2'000, 4'000, 1'000, tesSUCCESS},
+                // issuer can issue 500 tokens (250 VaultDeposit +
+                // 250 LoanBrokerCoverDeposit)
+                {2'000, 2'500, 250, tesSUCCESS},
+                // issuer can issue 500 tokens (250 VaultDeposit +
+                // 250 LoanBrokerCoverDeposit). MaximumAmount is default.
+                {maxMPTokenAmount - 500, std::nullopt, 250, tesSUCCESS},
+                // issuer can issue 500, and fails on depositing 1'000
+                {2'000, 2'500, 1'000, tecINSUFFICIENT_FUNDS},
+                // issuer has already issued MaximumAmount
+                {2'000, 2'000, 1'000, tecINSUFFICIENT_FUNDS},
+                // issuer has already issued MaximumAmount. MaximumAmount is
+                // default.
+                {maxMPTokenAmount, std::nullopt, 250, tecINSUFFICIENT_FUNDS},
+            };
+        for (auto const& [pay, max, deposit, err] : mptTests)
+        {
+            test([&](Env& env) -> std::tuple<MPT, PrettyAmount, TER> {
+                MPT const token = MPTTester(
+                    {.env = env,
+                     .issuer = issuer,
+                     .holders = {holder},
+                     .pay = pay,
+                     .flags = MPTDEXFlags,
+                     .maxAmt = max});
+                return std::make_tuple(token, token(deposit), err);
+            });
+        }
+    }
+
+    void
     testRIPD4274IOU()
     {
         using namespace jtx;
@@ -1717,6 +1876,7 @@ public:
     void
     run() override
     {
+        testLoanBrokerSetDebtMaximum();
         testLoanBrokerCoverDepositNullVault();
 
         testDisabled();
@@ -1727,6 +1887,8 @@ public:
         testInvalidLoanBrokerDelete();
         testInvalidLoanBrokerSet();
         testRequireAuth();
+
+        testRIPD4323();
 
         testRIPD4274();
 

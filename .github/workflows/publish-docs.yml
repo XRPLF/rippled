@@ -22,7 +22,7 @@ defaults:
     shell: bash
 
 env:
-  BUILD_DIR: .build
+  BUILD_DIR: build
   NPROC_SUBTRACT: 2
 
 jobs:
