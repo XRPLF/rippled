@@ -137,7 +137,7 @@ public:
     // Network parameters
     uint32_t NETWORK_ID = 0;
 
-    // DEPRECATED - Fee units for a reference transction.
+    // DEPRECATED - Fee units for a reference transaction.
     // Only provided for backwards compatibility in a couple of places
     static constexpr std::uint32_t FEE_UNITS_DEPRECATED = 10;
 

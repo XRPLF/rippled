@@ -2370,7 +2370,8 @@ private:
                                         &extractHeader](Message& message) {
             auto [header, buffers] = extractHeader(message);
             if (BEAST_EXPECT(header) &&
-                BEAST_EXPECT(header->message_type == protocol::mtVALIDATORLIST))
+                BEAST_EXPECT(
+                    header->message_type == protocol::mtVALIDATOR_LIST))
             {
                 auto const msg =
                     detail::parseMessageContent<protocol::TMValidatorList>(
@@ -2386,7 +2387,7 @@ private:
             if (BEAST_EXPECT(header) &&
                 BEAST_EXPECT(
                     header->message_type ==
-                    protocol::mtVALIDATORLISTCOLLECTION))
+                    protocol::mtVALIDATOR_LIST_COLLECTION))
             {
                 auto const msg = detail::parseMessageContent<
                     protocol::TMValidatorListCollection>(
