@@ -7,8 +7,10 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/messages.h>
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/shamap/SHAMap.h>
 
 #include <boost/asio.hpp>
 
