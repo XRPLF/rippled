@@ -104,7 +104,7 @@ SHAMapStoreImp::SHAMapStoreImp(
         get_if_exists(section, "delete_batch", deleteBatch_);
         std::uint32_t temp;
         if (get_if_exists(section, "back_off_milliseconds", temp) ||
-            // Included for backward compaibility with an undocumented setting
+            // Included for backward compatibility with an undocumented setting
             get_if_exists(section, "backOff", temp))
         {
             backOff_ = std::chrono::milliseconds{temp};

@@ -42,7 +42,7 @@ For more information on responsible disclosure, please read this [Wikipedia arti
 
 ## Report Handling Process
 
-Please report the bug directly to us and limit further disclosure. If you want to prove that you knew the bug as of a given time, consider using a cryptographic precommitment: hash the content of your report and publish the hash on a medium of your choice (e.g. on Twitter or as a memo in a transaction) as "proof" that you had written the text at a given point in time.
+Please report the bug directly to us and limit further disclosure. If you want to prove that you knew the bug as of a given time, consider using a cryptographic pre-commitment: hash the content of your report and publish the hash on a medium of your choice (e.g. on Twitter or as a memo in a transaction) as "proof" that you had written the text at a given point in time.
 
 Once we receive a report, we:
 

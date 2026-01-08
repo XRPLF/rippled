@@ -12,7 +12,7 @@
 
 namespace xrpl {
 
-constexpr std::size_t maximiumMessageSize = megabytes(64);
+constexpr std::size_t maximumMessageSize = megabytes(64);
 
 // VFALCO NOTE If we forward declare Message and write out shared_ptr
 //             instead of using the in-class type alias, we can remove the

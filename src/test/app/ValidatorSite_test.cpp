@@ -422,7 +422,7 @@ public:
                   1,
                   detail::default_expires,
                   std::chrono::seconds{-90}}});
-            // fetch single site with undending redirect (fails to load)
+            // fetch single site with unending redirect (fails to load)
             testFetchList(
                 good,
                 {{"/redirect_forever/301",
@@ -443,7 +443,7 @@ public:
                   ssl,
                   true,
                   true}});
-            // one undending redirect, one not
+            // one unending redirect, one not
             testFetchList(
                 good,
                 {{"/validators", "", ssl},
@@ -452,7 +452,7 @@ public:
                   ssl,
                   true,
                   true}});
-            // one undending redirect, one not
+            // one unending redirect, one not
             testFetchList(
                 good,
                 {{"/validators2", "", ssl},
