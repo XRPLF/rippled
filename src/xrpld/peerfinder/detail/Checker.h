@@ -14,7 +14,7 @@
 namespace xrpl {
 namespace PeerFinder {
 
-/** Tests remote listening sockets to make sure they are connectible. */
+/** Tests remote listening sockets to make sure they are connectable. */
 template <class Protocol = boost::asio::ip::tcp>
 class Checker
 {

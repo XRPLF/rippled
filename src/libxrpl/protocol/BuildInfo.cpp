@@ -34,7 +34,7 @@ char const* const versionString = "3.2.0-b0"
 #endif
 
 #ifdef SANITIZER
-    BOOST_PP_STRINGIZE(SANITIZER)
+    BOOST_PP_STRINGIZE(SANITIZER)  // cspell: disable-line
 #endif
 #endif
 

@@ -450,7 +450,7 @@ back as the database goes.
 
 If requested, it can additionally repair the SQLite entries for transactions
 in each checked ledger. This was primarily intended to repair incorrect
-entries created by a bug (since fixed) that could cause transasctions from a
+entries created by a bug (since fixed) that could cause transactions from a
 ledger other than the fully-validated ledger to appear in the SQLite
 databases in addition to the transactions from the correct ledger.
 

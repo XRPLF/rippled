@@ -436,12 +436,12 @@ public:
         // 895B
         doTest(
             buildValidatorList(),
-            protocol::mtVALIDATORLIST,
+            protocol::mtVALIDATOR_LIST,
             4,
             "TMValidatorList");
         doTest(
             buildValidatorListCollection(),
-            protocol::mtVALIDATORLISTCOLLECTION,
+            protocol::mtVALIDATOR_LIST_COLLECTION,
             4,
             "TMValidatorListCollection");
     }

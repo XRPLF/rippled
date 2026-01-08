@@ -52,7 +52,7 @@ public:
     }
 
     void
-    testBigObjectWithMultiupleSmallUpdatesWithoutSeed()
+    testBigObjectWithMultipleSmallUpdatesWithoutSeed()
     {
         testcase("Big object with multiple small updates without seed");
         xxhasher hasher{};
@@ -69,7 +69,7 @@ public:
     }
 
     void
-    testBigObjectWithMultiupleSmallUpdatesWithSeed()
+    testBigObjectWithMultipleSmallUpdatesWithSeed()
     {
         testcase("Big object with multiple small updates with seed");
         xxhasher hasher{static_cast<std::uint32_t>(103)};
@@ -199,8 +199,8 @@ public:
         testWithoutSeed();
         testWithSeed();
         testWithTwoSeeds();
-        testBigObjectWithMultiupleSmallUpdatesWithoutSeed();
-        testBigObjectWithMultiupleSmallUpdatesWithSeed();
+        testBigObjectWithMultipleSmallUpdatesWithoutSeed();
+        testBigObjectWithMultipleSmallUpdatesWithSeed();
         testBigObjectWithSmallAndBigUpdatesWithoutSeed();
         testBigObjectWithSmallAndBigUpdatesWithSeed();
         testBigObjectWithOneUpdateWithoutSeed();

@@ -56,7 +56,7 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
 done
 ${SED_COMMAND} -i 's/rippled/xrpld/g' cfg/xrpld-example.cfg
 ${SED_COMMAND} -i 's/rippled/xrpld/g' src/test/core/Config_test.cpp
-${SED_COMMAND} -i 's/ripplevalidators/xrplvalidators/g' src/test/core/Config_test.cpp
+${SED_COMMAND} -i 's/ripplevalidators/xrplvalidators/g' src/test/core/Config_test.cpp # cspell: disable-line
 ${SED_COMMAND} -i 's/rippleConfig/xrpldConfig/g' src/test/core/Config_test.cpp
 ${SED_COMMAND} -i 's@ripple/@xrpld/@g' src/test/core/Config_test.cpp
 ${SED_COMMAND} -i 's/Rippled/File/g' src/test/core/Config_test.cpp
