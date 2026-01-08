@@ -190,7 +190,7 @@ checkLoanGuards(
     beast::Journal j);
 
 LoanState
-computeRawLoanState(
+computeTheoreticalLoanState(
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t const paymentRemaining,

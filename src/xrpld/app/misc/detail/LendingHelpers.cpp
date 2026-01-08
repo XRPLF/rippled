@@ -393,7 +393,7 @@ tryOverpayment(
     beast::Journal j)
 {
     // Calculate what the loan state SHOULD be theoretically (at full precision)
-    auto const raw = computeRawLoanState(
+    auto const raw = computeTheoreticalLoanState(
         periodicPayment, periodicRate, paymentRemaining, managementFeeRate);
 
     // Calculate the accumulated rounding errors. These need to be preserved
@@ -427,7 +427,7 @@ tryOverpayment(
                     << newLoanProperties.firstPaymentPrincipal;
 
     // Calculate what the new loan state should be with the new periodic payment
-    auto const newRaw = computeRawLoanState(
+    auto const newRaw = computeTheoreticalLoanState(
                             newLoanProperties.periodicPayment,
                             periodicRate,
                             paymentRemaining,
@@ -975,7 +975,7 @@ computePaymentComponents(
 
     // Calculate what the loan state SHOULD be after this payment (the target).
     // This is computed at full precision using the theoretical amortization.
-    LoanState const trueTarget = computeRawLoanState(
+    LoanState const trueTarget = computeTheoreticalLoanState(
         periodicPayment, periodicRate, paymentRemaining - 1, managementFeeRate);
 
     // Round the target to the loan's scale to match how actual loan values
@@ -1390,7 +1390,7 @@ computeFullPaymentInterest(
  * computing payment components and validating that the loan's tracked state
  * hasn't drifted too far from the theoretical values.
  *
- * The raw state serves several purposes:
+ * The theoretical state serves several purposes:
  * 1. Computing the expected payment breakdown (principal, interest, fees)
  * 2. Detecting and correcting rounding errors that accumulate over time
  * 3. Validating that overpayments are calculated correctly
@@ -1400,7 +1400,7 @@ computeFullPaymentInterest(
  *       representing a completely paid-off loan.
  */
 LoanState
-computeRawLoanState(
+computeTheoreticalLoanState(
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t const paymentRemaining,
@@ -1416,29 +1416,30 @@ computeRawLoanState(
     }
 
     // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
-    Number const rawTotalValueOutstanding = periodicPayment * paymentRemaining;
+    Number const totalValueOutstanding = periodicPayment * paymentRemaining;
 
-    Number const rawPrincipalOutstanding =
+    Number const principalOutstanding =
         detail::loanPrincipalFromPeriodicPayment(
             periodicPayment, periodicRate, paymentRemaining);
 
     // Equation (31) from XLS-66 spec, Section A-2 Equation Glossary
-    Number const rawInterestOutstandingGross =
-        rawTotalValueOutstanding - rawPrincipalOutstanding;
+    Number const interestOutstandingGross =
+        totalValueOutstanding - principalOutstanding;
 
     // Equation (32) from XLS-66 spec, Section A-2 Equation Glossary
-    Number const rawManagementFeeOutstanding =
-        tenthBipsOfValue(rawInterestOutstandingGross, managementFeeRate);
+    Number const managementFeeOutstanding =
+        tenthBipsOfValue(interestOutstandingGross, managementFeeRate);
 
     // Equation (33) from XLS-66 spec, Section A-2 Equation Glossary
-    Number const rawInterestOutstandingNet =
-        rawInterestOutstandingGross - rawManagementFeeOutstanding;
+    Number const interestOutstandingNet =
+        interestOutstandingGross - managementFeeOutstanding;
 
     return LoanState{
-        .valueOutstanding = rawTotalValueOutstanding,
-        .principalOutstanding = rawPrincipalOutstanding,
-        .interestDue = rawInterestOutstandingNet,
-        .managementFeeDue = rawManagementFeeOutstanding};
+        .valueOutstanding = totalValueOutstanding,
+        .principalOutstanding = principalOutstanding,
+        .interestDue = interestOutstandingNet,
+        .managementFeeDue = managementFeeOutstanding,
+    };
 };
 
 /* Constructs a LoanState from rounded Loan ledger object values.
@@ -1590,13 +1591,13 @@ computeLoanProperties(
     auto const firstPaymentPrincipal = [&]() {
         // Compute the parts for the first payment. Ensure that the
         // principal payment will actually change the principal.
-        auto const startingState = computeRawLoanState(
+        auto const startingState = computeTheoreticalLoanState(
             periodicPayment,
             periodicRate,
             paymentsRemaining,
             managementFeeRate);
 
-        auto const firstPaymentState = computeRawLoanState(
+        auto const firstPaymentState = computeTheoreticalLoanState(
             periodicPayment,
             periodicRate,
             paymentsRemaining - 1,

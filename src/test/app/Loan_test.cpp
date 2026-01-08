@@ -912,7 +912,7 @@ protected:
             state.principalOutstanding,
             state.managementFeeOutstanding);
         {
-            auto const raw = computeRawLoanState(
+            auto const raw = computeTheoreticalLoanState(
                 state.periodicPayment,
                 periodicRate,
                 state.paymentRemaining,
@@ -965,7 +965,7 @@ protected:
         Number totalFeesPaid = 0;
         std::size_t totalPaymentsMade = 0;
 
-        xrpl::LoanState currentTrueState = computeRawLoanState(
+        xrpl::LoanState currentTrueState = computeTheoreticalLoanState(
             state.periodicPayment,
             periodicRate,
             state.paymentRemaining,
@@ -1020,7 +1020,7 @@ protected:
                     paymentComponents.trackedInterestPart() +
                     paymentComponents.trackedManagementFeeDelta);
 
-            xrpl::LoanState const nextTrueState = computeRawLoanState(
+            xrpl::LoanState const nextTrueState = computeTheoreticalLoanState(
                 state.periodicPayment,
                 periodicRate,
                 state.paymentRemaining - 1,
@@ -2669,7 +2669,7 @@ protected:
                         Number::upward));
 
                 {
-                    auto const raw = computeRawLoanState(
+                    auto const raw = computeTheoreticalLoanState(
                         state.periodicPayment,
                         periodicRate,
                         state.paymentRemaining,
@@ -2712,7 +2712,7 @@ protected:
                 Number totalInterestPaid = 0;
                 std::size_t totalPaymentsMade = 0;
 
-                xrpl::LoanState currentTrueState = computeRawLoanState(
+                xrpl::LoanState currentTrueState = computeTheoreticalLoanState(
                     state.periodicPayment,
                     periodicRate,
                     state.paymentRemaining,
@@ -2737,7 +2737,7 @@ protected:
                         paymentComponents.trackedValueDelta <=
                         roundedPeriodicPayment);
 
-                    xrpl::LoanState const nextTrueState = computeRawLoanState(
+                    xrpl::LoanState const nextTrueState = computeTheoreticalLoanState(
                         state.periodicPayment,
                         periodicRate,
                         state.paymentRemaining - 1,
@@ -5915,7 +5915,7 @@ protected:
 
         auto const periodicRate =
             loanPeriodicRate(interestRateValue, state.paymentInterval);
-        auto const rawLoanState = computeRawLoanState(
+        auto const rawLoanState = computeTheoreticalLoanState(
             state.periodicPayment,
             periodicRate,
             state.paymentRemaining,
