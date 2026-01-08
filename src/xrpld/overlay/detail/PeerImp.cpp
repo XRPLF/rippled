@@ -591,7 +591,7 @@ PeerImp::fail(std::string const& reason)
     if (!socket_.is_open())
         return;
 
-    // Call to name() locks, log only if the message will be outputed
+    // Call to name() locks, log only if the message will be outputted
     if (journal_.active(beast::severities::kWarning))
     {
         std::string const n = name();

@@ -103,7 +103,7 @@ private:
         std::function<bool(void)> const&);
 
     /** Finds and sets a PathSet in the JSON argument.
-        Returns false if the source currencies are inavlid.
+        Returns false if the source currencies are invalid.
     */
     bool
     findPaths(

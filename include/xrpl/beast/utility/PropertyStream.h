@@ -376,7 +376,7 @@ public:
         print statement examples
         "parent.child" prints child and all of its children
         "parent.child." start at the parent and print down to child
-        "parent.grandchild" prints nothing- grandchild not direct discendent
+        "parent.grandchild" prints nothing- grandchild not direct descendent
         "parent.grandchild." starts at the parent and prints down to grandchild
         "parent.grandchild.*" starts at parent, print through grandchild
        children

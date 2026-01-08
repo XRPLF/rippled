@@ -30,7 +30,7 @@ public:
                 "Missing field 'public_key'.");
         }
         {
-            // manifest with manlformed public key
+            // manifest with malformed public key
             auto const info = env.rpc(
                 "json",
                 "manifest",

@@ -31,9 +31,9 @@ class CanonicalTXSet;
 // should use this interface. The RPC code will primarily be a light wrapper
 // over this code.
 //
-// Eventually, it will check the node's operating mode (synched, unsynched,
-// etectera) and defer to the correct means of processing. The current
-// code assumes this node is synched (and will continue to do so until
+// Eventually, it will check the node's operating mode (synced, unsynced,
+// etcetera) and defer to the correct means of processing. The current
+// code assumes this node is synced (and will continue to do so until
 // there's a functional network.
 //
 

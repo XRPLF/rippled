@@ -17,9 +17,9 @@ enum MessageType {
   mtHAVE_SET = 35;
   mtVALIDATION = 41;
   mtGET_OBJECTS = 42;
-  mtVALIDATORLIST = 54;
+  mtVALIDATOR_LIST = 54;
   mtSQUELCH = 55;
-  mtVALIDATORLISTCOLLECTION = 56;
+  mtVALIDATOR_LIST_COLLECTION = 56;
   mtPROOF_PATH_REQ = 57;
   mtPROOF_PATH_RESPONSE = 58;
   mtREPLAY_DELTA_REQ = 59;
@@ -318,7 +318,7 @@ message TMSquelch {
 }
 
 enum TMLedgerMapType {
-  lmTRANASCTION = 1;    // transaction map
+  lmTRANSACTION = 1;    // transaction map
   lmACCOUNT_STATE = 2;  // account state map
 }
 

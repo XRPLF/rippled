@@ -158,7 +158,7 @@ Database::stop()
                      << duration_cast<std::chrono::milliseconds>(
                             steady_clock::now() - start)
                             .count()
-                     << " millseconds";
+                     << " milliseconds";
 }
 
 void

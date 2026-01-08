@@ -434,7 +434,7 @@ private:
         return jvRequest;
     }
 
-    // Return an error for attemping to subscribe/unsubscribe via RPC.
+    // Return an error for attempting to subscribe/unsubscribe via RPC.
     Json::Value
     parseEvented(Json::Value const& jvParams)
     {
@@ -1295,7 +1295,7 @@ public:
             {"wallet_propose", &RPCParser::parseWalletPropose, 0, 1},
             {"internal", &RPCParser::parseInternal, 1, -1},
 
-            // Evented methods
+            // Event methods
             {"path_find", &RPCParser::parseEvented, -1, -1},
             {"subscribe", &RPCParser::parseEvented, -1, -1},
             {"unsubscribe", &RPCParser::parseEvented, -1, -1},
@@ -1357,7 +1357,7 @@ JSONRPCRequest(
 
 namespace {
 // Special local exception type thrown when request can't be parsed.
-class RequestNotParseable : public std::runtime_error
+class RequestNotParsable : public std::runtime_error
 {
     using std::runtime_error::runtime_error;  // Inherit constructors
 };
@@ -1399,7 +1399,7 @@ struct RPCCallImp
             JLOG(j.debug()) << "RPC reply: " << strData << std::endl;
             if (strData.find("Unable to parse request") == 0 ||
                 strData.find(jss::invalid_API_version.c_str()) == 0)
-                Throw<RequestNotParseable>(strData);
+                Throw<RequestNotParsable>(strData);
             Json::Reader reader;
             Json::Value jvReply;
             if (!reader.parse(strData, jvReply))
@@ -1618,7 +1618,7 @@ rpcClient(
         // YYY We could have a command line flag for single line output for
         // scripts. YYY We would intercept output here and simplify it.
     }
-    catch (RequestNotParseable& e)
+    catch (RequestNotParsable& e)
     {
         jvOutput = rpcError(rpcINVALID_PARAMS);
         jvOutput["error_what"] = e.what();
