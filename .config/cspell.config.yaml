@@ -28,6 +28,7 @@ ignoreRegExpList:
   - /[\['"`]-[DWw][a-zA-Z0-9_-]+['"`\]]/g # compile flags
 suggestWords:
   - xprl->xrpl
+  - xprld->xrpld
   - unsynched->unsynced
   - synched->synced
   - synch->sync
@@ -123,6 +124,7 @@ words:
   - lseq
   - lsmf
   - ltype
+  - mcmodel
   - MEMORYSTATUSEX
   - Merkle
   - Metafuncton
@@ -230,6 +232,8 @@ words:
   - txn
   - txns
   - txs
+  - UBSAN
+  - ubsan
   - umant
   - unacquired
   - unambiguity

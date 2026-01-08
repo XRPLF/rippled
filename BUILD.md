@@ -520,7 +520,7 @@ stored inside the build directory, as either of:
 
 ## Sanitizers
 
-To build dependencies and xprld with sanitizer instrumentation, set the
+To build dependencies and xrpld with sanitizer instrumentation, set the
 `SANITIZERS` environment variable(only once before running conan and cmake) and use the `sanitizers` profile in conan:
 
 ```bash
