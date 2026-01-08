@@ -1917,9 +1917,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         {
-            Env env{*this};
+            Env env(*this);
             OpenView ov{*env.current()};
-            ApplyContext ac = createApplyContext(env, ov);
+            test::StreamSink sink{beast::severities::kTrace};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow =
                 keylet::escrow(env.master, env.seq(env.master));
@@ -1929,12 +1931,26 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             std::string data = "abc";
             auto const slice = Slice(data.data(), data.size());
             auto const result = hfs.trace(msg, slice, false);
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(result.value() == msg.size() + data.size());
+            if (BEAST_EXPECT(result.has_value()))
+            {
+                BEAST_EXPECT(result.value() == msg.size() + data.size());
+                auto const messages = sink.messages().str();
+                BEAST_EXPECT(messages.find(msg) != std::string::npos);
+            }
 
             auto const resultHex = hfs.trace(msg, slice, true);
-            BEAST_EXPECT(resultHex.has_value());
-            BEAST_EXPECT(resultHex.value() == msg.size() + data.size() * 2);
+            if (BEAST_EXPECT(resultHex.has_value()))
+            {
+                BEAST_EXPECT(resultHex.has_value());
+                BEAST_EXPECT(resultHex.value() == msg.size() + data.size() * 2);
+                auto const messages = sink.messages().str();
+                std::string hex;
+                hex.reserve(data.size() * 2);
+                boost::algorithm::hex(
+                    data.begin(), data.end(), std::back_inserter(hex));
+                BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                BEAST_EXPECT(messages.find(hex) != std::string::npos);
+            }
         }
 
         {
@@ -1966,9 +1982,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         {
-            Env env{*this};
+            Env env(*this);
             OpenView ov{*env.current()};
-            ApplyContext ac = createApplyContext(env, ov);
+            test::StreamSink sink{beast::severities::kTrace};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow =
                 keylet::escrow(env.master, env.seq(env.master));
@@ -1977,8 +1995,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             std::string msg = "trace number";
             int64_t num = 123456789;
             auto const result = hfs.traceNum(msg, num);
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(result.value() == msg.size() + sizeof(num));
+            if (BEAST_EXPECT(result.has_value()))
+            {
+                BEAST_EXPECT(result.value() == msg.size() + sizeof(num));
+                auto const messages = sink.messages().str();
+                BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                BEAST_EXPECT(
+                    messages.find(std::to_string(num)) != std::string::npos);
+            }
         }
 
         {
@@ -2009,21 +2033,26 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         {
-            Env env{*this};
+            Env env(*this);
             OpenView ov{*env.current()};
-            ApplyContext ac = createApplyContext(env, ov);
+            test::StreamSink sink{beast::severities::kTrace};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow =
                 keylet::escrow(env.master, env.seq(env.master));
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             std::string msg = "trace account";
-            // Valid account
+            auto const result = hfs.traceAccount(msg, env.master.id());
+            if (BEAST_EXPECT(result.has_value()))
             {
-                auto const result = hfs.traceAccount(msg, env.master.id());
-                if (BEAST_EXPECT(result.has_value()))
-                    BEAST_EXPECT(
-                        result.value() == msg.size() + env.master.id().size());
+                BEAST_EXPECT(
+                    result.value() == msg.size() + env.master.id().size());
+                auto const messages = sink.messages().str();
+                BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                BEAST_EXPECT(
+                    messages.find(env.master.human()) != std::string::npos);
             }
         }
 
@@ -2054,9 +2083,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         {
-            Env env{*this};
+            Env env(*this);
             OpenView ov{*env.current()};
-            ApplyContext ac = createApplyContext(env, ov);
+            test::StreamSink sink{beast::severities::kTrace};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow =
                 keylet::escrow(env.master, env.seq(env.master));
@@ -2067,7 +2098,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {
                 auto const result = hfs.traceAmount(msg, amount);
                 if (BEAST_EXPECT(result.has_value()))
+                {
                     BEAST_EXPECT(*result == msg.size());
+                    auto const messages = sink.messages().str();
+                    BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                    BEAST_EXPECT(
+                        messages.find(amount.getFullText()) !=
+                        std::string::npos);
+                }
             }
 
             // IOU amount
