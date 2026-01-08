@@ -169,9 +169,9 @@ LoanManage::defaultLoan(
                 tenthBipsOfValue(minimumCover, coverRateLiquidation),
                 totalDefaultAmount),
             loanScale);
-        auto const coverAvailable = brokerSle->at(sfCoverAvailable);
+        auto const coverAvailable = *brokerSle->at(sfCoverAvailable);
 
-        return std::min(covered, coverAvailable.value());
+        return std::min(covered, coverAvailable);
     }();
 
     auto const vaultDefaultAmount = totalDefaultAmount - defaultCovered;
