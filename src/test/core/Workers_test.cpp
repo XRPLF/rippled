@@ -1,7 +1,6 @@
-#include <xrpld/core/detail/Workers.h>
-#include <xrpld/perflog/PerfLog.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/core/PerfLog.h>
+#include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
 
 #include <chrono>
@@ -10,7 +9,7 @@
 #include <mutex>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * Dummy class for unit tests.
@@ -155,6 +154,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Workers, core, ripple);
+BEAST_DEFINE_TESTSUITE(Workers, core, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

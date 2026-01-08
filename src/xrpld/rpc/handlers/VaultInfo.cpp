@@ -1,5 +1,5 @@
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
@@ -8,7 +8,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
 
-namespace ripple {
+namespace xrpl {
 
 static std::optional<uint256>
 parseVault(Json::Value const& params, Json::Value& jvResult)
@@ -92,4 +92,4 @@ doVaultInfo(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

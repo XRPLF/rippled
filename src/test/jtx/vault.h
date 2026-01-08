@@ -12,7 +12,7 @@
 #include <optional>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -85,6 +85,6 @@ struct Vault
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

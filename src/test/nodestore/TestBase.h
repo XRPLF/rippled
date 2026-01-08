@@ -14,7 +14,7 @@
 
 #include <iomanip>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 /** Binary function that satisfies the strict-weak-ordering requirement.
@@ -81,7 +81,7 @@ public:
                     case 3:
                         return hotUNKNOWN;
                 }
-                // will never happen, but make static analysys tool happy.
+                // will never happen, but make static analysis tool happy.
                 return hotUNKNOWN;
             }();
 
@@ -209,6 +209,6 @@ public:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

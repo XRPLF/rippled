@@ -1,7 +1,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
@@ -10,7 +10,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Query:
 // 1) Specify ledger to query.
@@ -271,4 +271,4 @@ doGatewayBalances(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

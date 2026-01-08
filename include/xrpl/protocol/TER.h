@@ -9,7 +9,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 // See https://xrpl.org/transaction-results.html
 //
@@ -690,6 +690,6 @@ transHuman(TER code);
 std::optional<TER>
 transCode(std::string const& token);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

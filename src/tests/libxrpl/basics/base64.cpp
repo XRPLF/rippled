@@ -4,7 +4,7 @@
 
 #include <string>
 
-using namespace ripple;
+using namespace xrpl;
 
 static void
 check(std::string const& in, std::string const& out)

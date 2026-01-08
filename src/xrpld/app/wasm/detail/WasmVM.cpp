@@ -4,7 +4,7 @@
 
 #include <xrpld/app/wasm/HostFunc.h>
 #include <xrpld/app/wasm/HostFuncWrapper.h>
-#include <xrpld/app/wasm/WamrVM.h>
+#include <xrpld/app/wasm/WasmiVM.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AccountID.h>
@@ -13,10 +13,10 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 static void
-setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
+setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
 {
     // clang-format off
     WASM_IMPORT_FUNC2(i, getLedgerSqn, "get_ledger_sqn", hfs,                                                   60);
@@ -39,8 +39,8 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     WASM_IMPORT_FUNC2(i, getCurrentLedgerObjNestedArrayLen, "get_current_ledger_obj_nested_array_len",  hfs,    70);
     WASM_IMPORT_FUNC2(i, getLedgerObjNestedArrayLen, "get_ledger_obj_nested_array_len", hfs,                    70);
 
-    WASM_IMPORT_FUNC2(i, checkSignature, "check_sig", hfs,                                                     300);
-    WASM_IMPORT_FUNC2(i, computeSha512HalfHash, "compute_sha512_half", hfs,                                   2000);
+    WASM_IMPORT_FUNC2(i, checkSignature, "check_sig", hfs,                                                  35'000);
+    WASM_IMPORT_FUNC2(i, computeSha512HalfHash, "compute_sha512_half", hfs,                                  1'500);
 
     WASM_IMPORT_FUNC2(i, accountKeylet, "account_keylet", hfs,                                                 350);
     WASM_IMPORT_FUNC2(i, ammKeylet, "amm_keylet", hfs,                                                         450);
@@ -89,16 +89,13 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     // clang-format on
 }
 
-std::vector<WasmImportFunc>
-createWasmImport(HostFunctions* hfs)
+ImportVec
+createWasmImport(HostFunctions& hfs)
 {
-    std::vector<WasmImportFunc> i;
+    ImportVec i;
 
-    if (hfs)
-    {
-        setCommonHostFunctions(hfs, i);
-        WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs, 1000);
-    }
+    setCommonHostFunctions(&hfs, i);
+    WASM_IMPORT_FUNC2(i, updateData, "update_data", &hfs, 1000);
 
     return i;
 }
@@ -106,24 +103,23 @@ createWasmImport(HostFunctions* hfs)
 Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    HostFunctions* hfs,
-    int64_t gasLimit,
-    beast::Journal j)
+    int64_t gasLimit)
 {
     //  create VM and set cost limit
     auto& vm = WasmEngine::instance();
-    vm.initMaxPages(MAX_PAGES);
+    // vm.initMaxPages(MAX_PAGES);
 
     auto const ret = vm.run(
         wasmCode,
         funcName,
         params,
         createWasmImport(hfs),
-        hfs,
+        &hfs,
         gasLimit,
-        hfs ? hfs->getJournal() : j);
+        hfs.getJournal());
 
     // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
@@ -146,28 +142,28 @@ runEscrowWasm(
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName,
-    std::vector<WasmParam> const& params,
-    HostFunctions* hfs,
-    beast::Journal j)
+    std::vector<WasmParam> const& params)
 {
     //  create VM and set cost limit
     auto& vm = WasmEngine::instance();
-    vm.initMaxPages(MAX_PAGES);
+    // vm.initMaxPages(MAX_PAGES);
 
     auto const ret = vm.check(
         wasmCode,
         funcName,
         params,
         createWasmImport(hfs),
-        hfs ? hfs->getJournal() : j);
+        &hfs,
+        hfs.getJournal());
 
     return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-WasmEngine::WasmEngine() : impl(std::make_unique<WamrEngine>())
+WasmEngine::WasmEngine() : impl(std::make_unique<WasmiEngine>())
 {
 }
 
@@ -183,7 +179,7 @@ WasmEngine::run(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::vector<WasmImportFunc> const& imports,
+    ImportVec const& imports,
     HostFunctions* hfs,
     int64_t gasLimit,
     beast::Journal j)
@@ -196,28 +192,25 @@ WasmEngine::check(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,
-    std::vector<WasmImportFunc> const& imports,
+    ImportVec const& imports,
+    HostFunctions* hfs,
     beast::Journal j)
 {
-    return impl->check(wasmCode, funcName, params, imports, j);
-}
-
-std::int32_t
-WasmEngine::initMaxPages(std::int32_t def)
-{
-    return impl->initMaxPages(def);
+    return impl->check(wasmCode, funcName, params, imports, hfs, j);
 }
 
 void*
-WasmEngine::newTrap(std::string_view msg)
+WasmEngine::newTrap(std::string const& msg)
 {
     return impl->newTrap(msg);
 }
 
+// LCOV_EXCL_START
 beast::Journal
 WasmEngine::getJournal() const
 {
     return impl->getJournal();
 }
+// LCOV_EXCL_STOP
 
-}  // namespace ripple
+}  // namespace xrpl

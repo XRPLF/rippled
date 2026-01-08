@@ -20,7 +20,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
@@ -179,7 +179,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 
     if (auto const cb = ctx.tx[~sfCondition])
     {
-        using namespace ripple::cryptoconditions;
+        using namespace xrpl::cryptoconditions;
 
         std::error_code ec;
 
@@ -191,12 +191,6 @@ EscrowCreate::preflight(PreflightContext const& ctx)
                 << ec.message();
             return temMALFORMED;
         }
-
-        // Conditions other than PrefixSha256 require the
-        // "CryptoConditionsSuite" amendment:
-        if (condition->type != Type::preimageSha256 &&
-            !ctx.rules.enabled(featureCryptoConditionsSuite))
-            return temDISABLED;
     }
 
     if (ctx.tx.isFieldPresent(sfData))
@@ -226,9 +220,8 @@ EscrowCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
 
-        HostFunctions mock;
-        auto const re =
-            preflightEscrowWasm(code, ESCROW_FUNCTION_NAME, {}, &mock, ctx.j);
+        HostFunctions mock(ctx.j);
+        auto const re = preflightEscrowWasm(code, mock, ESCROW_FUNCTION_NAME);
         if (!isTesSuccess(re))
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";
@@ -508,7 +501,7 @@ calculateAdditionalReserve(T const& finishFunction)
 TER
 EscrowCreate::doApply()
 {
-    auto const closeTime = ctx_.view().info().parentCloseTime;
+    auto const closeTime = ctx_.view().header().parentCloseTime;
 
     if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
         return tecNO_PERMISSION;
@@ -547,12 +540,6 @@ EscrowCreate::doApply()
         if (((*sled)[sfFlags] & lsfRequireDestTag) &&
             !ctx_.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
-
-        // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
-        // featureDepositAuth to remove the bug.
-        if (!ctx_.view().rules().enabled(featureDepositAuth) &&
-            ((*sled)[sfFlags] & lsfDisallowXRP))
-            return tecNO_TARGET;
     }
 
     // Create escrow in ledger.  Note that we we use the value from the
@@ -648,7 +635,7 @@ EscrowCreate::doApply()
 static bool
 checkCondition(Slice f, Slice c)
 {
-    using namespace ripple::cryptoconditions;
+    using namespace xrpl::cryptoconditions;
 
     std::error_code ec;
 
@@ -750,13 +737,15 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
-    if (auto const allowance = tx[~sfComputationAllowance]; allowance)
+    if (std::optional<uint64_t> const allowance = tx[~sfComputationAllowance];
+        allowance)
     {
         // The extra fee is the allowance in drops, rounded up to the nearest
         // whole drop.
         // Integer math rounds down by default, so we add 1 to round up.
-        extraFee +=
+        uint64_t const allowanceFee =
             ((*allowance) * view.fees().gasPrice) / MICRO_DROPS_PER_DROP + 1;
+        extraFee += allowanceFee;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
@@ -1126,7 +1115,7 @@ EscrowFinish::doApply()
 
     // If a cancel time is present, a finish operation should only succeed prior
     // to that time.
-    auto const now = ctx_.view().info().parentCloseTime;
+    auto const now = ctx_.view().header().parentCloseTime;
 
     // Too soon: can't execute before the finish time
     if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
@@ -1144,13 +1133,10 @@ EscrowFinish::doApply()
         if (!sled)
             return tecNO_DST;
 
-        if (ctx_.view().rules().enabled(featureDepositAuth))
-        {
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
     }
 
     // Check cryptocondition fulfillment
@@ -1208,13 +1194,10 @@ EscrowFinish::doApply()
         if (!sled)
             return tecNO_DST;
 
-        if (ctx_.view().rules().enabled(featureDepositAuth))
-        {
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
+            !isTesSuccess(err))
+            return err;
     }
 
     // Execute custom release function
@@ -1235,7 +1218,7 @@ EscrowFinish::doApply()
         }
         std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
         auto re = runEscrowWasm(
-            wasm, ESCROW_FUNCTION_NAME, {}, &ledgerDataProvider, allowance);
+            wasm, ledgerDataProvider, ESCROW_FUNCTION_NAME, {}, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
         auto const& logs = ledgerDataProvider.getLogs();
         if (ctx_.app.config().useTxTables() && !logs.empty())
@@ -1336,7 +1319,7 @@ EscrowFinish::doApply()
             return temDISABLED;  // LCOV_EXCL_LINE
 
         Rate lockedRate = slep->isFieldPresent(sfTransferRate)
-            ? ripple::Rate(slep->getFieldU32(sfTransferRate))
+            ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
             : parityRate;
         auto const issuer = amount.getIssuer();
         bool const createAsset = destID == account_;
@@ -1493,7 +1476,7 @@ EscrowCancel::doApply()
         return tecNO_TARGET;
     }
 
-    auto const now = ctx_.view().info().parentCloseTime;
+    auto const now = ctx_.view().header().parentCloseTime;
 
     // No cancel time specified: can't execute at all.
     if (!(*slep)[~sfCancelAfter])
@@ -1590,4 +1573,4 @@ EscrowCancel::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

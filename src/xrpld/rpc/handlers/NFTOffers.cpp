@@ -1,5 +1,6 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/json/json_value.h>
@@ -10,7 +11,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 static void
 appendNftOfferJson(
@@ -156,4 +157,4 @@ doNFTBuyOffers(RPC::JsonContext& context)
     return enumerateNFTOffers(context, nftId, keylet::nft_buys(nftId));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

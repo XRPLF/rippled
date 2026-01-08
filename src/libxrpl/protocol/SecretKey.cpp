@@ -17,7 +17,6 @@
 #include <boost/utility/string_view.hpp>
 
 #include <ed25519.h>
-#include <secp256k1.h>
 
 #include <algorithm>
 #include <array>
@@ -27,7 +26,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 SecretKey::~SecretKey()
 {
@@ -382,4 +381,4 @@ parseBase58(TokenType type, std::string const& s)
     return SecretKey(makeSlice(result));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

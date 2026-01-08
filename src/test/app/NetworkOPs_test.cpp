@@ -1,12 +1,10 @@
-// Copyright (c) 2020 Dev Null Productions
-
 #include <test/jtx.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 
 #include <xrpld/app/misc/HashRouter.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class NetworkOPs_test : public beast::unit_test::suite
@@ -57,7 +55,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NetworkOPs, app, ripple);
+BEAST_DEFINE_TESTSUITE(NetworkOPs, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

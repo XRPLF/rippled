@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 // These are the same flags defined as HashRouterFlags::PRIVATE1-4 in
 // HashRouter.h
@@ -58,13 +58,7 @@ checkValidity(
 
     if (!any(flags & SF_SIGGOOD))
     {
-        // Don't know signature state. Check it.
-        auto const requireCanonicalSig =
-            rules.enabled(featureRequireFullyCanonicalSig)
-            ? STTx::RequireFullyCanonicalSig::yes
-            : STTx::RequireFullyCanonicalSig::no;
-
-        auto const sigVerify = tx.checkSign(requireCanonicalSig, rules);
+        auto const sigVerify = tx.checkSign(rules);
         if (!sigVerify)
         {
             router.setFlags(id, SF_SIGBAD);
@@ -273,4 +267,4 @@ applyTransaction(
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

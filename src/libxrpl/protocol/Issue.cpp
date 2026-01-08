@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 Issue::getText() const
@@ -132,4 +132,4 @@ operator<<(std::ostream& os, Issue const& x)
     return os;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

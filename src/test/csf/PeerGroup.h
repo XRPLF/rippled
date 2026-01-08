@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -351,5 +351,5 @@ randomRankedConnect(
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 #endif

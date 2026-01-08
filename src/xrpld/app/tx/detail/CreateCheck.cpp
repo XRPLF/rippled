@@ -7,7 +7,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 CreateCheck::preflight(PreflightContext const& ctx)
@@ -61,8 +61,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
     auto const flags = sleDst->getFlags();
 
     // Check if the destination has disallowed incoming checks
-    if (ctx.view.rules().enabled(featureDisallowIncoming) &&
-        (flags & lsfDisallowIncomingCheck))
+    if (flags & lsfDisallowIncomingCheck)
         return tecNO_PERMISSION;
 
     // Pseudo-accounts cannot cash checks. Note, this is not amendment-gated
@@ -215,4 +214,4 @@ CreateCheck::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

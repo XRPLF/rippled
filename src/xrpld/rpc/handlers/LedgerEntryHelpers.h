@@ -12,7 +12,7 @@
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace LedgerEntryHelpers {
 
@@ -218,6 +218,29 @@ requiredUInt192(
     return required<uint192>(params, fieldName, err, "Hash192");
 }
 
+template <>
+std::optional<Issue>
+parse(Json::Value const& param)
+{
+    try
+    {
+        return issueFromJson(param);
+    }
+    catch (std::runtime_error const&)
+    {
+        return std::nullopt;
+    }
+}
+
+Expected<Issue, Json::Value>
+requiredIssue(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    std::string const& err)
+{
+    return required<Issue>(params, fieldName, err, "Issue");
+}
+
 Expected<STXChainBridge, Json::Value>
 parseBridgeFields(Json::Value const& params)
 {
@@ -277,4 +300,4 @@ parseBridgeFields(Json::Value const& params)
 
 }  // namespace LedgerEntryHelpers
 
-}  // namespace ripple
+}  // namespace xrpl

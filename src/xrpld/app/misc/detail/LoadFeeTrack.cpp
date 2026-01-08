@@ -7,7 +7,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 LoadFeeTrack::raiseLocalFee()
@@ -90,4 +90,4 @@ scaleFeeLoad(
     return *result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

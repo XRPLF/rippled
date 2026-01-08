@@ -3,7 +3,7 @@
 
 #include <secp256k1.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <class = void>
 secp256k1_context const*
@@ -27,6 +27,6 @@ secp256k1Context()
     return h.impl;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

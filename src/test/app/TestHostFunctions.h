@@ -9,17 +9,18 @@
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
 struct TestLedgerDataProvider : public HostFunctions
 {
-    jtx::Env* env_;
+    jtx::Env& env_;
     void const* rt_ = nullptr;
 
 public:
-    TestLedgerDataProvider(jtx::Env* env) : env_(env)
+    TestLedgerDataProvider(jtx::Env& env)
+        : HostFunctions(env.journal), env_(env)
     {
     }
 
@@ -38,7 +39,7 @@ public:
     Expected<std::int32_t, HostFunctionError>
     getLedgerSqn() override
     {
-        return env_->current()->seq();
+        return env_.current()->seq();
     }
 };
 
@@ -52,7 +53,7 @@ struct TestHostFunctions : public HostFunctions
 
 public:
     TestHostFunctions(test::jtx::Env& env, int cd = 0)
-        : env_(env), clock_drift_(cd)
+        : HostFunctions(env.journal), env_(env), clock_drift_(cd)
     {
         accountID_ = env_.master.id();
         std::string t = "10000";
@@ -71,12 +72,6 @@ public:
         return rt_;
     }
 
-    beast::Journal
-    getJournal() override
-    {
-        return env_.journal;
-    }
-
     Expected<std::int32_t, HostFunctionError>
     getLedgerSqn() override
     {
@@ -92,7 +87,7 @@ public:
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() override
     {
-        return env_.current()->info().parentHash;
+        return env_.current()->header().parentHash;
     }
 
     Expected<int32_t, HostFunctionError>
@@ -289,7 +284,7 @@ public:
     Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data) override
     {
-        return env_.current()->info().parentHash;
+        return env_.current()->header().parentHash;
     }
 
     Expected<Bytes, HostFunctionError>
@@ -395,7 +390,7 @@ public:
 #endif
         if (!asHex)
         {
-            j << "WAMR TRACE: " << msg << " "
+            j << "WASM TRACE: " << msg << " "
               << std::string_view(
                      reinterpret_cast<char const*>(data.data()), data.size());
         }
@@ -405,7 +400,7 @@ public:
             hex.reserve(data.size() * 2);
             boost::algorithm::hex(
                 data.begin(), data.end(), std::back_inserter(hex));
-            j << "WAMR DEV TRACE: " << msg << " " << hex;
+            j << "WASM DEV TRACE: " << msg << " " << hex;
         }
 
 #ifdef DEBUG_OUTPUT
@@ -423,7 +418,7 @@ public:
 #else
         auto j = getJournal().trace();
 #endif
-        j << "WAMR TRACE NUM: " << msg << " " << data;
+        j << "WASM TRACE NUM: " << msg << " " << data;
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;
@@ -435,7 +430,7 @@ public:
     traceAccount(std::string_view const& msg, AccountID const& account) override
     {
 #ifdef DEBUG_OUTPUT
-        auto j = getJournal().error();
+        auto& j = std::cerr;
 #else
         auto j = getJournal().trace();
 #endif
@@ -444,7 +439,7 @@ public:
 
         auto const accountStr = toBase58(account);
 
-        j << "WAMR TRACE ACCOUNT: " << msg << " " << accountStr;
+        j << "WASM TRACE ACCOUNT: " << msg << " " << accountStr;
         return msg.size() + accountStr.size();
     }
 
@@ -457,7 +452,7 @@ public:
         auto j = getJournal().trace();
 #endif
         auto const s = floatToString(data);
-        j << "WAMR TRACE FLOAT: " << msg << " " << s;
+        j << "WASM TRACE FLOAT: " << msg << " " << s;
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;
@@ -469,12 +464,12 @@ public:
     traceAmount(std::string_view const& msg, STAmount const& amount) override
     {
 #ifdef DEBUG_OUTPUT
-        auto j = getJournal().error();
+        auto& j = std::cerr;
 #else
         auto j = getJournal().trace();
 #endif
         auto const amountStr = amount.getFullText();
-        j << "WAMR TRACE AMOUNT: " << msg << " " << amountStr;
+        j << "WASM TRACE AMOUNT: " << msg << " " << amountStr;
         return msg.size() + amountStr.size();
     }
 
@@ -548,27 +543,19 @@ public:
 struct TestHostFunctionsSink : public TestHostFunctions
 {
     test::StreamSink sink_;
-    beast::Journal jlog_;
     void const* rt_ = nullptr;
 
 public:
     explicit TestHostFunctionsSink(test::jtx::Env& env, int cd = 0)
-        : TestHostFunctions(env, cd)
-        , sink_(beast::severities::kDebug)
-        , jlog_(sink_)
+        : TestHostFunctions(env, cd), sink_(beast::severities::kDebug)
     {
+        j_ = beast::Journal(sink_);
     }
 
     test::StreamSink&
     getSink()
     {
         return sink_;
-    }
-
-    beast::Journal
-    getJournal() override
-    {
-        return jlog_;
     }
 };
 
@@ -616,7 +603,7 @@ struct PerfHostFunctions : public TestHostFunctions
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() override
     {
-        return env_.current()->info().parentHash;
+        return env_.current()->header().parentHash;
     }
 
     Expected<int32_t, HostFunctionError>
@@ -1037,7 +1024,7 @@ struct PerfHostFunctions : public TestHostFunctions
         if (data.size() > maxWasmDataLength)
             return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-        ripple::detail::ApplyViewBase v(
+        xrpl::detail::ApplyViewBase v(
             env_.app().openLedger().current().get(), tapNONE);
 
         auto sle = v.peek(leKey);
@@ -1060,7 +1047,7 @@ struct PerfHostFunctions : public TestHostFunctions
             return Unexpected(HostFunctionError::INVALID_PARAMS);
 
         PublicKey const pk(pubkey);
-        return verify(pk, message, signature, /*canonical*/ true);
+        return verify(pk, message, signature);
     }
 
     Expected<Hash, HostFunctionError>
@@ -1284,14 +1271,14 @@ struct PerfHostFunctions : public TestHostFunctions
     {
         if (!account || !nftId)
         {
-            getJournal().trace() << "WAMR getNFT: Invalid account or NFT ID";
+            getJournal().trace() << "WASM getNFT: Invalid account or NFT ID";
             return Unexpected(HostFunctionError::INVALID_PARAMS);
         }
 
         auto obj = nft::findToken(*env_.current(), account, nftId);
         if (!obj)
         {
-            getJournal().trace() << "WAMR getNFT: NFT not found";
+            getJournal().trace() << "WASM getNFT: NFT not found";
             return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
         }
 
@@ -1339,4 +1326,4 @@ struct PerfHostFunctions : public TestHostFunctions
 };
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -11,7 +11,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   secret_key: <signing_secret_key>
@@ -45,7 +45,7 @@ doChannelAuthorize(RPC::JsonContext& context)
 
     XRPL_ASSERT(
         keyPair || RPC::contains_error(result),
-        "ripple::doChannelAuthorize : valid keyPair or an error");
+        "xrpl::doChannelAuthorize : valid keyPair or an error");
     if (!keyPair || RPC::contains_error(result))
         return result;
 
@@ -137,9 +137,8 @@ doChannelVerify(RPC::JsonContext& context)
     serializePayChanAuthorization(msg, channelId, XRPAmount(drops));
 
     Json::Value result;
-    result[jss::signature_verified] =
-        verify(*pk, msg.slice(), makeSlice(*sig), /*canonical*/ true);
+    result[jss::signature_verified] = verify(*pk, msg.slice(), makeSlice(*sig));
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

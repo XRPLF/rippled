@@ -21,7 +21,7 @@
 #include <iterator>
 #include <numeric>
 
-namespace ripple {
+namespace xrpl {
 
 /** Result of flow() execution of a single Strand. */
 template <class TInAmt, class TOutAmt>
@@ -154,7 +154,7 @@ flow(
                             << to_string(get<TInAmt>(r.first))
                             << " maxIn: " << to_string(*maxIn);
                         UNREACHABLE(
-                            "ripple::flow : first step re-executing the "
+                            "xrpl::flow : first step re-executing the "
                             "limiting step failed");
                         return Result{strand, std::move(ofrsToRm)};
                         // LCOV_EXCL_STOP
@@ -194,7 +194,7 @@ flow(
                         JLOG(j.fatal()) << "Re-executed limiting step failed";
 #endif
                         UNREACHABLE(
-                            "ripple::flow : limiting step re-executing the "
+                            "xrpl::flow : limiting step re-executing the "
                             "limiting step failed");
                         return Result{strand, std::move(ofrsToRm)};
                         // LCOV_EXCL_STOP
@@ -232,7 +232,7 @@ flow(
                     JLOG(j.fatal()) << "Re-executed forward pass failed";
 #endif
                     UNREACHABLE(
-                        "ripple::flow : non-limiting step re-executing the "
+                        "xrpl::flow : non-limiting step re-executing the "
                         "forward pass failed");
                     return Result{strand, std::move(ofrsToRm)};
                     // LCOV_EXCL_STOP
@@ -433,7 +433,7 @@ public:
         // add the strands in `next_` to `cur_`, sorted by theoretical quality.
         // Best quality first.
         cur_.clear();
-        if (v.rules().enabled(featureFlowSortStrands) && !next_.empty())
+        if (!next_.empty())
         {
             std::vector<std::pair<Quality, Strand const*>> strandQuals;
             strandQuals.reserve(next_.size());
@@ -487,7 +487,7 @@ public:
         if (i >= cur_.size())
         {
             // LCOV_EXCL_START
-            UNREACHABLE("ripple::ActiveStrands::get : input out of range");
+            UNREACHABLE("xrpl::ActiveStrands::get : input out of range");
             return nullptr;
             // LCOV_EXCL_STOP
         }
@@ -698,7 +698,7 @@ flow(
             XRPL_ASSERT(
                 f.out <= remainingOut && f.sandbox &&
                     (!remainingIn || f.in <= *remainingIn),
-                "ripple::flow : remaining constraints");
+                "xrpl::flow : remaining constraints");
 
             Quality const q(f.out, f.in);
 
@@ -719,46 +719,16 @@ flow(
                 continue;
             }
 
-            if (baseView.rules().enabled(featureFlowSortStrands))
-            {
-                XRPL_ASSERT(!best, "ripple::flow : best is unset");
-                if (!f.inactive)
-                    activeStrands.push(strand);
-                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
-                activeStrands.pushRemainingCurToNext(strandIndex + 1);
-                break;
-            }
-
-            activeStrands.push(strand);
-
-            if (!best || best->quality < q ||
-                (best->quality == q && best->out < f.out))
-            {
-                // If this strand is inactive (because it consumed too many
-                // offers) and ends up having the best quality, remove it
-                // from the activeStrands. If it doesn't end up having the
-                // best quality, keep it active.
-
-                if (f.inactive)
-                {
-                    // This should be `nextSize`, not `size`. This issue is
-                    // fixed in featureFlowSortStrands.
-                    markInactiveOnUse = activeStrands.size() - 1;
-                }
-                else
-                {
-                    markInactiveOnUse.reset();
-                }
-
-                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
-            }
+            XRPL_ASSERT(!best, "xrpl::flow : best is unset");
+            if (!f.inactive)
+                activeStrands.push(strand);
+            best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
+            activeStrands.pushRemainingCurToNext(strandIndex + 1);
+            break;
         }
 
-        bool const shouldBreak = [&] {
-            if (baseView.rules().enabled(featureFlowSortStrands))
-                return !best || offersConsidered >= maxOffersToConsider;
-            return !best;
-        }();
+        bool const shouldBreak =
+            !best || offersConsidered >= maxOffersToConsider;
 
         if (best)
         {
@@ -835,7 +805,7 @@ flow(
             // running debug builds of rippled. While this issue still needs to
             // be resolved, the assert is causing more harm than good at this
             // point.
-            // UNREACHABLE("ripple::flow : rounding error");
+            // UNREACHABLE("xrpl::flow : rounding error");
 
             return {tefEXCEPTION, std::move(ofrsToRmOnFail)};
         }
@@ -872,7 +842,7 @@ flow(
         //   Handles both cases 1. and 2.
         // fixFillOrKill amendment:
         //   Handles 2. 1. is handled above and falls through for tfSell.
-        XRPL_ASSERT(remainingIn, "ripple::flow : nonzero remainingIn");
+        XRPL_ASSERT(remainingIn, "xrpl::flow : nonzero remainingIn");
         if (remainingIn && *remainingIn != beast::zero)
             return {
                 tecPATH_PARTIAL,
@@ -884,6 +854,6 @@ flow(
     return {actualIn, actualOut, std::move(sb), std::move(ofrsToRmOnFail)};
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

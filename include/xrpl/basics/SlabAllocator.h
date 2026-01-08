@@ -22,7 +22,7 @@
 #include <sys/mman.h>
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 template <typename Type>
 class SlabAllocator
@@ -128,7 +128,7 @@ class SlabAllocator
         {
             XRPL_ASSERT(
                 own(ptr),
-                "ripple::SlabAllocator::SlabBlock::deallocate : own input");
+                "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
             std::lock_guard l(m_);
 
@@ -159,7 +159,7 @@ public:
         @param count the number of items the slab allocator can allocate; note
                      that a count of 0 is valid and means that the allocator
                      is, effectively, disabled. This can be very useful in some
-                     contexts (e.g. when mimimal memory usage is needed) and
+                     contexts (e.g. when minimal memory usage is needed) and
                      allows for graceful failure.
      */
     constexpr explicit SlabAllocator(
@@ -173,7 +173,7 @@ public:
     {
         XRPL_ASSERT(
             (itemAlignment_ & (itemAlignment_ - 1)) == 0,
-            "ripple::SlabAllocator::SlabAllocator : valid alignment");
+            "xrpl::SlabAllocator::SlabAllocator : valid alignment");
     }
 
     SlabAllocator(SlabAllocator const& other) = delete;
@@ -285,7 +285,7 @@ public:
     {
         XRPL_ASSERT(
             ptr,
-            "ripple::SlabAllocator::SlabAllocator::deallocate : non-null "
+            "xrpl::SlabAllocator::SlabAllocator::deallocate : non-null "
             "input");
 
         for (auto slab = slabs_.load(); slab != nullptr; slab = slab->next_)
@@ -419,6 +419,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_BASICS_SLABALLOCATOR_H_INCLUDED

@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 // This a trusted interface, the user is expected to provide valid input to
 // perform valid requests. Error catching and reporting is not a requirement of
@@ -66,6 +66,6 @@ rpcClient(
     unsigned int apiVersion,
     std::unordered_map<std::string, std::string> const& headers = {});
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

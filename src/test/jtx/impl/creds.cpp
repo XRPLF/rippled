@@ -3,7 +3,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -84,4 +84,4 @@ ledgerEntry(jtx::Env& env, std::string const& credIdx)
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

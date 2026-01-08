@@ -4,7 +4,7 @@
 
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 static std::string_view const W_ENV = "env";
 static std::string_view const W_HOST_LIB = "host_lib";
@@ -20,10 +20,11 @@ static std::string_view const ESCROW_FUNCTION_NAME = "finish";
 
 uint32_t const MAX_PAGES = 128;  // 8MB = 64KB*128
 
-class WamrEngine;
+class WasmiEngine;
+
 class WasmEngine
 {
-    std::unique_ptr<WamrEngine> const impl;
+    std::unique_ptr<WasmiEngine> const impl;
 
     WasmEngine();
 
@@ -44,7 +45,7 @@ public:
     run(Bytes const& wasmCode,
         std::string_view funcName = {},
         std::vector<WasmParam> const& params = {},
-        std::vector<WasmImportFunc> const& imports = {},
+        ImportVec const& imports = {},
         HostFunctions* hfs = nullptr,
         int64_t gasLimit = -1,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
@@ -54,15 +55,13 @@ public:
         Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params = {},
-        std::vector<WasmImportFunc> const& imports = {},
+        ImportVec const& imports = {},
+        HostFunctions* hfs = nullptr,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
-
-    std::int32_t
-    initMaxPages(std::int32_t def);
 
     // Host functions helper functionality
     void*
-    newTrap(std::string_view msg = {});
+    newTrap(std::string const& txt = std::string());
 
     beast::Journal
     getJournal() const;
@@ -70,24 +69,22 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::vector<WasmImportFunc>
-createWasmImport(HostFunctions* hfs);
+ImportVec
+createWasmImport(HostFunctions& hfs);
 
 Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName = ESCROW_FUNCTION_NAME,
     std::vector<WasmParam> const& params = {},
-    HostFunctions* hfs = nullptr,
-    int64_t gasLimit = -1,
-    beast::Journal j = beast::Journal(beast::Journal::getNullSink()));
+    int64_t gasLimit = -1);
 
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
+    HostFunctions& hfs,
     std::string_view funcName = ESCROW_FUNCTION_NAME,
-    std::vector<WasmParam> const& params = {},
-    HostFunctions* hfs = nullptr,
-    beast::Journal j = beast::Journal(beast::Journal::getNullSink()));
+    std::vector<WasmParam> const& params = {});
 
-}  // namespace ripple
+}  // namespace xrpl

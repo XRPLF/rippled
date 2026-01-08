@@ -12,7 +12,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
@@ -36,41 +36,19 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
-    auto const account = ctx.tx[sfAccount];
+    auto const& account = ctx.tx[sfAccount];
     auto const assets = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
     if (assets.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
-    if (vaultAsset.native())
-        ;  // No special checks for XRP
-    else if (vaultAsset.holds<MPTIssue>())
+    auto const& vaultAccount = vault->at(sfAccount);
+    if (auto ter = canTransfer(ctx.view, vaultAsset, account, vaultAccount);
+        !isTesSuccess(ter))
     {
-        auto mptID = vaultAsset.get<MPTIssue>().getMptID();
-        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
-        if (!issuance)
-            return tecOBJECT_NOT_FOUND;
-        if (!issuance->isFlag(lsfMPTCanTransfer))
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.error())
-                << "VaultDeposit: vault assets are non-transferable.";
-            return tecNO_AUTH;
-            // LCOV_EXCL_STOP
-        }
-    }
-    else if (vaultAsset.holds<Issue>())
-    {
-        auto const issuer =
-            ctx.view.read(keylet::account(vaultAsset.getIssuer()));
-        if (!issuer)
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.error())
-                << "VaultDeposit: missing issuer of vault assets.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
+        JLOG(ctx.j.debug())
+            << "VaultDeposit: vault assets are non-transferable.";
+        return ter;
     }
 
     auto const mptIssuanceID = vault->at(sfShareMPTID);
@@ -201,7 +179,7 @@ VaultDeposit::doApply()
             // This follows from the reverse of the outer enclosing if condition
             XRPL_ASSERT(
                 account_ == vault->at(sfOwner),
-                "ripple::VaultDeposit::doApply : account is owner");
+                "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
                     mPriorBalance,              // priorBalance
@@ -258,7 +236,7 @@ VaultDeposit::doApply()
 
     XRPL_ASSERT(
         sharesCreated.asset() != assetsDeposited.asset(),
-        "ripple::VaultDeposit::doApply : assets are not shares");
+        "xrpl::VaultDeposit::doApply : assets are not shares");
 
     vault->at(sfAssetsTotal) += assetsDeposited;
     vault->at(sfAssetsAvailable) += assetsDeposited;
@@ -309,4 +287,4 @@ VaultDeposit::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

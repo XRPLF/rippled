@@ -11,7 +11,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 // Helper class that buffers modifications
@@ -141,6 +141,6 @@ private:
 };
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

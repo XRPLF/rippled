@@ -11,7 +11,7 @@
 
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class View_test : public beast::unit_test::suite
@@ -1019,8 +1019,8 @@ class View_test : public beast::unit_test::suite
 
         // Try the other interface.
         // Note that the different interface has different outcomes.
-        auto const& iA3 = rdViewA3->info();
-        auto const& iA4 = rdViewA4->info();
+        auto const& iA3 = rdViewA3->header();
+        auto const& iA4 = rdViewA4->header();
 
         BEAST_EXPECT(areCompatible(iA3.hash, iA3.seq, *rdViewA4, jStream, ""));
         BEAST_EXPECT(areCompatible(iA4.hash, iA4.seq, *rdViewA3, jStream, ""));
@@ -1114,10 +1114,10 @@ class GetAmendments_test : public beast::unit_test::suite
                 break;
         }
 
-        // There should be at least 5 amendments.  Don't do exact comparison
+        // There should be at least 3 amendments.  Don't do exact comparison
         // to avoid maintenance as more amendments are added in the future.
         BEAST_EXPECT(i == 254);
-        BEAST_EXPECT(majorities.size() >= 5);
+        BEAST_EXPECT(majorities.size() >= 2);
 
         // None of the amendments should be enabled yet.
         auto enableds = getEnabledAmendments(*env.closed());
@@ -1135,7 +1135,7 @@ class GetAmendments_test : public beast::unit_test::suite
                 break;
         }
         BEAST_EXPECT(i == 255);
-        BEAST_EXPECT(enableds.size() >= 5);
+        BEAST_EXPECT(enableds.size() >= 2);
     }
 
     void
@@ -1145,8 +1145,8 @@ class GetAmendments_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(View, ledger, ripple);
-BEAST_DEFINE_TESTSUITE(GetAmendments, ledger, ripple);
+BEAST_DEFINE_TESTSUITE(View, ledger, xrpl);
+BEAST_DEFINE_TESTSUITE(GetAmendments, ledger, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

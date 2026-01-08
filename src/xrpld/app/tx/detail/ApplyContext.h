@@ -11,7 +11,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** State information when applying a tx. */
 class ApplyContext
@@ -156,6 +156,6 @@ private:
     std::optional<std::int32_t> wasmReturnCode_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

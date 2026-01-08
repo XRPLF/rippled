@@ -4,7 +4,7 @@
 #include <array>
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -130,6 +130,6 @@ inline constexpr std::array<char const*, 3> WasmTraceDBInit{
 
      "END TRANSACTION;"}};
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

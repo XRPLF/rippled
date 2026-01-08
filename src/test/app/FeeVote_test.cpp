@@ -12,7 +12,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct FeeSettingsFields
@@ -1100,7 +1100,7 @@ class FeeVote_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FeeVote, app, ripple);
+BEAST_DEFINE_TESTSUITE(FeeVote, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

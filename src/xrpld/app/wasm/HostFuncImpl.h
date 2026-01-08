@@ -3,7 +3,7 @@
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpld/app/wasm/HostFunc.h>
 
-namespace ripple {
+namespace xrpl {
 class WasmHostFunctionsImpl : public HostFunctions
 {
     ApplyContext& ctx;
@@ -43,8 +43,8 @@ class WasmHostFunctionsImpl : public HostFunctions
     }
 
 public:
-    WasmHostFunctionsImpl(ApplyContext& ctx, Keylet const& leKey)
-        : ctx(ctx), leKey(leKey)
+    WasmHostFunctionsImpl(ApplyContext& ct, Keylet const& leKey)
+        : HostFunctions(ct.journal), ctx(ct), leKey(leKey)
     {
     }
 
@@ -58,12 +58,6 @@ public:
     getRT() const override
     {
         return rt_;
-    }
-
-    beast::Journal
-    getJournal() override
-    {
-        return ctx.journal;
     }
 
     std::optional<Bytes> const&
@@ -284,4 +278,4 @@ public:
     floatLog(Slice const& x, int32_t mode) override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
