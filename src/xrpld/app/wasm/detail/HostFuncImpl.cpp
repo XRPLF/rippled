@@ -13,7 +13,7 @@
 
 namespace xrpl {
 
-typedef std::variant<STBase const*, uint256 const*> STBaseOrUInt256;
+typedef std::variant<STBase const*, uint256 const*> FieldValue;
 
 Expected<std::int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getLedgerSqn()
@@ -171,7 +171,7 @@ getAnyFieldData(STBase const* obj)
 }
 
 static Expected<Bytes, HostFunctionError>
-getAnyFieldData(STBaseOrUInt256 const& variantObj)
+getAnyFieldData(FieldValue const& variantObj)
 {
     if (STBase const* const* obj = std::get_if<STBase const*>(&variantObj))
     {
@@ -216,7 +216,7 @@ noField(STBase const* field)
         (STI_UNKNOWN == field->getSType());
 }
 
-static Expected<STBaseOrUInt256, HostFunctionError>
+static Expected<FieldValue, HostFunctionError>
 locateField(STObject const& obj, Slice const& locator)
 {
     if (locator.empty() || (locator.size() & 3))  // must be multiple of 4
@@ -266,7 +266,7 @@ locateField(STObject const& obj, Slice const& locator)
             auto const* v = static_cast<STVector256 const*>(field);
             if (sfieldCode >= v->size())
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
-            return STBaseOrUInt256(&(v->operator[](sfieldCode)));
+            return FieldValue(&(v->operator[](sfieldCode)));
         }
         else  // simple field must be the last one
         {
@@ -277,7 +277,7 @@ locateField(STObject const& obj, Slice const& locator)
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
     }
 
-    return STBaseOrUInt256(field);
+    return FieldValue(field);
 }
 
 Expected<Bytes, HostFunctionError>
@@ -321,7 +321,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(
 }
 
 static inline Expected<int32_t, HostFunctionError>
-getArrayLen(STBaseOrUInt256 const& variantField)
+getArrayLen(FieldValue const& variantField)
 {
     if (STBase const* const* field = std::get_if<STBase const*>(&variantField))
     {
