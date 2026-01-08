@@ -89,26 +89,26 @@ ValueIteratorBase::copy(SelfType const& other)
 Value
 ValueIteratorBase::key() const
 {
-    Value::CZString const czstring = (*current_).first;
+    Value::CZString const czString = (*current_).first;
 
-    if (czstring.c_str())
+    if (czString.c_str())
     {
-        if (czstring.isStaticString())
-            return Value(StaticString(czstring.c_str()));
+        if (czString.isStaticString())
+            return Value(StaticString(czString.c_str()));
 
-        return Value(czstring.c_str());
+        return Value(czString.c_str());
     }
 
-    return Value(czstring.index());
+    return Value(czString.index());
 }
 
 UInt
 ValueIteratorBase::index() const
 {
-    Value::CZString const czstring = (*current_).first;
+    Value::CZString const czString = (*current_).first;
 
-    if (!czstring.c_str())
-        return czstring.index();
+    if (!czString.c_str())
+        return czString.index();
 
     return Value::UInt(-1);
 }

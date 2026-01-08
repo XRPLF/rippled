@@ -555,16 +555,16 @@ Rippled uses a linear workflow model that can be summarized as:
 git fetch --multiple upstreams user1 user2 user3 [...]
 git checkout -B release-next --no-track upstream/develop
 
-# Only do an ff-only merge if prbranch1 is either already
+# Only do an ff-only merge if pr-branch1 is either already
 # squashed, or needs to be merged with separate commits,
 # and has no merge commits.
-# Use -S on the ff-only merge if prbranch1 isn't signed.
-git merge [-S] --ff-only user1/prbranch1
+# Use -S on the ff-only merge if pr-branch1 isn't signed.
+git merge [-S] --ff-only user1/pr-branch1
 
-git merge --squash user2/prbranch2
+git merge --squash user2/pr-branch2
 git commit -S # Use the commit message provided on the PR
 
-git merge --squash user3/prbranch3
+git merge --squash user3/pr-branch3
 git commit -S # Use the commit message provided on the PR
 
 [...]
@@ -876,7 +876,7 @@ git push --delete upstream-push master-next
 
 #### Special cases: point releases, hotfixes, etc.
 
-On occassion, a bug or issue is discovered in a version that already
+On occasion, a bug or issue is discovered in a version that already
 had a final release. Most of the time, development will have started
 on the next version, and will usually have changes in `develop`
 and often in `release`.

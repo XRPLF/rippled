@@ -126,7 +126,7 @@ public:
     getEndpoint() const;
 
 private:
-    // Class encompasing the state and logic needed to serve a request.
+    // Class encompassing the state and logic needed to serve a request.
     template <class Request, class Response>
     class CallData
         : public Processor,
