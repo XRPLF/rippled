@@ -383,7 +383,7 @@ public:
               logs_->journal("TaggedCache"))
 
         , m_networkOPs(make_NetworkOPs(
-              *this,
+              getServiceRegistry(),
               stopwatch(),
               config_->standalone(),
               config_->NETWORK_QUORUM,
