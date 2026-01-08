@@ -83,7 +83,6 @@ words:
   - doxyfile
   - dxrpl
   - endmacro
-  - endpointv
   - exceptioned
   - Falco
   - finalizers
@@ -92,6 +91,7 @@ words:
   - funclets
   - gcov
   - gcovr
+  - ghead
   - Gnutella
   - gpgcheck
   - gpgkey
@@ -221,6 +221,8 @@ words:
   - takergets
   - takerpays
   - ters
+  - TMEndpointv2
+  - trixie
   - tx
   - txid
   - txids
@@ -255,6 +257,7 @@ words:
   - venv
   - vfalco
   - vinnie
+  - wasmi
   - wextra
   - wptr
   - writeme

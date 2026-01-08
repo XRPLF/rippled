@@ -11,7 +11,7 @@ Permission::Permission()
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, amendment, ...) \
+#define TRANSACTION(tag, value, name, delegable, amendment, ...) \
     {value, amendment},
 
 #include <xrpl/protocol/detail/transactions.macro>
@@ -24,7 +24,7 @@ Permission::Permission()
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, ...) {value, delegatable},
+#define TRANSACTION(tag, value, name, delegable, ...) {value, delegable},
 
 #include <xrpl/protocol/detail/transactions.macro>
 
@@ -170,7 +170,7 @@ Permission::isDelegable(
         !rules.enabled(txFeaturesIt->second))
         return false;
 
-    if (it->second == Delegation::notDelegatable)
+    if (it->second == Delegation::notDelegable)
         return false;
 
     return true;

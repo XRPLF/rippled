@@ -1,4 +1,5 @@
 #!/bin/bash
+# cspell: ignore clangf
 modified=$1
 dir=`pwd`
 clangf=clang-format-10

@@ -84,9 +84,9 @@ operator|(Privilege lhs, Privilege rhs)
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, amendment, privileges, ...) \
-    case tag: {                                                                \
-        return (privileges) & priv;                                            \
+#define TRANSACTION(tag, value, name, delegable, amendment, privileges, ...) \
+    case tag: {                                                              \
+        return (privileges) & priv;                                          \
     }
 
 bool
