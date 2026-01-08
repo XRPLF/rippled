@@ -2737,11 +2737,12 @@ protected:
                         paymentComponents.trackedValueDelta <=
                         roundedPeriodicPayment);
 
-                    xrpl::LoanState const nextTrueState = computeTheoreticalLoanState(
-                        state.periodicPayment,
-                        periodicRate,
-                        state.paymentRemaining - 1,
-                        broker.params.managementFeeRate);
+                    xrpl::LoanState const nextTrueState =
+                        computeTheoreticalLoanState(
+                            state.periodicPayment,
+                            periodicRate,
+                            state.paymentRemaining - 1,
+                            broker.params.managementFeeRate);
                     detail::LoanStateDeltas const deltas =
                         currentTrueState - nextTrueState;
 
