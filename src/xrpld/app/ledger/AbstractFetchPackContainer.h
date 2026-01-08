@@ -16,7 +16,7 @@ class AbstractFetchPackContainer
 public:
     virtual ~AbstractFetchPackContainer() = default;
 
-    /** Retrieves partial ledger data of the coresponding hash from peers.`
+    /** Retrieves partial ledger data of the corresponding hash from peers.`
 
         @param nodeHash The 256-bit hash of the data to fetch.
         @return `std::nullopt` if the hash isn't cached,

@@ -179,7 +179,7 @@ static constexpr int loanPaymentsPerFeeIncrement = 5;
  *
  * This limit is enforced during the loan payment process, and thus is not
  * estimated. If the limit is hit, no further payments or overpayments will be
- * processed, no matter how much of the transation Amount is left, but the
+ * processed, no matter how much of the transaction Amount is left, but the
  * transaction will succeed with the payments that have been processed up to
  * that point.
  *

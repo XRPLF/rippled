@@ -122,9 +122,9 @@ getBookBase(Book const& book)
 uint256
 getQualityNext(uint256 const& uBase)
 {
-    static constexpr uint256 nextq(
+    static constexpr uint256 nextQuality(
         "0000000000000000000000000000000000000000000000010000000000000000");
-    return uBase + nextq;
+    return uBase + nextQuality;
 }
 
 std::uint64_t

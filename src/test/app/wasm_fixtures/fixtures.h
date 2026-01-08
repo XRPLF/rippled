@@ -64,3 +64,5 @@ extern std::string const trapFuncSigMismatchHex;
 
 extern std::string const wasiGetTimeHex;
 extern std::string const wasiPrintHex;
+
+extern std::string const infiniteLoopWasmHex;

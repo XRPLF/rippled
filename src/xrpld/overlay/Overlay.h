@@ -94,7 +94,7 @@ public:
     size() const = 0;
 
     /** Return diagnostics on the status of all peers.
-        @deprecated This is superceded by PropertyStream
+        @deprecated This is superseded by PropertyStream
     */
     virtual Json::Value
     json() = 0;
