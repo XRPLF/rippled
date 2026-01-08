@@ -428,6 +428,7 @@ tryOverpayment(
                     << newLoanProperties.firstPaymentPrincipal;
 
     // Calculate what the new loan state should be with the new periodic payment
+    // including rounding errors
     auto const newTheoreticalState = computeTheoreticalLoanState(
                                          newLoanProperties.periodicPayment,
                                          periodicRate,
@@ -440,10 +441,10 @@ tryOverpayment(
                     << newTheoreticalState.principalOutstanding
                     << ", interest gross: "
                     << newTheoreticalState.interestOutstanding();
-    // Update the loan state variables with the new values PLUS the preserved
-    // rounding errors. This ensures the loan's tracked state remains
-    // consistent with its payment history.
 
+    // Update the loan state variables with the new values that include the
+    // preserved rounding errors. This ensures the loan's tracked state remains
+    // consistent with its payment history.
     auto const principalOutstanding = std::clamp(
         roundToAsset(
             asset,
