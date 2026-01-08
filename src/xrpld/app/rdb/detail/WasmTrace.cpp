@@ -2,7 +2,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 std::unique_ptr<DatabaseCon>
 makeWasmTraceDB(DatabaseCon::Setup const& setup, beast::Journal j)
@@ -72,4 +72,4 @@ getWasmTraceByTxID(soci::session& session, TxID const& txId)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

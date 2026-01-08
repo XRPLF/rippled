@@ -8,7 +8,7 @@
 
 #include <xrpl/protocol/Indexes.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::unique_ptr<DatabaseCon>
 makeWasmTraceDB(DatabaseCon::Setup const& setup, beast::Journal j);
@@ -23,6 +23,6 @@ addWasmTraceLogs(
 std::map<uint256, std::vector<std::string>>
 getWasmTraceByTxID(soci::session& session, TxID const& txId);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

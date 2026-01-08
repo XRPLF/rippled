@@ -815,7 +815,7 @@ public:
     {
         XRPL_ASSERT(
             mWasmTraceDB,
-            "ripple::ApplicationImp::getWasmTraceDB : null wasm debug "
+            "xrpl::ApplicationImp::getWasmTraceDB : null wasm debug "
             "database");
         return *mWasmTraceDB;
     }
@@ -837,7 +837,7 @@ public:
             "database");
         XRPL_ASSERT(
             mWasmTraceDB.get() == nullptr,
-            "ripple::ApplicationImp::initRelationalDatabase : null wasm debug "
+            "xrpl::ApplicationImp::initRelationalDatabase : null wasm debug "
             "database");
 
         try
