@@ -66,7 +66,7 @@ LoadMonitor::update()
 
         "Imagine if you add 10 to something every second. And you
          also reduce it by 1/4 every second. It will "idle" at 40,
-         correponding to 10 counts per second."
+         corresponding to 10 counts per second."
     */
     do
     {

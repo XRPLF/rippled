@@ -114,6 +114,9 @@ jobs:
       matrix:
         os: [linux, macos, windows]
     with:
+      # Enable ccache only for events targeting the XRPLF repository, since
+      # other accounts will not have access to our remote cache storage.
+      ccache_enabled: ${{ github.repository_owner == 'XRPLF' }}
       os: ${{ matrix.os }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

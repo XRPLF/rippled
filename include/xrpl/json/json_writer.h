@@ -90,7 +90,7 @@ private:
     void
     writeArrayValue(Value const& value);
     bool
-    isMultineArray(Value const& value);
+    isMultilineArray(Value const& value);
     void
     pushValue(std::string const& value);
     void
@@ -157,7 +157,7 @@ private:
     void
     writeArrayValue(Value const& value);
     bool
-    isMultineArray(Value const& value);
+    isMultilineArray(Value const& value);
     void
     pushValue(std::string const& value);
     void

@@ -165,7 +165,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
         // prevent alice's and minter's NFTs from clustering together
         // in becky's directory.
         //
-        // Use a default initialized mercenne_twister because we want the
+        // Use a default initialized mersenne_twister because we want the
         // effect of random numbers, but we want the test to run the same
         // way each time.
         std::mt19937 engine;

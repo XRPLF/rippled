@@ -217,7 +217,7 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
     }
 }
 
-TxConsequences::TxConsequences(NotTEC pfresult)
+TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
     , fee_(beast::zero)
     , potentialSpend_(beast::zero)
@@ -225,7 +225,7 @@ TxConsequences::TxConsequences(NotTEC pfresult)
     , sequencesConsumed_(0)
 {
     XRPL_ASSERT(
-        !isTesSuccess(pfresult),
+        !isTesSuccess(pfResult),
         "xrpl::TxConsequences::TxConsequences : is not tesSUCCESS");
 }
 
@@ -288,15 +288,15 @@ preflight(
     ApplyFlags flags,
     beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx, rules, flags, j);
+    PreflightContext const pfCtx(app, tx, rules, flags, j);
     try
     {
-        return {pfctx, invoke_preflight(pfctx)};
+        return {pfCtx, invoke_preflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 
@@ -309,15 +309,15 @@ preflight(
     ApplyFlags flags,
     beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx, parentBatchId, rules, flags, j);
+    PreflightContext const pfCtx(app, tx, parentBatchId, rules, flags, j);
     try
     {
-        return {pfctx, invoke_preflight(pfctx)};
+        return {pfCtx, invoke_preflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 
