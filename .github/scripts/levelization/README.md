@@ -81,7 +81,7 @@ It generates many files of [results](results):
 
 - `rawincludes.txt`: The raw dump of the `#includes`
 - `paths.txt`: A second dump grouping the source module
-  to the destination module, deduped, and with frequency counts.
+  to the destination module, de-duped, and with frequency counts.
 - `includes/`: A directory where each file represents a module and
   contains a list of modules and counts that the module _includes_.
 - `includedby/`: Similar to `includes/`, but the other way around. Each

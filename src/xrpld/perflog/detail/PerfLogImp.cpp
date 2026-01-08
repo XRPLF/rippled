@@ -103,7 +103,7 @@ PerfLogImp::Counters::countersJson() const
         rpcobj[jss::total] = totalRpcJson;
     }
 
-    Json::Value jqobj(Json::objectValue);
+    Json::Value jobQueueObj(Json::objectValue);
     // totalJq represents all jobs. All enqueued, started, finished, etc.
     Jq totalJq;
     for (auto const& proc : jq_)
@@ -132,7 +132,7 @@ PerfLogImp::Counters::countersJson() const
         j[jss::running_duration_us] =
             std::to_string(value.runningDuration.count());
         totalJq.runningDuration += value.runningDuration;
-        jqobj[JobTypes::name(proc.first)] = j;
+        jobQueueObj[JobTypes::name(proc.first)] = j;
     }
 
     if (totalJq.queued)
@@ -145,14 +145,14 @@ PerfLogImp::Counters::countersJson() const
             std::to_string(totalJq.queuedDuration.count());
         totalJqJson[jss::running_duration_us] =
             std::to_string(totalJq.runningDuration.count());
-        jqobj[jss::total] = totalJqJson;
+        jobQueueObj[jss::total] = totalJqJson;
     }
 
     Json::Value counters(Json::objectValue);
     // Be kind to reporting tools and let them expect rpc and jq objects
     // even if empty.
     counters[jss::rpc] = rpcobj;
-    counters[jss::job_queue] = jqobj;
+    counters[jss::job_queue] = jobQueueObj;
     return counters;
 }
 
