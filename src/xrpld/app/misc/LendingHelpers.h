@@ -86,8 +86,8 @@ struct LoanPaymentParts
 
 /** This structure captures the parts of a loan state.
  *
- *  Whether the values are raw (unrounded) or rounded will depend on how it was
- * computed.
+ *  Whether the values are theoretical (unrounded) or rounded will depend on how
+ * it was computed.
  *
  *  Many of the fields can be derived from each other, but they're all provided
  *  here to reduce code duplication and possible mistakes.
@@ -217,7 +217,7 @@ computeManagementFee(
 
 Number
 computeFullPaymentInterest(
-    Number const& rawPrincipalOutstanding,
+    Number const& theoreticalPrincipalOutstanding,
     Number const& periodicRate,
     NetClock::time_point parentCloseTime,
     std::uint32_t paymentInterval,

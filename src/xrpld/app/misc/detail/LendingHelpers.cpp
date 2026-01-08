@@ -393,19 +393,20 @@ tryOverpayment(
     beast::Journal j)
 {
     // Calculate what the loan state SHOULD be theoretically (at full precision)
-    auto const raw = computeTheoreticalLoanState(
+    auto const theoreticalState = computeTheoreticalLoanState(
         periodicPayment, periodicRate, paymentRemaining, managementFeeRate);
 
     // Calculate the accumulated rounding errors. These need to be preserved
     // across the re-amortization to maintain consistency with the loan's
     // payment history. Without preserving these errors, the loan could end
     // up with a different total value than what the borrower has actually paid.
-    auto const errors = roundedOldState - raw;
+    auto const errors = roundedOldState - theoreticalState;
 
-    // Compute the new principal by applying the overpayment to the raw
-    // (theoretical) principal. Use max with 0 to ensure we never go negative.
-    auto const newRawPrincipal = std::max(
-        raw.principalOutstanding - overpaymentComponents.trackedPrincipalDelta,
+    // Compute the new principal by applying the overpayment to the theoretical
+    // principal. Use max with 0 to ensure we never go negative.
+    auto const newTheoreticalPrincipal = std::max(
+        theoreticalState.principalOutstanding -
+            overpaymentComponents.trackedPrincipalDelta,
         Number{0});
 
     // Compute new loan properties based on the reduced principal. This
@@ -413,7 +414,7 @@ tryOverpayment(
     // for the remaining payment schedule.
     auto newLoanProperties = computeLoanProperties(
         asset,
-        newRawPrincipal,
+        newTheoreticalPrincipal,
         periodicRate,
         paymentRemaining,
         managementFeeRate,
@@ -427,35 +428,40 @@ tryOverpayment(
                     << newLoanProperties.firstPaymentPrincipal;
 
     // Calculate what the new loan state should be with the new periodic payment
-    auto const newRaw = computeTheoreticalLoanState(
-                            newLoanProperties.periodicPayment,
-                            periodicRate,
-                            paymentRemaining,
-                            managementFeeRate) +
+    auto const newTheoreticalState = computeTheoreticalLoanState(
+                                         newLoanProperties.periodicPayment,
+                                         periodicRate,
+                                         paymentRemaining,
+                                         managementFeeRate) +
         errors;
 
-    JLOG(j.debug()) << "new raw value: " << newRaw.valueOutstanding
-                    << ", principal: " << newRaw.principalOutstanding
-                    << ", interest gross: " << newRaw.interestOutstanding();
+    JLOG(j.debug()) << "new theoretical value: "
+                    << newTheoreticalState.valueOutstanding << ", principal: "
+                    << newTheoreticalState.principalOutstanding
+                    << ", interest gross: "
+                    << newTheoreticalState.interestOutstanding();
     // Update the loan state variables with the new values PLUS the preserved
     // rounding errors. This ensures the loan's tracked state remains
     // consistent with its payment history.
 
     auto const principalOutstanding = std::clamp(
         roundToAsset(
-            asset, newRaw.principalOutstanding, loanScale, Number::upward),
+            asset,
+            newTheoreticalState.principalOutstanding,
+            loanScale,
+            Number::upward),
         numZero,
         roundedOldState.principalOutstanding);
     auto const totalValueOutstanding = std::clamp(
         roundToAsset(
             asset,
-            principalOutstanding + newRaw.interestOutstanding(),
+            principalOutstanding + newTheoreticalState.interestOutstanding(),
             loanScale,
             Number::upward),
         numZero,
         roundedOldState.valueOutstanding);
     auto const managementFeeOutstanding = std::clamp(
-        roundToAsset(asset, newRaw.managementFeeDue, loanScale),
+        roundToAsset(asset, newTheoreticalState.managementFeeDue, loanScale),
         numZero,
         roundedOldState.managementFeeDue);
 
@@ -827,15 +833,16 @@ computeFullPayment(
     }
 
     // Calculate the theoretical principal based on the payment schedule.
-    // This raw (unrounded) value is used to compute interest and penalties
-    // accurately.
-    Number const rawPrincipalOutstanding = loanPrincipalFromPeriodicPayment(
-        periodicPayment, periodicRate, paymentRemaining);
+    // This theoretical (unrounded) value is used to compute interest and
+    // penalties accurately.
+    Number const theoreticalPrincipalOutstanding =
+        loanPrincipalFromPeriodicPayment(
+            periodicPayment, periodicRate, paymentRemaining);
 
     // Full payment interest includes both accrued interest (time since last
     // payment) and prepayment penalty (for closing early).
     auto const fullPaymentInterest = computeFullPaymentInterest(
-        rawPrincipalOutstanding,
+        theoreticalPrincipalOutstanding,
         periodicRate,
         view.parentCloseTime(),
         paymentInterval,
@@ -895,7 +902,8 @@ computeFullPayment(
     JLOG(j.trace()) << "computeFullPayment result: periodicPayment: "
                     << periodicPayment << ", periodicRate: " << periodicRate
                     << ", paymentRemaining: " << paymentRemaining
-                    << ", rawPrincipalOutstanding: " << rawPrincipalOutstanding
+                    << ", theoreticalPrincipalOutstanding: "
+                    << theoreticalPrincipalOutstanding
                     << ", fullPaymentInterest: " << fullPaymentInterest
                     << ", roundedFullInterest: " << roundedFullInterest
                     << ", roundedFullManagementFee: "
@@ -1346,7 +1354,7 @@ checkLoanGuards(
  */
 Number
 computeFullPaymentInterest(
-    Number const& rawPrincipalOutstanding,
+    Number const& theoreticalPrincipalOutstanding,
     Number const& periodicRate,
     NetClock::time_point parentCloseTime,
     std::uint32_t paymentInterval,
@@ -1355,7 +1363,7 @@ computeFullPaymentInterest(
     TenthBips32 closeInterestRate)
 {
     auto const accruedInterest = detail::loanAccruedInterest(
-        rawPrincipalOutstanding,
+        theoreticalPrincipalOutstanding,
         periodicRate,
         parentCloseTime,
         startDate,
@@ -1369,7 +1377,7 @@ computeFullPaymentInterest(
     // Equation (28) from XLS-66 spec, Section A-2 Equation Glossary
     auto const prepaymentPenalty = closeInterestRate == beast::zero
         ? Number{}
-        : tenthBipsOfValue(rawPrincipalOutstanding, closeInterestRate);
+        : tenthBipsOfValue(theoreticalPrincipalOutstanding, closeInterestRate);
 
     XRPL_ASSERT(
         prepaymentPenalty >= 0,
@@ -1386,8 +1394,8 @@ computeFullPaymentInterest(
  * This function computes what the loan's outstanding balances should be based
  * on the periodic payment amount and number of payments remaining,
  * without considering any rounding that may have been applied to the actual
- * Loan object's state. This "raw" (unrounded) state is used as a target for
- * computing payment components and validating that the loan's tracked state
+ * Loan object's state. This "theoretical" (unrounded) state is used as a target
+ * for computing payment components and validating that the loan's tracked state
  * hasn't drifted too far from the theoretical values.
  *
  * The theoretical state serves several purposes:
@@ -1445,12 +1453,13 @@ computeTheoreticalLoanState(
 /* Constructs a LoanState from rounded Loan ledger object values.
  *
  * This function creates a LoanState structure from the three tracked values
- * stored in a Loan ledger object. Unlike calculateRawLoanState(), which
+ * stored in a Loan ledger object. Unlike calculateTheoreticalLoanState(), which
  * computes theoretical unrounded values, this function works with values
  * that have already been rounded to the loan's scale.
  *
- * The key difference from calculateRawLoanState():
- * - calculateRawLoanState: Computes theoretical values at full precision
+ * The key difference from calculateTheoreticalLoanState():
+ * - calculateTheoreticalLoanState: Computes theoretical values at full
+ * precision
  * - constructRoundedLoanState: Builds state from actual rounded ledger values
  *
  * The interestDue field is derived from the other three values rather than
