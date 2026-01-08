@@ -17,6 +17,12 @@
 
 namespace ripple {
 
+struct CiphertextRandomness
+{
+    Buffer ciphertext;
+    Buffer randomness;
+};
+
 void
 addCommonZKPFields(
     Serializer& s,
@@ -236,7 +242,7 @@ proveEquality(
     std::uint32_t const spendVersion);
 
 // returns ciphertext and the blinding factor used
-std::pair<Buffer, Buffer>
+CiphertextRandomness
 encryptAmount(uint64_t amt, Slice const& pubKeySlice);
 
 Buffer

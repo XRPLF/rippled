@@ -6,6 +6,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstdint>
@@ -415,7 +416,7 @@ public:
     Buffer
     getPrivKey(Account const& account) const;
 
-    std::pair<Buffer, Buffer>
+    CiphertextRandomness
     encryptAmount(Account const& account, uint64_t amt) const;
 
     uint64_t
@@ -441,9 +442,9 @@ public:
         Account const& holder,
         std::uint64_t amount,
         uint256 const& ctxHash,
-        std::pair<Buffer, Buffer> holderCiphertext,
-        std::pair<Buffer, Buffer> issuerCiphertext,
-        std::optional<std::pair<Buffer, Buffer>> auditorCiphertext) const;
+        CiphertextRandomness holderCiphertext,
+        CiphertextRandomness issuerCiphertext,
+        std::optional<CiphertextRandomness> auditorCiphertext) const;
 
 private:
     using SLEP = SLE::const_pointer;
