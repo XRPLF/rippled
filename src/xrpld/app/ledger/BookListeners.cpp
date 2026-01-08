@@ -30,7 +30,7 @@ BookListeners::publish(
 
         if (p)
         {
-            // Only publish jvObj if this is the first occurence
+            // Only publish jvObj if this is the first occurrence
             if (havePublished.emplace(p->getSeq()).second)
             {
                 jvObj.visit(

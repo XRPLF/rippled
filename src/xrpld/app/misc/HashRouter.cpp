@@ -14,7 +14,7 @@ HashRouter::emplace(uint256 const& key) -> std::pair<Entry&, bool>
         return std::make_pair(std::ref(iter->second), false);
     }
 
-    // See if any supressions need to be expired
+    // See if any suppressions need to be expired
     expire(suppressionMap_, setup_.holdTime);
 
     return std::make_pair(

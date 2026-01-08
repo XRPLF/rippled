@@ -82,9 +82,9 @@ operator|(Privilege lhs, Privilege rhs)
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, amendment, privileges, ...) \
-    case tag: {                                                                \
-        return (privileges) & priv;                                            \
+#define TRANSACTION(tag, value, name, delegable, amendment, privileges, ...) \
+    case tag: {                                                              \
+        return (privileges) & priv;                                          \
     }
 
 bool
@@ -540,7 +540,7 @@ AccountRootsDeletedClean::finalize(
         }
 
         {
-            // NFT pages. ntfpage_min and nftpage_max were already explicitly
+            // NFT pages. nftpage_min and nftpage_max were already explicitly
             // checked above as entries in directAccountKeylets. This uses
             // view.succ() to check for any NFT pages in between the two
             // endpoints.

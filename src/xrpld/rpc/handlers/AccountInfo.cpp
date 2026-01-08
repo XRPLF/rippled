@@ -194,7 +194,7 @@ doAccountInfo(RPC::JsonContext& context)
 
             // Documentation states this is returned as part of the account_info
             // response, but previously the code put it under account_data. We
-            // can move this to the documentated location from apiVersion 2
+            // can move this to the documented location from apiVersion 2
             // onwards.
             if (context.apiVersion == 1)
             {
@@ -240,7 +240,7 @@ doAccountInfo(RPC::JsonContext& context)
                     {
                         XRPL_ASSERT(
                             prevSeqProxy < tx.seqProxy,
-                            "rpple::doAccountInfo : first sorted proxy");
+                            "doAccountInfo : first sorted proxy");
                         prevSeqProxy = tx.seqProxy;
                         jvTx[jss::seq] = tx.seqProxy.value();
                         ++seqCount;
@@ -252,7 +252,7 @@ doAccountInfo(RPC::JsonContext& context)
                     {
                         XRPL_ASSERT(
                             prevSeqProxy < tx.seqProxy,
-                            "rpple::doAccountInfo : second sorted proxy");
+                            "doAccountInfo : second sorted proxy");
                         prevSeqProxy = tx.seqProxy;
                         jvTx[jss::ticket] = tx.seqProxy.value();
                         ++ticketCount;

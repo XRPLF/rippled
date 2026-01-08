@@ -60,7 +60,7 @@ struct divider
     }
 };
 
-/** Creates a padded field with an optiona fill character. */
+/** Creates a padded field with an optional fill character. */
 struct fpad
 {
     explicit fpad(int width_, int pad_ = 0, char fill_ = ' ')
@@ -172,7 +172,7 @@ field(T const& t, int width = 8, int pad = 0, bool right = false)
 
 template <class CharT, class Traits, class Allocator>
 field_t<CharT, Traits, Allocator>
-rfield(
+rField(
     std::basic_string<CharT, Traits, Allocator> const& text,
     int width = 8,
     int pad = 0)
@@ -182,7 +182,7 @@ rfield(
 
 template <class CharT>
 field_t<CharT>
-rfield(CharT const* text, int width = 8, int pad = 0)
+rField(CharT const* text, int width = 8, int pad = 0)
 {
     return field_t<CharT, std::char_traits<CharT>, std::allocator<CharT>>(
         std::
@@ -195,7 +195,7 @@ rfield(CharT const* text, int width = 8, int pad = 0)
 
 template <typename T>
 field_t<char>
-rfield(T const& t, int width = 8, int pad = 0)
+rField(T const& t, int width = 8, int pad = 0)
 {
     std::string const text(detail::to_string(t));
     return field(text, width, pad, true);

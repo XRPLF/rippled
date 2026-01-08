@@ -1719,7 +1719,7 @@ public:
         BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(
             jrr[jss::offers].size() ==
-            (asAdmin ? RPC::Tuning::bookOffers.rdefault : 0u));
+            (asAdmin ? RPC::Tuning::bookOffers.rDefault : 0u));
     }
 
     void

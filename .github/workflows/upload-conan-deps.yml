@@ -72,7 +72,7 @@ jobs:
       - name: Prepare runner
         uses: XRPLF/actions/prepare-runner@2ece4ec6ab7de266859a6f053571425b2bd684b6
         with:
-          disable_ccache: false
+          disable_ccache: true
 
       - name: Print build environment
         uses: ./.github/actions/print-env
