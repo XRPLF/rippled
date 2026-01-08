@@ -1591,7 +1591,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(bob, USD) == USD(10125));
         }
 
-        // test cancel doesnt charge rate
+        // test cancel doesn't charge rate
         {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
@@ -1986,7 +1986,7 @@ struct EscrowToken_test : public beast::unit_test::suite
     void
     testIOUINSF(FeatureBitset features)
     {
-        testcase("IOU Insuficient Funds");
+        testcase("IOU Insufficient Funds");
         using namespace test::jtx;
         using namespace std::literals;
 

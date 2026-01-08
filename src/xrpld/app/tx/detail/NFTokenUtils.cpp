@@ -940,7 +940,7 @@ tokenOfferCreatePreclaim(
     {
         // If this is a sell offer, check that the account is allowed to
         // receive IOUs. If this is a buy offer, we have to check that trustline
-        // is authorized, even though we previosly checked it's balance via
+        // is authorized, even though we previously checked it's balance via
         // accountHolds. This is due to a possibility of existence of
         // unauthorized trustlines with balance
         auto const res = nft::checkTrustlineAuthorized(

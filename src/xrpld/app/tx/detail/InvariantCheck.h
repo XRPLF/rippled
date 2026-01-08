@@ -613,7 +613,7 @@ public:
 };
 
 /**
- * @brief Invariants: Pseudo-accounts have valid and consisent properties
+ * @brief Invariants: Pseudo-accounts have valid and consistent properties
  *
  * Pseudo-accounts have certain properties, and some of those properties are
  * unique to pseudo-accounts. Check that all pseudo-accounts are following the

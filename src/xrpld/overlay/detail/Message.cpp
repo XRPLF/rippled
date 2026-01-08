@@ -68,8 +68,8 @@ Message::compress()
             case protocol::mtGET_LEDGER:
             case protocol::mtLEDGER_DATA:
             case protocol::mtGET_OBJECTS:
-            case protocol::mtVALIDATORLIST:
-            case protocol::mtVALIDATORLISTCOLLECTION:
+            case protocol::mtVALIDATOR_LIST:
+            case protocol::mtVALIDATOR_LIST_COLLECTION:
             case protocol::mtREPLAY_DELTA_RESPONSE:
             case protocol::mtTRANSACTIONS:
                 return true;

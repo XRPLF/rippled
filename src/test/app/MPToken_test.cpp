@@ -115,7 +115,7 @@ class MPToken_test : public beast::unit_test::suite
                  .metadata = "",
                  .err = temMALFORMED});
 
-            // MaximumAmout of 0 returns error
+            // MaximumAmount of 0 returns error
             mptAlice.create(
                 {.maxAmt = 0,
                  .assetScale = 1,
@@ -400,7 +400,7 @@ class MPToken_test : public beast::unit_test::suite
             // a mptoken yet
             mptAlice.authorize({.holder = bob, .err = tecOBJECT_NOT_FOUND});
 
-            // alice specifys a holder acct that doesn't exist
+            // alice specifies a holder acct that doesn't exist
             mptAlice.authorize({.holder = cindy, .err = tecNO_DST});
 
             // bob now holds a mptoken object
@@ -975,7 +975,7 @@ class MPToken_test : public beast::unit_test::suite
                 sendmax(XRP(100)),
                 ter(temMALFORMED));
             env(pay(alice, carol, MPT(100)),
-                delivermin(XRP(100)),
+                deliver_min(XRP(100)),
                 ter(temBAD_AMOUNT));
             // sendMax MPT is invalid with IOU or XRP
             auto const USD = alice["USD"];
@@ -986,10 +986,10 @@ class MPToken_test : public beast::unit_test::suite
                 sendmax(MPT(100)),
                 ter(temMALFORMED));
             env(pay(alice, carol, USD(100)),
-                delivermin(MPT(100)),
+                deliver_min(MPT(100)),
                 ter(temBAD_AMOUNT));
             env(pay(alice, carol, XRP(100)),
-                delivermin(MPT(100)),
+                deliver_min(MPT(100)),
                 ter(temBAD_AMOUNT));
             // sendmax and amount are different MPT issue
             test::jtx::MPT const MPT1(
@@ -1535,13 +1535,13 @@ class MPToken_test : public beast::unit_test::suite
             // deliver amount < deliverMin
             env(pay(bob, alice, MPT(100)),
                 sendmax(MPT(99)),
-                delivermin(MPT(100)),
+                deliver_min(MPT(100)),
                 txflags(tfPartialPayment),
                 ter(tecPATH_PARTIAL));
             // Payment succeeds if deliver amount >= deliverMin
             env(pay(bob, alice, MPT(100)),
                 sendmax(MPT(99)),
-                delivermin(MPT(99)),
+                deliver_min(MPT(99)),
                 txflags(tfPartialPayment));
         }
 
@@ -1805,7 +1805,7 @@ class MPToken_test : public beast::unit_test::suite
             // alice authorizes bob to hold funds
             mptAlice.authorize({.account = alice, .holder = bob});
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
@@ -1884,7 +1884,7 @@ class MPToken_test : public beast::unit_test::suite
             // alice authorizes bob to hold funds
             mptAlice.authorize({.account = alice, .holder = bob});
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
