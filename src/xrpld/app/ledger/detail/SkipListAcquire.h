@@ -8,7 +8,7 @@
 
 #include <xrpl/shamap/SHAMap.h>
 
-namespace ripple {
+namespace xrpl {
 class InboundLedgers;
 class PeerSet;
 namespace test {
@@ -36,11 +36,11 @@ public:
     struct SkipListData
     {
         std::uint32_t const ledgerSeq;
-        std::vector<ripple::uint256> const skipList;
+        std::vector<xrpl::uint256> const skipList;
 
         SkipListData(
             std::uint32_t const ledgerSeq,
-            std::vector<ripple::uint256> const& skipList)
+            std::vector<xrpl::uint256> const& skipList)
             : ledgerSeq(ledgerSeq), skipList(skipList)
         {
         }
@@ -144,6 +144,6 @@ private:
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

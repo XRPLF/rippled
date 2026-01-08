@@ -89,15 +89,7 @@ find_package(OpenSSL 1.1.1 REQUIRED)
 set_target_properties(OpenSSL::SSL PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS OPENSSL_NO_SSL2
 )
-set(SECP256K1_INSTALL TRUE)
-set(SECP256K1_BUILD_BENCHMARK FALSE)
-set(SECP256K1_BUILD_TESTS FALSE)
-set(SECP256K1_BUILD_EXHAUSTIVE_TESTS FALSE)
-set(SECP256K1_BUILD_CTIME_TESTS FALSE)
-set(SECP256K1_BUILD_EXAMPLES FALSE)
-add_subdirectory(external/secp256k1)
-add_library(secp256k1::secp256k1 ALIAS secp256k1)
-add_subdirectory(external/ed25519-donna)
+
 add_subdirectory(external/antithesis-sdk)
 find_package(gRPC REQUIRED)
 find_package(lz4 REQUIRED)
@@ -117,8 +109,10 @@ if(rocksdb)
   target_link_libraries(xrpl_libs INTERFACE RocksDB::rocksdb)
 endif()
 
-find_package(nudb REQUIRED)
 find_package(date REQUIRED)
+find_package(ed25519 REQUIRED)
+find_package(nudb REQUIRED)
+find_package(secp256k1 REQUIRED)
 find_package(wasmi REQUIRED)
 find_package(xxHash REQUIRED)
 

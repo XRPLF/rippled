@@ -4,7 +4,7 @@
 
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 static std::string_view const W_ENV = "env";
 static std::string_view const W_HOST_LIB = "host_lib";
@@ -87,4 +87,4 @@ preflightEscrowWasm(
     std::string_view funcName = ESCROW_FUNCTION_NAME,
     std::vector<WasmParam> const& params = {});
 
-}  // namespace ripple
+}  // namespace xrpl

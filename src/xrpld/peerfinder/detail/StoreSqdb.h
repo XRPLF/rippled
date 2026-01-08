@@ -5,7 +5,7 @@
 #include <xrpld/core/SociDB.h>
 #include <xrpld/peerfinder/detail/Store.h>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Database persistence for PeerFinder using SQLite */
@@ -89,6 +89,6 @@ private:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

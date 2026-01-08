@@ -1,6 +1,6 @@
 #include <xrpld/app/tx/detail/BookTip.h>
 
-namespace ripple {
+namespace xrpl {
 
 BookTip::BookTip(ApplyView& view, Book const& book)
     : view_(view)
@@ -59,4 +59,4 @@ BookTip::step(beast::Journal j)
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

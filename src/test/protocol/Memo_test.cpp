@@ -2,7 +2,7 @@
 
 #include <xrpl/basics/strHex.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Memo_test : public beast::unit_test::suite
 {
@@ -116,6 +116,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Memo, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Memo, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

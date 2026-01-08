@@ -6,7 +6,7 @@
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Sync filters allow low-level SHAMapSync code to interact correctly with
 // higher-level structures such as caches and transaction stores
@@ -38,6 +38,6 @@ private:
     beast::Journal const j_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

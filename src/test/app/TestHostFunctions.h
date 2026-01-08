@@ -9,7 +9,7 @@
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -87,7 +87,7 @@ public:
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() override
     {
-        return env_.current()->info().parentHash;
+        return env_.current()->header().parentHash;
     }
 
     Expected<int32_t, HostFunctionError>
@@ -284,7 +284,7 @@ public:
     Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data) override
     {
-        return env_.current()->info().parentHash;
+        return env_.current()->header().parentHash;
     }
 
     Expected<Bytes, HostFunctionError>
@@ -603,7 +603,7 @@ struct PerfHostFunctions : public TestHostFunctions
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() override
     {
-        return env_.current()->info().parentHash;
+        return env_.current()->header().parentHash;
     }
 
     Expected<int32_t, HostFunctionError>
@@ -1024,7 +1024,7 @@ struct PerfHostFunctions : public TestHostFunctions
         if (data.size() > maxWasmDataLength)
             return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-        ripple::detail::ApplyViewBase v(
+        xrpl::detail::ApplyViewBase v(
             env_.app().openLedger().current().get(), tapNONE);
 
         auto sle = v.peek(leKey);
@@ -1326,4 +1326,4 @@ struct PerfHostFunctions : public TestHostFunctions
 };
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

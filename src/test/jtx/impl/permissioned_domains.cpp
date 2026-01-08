@@ -1,6 +1,6 @@
 #include <test/jtx.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 namespace pdomain {
@@ -158,4 +158,4 @@ getNewDomain(std::shared_ptr<STObject const> const& meta)
 }  // namespace pdomain
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -5,7 +5,7 @@
 
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 namespace credentials {
 
 bool
@@ -22,7 +22,7 @@ checkExpired(
 bool
 removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 {
-    auto const closeTime = view.info().parentCloseTime;
+    auto const closeTime = view.header().parentCloseTime;
     bool foundExpired = false;
 
     for (auto const& h : arr)
@@ -181,7 +181,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
     if (!slePD)
         return tecOBJECT_NOT_FOUND;
 
-    auto const closeTime = view.info().parentCloseTime;
+    auto const closeTime = view.header().parentCloseTime;
     bool foundExpired = false;
     for (auto const& h : slePD->getFieldArray(sfAcceptedCredentials))
     {
@@ -374,4 +374,4 @@ verifyDepositPreauth(
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

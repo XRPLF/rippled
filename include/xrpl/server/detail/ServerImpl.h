@@ -16,7 +16,7 @@
 #include <optional>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 using Endpoints =
     std::unordered_map<std::string, boost::asio::ip::tcp::endpoint>;
@@ -189,6 +189,6 @@ ServerImpl<Handler>::closed()
 {
     return ios_.closed();
 }
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

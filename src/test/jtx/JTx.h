@@ -13,7 +13,7 @@
 #include <memory>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -40,6 +40,9 @@ struct JTx
     // Functions that sign something else after the mainSigners, such as
     // sfCounterpartySignature
     std::vector<std::function<void(Env&, JTx&)>> postSigners;
+    // Metadata about the unit test itself
+    // The line where the JTx was constructed
+    std::optional<int> testLine = std::nullopt;
 
     JTx() = default;
     JTx(JTx const&) = default;
@@ -156,6 +159,6 @@ private:
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

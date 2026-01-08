@@ -11,7 +11,7 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/format.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 class HTTPClientSSLContext
 {
@@ -176,6 +176,6 @@ private:
     bool const verify_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

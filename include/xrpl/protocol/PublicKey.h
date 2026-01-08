@@ -15,7 +15,7 @@
 #include <optional>
 #include <ostream>
 
-namespace ripple {
+namespace xrpl {
 
 /** A public key.
 
@@ -260,16 +260,16 @@ getFingerprint(
     }
     return ss.str();
 }
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 
 namespace Json {
 template <>
-inline ripple::PublicKey
-getOrThrow(Json::Value const& v, ripple::SField const& field)
+inline xrpl::PublicKey
+getOrThrow(Json::Value const& v, xrpl::SField const& field)
 {
-    using namespace ripple;
+    using namespace xrpl;
     std::string const b58 = getOrThrow<std::string>(v, field);
     if (auto pubKeyBlob = strUnHex(b58); publicKeyType(makeSlice(*pubKeyBlob)))
     {

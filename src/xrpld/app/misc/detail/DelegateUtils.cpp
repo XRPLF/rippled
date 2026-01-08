@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/STArray.h>
 
-namespace ripple {
+namespace xrpl {
 NotTEC
 checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
 {
@@ -44,4 +44,4 @@ loadGranularPermission(
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

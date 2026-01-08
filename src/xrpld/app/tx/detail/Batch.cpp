@@ -9,7 +9,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * @brief Calculates the total base fee for a batch transaction.
@@ -78,7 +78,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             }
             // LCOV_EXCL_STOP
 
-            auto const fee = ripple::calculateBaseFee(view, stx);
+            auto const fee = xrpl::calculateBaseFee(view, stx);
             // LCOV_EXCL_START
             if (txnFees > maxAmount - fee)
             {
@@ -263,12 +263,21 @@ Batch::preflight(PreflightContext const& ctx)
             return temREDUNDANT;
         }
 
-        if (stx.getFieldU16(sfTransactionType) == ttBATCH)
+        auto const txType = stx.getFieldU16(sfTransactionType);
+        if (txType == ttBATCH)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "batch cannot have an inner batch txn. "
                                 << "txID: " << hash;
             return temINVALID;
+        }
+
+        if (std::any_of(
+                disabledTxTypes.begin(),
+                disabledTxTypes.end(),
+                [txType](auto const& disabled) { return txType == disabled; }))
+        {
+            return temINVALID_INNER_BATCH;
         }
 
         if (!(stx.getFlags() & tfInnerBatchTxn))
@@ -283,7 +292,6 @@ Batch::preflight(PreflightContext const& ctx)
         if (auto const ret = checkSignatureFields(stx, hash))
             return ret;
 
-        /* Placeholder for field that will be added by Lending Protocol
         // Note that the CounterpartySignature is optional, and should not be
         // included, but if it is, ensure it doesn't contain a signature.
         if (stx.isFieldPresent(sfCounterpartySignature))
@@ -296,10 +304,9 @@ Batch::preflight(PreflightContext const& ctx)
                 return ret;
             }
         }
-        */
 
         auto const innerAccount = stx.getAccountID(sfAccount);
-        if (auto const preflightResult = ripple::preflight(
+        if (auto const preflightResult = xrpl::preflight(
                 ctx.app, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
             preflightResult.ter != tesSUCCESS)
         {
@@ -393,13 +400,11 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         // inner account to the required signers set.
         if (innerAccount != outerAccount)
             requiredSigners.insert(innerAccount);
-        /* Placeholder for field that will be added by Lending Protocol
         // Some transactions have a Counterparty, who must also sign the
         // transaction if they are not the outer account
         if (auto const counterparty = rb.at(~sfCounterparty);
             counterparty && counterparty != outerAccount)
             requiredSigners.insert(*counterparty);
-        */
     }
 
     // Validation Batch Signers
@@ -516,4 +521,4 @@ Batch::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

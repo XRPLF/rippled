@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Feature_test : public beast::unit_test::suite
 {
@@ -14,13 +14,13 @@ class Feature_test : public beast::unit_test::suite
     {
         testcase("internals");
 
-        auto const& supportedAmendments = ripple::detail::supportedAmendments();
-        auto const& allAmendments = ripple::allAmendments();
+        auto const& supportedAmendments = xrpl::detail::supportedAmendments();
+        auto const& allAmendments = xrpl::allAmendments();
 
         BEAST_EXPECT(
             supportedAmendments.size() ==
-            ripple::detail::numDownVotedAmendments() +
-                ripple::detail::numUpVotedAmendments());
+            xrpl::detail::numDownVotedAmendments() +
+                xrpl::detail::numUpVotedAmendments());
         {
             std::size_t up = 0, down = 0, obsolete = 0;
             for (auto const& [name, vote] : supportedAmendments)
@@ -54,8 +54,8 @@ class Feature_test : public beast::unit_test::suite
                 }
             }
             BEAST_EXPECT(
-                down + obsolete == ripple::detail::numDownVotedAmendments());
-            BEAST_EXPECT(up == ripple::detail::numUpVotedAmendments());
+                down + obsolete == xrpl::detail::numDownVotedAmendments());
+            BEAST_EXPECT(up == xrpl::detail::numUpVotedAmendments());
         }
         {
             std::size_t supported = 0, unsupported = 0, retired = 0;
@@ -93,7 +93,7 @@ class Feature_test : public beast::unit_test::suite
         // Test all the supported features. In a perfect world, this would test
         // FeatureCollections::featureNames, but that's private. Leave it that
         // way.
-        auto const supported = ripple::detail::supportedAmendments();
+        auto const supported = xrpl::detail::supportedAmendments();
 
         for (auto const& [feature, vote] : supported)
         {
@@ -123,7 +123,7 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECT(
             featureToName(fixRemoveNFTokenAutoTrustLine) ==
             "fixRemoveNFTokenAutoTrustLine");
-        BEAST_EXPECT(featureToName(featureFlow) == "Flow");
+        BEAST_EXPECT(featureToName(featureBatch) == "Batch");
         BEAST_EXPECT(featureToName(featureDID) == "DID");
         BEAST_EXPECT(
             featureToName(fixIncludeKeyletFields) == "fixIncludeKeyletFields");
@@ -139,7 +139,7 @@ class Feature_test : public beast::unit_test::suite
         Env env{*this};
 
         std::map<std::string, VoteBehavior> const& votes =
-            ripple::detail::supportedAmendments();
+            xrpl::detail::supportedAmendments();
 
         auto jrr = env.rpc("feature")[jss::result];
         if (!BEAST_EXPECT(jrr.isMember(jss::features)))
@@ -183,16 +183,16 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto jrr = env.rpc("feature", "Flow")[jss::result];
+        auto jrr = env.rpc("feature", "fixAMMOverflowOffer")[jss::result];
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
         BEAST_EXPECT(
-            jrr.isMember("740352F2412A9909880C23A559FCECEDA3BE2126FED62FC7660D6"
-                         "28A06927F11"));
+            jrr.isMember("12523DF04B553A0B1AD74F42DDB741DE8DC06A03FC089A0EF197E"
+                         "2A87F1D8107"));
         auto feature = *(jrr.begin());
 
-        BEAST_EXPECTS(feature[jss::name] == "Flow", "name");
+        BEAST_EXPECTS(feature[jss::name] == "fixAMMOverflowOffer", "name");
         BEAST_EXPECTS(!feature[jss::enabled].asBool(), "enabled");
         BEAST_EXPECTS(
             feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(),
@@ -200,7 +200,7 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECTS(feature[jss::supported].asBool(), "supported");
 
         // feature names are case-sensitive - expect error here
-        jrr = env.rpc("feature", "flow")[jss::result];
+        jrr = env.rpc("feature", "fMM")[jss::result];
         BEAST_EXPECT(jrr[jss::error] == "badFeature");
         BEAST_EXPECT(jrr[jss::error_message] == "Feature unknown or invalid.");
     }
@@ -325,7 +325,7 @@ class Feature_test : public beast::unit_test::suite
         Env env{*this, FeatureBitset{}};
 
         std::map<std::string, VoteBehavior> const& votes =
-            ripple::detail::supportedAmendments();
+            xrpl::detail::supportedAmendments();
 
         auto jrr = env.rpc("feature")[jss::result];
         if (!BEAST_EXPECT(jrr.isMember(jss::features)))
@@ -419,11 +419,11 @@ class Feature_test : public beast::unit_test::suite
                 break;
         }
 
-        // There should be at least 3 amendments.  Don't do exact comparison
+        // There should be at least 2 amendments.  Don't do exact comparison
         // to avoid maintenance as more amendments are added in the future.
-        BEAST_EXPECT(majorities.size() >= 3);
+        BEAST_EXPECT(majorities.size() >= 2);
         std::map<std::string, VoteBehavior> const& votes =
-            ripple::detail::supportedAmendments();
+            xrpl::detail::supportedAmendments();
 
         jrr = env.rpc("feature")[jss::result];
         if (!BEAST_EXPECT(jrr.isMember(jss::features)))
@@ -476,8 +476,8 @@ class Feature_test : public beast::unit_test::suite
         testcase("Veto");
 
         using namespace test::jtx;
-        Env env{*this, FeatureBitset{featureFlow}};
-        constexpr char const* featureName = "Flow";
+        Env env{*this, FeatureBitset{featurePriceOracle}};
+        constexpr char const* featureName = "fixAMMOverflowOffer";
 
         auto jrr = env.rpc("feature", featureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
@@ -607,6 +607,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Feature, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Feature, rpc, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

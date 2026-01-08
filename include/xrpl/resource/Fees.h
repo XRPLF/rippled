@@ -3,7 +3,7 @@
 
 #include <xrpl/resource/Charge.h>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 // clang-format off
@@ -40,6 +40,6 @@ extern Charge const feeDrop;              // The cost of being dropped for
 // clang-format on
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

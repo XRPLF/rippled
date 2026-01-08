@@ -8,7 +8,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 inline TER
 checkFreeze(
@@ -17,7 +17,7 @@ checkFreeze(
     AccountID const& dst,
     Currency const& currency)
 {
-    XRPL_ASSERT(src != dst, "ripple::checkFreeze : unequal input accounts");
+    XRPL_ASSERT(src != dst, "xrpl::checkFreeze : unequal input accounts");
 
     // check freeze
     if (auto sle = view.read(keylet::account(dst)))
@@ -93,6 +93,6 @@ checkNoRipple(
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -11,7 +11,7 @@
 
 #include <boost/range/adaptor/transformed.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 OpenLedger::OpenLedger(
     std::shared_ptr<Ledger const> const& ledger,
@@ -105,8 +105,11 @@ OpenLedger::accept(
         auto const txId = tx->getTransactionID();
 
         // skip batch txns
+        // The flag should only be settable if Batch feature is enabled. If
+        // Batch is not enabled, the flag is always invalid, so don't relay it
+        // regardless.
         // LCOV_EXCL_START
-        if (tx->isFlag(tfInnerBatchTxn) && rules.enabled(featureBatch))
+        if (tx->isFlag(tfInnerBatchTxn))
         {
             XRPL_ASSERT(
                 txpair.second && txpair.second->isFieldPresent(sfParentBatchID),
@@ -160,7 +163,7 @@ OpenLedger::apply_one(
     if (retry)
         flags = flags | tapRETRY;
     // If it's in anybody's proposed set, try to keep it in the ledger
-    auto const result = ripple::apply(app, view, *tx, flags, j);
+    auto const result = xrpl::apply(app, view, *tx, flags, j);
     if (result.applied || result.ter == terQUEUED)
         return Result::success;
     if (isTefFailure(result.ter) || isTemMalformed(result.ter) ||
@@ -217,4 +220,4 @@ debugTostr(std::shared_ptr<ReadView const> const& view)
     return ss.str();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

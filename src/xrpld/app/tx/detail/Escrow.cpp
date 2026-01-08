@@ -17,7 +17,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
@@ -176,7 +176,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 
     if (auto const cb = ctx.tx[~sfCondition])
     {
-        using namespace ripple::cryptoconditions;
+        using namespace xrpl::cryptoconditions;
 
         std::error_code ec;
 
@@ -503,7 +503,7 @@ calculateAdditionalReserve(T const& finishFunction)
 TER
 EscrowCreate::doApply()
 {
-    auto const closeTime = ctx_.view().info().parentCloseTime;
+    auto const closeTime = ctx_.view().header().parentCloseTime;
 
     if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
         return tecNO_PERMISSION;
@@ -637,7 +637,7 @@ EscrowCreate::doApply()
 static bool
 checkCondition(Slice f, Slice c)
 {
-    using namespace ripple::cryptoconditions;
+    using namespace xrpl::cryptoconditions;
 
     std::error_code ec;
 
@@ -743,13 +743,15 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
-    if (auto const allowance = tx[~sfComputationAllowance]; allowance)
+    if (std::optional<uint64_t> const allowance = tx[~sfComputationAllowance];
+        allowance)
     {
         // The extra fee is the allowance in drops, rounded up to the nearest
         // whole drop.
         // Integer math rounds down by default, so we add 1 to round up.
-        extraFee +=
+        uint64_t const allowanceFee =
             ((*allowance) * view.fees().gasPrice) / MICRO_DROPS_PER_DROP + 1;
+        extraFee += allowanceFee;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
@@ -1119,7 +1121,7 @@ EscrowFinish::doApply()
 
     // If a cancel time is present, a finish operation should only succeed prior
     // to that time.
-    auto const now = ctx_.view().info().parentCloseTime;
+    auto const now = ctx_.view().header().parentCloseTime;
 
     // Too soon: can't execute before the finish time
     if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
@@ -1294,7 +1296,7 @@ EscrowFinish::doApply()
             return temDISABLED;  // LCOV_EXCL_LINE
 
         Rate lockedRate = slep->isFieldPresent(sfTransferRate)
-            ? ripple::Rate(slep->getFieldU32(sfTransferRate))
+            ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
             : parityRate;
         auto const issuer = amount.getIssuer();
         bool const createAsset = destID == account_;
@@ -1451,7 +1453,7 @@ EscrowCancel::doApply()
         return tecNO_TARGET;
     }
 
-    auto const now = ctx_.view().info().parentCloseTime;
+    auto const now = ctx_.view().header().parentCloseTime;
 
     // No cancel time specified: can't execute at all.
     if (!(*slep)[~sfCancelAfter])
@@ -1548,4 +1550,4 @@ EscrowCancel::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

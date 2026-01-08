@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 /** A backend used for the NodeStore.
@@ -143,6 +143,6 @@ public:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

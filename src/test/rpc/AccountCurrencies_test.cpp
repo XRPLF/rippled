@@ -3,7 +3,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class AccountCurrencies_test : public beast::unit_test::suite
 {
@@ -26,7 +26,9 @@ class AccountCurrencies_test : public beast::unit_test::suite
             auto const result = env.rpc(
                 "json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(result[jss::error_message] == "ledgerHashNotString");
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'ledger_hash', not hex string.");
         }
 
         {  // missing account field
@@ -207,6 +209,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountCurrencies, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountCurrencies, rpc, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl
