@@ -159,7 +159,7 @@ LoanManage::defaultLoan(
         auto const minimumCover =
             tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
         // Round the liquidation amount up, too
-        return roundToAsset(
+        auto const covered = roundToAsset(
             vaultAsset,
             /*
              * This formula is from the XLS-66 spec, section 3.2.3.2 (State
@@ -170,6 +170,9 @@ LoanManage::defaultLoan(
                 tenthBipsOfValue(minimumCover, coverRateLiquidation),
                 totalDefaultAmount),
             loanScale);
+        auto const coverAvailable = *brokerSle->at(sfCoverAvailable);
+
+        return std::min(covered, coverAvailable);
     }();
 
     auto const vaultDefaultAmount = totalDefaultAmount - defaultCovered;

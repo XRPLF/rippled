@@ -1621,6 +1621,32 @@ class LoanBroker_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testAMB06_VaultFreezeCheckMissing()
+    {
+        testcase << "RIPD-4466 - LoanBrokerSet disallows frozen vaults";
+        using namespace jtx;
+        Env env(*this);
+
+        Account const issuer{"issuer"}, lender{"lender"}, borrower{"borrower"};
+        env.fund(XRP(20'000), issuer, lender, borrower);
+        auto const IOU = issuer["IOU"];
+
+        Vault vault{env};
+        auto [tx, vaultKeylet] =
+            vault.create({.owner = lender, .asset = IOU.asset()});
+        env(tx);
+        env.close();
+
+        // Get vault pseudo-account and FREEZE it
+        auto const vaultSle = env.le(vaultKeylet);
+        auto const vaultPseudo = vaultSle->at(sfAccount);
+        auto const vaultPseudoAcct = Account("VaultPseudo", vaultPseudo);
+        env(trust(issuer, vaultPseudoAcct["IOU"](0), tfSetFreeze));
+
+        env(loanBroker::set(lender, vaultKeylet.key), ter(tecFROZEN));
+    }
+
 public:
     void
     run() override
@@ -1638,6 +1664,7 @@ public:
         testRequireAuth();
 
         testRIPD4323();
+        testAMB06_VaultFreezeCheckMissing();
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.
