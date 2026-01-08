@@ -134,7 +134,7 @@ validation messages (_PAV_) received from each validator on the node's UNL. Note
 that the node will only count the validation messages that agree with its own
 validations.
 
-We define the **PAV** as the **P**ercentage of **A**greed **V**alidation
+We define the **PAV** as the Percentage of Agreed Validation
 messages received for the last N ledgers, where N = 256 by default.
 
 When the PAV drops below the **_low-water mark_**, the validator is considered

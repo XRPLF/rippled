@@ -551,12 +551,12 @@ class AccountTx_test : public beast::unit_test::suite
             auto escrow = [](Account const& account,
                              Account const& to,
                              STAmount const& amount) {
-                Json::Value escro;
-                escro[jss::TransactionType] = jss::EscrowCreate;
-                escro[jss::Account] = account.human();
-                escro[jss::Destination] = to.human();
-                escro[jss::Amount] = amount.getJson(JsonOptions::none);
-                return escro;
+                Json::Value escrow;
+                escrow[jss::TransactionType] = jss::EscrowCreate;
+                escrow[jss::Account] = account.human();
+                escrow[jss::Destination] = to.human();
+                escrow[jss::Amount] = amount.getJson(JsonOptions::none);
+                return escrow;
             };
 
             NetClock::time_point const nextTime{env.now() + 2s};
@@ -651,7 +651,7 @@ class AccountTx_test : public beast::unit_test::suite
             env.close();
         }
         {
-            // Deposit preauthorization with a Ticket.
+            // Deposit pre-authorization with a Ticket.
             std::uint32_t const tktSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 1), sig(alie));
             env.close();
@@ -788,19 +788,19 @@ class AccountTx_test : public beast::unit_test::suite
             BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
 
             // The first two transactions listed in sanity haven't happened yet.
-            constexpr unsigned int beckyDeletedOffest = 2;
+            constexpr unsigned int beckyDeletedOffset = 2;
             BEAST_EXPECT(
                 std::size(sanity) ==
                 result[jss::result][jss::transactions].size() +
-                    beckyDeletedOffest);
+                    beckyDeletedOffset);
 
             Json::Value const& txs{result[jss::result][jss::transactions]};
 
-            for (unsigned int index = beckyDeletedOffest;
+            for (unsigned int index = beckyDeletedOffset;
                  index < std::size(sanity);
                  ++index)
             {
-                checkSanity(txs[index - beckyDeletedOffest], sanity[index]);
+                checkSanity(txs[index - beckyDeletedOffset], sanity[index]);
             }
         }
 

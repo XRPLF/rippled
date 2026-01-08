@@ -152,8 +152,8 @@ public:
 
     /** Return a "sub slice" of given length starting at the given position
 
-        Note that the subslice encompasses the range [pos, pos + rcount),
-        where rcount is the smaller of count and size() - pos.
+        Note that the subslice encompasses the range [pos, pos + rCount),
+        where rCount is the smaller of count and size() - pos.
 
         @param pos position of the first character
         @count requested length

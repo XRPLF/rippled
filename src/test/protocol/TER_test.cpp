@@ -137,7 +137,7 @@ struct TER_test : public beast::unit_test::suite
         testIterate<hiIndex, hiIndex, NotConvertible>(terEnums, *this);
 
         // Lambda that verifies assignability and convertibility.
-        auto isConvertable = [](auto from, auto to) {
+        auto isConvertible = [](auto from, auto to) {
             using From_t = std::decay_t<decltype(from)>;
             using To_t = std::decay_t<decltype(to)>;
             static_assert(
@@ -150,12 +150,12 @@ struct TER_test : public beast::unit_test::suite
 
         // Verify the right types convert to NotTEC.
         NotTEC const notTec;
-        isConvertable(telLOCAL_ERROR, notTec);
-        isConvertable(temMALFORMED, notTec);
-        isConvertable(tefFAILURE, notTec);
-        isConvertable(terRETRY, notTec);
-        isConvertable(tesSUCCESS, notTec);
-        isConvertable(notTec, notTec);
+        isConvertible(telLOCAL_ERROR, notTec);
+        isConvertible(temMALFORMED, notTec);
+        isConvertible(tefFAILURE, notTec);
+        isConvertible(terRETRY, notTec);
+        isConvertible(tesSUCCESS, notTec);
+        isConvertible(notTec, notTec);
 
         // Lambda that verifies types and not assignable or convertible.
         auto notConvertible = [](auto from, auto to) {
@@ -176,14 +176,14 @@ struct TER_test : public beast::unit_test::suite
         notConvertible(4, notTec);
 
         // Verify the right types convert to TER.
-        isConvertable(telLOCAL_ERROR, ter);
-        isConvertable(temMALFORMED, ter);
-        isConvertable(tefFAILURE, ter);
-        isConvertable(terRETRY, ter);
-        isConvertable(tesSUCCESS, ter);
-        isConvertable(tecCLAIM, ter);
-        isConvertable(notTec, ter);
-        isConvertable(ter, ter);
+        isConvertible(telLOCAL_ERROR, ter);
+        isConvertible(temMALFORMED, ter);
+        isConvertible(tefFAILURE, ter);
+        isConvertible(terRETRY, ter);
+        isConvertible(tesSUCCESS, ter);
+        isConvertible(tecCLAIM, ter);
+        isConvertible(notTec, ter);
+        isConvertible(ter, ter);
 
         // Verify that you can't convert from int to ter.
         notConvertible(4, ter);
