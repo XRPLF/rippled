@@ -104,6 +104,7 @@ struct MPTCreate
 struct MPTInit
 {
     Holders holders = {};
+    std::optional<Account> auditor = std::nullopt;
     PrettyAmount const xrp = XRP(10'000);
     PrettyAmount const xrpHolders = XRP(10'000);
     bool fund = true;
@@ -118,6 +119,7 @@ struct MPTInitDef
     Env& env;
     Account issuer;
     Holders holders = {};
+    std::optional<Account> auditor;
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = MPTDEXFlags;
@@ -256,6 +258,7 @@ public:
         ISSUER_ENCRYPTED_BALANCE,
         HOLDER_ENCRYPTED_INBOX,
         HOLDER_ENCRYPTED_SPENDING,
+        AUDITOR_ENCRYPTED_BALANCE,
     };
 
     MPTTester(Env& env, Account const& issuer, MPTInit const& constr = {});
@@ -347,7 +350,7 @@ public:
         return issuer_;
     }
 
-    std::optional<Account> const
+    std::optional<Account> const&
     auditor() const
     {
         return auditor_;

@@ -64,6 +64,7 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
     : env_(env)
     , issuer_(issuer)
     , holders_(makeHolders(arg.holders))
+    , auditor_(arg.auditor)
     , close_(arg.close)
 {
     if (arg.fund)
@@ -71,6 +72,9 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
         env_.fund(arg.xrp, issuer_);
         for (auto it : holders_)
             env_.fund(arg.xrpHolders, it.second);
+
+        if (arg.auditor)
+            env_.fund(arg.xrp, *arg.auditor);
     }
     if (close_)
         env.close();
@@ -83,6 +87,9 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
                 Throw<std::runtime_error>("Issuer can't be holder");
             env_.require(owners(it.second, 0));
         }
+
+        if (arg.auditor)
+            env_.require(owners(*arg.auditor, 0));
     }
     if (arg.create)
         create(*arg.create);

@@ -220,7 +220,7 @@ ConfidentialSend::doApply()
         (*sleSender)[sfIssuerEncryptedBalance] = newIssuerEnc;
     }
 
-    // Subtract from issuer's balance
+    // Subtract from auditor's balance if present
     if (hasAuditor && auditorEc)
     {
         Slice const curAuditorEnc = (*sleSender)[sfAuditorEncryptedBalance];
@@ -263,7 +263,7 @@ ConfidentialSend::doApply()
         (*sleDestination)[sfIssuerEncryptedBalance] = newIssuerEnc;
     }
 
-    // Add to auditor's balance
+    // Add to auditor's balance if present
     if (hasAuditor && auditorEc)
     {
         Slice const curAuditorEnc =
