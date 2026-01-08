@@ -55,7 +55,7 @@ public:
             HyperLevelDB, LevelDBFactory, SQLite, MDB
 
         If the fastBackendParameter is omitted or empty, no ephemeral database
-        is used. If the scheduler parameter is omited or unspecified, a
+        is used. If the scheduler parameter is omitted or unspecified, a
         synchronous scheduler is used which performs all tasks immediately on
         the caller's thread.
 

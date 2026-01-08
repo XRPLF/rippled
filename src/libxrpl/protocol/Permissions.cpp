@@ -11,7 +11,7 @@ Permission::Permission()
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, amendment, ...) \
+#define TRANSACTION(tag, value, name, delegable, amendment, ...) \
     {value, amendment},
 
 #include <xrpl/protocol/detail/transactions.macro>
@@ -20,11 +20,11 @@ Permission::Permission()
 #pragma pop_macro("TRANSACTION")
     };
 
-    delegatableTx_ = {
+    delegableTx_ = {
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, ...) {value, delegatable},
+#define TRANSACTION(tag, value, name, delegable, ...) {value, delegable},
 
 #include <xrpl/protocol/detail/transactions.macro>
 
@@ -142,7 +142,7 @@ Permission::getTxFeature(TxType txType) const
 }
 
 bool
-Permission::isDelegatable(
+Permission::isDelegable(
     std::uint32_t const& permissionValue,
     Rules const& rules) const
 {
@@ -153,15 +153,15 @@ Permission::isDelegatable(
         return true;
 
     auto const txType = permissionToTxType(permissionValue);
-    auto const it = delegatableTx_.find(txType);
+    auto const it = delegableTx_.find(txType);
 
-    if (it == delegatableTx_.end())
+    if (it == delegableTx_.end())
         return false;
 
     auto const txFeaturesIt = txFeatureMap_.find(txType);
     XRPL_ASSERT(
         txFeaturesIt != txFeatureMap_.end(),
-        "xrpl::Permissions::isDelegatable : tx exists in txFeatureMap_");
+        "xrpl::Permissions::isDelegable : tx exists in txFeatureMap_");
 
     // Delegation is only allowed if the required amendment for the transaction
     // is enabled. For transactions that do not require an amendment, delegation
@@ -170,7 +170,7 @@ Permission::isDelegatable(
         !rules.enabled(txFeaturesIt->second))
         return false;
 
-    if (it->second == Delegation::notDelegatable)
+    if (it->second == Delegation::notDelegable)
         return false;
 
     return true;

@@ -247,7 +247,7 @@ struct BalanceTransfer
 
     balance from_;
     balance to_;
-    balance payor_;                        // pays the rewards
+    balance payer_;                        // pays the rewards
     std::vector<balance> reward_accounts;  // receives the reward
     XRPAmount txFees_;
 
@@ -255,13 +255,13 @@ struct BalanceTransfer
         T& env,
         jtx::Account const& from_acct,
         jtx::Account const& to_acct,
-        jtx::Account const& payor,
+        jtx::Account const& payer,
         jtx::Account const* payees,
         size_t num_payees,
         bool withClaim)
         : from_(env, from_acct)
         , to_(env, to_acct)
-        , payor_(env, payor)
+        , payer_(env, payer)
         , reward_accounts([&]() {
             std::vector<balance> r;
             r.reserve(num_payees);
@@ -277,14 +277,14 @@ struct BalanceTransfer
         T& env,
         jtx::Account const& from_acct,
         jtx::Account const& to_acct,
-        jtx::Account const& payor,
+        jtx::Account const& payer,
         std::vector<jtx::Account> const& payees,
         bool withClaim)
         : BalanceTransfer(
               env,
               from_acct,
               to_acct,
-              payor,
+              payer,
               &payees[0],
               payees.size(),
               withClaim)
@@ -316,14 +316,14 @@ struct BalanceTransfer
         auto reward_cost =
             multiply(reward, STAmount(reward_accounts.size()), reward.issue());
         return check_most_balances(amt, reward) &&
-            (!check_payer || payor_.diff() == -(reward_cost + txFees_));
+            (!check_payer || payer_.diff() == -(reward_cost + txFees_));
     }
 
     bool
     has_not_happened()
     {
         return check_most_balances(STAmount(0), STAmount(0)) &&
-            payor_.diff() <= txFees_;  // could have paid fee for failed claim
+            payer_.diff() <= txFees_;  // could have paid fee for failed claim
     }
 };
 
@@ -592,7 +592,7 @@ struct XChain_test : public beast::unit_test::suite,
         auto CEUR = C["EUR"];
         auto GEUR = scGw["EUR"];
 
-        // Accounts to own single brdiges
+        // Accounts to own single bridges
         Account const a1("a1");
         Account const a2("a2");
         Account const a3("a3");
@@ -2566,7 +2566,7 @@ struct XChain_test : public beast::unit_test::suite,
             }
             {
                 // --B5: missing sfAttestationSignerAccount field
-                // Then submit the one with the field. Should rearch quorum.
+                // Then submit the one with the field. Should reach quorum.
                 auto att = claim_attestation(
                     scAttester,
                     jvb,
@@ -3825,7 +3825,7 @@ struct XChain_test : public beast::unit_test::suite,
             }
 
             // this also checks that only 3 * split_reward was deducted from
-            // scAlice (the payor account), since we passed alt_payees to
+            // scAlice (the payer account), since we passed alt_payees to
             // BalanceTransfer
             BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
         }
@@ -3884,7 +3884,7 @@ struct XChain_test : public beast::unit_test::suite,
             }
 
             // this also checks that only 3 * split_reward was deducted from
-            // scAlice (the payor account), since we passed payees.size() -
+            // scAlice (the payer account), since we passed payees.size() -
             // 1 to BalanceTransfer
             BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
 
@@ -4548,7 +4548,7 @@ private:
 
     enum SmState {
         st_initial,
-        st_claimid_created,
+        st_claim_id_created,
         st_attesting,
         st_attested,
         st_completed,
@@ -4864,10 +4864,10 @@ private:
             {
                 case st_initial:
                     xfer.claim_id = create_claim_id();
-                    sm_state = st_claimid_created;
+                    sm_state = st_claim_id_created;
                     break;
 
-                case st_claimid_created:
+                case st_claim_id_created:
                     commit();
                     sm_state = st_attesting;
                     break;

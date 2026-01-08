@@ -63,7 +63,7 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         {
             peer->submit(Tx{0});
             // Peers 0,1,2,6 will close the next ledger differently by injecting
-            // a non-consensus approved transaciton
+            // a non-consensus approved transaction
             if (byzantineNodes.contains(peer))
             {
                 peer->txInjections.emplace(
