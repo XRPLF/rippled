@@ -203,7 +203,7 @@ class Delegate_test : public beast::unit_test::suite
                 ter(tecNO_TARGET));
         }
 
-        // non-delegatable transaction
+        // non-delegable transaction
         {
             env(delegate::set(gw, alice, {"SetRegularKey"}), ter(temMALFORMED));
             env(delegate::set(gw, alice, {"AccountSet"}), ter(temMALFORMED));
@@ -1693,13 +1693,13 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testTxReqireFeatures(FeatureBitset features)
+    testTxRequireFeatures(FeatureBitset features)
     {
         testcase("test delegate disabled tx");
         using namespace jtx;
 
         // map of tx and required feature.
-        // non-delegatable tx are not included.
+        // non-delegable tx are not included.
         // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer,
         // NFTokenAcceptOffer are not included, they are tested separately.
         std::unordered_map<std::string, uint256> txRequiredFeatures{
@@ -1803,7 +1803,7 @@ class Delegate_test : public beast::unit_test::suite
         testMultiSign();
         testMultiSignQuorumNotMet();
         testPermissionValue(all);
-        testTxReqireFeatures(all);
+        testTxRequireFeatures(all);
     }
 };
 BEAST_DEFINE_TESTSUITE(Delegate, app, xrpl);

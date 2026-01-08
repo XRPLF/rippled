@@ -28,4 +28,43 @@ extern std::string const float0Hex;
 
 extern std::string const disabledFloatHex;
 
+extern std::string const memoryPointerAtLimitHex;
+extern std::string const memoryPointerOverLimitHex;
+extern std::string const memoryOffsetOverLimitHex;
+extern std::string const memoryEndOfWordOverLimitHex;
+extern std::string const memoryGrow0To1PageHex;
+extern std::string const memoryGrow1To0PageHex;
+extern std::string const memoryLastByteOf8MBHex;
+extern std::string const memoryGrow1MoreThan8MBHex;
+extern std::string const memoryGrow0MoreThan8MBHex;
+extern std::string const memoryInit1MoreThan8MBHex;
+extern std::string const memoryNegativeAddressHex;
+
+extern std::string const table64ElementsHex;
+extern std::string const table65ElementsHex;
+extern std::string const table2TablesHex;
+extern std::string const table0ElementsHex;
+extern std::string const tableUintMaxHex;
+
+extern std::string const proposalMutableGlobalHex;
+extern std::string const proposalGcStructNewHex;
+extern std::string const proposalMultiValueHex;
+extern std::string const proposalSignExtHex;
+extern std::string const proposalFloatToIntHex;
+extern std::string const proposalBulkMemoryHex;
+extern std::string const proposalRefTypesHex;
+extern std::string const proposalTailCallHex;
+extern std::string const proposalExtendedConstHex;
+
+extern std::string const trapDivideBy0Hex;
+extern std::string const trapIntOverflowHex;
+extern std::string const trapUnreachableHex;
+extern std::string const trapNullCallHex;
+extern std::string const trapFuncSigMismatchHex;
+
+extern std::string const wasiGetTimeHex;
+extern std::string const wasiPrintHex;
+
+extern std::string const infiniteLoopWasmHex;
+
 extern std::string const updateDataWasmHex;

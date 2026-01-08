@@ -1149,7 +1149,7 @@ Transactor::operator()()
     // raii classes for the current ledger rules.
     // fixUniversalNumber predate the rulesGuard and should be replaced.
     NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
-    CurrentTransactionRulesGuard currentTransctionRulesGuard(view().rules());
+    CurrentTransactionRulesGuard currentTransactionRulesGuard(view().rules());
 
 #ifdef DEBUG
     {

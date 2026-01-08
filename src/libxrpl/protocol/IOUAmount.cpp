@@ -18,7 +18,7 @@ namespace xrpl {
 
 namespace {
 
-// Use a static inside a function to help prevent order-of-initialzation issues
+// Use a static inside a function to help prevent order-of-initialization issues
 LocalValue<bool>&
 getStaticSTNumberSwitchover()
 {

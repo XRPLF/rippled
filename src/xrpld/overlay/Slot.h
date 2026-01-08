@@ -345,14 +345,14 @@ Slot<clock_type>::update(
             auto it = std::next(considered_.begin(), i);
             auto id = *it;
             considered_.erase(it);
-            auto const& itpeers = peers_.find(id);
-            if (itpeers == peers_.end())
+            auto const& itPeers = peers_.find(id);
+            if (itPeers == peers_.end())
             {
                 JLOG(journal_.error()) << "update: peer not found "
                                        << Slice(validator) << " " << id;
                 continue;
             }
-            if (now - itpeers->second.lastMessage < IDLED)
+            if (now - itPeers->second.lastMessage < IDLED)
                 selected.insert(id);
         }
 

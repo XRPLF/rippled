@@ -1378,7 +1378,7 @@ public:
         //
         // The values of these fields are dependent on the NFTokenID/OfferID
         // changed in its corresponding transaction. We want to validate each
-        // response to make sure the synethic fields hold the right values.
+        // response to make sure the synthetic fields hold the right values.
 
         testcase("Test synthetic fields from Subscribe response");
 

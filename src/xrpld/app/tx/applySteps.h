@@ -64,7 +64,7 @@ private:
 public:
     // Constructor if preflight returns a value other than tesSUCCESS.
     // Asserts if tesSUCCESS is passed.
-    explicit TxConsequences(NotTEC pfresult);
+    explicit TxConsequences(NotTEC pfResult);
 
     /// Constructor if the STTx has no notable consequences for the TxQ.
     explicit TxConsequences(STTx const& tx);

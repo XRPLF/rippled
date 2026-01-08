@@ -10,8 +10,14 @@ on:
 
       build_type:
         description: 'The build type to use ("Debug", "Release").'
-        type: string
         required: true
+        type: string
+
+      ccache_enabled:
+        description: "Whether to enable ccache."
+        required: false
+        type: boolean
+        default: false
 
       cmake_args:
         description: "Additional arguments to pass to CMake."
@@ -21,8 +27,8 @@ on:
 
       cmake_target:
         description: "The CMake target to build."
-        type: string
         required: true
+        type: string
 
       runs_on:
         description: Runner to run the job on as a JSON string
@@ -66,8 +72,25 @@ jobs:
     container: ${{ inputs.image != '' && inputs.image || null }}
     timeout-minutes: 60
     env:
-      ENABLED_VOIDSTAR: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
-      ENABLED_COVERAGE: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
+      # Use a namespace to keep the objects separate for each configuration.
+      CCACHE_NAMESPACE: ${{ inputs.config_name }}
+      # Ccache supports both Redis and HTTP endpoints.
+      # * For Redis, use the following format: redis://ip:port, see
+      #   https://github.com/ccache/ccache/wiki/Redis-storage. Note that TLS is
+      #   not directly supported by ccache, and requires use of a proxy.
+      # * For HTTP use the following format: http://ip:port/cache when using
+      #   nginx as backend or http://ip:port|layout=bazel when using Bazel
+      #   Remote Cache, see https://github.com/ccache/ccache/wiki/HTTP-storage.
+      #   Note that HTTPS is not directly supported by ccache.
+      CCACHE_REMOTE_ONLY: true
+      CCACHE_REMOTE_STORAGE: http://cache.dev.ripplex.io:8080|layout=bazel
+      # Ignore the creation and modification timestamps on files, since the
+      # header files are copied into separate directories by CMake, which will
+      # otherwise result in cache misses.
+      CCACHE_SLOPPINESS: include_file_ctime,include_file_mtime
+      # Determine if coverage and voidstar should be enabled.
+      COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
+      VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
     steps:
       - name: Cleanup workspace (macOS and Windows)
         if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
@@ -77,9 +100,13 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/.github/actions/prepare-runner@ff9f8f649df5855ffe1a1ae715df43e51807f2e0
+        uses: XRPLF/actions/prepare-runner@2ece4ec6ab7de266859a6f053571425b2bd684b6
         with:
-          disable_ccache: false
+          disable_ccache: ${{ !inputs.ccache_enabled }}
+
+      - name: Set ccache log file
+        if: ${{ inputs.ccache_enabled && runner.debug == '1' }}
+        run: echo "CCACHE_LOGFILE=${{ runner.temp }}/ccache.log" >> "${GITHUB_ENV}"
 
       - name: Print build environment
         uses: ./.github/actions/print-env
@@ -128,6 +155,15 @@ jobs:
             --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
 
+      - name: Show ccache statistics
+        if: ${{ inputs.ccache_enabled }}
+        run: |
+          ccache --show-stats -vv
+          if [ '${{ runner.debug }}' = '1' ]; then
+            cat "${CCACHE_LOGFILE}"
+            curl ${CCACHE_REMOTE_STORAGE%|*}/status || true
+          fi
+
       - name: Upload the binary (Linux)
         if: ${{ github.repository_owner == 'XRPLF' && runner.os == 'Linux' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -150,7 +186,7 @@ jobs:
           fi
 
       - name: Verify presence of instrumentation (Linux)
-        if: ${{ runner.os == 'Linux' && env.ENABLED_VOIDSTAR == 'true' }}
+        if: ${{ runner.os == 'Linux' && env.VOIDSTAR_ENABLED == 'true' }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           ./xrpld --version | grep libvoidstar
@@ -185,7 +221,7 @@ jobs:
           netstat -an
 
       - name: Prepare coverage report
-        if: ${{ !inputs.build_only && env.ENABLED_COVERAGE == 'true' }}
+        if: ${{ !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
         working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
@@ -198,7 +234,7 @@ jobs:
             --target coverage
 
       - name: Upload coverage report
-        if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.ENABLED_COVERAGE == 'true' }}
+        if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
         uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
         with:
           disable_search: true

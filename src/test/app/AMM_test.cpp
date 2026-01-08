@@ -831,10 +831,10 @@ private:
         // Tiny deposit
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto const enabledv1_3 =
+                auto const enabledV1_3 =
                     env.current()->rules().enabled(fixAMMv1_3);
                 auto const err =
-                    !enabledv1_3 ? ter(temBAD_AMOUNT) : ter(tesSUCCESS);
+                    !enabledV1_3 ? ter(temBAD_AMOUNT) : ter(tesSUCCESS);
                 // Pre-amendment XRP deposit side is rounded to 0
                 // and deposit fails.
                 // Post-amendment XRP deposit side is rounded to 1
@@ -2818,7 +2818,7 @@ private:
             BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
 
             // gw burns all but one of its LPTokens through a bid transaction
-            // this transaction suceeds because the bid price is less than
+            // this transaction succeeds because the bid price is less than
             // the total outstanding LPToken balance
             env(amm.bid({
                     .account = gw,
@@ -2872,7 +2872,7 @@ private:
                     ter(temBAD_AMOUNT));
             }
 
-            // Invlaid Min/Max combination
+            // Invalid Min/Max combination
             env(ammAlice.bid({
                     .account = carol,
                     .bidMin = 200,
@@ -3547,13 +3547,13 @@ private:
             {
                 auto jtx = env.jt(tx, seq(1), fee(baseFee));
                 env.app().config().features.erase(featureAMM);
-                PreflightContext pfctx(
+                PreflightContext pfCtx(
                     env.app(),
                     *jtx.stx,
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfCtx);
                 BEAST_EXPECT(pf == temDISABLED);
                 env.app().config().features.insert(featureAMM);
             }
@@ -3562,13 +3562,13 @@ private:
                 auto jtx = env.jt(tx, seq(1), fee(baseFee));
                 jtx.jv["TxnSignature"] = "deadbeef";
                 jtx.stx = env.ust(jtx);
-                PreflightContext pfctx(
+                PreflightContext pfCtx(
                     env.app(),
                     *jtx.stx,
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfCtx);
                 BEAST_EXPECT(pf != tesSUCCESS);
             }
 
@@ -3577,13 +3577,13 @@ private:
                 jtx.jv["Asset2"]["currency"] = "XRP";
                 jtx.jv["Asset2"].removeMember("issuer");
                 jtx.stx = env.ust(jtx);
-                PreflightContext pfctx(
+                PreflightContext pfCtx(
                     env.app(),
                     *jtx.stx,
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfCtx);
                 BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
             }
         }
