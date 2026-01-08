@@ -381,8 +381,8 @@ MPTTester::setjv(MPTSet const& arg)
         jv[sfTransferFee] = *arg.transferFee;
     if (arg.metadata)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
-    if (arg.pubKey)
-        jv[sfIssuerElGamalPublicKey] = strHex(*arg.pubKey);
+    if (arg.issuerPubKey)
+        jv[sfIssuerElGamalPublicKey] = strHex(*arg.issuerPubKey);
     if (arg.auditorPubKey)
         jv[sfAuditorElGamalPublicKey] = strHex(*arg.auditorPubKey);
     jv[sfTransactionType] = jss::MPTokenIssuanceSet;
@@ -404,7 +404,7 @@ MPTTester::set(MPTSet const& arg)
          .metadata = arg.metadata,
          .delegate = arg.delegate,
          .domainID = arg.domainID,
-         .pubKey = arg.pubKey,
+         .issuerPubKey = arg.issuerPubKey,
          .auditorPubKey = arg.auditorPubKey});
     if (submit(arg, jv) == tesSUCCESS)
     {
@@ -471,7 +471,7 @@ MPTTester::set(MPTSet const& arg)
                 require(*account, false);
         }
 
-        if (arg.pubKey)
+        if (arg.issuerPubKey)
         {
             env_.require(requireAny([&]() -> bool {
                 return forObject([&](SLEP const& sle) -> bool {
@@ -1519,6 +1519,8 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
     uint64_t prevIssuerBalance =
         getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+    [[maybe_unused]] uint64_t prevAuditorBalance =
+        getDecryptedBalance(*arg.account, AUDITOR_ENCRYPTED_BALANCE);
 
     if (submit(arg, jv) == tesSUCCESS)
     {

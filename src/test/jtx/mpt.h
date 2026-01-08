@@ -165,7 +165,7 @@ struct MPTSet
     std::optional<std::string> metadata = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
     std::optional<uint256> domainID = std::nullopt;
-    std::optional<Buffer> pubKey = std::nullopt;
+    std::optional<Buffer> issuerPubKey = std::nullopt;
     std::optional<Buffer> auditorPubKey = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };

@@ -126,7 +126,7 @@ ConfidentialClawback::doApply()
         JLOG(ctx_.journal.error())
             << "ConfidentialClawback: Failed to generate canonical zero: "
             << e.what();
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     // Set holder's confidential balances to encrypted zero
@@ -134,6 +134,30 @@ ConfidentialClawback::doApply()
     (*sleHolderMPToken)[sfConfidentialBalanceSpending] = encZeroForHolder;
     (*sleHolderMPToken)[sfIssuerEncryptedBalance] = encZeroForIssuer;
     (*sleHolderMPToken)[sfConfidentialBalanceVersion] = 0;
+
+    if (sleHolderMPToken->isFieldPresent(sfAuditorEncryptedBalance))
+    {
+        // check that issuance has auditor's pubkey before accessing it, if the
+        // field is absent, something has gone bad
+        if (!sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey))
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        Slice const auditorPubKey = (*sleIssuance)[sfAuditorElGamalPublicKey];
+
+        try
+        {
+            Buffer const encZeroForAuditor = encryptCanonicalZeroAmount(
+                auditorPubKey, holder, mptIssuanceID);
+            (*sleHolderMPToken)[sfAuditorEncryptedBalance] = encZeroForAuditor;
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(ctx_.journal.error())
+                << "ConfidentialClawback: Failed to generate canonical zero: "
+                << e.what();
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
+    }
 
     // Decrease Global Confidential Outstanding Amount
     auto const oldCOA = (*sleIssuance)[sfConfidentialOutstandingAmount];
