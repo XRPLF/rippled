@@ -180,7 +180,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
             # Windows:
             # - Release and Unity on windows/amd64.
             if os["distro_name"] == "windows" and not (
-                build_type == "Release"
+                build_type == "Debug"
                 and "-Dunity=ON" in cmake_args
                 and architecture["platform"] == "windows/amd64"
             ):
@@ -294,7 +294,7 @@ if __name__ == "__main__":
             args.all, read_config(THIS_DIR / "macos.json")
         )
         matrix += generate_strategy_matrix(
-            args.all or True, read_config(THIS_DIR / "windows.json")
+            args.all, read_config(THIS_DIR / "windows.json")
         )
     else:
         matrix += generate_strategy_matrix(args.all, read_config(args.config))
