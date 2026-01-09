@@ -5503,7 +5503,7 @@ private:
                         STAmount{USD, UINT64_C(30'000'0000000003), -10}));
                 else
                     BEAST_EXPECT(expectHolding(env, alice, USD(30'000)));
-                // alice XRP balance is 30,000initial - 50 AMMCreate fee -
+                // alice XRP balance is 30,000 initial - 50 AMMCreate fee -
                 // 10drops fee
                 BEAST_EXPECT(
                     accountBalance(env, alice) ==
