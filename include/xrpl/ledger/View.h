@@ -729,6 +729,8 @@ checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag);
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
  *      the sender has it.
+ *    - Checks that the receiver will not exceed the limit (IOU trustline limit
+ *      or MPT MaximumAmount).
  */
 [[nodiscard]] TER
 canWithdraw(
@@ -736,6 +738,7 @@ canWithdraw(
     ReadView const& view,
     AccountID const& to,
     SLE::const_ref toSle,
+    STAmount const& amount,
     bool hasDestinationTag);
 
 /** Checks that can withdraw funds from an object to itself or a destination.
@@ -749,12 +752,15 @@ canWithdraw(
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
  *      the sender has it.
+ *    - Checks that the receiver will not exceed the limit (IOU trustline limit
+ *      or MPT MaximumAmount).
  */
 [[nodiscard]] TER
 canWithdraw(
     AccountID const& from,
     ReadView const& view,
     AccountID const& to,
+    STAmount const& amount,
     bool hasDestinationTag);
 
 /** Checks that can withdraw funds from an object to itself or a destination.
@@ -768,6 +774,8 @@ canWithdraw(
  *    - If withdrawing to self, succeed.
  *    - If not, checks if the receiver requires deposit authorization, and if
  *      the sender has it.
+ *    - Checks that the receiver will not exceed the limit (IOU trustline limit
+ *      or MPT MaximumAmount).
  */
 [[nodiscard]] TER
 canWithdraw(ReadView const& view, STTx const& tx);
