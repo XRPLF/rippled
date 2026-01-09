@@ -120,7 +120,7 @@ struct MPTInitDef
     Env& env;
     Account issuer;
     Holders holders = {};
-    std::optional<Account> auditor;
+    std::optional<Account> auditor = std::nullopt;
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = MPTDEXFlags;
