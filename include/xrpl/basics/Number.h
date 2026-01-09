@@ -123,6 +123,11 @@ private:
     }
 };
 
+// Like std::integral, but only 64-bit integral types.
+template <class T>
+concept Integral64 =
+    std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::uint64_t>;
+
 /** Number is a floating point type that can represent a wide range of values.
  *
  * It can represent all values that can be represented by an STAmount -
@@ -457,7 +462,7 @@ public:
     static Number
     one();
 
-    template <class T>
+    template <Integral64 T>
     [[nodiscard]]
     std::pair<T, int>
     normalizeToRange(T minMantissa, T maxMantissa) const;
@@ -731,7 +736,7 @@ Number::isnormal() const noexcept
          exponent_ <= maxExponent);
 }
 
-template <class T>
+template <Integral64 T>
 std::pair<T, int>
 Number::normalizeToRange(T minMantissa, T maxMantissa) const
 {

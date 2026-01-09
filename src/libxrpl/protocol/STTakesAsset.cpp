@@ -4,7 +4,7 @@
 
 namespace ripple {
 
-void
+inline void
 STTakesAsset::associateAsset(Asset const& a)
 {
     asset_.emplace(a);

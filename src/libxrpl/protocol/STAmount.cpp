@@ -363,6 +363,26 @@ STAmount::operator=(IOUAmount const& iou)
     return *this;
 }
 
+STAmount&
+STAmount::operator=(Number const& number)
+{
+    if (!getCurrentTransactionRules() ||
+        isFeatureEnabled(featureSingleAssetVault) ||
+        isFeatureEnabled(featureLendingProtocol))
+    {
+        *this = fromNumber(mAsset, number);
+    }
+    else
+    {
+        auto const originalMantissa = number.mantissa();
+        mIsNegative = originalMantissa < 0;
+        mValue = mIsNegative ? -originalMantissa : originalMantissa;
+        mOffset = number.exponent();
+    }
+    canonicalize();
+    return *this;
+}
+
 //------------------------------------------------------------------------------
 //
 // Operators

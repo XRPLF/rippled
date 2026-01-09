@@ -695,9 +695,6 @@ Number::operator*=(Number const& y)
         *this = y;
         return *this;
     }
-    XRPL_ASSERT(
-        isnormal() && y.isnormal(),
-        "xrpl::Number::operator*=(Number) : is normal");
     // *n = negative
     // *s = sign
     // *m = mantissa

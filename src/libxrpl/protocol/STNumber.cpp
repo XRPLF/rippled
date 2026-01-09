@@ -106,6 +106,7 @@ STNumber::add(Serializer& s) const
         }
         else
         {
+#if !NDEBUG
             // There are circumstances where an already-rounded Number is
             // serialized without being touched by a transactor, and thus
             // without an asset. We can't be 100% sure, but we can check a
@@ -125,6 +126,7 @@ STNumber::add(Serializer& s) const
                 testExponent <= 0 || (testMantissa % 1000 == 0),
                 "xrpl::STNumber::add",
                 "STNumber is probably already rounded");
+#endif
         }
     }
 
@@ -263,6 +265,12 @@ numberFromJson(SField const& field, Json::Value const& value)
     else if (value.isString())
     {
         parts = partsFromString(value.asString());
+
+        XRPL_ASSERT_PARTS(
+            !getCurrentTransactionRules(),
+            "xrpld::numberFromJson",
+            "Not in a Transactor context");
+
         // Number mantissas are much bigger than the allowable parsed values, so
         // it can't be out of range.
         static_assert(

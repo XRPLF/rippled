@@ -586,21 +586,11 @@ STAmount::fromNumber(A const& a, Number const& number)
         std::uint64_t const intValue = static_cast<std::int64_t>(working);
         return STAmount{asset, intValue, 0, negative};
     }
-    else
-    {
-        auto const [mantissa, exponent] =
-            working.normalizeToRange(cMinValue, cMaxValue);
 
-        return STAmount{asset, mantissa, exponent, negative};
-    }
-}
+    auto const [mantissa, exponent] =
+        working.normalizeToRange(cMinValue, cMaxValue);
 
-inline STAmount&
-STAmount::operator=(Number const& number)
-{
-    *this = fromNumber(mAsset, number);
-    canonicalize();
-    return *this;
+    return STAmount{asset, mantissa, exponent, negative};
 }
 
 inline void
