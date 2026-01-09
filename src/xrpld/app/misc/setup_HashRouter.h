@@ -1,7 +1,7 @@
 #ifndef XRPLD_APP_MISC_SETUP_HASHROUTER_H_INCLUDED
 #define XRPLD_APP_MISC_SETUP_HASHROUTER_H_INCLUDED
 
-#include <xrpld/app/misc/HashRouter.h>
+#include <xrpl/core/HashRouter.h>
 
 namespace xrpl {
 
