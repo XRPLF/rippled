@@ -106,7 +106,7 @@ jobs:
 
       - name: Temporarily downgrade ccache
         if: ${{ runner.os == 'Windows' }}
-        run: choco install -y ccache --version 4.11.3 --allow-downgrade
+        run: choco install -y ccache --version 4.12.1 --allow-downgrade
 
       - name: Set ccache log file
         if: ${{ inputs.ccache_enabled && runner.debug == '1' }}
