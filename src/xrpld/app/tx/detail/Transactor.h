@@ -127,8 +127,8 @@ enum class FeePayerType {
 
 struct FeePayer
 {
-    Keylet keylet;
-    SF_AMOUNT const& field;
+    Keylet entry;
+    SF_AMOUNT const& balanceField;
     FeePayerType type;
 };
 

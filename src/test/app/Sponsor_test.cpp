@@ -302,8 +302,16 @@ public:
         env(signers(sponsor, 2, {{signer1, 1}, {signer2, 1}}));
         env.close();
 
+        // test calculateBaseFee for multisigned sponsor
+        auto const baseFee = env.current()->fees().base;
         env(noop(alice),
-            fee(XRP(1)),
+            fee(baseFee + 2 * baseFee - 1),
+            sponsor::as(sponsor, tfSponsorReserve),
+            msig(sfSponsorSignature, {signer1, signer2}),
+            ter(telINSUF_FEE_P));
+
+        env(noop(alice),
+            fee(baseFee + 2 * baseFee),
             sponsor::as(sponsor, tfSponsorReserve),
             msig(sfSponsorSignature, {signer1, signer2}),
             ter(tesSUCCESS));
