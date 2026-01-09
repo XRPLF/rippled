@@ -23,6 +23,7 @@
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/app/misc/make_NetworkOPs.h>
+#include <xrpld/app/misc/setup_HashRouter.h>
 #include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/app/tx/apply.h>
