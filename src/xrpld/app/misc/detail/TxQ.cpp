@@ -263,7 +263,7 @@ TxQ::MaybeTx::MaybeTx(
     TxID const& txID_,
     FeeLevel64 feeLevel_,
     ApplyFlags const flags_,
-    PreflightResult const& pfresult_)
+    PreflightResult const& pfResult_)
     : txn(txn_)
     , feeLevel(feeLevel_)
     , txID(txID_)
@@ -272,7 +272,7 @@ TxQ::MaybeTx::MaybeTx(
     , seqProxy(txn_->getSeqProxy())
     , retriesRemaining(retriesAllowed)
     , flags(flags_)
-    , pfresult(pfresult_)
+    , pfResult(pfResult_)
 {
 }
 
@@ -281,20 +281,20 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
     // If the rules or flags change, preflight again
     XRPL_ASSERT(
-        pfresult, "xrpl::TxQ::MaybeTx::apply : preflight result is set");
+        pfResult, "xrpl::TxQ::MaybeTx::apply : preflight result is set");
     NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
-    if (pfresult->rules != view.rules() || pfresult->flags != flags)
+    if (pfResult->rules != view.rules() || pfResult->flags != flags)
     {
         JLOG(j.debug()) << "Queued transaction " << txID
                         << " rules or flags have changed. Flags from "
-                        << pfresult->flags << " to " << flags;
+                        << pfResult->flags << " to " << flags;
 
-        pfresult.emplace(
-            preflight(app, view.rules(), pfresult->tx, flags, pfresult->j));
+        pfResult.emplace(
+            preflight(app, view.rules(), pfResult->tx, flags, pfResult->j));
     }
 
-    auto pcresult = preclaim(*pfresult, app, view);
+    auto pcresult = preclaim(*pfResult, app, view);
 
     return doApply(pcresult, app, view);
 }
@@ -503,7 +503,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     TxQ::AccountMap::iterator const& accountIter,
     TxQAccount::TxMap::iterator beginTxIter,
     FeeLevel64 feeLevelPaid,
-    PreflightResult const& pfresult,
+    PreflightResult const& pfResult,
     std::size_t const txExtraCount,
     ApplyFlags flags,
     FeeMetrics::Snapshot const& metricsSnapshot,
@@ -578,7 +578,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     }
     // Apply the current tx. Because the state of the view has been changed
     // by the queued txs, we also need to preclaim again.
-    auto const txResult = doApply(preclaim(pfresult, app, view), app, view);
+    auto const txResult = doApply(preclaim(pfResult, app, view), app, view);
 
     if (txResult.applied)
     {
@@ -720,9 +720,9 @@ TxQ::apply(
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
-    auto const pfresult = preflight(app, view.rules(), *tx, flags, j);
-    if (pfresult.ter != tesSUCCESS)
-        return {pfresult.ter, false};
+    auto const pfResult = preflight(app, view.rules(), *tx, flags, j);
+    if (pfResult.ter != tesSUCCESS)
+        return {pfResult.ter, false};
 
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
@@ -814,7 +814,7 @@ TxQ::apply(
     //  1. If the account's queue is empty or
     //  2. If the blocker replaces the only entry in the account's queue.
     auto const transactionID = tx->getTransactionID();
-    if (pfresult.consequences.isBlocker())
+    if (pfResult.consequences.isBlocker())
     {
         if (acctTxCount > 1)
         {
@@ -1040,8 +1040,8 @@ TxQ::apply(
                     // The fee for the candidate transaction _should_ be
                     // counted if it's replacing a transaction in the middle
                     // of the queue.
-                    totalFee += pfresult.consequences.fee();
-                    potentialSpend += pfresult.consequences.potentialSpend();
+                    totalFee += pfResult.consequences.fee();
+                    potentialSpend += pfResult.consequences.potentialSpend();
                 }
             }
 
@@ -1144,7 +1144,7 @@ TxQ::apply(
     // is valid.  So we use a special entry point that runs all of the
     // preclaim checks with the exception of the sequence check.
     auto const pcresult =
-        preclaim(pfresult, app, multiTxn ? multiTxn->openView : view);
+        preclaim(pfResult, app, multiTxn ? multiTxn->openView : view);
     if (!pcresult.likelyToClaimFee)
         return {pcresult.ter, false};
 
@@ -1187,7 +1187,7 @@ TxQ::apply(
             accountIter,
             txIter->first,
             feeLevelPaid,
-            pfresult,
+            pfResult,
             view.txCount(),
             flags,
             metricsSnapshot,
@@ -1316,12 +1316,12 @@ TxQ::apply(
     flags &= ~tapRETRY;
 
     auto& candidate = accountIter->second.add(
-        {tx, transactionID, feeLevelPaid, flags, pfresult});
+        {tx, transactionID, feeLevelPaid, flags, pfResult});
 
     // Then index it into the byFee lookup.
     byFee_.insert(candidate);
     JLOG(j_.debug()) << "Added transaction " << candidate.txID
-                     << " with result " << transToken(pfresult.ter) << " from "
+                     << " with result " << transToken(pfResult.ter) << " from "
                      << (accountIsInQueue ? "existing" : "new") << " account "
                      << candidate.account << " to queue."
                      << " Flags: " << flags;

@@ -29,7 +29,7 @@ namespace xrpl {
 namespace test {
 namespace jtx {
 
-/** Generic helper class for helper clases that set a field on a JTx.
+/** Generic helper class for helper classes that set a field on a JTx.
 
  Not every helper will be able to use this because of conversions and other
  issues, but for classes where it's straightforward, this can simplify things.
