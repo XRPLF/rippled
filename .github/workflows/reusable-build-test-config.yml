@@ -104,6 +104,10 @@ jobs:
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
+      - name: Temporarily downgrade ccache
+        if: ${{ runner.os == 'Windows' }}
+        run: choco install -y ccache --version 4.11.3 --allow-downgrade
+
       - name: Set ccache log file
         if: ${{ inputs.ccache_enabled && runner.debug == '1' }}
         run: echo "CCACHE_LOGFILE=${{ runner.temp }}/ccache.log" >> "${GITHUB_ENV}"
