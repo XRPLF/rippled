@@ -1538,6 +1538,18 @@ class LoanBroker_test : public beast::unit_test::suite
 
         tx2[sfDebtMaximum] = 0;
         env(tx2, ter(tesSUCCESS), THISLINE);
+
+        tx2[sfDebtMaximum] = Json::Value::maxInt;
+        env(tx2, ter(tesSUCCESS), THISLINE);
+
+        tx2[sfDebtMaximum] = power(2, 64) - 1;
+        env(tx2, ter(temINVALID), THISLINE);
+
+        tx2[sfDebtMaximum] = power(2, 63) - 1;
+        env(tx2, ter(tesSUCCESS), THISLINE);
+
+        tx2[sfDebtMaximum] = Number{9223372036854775807, 0};
+        env(tx2, ter(tesSUCCESS), THISLINE);
     }
 
     void
