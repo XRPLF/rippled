@@ -1,9 +1,9 @@
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/setup_HashRouter.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/core/HashRouter.h>
 
 namespace xrpl {
 namespace test {
