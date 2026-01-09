@@ -983,6 +983,199 @@ struct EscrowSmart_test : public beast::unit_test::suite
     }
 
     void
+    testLargeWasmModules(FeatureBitset features)
+    {
+        testcase("Test large wasm modules");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        // Helper: Variable-length integer encoding (LEB128)
+        auto pushLeb128 = [](std::vector<uint8_t>& buf, uint32_t val) {
+            do
+            {
+                uint8_t byte = val & 0x7F;
+                val >>= 7;
+                if (val != 0)
+                    byte |= 0x80;
+                buf.push_back(byte);
+            } while (val != 0);
+        };
+
+        // Generator for Large Code Section
+        auto generateCodeBlob = [pushLeb128](uint32_t num_instructions) {
+            std::vector<uint8_t> wasm = {
+                0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00};
+
+            // Type (index 0: ()->()) | Func (index 0 uses type 0)
+            wasm.insert(
+                wasm.end(),
+                {0x01, 0x04, 0x01, 0x60, 0x00, 0x00, 0x03, 0x02, 0x01, 0x00});
+            // Export: "finish" (func index 0)
+            wasm.insert(
+                wasm.end(),
+                {0x07,
+                 0x0a,
+                 0x01,
+                 0x06,
+                 'f',
+                 'i',
+                 'n',
+                 'i',
+                 's',
+                 'h',
+                 0x00,
+                 0x00});
+
+            std::vector<uint8_t> body;
+            pushLeb128(body, 0);  // No locals
+            for (uint32_t i = 0; i < num_instructions; ++i)
+                body.push_back(0x01);  // NOPs
+            body.push_back(0x0b);      // end
+
+            std::vector<uint8_t> section;
+            pushLeb128(section, 1);  // 1 function
+            pushLeb128(section, (uint32_t)body.size());
+            section.insert(section.end(), body.begin(), body.end());
+
+            wasm.push_back(0x0a);  // Code Section ID
+            pushLeb128(wasm, (uint32_t)section.size());
+            wasm.insert(wasm.end(), section.begin(), section.end());
+            return wasm;
+        };
+
+        // Generator for Large Data Section
+        auto generateDataBlob = [pushLeb128](uint32_t data_size) {
+            std::vector<uint8_t> wasm = {
+                0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00};
+
+            // Type Section: () -> ()
+            wasm.insert(wasm.end(), {0x01, 0x04, 0x01, 0x60, 0x00, 0x00});
+            // Function Section: Func 0 uses Type 0
+            wasm.insert(wasm.end(), {0x03, 0x02, 0x01, 0x00});
+
+            // Memory Section: Calculate pages (64KB per page)
+            uint32_t pages = (data_size + 65535) / 65536;
+            std::vector<uint8_t> mem_p;
+            pushLeb128(mem_p, 1);      // Count
+            mem_p.push_back(0x00);     // Flag: min only
+            pushLeb128(mem_p, pages);  // Initial pages
+            wasm.push_back(0x05);
+            pushLeb128(wasm, (uint32_t)mem_p.size());
+            wasm.insert(wasm.end(), mem_p.begin(), mem_p.end());
+
+            // Export Section: "finish"
+            wasm.insert(
+                wasm.end(),
+                {0x07,
+                 0x0a,
+                 0x01,
+                 0x06,
+                 'f',
+                 'i',
+                 'n',
+                 'i',
+                 's',
+                 'h',
+                 0x00,
+                 0x00});
+
+            // Data Section: Segment + Content
+            std::vector<uint8_t> data_p;
+            pushLeb128(data_p, 1);   // 1 segment
+            data_p.push_back(0x00);  // mem index 0
+            data_p.insert(
+                data_p.end(), {0x41, 0x00, 0x0b});  // offset i32.const 0, end
+            pushLeb128(data_p, data_size);
+
+            wasm.push_back(0x0b);
+            pushLeb128(wasm, (uint32_t)(data_p.size() + data_size));
+            wasm.insert(wasm.end(), data_p.begin(), data_p.end());
+            wasm.insert(wasm.end(), data_size, 0xEE);  // Content
+
+            // Code Section: body for "finish"
+            wasm.insert(wasm.end(), {0x0a, 0x04, 0x01, 0x02, 0x00, 0x0b});
+
+            return wasm;
+        };
+
+        enum class ExpectedStatus { Success, Malformed, Crash };
+
+        auto runTest = [&](std::vector<uint8_t> const& wasm,
+                           std::optional<uint32_t> sizeLimit = std::nullopt,
+                           ExpectedStatus expectSuccess =
+                               ExpectedStatus::Success) {
+            Env env = sizeLimit
+                ? Env(*this,
+                      envconfig([&sizeLimit](std::unique_ptr<Config> cfg) {
+                          cfg->FEES.extension_size_limit = *sizeLimit;
+                          return cfg;
+                      }),
+                      features)
+                : Env(*this, features);
+
+            auto const alice = Account("alice");
+            env.fund(XRP(1'000'000), alice);
+            env.close();
+
+            auto const wasmHex = strHex(wasm);
+            std::cerr << "Wasm size: " << wasm.size() << " bytes" << std::endl;
+            try
+            {
+                env(escrow::create(alice, alice, XRP(1000)),
+                    escrow::finish_function(wasmHex),
+                    escrow::cancel_time(env.now() + 100s),
+                    fee(env.current()->fees().base * 10 +
+                        wasmHex.size() / 2 * 5),
+                    ter(expectSuccess == ExpectedStatus::Success
+                            ? TER{tesSUCCESS}
+                            : TER{temMALFORMED}));
+                if (expectSuccess == ExpectedStatus::Crash)
+                {
+                    fail("Expected crash");
+                }
+                else
+                {
+                    pass();
+                }
+            }
+            catch (std::exception const& e)
+            {
+                if (expectSuccess == ExpectedStatus::Crash)
+                {
+                    pass();
+                }
+                else
+                {
+                    fail(e.what());
+                }
+            }
+        };
+
+        runTest(generateCodeBlob(99'959));  // just under 100kb
+        runTest(
+            generateCodeBlob(99'961),
+            std::nullopt,
+            ExpectedStatus::Malformed);                  // just over 100kb
+        runTest(generateCodeBlob(200'000), 10'000'000);  // ~200kb
+        runTest(
+            generateCodeBlob(490'000), 10'000'000);  // just under 1MB of JSON
+        runTest(
+            generateCodeBlob(999'999),
+            10'000'000,
+            ExpectedStatus::Crash);  // just over 1MB of JSON
+
+        runTest(generateDataBlob(99946));  // just under 100kb
+        // runTest(
+        //     generateDataBlob(99950), std::nullopt,
+        //     ExpectedStatus::Malformed);    // just over 100kb
+        // runTest(generateDataBlob(200'000), 1'000'000);        // ~200kb
+        // runTest(generateDataBlob(999950), 10'000'000);        // just under
+        // 0.5mb runTest(generateDataBlob(999950), 1'000'000,
+        // ExpectedStatus::Crash);  // just over 1MB of JSON
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testCreateFinishFunctionPreflight(features);
@@ -994,6 +1187,8 @@ struct EscrowSmart_test : public beast::unit_test::suite
         // TODO: Update module with new host functions
         testAllHostFunctions(features);
         testKeyletHostFunctions(features);
+
+        testLargeWasmModules(features);
     }
 
 public:
