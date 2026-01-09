@@ -180,8 +180,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
             # Windows:
             # - Release and Unity on windows/amd64.
             if os["distro_name"] == "windows" and not (
-                build_type == "Release"
-                and "-Dunity=ON" in cmake_args
+                "-Dunity=ON" in cmake_args
                 and architecture["platform"] == "windows/amd64"
             ):
                 continue
