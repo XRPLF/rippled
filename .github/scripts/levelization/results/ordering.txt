@@ -137,6 +137,7 @@ test.rpc > xrpld.rpc
 test.rpc > xrpl.json
 test.rpc > xrpl.protocol
 test.rpc > xrpl.resource
+test.rpc > xrpl.server
 test.server > test.jtx
 test.server > test.toplevel
 test.server > test.unit_test
@@ -178,8 +179,11 @@ xrpl.resource > xrpl.protocol
 xrpl.server > xrpl.basics
 xrpl.server > xrpl.core
 xrpl.server > xrpl.json
+xrpl.server > xrpl.ledger
 xrpl.server > xrpl.protocol
 xrpl.server > xrpl.rdb
+xrpl.server > xrpl.resource
+xrpl.server > xrpl.shamap
 xrpl.shamap > xrpl.basics
 xrpl.shamap > xrpl.nodestore
 xrpl.shamap > xrpl.protocol

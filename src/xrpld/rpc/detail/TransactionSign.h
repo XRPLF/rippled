@@ -1,9 +1,10 @@
 #pragma once
 
 #include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
+
+#include <xrpl/server/NetworkOPs.h>
 
 namespace xrpl {
 
