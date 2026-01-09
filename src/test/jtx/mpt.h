@@ -416,7 +416,7 @@ public:
     Buffer
     getPrivKey(Account const& account) const;
 
-    CiphertextRandomness
+    CiphertextComponents
     encryptAmount(Account const& account, uint64_t amt) const;
 
     uint64_t
@@ -442,9 +442,9 @@ public:
         Account const& holder,
         std::uint64_t amount,
         uint256 const& ctxHash,
-        CiphertextRandomness holderCiphertext,
-        CiphertextRandomness issuerCiphertext,
-        std::optional<CiphertextRandomness> auditorCiphertext) const;
+        CiphertextComponents holderCiphertext,
+        CiphertextComponents issuerCiphertext,
+        std::optional<CiphertextComponents> auditorCiphertext) const;
 
 private:
     using SLEP = SLE::const_pointer;

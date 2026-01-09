@@ -39,7 +39,8 @@ ConfidentialSend::preflight(PreflightContext const& ctx)
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
     if (hasAuditor &&
-        ctx.tx[sfHolderEncryptedAmount].length() != ecGamalEncryptedTotalLength)
+        ctx.tx[sfAuditorEncryptedAmount].length() !=
+            ecGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
     if (!isValidCiphertext(ctx.tx[sfSenderEncryptedAmount]) ||

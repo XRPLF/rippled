@@ -856,7 +856,7 @@ proveEquality(
     return tesSUCCESS;
 }
 
-CiphertextRandomness
+CiphertextComponents
 encryptAmount(uint64_t amt, Slice const& pubKeySlice)
 {
     Buffer buf(ecGamalEncryptedTotalLength);

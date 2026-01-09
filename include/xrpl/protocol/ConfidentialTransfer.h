@@ -17,7 +17,7 @@
 
 namespace ripple {
 
-struct CiphertextRandomness
+struct CiphertextComponents
 {
     Buffer ciphertext;
     Buffer randomness;
@@ -242,7 +242,7 @@ proveEquality(
     std::uint32_t const spendVersion);
 
 // returns ciphertext and the blinding factor used
-CiphertextRandomness
+CiphertextComponents
 encryptAmount(uint64_t amt, Slice const& pubKeySlice);
 
 Buffer
