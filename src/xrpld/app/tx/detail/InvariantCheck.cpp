@@ -9,6 +9,7 @@
 #include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -805,7 +806,7 @@ TransfersNotFrozen::finalize(
             continue;
         }
 
-        if (!validateIssuerChanges(issuerSle, changes, tx, j, enforce))
+        if (!validateIssuerChanges(issuerSle, changes, tx, j, enforce, view))
         {
             return false;
         }
@@ -915,13 +916,41 @@ TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
     return view.read(keylet::account(issuerID));
 }
 
+// Helper function to check if transaction is part of Lending Protocol or Vault
+static bool
+isLendingProtocolTransaction(TxType txType)
+{
+    switch (txType)
+    {
+        case ttVAULT_CREATE:
+        case ttVAULT_SET:
+        case ttVAULT_DELETE:
+        case ttVAULT_DEPOSIT:
+        case ttVAULT_WITHDRAW:
+        case ttVAULT_CLAWBACK:
+        case ttLOAN_BROKER_SET:
+        case ttLOAN_BROKER_DELETE:
+        case ttLOAN_BROKER_COVER_DEPOSIT:
+        case ttLOAN_BROKER_COVER_WITHDRAW:
+        case ttLOAN_BROKER_COVER_CLAWBACK:
+        case ttLOAN_SET:
+        case ttLOAN_DELETE:
+        case ttLOAN_MANAGE:
+        case ttLOAN_PAY:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool
 TransfersNotFrozen::validateIssuerChanges(
     std::shared_ptr<SLE const> const& issuer,
     IssuerChanges const& changes,
     STTx const& tx,
     beast::Journal const& j,
-    bool enforce)
+    bool enforce,
+    ReadView const& view)
 {
     if (!issuer)
     {
@@ -941,15 +970,37 @@ TransfersNotFrozen::validateIssuerChanges(
         return true;
     }
 
+    AccountID const issuerAccount = issuer->at(sfAccount);
+    // Global Freeze Issuer Amendment: Issuer exemption from their own global
+    // freeze only applies to Lending Protocol and Vault transactions
+    bool const issuerExempt = globalFreeze &&
+        view.rules().enabled(featureLendingProtocol) &&
+        isLendingProtocolTransaction(tx.getTxnType());
+
     for (auto const& actors : {changes.senders, changes.receivers})
     {
         for (auto const& change : actors)
         {
-            bool const high = change.line->at(sfLowLimit).getIssuer() ==
-                issuer->at(sfAccount);
+            bool const high =
+                change.line->at(sfLowLimit).getIssuer() == issuerAccount;
 
+            // Check if this is the issuer's side of the trust line
+            AccountID const thisAccount = high
+                ? change.line->at(sfLowLimit).getIssuer()
+                : change.line->at(sfHighLimit).getIssuer();
+            bool const isIssuerSide = (thisAccount == issuerAccount);
+
+            // With the Global Freeze Issuer Amendment, the issuer is exempt
+            // from their own global freeze, but not from individual trust line
+            // freezes. We pass this information to validateFrozenState.
             if (!validateFrozenState(
-                    change, high, tx, j, enforce, globalFreeze))
+                    change,
+                    high,
+                    tx,
+                    j,
+                    enforce,
+                    globalFreeze,
+                    isIssuerSide && issuerExempt))
             {
                 return false;
             }
@@ -965,13 +1016,15 @@ TransfersNotFrozen::validateFrozenState(
     STTx const& tx,
     beast::Journal const& j,
     bool enforce,
-    bool globalFreeze)
+    bool globalFreeze,
+    bool issuerGlobalFreezeExempt)
 {
     bool const freeze = change.balanceChangeSign < 0 &&
         change.line->isFlag(high ? lsfLowFreeze : lsfHighFreeze);
     bool const deepFreeze =
         change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighDeepFreeze);
-    bool const frozen = globalFreeze || deepFreeze || freeze;
+    bool const frozen =
+        (globalFreeze && !issuerGlobalFreezeExempt) || deepFreeze || freeze;
 
     bool const isAMMLine = change.line->isFlag(lsfAMMNode);
 
@@ -2989,12 +3042,20 @@ ValidVault::finalize(
             return std::nullopt;
         auto const& beforeVault = beforeVault_[0];
 
+        // Check if shares were visited during transaction processing
         for (auto const& e : beforeMPTs_)
         {
             if (e.share.getMptID() == beforeVault.shareMPTID)
                 return std::move(e);
         }
-        return std::nullopt;
+
+        // Fallback: read shares from ledger if not visited (e.g., when
+        // transferring 0 shares, nothing changes so nothing gets visited)
+        auto const sleShares =
+            view.read(keylet::mptIssuance(beforeVault.shareMPTID));
+
+        return sleShares ? std::optional<Shares>(Shares::make(*sleShares))
+                         : std::nullopt;
     }();
 
     if (!beforeShares &&
@@ -3455,70 +3516,92 @@ ValidVault::finalize(
                 }
 
                 auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
-
-                if (!vaultDeltaAssets)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must change vault balance";
-                    return false;  // That's all we can do
-                }
-
-                if (*vaultDeltaAssets >= zero)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must decrease vault "
-                        "balance";
-                    result = false;
-                }
-
                 auto const accountDeltaShares = deltaShares(tx[sfHolder]);
-                if (!accountDeltaShares)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must change holder shares";
-                    return false;  // That's all we can do
-                }
-
-                if (*accountDeltaShares >= zero)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must decrease holder "
-                        "shares";
-                    result = false;
-                }
-
                 auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
-                if (!vaultDeltaShares || *vaultDeltaShares == zero)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must change vault shares";
-                    return false;  // That's all we can do
-                }
 
-                if (*vaultDeltaShares * -1 != *accountDeltaShares)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must change holder and "
-                        "vault shares by equal amount";
-                    result = false;
-                }
+                // When clawing back 0 shares/assets (e.g., to clean up empty
+                // MPTokens), deltas may be null (no balance changes) or 0.
+                // Check if this is a zero-clawback by seeing if all deltas
+                // are either null or zero.
+                bool const zeroClawback =
+                    (!vaultDeltaAssets || *vaultDeltaAssets == zero) &&
+                    (!accountDeltaShares || *accountDeltaShares == zero) &&
+                    (!vaultDeltaShares || *vaultDeltaShares == zero);
 
-                if (beforeVault.assetsTotal + *vaultDeltaAssets !=
-                    afterVault.assetsTotal)
+                if (zeroClawback)
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback and assets outstanding "
-                        "must add up";
-                    result = false;
+                    // Valid zero-clawback, no further checks needed
                 }
-
-                if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
-                    afterVault.assetsAvailable)
+                else
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback and assets available must "
-                        "add up";
-                    result = false;
+                    // Non-zero clawback, verify all deltas exist and are valid
+                    if (!vaultDeltaAssets)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must change vault "
+                            "balance";
+                        return false;  // That's all we can do
+                    }
+
+                    if (!accountDeltaShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must change holder "
+                            "shares";
+                        return false;  // That's all we can do
+                    }
+
+                    if (!vaultDeltaShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must change vault "
+                            "shares";
+                        return false;  // That's all we can do
+                    }
+
+                    // Verify deltas are negative (decreasing)
+                    if (*vaultDeltaAssets >= zero)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must decrease vault "
+                            "balance";
+                        result = false;
+                    }
+
+                    if (*accountDeltaShares >= zero)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must decrease holder "
+                            "shares";
+                        result = false;
+                    }
+
+                    if (*vaultDeltaShares * -1 != *accountDeltaShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must change holder and "
+                            "vault shares by equal amount";
+                        result = false;
+                    }
+
+                    // Verify vault asset totals updated correctly
+                    if (beforeVault.assetsTotal + *vaultDeltaAssets !=
+                        afterVault.assetsTotal)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback and assets outstanding "
+                            "must add up";
+                        result = false;
+                    }
+
+                    if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
+                        afterVault.assetsAvailable)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback and assets available "
+                            "must add up";
+                        result = false;
+                    }
                 }
 
                 return result;

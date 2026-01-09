@@ -1,6 +1,7 @@
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
@@ -504,8 +505,14 @@ class Freeze_test : public beast::unit_test::suite
 
         {
             // Payments
-            //    test: direct issues can be sent
-            env(pay(G1, A2, G1["USD"](1)));
+            //    test: direct issues behavior depends on featureLendingProtocol
+            // Before featureLendingProtocol: issuers CAN send under global
+            // freeze After featureLendingProtocol: issuers CANNOT send under
+            // global freeze
+            if (features[featureLendingProtocol])
+                env(pay(G1, A2, G1["USD"](1)), ter(tecPATH_DRY));
+            else
+                env(pay(G1, A2, G1["USD"](1)));
 
             //    test: direct redemptions can be sent
             env(pay(A2, G1, G1["USD"](1)));
@@ -2002,6 +2009,251 @@ class Freeze_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testIsFrozenDirectly(FeatureBitset features)
+    {
+        testcase("isFrozen function issuer exemption");
+
+        using namespace test::jtx;
+        Env env(*this, features);
+
+        Account issuer{"issuer"};
+        Account holder{"holder"};
+
+        env.fund(XRP(10000), issuer, holder);
+        env.close();
+
+        auto const USD = issuer["USD"];
+        env.trust(USD(1000), holder);
+        env.close();
+
+        env(pay(issuer, holder, USD(100)));
+        env.close();
+
+        // Before global freeze, neither account is frozen
+        BEAST_EXPECT(
+            !isFrozen(*env.current(), issuer.id(), USD.currency, issuer.id()));
+        BEAST_EXPECT(
+            !isFrozen(*env.current(), holder.id(), USD.currency, issuer.id()));
+
+        // Enable global freeze
+        env(fset(issuer, asfGlobalFreeze));
+        env.close();
+
+        // After global freeze, issuer IS frozen for their own currency
+        // Note: The featureLendingProtocol amendment provides issuer exemption
+        // from global freeze ONLY for Lending Protocol and Vault transactions,
+        // NOT for regular payment transactions. Regular payments remain frozen.
+        BEAST_EXPECT(
+            isFrozen(*env.current(), issuer.id(), USD.currency, issuer.id()));
+
+        // Issuer can still receive payments (always worked)
+        env(pay(holder, issuer, USD(10)));
+        env.close();
+
+        // But issuer cannot send regular payments (frozen)
+        env(pay(issuer, holder, USD(10)), ter(tecPATH_DRY));
+
+        // After global freeze, holder IS frozen (both scenarios)
+        BEAST_EXPECT(
+            isFrozen(*env.current(), holder.id(), USD.currency, issuer.id()));
+
+        // Verify holder cannot send to other accounts
+        Account other{"other"};
+        env.fund(XRP(10000), other);
+        env.trust(USD(1000), other);
+        env.close();
+        env(pay(holder, other, USD(10)), ter(tecPATH_DRY));
+    }
+
+    void
+    testGlobalFreezeIssuerAmendment(FeatureBitset features)
+    {
+        testcase("Global Freeze Issuer Amendment");
+
+        using namespace test::jtx;
+
+        Account issuer{"issuer"};
+        Account holder{"holder"};
+
+        // Test pre-amendment behavior (issuer IS frozen under global freeze)
+        {
+            Env env_pre(*this, features - featureLendingProtocol);
+
+            env_pre.fund(XRP(10000), issuer, holder);
+            env_pre.close();
+
+            auto const USD = issuer["USD"];
+            env_pre.trust(USD(1000), holder);
+            env_pre.close();
+
+            env_pre(pay(issuer, holder, USD(100)));
+            env_pre.close();
+
+            env_pre(fset(issuer, asfGlobalFreeze));
+            env_pre.close();
+
+            BEAST_EXPECT(isFrozen(
+                *env_pre.current(), issuer.id(), USD.currency, issuer.id()));
+
+            BEAST_EXPECT(isFrozen(
+                *env_pre.current(), holder.id(), USD.currency, issuer.id()));
+        }
+
+        // Test post-amendment behavior (issuer exemption applies ONLY to
+        // Lending Protocol and Vault transactions, NOT regular payments)
+        if (features[featureLendingProtocol])
+        {
+            using namespace loanBroker;
+            Env env_post(*this, features);
+
+            Account owner{"owner"};
+            env_post.fund(XRP(10000), issuer, holder, owner);
+            env_post.close();
+
+            auto const USD = issuer["USD"];
+            env_post(fset(issuer, asfAllowTrustLineClawback));
+            env_post.close();
+            env_post.trust(USD(1000), holder);
+            env_post.trust(USD(1000), owner);
+            env_post.close();
+
+            env_post(pay(issuer, holder, USD(100)));
+            env_post(pay(issuer, owner, USD(100)));
+            env_post.close();
+
+            Vault vault{env_post};
+            PrettyAsset const asset{USD};
+            auto [vaultTx, vaultKeylet] =
+                vault.create({.owner = owner, .asset = asset});
+            env_post(vaultTx);
+            env_post.close();
+
+            env_post(vault.deposit(
+                {.depositor = holder,
+                 .id = vaultKeylet.key,
+                 .amount = USD(50)}));
+            env_post.close();
+
+            auto const brokerKeylet =
+                keylet::loanbroker(owner.id(), env_post.seq(owner));
+            env_post(set(owner, vaultKeylet.key));
+            env_post.close();
+
+            auto broker = env_post.le(brokerKeylet);
+            BEAST_EXPECT(broker);
+            Account const pseudoAccount{
+                "Broker pseudo-account", broker->at(sfAccount)};
+
+            env_post(fset(issuer, asfGlobalFreeze));
+            env_post.close();
+
+            // Issuer IS frozen for their own currency under global freeze
+            // (issuer exemption only applies to Lending Protocol/Vault txs)
+            BEAST_EXPECT(isFrozen(
+                *env_post.current(), issuer.id(), USD.currency, issuer.id()));
+
+            BEAST_EXPECT(isFrozen(
+                *env_post.current(), holder.id(), USD.currency, issuer.id()));
+
+            // Regular payments from issuer fail under global freeze
+            env_post(pay(issuer, holder, USD(10)), ter(tecPATH_DRY));
+
+            // Issuer can still receive regular payments
+            env_post(pay(holder, issuer, USD(10)));
+            env_post.close();
+
+            env_post(
+                vault.withdraw(
+                    {.depositor = holder,
+                     .id = vaultKeylet.key,
+                     .amount = USD(10)}),
+                ter(tecFROZEN));
+
+            auto tx = vault.withdraw(
+                {.depositor = holder,
+                 .id = vaultKeylet.key,
+                 .amount = USD(10)});
+            tx[sfDestination] = issuer.human();
+            env_post(tx);
+            env_post.close();
+
+            env_post(vault.deposit(
+                {.depositor = issuer,
+                 .id = vaultKeylet.key,
+                 .amount = USD(20)}));
+            env_post.close();
+
+            // Non-owner cannot deposit cover (ownership check)
+            env_post(
+                coverDeposit(holder, brokerKeylet.key, USD(10)),
+                ter(tecNO_PERMISSION));
+
+            // Issuer also cannot deposit if not the owner (ownership check)
+            env_post(
+                coverDeposit(issuer, brokerKeylet.key, USD(20)),
+                ter(tecNO_PERMISSION));
+
+            // Owner can deposit even under global freeze
+            env_post(coverDeposit(owner, brokerKeylet.key, USD(20)));
+            env_post.close();
+            env_post.require(balance(pseudoAccount, USD(20)));
+
+            env_post(
+                coverWithdraw(owner, brokerKeylet.key, USD(10)),
+                ter(tecFROZEN));
+
+            tx = coverWithdraw(owner, brokerKeylet.key, USD(10));
+            tx[sfDestination] = issuer.human();
+            env_post(tx);
+            env_post.close();
+            env_post.require(balance(pseudoAccount, USD(10)));
+
+            // Owner deposits more cover
+            env_post(coverDeposit(owner, brokerKeylet.key, USD(20)));
+            env_post.close();
+
+            // Withdrawal to holder should fail due to global freeze
+            tx = coverWithdraw(owner, brokerKeylet.key, USD(15));
+            tx[sfDestination] = holder.human();
+            env_post(tx, ter(tecFROZEN));
+
+            // Withdraw to issuer instead (issuer is exempt from global freeze)
+            tx = coverWithdraw(owner, brokerKeylet.key, USD(15));
+            tx[sfDestination] = issuer.human();
+            env_post(tx);
+            env_post.close();
+
+            env_post(
+                coverClawback(issuer),
+                loanBrokerID(brokerKeylet.key),
+                amount(USD(0)));
+            env_post.close();
+
+            env_post(del(owner, brokerKeylet.key));
+            env_post.close();
+
+            // Withdraw remaining vault balances before deleting
+            // Holder has 40 shares (deposited 50, withdrew 10)
+            tx = vault.withdraw(
+                {.depositor = holder,
+                 .id = vaultKeylet.key,
+                 .amount = USD(40)});
+            tx[sfDestination] = issuer.human();
+            env_post(tx);
+            env_post.close();
+
+            // Issuer has 20 shares (deposited 20)
+            env_post(vault.withdraw(
+                {.depositor = issuer,
+                 .id = vaultKeylet.key,
+                 .amount = USD(20)}));
+            env_post.close();
+
+            env_post(vault.del({.owner = owner, .id = vaultKeylet.key}));
+        }
+    }
+
     // Helper function to extract trustline flags from open ledger
     uint32_t
     getTrustlineFlags(
@@ -2065,6 +2317,8 @@ public:
             testCreateFrozenTrustline(features);
             testSetAndClear(features);
             testGlobalFreeze(features);
+            testIsFrozenDirectly(features);
+            testGlobalFreezeIssuerAmendment(features);
             testNoFreeze(features);
             testOffersWhenFrozen(features);
             testOffersWhenDeepFrozen(features);

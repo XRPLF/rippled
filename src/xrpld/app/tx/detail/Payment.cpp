@@ -367,6 +367,28 @@ Payment::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
+    // Check global freeze for IOU payments where sender is the issuer.
+    // This is NOT Lending Protocol/Vault specific, so issuers do NOT get
+    // exemption from their own global freeze for regular Payment transactions.
+    // IMPORTANT: This restriction only applies when featureLendingProtocol is
+    // enabled. Before this amendment, issuers were allowed to send under global
+    // freeze.
+    if (ctx.view.rules().enabled(featureLendingProtocol))
+    {
+        STAmount const maxSourceAmount =
+            getMaxSourceAmount(ctx.tx[sfAccount], dstAmount, sendMax);
+        if (!maxSourceAmount.native() && !maxSourceAmount.holds<MPTIssue>())
+        {
+            auto const& issue = maxSourceAmount.get<Issue>();
+            auto const& account = ctx.tx[sfAccount];
+
+            // If sender is the issuer and global freeze is enabled, payment
+            // fails
+            if (account == issue.getIssuer() && isGlobalFrozen(ctx.view, issue))
+                return tecPATH_DRY;
+        }
+    }
+
     return tesSUCCESS;
 }
 

@@ -81,12 +81,18 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    // Cannot deposit inside Vault an Asset frozen for the depositor
-    if (isFrozen(ctx.view, account, vaultAsset))
-        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+    // Cannot deposit inside Vault an Asset frozen for the depositor.
+    // Use checkFrozenLendingProtocol to apply issuer exemption from global
+    // freeze.
+    if (auto const ret =
+            checkFrozenLendingProtocol(ctx.view, account, vaultAsset))
+        return ret;
 
-    // Cannot deposit if the shares of the vault are frozen
-    if (isFrozen(ctx.view, account, vaultShare))
+    // Cannot deposit if the shares of the vault are individually frozen.
+    // Skip freeze check if depositor is the asset issuer (applies to both IOUs
+    // and MPTs).
+    bool const isAssetIssuer = (account == vaultAsset.getIssuer());
+    if (!isAssetIssuer && isIndividualFrozen(ctx.view, account, vaultShare))
         return tecLOCKED;
 
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
@@ -115,6 +121,9 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(ter))
         return ter;
 
+    // Check if account has enough spendable balance.
+    // Use fhZERO_IF_FROZEN since checkFrozenLendingProtocol above already
+    // verified freeze status.
     if (accountSpendable(
             ctx.view,
             account,

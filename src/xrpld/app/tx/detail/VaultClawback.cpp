@@ -235,15 +235,28 @@ VaultClawback::doApply()
         return tecPATH_DRY;
     }
 
-    if (sharesDestroyed == beast::zero)
+    // When clawing back a specific amount (not amount=0), having 0 shares
+    // destroyed indicates precision loss. But when amount=0 (clawback all),
+    // it's valid to have 0 shares if the holder has already withdrawn
+    // everything. This allows cleaning up empty MPTokens.
+    if (sharesDestroyed == beast::zero && amount != beast::zero)
         return tecPRECISION_LOSS;
 
-    assetsTotal -= assetsRecovered;
-    assetsAvailable -= assetsRecovered;
-    view().update(vault);
-
     auto const& vaultAccount = vault->at(sfAccount);
-    // Transfer shares from holder to vault.
+
+    // When sharesDestroyed is 0, we still need to update vault state and
+    // transfer shares (even if 0) to satisfy invariant checks. This can happen
+    // when amount=0 (clawback all) and the holder has already withdrawn
+    // everything.
+    if (sharesDestroyed > beast::zero)
+    {
+        assetsTotal -= assetsRecovered;
+        assetsAvailable -= assetsRecovered;
+    }
+
+    // Always transfer shares from holder to vault, even if amount is 0.
+    // This satisfies the invariant check that vault operations must update
+    // shares.
     if (auto const ter = accountSend(
             view(),
             holder,
@@ -253,6 +266,25 @@ VaultClawback::doApply()
             WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
+
+    // Only transfer assets if there are any to transfer.
+    if (sharesDestroyed > beast::zero)
+    {
+        // Transfer assets from vault to issuer.
+        if (auto const ter = accountSend(
+                view(),
+                vaultAccount,
+                account_,
+                assetsRecovered,
+                j_,
+                WaiveTransferFee::Yes);
+            !isTesSuccess(ter))
+            return ter;
+    }
+
+    // Always update the vault, even if amounts haven't changed. This satisfies
+    // the invariant check that vault operations must modify the vault.
+    view().update(vault);
 
     // Try to remove MPToken for shares, if the holder balance is zero. Vault
     // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
@@ -265,6 +297,16 @@ VaultClawback::doApply()
         {
             JLOG(j_.debug())  //
                 << "VaultClawback: removed empty MPToken for vault shares"
+                << " MPTID=" << to_string(mptIssuanceID)  //
+                << " account=" << toBase58(holder);
+        }
+        else if (ter == tecOBJECT_NOT_FOUND && sharesDestroyed == beast::zero)
+        {
+            // When clawing back 0 shares (amount=0), the MPToken may have been
+            // already removed by a previous withdrawal. This is expected and
+            // ok.
+            JLOG(j_.debug())  //
+                << "VaultClawback: MPToken already removed for vault shares"
                 << " MPTID=" << to_string(mptIssuanceID)  //
                 << " account=" << toBase58(holder);
         }
@@ -281,17 +323,6 @@ VaultClawback::doApply()
         }
         // else quietly ignore, holder balance is not zero
     }
-
-    // Transfer assets from vault to issuer.
-    if (auto const ter = accountSend(
-            view(),
-            vaultAccount,
-            account_,
-            assetsRecovered,
-            j_,
-            WaiveTransferFee::Yes);
-        !isTesSuccess(ter))
-        return ter;
 
     // Sanity check
     if (accountHolds(

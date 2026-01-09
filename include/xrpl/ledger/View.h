@@ -70,6 +70,29 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, Asset const& asset);
 
+/** Check if an asset is globally frozen with issuer exemption.
+ *
+ * This function implements the Global Freeze Issuer Amendment logic
+ * specifically for Lending Protocol and Vault transactions:
+ * - Returns true if asset is globally frozen AND neither source nor
+ *   destination is the issuer
+ * - Returns false if the source or destination is the issuer (issuer exemption)
+ * - Used exclusively by Vault and Lending Protocol transactions
+ *
+ * @param view The ledger view to check
+ * @param asset The asset to check for global freeze
+ * @param source The source account
+ * @param destination The destination account
+ * @return true if globally frozen and neither party is the issuer, false
+ * otherwise
+ */
+[[nodiscard]] bool
+isGlobalFrozenWithIssuerExemption(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& source,
+    AccountID const& destination);
+
 // Note, depth parameter is used to limit the recursion depth
 [[nodiscard]] bool
 isVaultPseudoAccountFrozen(
@@ -179,6 +202,97 @@ checkFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
         asset.value());
 }
 
+/** Lending Protocol-specific freeze check with issuer exemption.
+ *
+ * Checks if an account is frozen for an asset, but exempts the issuer from
+ * global freeze (not from individual freeze). This implements the Global
+ * Freeze Issuer Amendment for Lending Protocol and Vault transactions only.
+ *
+ * @param view The ledger view
+ * @param account The account to check
+ * @param issue The IOU issue to check
+ * @return tecFROZEN if frozen, tesSUCCESS otherwise
+ */
+[[nodiscard]] inline TER
+checkFrozenLendingProtocol(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue)
+{
+    // Check individual freeze (no exemption)
+    if (isIndividualFrozen(view, account, issue))
+        return tecFROZEN;
+
+    // Check global freeze with issuer exemption
+    if (isGlobalFrozen(view, issue) && account != issue.getIssuer())
+        return tecFROZEN;
+
+    return tesSUCCESS;
+}
+
+/** Lending Protocol-specific freeze check with issuer exemption for MPT.
+ *
+ * Checks if an account is frozen for an MPT, but exempts the issuer from
+ * global freeze (not from individual freeze). This implements the Global
+ * Freeze Issuer Amendment for Lending Protocol and Vault transactions only.
+ *
+ * @param view The ledger view
+ * @param account The account to check
+ * @param mptIssue The MPT issue to check
+ * @param depth Recursion depth for vault pseudo-account checks
+ * @return tecLOCKED if frozen, tesSUCCESS otherwise
+ */
+[[nodiscard]] inline TER
+checkFrozenLendingProtocol(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    int depth = 0)
+{
+    // Check individual freeze (no exemption)
+    if (isIndividualFrozen(view, account, mptIssue))
+        return tecLOCKED;
+
+    // Check vault pseudo-account freeze (no exemption)
+    if (isVaultPseudoAccountFrozen(view, account, mptIssue, depth))
+        return tecLOCKED;
+
+    // Check global freeze with issuer exemption
+    if (isGlobalFrozen(view, mptIssue) && account != mptIssue.getIssuer())
+        return tecLOCKED;
+
+    return tesSUCCESS;
+}
+
+/** Lending Protocol-specific freeze check with issuer exemption for Asset.
+ *
+ * Checks if an account is frozen for an asset, but exempts the issuer from
+ * global freeze (not from individual freeze). This implements the Global
+ * Freeze Issuer Amendment for Lending Protocol and Vault transactions only.
+ *
+ * @param view The ledger view
+ * @param account The account to check
+ * @param asset The asset to check (Issue or MPTIssue)
+ * @param depth Recursion depth for vault pseudo-account checks (MPT only)
+ * @return tecFROZEN or tecLOCKED if frozen, tesSUCCESS otherwise
+ */
+[[nodiscard]] inline TER
+checkFrozenLendingProtocol(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    int depth = 0)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return checkFrozenLendingProtocol(view, account, issue);
+            else
+                return checkFrozenLendingProtocol(view, account, issue, depth);
+        },
+        asset.value());
+}
+
 [[nodiscard]] bool
 isAnyFrozen(
     ReadView const& view,
@@ -241,8 +355,9 @@ isDeepFrozen(
     MPTIssue const& mptIssue,
     int depth = 0)
 {
-    // Unlike IOUs, frozen / locked MPTs are not allowed to send or receive
-    // funds, so checking "deep frozen" is the same as checking "frozen".
+    // Unlike IOUs, frozen / locked MPTs cannot receive funds and can only send
+    // funds back to the issuer. Deep freeze check is the same as frozen check
+    // for MPTs.
     return isFrozen(view, account, mptIssue, depth);
 }
 
@@ -296,6 +411,22 @@ checkDeepFrozen(
             return checkDeepFrozen(view, account, issue);
         },
         asset.value());
+}
+
+[[nodiscard]] inline bool
+isAnyDeepOrIndividuallyFrozen(
+    ReadView const& view,
+    std::initializer_list<AccountID> const& accounts,
+    Asset const& asset,
+    int depth = 0)
+{
+    for (auto const& account : accounts)
+    {
+        if (isDeepFrozen(view, account, asset, depth) ||
+            isIndividualFrozen(view, account, asset))
+            return true;
+    }
+    return false;
 }
 
 [[nodiscard]] bool

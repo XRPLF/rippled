@@ -59,11 +59,6 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
         return tecNO_ENTRY;
     }
-    if (account != sleBroker->at(sfOwner))
-    {
-        JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
-        return tecNO_PERMISSION;
-    }
     auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
     if (!vault)
     {
@@ -76,6 +71,13 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const vaultAsset = vault->at(sfAsset);
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
+
+    // Only the broker owner can withdraw cover
+    if (account != sleBroker->at(sfOwner))
+    {
+        JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
+        return tecNO_PERMISSION;
+    }
 
     // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
@@ -101,12 +103,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType))
         return ter;
 
-    // Check for freezes, unless sending directly to the issuer
+    // Skip source freeze check here - let doWithdraw handle it, which will
+    // properly exempt the issuer from global freeze when the amendment is
+    // enabled. Check for destination deep freeze, unless sending directly to
+    // the issuer
     if (dstAcct != vaultAsset.getIssuer())
     {
-        // Cannot send a frozen Asset
-        if (auto const ret = checkFrozen(ctx.view, pseudoAccountID, vaultAsset))
-            return ret;
         // Destination account cannot receive if asset is deep frozen
         if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
             return ret;
@@ -131,11 +133,16 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if ((coverAvail - amount) < minimumCover)
         return tecINSUFFICIENT_FUNDS;
 
+    // Check if the pseudo-account has sufficient funds.
+    // Use fhIGNORE_FREEZE because we want to allow the transaction to proceed
+    // to doApply where doWithdraw will perform the proper global freeze check
+    // (exempting the issuer when the amendment is enabled). If we used
+    // fhZERO_IF_FROZEN here, we would return tecINSUFFICIENT_FUNDS prematurely.
     if (accountHolds(
             ctx.view,
             pseudoAccountID,
             vaultAsset,
-            FreezeHandling::fhZERO_IF_FROZEN,
+            FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahZERO_IF_UNAUTHORIZED,
             ctx.j) < amount)
         return tecINSUFFICIENT_FUNDS;

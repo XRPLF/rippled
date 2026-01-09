@@ -357,7 +357,8 @@ private:
         IssuerChanges const& changes,
         STTx const& tx,
         beast::Journal const& j,
-        bool enforce);
+        bool enforce,
+        ReadView const& view);
 
     bool
     validateFrozenState(
@@ -366,7 +367,8 @@ private:
         STTx const& tx,
         beast::Journal const& j,
         bool enforce,
-        bool globalFreeze);
+        bool globalFreeze,
+        bool issuerGlobalFreezeExempt);
 };
 
 /**
