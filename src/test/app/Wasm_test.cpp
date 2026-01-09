@@ -43,20 +43,6 @@ runFinishFunction(std::string const& code)
 struct Wasm_test : public beast::unit_test::suite
 {
     void
-    testDisabledWasm1Features()
-    {
-        testcase("Disable Wasm 1.0 feature test");
-        BEAST_EXPECT(
-            runFinishFunction(multiMemoryHex).has_value() == false);
-        BEAST_EXPECT(
-            runFinishFunction(customPageSizesHex).has_value() == false);
-        BEAST_EXPECT(
-            runFinishFunction(memory64Hex).has_value() == false);
-        BEAST_EXPECT(
-            runFinishFunction(wideArithmeticHex).has_value() == false);
-    }
-
-    void
     testGetDataHelperFunctions()
     {
         testcase("getData helper functions");
@@ -818,6 +804,14 @@ struct Wasm_test : public beast::unit_test::suite
             runFinishFunction(proposalTailCallHex).has_value() == false);
         BEAST_EXPECT(
             runFinishFunction(proposalExtendedConstHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalMultiMemoryHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalCustomPageSizesHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalMemory64Hex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalWideArithmeticHex).has_value() == false);
     }
 
     void
@@ -926,8 +920,6 @@ struct Wasm_test : public beast::unit_test::suite
 
         testStartFunctionLoop();
         // perfTest();
-
-        testDisabledWasm1Features();
     }
 };
 

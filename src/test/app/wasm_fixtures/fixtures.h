@@ -55,10 +55,10 @@ extern std::string const proposalBulkMemoryHex;
 extern std::string const proposalRefTypesHex;
 extern std::string const proposalTailCallHex;
 extern std::string const proposalExtendedConstHex;
-extern std::string const multiMemoryHex;
-extern std::string const customPageSizesHex;
-extern std::string const memory64Hex;
-extern std::string const wideArithmeticHex;
+extern std::string const proposalMultiMemoryHex;
+extern std::string const proposalCustomPageSizesHex;
+extern std::string const proposalMemory64Hex;
+extern std::string const proposalWideArithmeticHex;
 
 extern std::string const trapDivideBy0Hex;
 extern std::string const trapIntOverflowHex;
