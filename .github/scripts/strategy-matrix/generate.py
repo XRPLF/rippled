@@ -179,12 +179,12 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
 
             # Windows:
             # - Release and Unity on windows/amd64.
-            if os["distro_name"] == "windows" and not (
-                build_type == "Debug"
-                and "-Dunity=ON" in cmake_args
-                and architecture["platform"] == "windows/amd64"
-            ):
-                continue
+            # if os["distro_name"] == "windows" and not (
+            #     build_type == "Debug"
+            #     and "-Dunity=OFF" in cmake_args
+            #     and architecture["platform"] == "windows/amd64"
+            # ):
+            #     continue
 
         # Additional CMake arguments.
         cmake_args = f"{cmake_args} -Dtests=ON -Dwerr=ON -Dxrpld=ON"
