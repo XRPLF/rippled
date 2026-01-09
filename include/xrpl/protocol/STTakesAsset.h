@@ -32,6 +32,12 @@ public:
     associateAsset(Asset const& a);
 };
 
+inline void
+STTakesAsset::associateAsset(Asset const& a)
+{
+    asset_.emplace(a);
+}
+
 class STLedgerEntry;
 
 /** Associate an Asset with all sMD_NeedsAsset fields in a ledger entry.

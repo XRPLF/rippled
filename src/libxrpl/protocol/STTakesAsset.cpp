@@ -4,12 +4,6 @@
 
 namespace ripple {
 
-inline void
-STTakesAsset::associateAsset(Asset const& a)
-{
-    asset_.emplace(a);
-}
-
 void
 associateAsset(SLE& sle, Asset const& asset)
 {
