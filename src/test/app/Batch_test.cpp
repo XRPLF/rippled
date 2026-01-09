@@ -3,7 +3,6 @@
 #include <test/jtx/utility.h>
 
 #include <xrpld/app/misc/HashRouter.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/Batch.h>
@@ -14,6 +13,7 @@
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 namespace xrpl {
 namespace test {
@@ -1415,14 +1415,14 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq));
 
-            env.app().openLedger().modify(
-                [&](OpenView& view, beast::Journal j) {
-                    auto const result =
-                        xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
-                    BEAST_EXPECT(
-                        !result.applied && result.ter == temARRAY_TOO_LARGE);
-                    return result.applied;
-                });
+            env.app().openLedger().modify([&](OpenView& view,
+                                              beast::Journal j) {
+                auto const result = xrpl::apply(
+                    env.app(), view, *jt.stx, tapNONE, j);
+                BEAST_EXPECT(
+                    !result.applied && result.ter == temARRAY_TOO_LARGE);
+                return result.applied;
+            });
         }
 
         // telENV_RPC_FAILED: Batch: signers array exceeds 8 entries.
@@ -1461,14 +1461,14 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(5)), aliceSeq + 2),
                 batch::sig(bob, bob, bob, bob, bob, bob, bob, bob, bob, bob));
 
-            env.app().openLedger().modify(
-                [&](OpenView& view, beast::Journal j) {
-                    auto const result =
-                        xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
-                    BEAST_EXPECT(
-                        !result.applied && result.ter == temARRAY_TOO_LARGE);
-                    return result.applied;
-                });
+            env.app().openLedger().modify([&](OpenView& view,
+                                              beast::Journal j) {
+                auto const result = xrpl::apply(
+                    env.app(), view, *jt.stx, tapNONE, j);
+                BEAST_EXPECT(
+                    !result.applied && result.ter == temARRAY_TOO_LARGE);
+                return result.applied;
+            });
         }
     }
 
@@ -3738,7 +3738,8 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(!passesLocalChecks(stx, reason));
         BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
         env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
-            auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
+            auto const result = xrpl::apply(
+                env.app(), view, stx, tapNONE, j);
             BEAST_EXPECT(!result.applied && result.ter == temINVALID_FLAG);
             return result.applied;
         });

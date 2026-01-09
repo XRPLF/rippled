@@ -2,7 +2,7 @@
 #define XRPL_RPC_TRANSACTIONSIGN_H_INCLUDED
 
 #include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpl/server/NetworkOPs.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 

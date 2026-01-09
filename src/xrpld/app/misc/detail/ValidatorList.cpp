@@ -1,5 +1,4 @@
 #include <xrpld/app/misc/HashRouter.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/overlay/Overlay.h>
 
@@ -13,6 +12,7 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/messages.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <boost/regex.hpp>
 

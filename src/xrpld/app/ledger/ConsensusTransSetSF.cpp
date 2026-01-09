@@ -1,6 +1,6 @@
 #include <xrpld/app/ledger/ConsensusTransSetSF.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpl/server/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
 
 #include <xrpl/basics/Log.h>

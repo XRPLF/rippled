@@ -2,7 +2,6 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/RPCHandler.h>
@@ -18,6 +17,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <atomic>
 #include <chrono>

@@ -1,6 +1,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpl/server/NetworkOPs.h>
 #include <xrpld/app/paths/AccountCurrencies.h>
 #include <xrpld/app/paths/PathRequest.h>
 #include <xrpld/app/paths/PathRequests.h>
