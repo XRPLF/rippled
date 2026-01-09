@@ -3,6 +3,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/Credit.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
@@ -1341,12 +1342,58 @@ checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag)
     return tesSUCCESS;
 }
 
+/*
+ * Checks if a withdrawal amount into the destination account exceeds
+ * any applicable receiving limit.
+ * Called by VaultWithdraw and LoanBrokerCoverWithdraw.
+ *
+ * IOU : Performs the trustline check against the destination account's
+ * credit limit to ensure the account's trust maximum is not exceeded.
+ *
+ * MPT: The limit check is effectively skipped (returns true). This is
+ * because MPT MaximumAmount relates to token supply, and withdrawal does not
+ * involve minting new tokens that could exceed the global cap.
+ * On withdrawal, tokens are simply transferred from the vault's pseudo-account
+ * to the destination account. Since no new MPT tokens are minted during this
+ * transfer, the withdrawal cannot violate the MPT MaximumAmount/supply cap
+ * even if `from` is the issuer.
+ */
+static TER
+withdrawToDestExceedsLimit(
+    ReadView const& view,
+    AccountID const& from,
+    AccountID const& to,
+    STAmount const& amount)
+{
+    auto const& issuer = amount.getIssuer();
+    if (from == to || to == issuer || isXRP(issuer))
+        return tesSUCCESS;
+
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+            if constexpr (std::is_same_v<TIss, Issue>)
+            {
+                auto const& currency = issue.currency;
+                auto const owed = creditBalance(view, to, issuer, currency);
+                if (owed <= beast::zero)
+                {
+                    auto const limit = creditLimit(view, to, issuer, currency);
+                    if (-owed >= limit || amount > (limit + owed))
+                        return tecNO_LINE;
+                }
+            }
+            return tesSUCCESS;
+        },
+        amount.asset().value());
+}
+
 [[nodiscard]] TER
 canWithdraw(
     AccountID const& from,
     ReadView const& view,
     AccountID const& to,
     SLE::const_ref toSle,
+    STAmount const& amount,
     bool hasDestinationTag)
 {
     if (auto const ret = checkDestinationAndTag(toSle, hasDestinationTag))
@@ -1361,7 +1408,7 @@ canWithdraw(
             return tecNO_PERMISSION;
     }
 
-    return tesSUCCESS;
+    return withdrawToDestExceedsLimit(view, from, to, amount);
 }
 
 [[nodiscard]] TER
@@ -1369,11 +1416,12 @@ canWithdraw(
     AccountID const& from,
     ReadView const& view,
     AccountID const& to,
+    STAmount const& amount,
     bool hasDestinationTag)
 {
     auto const toSle = view.read(keylet::account(to));
 
-    return canWithdraw(from, view, to, toSle, hasDestinationTag);
+    return canWithdraw(from, view, to, toSle, amount, hasDestinationTag);
 }
 
 [[nodiscard]] TER
@@ -1382,7 +1430,8 @@ canWithdraw(ReadView const& view, STTx const& tx)
     auto const from = tx[sfAccount];
     auto const to = tx[~sfDestination].value_or(from);
 
-    return canWithdraw(from, view, to, tx.isFieldPresent(sfDestinationTag));
+    return canWithdraw(
+        from, view, to, tx[sfAmount], tx.isFieldPresent(sfDestinationTag));
 }
 
 TER
