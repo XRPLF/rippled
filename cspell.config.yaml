@@ -36,7 +36,7 @@ overrides:
       - /`[^`]*`/g # backtick strings
 suggestWords:
   - xprl->xrpl
-  - unsynched->unsynced
+  - unsynched->unsynced # cspell: disable-line not sure what this problem is....
   - synched->synced
   - synch->sync
 words:
