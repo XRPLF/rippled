@@ -503,9 +503,9 @@ public:
             STAmount::cMinOffset + 1);
         STAmount zeroSt(noIssue(), 0);
 
-        STAmount smallXsmall = multiply(smallValue, smallValue, noIssue());
+        STAmount smallXSmall = multiply(smallValue, smallValue, noIssue());
 
-        BEAST_EXPECT(smallXsmall == beast::zero);
+        BEAST_EXPECT(smallXSmall == beast::zero);
 
         STAmount bigDsmall = divide(smallValue, bigValue, noIssue());
 

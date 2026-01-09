@@ -1369,19 +1369,19 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     authCred.isArray() &&
                     authCred.size() == credentials.size());
-                std::vector<std::pair<Account, std::string>> readedCreds;
+                std::vector<std::pair<Account, std::string>> readCreds;
                 for (auto const& o : authCred)
                 {
                     auto const& c(o[jss::Credential]);
                     auto issuer = c[jss::Issuer].asString();
 
                     if (BEAST_EXPECT(pubKey2Acc.contains(issuer)))
-                        readedCreds.emplace_back(
+                        readCreds.emplace_back(
                             pubKey2Acc.at(issuer),
                             c["CredentialType"].asString());
                 }
 
-                BEAST_EXPECT(std::ranges::is_sorted(readedCreds));
+                BEAST_EXPECT(std::ranges::is_sorted(readCreds));
 
                 env(deposit::unauthCredentials(stock, credentials));
                 env.close();

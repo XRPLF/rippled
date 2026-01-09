@@ -198,14 +198,14 @@ public:
         std::string usdTxBlob = "";
         auto wsc = makeWSClient(env.app().config());
         {
-            Json::Value jrequestUsd;
-            jrequestUsd[jss::secret] = toBase58(generateSeed("bob"));
-            jrequestUsd[jss::tx_json] =
+            Json::Value requestUsd;
+            requestUsd[jss::secret] = toBase58(generateSeed("bob"));
+            requestUsd[jss::tx_json] =
                 pay("bob", "alice", bob["USD"](fund / 2));
-            Json::Value jreply_usd = wsc->invoke("sign", jrequestUsd);
+            Json::Value replyUSD = wsc->invoke("sign", requestUsd);
 
             usdTxBlob =
-                toBinary(jreply_usd[jss::result][jss::tx_blob].asString());
+                toBinary(replyUSD[jss::result][jss::tx_blob].asString());
         }
 
         auto transaction = std::make_shared<protocol::TMTransaction>();

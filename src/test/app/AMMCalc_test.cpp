@@ -15,7 +15,7 @@ namespace test {
  *  - swapIn, find out given in. in can flow through multiple AMM/Offer steps.
  *  - swapOut, find in given out. out can flow through multiple AMM/Offer steps.
  *  - lptokens, find lptokens given pool composition.
- *  - changespq, change AMM spot price (SP) quality. given AMM and Offer
+ *  - changeSPQ, change AMM spot price (SP) quality. given AMM and Offer
  *      find out AMM offer, which changes AMM's SP quality to
  *      the Offer's quality.
  */
@@ -23,8 +23,8 @@ class AMMCalc_test : public beast::unit_test::suite
 {
     using token_iter = boost::sregex_token_iterator;
     using steps = std::vector<std::pair<Amounts, bool>>;
-    using trates = std::map<std::string, std::uint32_t>;
-    using swapargs = std::tuple<steps, STAmount, trates, std::uint32_t>;
+    using transfer_rates = std::map<std::string, std::uint32_t>;
+    using swapargs = std::tuple<steps, STAmount, transfer_rates, std::uint32_t>;
     jtx::Account const gw{jtx::Account("gw")};
     token_iter const end_;
 
@@ -101,10 +101,10 @@ class AMMCalc_test : public beast::unit_test::suite
         return {{{*a1, *a2}, amm}};
     }
 
-    std::optional<trates>
+    std::optional<transfer_rates>
     getTransferRate(token_iter& p)
     {
-        trates rates{};
+        transfer_rates rates{};
         if (p == end_)
             return rates;
         std::string str = *p;
@@ -115,8 +115,8 @@ class AMMCalc_test : public beast::unit_test::suite
         {
             if (auto const rate = getRate(p++))
             {
-                auto const [currency, trate, delimited] = *rate;
-                rates[currency] = trate;
+                auto const [currency, transferRate, delimited] = *rate;
+                rates[currency] = transferRate;
                 if (delimited)
                     break;
             }
@@ -180,13 +180,13 @@ class AMMCalc_test : public beast::unit_test::suite
         auto const vp = std::get<steps>(args);
         STAmount sout = std::get<STAmount>(args);
         auto const fee = std::get<std::uint32_t>(args);
-        auto const rates = std::get<trates>(args);
+        auto const rates = std::get<transfer_rates>(args);
         STAmount resultOut = sout;
         STAmount resultIn{};
         STAmount sin{};
         int limitingStep = vp.size();
         STAmount limitStepOut{};
-        auto trate = [&](auto const& amt) {
+        auto transferRate = [&](auto const& amt) {
             auto const currency = to_string(amt.issue().currency);
             return rates.find(currency) != rates.end() ? rates.at(currency)
                                                        : QUALITY_ONE;
@@ -195,7 +195,7 @@ class AMMCalc_test : public beast::unit_test::suite
         sin = sout;
         for (auto it = vp.rbegin(); it != vp.rend(); ++it)
         {
-            sout = mulratio(sin, trate(sin), QUALITY_ONE, true);
+            sout = mulratio(sin, transferRate(sin), QUALITY_ONE, true);
             auto const [amts, amm] = *it;
             // assume no amm limit
             if (amm)
@@ -222,7 +222,7 @@ class AMMCalc_test : public beast::unit_test::suite
         for (int i = limitingStep + 1; i < vp.size(); ++i)
         {
             auto const [amts, amm] = vp[i];
-            sin = mulratio(sin, QUALITY_ONE, trate(sin), false);
+            sin = mulratio(sin, QUALITY_ONE, transferRate(sin), false);
             if (amm)
             {
                 sout = swapAssetIn(amts, sin, fee);
@@ -245,13 +245,13 @@ class AMMCalc_test : public beast::unit_test::suite
         auto const vp = std::get<steps>(args);
         STAmount sin = std::get<STAmount>(args);
         auto const fee = std::get<std::uint32_t>(args);
-        auto const rates = std::get<trates>(args);
+        auto const rates = std::get<transfer_rates>(args);
         STAmount resultIn = sin;
         STAmount resultOut{};
         STAmount sout{};
         int limitingStep = 0;
         STAmount limitStepIn{};
-        auto trate = [&](auto const& amt) {
+        auto transferRate = [&](auto const& amt) {
             auto const currency = to_string(amt.issue().currency);
             return rates.find(currency) != rates.end() ? rates.at(currency)
                                                        : QUALITY_ONE;
@@ -263,7 +263,7 @@ class AMMCalc_test : public beast::unit_test::suite
             sin = mulratio(
                 sin,
                 QUALITY_ONE,
-                trate(sin),
+                transferRate(sin),
                 false);  // out of the next step
             // assume no amm limit
             if (amm)
@@ -289,7 +289,7 @@ class AMMCalc_test : public beast::unit_test::suite
         // swap out if limiting step
         for (int i = limitingStep - 1; i >= 0; --i)
         {
-            sout = mulratio(sin, trate(sin), QUALITY_ONE, false);
+            sout = mulratio(sin, transferRate(sin), QUALITY_ONE, false);
             auto const [amts, amm] = vp[i];
             if (amm)
             {
@@ -302,7 +302,8 @@ class AMMCalc_test : public beast::unit_test::suite
             }
             resultIn = sin;
         }
-        resultOut = mulratio(resultOut, QUALITY_ONE, trate(resultOut), true);
+        resultOut =
+            mulratio(resultOut, QUALITY_ONE, transferRate(resultOut), true);
         std::cout << "in: " << toString(resultIn)
                   << " out: " << toString(resultOut) << std::endl;
     }
@@ -389,12 +390,12 @@ class AMMCalc_test : public beast::unit_test::suite
             // Change spot price quality - generates AMM offer such that
             // when consumed the updated AMM spot price quality is equal
             // to the CLOB offer quality
-            // changespq,A(XRP(1000),USD(1000)),O(XRP(100),USD(99)),10
+            // changeSPQ,A(XRP(1000),USD(1000)),O(XRP(100),USD(99)),10
             //   where
             //     A(...) is AMM
             //     O(...) is CLOB offer
             //     10 is AMM trading fee
-            else if (*p == "changespq")
+            else if (*p == "changeSPQ")
             {
                 Env env(*this);
                 if (auto const pool = getAmounts(++p))

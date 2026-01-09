@@ -767,7 +767,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.trust(USD(1), bob);
             env.close();
 
-            // alice cannot finish because bobs limit is too low
+            // alice cannot finish because bob's limit is too low
             env(escrow::finish(alice, alice, seq1),
                 escrow::condition(escrow::cb1),
                 escrow::fulfillment(escrow::fb1),
@@ -804,7 +804,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.trust(USD(1), bob);
             env.close();
 
-            // bob can finish even if bobs limit is too low
+            // bob can finish even if bob's limit is too low
             auto const bobPreLimit = env.limit(bob, USD);
 
             env(escrow::finish(bob, alice, seq1),
@@ -814,7 +814,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            // bobs limit is not changed
+            // bob's limit is not changed
             BEAST_EXPECT(env.limit(bob, USD) == bobPreLimit);
         }
     }
@@ -1674,7 +1674,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(baseFee * 150));
             env.close();
             auto const postBobLimit = env.limit(bob, USD);
-            // bobs limit is NOT changed
+            // bob's limit is NOT changed
             BEAST_EXPECT(postBobLimit == preBobLimit);
         }
     }
@@ -1984,7 +1984,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         }
     }
     void
-    testIOUINSF(FeatureBitset features)
+    testIOUInsufficientFunds(FeatureBitset features)
     {
         testcase("IOU Insufficient Funds");
         using namespace test::jtx;
@@ -3895,7 +3895,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         testIOULimitAmount(features);
         testIOURequireAuth(features);
         testIOUFreeze(features);
-        testIOUINSF(features);
+        testIOUInsufficientFunds(features);
         testIOUPrecisionLoss(features);
     }
 

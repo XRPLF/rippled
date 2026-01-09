@@ -346,7 +346,7 @@ cpe(Currency const& c)
 
 // All path element
 STPathElement
-allpe(AccountID const& a, Issue const& iss)
+allPathElements(AccountID const& a, Issue const& iss)
 {
     return STPathElement(
         STPathElement::typeAccount | STPathElement::typeCurrency |

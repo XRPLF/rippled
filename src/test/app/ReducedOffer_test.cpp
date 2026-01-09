@@ -93,9 +93,8 @@ public:
                 STAmount const initialRate = Quality(newOffer).rate();
                 std::uint32_t const bobOfferSeq = env.seq(bob);
                 STAmount const bobInitialBalance = env.balance(bob);
-                STAmount const bobsFee = env.current()->fees().base;
-                env(offer(bob, newOffer.in, newOffer.out, tfSell),
-                    fee(bobsFee));
+                STAmount const bobFee = env.current()->fees().base;
+                env(offer(bob, newOffer.in, newOffer.out, tfSell), fee(bobFee));
                 env.close();
                 STAmount const bobFinalBalance = env.balance(bob);
 
@@ -117,7 +116,7 @@ public:
                     STAmount const reducedTakerPays = amountFromJson(
                         sfTakerPays, bobOffer[jss::node][sfTakerPays.jsonName]);
                     STAmount const bobGot =
-                        env.balance(bob) + bobsFee - bobInitialBalance;
+                        env.balance(bob) + bobFee - bobInitialBalance;
                     BEAST_EXPECT(reducedTakerPays < newOffer.in);
                     BEAST_EXPECT(reducedTakerGets < newOffer.out);
                     STAmount const inLedgerRate =
@@ -164,7 +163,7 @@ public:
             };
 
             // bob's offer (the new offer) is the same every time:
-            Amounts const bobsOffer{
+            Amounts const bobOffer{
                 STAmount(XRP(1)), STAmount(USD.issue(), 1, 0)};
 
             // alice's offer has a slightly smaller TakerPays with each
@@ -176,13 +175,13 @@ public:
                  mantissaReduce += 20'000'000ull)
             {
                 STAmount aliceUSD{
-                    bobsOffer.out.issue(),
-                    bobsOffer.out.mantissa() - mantissaReduce,
-                    bobsOffer.out.exponent()};
+                    bobOffer.out.issue(),
+                    bobOffer.out.mantissa() - mantissaReduce,
+                    bobOffer.out.exponent()};
                 STAmount aliceXRP{
-                    bobsOffer.in.issue(), bobsOffer.in.mantissa() - 1};
-                Amounts alicesOffer{aliceUSD, aliceXRP};
-                blockedCount += exerciseOfferPair(alicesOffer, bobsOffer);
+                    bobOffer.in.issue(), bobOffer.in.mantissa() - 1};
+                Amounts aliceOffer{aliceUSD, aliceXRP};
+                blockedCount += exerciseOfferPair(aliceOffer, bobOffer);
             }
 
             // None of the test cases should produce a potentially blocking
@@ -325,9 +324,9 @@ public:
                     aliceOffer.out.exponent()};
                 STAmount bobXRP{
                     aliceOffer.in.issue(), aliceOffer.in.mantissa() - 1};
-                Amounts bobsOffer{bobUSD, bobXRP};
+                Amounts bobOffer{bobUSD, bobXRP};
 
-                blockedCount += exerciseOfferPair(aliceOffer, bobsOffer);
+                blockedCount += exerciseOfferPair(aliceOffer, bobOffer);
             }
 
             // None of the test cases should produce a potentially blocking
@@ -380,7 +379,7 @@ public:
                 // then we use that as evidence that bob's offer blocked the
                 // order book.
                 {
-                    bool const bobsOfferGone =
+                    bool const bobOfferGone =
                         !offerInLedger(env, bob, bobOfferSeq);
                     STAmount const aliceBalanceUSD = env.balance(alice, USD);
 
@@ -389,11 +388,11 @@ public:
                     {
                         BEAST_EXPECT(aliceBalanceUSD == initialBobUSD);
                         BEAST_EXPECT(env.balance(bob, USD) == USD(0));
-                        BEAST_EXPECT(bobsOfferGone);
+                        BEAST_EXPECT(bobOfferGone);
                     }
 
                     // Track occurrences of order book blocking.
-                    if (!bobsOfferGone && aliceBalanceUSD.signum() == 0)
+                    if (!bobOfferGone && aliceBalanceUSD.signum() == 0)
                     {
                         ++blockedOrderBookCount;
                     }
@@ -478,14 +477,14 @@ public:
 
                 // Examine the aftermath of alice's offer.
                 {
-                    bool const bobsOfferGone =
+                    bool const bobOfferGone =
                         !offerInLedger(env, bob, bobOfferSeq);
                     STAmount aliceBalanceUSD = env.balance(alice, USD);
 #if 0
                     std::cout
-                        << "bobs initial: " << initialBobUSD
+                        << "bob initial: " << initialBobUSD
                         << "; alice final: " << aliceBalanceUSD
-                        << "; bobs offer: " << bobsOfferJson.toStyledString()
+                        << "; bob offer: " << bobOfferJson.toStyledString()
                         << std::endl;
 #endif
                     // Sanity check the ledger if alice got USD.
@@ -493,11 +492,11 @@ public:
                     {
                         BEAST_EXPECT(aliceBalanceUSD == initialBobUSD);
                         BEAST_EXPECT(env.balance(bob, USD) == USD(0));
-                        BEAST_EXPECT(bobsOfferGone);
+                        BEAST_EXPECT(bobOfferGone);
                     }
 
                     // Track occurrences of order book blocking.
-                    if (!bobsOfferGone && aliceBalanceUSD.signum() == 0)
+                    if (!bobOfferGone && aliceBalanceUSD.signum() == 0)
                     {
                         ++blockedOrderBookCount;
                     }
