@@ -26,7 +26,7 @@ DelegateSet::preflight(PreflightContext const& ctx)
         if (!permissionSet.insert(permission[sfPermissionValue]).second)
             return temMALFORMED;
 
-        if (!Permission::getInstance().isDelegatable(
+        if (!Permission::getInstance().isDelegable(
                 permission[sfPermissionValue], ctx.rules))
             return temMALFORMED;
     }

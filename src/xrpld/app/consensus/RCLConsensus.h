@@ -59,7 +59,7 @@ class RCLConsensus
         // The timestamp of the last validation we used
         NetClock::time_point lastValidationTime_;
 
-        // These members are queried via public accesors and are atomic for
+        // These members are queried via public accessors and are atomic for
         // thread safety.
         std::atomic<bool> validating_{false};
         std::atomic<std::size_t> prevProposers_{0};

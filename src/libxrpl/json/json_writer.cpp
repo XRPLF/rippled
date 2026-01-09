@@ -79,7 +79,7 @@ valueToString(double value)
     // of precision requested below.
     char buffer[32];
     // Print into the buffer. We need not request the alternative representation
-    // that always has a decimal point because JSON doesn't distingish the
+    // that always has a decimal point because JSON doesn't distinguish the
     // concepts of reals and integers.
 #if defined(_MSC_VER) && \
     defined(__STDC_SECURE_LIB__)  // Use secure version with visual studio 2005
@@ -108,7 +108,7 @@ valueToQuotedString(char const* value)
     // We have to walk value and escape any special characters.
     // Appending to std::string is not efficient, but this should be rare.
     // (Note: forward slashes are *not* rare, but I am not escaping them.)
-    unsigned maxsize = strlen(value) * 2 + 3;  // allescaped+quotes+NULL
+    unsigned maxsize = strlen(value) * 2 + 3;  // all-escaped+quotes+NULL
     std::string result;
     result.reserve(maxsize);  // to avoid lots of mallocs
     result += "\"";
@@ -347,7 +347,7 @@ StyledWriter::writeArrayValue(Value const& value)
         pushValue("[]");
     else
     {
-        bool isArrayMultiLine = isMultineArray(value);
+        bool isArrayMultiLine = isMultilineArray(value);
 
         if (isArrayMultiLine)
         {
@@ -398,7 +398,7 @@ StyledWriter::writeArrayValue(Value const& value)
 }
 
 bool
-StyledWriter::isMultineArray(Value const& value)
+StyledWriter::isMultilineArray(Value const& value)
 {
     int size = value.size();
     bool isMultiLine = size * 3 >= rightMargin_;
@@ -573,7 +573,7 @@ StyledStreamWriter::writeArrayValue(Value const& value)
         pushValue("[]");
     else
     {
-        bool isArrayMultiLine = isMultineArray(value);
+        bool isArrayMultiLine = isMultilineArray(value);
 
         if (isArrayMultiLine)
         {
@@ -624,7 +624,7 @@ StyledStreamWriter::writeArrayValue(Value const& value)
 }
 
 bool
-StyledStreamWriter::isMultineArray(Value const& value)
+StyledStreamWriter::isMultilineArray(Value const& value)
 {
     int size = value.size();
     bool isMultiLine = size * 3 >= rightMargin_;

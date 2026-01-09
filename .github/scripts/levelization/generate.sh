@@ -29,7 +29,7 @@ pushd results
 oldifs=${IFS}
 IFS=:
 mkdir includes
-mkdir includedby
+mkdir included_by
 echo Build levelization paths
 exec 3< ${includes} # open rawincludes.txt for input
 while read -r -u 3 file include
@@ -59,7 +59,7 @@ do
         echo $level $includelevel | tee -a paths.txt
     fi
 done
-echo Sort and dedup paths
+echo Sort and deduplicate paths
 sort -ds paths.txt | uniq -c | tee sortedpaths.txt
 mv sortedpaths.txt paths.txt
 exec 3>&- #close fd 3
@@ -71,7 +71,7 @@ exec 4<paths.txt # open paths.txt for input
 while read -r -u 4 count level include
 do
     echo ${include} ${count} | tee -a includes/${level}
-    echo ${level} ${count} | tee -a includedby/${include}
+    echo ${level} ${count} | tee -a included_by/${include}
 done
 exec 4>&- #close fd 4
 
