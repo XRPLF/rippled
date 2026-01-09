@@ -100,7 +100,7 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Prepare runner
-        uses: a1q123456/actions/prepare-runner@02187386f5f2cc68e40c2935dabbf7d23c2aa9af
+        uses: a1q123456/actions/prepare-runner@2e86014f7d2947e1d0cef17c6961514f20ae3a7e
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
