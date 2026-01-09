@@ -4,10 +4,11 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/CachedSLEs.h>
 #include <xrpl/protocol/Protocol.h>
 
-#include <boost/asio.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <cstdint>
 #include <memory>
@@ -30,6 +31,7 @@ class AmendmentTable;
 class Application;
 class Cluster;
 class CollectorManager;
+class Config;
 class DatabaseCon;
 class Family;
 class HashRouter;
@@ -43,6 +45,7 @@ class LoadFeeTrack;
 class LoadManager;
 class ManifestCache;
 class NetworkOPs;
+class NetworkIDService;
 class OpenLedger;
 class OrderBookDB;
 class Overlay;
@@ -101,6 +104,9 @@ public:
 
     virtual CachedSLEs&
     cachedSLEs() = 0;
+
+    virtual NetworkIDService&
+    getNetworkIDService() = 0;
 
     // Protocol and validation services
     virtual AmendmentTable&

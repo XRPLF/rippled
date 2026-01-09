@@ -89,7 +89,7 @@ class Invariants_test : public beast::unit_test::suite
             tx.setAccountID(
                 sfAccount, setTxAccount == TxAccount::A1 ? A1.id() : A2.id());
         ApplyContext ac{
-            env.app(),
+            env.app().getServiceRegistry(),
             ov,
             tx,
             tesSUCCESS,

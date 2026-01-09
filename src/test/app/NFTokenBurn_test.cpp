@@ -780,7 +780,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
                 test::StreamSink sink{beast::severities::kWarning};
                 beast::Journal jlog{sink};
                 ApplyContext ac{
-                    env.app(),
+                    env.app().getServiceRegistry(),
                     ov,
                     tx,
                     tesSUCCESS,
@@ -824,7 +824,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
                 test::StreamSink sink{beast::severities::kWarning};
                 beast::Journal jlog{sink};
                 ApplyContext ac{
-                    env.app(),
+                    env.app().getServiceRegistry(),
                     ov,
                     tx,
                     tesSUCCESS,

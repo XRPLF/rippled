@@ -977,13 +977,17 @@ public:
 
             Env::ParsedResult parsed;
 
-            env.app().openLedger().modify([&](OpenView& view,
-                                              beast::Journal j) {
-                auto const result =
-                    xrpl::apply(env.app(), view, *jt.stx, tapNONE, env.journal);
-                parsed.ter = result.ter;
-                return result.applied;
-            });
+            env.app().openLedger().modify(
+                [&](OpenView& view, beast::Journal j) {
+                    auto const result = xrpl::apply(
+                        env.app().getServiceRegistry(),
+                        view,
+                        *jt.stx,
+                        tapNONE,
+                        env.journal);
+                    parsed.ter = result.ter;
+                    return result.applied;
+                });
             env.postconditions(jt, parsed);
         }
         checkMetrics(*this, env, 1, std::nullopt, 4, 2);
@@ -2428,7 +2432,7 @@ public:
         {
             auto const jtx = env.jt(offer_cancel(alice, 3), seq(5), fee(10));
             auto const pf = preflight(
-                env.app(),
+                env.app().getServiceRegistry(),
                 env.current()->rules(),
                 *jtx.stx,
                 tapNONE,
@@ -2445,7 +2449,7 @@ public:
             auto const jtx =
                 env.jt(trust("carol", USD(50000000)), seq(1), fee(10));
             auto const pf = preflight(
-                env.app(),
+                env.app().getServiceRegistry(),
                 env.current()->rules(),
                 *jtx.stx,
                 tapNONE,
@@ -2459,7 +2463,7 @@ public:
         {
             auto const jtx = env.jt(ticket::create(alice, 1), seq(1), fee(10));
             auto const pf = preflight(
-                env.app(),
+                env.app().getServiceRegistry(),
                 env.current()->rules(),
                 *jtx.stx,
                 tapNONE,
@@ -4190,8 +4194,8 @@ public:
         env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const tx =
                 env.jt(noop(alice), seq(aliceSeq), fee(openLedgerCost(env)));
-            auto const result =
-                xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
+            auto const result = xrpl::apply(
+                env.app().getServiceRegistry(), view, *tx.stx, tapUNLIMITED, j);
             BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
             return result.applied;
         });
@@ -4262,8 +4266,8 @@ public:
                 noop(alice),
                 ticket::use(tktSeq0 + 1),
                 fee(openLedgerCost(env)));
-            auto const result =
-                xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
+            auto const result = xrpl::apply(
+                env.app().getServiceRegistry(), view, *tx.stx, tapUNLIMITED, j);
             BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
             return result.applied;
         });

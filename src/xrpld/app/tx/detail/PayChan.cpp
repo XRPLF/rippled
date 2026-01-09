@@ -328,7 +328,7 @@ PayChanFund::doApply()
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (expiration && closeTime >= *expiration))
             return closeChannel(
-                slep, ctx_.view(), k.key, ctx_.app.journal("View"));
+                slep, ctx_.view(), k.key, ctx_.registry.journal("View"));
     }
 
     if (src != txAccount)
@@ -485,7 +485,7 @@ PayChanClaim::doApply()
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (curExpiration && closeTime >= *curExpiration))
             return closeChannel(
-                slep, ctx_.view(), k.key, ctx_.app.journal("View"));
+                slep, ctx_.view(), k.key, ctx_.registry.journal("View"));
     }
 
     if (txAccount != src && txAccount != dst)
@@ -546,7 +546,7 @@ PayChanClaim::doApply()
         // Channel will close immediately if dry or the receiver closes
         if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
             return closeChannel(
-                slep, ctx_.view(), k.key, ctx_.app.journal("View"));
+                slep, ctx_.view(), k.key, ctx_.registry.journal("View"));
 
         auto const settleExpiration =
             ctx_.view().header().parentCloseTime.time_since_epoch().count() +

@@ -46,7 +46,7 @@ public:
     // Interface used by DeleteAccount
     static TER
     removeFromLedger(
-        Application& app,
+        ServiceRegistry& registry,
         ApplyView& view,
         AccountID const& account,
         beast::Journal j);

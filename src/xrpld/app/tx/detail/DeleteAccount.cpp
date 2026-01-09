@@ -53,7 +53,7 @@ DeleteAccount::calculateBaseFee(ReadView const& view, STTx const& tx)
 namespace {
 // Define a function pointer type that can be used to delete ledger node types.
 using DeleterFuncPtr = TER (*)(
-    Application& app,
+    ServiceRegistry& registry,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -63,7 +63,7 @@ using DeleterFuncPtr = TER (*)(
 // Local function definitions that provides signature compatibility.
 TER
 offerDelete(
-    Application& app,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -75,19 +75,19 @@ offerDelete(
 
 TER
 removeSignersFromLedger(
-    Application& app,
+    ServiceRegistry& registry,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
-    return SetSignerList::removeFromLedger(app, view, account, j);
+    return SetSignerList::removeFromLedger(registry, view, account, j);
 }
 
 TER
 removeTicketFromLedger(
-    Application&,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -99,7 +99,7 @@ removeTicketFromLedger(
 
 TER
 removeDepositPreauthFromLedger(
-    Application&,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const&,
     uint256 const& delIndex,
@@ -111,7 +111,7 @@ removeDepositPreauthFromLedger(
 
 TER
 removeNFTokenOfferFromLedger(
-    Application& app,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -126,7 +126,7 @@ removeNFTokenOfferFromLedger(
 
 TER
 removeDIDFromLedger(
-    Application& app,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -138,7 +138,7 @@ removeDIDFromLedger(
 
 TER
 removeOracleFromLedger(
-    Application&,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const&,
@@ -150,7 +150,7 @@ removeOracleFromLedger(
 
 TER
 removeCredentialFromLedger(
-    Application&,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const&,
     uint256 const&,
@@ -162,7 +162,7 @@ removeCredentialFromLedger(
 
 TER
 removeDelegateFromLedger(
-    Application& app,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -364,8 +364,8 @@ DeleteAccount::doApply()
             std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             if (auto deleter = nonObligationDeleter(nodeType))
             {
-                TER const result{
-                    deleter(ctx_.app, view(), account_, dirEntry, sleItem, j_)};
+                TER const result{deleter(
+                    ctx_.registry, view(), account_, dirEntry, sleItem, j_)};
 
                 return {result, SkipEntry::No};
             }

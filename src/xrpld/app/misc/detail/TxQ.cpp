@@ -290,13 +290,17 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
                         << " rules or flags have changed. Flags from "
                         << pfResult->flags << " to " << flags;
 
-        pfResult.emplace(
-            preflight(app, view.rules(), pfResult->tx, flags, pfResult->j));
+        pfResult.emplace(preflight(
+            app.getServiceRegistry(),
+            view.rules(),
+            pfResult->tx,
+            flags,
+            pfResult->j));
     }
 
-    auto pcresult = preclaim(*pfResult, app, view);
+    auto pcresult = preclaim(*pfResult, app.getServiceRegistry(), view);
 
-    return doApply(pcresult, app, view);
+    return doApply(pcresult, app.getServiceRegistry(), view);
 }
 
 TxQ::TxQAccount::TxQAccount(std::shared_ptr<STTx const> const& txn)
@@ -578,7 +582,10 @@ TxQ::tryClearAccountQueueUpThruTx(
     }
     // Apply the current tx. Because the state of the view has been changed
     // by the queued txs, we also need to preclaim again.
-    auto const txResult = doApply(preclaim(pfResult, app, view), app, view);
+    auto const txResult = doApply(
+        preclaim(pfResult, app.getServiceRegistry(), view),
+        app.getServiceRegistry(),
+        view);
 
     if (txResult.applied)
     {
@@ -720,7 +727,8 @@ TxQ::apply(
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
-    auto const pfResult = preflight(app, view.rules(), *tx, flags, j);
+    auto const pfResult =
+        preflight(app.getServiceRegistry(), view.rules(), *tx, flags, j);
     if (pfResult.ter != tesSUCCESS)
         return {pfResult.ter, false};
 
@@ -1143,8 +1151,10 @@ TxQ::apply(
     // Note that earlier code has already verified that the sequence/ticket
     // is valid.  So we use a special entry point that runs all of the
     // preclaim checks with the exception of the sequence check.
-    auto const pcresult =
-        preclaim(pfResult, app, multiTxn ? multiTxn->openView : view);
+    auto const pcresult = preclaim(
+        pfResult,
+        app.getServiceRegistry(),
+        multiTxn ? multiTxn->openView : view);
     if (!pcresult.likelyToClaimFee)
         return {pcresult.ter, false};
 
@@ -1694,7 +1704,7 @@ TxQ::tryDirectApply(
                          << " to open ledger.";
 
         auto const [txnResult, didApply, metadata] =
-            xrpl::apply(app, view, *tx, flags, j);
+            xrpl::apply(app.getServiceRegistry(), view, *tx, flags, j);
 
         JLOG(j_.trace()) << "New transaction " << transactionID
                          << (didApply ? " applied successfully with "

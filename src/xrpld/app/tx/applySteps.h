@@ -6,7 +6,7 @@
 
 namespace xrpl {
 
-class Application;
+class ServiceRegistry;
 class STTx;
 class TxQ;
 
@@ -245,7 +245,7 @@ public:
 /** @{ */
 PreflightResult
 preflight(
-    Application& app,
+    ServiceRegistry& registry,
     Rules const& rules,
     STTx const& tx,
     ApplyFlags flags,
@@ -253,7 +253,7 @@ preflight(
 
 PreflightResult
 preflight(
-    Application& app,
+    ServiceRegistry& registry,
     Rules const& rules,
     uint256 const& parentBatchId,
     STTx const& tx,
@@ -292,7 +292,7 @@ preflight(
 PreclaimResult
 preclaim(
     PreflightResult const& preflightResult,
-    Application& app,
+    ServiceRegistry& registry,
     OpenView const& view);
 
 /** Compute only the expected base fee for a transaction.
@@ -335,7 +335,7 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx);
 
     @param preclaimResult The result of a previous
     call to `preclaim` for the transaction.
-    @param app The current running `Application`.
+    @param registry The service registry.
     @param view The open ledger that the transaction
     will attempt to be applied to.
 
@@ -345,7 +345,10 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx);
     whether or not the transaction was applied.
 */
 ApplyResult
-doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view);
+doApply(
+    PreclaimResult const& preclaimResult,
+    ServiceRegistry& registry,
+    OpenView& view);
 
 }  // namespace xrpl
 

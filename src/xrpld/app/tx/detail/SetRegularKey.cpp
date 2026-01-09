@@ -48,7 +48,7 @@ SetRegularKey::doApply()
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!minimumFee(ctx_.app, ctx_.baseFee, view().fees(), view().flags()))
+    if (!minimumFee(ctx_.registry, ctx_.baseFee, view().fees(), view().flags()))
         sle->setFlag(lsfPasswordSpent);
 
     if (ctx_.tx.isFieldPresent(sfRegularKey))

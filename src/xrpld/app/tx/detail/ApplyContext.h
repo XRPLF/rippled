@@ -1,10 +1,8 @@
 #ifndef XRPL_TX_APPLYCONTEXT_H_INCLUDED
 #define XRPL_TX_APPLYCONTEXT_H_INCLUDED
 
-#include <xrpld/app/main/Application.h>
-#include <xrpld/core/Config.h>
-
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -18,7 +16,7 @@ class ApplyContext
 {
 public:
     explicit ApplyContext(
-        Application& app,
+        ServiceRegistry& registry,
         OpenView& base,
         std::optional<uint256 const> const& parentBatchId,
         STTx const& tx,
@@ -28,7 +26,7 @@ public:
         beast::Journal journal = beast::Journal{beast::Journal::getNullSink()});
 
     explicit ApplyContext(
-        Application& app,
+        ServiceRegistry& registry,
         OpenView& base,
         STTx const& tx,
         TER preclaimResult,
@@ -36,7 +34,7 @@ public:
         ApplyFlags flags,
         beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
         : ApplyContext(
-              app,
+              registry,
               base,
               std::nullopt,
               tx,
@@ -49,7 +47,7 @@ public:
             (flags & tapBATCH) == 0, "Batch apply flag should not be set");
     }
 
-    Application& app;
+    ServiceRegistry& registry;
     STTx const& tx;
     TER const preclaimResult;
     XRPAmount const baseFee;

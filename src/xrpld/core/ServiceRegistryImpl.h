@@ -46,6 +46,9 @@ public:
     CachedSLEs&
     cachedSLEs() override;
 
+    NetworkIDService&
+    getNetworkIDService() override;
+
     // Protocol and validation services
     AmendmentTable&
     getAmendmentTable() override;

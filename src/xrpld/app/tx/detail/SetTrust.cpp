@@ -376,7 +376,7 @@ SetTrust::doApply()
     bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze);
     bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
 
-    auto viewJ = ctx_.app.journal("View");
+    auto viewJ = ctx_.registry.journal("View");
 
     SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
 

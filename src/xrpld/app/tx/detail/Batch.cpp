@@ -318,7 +318,7 @@ Batch::preflight(PreflightContext const& ctx)
 
         auto const innerAccount = stx.getAccountID(sfAccount);
         if (auto const preflightResult = xrpl::preflight(
-                ctx.app, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
+                ctx.registry, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
             preflightResult.ter != tesSUCCESS)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "

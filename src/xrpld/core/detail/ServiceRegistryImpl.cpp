@@ -1,4 +1,5 @@
 #include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ServiceRegistryImpl.h>
 
 namespace xrpl {
@@ -42,6 +43,12 @@ CachedSLEs&
 ServiceRegistryImpl::cachedSLEs()
 {
     return app_.cachedSLEs();
+}
+
+NetworkIDService&
+ServiceRegistryImpl::getNetworkIDService()
+{
+    return app_.getNetworkIDService();
 }
 
 // Protocol and validation services

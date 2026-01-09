@@ -122,8 +122,12 @@ createInvalidFeeTx(
 bool
 applyFeeAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx)
 {
-    auto const res =
-        apply(env.app(), view, tx, ApplyFlags::tapNONE, env.journal);
+    auto const res = apply(
+        env.app().getServiceRegistry(),
+        view,
+        tx,
+        ApplyFlags::tapNONE,
+        env.journal);
     return res.ter == tesSUCCESS;
 }
 

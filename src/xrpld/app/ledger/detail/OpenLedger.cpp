@@ -163,7 +163,8 @@ OpenLedger::apply_one(
     if (retry)
         flags = flags | tapRETRY;
     // If it's in anybody's proposed set, try to keep it in the ledger
-    auto const result = xrpl::apply(app, view, *tx, flags, j);
+    auto const result =
+        xrpl::apply(app.getServiceRegistry(), view, *tx, flags, j);
     if (result.applied || result.ter == terQUEUED)
         return Result::success;
     if (isTefFailure(result.ter) || isTemMalformed(result.ter) ||

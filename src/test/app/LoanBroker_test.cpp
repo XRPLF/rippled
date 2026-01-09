@@ -1323,7 +1323,7 @@ class LoanBroker_test : public beast::unit_test::suite
         test::StreamSink sink{beast::severities::kWarning};
         beast::Journal jlog{sink};
         ApplyContext ac{
-            env.app(),
+            env.app().getServiceRegistry(),
             ov,
             tx,
             tesSUCCESS,
@@ -1344,7 +1344,12 @@ class LoanBroker_test : public beast::unit_test::suite
         // Invoke preclaim against the mutated (ApplyView) view; triggers
         // nullptr deref
         PreclaimContext pctx{
-            env.app(), ac.view(), tesSUCCESS, tx, tapNONE, jlog};
+            env.app().getServiceRegistry(),
+            ac.view(),
+            tesSUCCESS,
+            tx,
+            tapNONE,
+            jlog};
         (void)LoanBrokerCoverDeposit::preclaim(pctx);
     }
 

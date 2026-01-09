@@ -15,7 +15,7 @@ namespace xrpl {
 struct PreflightContext
 {
 public:
-    Application& app;
+    ServiceRegistry& registry;
     STTx const& tx;
     Rules const rules;
     ApplyFlags flags;
@@ -23,13 +23,13 @@ public:
     beast::Journal const j;
 
     PreflightContext(
-        Application& app_,
+        ServiceRegistry& registry_,
         STTx const& tx_,
         uint256 parentBatchId_,
         Rules const& rules_,
         ApplyFlags flags_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : app(app_)
+        : registry(registry_)
         , tx(tx_)
         , rules(rules_)
         , flags(flags_)
@@ -41,12 +41,12 @@ public:
     }
 
     PreflightContext(
-        Application& app_,
+        ServiceRegistry& registry_,
         STTx const& tx_,
         Rules const& rules_,
         ApplyFlags flags_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : app(app_), tx(tx_), rules(rules_), flags(flags_), j(j_)
+        : registry(registry_), tx(tx_), rules(rules_), flags(flags_), j(j_)
     {
         XRPL_ASSERT(
             (flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
@@ -60,7 +60,7 @@ public:
 struct PreclaimContext
 {
 public:
-    Application& app;
+    ServiceRegistry& registry;
     ReadView const& view;
     TER preflightResult;
     ApplyFlags flags;
@@ -69,14 +69,14 @@ public:
     beast::Journal const j;
 
     PreclaimContext(
-        Application& app_,
+        ServiceRegistry& registry_,
         ReadView const& view_,
         TER preflightResult_,
         STTx const& tx_,
         ApplyFlags flags_,
         std::optional<uint256> parentBatchId_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : app(app_)
+        : registry(registry_)
         , view(view_)
         , preflightResult(preflightResult_)
         , flags(flags_)
@@ -90,14 +90,14 @@ public:
     }
 
     PreclaimContext(
-        Application& app_,
+        ServiceRegistry& registry_,
         ReadView const& view_,
         TER preflightResult_,
         STTx const& tx_,
         ApplyFlags flags_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
         : PreclaimContext(
-              app_,
+              registry_,
               view_,
               preflightResult_,
               tx_,
@@ -245,7 +245,7 @@ protected:
     /** Compute the minimum fee required to process a transaction
         with a given baseFee based on the current server load.
 
-        @param app The application hosting the server
+        @param registry The service registry.
         @param baseFee The base fee of a candidate transaction
             @see xrpl::calculateBaseFee
         @param fees Fee settings from the current ledger
@@ -253,7 +253,7 @@ protected:
      */
     static XRPAmount
     minimumFee(
-        Application& app,
+        ServiceRegistry& registry,
         XRPAmount baseFee,
         Fees const& fees,
         ApplyFlags flags);

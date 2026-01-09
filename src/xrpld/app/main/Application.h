@@ -159,6 +159,8 @@ public:
     getTempNodeCache() = 0;
     virtual CachedSLEs&
     cachedSLEs() = 0;
+    virtual NetworkIDService&
+    getNetworkIDService() = 0;
     virtual AmendmentTable&
     getAmendmentTable() = 0;
     virtual HashRouter&

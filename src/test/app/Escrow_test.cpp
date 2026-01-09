@@ -1314,7 +1314,7 @@ struct Escrow_test : public beast::unit_test::suite
                 seq(1),
                 fee(baseFee));
             auto const pf = preflight(
-                env.app(),
+                env.app().getServiceRegistry(),
                 env.current()->rules(),
                 *jtx.stx,
                 tapNONE,
@@ -1329,7 +1329,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const jtx =
                 env.jt(escrow::cancel("bob", "alice", 3), seq(1), fee(baseFee));
             auto const pf = preflight(
-                env.app(),
+                env.app().getServiceRegistry(),
                 env.current()->rules(),
                 *jtx.stx,
                 tapNONE,
@@ -1344,7 +1344,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const jtx =
                 env.jt(escrow::finish("bob", "alice", 3), seq(1), fee(baseFee));
             auto const pf = preflight(
-                env.app(),
+                env.app().getServiceRegistry(),
                 env.current()->rules(),
                 *jtx.stx,
                 tapNONE,

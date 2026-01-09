@@ -110,7 +110,12 @@ applyTransactions(
                 }
 
                 switch (applyTransaction(
-                    app, view, *it->second, certainRetry, tapNONE, j))
+                    app.getServiceRegistry(),
+                    view,
+                    *it->second,
+                    certainRetry,
+                    tapNONE,
+                    j))
                 {
                     case ApplyTransactionResult::Success:
                         it = txns.erase(it);
@@ -224,7 +229,13 @@ buildLedger(
         j,
         [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
             for (auto& tx : replayData.orderedTxns())
-                applyTransaction(app, accum, *tx.second, false, applyFlags, j);
+                applyTransaction(
+                    app.getServiceRegistry(),
+                    accum,
+                    *tx.second,
+                    false,
+                    applyFlags,
+                    j);
         });
 }
 

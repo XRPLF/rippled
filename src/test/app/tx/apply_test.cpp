@@ -42,8 +42,7 @@ public:
             Validity valid = checkValidity(
                                  fully_canonical.app().getHashRouter(),
                                  tx,
-                                 fully_canonical.current()->rules(),
-                                 fully_canonical.app().config())
+                                 fully_canonical.current()->rules())
                                  .first;
             if (valid == Validity::Valid)
                 fail("Non-Fully canonical signature was permitted");

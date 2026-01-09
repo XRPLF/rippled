@@ -565,7 +565,8 @@ public:
         stx->at(sfSigningPubKey) = makeSlice(std::string("badkey"));
 
         env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
-            auto const result = xrpl::apply(env.app(), view, *stx, tapNONE, j);
+            auto const result = xrpl::apply(
+                env.app().getServiceRegistry(), view, *stx, tapNONE, j);
             BEAST_EXPECT(result.ter == temBAD_SIGNATURE);
             BEAST_EXPECT(!result.applied);
             return result.applied;

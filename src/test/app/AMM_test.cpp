@@ -3563,7 +3563,7 @@ private:
                 auto jtx = env.jt(tx, seq(1), fee(baseFee));
                 env.app().config().features.erase(featureAMM);
                 PreflightContext pfCtx(
-                    env.app(),
+                    env.app().getServiceRegistry(),
                     *jtx.stx,
                     env.current()->rules(),
                     tapNONE,
@@ -3578,7 +3578,7 @@ private:
                 jtx.jv["TxnSignature"] = "deadbeef";
                 jtx.stx = env.ust(jtx);
                 PreflightContext pfCtx(
-                    env.app(),
+                    env.app().getServiceRegistry(),
                     *jtx.stx,
                     env.current()->rules(),
                     tapNONE,
@@ -3593,7 +3593,7 @@ private:
                 jtx.jv["Asset2"].removeMember("issuer");
                 jtx.stx = env.ust(jtx);
                 PreflightContext pfCtx(
-                    env.app(),
+                    env.app().getServiceRegistry(),
                     *jtx.stx,
                     env.current()->rules(),
                     tapNONE,

@@ -1202,10 +1202,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
     try
     {
         auto const [validity, reason] = checkValidity(
-            app_.getHashRouter(),
-            *trans,
-            m_ledgerMaster.getValidatedRules(),
-            app_.config());
+            app_.getHashRouter(), *trans, m_ledgerMaster.getValidatedRules());
 
         if (validity != Validity::Valid)
         {
@@ -1265,7 +1262,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     // but I'm not 100% sure yet.
     // If so, only cost is looking up HashRouter flags.
     auto const [validity, reason] =
-        checkValidity(app_.getHashRouter(), sttx, view->rules(), app_.config());
+        checkValidity(app_.getHashRouter(), sttx, view->rules());
     XRPL_ASSERT(
         validity == Validity::Valid,
         "xrpl::NetworkOPsImp::processTransaction : valid validity");

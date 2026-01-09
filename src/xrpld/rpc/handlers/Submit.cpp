@@ -85,8 +85,7 @@ doSubmit(RPC::JsonContext& context)
         auto [validity, reason] = checkValidity(
             context.app.getHashRouter(),
             *stTx,
-            context.ledgerMaster.getCurrentLedger()->rules(),
-            context.app.config());
+            context.ledgerMaster.getCurrentLedger()->rules());
         if (validity != Validity::Valid)
         {
             jvResult[jss::error] = "invalidTransaction";
