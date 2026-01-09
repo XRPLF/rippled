@@ -1,7 +1,7 @@
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/core/Config.h>
 
-namespace ripple {
+namespace xrpl {
 
 auto
 HashRouter::emplace(uint256 const& key) -> std::pair<Entry&, bool>
@@ -14,7 +14,7 @@ HashRouter::emplace(uint256 const& key) -> std::pair<Entry&, bool>
         return std::make_pair(std::ref(iter->second), false);
     }
 
-    // See if any supressions need to be expired
+    // See if any suppressions need to be expired
     expire(suppressionMap_, setup_.holdTime);
 
     return std::make_pair(
@@ -87,7 +87,7 @@ bool
 HashRouter::setFlags(uint256 const& key, HashRouterFlags flags)
 {
     XRPL_ASSERT(
-        static_cast<bool>(flags), "ripple::HashRouter::setFlags : valid input");
+        static_cast<bool>(flags), "xrpl::HashRouter::setFlags : valid input");
 
     std::lock_guard lock(mutex_);
 
@@ -149,4 +149,4 @@ setup_HashRouter(Config const& config)
     return setup;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

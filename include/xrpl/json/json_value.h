@@ -44,7 +44,7 @@ enum ValueType {
 class StaticString
 {
 public:
-    constexpr explicit StaticString(char const* czstring) : str_(czstring)
+    constexpr explicit StaticString(char const* czString) : str_(czString)
     {
     }
 
@@ -199,7 +199,7 @@ public:
     Value(UInt value);
     Value(double value);
     Value(char const* value);
-    Value(ripple::Number const& value);
+    Value(xrpl::Number const& value);
     /** \brief Constructs a value from a static string.
 
      * Like other value string constructor but do not duplicate the string for
@@ -381,6 +381,9 @@ public:
     /// Return true if the object has a member named key.
     bool
     isMember(std::string const& key) const;
+    /// Return true if the object has a member named key.
+    bool
+    isMember(StaticString const& key) const;
 
     /// \brief Return a list of the member names.
     ///
@@ -427,7 +430,7 @@ private:
 };
 
 inline Value
-to_json(ripple::Number const& number)
+to_json(xrpl::Number const& number)
 {
     return to_string(number);
 }
@@ -679,4 +682,4 @@ public:
 
 }  // namespace Json
 
-#endif  // CPPTL_JSON_H_INCLUDED
+#endif  // XRPL_JSON_JSON_VALUE_H_INCLUDED

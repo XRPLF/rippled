@@ -4,7 +4,7 @@
 
 #include <xrpld/app/misc/HashRouter.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class NetworkOPs_test : public beast::unit_test::suite
@@ -38,14 +38,14 @@ public:
 
             auto const jtx = env.jt(ticket::create(alice, 1), seq(1), fee(10));
 
-            auto transacionId = jtx.stx->getTransactionID();
+            auto transactionId = jtx.stx->getTransactionID();
             env.app().getHashRouter().setFlags(
-                transacionId, HashRouterFlags::HELD);
+                transactionId, HashRouterFlags::HELD);
 
             env(jtx, json(jss::Sequence, 1), ter(terNO_ACCOUNT));
 
             env.app().getHashRouter().setFlags(
-                transacionId, HashRouterFlags::BAD);
+                transactionId, HashRouterFlags::BAD);
 
             env.close();
         }
@@ -55,7 +55,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NetworkOPs, app, ripple);
+BEAST_DEFINE_TESTSUITE(NetworkOPs, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

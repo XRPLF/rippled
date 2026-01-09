@@ -1,6 +1,6 @@
 #include <xrpld/app/ledger/OrderBookDB.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 BookListeners::addSubscriber(InfoSub::ref sub)
@@ -30,7 +30,7 @@ BookListeners::publish(
 
         if (p)
         {
-            // Only publish jvObj if this is the first occurence
+            // Only publish jvObj if this is the first occurrence
             if (havePublished.emplace(p->getSeq()).second)
             {
                 jvObj.visit(
@@ -44,4 +44,4 @@ BookListeners::publish(
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

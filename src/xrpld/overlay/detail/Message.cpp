@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 Message::Message(
     ::google::protobuf::Message const& message,
@@ -12,12 +12,12 @@ Message::Message(
     : category_(TrafficCount::categorize(message, type, false))
     , validatorKey_(validator)
 {
-    using namespace ripple::compression;
+    using namespace xrpl::compression;
 
     auto const messageBytes = messageSize(message);
 
     XRPL_ASSERT(
-        messageBytes, "ripple::Message::Message : non-empty message input");
+        messageBytes, "xrpl::Message::Message : non-empty message input");
 
     buffer_.resize(headerBytes + messageBytes);
 
@@ -28,7 +28,7 @@ Message::Message(
 
     XRPL_ASSERT(
         getBufferSize() == totalSize(message),
-        "ripple::Message::Message : message size matches the buffer");
+        "xrpl::Message::Message : message size matches the buffer");
 }
 
 // static
@@ -52,7 +52,7 @@ Message::totalSize(::google::protobuf::Message const& message)
 void
 Message::compress()
 {
-    using namespace ripple::compression;
+    using namespace xrpl::compression;
     auto const messageBytes = buffer_.size() - headerBytes;
 
     auto type = getType(buffer_.data());
@@ -68,8 +68,8 @@ Message::compress()
             case protocol::mtGET_LEDGER:
             case protocol::mtLEDGER_DATA:
             case protocol::mtGET_OBJECTS:
-            case protocol::mtVALIDATORLIST:
-            case protocol::mtVALIDATORLISTCOLLECTION:
+            case protocol::mtVALIDATOR_LIST:
+            case protocol::mtVALIDATOR_LIST_COLLECTION:
             case protocol::mtREPLAY_DELTA_RESPONSE:
             case protocol::mtTRANSACTIONS:
                 return true;
@@ -92,7 +92,7 @@ Message::compress()
     {
         auto payload = static_cast<void const*>(buffer_.data() + headerBytes);
 
-        auto compressedSize = ripple::compression::compress(
+        auto compressedSize = xrpl::compression::compress(
             payload,
             messageBytes,
             [&](std::size_t inSize) {  // size of required compressed buffer
@@ -208,4 +208,4 @@ Message::getType(std::uint8_t const* in) const
     return type;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

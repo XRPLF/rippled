@@ -16,7 +16,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 static auto checkpointPageCount = 1000;
 
@@ -206,7 +206,7 @@ public:
     {
         if (auto p = session_.lock())
         {
-            return {ripple::getConnection(*p), p};
+            return {xrpl::getConnection(*p), p};
         }
         return {nullptr, std::shared_ptr<soci::session>{}};
     }
@@ -279,7 +279,7 @@ public:
 protected:
     std::uintptr_t const id_;
     // session is owned by the DatabaseCon parent that holds the checkpointer.
-    // It is possible (tho rare) for the DatabaseCon class to be destoryed
+    // It is possible (though rare) for the DatabaseCon class to be destroyed
     // before the checkpointer.
     std::weak_ptr<soci::session> session_;
     std::mutex mutex_;
@@ -324,7 +324,7 @@ makeCheckpointer(
         id, std::move(session), queue, logs);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #if defined(__clang__)
 #pragma clang diagnostic pop

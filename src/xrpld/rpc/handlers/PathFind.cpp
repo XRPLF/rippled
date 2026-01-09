@@ -8,7 +8,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doPathFind(RPC::JsonContext& context)
@@ -63,4 +63,4 @@ doPathFind(RPC::JsonContext& context)
     return rpcError(rpcINVALID_PARAMS);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

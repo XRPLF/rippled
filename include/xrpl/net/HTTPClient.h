@@ -12,7 +12,7 @@
 #include <functional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /** Provides an asynchronous HTTP client implementation with optional SSL.
  */
@@ -75,6 +75,6 @@ public:
         beast::Journal& j);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

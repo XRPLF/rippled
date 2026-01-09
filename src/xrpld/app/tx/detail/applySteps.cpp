@@ -18,7 +18,7 @@
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -113,7 +113,7 @@ invoke_preflight(PreflightContext const& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preflight: " << e.txnType;
-        UNREACHABLE("ripple::invoke_preflight : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_preflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
         // LCOV_EXCL_STOP
     }
@@ -177,7 +177,7 @@ invoke_preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preclaim: " << e.txnType;
-        UNREACHABLE("ripple::invoke_preclaim : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_preclaim : unknown transaction type");
         return temUNKNOWN;
         // LCOV_EXCL_STOP
     }
@@ -211,14 +211,13 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
     catch (UnknownTxnType const& e)
     {
         // LCOV_EXCL_START
-        UNREACHABLE(
-            "ripple::invoke_calculateBaseFee : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_calculateBaseFee : unknown transaction type");
         return XRPAmount{0};
         // LCOV_EXCL_STOP
     }
 }
 
-TxConsequences::TxConsequences(NotTEC pfresult)
+TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
     , fee_(beast::zero)
     , potentialSpend_(beast::zero)
@@ -226,8 +225,8 @@ TxConsequences::TxConsequences(NotTEC pfresult)
     , sequencesConsumed_(0)
 {
     XRPL_ASSERT(
-        !isTesSuccess(pfresult),
-        "ripple::TxConsequences::TxConsequences : is not tesSUCCESS");
+        !isTesSuccess(pfResult),
+        "xrpl::TxConsequences::TxConsequences : is not tesSUCCESS");
 }
 
 TxConsequences::TxConsequences(STTx const& tx)
@@ -275,7 +274,7 @@ invoke_apply(ApplyContext& ctx)
         // LCOV_EXCL_START
         JLOG(ctx.journal.fatal())
             << "Unknown transaction type in apply: " << e.txnType;
-        UNREACHABLE("ripple::invoke_apply : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_apply : unknown transaction type");
         return {temUNKNOWN, false};
         // LCOV_EXCL_STOP
     }
@@ -289,15 +288,15 @@ preflight(
     ApplyFlags flags,
     beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx, rules, flags, j);
+    PreflightContext const pfCtx(app, tx, rules, flags, j);
     try
     {
-        return {pfctx, invoke_preflight(pfctx)};
+        return {pfCtx, invoke_preflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 
@@ -310,15 +309,15 @@ preflight(
     ApplyFlags flags,
     beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx, parentBatchId, rules, flags, j);
+    PreflightContext const pfCtx(app, tx, parentBatchId, rules, flags, j);
     try
     {
-        return {pfctx, invoke_preflight(pfctx)};
+        return {pfCtx, invoke_preflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 
@@ -426,4 +425,4 @@ doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

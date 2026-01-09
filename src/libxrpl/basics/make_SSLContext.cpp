@@ -24,11 +24,11 @@
 #include <memory>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 namespace openssl {
 namespace detail {
 
-/** The default strength of self-signed RSA certifices.
+/** The default strength of self-signed RSA certificates.
 
     Per NIST Special Publication 800-57 Part 3, 2048-bit RSA is still
     considered acceptably secure. Generally, we would want to go above
@@ -131,7 +131,7 @@ initAnonymous(boost::asio::ssl::context& context)
             LogicError("X509_new failed");
 
         // According to the standards (X.509 et al), the value should be one
-        // less than the actualy certificate version we want. Since we want
+        // less than the actually certificate version we want. Since we want
         // version 3, we must use a 2.
         X509_set_version(x509, 2);
 
@@ -385,4 +385,4 @@ make_SSLContextAuthed(
     return context;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

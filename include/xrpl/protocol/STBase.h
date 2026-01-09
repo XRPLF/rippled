@@ -11,7 +11,7 @@
 #include <typeinfo>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 /// Note, should be treated as flags that can be | and &
 struct JsonOptions
@@ -219,6 +219,6 @@ STBase::emplace(std::size_t n, void* buf, T&& val)
     return new (buf) U(std::forward<T>(val));
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -7,7 +7,7 @@
 #include <xrpl/shamap/SHAMapTxLeafNode.h>
 #include <xrpl/shamap/SHAMapTxPlusMetaLeafNode.h>
 
-namespace ripple {
+namespace xrpl {
 
 [[nodiscard]] intr_ptr::SharedPtr<SHAMapLeafNode>
 makeTypedLeaf(
@@ -85,10 +85,10 @@ SHAMap::dirtyUp(
 
     XRPL_ASSERT(
         (state_ != SHAMapState::Synching) && (state_ != SHAMapState::Immutable),
-        "ripple::SHAMap::dirtyUp : valid state");
+        "xrpl::SHAMap::dirtyUp : valid state");
     XRPL_ASSERT(
         child && (child->cowid() == cowid_),
-        "ripple::SHAMap::dirtyUp : valid child input");
+        "xrpl::SHAMap::dirtyUp : valid child input");
 
     while (!stack.empty())
     {
@@ -96,10 +96,10 @@ SHAMap::dirtyUp(
             intr_ptr::dynamic_pointer_cast<SHAMapInnerNode>(stack.top().first);
         SHAMapNodeID nodeID = stack.top().second;
         stack.pop();
-        XRPL_ASSERT(node, "ripple::SHAMap::dirtyUp : non-null node");
+        XRPL_ASSERT(node, "xrpl::SHAMap::dirtyUp : non-null node");
 
         int branch = selectBranch(nodeID, target);
-        XRPL_ASSERT(branch >= 0, "ripple::SHAMap::dirtyUp : valid branch");
+        XRPL_ASSERT(branch >= 0, "xrpl::SHAMap::dirtyUp : valid branch");
 
         node = unshareNode(std::move(node), nodeID);
         node->setChild(branch, std::move(child));
@@ -113,7 +113,7 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
 {
     XRPL_ASSERT(
         stack == nullptr || stack->empty(),
-        "ripple::SHAMap::walkTowardsKey : empty stack input");
+        "xrpl::SHAMap::walkTowardsKey : empty stack input");
     auto inNode = root_;
     SHAMapNodeID nodeID;
 
@@ -149,7 +149,7 @@ SHAMap::findKey(uint256 const& id) const
 intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 {
-    XRPL_ASSERT(backed_, "ripple::SHAMap::fetchNodeFromDB : is backed");
+    XRPL_ASSERT(backed_, "xrpl::SHAMap::fetchNodeFromDB : is backed");
     auto obj = f_.db().fetchNodeObject(hash.as_uint256(), ledgerSeq_);
     return finishFetch(hash, obj);
 }
@@ -159,7 +159,7 @@ SHAMap::finishFetch(
     SHAMapHash const& hash,
     std::shared_ptr<NodeObject> const& object) const
 {
-    XRPL_ASSERT(backed_, "ripple::SHAMap::finishFetch : is backed");
+    XRPL_ASSERT(backed_, "xrpl::SHAMap::finishFetch : is backed");
 
     try
     {
@@ -186,7 +186,7 @@ SHAMap::finishFetch(
     catch (...)
     {
         JLOG(journal_.warn())
-            << "finishFetch exception: unknonw exception: " << hash;
+            << "finishFetch exception: unknown exception: " << hash;
     }
 
     return {};
@@ -344,13 +344,13 @@ SHAMap::descend(
     SHAMapSyncFilter* filter) const
 {
     XRPL_ASSERT(
-        parent->isInner(), "ripple::SHAMap::descend : valid parent input");
+        parent->isInner(), "xrpl::SHAMap::descend : valid parent input");
     XRPL_ASSERT(
         (branch >= 0) && (branch < branchFactor),
-        "ripple::SHAMap::descend : valid branch input");
+        "xrpl::SHAMap::descend : valid branch input");
     XRPL_ASSERT(
         !parent->isEmptyBranch(branch),
-        "ripple::SHAMap::descend : parent branch is non-empty");
+        "xrpl::SHAMap::descend : parent branch is non-empty");
 
     SHAMapTreeNode* child = parent->getChildPointer(branch);
 
@@ -420,13 +420,13 @@ SHAMap::unshareNode(intr_ptr::SharedPtr<Node> node, SHAMapNodeID const& nodeID)
     // make sure the node is suitable for the intended operation (copy on write)
     XRPL_ASSERT(
         node->cowid() <= cowid_,
-        "ripple::SHAMap::unshareNode : node valid for cowid");
+        "xrpl::SHAMap::unshareNode : node valid for cowid");
     if (node->cowid() != cowid_)
     {
         // have a CoW
         XRPL_ASSERT(
             state_ != SHAMapState::Immutable,
-            "ripple::SHAMap::unshareNode : not immutable");
+            "xrpl::SHAMap::unshareNode : not immutable");
         node = intr_ptr::static_pointer_cast<Node>(node->clone(cowid_));
         if (nodeID.isRoot())
             root_ = node;
@@ -460,8 +460,7 @@ SHAMap::belowHelper(
         {
             node.adopt(descendThrow(inner.get(), i));
             XRPL_ASSERT(
-                !stack.empty(),
-                "ripple::SHAMap::belowHelper : non-empty stack");
+                !stack.empty(), "xrpl::SHAMap::belowHelper : non-empty stack");
             if (node->isLeaf())
             {
                 auto n = intr_ptr::static_pointer_cast<SHAMapLeafNode>(node);
@@ -526,7 +525,7 @@ SHAMap::onlyBelow(SHAMapTreeNode* node) const
         if (!nextNode)
         {
             // LCOV_EXCL_START
-            UNREACHABLE("ripple::SHAMap::onlyBelow : no next node");
+            UNREACHABLE("xrpl::SHAMap::onlyBelow : no next node");
             return no_item;
             // LCOV_EXCL_STOP
         }
@@ -539,7 +538,7 @@ SHAMap::onlyBelow(SHAMapTreeNode* node) const
     auto const leaf = static_cast<SHAMapLeafNode const*>(node);
     XRPL_ASSERT(
         leaf->peekItem() || (leaf == root_.get()),
-        "ripple::SHAMap::onlyBelow : valid inner node");
+        "xrpl::SHAMap::onlyBelow : valid inner node");
     return leaf->peekItem();
 }
 
@@ -547,7 +546,7 @@ SHAMapLeafNode const*
 SHAMap::peekFirstItem(SharedPtrNodeStack& stack) const
 {
     XRPL_ASSERT(
-        stack.empty(), "ripple::SHAMap::peekFirstItem : empty stack input");
+        stack.empty(), "xrpl::SHAMap::peekFirstItem : empty stack input");
     SHAMapLeafNode* node = firstBelow(root_, stack);
     if (!node)
     {
@@ -562,17 +561,17 @@ SHAMapLeafNode const*
 SHAMap::peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const
 {
     XRPL_ASSERT(
-        !stack.empty(), "ripple::SHAMap::peekNextItem : non-empty stack input");
+        !stack.empty(), "xrpl::SHAMap::peekNextItem : non-empty stack input");
     XRPL_ASSERT(
         stack.top().first->isLeaf(),
-        "ripple::SHAMap::peekNextItem : stack starts with leaf");
+        "xrpl::SHAMap::peekNextItem : stack starts with leaf");
     stack.pop();
     while (!stack.empty())
     {
         auto [node, nodeID] = stack.top();
         XRPL_ASSERT(
             !node->isLeaf(),
-            "ripple::SHAMap::peekNextItem : another node is not leaf");
+            "xrpl::SHAMap::peekNextItem : another node is not leaf");
         auto inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
         for (auto i = selectBranch(nodeID, id) + 1; i < branchFactor; ++i)
         {
@@ -584,7 +583,7 @@ SHAMap::peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const
                     Throw<SHAMapMissingNode>(type_, id);
                 XRPL_ASSERT(
                     leaf->isLeaf(),
-                    "ripple::SHAMap::peekNextItem : leaf is valid");
+                    "xrpl::SHAMap::peekNextItem : leaf is valid");
                 return leaf;
             }
         }
@@ -704,7 +703,7 @@ SHAMap::delItem(uint256 const& id)
     // delete the item with this ID
     XRPL_ASSERT(
         state_ != SHAMapState::Immutable,
-        "ripple::SHAMap::delItem : not immutable");
+        "xrpl::SHAMap::delItem : not immutable");
 
     SharedPtrNodeStack stack;
     walkTowardsKey(id, &stack);
@@ -787,10 +786,10 @@ SHAMap::addGiveItem(
 {
     XRPL_ASSERT(
         state_ != SHAMapState::Immutable,
-        "ripple::SHAMap::addGiveItem : not immutable");
+        "xrpl::SHAMap::addGiveItem : not immutable");
     XRPL_ASSERT(
         type != SHAMapNodeType::tnINNER,
-        "ripple::SHAMap::addGiveItem : valid type input");
+        "xrpl::SHAMap::addGiveItem : valid type input");
 
     // add the specified item, does not update
     uint256 tag = item->key();
@@ -818,7 +817,7 @@ SHAMap::addGiveItem(
         int branch = selectBranch(nodeID, tag);
         XRPL_ASSERT(
             inner->isEmptyBranch(branch),
-            "ripple::SHAMap::addGiveItem : inner branch is empty");
+            "xrpl::SHAMap::addGiveItem : inner branch is empty");
         inner->setChild(branch, makeTypedLeaf(type, std::move(item), cowid_));
     }
     else
@@ -829,7 +828,7 @@ SHAMap::addGiveItem(
         auto otherItem = leaf->peekItem();
         XRPL_ASSERT(
             otherItem && (tag != otherItem->key()),
-            "ripple::SHAMap::addGiveItem : non-null item");
+            "xrpl::SHAMap::addGiveItem : non-null item");
 
         node = intr_ptr::make_shared<SHAMapInnerNode>(node->cowid());
 
@@ -848,7 +847,7 @@ SHAMap::addGiveItem(
 
         // we can add the two leaf nodes here
         XRPL_ASSERT(
-            node->isInner(), "ripple::SHAMap::addGiveItem : node is inner");
+            node->isInner(), "xrpl::SHAMap::addGiveItem : node is inner");
 
         auto inner = static_cast<SHAMapInnerNode*>(node.get());
         inner->setChild(b1, makeTypedLeaf(type, std::move(item), cowid_));
@@ -889,7 +888,7 @@ SHAMap::updateGiveItem(
 
     XRPL_ASSERT(
         state_ != SHAMapState::Immutable,
-        "ripple::SHAMap::updateGiveItem : not immutable");
+        "xrpl::SHAMap::updateGiveItem : not immutable");
 
     SharedPtrNodeStack stack;
     walkTowardsKey(tag, &stack);
@@ -905,7 +904,7 @@ SHAMap::updateGiveItem(
     if (!node || (node->peekItem()->key() != tag))
     {
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::SHAMap::updateGiveItem : invalid node");
+        UNREACHABLE("xrpl::SHAMap::updateGiveItem : invalid node");
         return false;
         // LCOV_EXCL_STOP
     }
@@ -953,7 +952,7 @@ SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter* filter)
         root_ = newRoot;
         XRPL_ASSERT(
             root_->getHash() == hash,
-            "ripple::SHAMap::fetchRoot : root hash do match");
+            "xrpl::SHAMap::fetchRoot : root hash do match");
         return true;
     }
 
@@ -977,8 +976,8 @@ SHAMap::writeNode(NodeObjectType t, intr_ptr::SharedPtr<SHAMapTreeNode> node)
     const
 {
     XRPL_ASSERT(
-        node->cowid() == 0, "ripple::SHAMap::writeNode : valid input node");
-    XRPL_ASSERT(backed_, "ripple::SHAMap::writeNode : is backed");
+        node->cowid() == 0, "xrpl::SHAMap::writeNode : valid input node");
+    XRPL_ASSERT(backed_, "xrpl::SHAMap::writeNode : is backed");
 
     canonicalize(node->getHash(), node);
 
@@ -998,8 +997,7 @@ SHAMap::preFlushNode(intr_ptr::SharedPtr<Node> node) const
 {
     // A shared node should never need to be flushed
     // because that would imply someone modified it
-    XRPL_ASSERT(
-        node->cowid(), "ripple::SHAMap::preFlushNode : valid input node");
+    XRPL_ASSERT(node->cowid(), "xrpl::SHAMap::preFlushNode : valid input node");
 
     if (node->cowid() != cowid_)
     {
@@ -1027,8 +1025,7 @@ SHAMap::flushDirty(NodeObjectType t)
 int
 SHAMap::walkSubTree(bool doWrite, NodeObjectType t)
 {
-    XRPL_ASSERT(
-        !doWrite || backed_, "ripple::SHAMap::walkSubTree : valid input");
+    XRPL_ASSERT(!doWrite || backed_, "xrpl::SHAMap::walkSubTree : valid input");
 
     int flushed = 0;
 
@@ -1105,7 +1102,7 @@ SHAMap::walkSubTree(bool doWrite, NodeObjectType t)
 
                         XRPL_ASSERT(
                             node->cowid() == cowid_,
-                            "ripple::SHAMap::walkSubTree : node cowid do "
+                            "xrpl::SHAMap::walkSubTree : node cowid do "
                             "match");
                         child->updateHash();
                         child->unshare();
@@ -1141,7 +1138,7 @@ SHAMap::walkSubTree(bool doWrite, NodeObjectType t)
         // Hook this inner node to its parent
         XRPL_ASSERT(
             parent->cowid() == cowid_,
-            "ripple::SHAMap::walkSubTree : parent cowid do match");
+            "xrpl::SHAMap::walkSubTree : parent cowid do match");
         parent->shareChild(pos, node);
 
         // Continue with parent's next child, if any
@@ -1187,7 +1184,7 @@ SHAMap::dump(bool hash) const
                     {
                         XRPL_ASSERT(
                             child->getHash() == inner->getChildHash(i),
-                            "ripple::SHAMap::dump : child hash do match");
+                            "xrpl::SHAMap::dump : child hash do match");
                         stack.push({child, nodeID.getChildNodeID(i)});
                     }
                 }
@@ -1206,7 +1203,7 @@ SHAMap::cacheLookup(SHAMapHash const& hash) const
     auto ret = f_.getTreeNodeCache()->fetch(hash.as_uint256());
     XRPL_ASSERT(
         !ret || !ret->cowid(),
-        "ripple::SHAMap::cacheLookup : not found or zero cowid");
+        "xrpl::SHAMap::cacheLookup : not found or zero cowid");
     return ret;
 }
 
@@ -1215,12 +1212,12 @@ SHAMap::canonicalize(
     SHAMapHash const& hash,
     intr_ptr::SharedPtr<SHAMapTreeNode>& node) const
 {
-    XRPL_ASSERT(backed_, "ripple::SHAMap::canonicalize : is backed");
+    XRPL_ASSERT(backed_, "xrpl::SHAMap::canonicalize : is backed");
     XRPL_ASSERT(
-        node->cowid() == 0, "ripple::SHAMap::canonicalize : valid node input");
+        node->cowid() == 0, "xrpl::SHAMap::canonicalize : valid node input");
     XRPL_ASSERT(
         node->getHash() == hash,
-        "ripple::SHAMap::canonicalize : node hash do match");
+        "xrpl::SHAMap::canonicalize : node hash do match");
 
     f_.getTreeNodeCache()->canonicalize_replace_client(hash.as_uint256(), node);
 }
@@ -1230,9 +1227,9 @@ SHAMap::invariants() const
 {
     (void)getHash();  // update node hashes
     auto node = root_.get();
-    XRPL_ASSERT(node, "ripple::SHAMap::invariants : non-null root node");
+    XRPL_ASSERT(node, "xrpl::SHAMap::invariants : non-null root node");
     XRPL_ASSERT(
-        !node->isLeaf(), "ripple::SHAMap::invariants : root node is not leaf");
+        !node->isLeaf(), "xrpl::SHAMap::invariants : root node is not leaf");
     SharedPtrNodeStack stack;
     for (auto leaf = peekFirstItem(stack); leaf != nullptr;
          leaf = peekNextItem(leaf->peekItem()->key(), stack))
@@ -1240,4 +1237,4 @@ SHAMap::invariants() const
     node->invariants(true);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

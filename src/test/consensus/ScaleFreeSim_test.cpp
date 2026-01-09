@@ -5,7 +5,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ScaleFreeSim_test : public beast::unit_test::suite
@@ -56,7 +56,7 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         // Initialize timers
         HeartbeatTimer heart(sim.scheduler, seconds(10s));
 
-        // Run for 10 minues, submitting 100 tx/second
+        // Run for 10 minutes, submitting 100 tx/second
         std::chrono::nanoseconds const simDuration = 10min;
         std::chrono::nanoseconds const quiet = 10s;
         Rate const rate{100, 1000ms};
@@ -100,7 +100,7 @@ class ScaleFreeSim_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(ScaleFreeSim, consensus, ripple, 80);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(ScaleFreeSim, consensus, xrpl, 80);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -218,7 +218,7 @@ Value::Value(char const* value) : type_(stringValue), allocated_(true)
     value_.string_ = valueAllocator()->duplicateStringValue(value);
 }
 
-Value::Value(ripple::Number const& value) : type_(stringValue), allocated_(true)
+Value::Value(xrpl::Number const& value) : type_(stringValue), allocated_(true)
 {
     auto const tmp = to_string(value);
     value_.string_ =
@@ -1038,6 +1038,12 @@ Value::isMember(char const* key) const
 
 bool
 Value::isMember(std::string const& key) const
+{
+    return isMember(key.c_str());
+}
+
+bool
+Value::isMember(StaticString const& key) const
 {
     return isMember(key.c_str());
 }

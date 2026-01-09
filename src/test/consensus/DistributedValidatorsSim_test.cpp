@@ -11,7 +11,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /** In progress simulations for diversifying and distributing validators
@@ -59,7 +59,7 @@ class DistributedValidators_test : public beast::unit_test::suite
         // Initial round to set prior state
         sim.run(1);
 
-        // Run for 10 minues, submitting 100 tx/second
+        // Run for 10 minutes, submitting 100 tx/second
         std::chrono::nanoseconds const simDuration = 10min;
         std::chrono::nanoseconds const quiet = 10s;
         Rate const rate{100, 1000ms};
@@ -163,7 +163,7 @@ class DistributedValidators_test : public beast::unit_test::suite
         // Initial round to set prior state
         sim.run(1);
 
-        // Run for 10 minues, submitting 100 tx/second
+        // Run for 10 minutes, submitting 100 tx/second
         std::chrono::nanoseconds simDuration = 10min;
         std::chrono::nanoseconds quiet = 10s;
         Rate rate{100, 1000ms};
@@ -254,7 +254,7 @@ class DistributedValidators_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DistributedValidators, consensus, ripple, 2);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DistributedValidators, consensus, xrpl, 2);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

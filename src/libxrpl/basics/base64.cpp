@@ -40,7 +40,7 @@
 #include <string_view>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace base64 {
 
@@ -232,4 +232,4 @@ base64_decode(std::string_view data)
     return dest;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

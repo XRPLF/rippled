@@ -11,7 +11,7 @@
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 template <class TIn, class TOut>
 class TOfferBase
@@ -121,13 +121,15 @@ public:
 
     TAmounts<TIn, TOut>
     limitOut(
-        TAmounts<TIn, TOut> const& offrAmt,
+        TAmounts<TIn, TOut> const& offerAmount,
         TOut const& limit,
         bool roundUp) const;
 
     TAmounts<TIn, TOut>
-    limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit, bool roundUp)
-        const;
+    limitIn(
+        TAmounts<TIn, TOut> const& offerAmount,
+        TIn const& limit,
+        bool roundUp) const;
 
     template <typename... Args>
     static TER
@@ -208,7 +210,7 @@ TOffer<TIn, TOut>::setFieldAmounts()
 {
     // LCOV_EXCL_START
 #ifdef _MSC_VER
-    UNREACHABLE("ripple::TOffer::setFieldAmounts : must be specialized");
+    UNREACHABLE("xrpl::TOffer::setFieldAmounts : must be specialized");
 #else
     static_assert(sizeof(TOut) == -1, "Must be specialized");
 #endif
@@ -218,19 +220,19 @@ TOffer<TIn, TOut>::setFieldAmounts()
 template <class TIn, class TOut>
 TAmounts<TIn, TOut>
 TOffer<TIn, TOut>::limitOut(
-    TAmounts<TIn, TOut> const& offrAmt,
+    TAmounts<TIn, TOut> const& offerAmount,
     TOut const& limit,
     bool roundUp) const
 {
     // It turns out that the ceil_out implementation has some slop in
     // it, which ceil_out_strict removes.
-    return quality().ceil_out_strict(offrAmt, limit, roundUp);
+    return quality().ceil_out_strict(offerAmount, limit, roundUp);
 }
 
 template <class TIn, class TOut>
 TAmounts<TIn, TOut>
 TOffer<TIn, TOut>::limitIn(
-    TAmounts<TIn, TOut> const& offrAmt,
+    TAmounts<TIn, TOut> const& offerAmount,
     TIn const& limit,
     bool roundUp) const
 {
@@ -240,8 +242,8 @@ TOffer<TIn, TOut>::limitIn(
         // it.  ceil_in_strict removes that slop.  But removing that slop
         // affects transaction outcomes, so the change must be made using
         // an amendment.
-        return quality().ceil_in_strict(offrAmt, limit, roundUp);
-    return m_quality.ceil_in(offrAmt, limit);
+        return quality().ceil_in_strict(offerAmount, limit, roundUp);
+    return m_quality.ceil_in(offerAmount, limit);
 }
 
 template <class TIn, class TOut>
@@ -319,6 +321,6 @@ operator<<(std::ostream& os, TOffer<TIn, TOut> const& offer)
     return os << offer.id();
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

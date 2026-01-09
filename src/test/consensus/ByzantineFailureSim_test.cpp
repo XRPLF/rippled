@@ -4,7 +4,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ByzantineFailureSim_test : public beast::unit_test::suite
@@ -63,7 +63,7 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         {
             peer->submit(Tx{0});
             // Peers 0,1,2,6 will close the next ledger differently by injecting
-            // a non-consensus approved transaciton
+            // a non-consensus approved transaction
             if (byzantineNodes.contains(peer))
             {
                 peer->txInjections.emplace(
@@ -79,7 +79,7 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(ByzantineFailureSim, consensus, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(ByzantineFailureSim, consensus, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

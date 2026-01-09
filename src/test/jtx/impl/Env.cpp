@@ -28,7 +28,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -67,7 +67,8 @@ Env::AppBundle::AppBundle(
     app->logs().threshold(thresh);
     if (!app->setup({}))
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
-    timeKeeper->set(app->getLedgerMaster().getClosedLedger()->info().closeTime);
+    timeKeeper->set(
+        app->getLedgerMaster().getClosedLedger()->header().closeTime);
     app->start(false /*don't start timers*/);
     thread = std::thread([&]() { app->run(); });
 
@@ -107,7 +108,7 @@ Env::close(
     // Round up to next distinguishable value
     using namespace std::chrono_literals;
     bool res = true;
-    closeTime += closed()->info().closeTimeResolution - 1s;
+    closeTime += closed()->header().closeTimeResolution - 1s;
     timeKeeper().set(closeTime);
     // Go through the rpc interface unless we need to simulate
     // a specific consensus delay.
@@ -130,7 +131,7 @@ Env::close(
             res = false;
         }
     }
-    timeKeeper().set(closed()->info().closeTime);
+    timeKeeper().set(closed()->header().closeTime);
     return res;
 }
 
@@ -427,14 +428,16 @@ Env::postconditions(
     ParsedResult const& parsed,
     Json::Value const& jr)
 {
-    bool bad = !test.expect(parsed.ter, "apply: No ter result!");
+    auto const line = jt.testLine ? " (" + to_string(*jt.testLine) + ")" : "";
+    bool bad = !test.expect(parsed.ter, "apply: No ter result!" + line);
     bad =
         (jt.ter && parsed.ter &&
          !test.expect(
              *parsed.ter == *jt.ter,
              "apply: Got " + transToken(*parsed.ter) + " (" +
                  transHuman(*parsed.ter) + "); Expected " +
-                 transToken(*jt.ter) + " (" + transHuman(*jt.ter) + ")"));
+                 transToken(*jt.ter) + " (" + transHuman(*jt.ter) + ")" +
+                 line));
     using namespace std::string_literals;
     bad = (jt.rpcCode &&
            !test.expect(
@@ -446,21 +449,21 @@ Env::postconditions(
                         : "NO RESULT") +
                    " (" + parsed.rpcMessage + "); Expected " +
                    RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
-                   jt.rpcCode->second + ")")) ||
+                   jt.rpcCode->second + ")" + line)) ||
         bad;
     // If we have an rpcCode (just checked), then the rpcException check is
     // optional - the 'error' field may not be defined, but if it is, it must
     // match rpcError.
-    bad =
-        (jt.rpcException &&
-         !test.expect(
-             (jt.rpcCode && parsed.rpcError.empty()) ||
-                 (parsed.rpcError == jt.rpcException->first &&
-                  (!jt.rpcException->second ||
-                   parsed.rpcException == *jt.rpcException->second)),
-             "apply: Got RPC result "s + parsed.rpcError + " (" +
-                 parsed.rpcException + "); Expected " + jt.rpcException->first +
-                 " (" + jt.rpcException->second.value_or("n/a") + ")")) ||
+    bad = (jt.rpcException &&
+           !test.expect(
+               (jt.rpcCode && parsed.rpcError.empty()) ||
+                   (parsed.rpcError == jt.rpcException->first &&
+                    (!jt.rpcException->second ||
+                     parsed.rpcException == *jt.rpcException->second)),
+               "apply: Got RPC result "s + parsed.rpcError + " (" +
+                   parsed.rpcException + "); Expected " +
+                   jt.rpcException->first + " (" +
+                   jt.rpcException->second.value_or("n/a") + ")" + line)) ||
         bad;
     if (bad)
     {
@@ -670,4 +673,4 @@ Env::disableFeature(uint256 const feature)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

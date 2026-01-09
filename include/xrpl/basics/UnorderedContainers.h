@@ -22,7 +22,7 @@
  * what container it is.
  */
 
-namespace ripple {
+namespace xrpl {
 
 // hash containers
 
@@ -102,6 +102,6 @@ template <
 using hardened_hash_multiset =
     std::unordered_multiset<Value, Hash, Pred, Allocator>;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

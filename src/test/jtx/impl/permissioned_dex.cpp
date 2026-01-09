@@ -5,7 +5,7 @@
 
 #include <exception>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -63,4 +63,4 @@ PermissionedDEX::PermissionedDEX(Env& env)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

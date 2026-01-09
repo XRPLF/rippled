@@ -6,7 +6,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace path {
 
 RippleCalc::Output
@@ -42,15 +42,6 @@ RippleCalc::rippleCalculate(
     Output flowOut;
     PaymentSandbox flowSB(&view);
     auto j = l.journal("Flow");
-
-    if (!view.rules().enabled(featureFlow))
-    {
-        // The new payment engine was enabled several years ago. New transaction
-        // should never use the old rules. Assume this is a replay
-        j.fatal()
-            << "Old payment rules are required for this transaction. Assuming "
-               "this is a replay and running with the new rules.";
-    }
 
     {
         bool const defaultPaths =
@@ -117,4 +108,4 @@ RippleCalc::rippleCalculate(
 }
 
 }  // namespace path
-}  // namespace ripple
+}  // namespace xrpl

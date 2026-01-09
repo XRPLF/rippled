@@ -10,7 +10,7 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 // an item stored in a SHAMap
 class SHAMapItem : public CountedObject<SHAMapItem>
@@ -125,13 +125,13 @@ intrusive_ptr_release(SHAMapItem const* x)
     {
         auto p = reinterpret_cast<std::uint8_t const*>(x);
 
-        // The SHAMapItem constuctor isn't trivial (because the destructor
+        // The SHAMapItem constructor isn't trivial (because the destructor
         // for CountedObject isn't) so we can't avoid calling it here, but
         // plan for a future where we might not need to.
         if constexpr (!std::is_trivially_destructible_v<SHAMapItem>)
             std::destroy_at(x);
 
-        // If the slabber doens't claim this pointer, it was allocated
+        // If the slabber doesn't claim this pointer, it was allocated
         // manually, so we free it manually.
         if (!detail::slabber.deallocate(const_cast<std::uint8_t*>(p)))
             delete[] p;
@@ -143,7 +143,7 @@ make_shamapitem(uint256 const& tag, Slice data)
 {
     XRPL_ASSERT(
         data.size() <= megabytes<std::size_t>(16),
-        "ripple::make_shamapitem : maximum input size");
+        "xrpl::make_shamapitem : maximum input size");
 
     std::uint8_t* raw = detail::slabber.allocate(data.size());
 
@@ -168,6 +168,6 @@ make_shamapitem(SHAMapItem const& other)
     return make_shamapitem(other.key(), other.slice());
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

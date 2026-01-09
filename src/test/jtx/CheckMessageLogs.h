@@ -3,7 +3,7 @@
 
 #include <xrpl/basics/Log.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /** Log manager that searches for a specific message substring
@@ -63,6 +63,6 @@ public:
 };
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

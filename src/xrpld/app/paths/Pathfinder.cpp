@@ -4,10 +4,10 @@
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/paths/RippleLineCache.h>
 #include <xrpld/app/paths/detail/PathfinderUtils.h>
-#include <xrpld/core/JobQueue.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/join.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 
@@ -40,12 +40,12 @@ final paths and the estimated cost are returned.
 The engine permits the search depth to be selected and the paths table
 includes the depth at which each path type is found.  A search depth of zero
 causes no searching to be done.  Extra paths can also be injected, and this
-should be used to preserve previously-found paths across invokations for the
+should be used to preserve previously-found paths across invocations for the
 same path request (particularly if the search depth may change).
 
 */
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -174,7 +174,7 @@ Pathfinder::Pathfinder(
 {
     XRPL_ASSERT(
         !uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.value()),
-        "ripple::Pathfinder::Pathfinder : valid inputs");
+        "xrpl::Pathfinder::Pathfinder : valid inputs");
 }
 
 bool
@@ -568,7 +568,7 @@ Pathfinder::getBestPaths(
 
     XRPL_ASSERT(
         fullLiquidityPath.empty(),
-        "ripple::Pathfinder::getBestPaths : first empty path result");
+        "xrpl::Pathfinder::getBestPaths : first empty path result");
     bool const issuerIsSender =
         isXRP(mSrcCurrency) || (srcIssuer == mSrcAccount);
 
@@ -630,7 +630,7 @@ Pathfinder::getBestPaths(
         if (path.empty())
         {
             // LCOV_EXCL_START
-            UNREACHABLE("ripple::Pathfinder::getBestPaths : path not found");
+            UNREACHABLE("xrpl::Pathfinder::getBestPaths : path not found");
             continue;
             // LCOV_EXCL_STOP
         }
@@ -676,7 +676,7 @@ Pathfinder::getBestPaths(
     {
         XRPL_ASSERT(
             fullLiquidityPath.empty(),
-            "ripple::Pathfinder::getBestPaths : second empty path result");
+            "xrpl::Pathfinder::getBestPaths : second empty path result");
         JLOG(j_.info()) << "Paths could not send " << remaining << " of "
                         << mDstAmount;
     }
@@ -827,7 +827,7 @@ Pathfinder::addPathsForType(
             // Source must always be at the start, so pathsOut has to be empty.
             XRPL_ASSERT(
                 pathsOut.empty(),
-                "ripple::Pathfinder::addPathsForType : empty paths");
+                "xrpl::Pathfinder::addPathsForType : empty paths");
             pathsOut.push_back(STPath());
             break;
 
@@ -1280,7 +1280,7 @@ void
 fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 {
     auto& list = mPathTable[type];
-    XRPL_ASSERT(list.empty(), "ripple::fillPaths : empty paths");
+    XRPL_ASSERT(list.empty(), "xrpl::fillPaths : empty paths");
     for (auto& cost : costs)
         list.push_back({cost.cost, makePath(cost.path)});
 }
@@ -1292,7 +1292,7 @@ fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 // 1 = include trivial paths to make common cases work
 // 4 = normal fast search level
 // 7 = normal slow search level
-// 10 = most agressive
+// 10 = most aggressive
 
 void
 Pathfinder::initPathTable()
@@ -1301,6 +1301,7 @@ Pathfinder::initPathTable()
 
     mPathTable.clear();
     fillPaths(pt_XRP_to_XRP, {});
+    /* cspell: disable */
 
     fillPaths(
         pt_XRP_to_nonXRP,
@@ -1357,6 +1358,7 @@ Pathfinder::initPathTable()
             {8, "saafad"},
             {9, "safaad"},
         });
+    /* cspell: enable */
 }
 
-}  // namespace ripple
+}  // namespace xrpl

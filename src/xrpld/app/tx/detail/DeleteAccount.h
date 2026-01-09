@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class DeleteAccount : public Transactor
 {
@@ -32,6 +32,6 @@ public:
 
 using AccountDelete = DeleteAccount;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

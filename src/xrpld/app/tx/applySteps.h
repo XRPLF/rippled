@@ -4,7 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class STTx;
@@ -64,7 +64,7 @@ private:
 public:
     // Constructor if preflight returns a value other than tesSUCCESS.
     // Asserts if tesSUCCESS is passed.
-    explicit TxConsequences(NotTEC pfresult);
+    explicit TxConsequences(NotTEC pfResult);
 
     /// Constructor if the STTx has no notable consequences for the TxQ.
     explicit TxConsequences(STTx const& tx);
@@ -347,6 +347,6 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx);
 ApplyResult
 doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

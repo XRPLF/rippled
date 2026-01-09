@@ -8,7 +8,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 
@@ -78,6 +78,6 @@ make_InboundTransactions(
     beast::insight::Collector::ptr const& collector,
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

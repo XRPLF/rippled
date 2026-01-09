@@ -15,7 +15,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Batch_test : public beast::unit_test::suite
@@ -402,6 +402,38 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
+        // temBAD_FEE: Inner txn with negative fee
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
+            tx1[jss::Fee] = "-1";
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                tx1,
+                batch::inner(pay(alice, bob, XRP(2)), seq + 2),
+                ter(temBAD_FEE));
+            env.close();
+        }
+
+        // temBAD_FEE: Inner txn with non-integer fee
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
+            tx1[jss::Fee] = "1.5";
+            try
+            {
+                env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                    tx1,
+                    batch::inner(pay(alice, bob, XRP(2)), seq + 2));
+                fail("Expected parse_error for fractional fee");
+            }
+            catch (jtx::parse_error const&)
+            {
+                BEAST_EXPECT(true);
+            }
+        }
+
         // temSEQ_AND_TICKET: Batch: inner txn cannot have both Sequence
         // and TicketSequence.
         {
@@ -547,7 +579,7 @@ class Batch_test : public beast::unit_test::suite
             Serializer msg;
             serializeBatch(
                 msg, tfAllOrNothing, jt.stx->getBatchTransactionIDs());
-            auto const sig = ripple::sign(bob.pk(), bob.sk(), msg.slice());
+            auto const sig = xrpl::sign(bob.pk(), bob.sk(), msg.slice());
             jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName]
                  [sfAccount.jsonName] = bob.human();
             jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName]
@@ -1378,7 +1410,7 @@ class Batch_test : public beast::unit_test::suite
             env.app().openLedger().modify(
                 [&](OpenView& view, beast::Journal j) {
                     auto const result =
-                        ripple::apply(env.app(), view, *jt.stx, tapNONE, j);
+                        xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
                     BEAST_EXPECT(
                         !result.applied && result.ter == temARRAY_TOO_LARGE);
                     return result.applied;
@@ -1424,7 +1456,7 @@ class Batch_test : public beast::unit_test::suite
             env.app().openLedger().modify(
                 [&](OpenView& view, beast::Journal j) {
                     auto const result =
-                        ripple::apply(env.app(), view, *jt.stx, tapNONE, j);
+                        xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
                     BEAST_EXPECT(
                         !result.applied && result.ter == temARRAY_TOO_LARGE);
                     return result.applied;
@@ -2536,6 +2568,207 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testLoan(FeatureBitset features)
+    {
+        testcase("loan");
+
+        bool const lendingBatchEnabled = !std::any_of(
+            Batch::disabledTxTypes.begin(),
+            Batch::disabledTxTypes.end(),
+            [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
+
+        using namespace test::jtx;
+
+        test::jtx::Env env{
+            *this,
+            envconfig(),
+            features | featureSingleAssetVault | featureLendingProtocol |
+                featureMPTokensV1};
+
+        Account const issuer{"issuer"};
+        // For simplicity, lender will be the sole actor for the vault &
+        // brokers.
+        Account const lender{"lender"};
+        // Borrower only wants to borrow
+        Account const borrower{"borrower"};
+
+        // Fund the accounts and trust lines with the same amount so that tests
+        // can use the same values regardless of the asset.
+        env.fund(XRP(100'000), issuer, noripple(lender, borrower));
+        env.close();
+
+        // Just use an XRP asset
+        PrettyAsset const asset{xrpIssue(), 1'000'000};
+
+        Vault vault{env};
+
+        auto const deposit = asset(50'000);
+        auto const debtMaximumValue = asset(25'000).value();
+        auto const coverDepositValue = asset(1000).value();
+
+        auto [tx, vaultKeylet] =
+            vault.create({.owner = lender, .asset = asset});
+        env(tx);
+        env.close();
+        BEAST_EXPECT(env.le(vaultKeylet));
+
+        env(vault.deposit(
+            {.depositor = lender, .id = vaultKeylet.key, .amount = deposit}));
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanbroker(lender.id(), env.seq(lender));
+
+        {
+            using namespace loanBroker;
+            env(set(lender, vaultKeylet.key),
+                managementFeeRate(TenthBips16(100)),
+                debtMaximum(debtMaximumValue),
+                coverRateMinimum(TenthBips32(percentageToTenthBips(10))),
+                coverRateLiquidation(TenthBips32(percentageToTenthBips(25))));
+
+            env(coverDeposit(lender, brokerKeylet.key, coverDepositValue));
+
+            env.close();
+        }
+
+        {
+            using namespace loan;
+            using namespace std::chrono_literals;
+
+            auto const lenderSeq = env.seq(lender);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            {
+                auto const [txIDs, batchID] = submitBatch(
+                    env,
+                    lendingBatchEnabled ? temBAD_SIGNATURE
+                                        : temINVALID_INNER_BATCH,
+                    batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+                    batch::inner(
+                        env.json(
+                            set(lender, brokerKeylet.key, asset(1000).value()),
+                            // Not allowed to include the counterparty signature
+                            sig(sfCounterpartySignature, borrower),
+                            sig(none),
+                            fee(none),
+                            seq(none)),
+                        lenderSeq + 1),
+                    batch::inner(
+                        pay(lender,
+                            loanKeylet.key,
+                            STAmount{asset, asset(500).value()}),
+                        lenderSeq + 2));
+            }
+            {
+                auto const [txIDs, batchID] = submitBatch(
+                    env,
+                    temINVALID_INNER_BATCH,
+                    batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+                    batch::inner(
+                        env.json(
+                            set(lender, brokerKeylet.key, asset(1000).value()),
+                            // Counterparty must be set
+                            sig(none),
+                            fee(none),
+                            seq(none)),
+                        lenderSeq + 1),
+                    batch::inner(
+                        pay(lender,
+                            loanKeylet.key,
+                            STAmount{asset, asset(500).value()}),
+                        lenderSeq + 2));
+            }
+            {
+                auto const [txIDs, batchID] = submitBatch(
+                    env,
+                    lendingBatchEnabled ? temBAD_SIGNER
+                                        : temINVALID_INNER_BATCH,
+                    batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+                    batch::inner(
+                        env.json(
+                            set(lender, brokerKeylet.key, asset(1000).value()),
+                            // Counterparty must sign the outer transaction
+                            counterparty(borrower.id()),
+                            sig(none),
+                            fee(none),
+                            seq(none)),
+                        lenderSeq + 1),
+                    batch::inner(
+                        pay(lender,
+                            loanKeylet.key,
+                            STAmount{asset, asset(500).value()}),
+                        lenderSeq + 2));
+            }
+            {
+                // LoanSet normally charges at least 2x base fee, but since the
+                // signature check is done by the batch, it only charges the
+                // base fee.
+                auto const batchFee = batch::calcBatchFee(env, 1, 2);
+                auto const [txIDs, batchID] = submitBatch(
+                    env,
+                    lendingBatchEnabled ? TER(tesSUCCESS)
+                                        : TER(temINVALID_INNER_BATCH),
+                    batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+                    batch::inner(
+                        env.json(
+                            set(lender, brokerKeylet.key, asset(1000).value()),
+                            counterparty(borrower.id()),
+                            sig(none),
+                            fee(none),
+                            seq(none)),
+                        lenderSeq + 1),
+                    batch::inner(
+                        pay(
+                            // However, this inner transaction will fail,
+                            // because the lender is not allowed to draw the
+                            // transaction
+                            lender,
+                            loanKeylet.key,
+                            STAmount{asset, asset(500).value()}),
+                        lenderSeq + 2),
+                    batch::sig(borrower));
+            }
+            env.close();
+            BEAST_EXPECT(env.le(brokerKeylet));
+            BEAST_EXPECT(!env.le(loanKeylet));
+            {
+                // LoanSet normally charges at least 2x base fee, but since the
+                // signature check is done by the batch, it only charges the
+                // base fee.
+                auto const lenderSeq = env.seq(lender);
+                auto const batchFee = batch::calcBatchFee(env, 1, 2);
+                auto const [txIDs, batchID] = submitBatch(
+                    env,
+                    lendingBatchEnabled ? TER(tesSUCCESS)
+                                        : TER(temINVALID_INNER_BATCH),
+                    batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+                    batch::inner(
+                        env.json(
+                            set(lender, brokerKeylet.key, asset(1000).value()),
+                            counterparty(borrower.id()),
+                            sig(none),
+                            fee(none),
+                            seq(none)),
+                        lenderSeq + 1),
+                    batch::inner(
+                        manage(lender, loanKeylet.key, tfLoanImpair),
+                        lenderSeq + 2),
+                    batch::sig(borrower));
+            }
+            env.close();
+            BEAST_EXPECT(env.le(brokerKeylet));
+            if (auto const sleLoan = env.le(loanKeylet); lendingBatchEnabled
+                    ? BEAST_EXPECT(sleLoan)
+                    : !BEAST_EXPECT(!sleLoan))
+            {
+                BEAST_EXPECT(sleLoan->isFlag(lsfLoanImpaired));
+            }
+        }
+    }
+
+    void
     testObjectCreateSequence(FeatureBitset features)
     {
         testcase("object create w/ sequence");
@@ -3391,7 +3624,7 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(!passesLocalChecks(stx, reason));
         BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
         env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
-            auto const result = ripple::apply(env.app(), view, stx, tapNONE, j);
+            auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
             BEAST_EXPECT(!result.applied && result.ter == temINVALID_FLAG);
             return result.applied;
         });
@@ -4128,6 +4361,7 @@ class Batch_test : public beast::unit_test::suite
         testAccountActivation(features);
         testAccountSet(features);
         testAccountDelete(features);
+        testLoan(features);
         testObjectCreateSequence(features);
         testObjectCreateTicket(features);
         testObjectCreate3rdParty(features);
@@ -4154,7 +4388,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Batch, app, ripple);
+BEAST_DEFINE_TESTSUITE(Batch, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

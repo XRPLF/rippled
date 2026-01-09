@@ -14,7 +14,7 @@
 #include <optional>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -261,7 +261,7 @@ class Simulate_test : public beast::unit_test::suite
         {
             // `seed` field included
             Json::Value params = Json::objectValue;
-            params[jss::seed] = "doesnt_matter";
+            params[jss::seed] = "random_data";
             Json::Value tx_json = Json::objectValue;
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = env.master.human();
@@ -274,7 +274,7 @@ class Simulate_test : public beast::unit_test::suite
         {
             // `secret` field included
             Json::Value params = Json::objectValue;
-            params[jss::secret] = "doesnt_matter";
+            params[jss::secret] = "random_data";
             Json::Value tx_json = Json::objectValue;
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = env.master.human();
@@ -287,7 +287,7 @@ class Simulate_test : public beast::unit_test::suite
         {
             // `seed_hex` field included
             Json::Value params = Json::objectValue;
-            params[jss::seed_hex] = "doesnt_matter";
+            params[jss::seed_hex] = "random_data";
             Json::Value tx_json = Json::objectValue;
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = env.master.human();
@@ -300,7 +300,7 @@ class Simulate_test : public beast::unit_test::suite
         {
             // `passphrase` field included
             Json::Value params = Json::objectValue;
-            params[jss::passphrase] = "doesnt_matter";
+            params[jss::passphrase] = "random_data";
             Json::Value tx_json = Json::objectValue;
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = env.master.human();
@@ -1027,7 +1027,7 @@ class Simulate_test : public beast::unit_test::suite
 
         auto jv = credentials::create(subject, issuer, credType);
         uint32_t const t =
-            env.current()->info().parentCloseTime.time_since_epoch().count();
+            env.current()->header().parentCloseTime.time_since_epoch().count();
         jv[sfExpiration.jsonName] = t;
         env(jv);
         env.close();
@@ -1316,8 +1316,8 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Simulate, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Simulate, rpc, xrpl);
 
 }  // namespace test
 
-}  // namespace ripple
+}  // namespace xrpl

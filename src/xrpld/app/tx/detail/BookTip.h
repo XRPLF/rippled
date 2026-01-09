@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Quality.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Logs;
 
@@ -61,6 +61,6 @@ public:
     step(beast::Journal j);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -4,7 +4,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // VFALCO NOTE These are outside the RPC namespace
 
@@ -209,33 +209,11 @@ get_error_info(error_code_i code);
 
 /** Add or update the json update to reflect the error code. */
 /** @{ */
-template <class JsonValue>
 void
-inject_error(error_code_i code, JsonValue& json)
-{
-    ErrorInfo const& info(get_error_info(code));
-    json[jss::error] = info.token;
-    json[jss::error_code] = info.code;
-    json[jss::error_message] = info.message;
-}
+inject_error(error_code_i code, Json::Value& json);
 
-template <class JsonValue>
 void
-inject_error(int code, JsonValue& json)
-{
-    inject_error(error_code_i(code), json);
-}
-
-template <class JsonValue>
-void
-inject_error(error_code_i code, std::string const& message, JsonValue& json)
-{
-    ErrorInfo const& info(get_error_info(code));
-    json[jss::error] = info.token;
-    json[jss::error_code] = info.code;
-    json[jss::error_message] = message;
-}
-
+inject_error(error_code_i code, std::string const& message, Json::Value& json);
 /** @} */
 
 /** Returns a new json object that reflects the error code. */
@@ -360,6 +338,6 @@ error_code_http_status(error_code_i code);
 std::string
 rpcErrorString(Json::Value const& jv);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
