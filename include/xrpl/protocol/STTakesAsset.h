@@ -47,7 +47,7 @@ class STLedgerEntry;
  * `associateAsset` on that field with the given Asset. Such field must be
  * derived from STTakesAsset - if it is not, the conversion will throw.
  *
- * Typically, assocaiteAsset should be called near the end of doApply() of any
+ * Typically, associateAsset should be called near the end of doApply() of any
  * Transactor classes on the SLEs of any new or modified ledger entries
  * containing STNumber fields, after doing all of the modifications t the SLEs.
  *

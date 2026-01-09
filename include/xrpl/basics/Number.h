@@ -216,7 +216,7 @@ concept Integral64 =
  *
  * ----- Unit Tests -----
  *
- * Within unit tests, it may be useful to explcitly switch between the two
+ * Within unit tests, it may be useful to explicitly switch between the two
  * ranges, or to check which range is active when checking the results of
  * computations. If the test is doing the math directly, the
  * set/getMantissaScale() functions may be most appropriate. However, if the
