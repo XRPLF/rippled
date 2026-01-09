@@ -914,7 +914,7 @@ protected:
             state.principalOutstanding,
             state.managementFeeOutstanding);
         {
-            auto const raw = computeRawLoanState(
+            auto const raw = computeTheoreticalLoanState(
                 state.periodicPayment,
                 periodicRate,
                 state.paymentRemaining,
@@ -967,7 +967,7 @@ protected:
         Number totalFeesPaid = 0;
         std::size_t totalPaymentsMade = 0;
 
-        ripple::LoanState currentTrueState = computeRawLoanState(
+        ripple::LoanState currentTrueState = computeTheoreticalLoanState(
             state.periodicPayment,
             periodicRate,
             state.paymentRemaining,
@@ -1022,7 +1022,7 @@ protected:
                     paymentComponents.trackedInterestPart() +
                     paymentComponents.trackedManagementFeeDelta);
 
-            ripple::LoanState const nextTrueState = computeRawLoanState(
+            ripple::LoanState const nextTrueState = computeTheoreticalLoanState(
                 state.periodicPayment,
                 periodicRate,
                 state.paymentRemaining - 1,
@@ -2673,7 +2673,7 @@ protected:
                         Number::upward));
 
                 {
-                    auto const raw = computeRawLoanState(
+                    auto const raw = computeTheoreticalLoanState(
                         state.periodicPayment,
                         periodicRate,
                         state.paymentRemaining,
@@ -2716,11 +2716,12 @@ protected:
                 Number totalInterestPaid = 0;
                 std::size_t totalPaymentsMade = 0;
 
-                ripple::LoanState currentTrueState = computeRawLoanState(
-                    state.periodicPayment,
-                    periodicRate,
-                    state.paymentRemaining,
-                    broker.params.managementFeeRate);
+                ripple::LoanState currentTrueState =
+                    computeTheoreticalLoanState(
+                        state.periodicPayment,
+                        periodicRate,
+                        state.paymentRemaining,
+                        broker.params.managementFeeRate);
 
                 while (state.paymentRemaining > 0)
                 {
@@ -2741,11 +2742,12 @@ protected:
                         paymentComponents.trackedValueDelta <=
                         roundedPeriodicPayment);
 
-                    ripple::LoanState const nextTrueState = computeRawLoanState(
-                        state.periodicPayment,
-                        periodicRate,
-                        state.paymentRemaining - 1,
-                        broker.params.managementFeeRate);
+                    ripple::LoanState const nextTrueState =
+                        computeTheoreticalLoanState(
+                            state.periodicPayment,
+                            periodicRate,
+                            state.paymentRemaining - 1,
+                            broker.params.managementFeeRate);
                     detail::LoanStateDeltas const deltas =
                         currentTrueState - nextTrueState;
 
@@ -5919,7 +5921,7 @@ protected:
 
         auto const periodicRate =
             loanPeriodicRate(interestRateValue, state.paymentInterval);
-        auto const rawLoanState = computeRawLoanState(
+        auto const rawLoanState = computeTheoreticalLoanState(
             state.periodicPayment,
             periodicRate,
             state.paymentRemaining,
