@@ -2,7 +2,6 @@
 #define XRPL_TX_APPLY_H_INCLUDED
 
 #include <xrpld/app/tx/applySteps.h>
-#include <xrpld/core/Config.h>
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/View.h>

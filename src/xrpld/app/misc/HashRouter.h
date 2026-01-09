@@ -267,9 +267,6 @@ private:
         suppressionMap_;
 };
 
-HashRouter::Setup
-setup_HashRouter(Config const&);
-
 }  // namespace xrpl
 
 #endif
