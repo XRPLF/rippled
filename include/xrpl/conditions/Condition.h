@@ -1,10 +1,9 @@
 #ifndef XRPL_CONDITIONS_CONDITION_H
 #define XRPL_CONDITIONS_CONDITION_H
 
-#include <xrpld/conditions/detail/utils.h>
-
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/conditions/detail/utils.h>
 
 #include <cstdint>
 #include <set>

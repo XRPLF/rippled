@@ -143,12 +143,18 @@ target_link_libraries(xrpl.libxrpl.server PUBLIC
   xrpl.libxrpl.resource
 )
 
+add_module(xrpl conditions)
+target_link_libraries(xrpl.libxrpl.conditions PUBLIC
+  xrpl.libxrpl.server
+)
+
 add_module(xrpl ledger)
 target_link_libraries(xrpl.libxrpl.ledger PUBLIC
   xrpl.libxrpl.basics
   xrpl.libxrpl.json
   xrpl.libxrpl.protocol
   xrpl.libxrpl.rdb
+  xrpl.libxrpl.conditions
 )
 
 add_library(xrpl.libxrpl)
@@ -174,6 +180,7 @@ target_link_modules(xrpl PUBLIC
   shamap
   rdb
   server
+  conditions
   ledger
 )
 
