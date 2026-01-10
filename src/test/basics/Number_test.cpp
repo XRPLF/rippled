@@ -152,73 +152,78 @@ public:
             // Note that items with extremely large mantissas need to be
             // calculated, because otherwise they overflow uint64. Items from C
             // with larger mantissa
-            {{Number{1'000'000'000'000'000, -15},
-              Number{6'555'555'555'555'555, -29},
-              Number{1'000'000'000'000'065'556, -18}},
-             {Number{-1'000'000'000'000'000, -15},
-              Number{-6'555'555'555'555'555, -29},
-              Number{-1'000'000'000'000'065'556, -18}},
-             {Number{-1'000'000'000'000'000, -15},
-              Number{6'555'555'555'555'555, -29},
-              Number{
-                  true,
-                  9'999'999'999'999'344'444ULL,
-                  -19,
-                  Number::normalized{}}},
-             {Number{-6'555'555'555'555'555, -29},
-              Number{1'000'000'000'000'000, -15},
-              Number{
-                  false,
-                  9'999'999'999'999'344'444ULL,
-                  -19,
-                  Number::normalized{}}},
-             {Number{}, Number{5}, Number{5}},
-             {Number{5}, Number{}, Number{5}},
-             {Number{5'555'555'555'555'555'000, -32768},
-              Number{-5'555'555'555'555'554'000, -32768},
-              Number{0}},
-             {Number{-9'999'999'999'999'999, -31},
-              Number{1'000'000'000'000'000, -15},
-              Number{9'999'999'999'999'990, -16}},
-             // Items from cSmall expanded for the larger mantissa
-             {Number{1'000'000'000'000'000'000, -18},
-              Number{6'555'555'555'555'555'555, -35},
-              Number{1'000'000'000'000'000'066, -18}},
-             {Number{-1'000'000'000'000'000'000, -18},
-              Number{-6'555'555'555'555'555'555, -35},
-              Number{-1'000'000'000'000'000'066, -18}},
-             {Number{-1'000'000'000'000'000'000, -18},
-              Number{6'555'555'555'555'555'555, -35},
-              Number{
-                  true,
-                  9'999'999'999'999'999'344ULL,
-                  -19,
-                  Number::normalized{}}},
-             {Number{-6'555'555'555'555'555'555, -35},
-              Number{1'000'000'000'000'000'000, -18},
-              Number{
-                  false,
-                  9'999'999'999'999'999'344ULL,
-                  -19,
-                  Number::normalized{}}},
-             {Number{}, Number{5}, Number{5}},
-             {Number{5'555'555'555'555'555'555, -32768},
-              Number{-5'555'555'555'555'555'554, -32768},
-              Number{0}},
-             {Number{
-                  true,
-                  9'999'999'999'999'999'999ULL,
-                  -37,
-                  Number::normalized{}},
-              Number{1'000'000'000'000'000'000, -18},
-              Number{
-                  false,
-                  9'999'999'999'999'999'990ULL,
-                  -19,
-                  Number::normalized{}}},
-             {Number{Number::maxRep},
-              Number{6, -1},
-              Number{Number::maxRep / 10, 1}}});
+            {
+                {Number{1'000'000'000'000'000, -15},
+                 Number{6'555'555'555'555'555, -29},
+                 Number{1'000'000'000'000'065'556, -18}},
+                {Number{-1'000'000'000'000'000, -15},
+                 Number{-6'555'555'555'555'555, -29},
+                 Number{-1'000'000'000'000'065'556, -18}},
+                {Number{-1'000'000'000'000'000, -15},
+                 Number{6'555'555'555'555'555, -29},
+                 Number{
+                     true,
+                     9'999'999'999'999'344'444ULL,
+                     -19,
+                     Number::normalized{}}},
+                {Number{-6'555'555'555'555'555, -29},
+                 Number{1'000'000'000'000'000, -15},
+                 Number{
+                     false,
+                     9'999'999'999'999'344'444ULL,
+                     -19,
+                     Number::normalized{}}},
+                {Number{}, Number{5}, Number{5}},
+                {Number{5}, Number{}, Number{5}},
+                {Number{5'555'555'555'555'555'000, -32768},
+                 Number{-5'555'555'555'555'554'000, -32768},
+                 Number{0}},
+                {Number{-9'999'999'999'999'999, -31},
+                 Number{1'000'000'000'000'000, -15},
+                 Number{9'999'999'999'999'990, -16}},
+                // Items from cSmall expanded for the larger mantissa
+                {Number{1'000'000'000'000'000'000, -18},
+                 Number{6'555'555'555'555'555'555, -35},
+                 Number{1'000'000'000'000'000'066, -18}},
+                {Number{-1'000'000'000'000'000'000, -18},
+                 Number{-6'555'555'555'555'555'555, -35},
+                 Number{-1'000'000'000'000'000'066, -18}},
+                {Number{-1'000'000'000'000'000'000, -18},
+                 Number{6'555'555'555'555'555'555, -35},
+                 Number{
+                     true,
+                     9'999'999'999'999'999'344ULL,
+                     -19,
+                     Number::normalized{}}},
+                {Number{-6'555'555'555'555'555'555, -35},
+                 Number{1'000'000'000'000'000'000, -18},
+                 Number{
+                     false,
+                     9'999'999'999'999'999'344ULL,
+                     -19,
+                     Number::normalized{}}},
+                {Number{}, Number{5}, Number{5}},
+                {Number{5'555'555'555'555'555'555, -32768},
+                 Number{-5'555'555'555'555'555'554, -32768},
+                 Number{0}},
+                {Number{
+                     true,
+                     9'999'999'999'999'999'999ULL,
+                     -37,
+                     Number::normalized{}},
+                 Number{1'000'000'000'000'000'000, -18},
+                 Number{
+                     false,
+                     9'999'999'999'999'999'990ULL,
+                     -19,
+                     Number::normalized{}}},
+                {Number{Number::maxRep},
+                 Number{6, -1},
+                 Number{Number::maxRep / 10, 1}},
+                {Number{Number::maxRep - 1},
+                 Number{1, 0},
+                 Number{Number::maxRep}},
+            });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
             {
@@ -280,53 +285,65 @@ public:
             // Note that items with extremely large mantissas need to be
             // calculated, because otherwise they overflow uint64. Items from C
             // with larger mantissa
-            {{Number{1'000'000'000'000'000, -15},
-              Number{6'555'555'555'555'555, -29},
-              Number{
-                  false,
-                  9'999'999'999'999'344'444ULL,
-                  -19,
-                  Number::normalized{}}},
-             {Number{6'555'555'555'555'555, -29},
-              Number{1'000'000'000'000'000, -15},
-              Number{
-                  true,
-                  9'999'999'999'999'344'444ULL,
-                  -19,
-                  Number::normalized{}}},
-             {Number{1'000'000'000'000'000, -15},
-              Number{1'000'000'000'000'000, -15},
-              Number{0}},
-             {Number{1'000'000'000'000'000, -15},
-              Number{1'000'000'000'000'001, -15},
-              Number{-1'000'000'000'000'000, -30}},
-             {Number{1'000'000'000'000'001, -15},
-              Number{1'000'000'000'000'000, -15},
-              Number{1'000'000'000'000'000, -30}},
-             // Items from cSmall expanded for the larger mantissa
-             {Number{1'000'000'000'000'000'000, -18},
-              Number{6'555'555'555'555'555'555, -32},
-              Number{
-                  false,
-                  9'999'999'999'999'344'444ULL,
-                  -19,
-                  Number::normalized{}}},
-             {Number{6'555'555'555'555'555'555, -32},
-              Number{1'000'000'000'000'000'000, -18},
-              Number{
-                  true,
-                  9'999'999'999'999'344'444ULL,
-                  -19,
-                  Number::normalized{}}},
-             {Number{1'000'000'000'000'000'000, -18},
-              Number{1'000'000'000'000'000'000, -18},
-              Number{0}},
-             {Number{1'000'000'000'000'000'000, -18},
-              Number{1'000'000'000'000'000'001, -18},
-              Number{-1'000'000'000'000'000'000, -36}},
-             {Number{1'000'000'000'000'000'001, -18},
-              Number{1'000'000'000'000'000'000, -18},
-              Number{1'000'000'000'000'000'000, -36}}});
+            {
+                {Number{1'000'000'000'000'000, -15},
+                 Number{6'555'555'555'555'555, -29},
+                 Number{
+                     false,
+                     9'999'999'999'999'344'444ULL,
+                     -19,
+                     Number::normalized{}}},
+                {Number{6'555'555'555'555'555, -29},
+                 Number{1'000'000'000'000'000, -15},
+                 Number{
+                     true,
+                     9'999'999'999'999'344'444ULL,
+                     -19,
+                     Number::normalized{}}},
+                {Number{1'000'000'000'000'000, -15},
+                 Number{1'000'000'000'000'000, -15},
+                 Number{0}},
+                {Number{1'000'000'000'000'000, -15},
+                 Number{1'000'000'000'000'001, -15},
+                 Number{-1'000'000'000'000'000, -30}},
+                {Number{1'000'000'000'000'001, -15},
+                 Number{1'000'000'000'000'000, -15},
+                 Number{1'000'000'000'000'000, -30}},
+                // Items from cSmall expanded for the larger mantissa
+                {Number{1'000'000'000'000'000'000, -18},
+                 Number{6'555'555'555'555'555'555, -32},
+                 Number{
+                     false,
+                     9'999'999'999'999'344'444ULL,
+                     -19,
+                     Number::normalized{}}},
+                {Number{6'555'555'555'555'555'555, -32},
+                 Number{1'000'000'000'000'000'000, -18},
+                 Number{
+                     true,
+                     9'999'999'999'999'344'444ULL,
+                     -19,
+                     Number::normalized{}}},
+                {Number{1'000'000'000'000'000'000, -18},
+                 Number{1'000'000'000'000'000'000, -18},
+                 Number{0}},
+                {Number{1'000'000'000'000'000'000, -18},
+                 Number{1'000'000'000'000'000'001, -18},
+                 Number{-1'000'000'000'000'000'000, -36}},
+                {Number{1'000'000'000'000'000'001, -18},
+                 Number{1'000'000'000'000'000'000, -18},
+                 Number{1'000'000'000'000'000'000, -36}},
+                {Number{Number::maxRep},
+                 Number{6, -1},
+                 Number{Number::maxRep - 1}},
+                {Number{false, Number::maxRep + 1, 0, Number::normalized{}},
+                 Number{1, 0},
+                 Number{Number::maxRep / 10 + 1, 1}},
+                {Number{false, Number::maxRep + 1, 0, Number::normalized{}},
+                 Number{3, 0},
+                 Number{Number::maxRep}},
+                {power(2, 63), Number{3, 0}, Number{Number::maxRep}},
+            });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
             {
@@ -365,7 +382,6 @@ public:
                 test(cLarge);
         };
         auto const maxMantissa = Number::maxMantissa();
-        auto const maxInt64 = std::numeric_limits<std::int64_t>::max();
 
         saveNumberRoundMode save{Number::setround(Number::to_nearest)};
         {
@@ -435,8 +451,8 @@ public:
                  Number{false, maxMantissa, 0, Number::normalized{}},
                  Number{1, 38}},
                 // Maximum int64 range
-                {Number{maxInt64, 0},
-                 Number{maxInt64, 0},
+                {Number{Number::maxRep, 0},
+                 Number{Number::maxRep, 0},
                  Number{85'070'591'730'234'615'85, 19}},
             });
             tests(cSmall, cLarge);
@@ -513,8 +529,8 @@ public:
                          Number::normalized{}}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{maxInt64, 0},
-                     Number{maxInt64, 0},
+                    {Number{Number::maxRep, 0},
+                     Number{Number::maxRep, 0},
                      Number{85'070'591'730'234'615'84, 19}},
                 });
             tests(cSmall, cLarge);
@@ -591,8 +607,8 @@ public:
                          Number::normalized{}}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{maxInt64, 0},
-                     Number{maxInt64, 0},
+                    {Number{Number::maxRep, 0},
+                     Number{Number::maxRep, 0},
                      Number{85'070'591'730'234'615'84, 19}},
                 });
             tests(cSmall, cLarge);
@@ -661,8 +677,8 @@ public:
                      Number{1, 38}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{maxInt64, 0},
-                     Number{maxInt64, 0},
+                    {Number{Number::maxRep, 0},
+                     Number{Number::maxRep, 0},
                      Number{85'070'591'730'234'615'85, 19}},
                 });
             tests(cSmall, cLarge);
@@ -954,6 +970,12 @@ public:
              2,
              Number{
                  false, 3'162'277'660'168'379'330, -9, Number::normalized{}}},
+            {Number{Number::maxRep},
+             2,
+             Number{false, 3'037'000'499'976049692, -9, Number::normalized{}}},
+            {Number{Number::maxRep},
+             4,
+             Number{false, 55'108'98747006743627, -14, Number::normalized{}}},
         });
         test(cSmall);
         if (Number::getMantissaScale() != MantissaRange::small)
@@ -1001,15 +1023,17 @@ public:
             }
         };
 
-        auto const cSmall = std::to_array<Number>(
-            {Number{2},
-             Number{2'000'000},
-             Number{2, -30},
-             Number{27},
-             Number{1},
-             Number{5, -1},
-             Number{0},
-             Number{5625, -4}});
+        auto const cSmall = std::to_array<Number>({
+            Number{2},
+            Number{2'000'000},
+            Number{2, -30},
+            Number{27},
+            Number{1},
+            Number{5, -1},
+            Number{0},
+            Number{5625, -4},
+            Number{Number::maxRep},
+        });
         test(cSmall);
         bool caught = false;
         try
@@ -1628,7 +1652,7 @@ public:
             Number const initalXrp{INITIAL_XRP};
             BEAST_EXPECT(initalXrp.exponent() > 0);
 
-            Number const maxInt64{std::numeric_limits<std::int64_t>::max()};
+            Number const maxInt64{Number::maxRep};
             BEAST_EXPECT(maxInt64.exponent() > 0);
             // 85'070'591'730'234'615'865'843'651'857'942'052'864 - 38 digits
             BEAST_EXPECT(
@@ -1648,7 +1672,7 @@ public:
             Number const initalXrp{INITIAL_XRP};
             BEAST_EXPECT(initalXrp.exponent() <= 0);
 
-            Number const maxInt64{std::numeric_limits<std::int64_t>::max()};
+            Number const maxInt64{Number::maxRep};
             BEAST_EXPECT(maxInt64.exponent() <= 0);
             // 85'070'591'730'234'615'847'396'907'784'232'501'249 - 38 digits
             BEAST_EXPECT(

@@ -1483,9 +1483,14 @@ class LoanBroker_test : public beast::unit_test::suite
         env.close();
 
         PrettyAsset const asset = [&]() {
-            env(trust(alice, issuer["IOU"](1'000'000)), THISLINE);
+            MPTTester mptt{env, issuer, mptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
             env.close();
-            return PrettyAsset(issuer["IOU"]);
+            PrettyAsset const mptAsset = mptt["MPT"];
+            mptt.authorize({.account = alice});
+            env.close();
+            return mptAsset;
         }();
 
         env(pay(issuer, alice, asset(100'000)), THISLINE);
@@ -1542,11 +1547,33 @@ class LoanBroker_test : public beast::unit_test::suite
         tx2[sfDebtMaximum] = Json::Value::maxInt;
         env(tx2, ter(tesSUCCESS), THISLINE);
 
-        tx2[sfDebtMaximum] = power(2, 64) - 1;
-        env(tx2, ter(temINVALID), THISLINE);
+        {
+            auto const dm = power(2, 64) - 1;
+            BEAST_EXPECT(dm > maxMPTokenAmount);
+            tx2[sfDebtMaximum] = dm;
+            env(tx2, ter(temINVALID), THISLINE);
+        }
 
-        tx2[sfDebtMaximum] = power(2, 63) - 1;
-        env(tx2, ter(tesSUCCESS), THISLINE);
+        {
+            auto const dm = power(2, 63) - 1;
+            BEAST_EXPECTS(dm > maxMPTokenAmount, to_string(dm));
+            tx2[sfDebtMaximum] = dm;
+            env(tx2, ter(temINVALID), THISLINE);
+        }
+
+        {
+            auto const dm = power(2, 63) - 3;
+            BEAST_EXPECTS(dm == maxMPTokenAmount, to_string(dm));
+            tx2[sfDebtMaximum] = dm;
+            env(tx2, ter(tesSUCCESS), THISLINE);
+        }
+
+        {
+            auto const dm = 2 * (power(2, 62) - 1) + 1;
+            BEAST_EXPECTS(dm == maxMPTokenAmount, to_string(dm));
+            tx2[sfDebtMaximum] = dm;
+            env(tx2, ter(tesSUCCESS), THISLINE);
+        }
 
         tx2[sfDebtMaximum] = Number{9223372036854775807, 0};
         env(tx2, ter(tesSUCCESS), THISLINE);

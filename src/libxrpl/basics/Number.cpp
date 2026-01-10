@@ -579,13 +579,13 @@ Number::operator+=(Number const& y)
 
     bool xn = negative_;
     int xs = xn ? -1 : 1;
-    internalrep xm = xs * mantissa();
-    auto xe = exponent();
+    internalrep xm = mantissa_;
+    auto xe = exponent_;
 
     bool yn = y.negative_;
     int ys = yn ? -1 : 1;
-    internalrep ym = ys * y.mantissa();
-    auto ye = y.exponent();
+    internalrep ym = y.mantissa_;
+    auto ye = y.exponent_;
     Guard g;
     if (xe < ye)
     {
@@ -650,8 +650,6 @@ Number::operator+=(Number const& y)
     negative_ = xn;
     mantissa_ = xm;
     exponent_ = xe;
-    XRPL_ASSERT(
-        isnormal(), "xrpl::Number::operator+=(Number) : result is normal");
     normalize();
     return *this;
 }
@@ -702,13 +700,13 @@ Number::operator*=(Number const& y)
 
     bool xn = negative_;
     int xs = xn ? -1 : 1;
-    internalrep xm = xs * mantissa();
-    auto xe = exponent();
+    internalrep xm = mantissa_;
+    auto xe = exponent_;
 
     bool yn = y.negative_;
     int ys = yn ? -1 : 1;
-    internalrep ym = ys * y.mantissa();
-    auto ye = y.exponent();
+    internalrep ym = y.mantissa_;
+    auto ye = y.exponent_;
 
     auto zm = uint128_t(xm) * uint128_t(ym);
     auto ze = xe + ye;
@@ -742,8 +740,7 @@ Number::operator*=(Number const& y)
     negative_ = zn;
     mantissa_ = xm;
     exponent_ = xe;
-    XRPL_ASSERT(
-        isnormal(), "xrpl::Number::operator*=(Number) : result is normal");
+
     normalize();
     return *this;
 }
@@ -840,8 +837,7 @@ Number::operator/=(Number const& y)
     negative_ = zn;
     mantissa_ = static_cast<internalrep>(zm);
     exponent_ = ze;
-    XRPL_ASSERT_PARTS(
-        isnormal(), "xrpl::Number::operator/=", "result is normalized");
+
     return *this;
 }
 
@@ -1037,7 +1033,7 @@ root(Number f, unsigned d)
         return f;
 
     // Scale f into the range (0, 1) such that f's exponent is a multiple of d
-    auto e = f.exponent() + Number::mantissaLog() + 1;
+    auto e = f.exponent_ + Number::mantissaLog() + 1;
     auto const di = static_cast<int>(d);
     auto ex = [e = e, di = di]()  // Euclidean remainder of e/d
     {
@@ -1049,6 +1045,7 @@ root(Number f, unsigned d)
     }();
     e += ex;
     f = f.shiftExponent(-e);  // f /= 10^e;
+
     XRPL_ASSERT_PARTS(
         f.isnormal(), "xrpl::root(Number, unsigned)", "f is normalized");
     bool neg = false;
@@ -1104,7 +1101,7 @@ root2(Number f)
         return f;
 
     // Scale f into the range (0, 1) such that f's exponent is a multiple of d
-    auto e = f.exponent() + Number::mantissaLog() + 1;
+    auto e = f.exponent_ + Number::mantissaLog() + 1;
     if (e % 2 != 0)
         ++e;
     f = f.shiftExponent(-e);  // f /= 10^e;

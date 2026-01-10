@@ -110,23 +110,14 @@ STNumber::add(Serializer& s) const
 #if !NDEBUG
             // There are circumstances where an already-rounded Number is
             // serialized without being touched by a transactor, and thus
-            // without an asset. We can't be 100% sure, but we can check a
-            // couple of conditions that indicate it's _probably_ rounded.
+            // without an asset. We can't know if it's rounded, because it could
+            // represent _anything_, particularly when serializing user-provided
+            // Json. Regardless, the only time we should be serializing an
+            // STNumber is when the scale is large.
             XRPL_ASSERT_PARTS(
                 Number::getMantissaScale() == MantissaRange::large,
                 "xrpl::STNumber::add",
                 "STNumber only used with large mantissa scale");
-            std::uint64_t testMantissa = mantissa < 0 ? -mantissa : mantissa;
-            auto testExponent = exponent;
-            if (testMantissa < Number::minMantissa())
-            {
-                testMantissa *= 10;
-                --testExponent;
-            }
-            XRPL_ASSERT_PARTS(
-                testExponent <= 0 || (testMantissa % 1000 == 0),
-                "xrpl::STNumber::add",
-                "STNumber is probably already rounded");
 #endif
         }
     }
