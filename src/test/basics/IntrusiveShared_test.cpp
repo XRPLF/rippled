@@ -396,7 +396,7 @@ public:
                 // This checks that partialDelete has run to completion
                 // before the destructor is called. A sleep is inserted
                 // inside the partial delete to make sure the destructor is
-                // given an opportunity to run durring partial delete.
+                // given an opportunity to run during partial delete.
                 BEAST_EXPECT(cur == partiallyDeleted);
             }
             if (next == partiallyDeletedStarted)
