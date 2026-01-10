@@ -578,12 +578,10 @@ Number::operator+=(Number const& y)
     // *e = exponent
 
     bool xn = negative_;
-    int xs = xn ? -1 : 1;
     internalrep xm = mantissa_;
     auto xe = exponent_;
 
     bool yn = y.negative_;
-    int ys = yn ? -1 : 1;
     internalrep ym = y.mantissa_;
     auto ye = y.exponent_;
     Guard g;
