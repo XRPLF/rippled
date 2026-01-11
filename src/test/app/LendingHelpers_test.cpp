@@ -738,7 +738,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         testcase("tryOverpayment - No Interest With Overpayment Fee");
 
         using namespace jtx;
-        using namespace xrpl::detail;
+        using namespace ripple::detail;
 
         Env env{*this};
         Account const issuer{"issuer"};
@@ -845,7 +845,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         testcase("tryOverpayment - Loan Interest, No Overpayment Fees");
 
         using namespace jtx;
-        using namespace xrpl::detail;
+        using namespace ripple::detail;
 
         Env env{*this};
         Account const issuer{"issuer"};
@@ -959,7 +959,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             "tryOverpayment - Loan Interest, Overpayment Interest, No Fee");
 
         using namespace jtx;
-        using namespace xrpl::detail;
+        using namespace ripple::detail;
 
         Env env{*this};
         Account const issuer{"issuer"};
@@ -1080,7 +1080,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             "Fee");
 
         using namespace jtx;
-        using namespace xrpl::detail;
+        using namespace ripple::detail;
 
         Env env{*this};
         Account const issuer{"issuer"};
@@ -1204,7 +1204,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             "tryOverpayment - Loan Interest, Fee, Overpayment Interest, Fee");
 
         using namespace jtx;
-        using namespace xrpl::detail;
+        using namespace ripple::detail;
 
         Env env{*this};
         Account const issuer{"issuer"};
