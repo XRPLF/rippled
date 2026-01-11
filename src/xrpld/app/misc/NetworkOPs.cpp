@@ -1677,10 +1677,11 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     app_.getHashRouter().shouldRelay(e.transaction->getID());
                 if (auto const sttx = *(e.transaction->getSTransaction());
                     toSkip &&
-                    // Skip relaying if it's an inner batch txn and batch
-                    // feature is enabled
-                    !(sttx.isFlag(tfInnerBatchTxn) &&
-                      newOL->rules().enabled(featureBatch)))
+                    // Skip relaying if it's an inner batch txn. The flag should
+                    // only be set if the Batch feature is enabled. If Batch is
+                    // not enabled, the flag is always invalid, so don't relay
+                    // it regardless.
+                    !(sttx.isFlag(tfInnerBatchTxn)))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
