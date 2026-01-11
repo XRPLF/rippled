@@ -46,6 +46,12 @@ set(CMAKE_VS_GLOBALS
         "TrackFileAccess=false"
         "UseMultiToolTask=true")
 
-# By default Visual Studio generators will use /Zi, which is not compatible with
-# ccache, so tell it to use /Z7 instead.
-set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+# By default Visual Studio generators will use /Zi to capture debug information,
+# which is not compatible with ccache, so tell it to use /Z7 instead.
+if (MSVC)
+    foreach (var_
+        CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE)
+        string (REPLACE "/Zi" "/Z7" ${var_} "${${var_}}")
+    endforeach ()
+endif ()
