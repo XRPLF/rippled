@@ -420,22 +420,13 @@ LoanManage::doApply()
     // Valid flag combinations are checked in preflight. No flags is valid -
     // just a noop.
     if (tx.isFlag(tfLoanDefault))
-    {
         return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
-    }
-    else if (tx.isFlag(tfLoanImpair))
-    {
+    if (tx.isFlag(tfLoanImpair))
         return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
-    }
-    else if (tx.isFlag(tfLoanUnimpair))
-    {
+    if (tx.isFlag(tfLoanUnimpair))
         return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
-    }
-    else
-    {
-        // Noop, as described above.
-        return tesSUCCESS;
-    }
+    // Noop, as described above.
+    return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------

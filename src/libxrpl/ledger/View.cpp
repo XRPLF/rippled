@@ -588,22 +588,23 @@ accountHolds(
     SpendableHandling includeFullBalance)
 {
     return std::visit(
-        [&](auto const& value) {
-            if constexpr (std::is_same_v<
-                              std::remove_cvref_t<decltype(value)>,
-                              Issue>)
+        [&]<ValidIssueType TIss>(TIss const& value) {
+            if constexpr (std::is_same_v<TIss, Issue>)
             {
                 return accountHolds(
                     view, account, value, zeroIfFrozen, j, includeFullBalance);
             }
-            return accountHolds(
-                view,
-                account,
-                value,
-                zeroIfFrozen,
-                zeroIfUnauthorized,
-                j,
-                includeFullBalance);
+            else if constexpr (std::is_same_v<TIss, MPTIssue>)
+            {
+                return accountHolds(
+                    view,
+                    account,
+                    value,
+                    zeroIfFrozen,
+                    zeroIfUnauthorized,
+                    j,
+                    includeFullBalance);
+            }
         },
         asset.value());
 }
