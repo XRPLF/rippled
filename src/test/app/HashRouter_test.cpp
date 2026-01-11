@@ -349,7 +349,7 @@ class HashRouter_test : public beast::unit_test::suite
             h.set("hold_time", "alice");
             h.set("relay_time", "bob");
             auto const setup = setup_HashRouter(cfg);
-            // The set function ignores values that don't covert, so the
+            // The set function ignores values that don't convert, so the
             // defaults are left unchanged
             BEAST_EXPECT(setup.holdTime == 300s);
             BEAST_EXPECT(setup.relayTime == 30s);
