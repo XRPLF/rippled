@@ -44,6 +44,7 @@ if (MSVC)
     # omit debug info completely under CI (not needed)
     if (is_ci)
       string (REPLACE "/Zi" " " ${var_} "${${var_}}")
+      string (REPLACE "/Z7" " " ${var_} "${${var_}}")
     endif ()
   endforeach ()
 
