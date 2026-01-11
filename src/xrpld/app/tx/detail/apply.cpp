@@ -60,15 +60,22 @@ checkValidity(
                 Validity::SigBad,
                 "Malformed: Invalid inner batch transaction."};
 
-        std::string reason;
-        if (!passesLocalChecks(tx, reason))
+        // This block should probably have never been included in the
+        // original `Batch` implementation. An inner transaction never
+        // has a valid signature.
+        bool const neverValid = rules.enabled(fixBatchInnerSigs);
+        if (!neverValid)
         {
-            router.setFlags(id, SF_LOCALBAD);
-            return {Validity::SigGoodOnly, reason};
-        }
+            std::string reason;
+            if (!passesLocalChecks(tx, reason))
+            {
+                router.setFlags(id, SF_LOCALBAD);
+                return {Validity::SigGoodOnly, reason};
+            }
 
-        router.setFlags(id, SF_SIGGOOD);
-        return {Validity::Valid, ""};
+            router.setFlags(id, SF_SIGGOOD);
+            return {Validity::Valid, ""};
+        }
     }
 
     if (any(flags & SF_SIGBAD))

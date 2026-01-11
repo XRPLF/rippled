@@ -880,6 +880,7 @@ class ValidVault
         uint256 key = beast::zero;
         Asset asset = {};
         AccountID pseudoId = {};
+        AccountID owner = {};
         uint192 shareMPTID = beast::zero;
         Number assetsTotal = 0;
         Number assetsAvailable = 0;

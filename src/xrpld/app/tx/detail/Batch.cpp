@@ -324,6 +324,16 @@ Batch::preflight(PreflightContext const& ctx)
             }
         }
 
+        // Check that the Fee is native asset (XRP) and zero
+        if (auto const fee = stx.getFieldAmount(sfFee);
+            !fee.native() || fee.xrp() != beast::zero)
+        {
+            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                << "inner txn must have a fee of 0. "
+                                << "txID: " << hash;
+            return temBAD_FEE;
+        }
+
         auto const innerAccount = stx.getAccountID(sfAccount);
         if (auto const preflightResult = ripple::preflight(
                 ctx.app, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
@@ -334,16 +344,6 @@ Batch::preflight(PreflightContext const& ctx)
                                 << transHuman(preflightResult.ter) << " "
                                 << "txID: " << hash;
             return temINVALID_INNER_BATCH;
-        }
-
-        // Check that the fee is zero
-        if (auto const fee = stx.getFieldAmount(sfFee);
-            !fee.native() || fee.xrp() != beast::zero)
-        {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn must have a fee of 0. "
-                                << "txID: " << hash;
-            return temBAD_FEE;
         }
 
         // Check that Sequence and TicketSequence are not both present
