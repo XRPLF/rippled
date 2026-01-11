@@ -2651,7 +2651,7 @@ class MPToken_test : public beast::unit_test::suite
         STAmount const amt3{asset3, 10'000};
 
         {
-            testcase("Test STAmount MPT arithmetics");
+            testcase("Test STAmount MPT arithmetic");
             using namespace std::string_literals;
             STAmount res = multiply(amt1, amt2, asset3);
             BEAST_EXPECT(res == amt3);
@@ -2688,7 +2688,7 @@ class MPToken_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Test MPTAmount arithmetics");
+            testcase("Test MPTAmount arithmetic");
             MPTAmount mptAmt1{100};
             MPTAmount const mptAmt2{100};
             BEAST_EXPECT((mptAmt1 += mptAmt2) == MPTAmount{200});
