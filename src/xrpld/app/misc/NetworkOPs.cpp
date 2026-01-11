@@ -1696,7 +1696,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     // only be set if the Batch feature is enabled. If Batch is
                     // not enabled, the flag is always invalid, so don't relay
                     // it regardless.
-                    !sttx.isFlag(tfInnerBatchTxn))
+                    !(sttx.isFlag(tfInnerBatchTxn)))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
