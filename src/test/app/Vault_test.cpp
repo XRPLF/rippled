@@ -5343,7 +5343,7 @@ class Vault_test : public beast::unit_test::suite
             // Create a simple Loan for the full amount of Vault assets
             env(set(depositor, brokerKeylet.key, asset(100).value()),
                 loan::interestRate(TenthBips32(0)),
-                gracePeriod(10),
+                gracePeriod(60),
                 paymentInterval(120),
                 paymentTotal(10),
                 sig(sfCounterpartySignature, owner),
@@ -5363,7 +5363,7 @@ class Vault_test : public beast::unit_test::suite
                 THISLINE);
             env.close();
 
-            env.close(std::chrono::seconds{120 + 10});
+            env.close(std::chrono::seconds{120 + 60});
 
             env(manage(owner, loanKeylet.key, tfLoanDefault),
                 ter(tesSUCCESS),
