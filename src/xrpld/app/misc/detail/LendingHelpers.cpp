@@ -531,6 +531,8 @@ tryOverpayment(
     // overpayment should never increase the loan's value.
     // The value change is derived from the reduction in interest due to
     // the lower principal.
+    // We do not consider the change in management fee here, since
+    // management fees are excluded from the valueOutstanding.
     auto const valueChange = -deltas.interest;
     if (valueChange > 0)
     {
@@ -544,17 +546,15 @@ tryOverpayment(
             // Principal paid is the reduction in principal outstanding
             .principalPaid = deltas.principal,
             // Interest paid is the reduction in interest due
-            .interestPaid =
-                deltas.interest + overpaymentComponents.untrackedInterest,
+            .interestPaid = overpaymentComponents.untrackedInterest,
             // Value change includes both the reduction from paying down
             // principal (negative) and any untracked interest penalties
             // (positive, e.g., if the overpayment itself incurs a fee)
             .valueChange =
-                valueChange + overpaymentComponents.trackedInterestPart(),
+                valueChange + overpaymentComponents.untrackedInterest,
             // Fee paid includes both the reduction in tracked management fees
             // and any untracked fees on the overpayment itself
-            .feePaid = deltas.managementFee +
-                overpaymentComponents.untrackedManagementFee +
+            .feePaid = overpaymentComponents.untrackedManagementFee +
                 overpaymentComponents.trackedManagementFeeDelta,
         },
         newLoanProperties);
@@ -1212,12 +1212,11 @@ computeOverpaymentComponents(
             .specialCase = detail::PaymentSpecialCase::extra},
         // Untracked management fee is the fixed overpayment fee
         overpaymentFee,
-        // Untracked interest is the penalty interest charged for
-        // overpaying.
-        // This is positive, representing a one-time cost, but it's
-        // typically
-        // much smaller than the interest savings from reducing
-        // principal.
+        // Untracked interest is the penalty interest charged for  overpaying.
+        // This is positive, representing a one-time cost, but it's typically
+        // much smaller than the interest savings from reducing principal.
+        // It is equal to the paymentComponents.trackedInterestPart()
+        // but is kept separate for clarity.
         roundedOverpaymentInterest};
     XRPL_ASSERT_PARTS(
         result.trackedInterestPart() == roundedOverpaymentInterest,
