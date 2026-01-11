@@ -2322,7 +2322,7 @@ NoModifiedUnmodifiableFields::finalize(
         if (bad)
         {
             JLOG(j.fatal())
-                << "Invariant failed: changed an unchangable field for "
+                << "Invariant failed: changed an unchangeable field for "
                 << tx.getTransactionID();
             if (enforce)
                 return false;
