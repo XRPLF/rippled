@@ -577,12 +577,14 @@ Number::operator+=(Number const& y)
     // *m = mantissa
     // *e = exponent
 
+    // Need to use uint128_t, because large mantissas can overflow when added
+    // together.
     bool xn = negative_;
-    internalrep xm = mantissa_;
+    uint128_t xm = mantissa_;
     auto xe = exponent_;
 
     bool yn = y.negative_;
-    internalrep ym = y.mantissa_;
+    uint128_t ym = y.mantissa_;
     auto ye = y.exponent_;
     Guard g;
     if (xe < ye)
@@ -646,7 +648,7 @@ Number::operator+=(Number const& y)
     }
 
     negative_ = xn;
-    mantissa_ = xm;
+    mantissa_ = static_cast<internalrep>(xm);
     exponent_ = xe;
     normalize();
     return *this;
@@ -835,6 +837,8 @@ Number::operator/=(Number const& y)
     negative_ = zn;
     mantissa_ = static_cast<internalrep>(zm);
     exponent_ = ze;
+    XRPL_ASSERT_PARTS(
+        isnormal(), "xrpl::Number::operator/=", "result is normalized");
 
     return *this;
 }

@@ -223,6 +223,44 @@ public:
                 {Number{Number::maxRep - 1},
                  Number{1, 0},
                  Number{Number::maxRep}},
+                // Test extremes
+                {
+                    // Each Number operand rounds up, so the actual mantissa is
+                    // minMantissa
+                    Number{
+                        false,
+                        9'999'999'999'999'999'999ULL,
+                        0,
+                        Number::normalized{}},
+                    Number{
+                        false,
+                        9'999'999'999'999'999'999ULL,
+                        0,
+                        Number::normalized{}},
+                    Number{2, 19},
+                },
+                {
+                    // Does not round. Mantissas are going to be > maxRep, so if
+                    // added together as uint64_t's, the result will overflow.
+                    // With addition using uint128_t, there's no problem. After
+                    // normalizing, the resulting mantissa ends up less than
+                    // maxRep.
+                    Number{
+                        false,
+                        9'999'999'999'999'999'990ULL,
+                        0,
+                        Number::normalized{}},
+                    Number{
+                        false,
+                        9'999'999'999'999'999'990ULL,
+                        0,
+                        Number::normalized{}},
+                    Number{
+                        false,
+                        1'999'999'999'999'999'998ULL,
+                        1,
+                        Number::normalized{}},
+                },
             });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
