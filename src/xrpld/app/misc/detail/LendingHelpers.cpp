@@ -1588,7 +1588,7 @@ computeLoanProperties(
     auto const roundedPrincipalOutstanding = roundToAsset(
         asset, principalOutstanding, loanScale, Number::to_nearest);
 
-    // E<quation (31) from XLS-66 spec, Section A-2 Equation Glossary
+    // Equation (31) from XLS-66 spec, Section A-2 Equation Glossary
     auto const totalInterestOutstanding =
         totalValueOutstanding - roundedPrincipalOutstanding;
     auto const feeOwedToBroker = computeManagementFee(
