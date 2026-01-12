@@ -1,7 +1,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 class XRPAmount_test : public beast::unit_test::suite
 {
@@ -218,7 +218,7 @@ public:
 
             // multiply and divide by values that would overflow if done
             // naively, and check that it gives the correct answer
-            big -= 0xf;  // Subtract a little so it's divisable by 4
+            big -= 0xf;  // Subtract a little so it's divisible by 4
             BEAST_EXPECT(
                 mulRatio(big, 3, 4, false).value() == (big.value() / 4) * 3);
             BEAST_EXPECT(
@@ -308,7 +308,7 @@ public:
             XRPAmount bigNegative(minXRP + 10);
             BEAST_EXPECT(mulRatio(bigNegative, 2, 1, true) == minXRP);
         }
-    }  // namespace ripple
+    }  // namespace xrpl
 
     //--------------------------------------------------------------------------
 
@@ -325,6 +325,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(XRPAmount, basics, ripple);
+BEAST_DEFINE_TESTSUITE(XRPAmount, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

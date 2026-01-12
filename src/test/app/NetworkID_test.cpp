@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class NetworkID_test : public beast::unit_test::suite
@@ -112,7 +112,7 @@ public:
                 jvn[jss::TransactionType] = jss::AccountSet;
                 jvn[jss::Fee] = to_string(env.current()->fees().base);
                 jvn[jss::Sequence] = env.seq(alice);
-                jvn[jss::LastLedgerSequence] = env.current()->info().seq + 2;
+                jvn[jss::LastLedgerSequence] = env.current()->header().seq + 2;
                 auto jt = env.jtnofill(jvn);
                 Serializer s;
                 jt.stx->add(s);
@@ -142,7 +142,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NetworkID, app, ripple);
+BEAST_DEFINE_TESTSUITE(NetworkID, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

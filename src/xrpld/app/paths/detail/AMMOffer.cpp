@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/QualityFunction.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <typename TIn, typename TOut>
 AMMOffer<TIn, TOut>::AMMOffer(
@@ -61,7 +61,7 @@ AMMOffer<TIn, TOut>::consume(
 template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
 AMMOffer<TIn, TOut>::limitOut(
-    TAmounts<TIn, TOut> const& offrAmt,
+    TAmounts<TIn, TOut> const& offerAmount,
     TOut const& limit,
     bool roundUp) const
 {
@@ -75,7 +75,7 @@ AMMOffer<TIn, TOut>::limitOut(
     {
         // It turns out that the ceil_out implementation has some slop in
         // it, which ceil_out_strict removes.
-        return quality().ceil_out_strict(offrAmt, limit, roundUp);
+        return quality().ceil_out_strict(offerAmount, limit, roundUp);
     }
     // Change the offer size according to the conservation function. The offer
     // quality is increased in this case, but it doesn't matter since there is
@@ -86,7 +86,7 @@ AMMOffer<TIn, TOut>::limitOut(
 template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
 AMMOffer<TIn, TOut>::limitIn(
-    TAmounts<TIn, TOut> const& offrAmt,
+    TAmounts<TIn, TOut> const& offerAmount,
     TIn const& limit,
     bool roundUp) const
 {
@@ -95,9 +95,9 @@ AMMOffer<TIn, TOut>::limitIn(
     {
         if (auto const& rules = getCurrentTransactionRules();
             rules && rules->enabled(fixReducedOffersV2))
-            return quality().ceil_in_strict(offrAmt, limit, roundUp);
+            return quality().ceil_in_strict(offerAmount, limit, roundUp);
 
-        return quality().ceil_in(offrAmt, limit);
+        return quality().ceil_in(offerAmount, limit);
     }
     return {limit, swapAssetIn(balances_, limit, ammLiquidity_.tradingFee())};
 }
@@ -155,4 +155,4 @@ template class AMMOffer<IOUAmount, IOUAmount>;
 template class AMMOffer<XRPAmount, IOUAmount>;
 template class AMMOffer<IOUAmount, XRPAmount>;
 
-}  // namespace ripple
+}  // namespace xrpl

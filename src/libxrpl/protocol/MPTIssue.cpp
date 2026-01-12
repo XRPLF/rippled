@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 MPTIssue::MPTIssue(MPTID const& issuanceID) : mptID_(issuanceID)
 {
@@ -88,4 +88,4 @@ mptIssueFromJson(Json::Value const& v)
     return MPTIssue{id};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

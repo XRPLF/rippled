@@ -6,7 +6,7 @@
 
 #include <xrpl/protocol/ErrorCodes.h>
 
-namespace ripple {
+namespace xrpl {
 Json::Value
 doFee(RPC::JsonContext& context)
 {
@@ -15,10 +15,10 @@ doFee(RPC::JsonContext& context)
         return result;
 
     // LCOV_EXCL_START
-    UNREACHABLE("ripple::doFee : invalid result type");
+    UNREACHABLE("xrpl::doFee : invalid result type");
     RPC::inject_error(rpcINTERNAL, context.params);
     return context.params;
     // LCOV_EXCL_STOP
 }
 
-}  // namespace ripple
+}  // namespace xrpl

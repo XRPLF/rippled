@@ -33,7 +33,6 @@
 #include <xrpld/overlay/PeerReservationTable.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/make_Overlay.h>
-#include <xrpld/perflog/PerfLog.h>
 #include <xrpld/shamap/NodeFamily.h>
 
 #include <xrpl/basics/ByteUtilities.h>
@@ -41,6 +40,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/core/PerfLog.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/nodestore/DummyScheduler.h>
@@ -66,7 +66,7 @@
 #include <optional>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 static void
 fixConfigPorts(Config& config, Endpoints const& endpoints);
@@ -569,7 +569,7 @@ public:
     {
         XRPL_ASSERT(
             serverHandler_,
-            "ripple::ApplicationImp::getServerHandler : non-null server "
+            "xrpl::ApplicationImp::getServerHandler : non-null server "
             "handle");
         return *serverHandler_;
     }
@@ -777,7 +777,7 @@ public:
     overlay() override
     {
         XRPL_ASSERT(
-            overlay_, "ripple::ApplicationImp::overlay : non-null overlay");
+            overlay_, "xrpl::ApplicationImp::overlay : non-null overlay");
         return *overlay_;
     }
 
@@ -785,8 +785,7 @@ public:
     getTxQ() override
     {
         XRPL_ASSERT(
-            txQ_,
-            "ripple::ApplicationImp::getTxQ : non-null transaction queue");
+            txQ_, "xrpl::ApplicationImp::getTxQ : non-null transaction queue");
         return *txQ_;
     }
 
@@ -795,7 +794,7 @@ public:
     {
         XRPL_ASSERT(
             mRelationalDatabase,
-            "ripple::ApplicationImp::getRelationalDatabase : non-null "
+            "xrpl::ApplicationImp::getRelationalDatabase : non-null "
             "relational database");
         return *mRelationalDatabase;
     }
@@ -805,7 +804,7 @@ public:
     {
         XRPL_ASSERT(
             mWalletDB,
-            "ripple::ApplicationImp::getWalletDB : non-null wallet database");
+            "xrpl::ApplicationImp::getWalletDB : non-null wallet database");
         return *mWalletDB;
     }
 
@@ -822,7 +821,7 @@ public:
     {
         XRPL_ASSERT(
             mWalletDB.get() == nullptr,
-            "ripple::ApplicationImp::initRelationalDatabase : null wallet "
+            "xrpl::ApplicationImp::initRelationalDatabase : null wallet "
             "database");
 
         try
@@ -1223,9 +1222,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             supported.reserve(amendments.size());
             for (auto const& [a, vote] : amendments)
             {
-                auto const f = ripple::getRegisteredFeature(a);
+                auto const f = xrpl::getRegisteredFeature(a);
                 XRPL_ASSERT(
-                    f, "ripple::ApplicationImp::setup : registered feature");
+                    f, "xrpl::ApplicationImp::setup : registered feature");
                 if (f)
                     supported.emplace_back(a, *f, vote);
             }
@@ -1384,7 +1383,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     // start first consensus round
     if (!m_networkOPs->beginConsensus(
-            m_ledgerMaster->getClosedLedger()->info().hash, {}))
+            m_ledgerMaster->getClosedLedger()->header().hash, {}))
     {
         JLOG(m_journal.fatal()) << "Unable to start consensus";
         return false;
@@ -1699,9 +1698,9 @@ ApplicationImp::startGenesisLedger()
         std::make_shared<Ledger>(*genesis, timeKeeper().closeTime());
     next->updateSkipList();
     XRPL_ASSERT(
-        next->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        next->header().seq < XRP_LEDGER_EARLIEST_FEES ||
             next->read(keylet::fees()),
-        "ripple::ApplicationImp::startGenesisLedger : valid ledger fees");
+        "xrpl::ApplicationImp::startGenesisLedger : valid ledger fees");
     next->setImmutable();
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
     m_ledgerMaster->storeLedger(next);
@@ -1721,15 +1720,15 @@ ApplicationImp::getLastFullLedger()
             return ledger;
 
         XRPL_ASSERT(
-            ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+            ledger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
                 ledger->read(keylet::fees()),
-            "ripple::ApplicationImp::getLastFullLedger : valid ledger fees");
+            "xrpl::ApplicationImp::getLastFullLedger : valid ledger fees");
         ledger->setImmutable();
 
         if (getLedgerMaster().haveLedger(seq))
             ledger->setValidated();
 
-        if (ledger->info().hash == hash)
+        if (ledger->header().hash == hash)
         {
             JLOG(j.trace()) << "Loaded ledger: " << hash;
             return ledger;
@@ -1876,9 +1875,9 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         loadLedger->stateMap().flushDirty(hotACCOUNT_NODE);
 
         XRPL_ASSERT(
-            loadLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+            loadLedger->header().seq < XRP_LEDGER_EARLIEST_FEES ||
                 loadLedger->read(keylet::fees()),
-            "ripple::ApplicationImp::loadLedgerFromFile : valid ledger fees");
+            "xrpl::ApplicationImp::loadLedgerFromFile : valid ledger fees");
         loadLedger->setAccepted(
             closeTime, closeTimeResolution, !closeTimeEstimated);
 
@@ -1955,7 +1954,7 @@ ApplicationImp::loadOldLedger(
 
             JLOG(m_journal.info()) << "Loading parent ledger";
 
-            loadLedger = loadByHash(replayLedger->info().parentHash, *this);
+            loadLedger = loadByHash(replayLedger->header().parentHash, *this);
             if (!loadLedger)
             {
                 JLOG(m_journal.info())
@@ -1964,7 +1963,7 @@ ApplicationImp::loadOldLedger(
                 // Try to build the ledger from the back end
                 auto il = std::make_shared<InboundLedger>(
                     *this,
-                    replayLedger->info().parentHash,
+                    replayLedger->header().parentHash,
                     0,
                     InboundLedger::Reason::GENERIC,
                     stopwatch(),
@@ -1978,7 +1977,7 @@ ApplicationImp::loadOldLedger(
                     // LCOV_EXCL_START
                     JLOG(m_journal.fatal()) << "Replay ledger missing/damaged";
                     UNREACHABLE(
-                        "ripple::ApplicationImp::loadOldLedger : replay ledger "
+                        "xrpl::ApplicationImp::loadOldLedger : replay ledger "
                         "missing/damaged");
                     return false;
                     // LCOV_EXCL_STOP
@@ -1989,7 +1988,7 @@ ApplicationImp::loadOldLedger(
         using namespace date;
         static constexpr NetClock::time_point ledgerWarnTimePoint{
             sys_days{January / 1 / 2018} - sys_days{January / 1 / 2000}};
-        if (loadLedger->info().closeTime < ledgerWarnTimePoint)
+        if (loadLedger->header().closeTime < ledgerWarnTimePoint)
         {
             JLOG(m_journal.fatal())
                 << "\n\n***  WARNING   ***\n"
@@ -2003,15 +2002,15 @@ ApplicationImp::loadOldLedger(
                    "get the older rules.\n*** CONTINUING ***\n";
         }
 
-        JLOG(m_journal.info()) << "Loading ledger " << loadLedger->info().hash
-                               << " seq:" << loadLedger->info().seq;
+        JLOG(m_journal.info()) << "Loading ledger " << loadLedger->header().hash
+                               << " seq:" << loadLedger->header().seq;
 
-        if (loadLedger->info().accountHash.isZero())
+        if (loadLedger->header().accountHash.isZero())
         {
             // LCOV_EXCL_START
             JLOG(m_journal.fatal()) << "Ledger is empty.";
             UNREACHABLE(
-                "ripple::ApplicationImp::loadOldLedger : ledger is empty");
+                "xrpl::ApplicationImp::loadOldLedger : ledger is empty");
             return false;
             // LCOV_EXCL_STOP
         }
@@ -2021,7 +2020,7 @@ ApplicationImp::loadOldLedger(
             // LCOV_EXCL_START
             JLOG(m_journal.fatal()) << "Ledger is missing nodes.";
             UNREACHABLE(
-                "ripple::ApplicationImp::loadOldLedger : ledger is missing "
+                "xrpl::ApplicationImp::loadOldLedger : ledger is missing "
                 "nodes");
             return false;
             // LCOV_EXCL_STOP
@@ -2032,14 +2031,14 @@ ApplicationImp::loadOldLedger(
             // LCOV_EXCL_START
             JLOG(m_journal.fatal()) << "Ledger is not sensible.";
             UNREACHABLE(
-                "ripple::ApplicationImp::loadOldLedger : ledger is not "
+                "xrpl::ApplicationImp::loadOldLedger : ledger is not "
                 "sensible");
             return false;
             // LCOV_EXCL_STOP
         }
 
         m_ledgerMaster->setLedgerRangePresent(
-            loadLedger->info().seq, loadLedger->info().seq);
+            loadLedger->header().seq, loadLedger->header().seq);
 
         m_ledgerMaster->switchLCL(loadLedger);
         loadLedger->setValidated();
@@ -2081,7 +2080,7 @@ ApplicationImp::loadOldLedger(
             if (trapTxID && !trapTxID_)
             {
                 JLOG(m_journal.fatal())
-                    << "Ledger " << replayLedger->info().seq
+                    << "Ledger " << replayLedger->header().seq
                     << " does not contain the transaction hash " << *trapTxID;
                 return false;
             }
@@ -2206,4 +2205,4 @@ fixConfigPorts(Config& config, Endpoints const& endpoints)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -24,7 +24,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 namespace CrawlOptions {
 enum {
@@ -285,7 +285,7 @@ OverlayImpl::onHandoff(
                 auto const result = m_peers.emplace(peer->slot(), peer);
                 XRPL_ASSERT(
                     result.second,
-                    "ripple::OverlayImpl::onHandoff : peer is inserted");
+                    "xrpl::OverlayImpl::onHandoff : peer is inserted");
                 (void)result.second;
             }
             list_.emplace(peer.get(), peer);
@@ -378,7 +378,7 @@ OverlayImpl::makeErrorResponse(
 void
 OverlayImpl::connect(beast::IP::Endpoint const& remote_endpoint)
 {
-    XRPL_ASSERT(work_, "ripple::OverlayImpl::connect : work is set");
+    XRPL_ASSERT(work_, "xrpl::OverlayImpl::connect : work is set");
 
     auto usage = resourceManager().newOutboundEndpoint(remote_endpoint);
     if (usage.disconnect(journal_))
@@ -425,8 +425,7 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
     {
         auto const result = m_peers.emplace(peer->slot(), peer);
         XRPL_ASSERT(
-            result.second,
-            "ripple::OverlayImpl::add_active : peer is inserted");
+            result.second, "xrpl::OverlayImpl::add_active : peer is inserted");
         (void)result.second;
     }
 
@@ -437,7 +436,7 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
             std::make_tuple(peer));
         XRPL_ASSERT(
             result.second,
-            "ripple::OverlayImpl::add_active : peer ID is inserted");
+            "xrpl::OverlayImpl::add_active : peer ID is inserted");
         (void)result.second;
     }
 
@@ -457,7 +456,7 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
     std::lock_guard lock(mutex_);
     auto const iter = m_peers.find(slot);
     XRPL_ASSERT(
-        iter != m_peers.end(), "ripple::OverlayImpl::remove : valid input");
+        iter != m_peers.end(), "xrpl::OverlayImpl::remove : valid input");
     m_peers.erase(iter);
 }
 
@@ -515,7 +514,7 @@ OverlayImpl::start()
                 m_peerFinder->addFallbackStrings(base + name, ips);
         });
 
-    // Add the ips_fixed from the rippled.cfg file
+    // Add the ips_fixed from the xrpld.cfg file
     if (!app_.config().standalone() && !app_.config().IPS_FIXED.empty())
     {
         m_resolver.resolve(
@@ -598,15 +597,14 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
             std::make_tuple(peer->id()),
             std::make_tuple(peer)));
         XRPL_ASSERT(
-            result.second,
-            "ripple::OverlayImpl::activate : peer ID is inserted");
+            result.second, "xrpl::OverlayImpl::activate : peer ID is inserted");
         (void)result.second;
     }
 
     JLOG(journal.debug()) << "activated";
 
     // We just accepted this peer so we have non-zero active peers
-    XRPL_ASSERT(size(), "ripple::OverlayImpl::activate : nonzero peers");
+    XRPL_ASSERT(size(), "xrpl::OverlayImpl::activate : nonzero peers");
 }
 
 void
@@ -622,7 +620,7 @@ OverlayImpl::onManifests(
     std::shared_ptr<PeerImp> const& from)
 {
     auto const n = m->list_size();
-    auto const& journal = from->pjournal();
+    auto const& journal = from->pJournal();
 
     protocol::TMManifests relay;
 
@@ -647,7 +645,7 @@ OverlayImpl::onManifests(
                 mo = deserializeManifest(serialized);
                 XRPL_ASSERT(
                     mo,
-                    "ripple::OverlayImpl::onManifests : manifest "
+                    "xrpl::OverlayImpl::onManifests : manifest "
                     "deserialization succeeded");
 
                 app_.getOPs().pubManifest(*mo);
@@ -1603,4 +1601,4 @@ make_Overlay(
         collector);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

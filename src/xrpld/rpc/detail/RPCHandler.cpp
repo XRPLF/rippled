@@ -4,8 +4,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/JobQueue.h>
-#include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/RPCHandler.h>
@@ -14,6 +12,8 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/core/PerfLog.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
@@ -22,7 +22,7 @@
 #include <atomic>
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 namespace {
@@ -250,4 +250,4 @@ roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

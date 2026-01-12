@@ -3,7 +3,7 @@
 
 #include <xrpld/app/ledger/AcceptedLedgerTx.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** A ledger that has become irrevocable.
 
@@ -57,6 +57,6 @@ private:
     std::vector<std::unique_ptr<AcceptedLedgerTx>> transactions_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class Rules;
 
@@ -77,6 +77,7 @@ class Config : public BasicConfig
 public:
     // Settings related to the configuration file location and directories
     static char const* const configFileName;
+    static char const* const configLegacyName;
     static char const* const databaseDirName;
     static char const* const validatorsFileName;
 
@@ -145,7 +146,7 @@ public:
     // Network parameters
     uint32_t NETWORK_ID = 0;
 
-    // DEPRECATED - Fee units for a reference transction.
+    // DEPRECATED - Fee units for a reference transaction.
     // Only provided for backwards compatibility in a couple of places
     static constexpr std::uint32_t FEE_UNITS_DEPRECATED = 10;
 
@@ -371,6 +372,6 @@ public:
 FeeSetup
 setup_FeeVote(Section const& section);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

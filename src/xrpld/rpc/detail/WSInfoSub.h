@@ -11,7 +11,7 @@
 #include <memory>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class WSInfoSub : public InfoSub
 {
@@ -65,6 +65,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

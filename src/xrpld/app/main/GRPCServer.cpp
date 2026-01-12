@@ -5,7 +5,7 @@
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
@@ -249,7 +249,7 @@ template <class Request, class Response>
 std::optional<boost::asio::ip::tcp::endpoint>
 GRPCServerImpl::CallData<Request, Response>::getClientEndpoint()
 {
-    return ripple::getEndpoint(ctx_.peer());
+    return xrpl::getEndpoint(ctx_.peer());
 }
 
 template <class Request, class Response>
@@ -413,7 +413,7 @@ GRPCServerImpl::handleRpcs()
     // tells us whether there is any kind of event or cq_ is shutting down.
     // When cq_.Next(...) returns false, all work has been completed and the
     // loop can exit. When the server is shutdown, each CallData object that is
-    // listening for a request is forceably cancelled, and is returned by
+    // listening for a request is forcibly cancelled, and is returned by
     // cq_->Next() with ok set to false. Then, each CallData object processing
     // a request must complete (by sending data to the client), each of which
     // will be returned from cq_->Next() with ok set to true. After all
@@ -601,7 +601,7 @@ GRPCServer::stop()
 
 GRPCServer::~GRPCServer()
 {
-    XRPL_ASSERT(!running_, "ripple::GRPCServer::~GRPCServer : is not running");
+    XRPL_ASSERT(!running_, "xrpl::GRPCServer::~GRPCServer : is not running");
 }
 
 boost::asio::ip::tcp::endpoint
@@ -610,4 +610,4 @@ GRPCServer::getEndpoint() const
     return impl_.getEndpoint();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

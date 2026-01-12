@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -11,18 +11,18 @@ namespace jtx {
 class expiration
 {
 private:
-    std::uint32_t const expry_;
+    std::uint32_t const expiry_;
 
 public:
     explicit expiration(NetClock::time_point const& expiry)
-        : expry_{expiry.time_since_epoch().count()}
+        : expiry_{expiry.time_since_epoch().count()}
     {
     }
 
     void
     operator()(Env&, JTx& jt) const
     {
-        jt[sfExpiration.jsonName] = expry_;
+        jt[sfExpiration.jsonName] = expiry_;
     }
 };
 
@@ -1911,7 +1911,7 @@ class Check_test : public beast::unit_test::suite
                 return acct;
             }
 
-            operator ripple::AccountID() const
+            operator xrpl::AccountID() const
             {
                 return acct.id();
             }
@@ -2585,6 +2585,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Check, app, ripple);
+BEAST_DEFINE_TESTSUITE(Check, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -5,7 +5,7 @@
 #include <wasm.h>
 #include <wasmi.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <class T, void (*Create)(T*, size_t), void (*Destroy)(T*)>
 struct WasmVec
@@ -179,6 +179,10 @@ public:
 
     FuncInfo
     getFunc(std::string_view funcName) const;
+
+    wasm_functype_t*
+    getFuncType(std::string_view funcName) const;
+
     wmem
     getMem() const;
 
@@ -345,4 +349,4 @@ private:
         Types&&... args);
 };
 
-}  // namespace ripple
+}  // namespace xrpl

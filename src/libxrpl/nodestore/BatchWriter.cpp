@@ -1,6 +1,6 @@
 #include <xrpl/nodestore/detail/BatchWriter.h>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
@@ -66,7 +66,7 @@ BatchWriter::writeBatch()
             mWriteSet.swap(set);
             XRPL_ASSERT(
                 mWriteSet.empty(),
-                "ripple::NodeStore::BatchWriter::writeBatch : writes not set");
+                "xrpl::NodeStore::BatchWriter::writeBatch : writes not set");
             mWriteLoad = set.size();
 
             if (set.empty())
@@ -102,4 +102,4 @@ BatchWriter::waitForWriting()
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

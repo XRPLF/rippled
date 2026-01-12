@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class WSMsg
 {
@@ -125,6 +125,6 @@ struct WSSession
     complete() = 0;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

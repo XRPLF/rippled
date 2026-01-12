@@ -3,12 +3,17 @@
 Levelization is the term used to describe efforts to prevent rippled from
 having or creating cyclic dependencies.
 
-rippled code is organized into directories under `src/rippled` (and
+rippled code is organized into directories under `src/xrpld`, `src/libxrpl` (and
 `src/test`) representing modules. The modules are intended to be
 organized into "tiers" or "levels" such that a module from one level can
 only include code from lower levels. Additionally, a module
-in one level should never include code in an `impl` folder of any level
+in one level should never include code in an `impl` or `detail` folder of any level
 other than it's own.
+
+The codebase is split into two main areas:
+
+- **libxrpl** (`src/libxrpl`, `include/xrpl`): Reusable library modules with public interfaces
+- **xrpld** (`src/xrpld`): Application-specific implementation code
 
 Unfortunately, over time, enforcement of levelization has been
 inconsistent, so the current state of the code doesn't necessarily
@@ -16,8 +21,8 @@ reflect these rules. Whenever possible, developers should refactor any
 levelization violations they find (by moving files or individual
 classes). At the very least, don't make things worse.
 
-The table below summarizes the _desired_ division of modules, based on the
-state of the rippled code when it was created. The levels are numbered from
+The table below summarizes the _desired_ division of modules, based on the current
+state of the rippled code. The levels are numbered from
 the bottom up with the lower level, lower numbered, more independent
 modules listed first, and the higher level, higher numbered modules with
 more dependencies listed later.
@@ -25,18 +30,33 @@ more dependencies listed later.
 **tl;dr:** The modules listed first are more independent than the modules
 listed later.
 
+## libxrpl Modules (Reusable Libraries)
+
+| Level / Tier | Module(s)                           |
+| ------------ | ----------------------------------- |
+| 01           | xrpl/beast                          |
+| 02           | xrpl/basics                         |
+| 03           | xrpl/json xrpl/crypto               |
+| 04           | xrpl/protocol                       |
+| 05           | xrpl/core xrpl/resource xrpl/server |
+| 06           | xrpl/ledger xrpl/nodestore xrpl/net |
+| 07           | xrpl/shamap                         |
+
+## xrpld Modules (Application Implementation)
+
+| Level / Tier | Module(s)                        |
+| ------------ | -------------------------------- |
+| 05           | xrpld/conditions xrpld/consensus |
+| 06           | xrpld/core xrpld/peerfinder      |
+| 07           | xrpld/shamap xrpld/overlay       |
+| 08           | xrpld/app                        |
+| 09           | xrpld/rpc                        |
+| 10           | xrpld/perflog                    |
+
+## Test Modules
+
 | Level / Tier | Module(s)                                                                                                |
 | ------------ | -------------------------------------------------------------------------------------------------------- |
-| 01           | ripple/beast ripple/unity                                                                                |
-| 02           | ripple/basics                                                                                            |
-| 03           | ripple/json ripple/crypto                                                                                |
-| 04           | ripple/protocol                                                                                          |
-| 05           | ripple/core ripple/conditions ripple/consensus ripple/resource ripple/server                             |
-| 06           | ripple/peerfinder ripple/ledger ripple/nodestore ripple/net                                              |
-| 07           | ripple/shamap ripple/overlay                                                                             |
-| 08           | ripple/app                                                                                               |
-| 09           | ripple/rpc                                                                                               |
-| 10           | ripple/perflog                                                                                           |
 | 11           | test/jtx test/beast test/csf                                                                             |
 | 12           | test/unit_test                                                                                           |
 | 13           | test/crypto test/conditions test/json test/resource test/shamap test/peerfinder test/basics test/overlay |
@@ -45,8 +65,8 @@ listed later.
 | 16           | test/rpc test/app                                                                                        |
 
 (Note that `test` levelization is _much_ less important and _much_ less
-strictly enforced than `ripple` levelization, other than the requirement
-that `test` code should _never_ be included in `ripple` code.)
+strictly enforced than `xrpl`/`xrpld` levelization, other than the requirement
+that `test` code should _never_ be included in `xrpl` or `xrpld` code.)
 
 ## Validation
 
@@ -61,10 +81,10 @@ It generates many files of [results](results):
 
 - `rawincludes.txt`: The raw dump of the `#includes`
 - `paths.txt`: A second dump grouping the source module
-  to the destination module, deduped, and with frequency counts.
+  to the destination module, de-duped, and with frequency counts.
 - `includes/`: A directory where each file represents a module and
   contains a list of modules and counts that the module _includes_.
-- `includedby/`: Similar to `includes/`, but the other way around. Each
+- `included_by/`: Similar to `includes/`, but the other way around. Each
   file represents a module and contains a list of modules and counts
   that _include_ the module.
 - [`loops.txt`](results/loops.txt): A list of direct loops detected

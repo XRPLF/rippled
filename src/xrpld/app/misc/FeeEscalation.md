@@ -237,7 +237,7 @@ often coincides with new ledgers with zero transactions.
   recover if the problem is temporary. These exact values were chosen
   experimentally, and can easily change in the future.
 - _Minimum `lastLedgerMedianFeeLevel`_. The value of 500 was chosen to
-  ensure that the first escalated fee was more significant and noticable
+  ensure that the first escalated fee was more significant and noticeable
   than what the default would allow. This exact value was chosen
   experimentally, and can easily change in the future.
 - _Transaction queue size limit_. The limit is computed based on the
@@ -291,7 +291,7 @@ single-singed reference transaction. It is up to the user to compute the
 necessary fees for other types of transactions. (E.g. multiply all drop
 values by 5 for a multi-signed transaction with 4 signatures.)
 
-The `fee` result is always instantanteous, and relates to the open
+The `fee` result is always instantaneous, and relates to the open
 ledger. It includes the sequence number of the current open ledger,
 but may not make sense if rippled is not synced to the network.
 

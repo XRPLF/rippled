@@ -17,7 +17,7 @@
 #include <string>
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 sqlBlobLiteral(Blob const& blob)
@@ -136,4 +136,4 @@ isProperlyFormedTomlDomain(std::string_view domain)
     return boost::regex_match(domain.begin(), domain.end(), re);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

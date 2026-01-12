@@ -16,7 +16,7 @@
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 class Logic
@@ -61,7 +61,7 @@ private:
     // List of all active admin entries
     EntryIntrusiveList admin_;
 
-    // List of all inactve entries
+    // List of all inactive entries
     EntryIntrusiveList inactive_;
 
     // All imported gossip data
@@ -385,7 +385,7 @@ public:
         Entry& entry(iter->second);
         XRPL_ASSERT(
             entry.refcount == 0,
-            "ripple::Resource::Logic::erase : entry not used");
+            "xrpl::Resource::Logic::erase : entry not used");
         inactive_.erase(inactive_.iterator_to(entry));
         table_.erase(iter);
     }
@@ -419,7 +419,7 @@ public:
                 default:
                     // LCOV_EXCL_START
                     UNREACHABLE(
-                        "ripple::Resource::Logic::release : invalid entry "
+                        "xrpl::Resource::Logic::release : invalid entry "
                         "kind");
                     break;
                     // LCOV_EXCL_STOP
@@ -568,6 +568,6 @@ public:
 };
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

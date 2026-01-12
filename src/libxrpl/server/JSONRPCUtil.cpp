@@ -8,7 +8,7 @@
 #include <ctime>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 getHTTPHeaderTimestamp()
@@ -139,4 +139,4 @@ HTTPReply(
     output("\r\n");
 }
 
-}  // namespace ripple
+}  // namespace xrpl

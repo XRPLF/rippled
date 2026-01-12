@@ -8,7 +8,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 using namespace jtx::paychan;
 
@@ -322,7 +322,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const pk = alice.pk();
             auto const settleDelay = 100s;
             NetClock::time_point const cancelAfter =
-                env.current()->info().parentCloseTime + 3600s;
+                env.current()->header().parentCloseTime + 3600s;
             auto const channelFunds = XRP(1000);
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
@@ -354,7 +354,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const pk = alice.pk();
             auto const settleDelay = 100s;
             NetClock::time_point const cancelAfter =
-                env.current()->info().parentCloseTime + 3600s;
+                env.current()->header().parentCloseTime + 3600s;
             auto const channelFunds = XRP(1000);
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
@@ -385,7 +385,7 @@ struct PayChan_test : public beast::unit_test::suite
                 auto const settleDelay = 100s;
                 auto const channelFunds = XRP(1000);
                 NetClock::time_point const cancelAfter =
-                    env.current()->info().parentCloseTime - 1s;
+                    env.current()->header().parentCloseTime - 1s;
                 auto const txResult =
                     withFixPayChan ? ter(tecEXPIRED) : ter(tesSUCCESS);
                 env(create(
@@ -409,7 +409,7 @@ struct PayChan_test : public beast::unit_test::suite
                 auto const settleDelay = 100s;
                 auto const channelFunds = XRP(1000);
                 NetClock::time_point const cancelAfter =
-                    env.current()->info().parentCloseTime;
+                    env.current()->header().parentCloseTime;
                 env(create(
                         alice, bob, channelFunds, settleDelay, pk, cancelAfter),
                     ter(tesSUCCESS));
@@ -430,7 +430,7 @@ struct PayChan_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice, bob, carol);
         auto const pk = alice.pk();
         auto const settleDelay = 3600s;
-        auto const closeTime = env.current()->info().parentCloseTime;
+        auto const closeTime = env.current()->header().parentCloseTime;
         auto const minExpiration = closeTime + settleDelay;
         NetClock::time_point const cancelAfter = closeTime + 7200s;
         auto const channelFunds = XRP(1000);
@@ -496,7 +496,7 @@ struct PayChan_test : public beast::unit_test::suite
         auto const pk = alice.pk();
         auto const settleDelay = 3600s;
         NetClock::time_point const settleTimepoint =
-            env.current()->info().parentCloseTime + settleDelay;
+            env.current()->header().parentCloseTime + settleDelay;
         auto const channelFunds = XRP(1000);
         auto const chan = channel(alice, bob, env.seq(alice));
         env(create(alice, bob, channelFunds, settleDelay, pk));
@@ -763,7 +763,7 @@ struct PayChan_test : public beast::unit_test::suite
                 BEAST_EXPECT(env.balance(bob) == preBob + delta - baseFee);
             }
             {
-                // Explore the limits of deposit preauthorization.
+                // Explore the limits of deposit pre-authorization.
                 auto const delta = XRP(600).value();
                 auto const sig = signClaimAuth(pk, alice.sk(), chan, delta);
 
@@ -799,7 +799,7 @@ struct PayChan_test : public beast::unit_test::suite
                     env.balance(bob) == preBob + delta - (3 * baseFee));
             }
             {
-                // bob removes preauthorization of alice.  Once again she
+                // bob removes pre-authorization of alice.  Once again she
                 // cannot submit a claim.
                 auto const delta = XRP(800).value();
 
@@ -861,7 +861,7 @@ struct PayChan_test : public beast::unit_test::suite
             {  // create credentials
                 auto jv = credentials::create(alice, carol, credType);
                 uint32_t const t = env.current()
-                                       ->info()
+                                       ->header()
                                        .parentCloseTime.time_since_epoch()
                                        .count() +
                     100;
@@ -874,7 +874,7 @@ struct PayChan_test : public beast::unit_test::suite
                 credentials::ledgerEntry(env, alice, carol, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
@@ -1772,14 +1772,14 @@ struct PayChan_test : public beast::unit_test::suite
         auto inOwnerDir = [](ReadView const& view,
                              Account const& acc,
                              std::shared_ptr<SLE const> const& chan) -> bool {
-            ripple::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
+            xrpl::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
             return std::find(ownerDir.begin(), ownerDir.end(), chan) !=
                 ownerDir.end();
         };
 
         auto ownerDirCount = [](ReadView const& view,
                                 Account const& acc) -> std::size_t {
-            ripple::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
+            xrpl::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
             return std::distance(ownerDir.begin(), ownerDir.end());
         };
 
@@ -1910,7 +1910,7 @@ struct PayChan_test : public beast::unit_test::suite
                 env.close();
                 // settle delay hasn't elapsed. Channels should exist.
                 BEAST_EXPECT(channelExists(*env.current(), chan));
-                auto const closeTime = env.current()->info().parentCloseTime;
+                auto const closeTime = env.current()->header().parentCloseTime;
                 auto const minExpiration = closeTime + settleDelay;
                 env.close(minExpiration);
                 env(claim(alice, chan), txflags(tfClose));
@@ -2119,6 +2119,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PayChan, app, ripple);
+BEAST_DEFINE_TESTSUITE(PayChan, app, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

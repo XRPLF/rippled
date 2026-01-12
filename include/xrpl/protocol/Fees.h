@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 constexpr std::uint32_t MICRO_DROPS_PER_DROP{1'000'000};
 
@@ -39,6 +39,6 @@ struct Fees
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

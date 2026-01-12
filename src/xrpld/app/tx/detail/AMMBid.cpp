@@ -9,7 +9,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 AMMBid::checkExtraFeatures(PreflightContext const& ctx)
@@ -173,14 +173,14 @@ applyBid(
     {
         XRPL_ASSERT(
             ammSle->isFieldPresent(sfAuctionSlot),
-            "ripple::applyBid : has auction slot");
+            "xrpl::applyBid : has auction slot");
         if (!ammSle->isFieldPresent(sfAuctionSlot))
             return {tecINTERNAL, false};
     }
     auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auto const current =
         duration_cast<seconds>(
-            ctx_.view().info().parentCloseTime.time_since_epoch())
+            ctx_.view().header().parentCloseTime.time_since_epoch())
             .count();
     // Auction slot discounted fee
     auto const discountedFee =
@@ -300,7 +300,7 @@ applyBid(
     {
         // Price the slot was purchased at.
         STAmount const pricePurchased = auctionSlot[sfPrice];
-        XRPL_ASSERT(timeSlot, "ripple::applyBid : timeSlot is set");
+        XRPL_ASSERT(timeSlot, "xrpl::applyBid : timeSlot is set");
         auto const fractionUsed =
             (Number(*timeSlot) + 1) / AUCTION_SLOT_TIME_INTERVALS;
         auto const fractionRemaining = Number(1) - fractionUsed;
@@ -362,4 +362,4 @@ AMMBid::doApply()
     return result.first;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

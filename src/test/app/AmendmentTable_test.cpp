@@ -16,7 +16,7 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class AmendmentTable_test final : public beast::unit_test::suite
 {
@@ -506,7 +506,7 @@ public:
 
         // Parameters:
         // table:      Our table of known and vetoed amendments
-        // validators: The addreses of validators we trust
+        // validators: The addresses of validators we trust
         // votes:      Amendments and the number of validators who vote for them
         // ourVotes:   The amendments we vote for in our validation
         // enabled:    In/out enabled amendments
@@ -534,7 +534,7 @@ public:
             }
 
             auto v = std::make_shared<STValidation>(
-                ripple::NetClock::time_point{},
+                xrpl::NetClock::time_point{},
                 pub,
                 sec,
                 calcNodeID(pub),
@@ -1271,6 +1271,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AmendmentTable, app, ripple);
+BEAST_DEFINE_TESTSUITE(AmendmentTable, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

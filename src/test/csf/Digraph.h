@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 // Dummy class when no edge data needed for graph
 struct NoEdgeData
@@ -199,7 +199,7 @@ public:
 
         Save a GraphViz dot description of the graph
         @param fileName The output file (creates)
-        @param vertexName A invokable T vertexName(Vertex const &) that
+        @param vertexName A invocable T vertexName(Vertex const &) that
                           returns the name target use for the vertex in the file
                           T must be ostream-able
     */
@@ -231,5 +231,5 @@ public:
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 #endif

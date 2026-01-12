@@ -9,7 +9,7 @@
 #include <map>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** Consensus algorithm parameters
 
@@ -170,7 +170,7 @@ getNeededWeight(
         // See if enough time has passed to move on to the next.
         XRPL_ASSERT(
             nextCutoff.consensusTime >= currentCutoff.consensusTime,
-            "ripple::getNeededWeight : next state valid");
+            "xrpl::getNeededWeight : next state valid");
         if (percentTime >= nextCutoff.consensusTime)
         {
             return {nextCutoff.consensusPct, currentCutoff.next};
@@ -179,5 +179,5 @@ getNeededWeight(
     return {currentCutoff.consensusPct, {}};
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 #endif

@@ -6,7 +6,7 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 using SFieldCRef = std::reference_wrapper<SField const>;
 
@@ -2182,4 +2182,4 @@ testGetDataIncrement()
 }  // namespace test
 // LCOV_EXCL_STOP
 
-}  // namespace ripple
+}  // namespace xrpl

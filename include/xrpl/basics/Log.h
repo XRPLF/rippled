@@ -13,7 +13,7 @@
 #include <mutex>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 // DEPRECATED use beast::severities::Severity instead
 enum LogSeverity {
@@ -221,7 +221,8 @@ public:
 private:
     enum {
         // Maximum line length for log messages.
-        // If the message exceeds this length it will be truncated with elipses.
+        // If the message exceeds this length it will be truncated with
+        // ellipses.
         maximumMessageCharacters = 12 * 1024
     };
 
@@ -271,6 +272,6 @@ setDebugLogSink(std::unique_ptr<beast::Journal::Sink> sink);
 beast::Journal
 debugLog();
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

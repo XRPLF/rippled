@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 // We're prepared for there to be multiple signer lists in the future,
 // but we don't need them yet.  So for the time being we're manually
@@ -116,7 +116,7 @@ SetSignerList::doApply()
             break;
     }
     // LCOV_EXCL_START
-    UNREACHABLE("ripple::SetSignerList::doApply : invalid operation");
+    UNREACHABLE("xrpl::SetSignerList::doApply : invalid operation");
     return temMALFORMED;
     // LCOV_EXCL_STOP
 }
@@ -128,10 +128,10 @@ SetSignerList::preCompute()
     auto result = determineOperation(ctx_.tx, view().flags(), j_);
     XRPL_ASSERT(
         std::get<0>(result) == tesSUCCESS,
-        "ripple::SetSignerList::preCompute : result is tesSUCCESS");
+        "xrpl::SetSignerList::preCompute : result is tesSUCCESS");
     XRPL_ASSERT(
         std::get<3>(result) != unknown,
-        "ripple::SetSignerList::preCompute : result is known operation");
+        "xrpl::SetSignerList::preCompute : result is known operation");
 
     quorum_ = std::get<1>(result);
     signers_ = std::get<2>(result);
@@ -162,10 +162,10 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // We've got a lot of room to grow.
     XRPL_ASSERT(
         entryCount >= STTx::minMultiSigners,
-        "ripple::signerCountBasedOwnerCountDelta : minimum signers");
+        "xrpl::signerCountBasedOwnerCountDelta : minimum signers");
     XRPL_ASSERT(
         entryCount <= STTx::maxMultiSigners,
-        "ripple::signerCountBasedOwnerCountDelta : maximum signers");
+        "xrpl::signerCountBasedOwnerCountDelta : maximum signers");
     return 2 + static_cast<int>(entryCount);
 }
 
@@ -257,7 +257,7 @@ SetSignerList::validateQuorumAndSignerEntries(
     // Make sure there are no duplicate signers.
     XRPL_ASSERT(
         std::is_sorted(signers.begin(), signers.end()),
-        "ripple::SetSignerList::validateQuorumAndSignerEntries : sorted "
+        "xrpl::SetSignerList::validateQuorumAndSignerEntries : sorted "
         "signers");
     if (std::adjacent_find(signers.begin(), signers.end()) != signers.end())
     {
@@ -412,4 +412,4 @@ SetSignerList::writeSignersToSLE(
     ledgerEntry->setFieldArray(sfSignerEntries, toLedger);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

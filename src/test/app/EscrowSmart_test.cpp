@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <iterator>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct EscrowSmart_test : public beast::unit_test::suite
@@ -1006,7 +1006,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(EscrowSmart, app, ripple);
+BEAST_DEFINE_TESTSUITE(EscrowSmart, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

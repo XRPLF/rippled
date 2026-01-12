@@ -2,7 +2,7 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/Units.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class units_test : public beast::unit_test::suite
@@ -353,7 +353,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(units, basics, ripple);
+BEAST_DEFINE_TESTSUITE(units, basics, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class LedgerData_test : public beast::unit_test::suite
 {
@@ -217,7 +217,7 @@ public:
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
                 BEAST_EXPECT(
                     jrr[jss::ledger][jss::ledger_hash] ==
-                    to_string(env.closed()->info().hash));
+                    to_string(env.closed()->header().hash));
         }
         {
             // Closed ledger with binary form
@@ -473,6 +473,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(LedgerData, rpc, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(LedgerData, rpc, xrpl, 1);
 
-}  // namespace ripple
+}  // namespace xrpl

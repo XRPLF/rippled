@@ -6,7 +6,7 @@
 
 #include <xrpld/app/wasm/HostFuncWrapper.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 bool
@@ -21,6 +21,23 @@ Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     // printf("Host function \"Add\": %d + %d\n", Val1, Val2);
     results->data[0] = WASM_I32_VAL(Val1 + Val2);
     return nullptr;
+}
+
+std::optional<int32_t>
+runFinishFunction(std::string const& code)
+{
+    auto& engine = WasmEngine::instance();
+    auto const ws = boost::algorithm::unhex(code);
+    Bytes const wasm(ws.begin(), ws.end());
+    auto const re = engine.run(wasm, "finish");
+    if (re.has_value())
+    {
+        return std::optional<int32_t>(re->result);
+    }
+    else
+    {
+        return std::nullopt;
+    }
 }
 
 struct Wasm_test : public beast::unit_test::suite
@@ -450,6 +467,20 @@ struct Wasm_test : public beast::unit_test::suite
             BEAST_EXPECT(countSubstr(s, "exception: <finish> failure") > 0);
         }
 
+        {  // infinite loop
+            auto const wasmStr = boost::algorithm::unhex(infiniteLoopWasmHex);
+            Bytes wasm(wasmStr.begin(), wasmStr.end());
+            std::string const funcName("loop");
+            TestHostFunctions hfs(env, 0);
+
+            // infinite loop should be caught and fail
+            auto const re = runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000);
+            if (BEAST_EXPECT(!re.has_value()))
+            {
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+            }
+        }
+
         {
             // expected import not provided
             auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
@@ -716,6 +747,217 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testWasmMemory()
+    {
+        testcase("Wasm additional memory limit tests");
+        BEAST_EXPECT(runFinishFunction(memoryPointerAtLimitHex).value() == 1);
+        BEAST_EXPECT(
+            runFinishFunction(memoryPointerOverLimitHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(memoryOffsetOverLimitHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(memoryEndOfWordOverLimitHex).has_value() ==
+            false);
+        BEAST_EXPECT(runFinishFunction(memoryGrow0To1PageHex).value() == 1);
+        BEAST_EXPECT(runFinishFunction(memoryGrow1To0PageHex).value() == -1);
+        BEAST_EXPECT(runFinishFunction(memoryLastByteOf8MBHex).value() == 1);
+        BEAST_EXPECT(
+            runFinishFunction(memoryGrow1MoreThan8MBHex).value() == -1);
+        BEAST_EXPECT(runFinishFunction(memoryGrow0MoreThan8MBHex).value() == 1);
+        BEAST_EXPECT(
+            runFinishFunction(memoryInit1MoreThan8MBHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(memoryNegativeAddressHex).has_value() == false);
+    }
+
+    void
+    testWasmTable()
+    {
+        testcase("Wasm table limit tests");
+        BEAST_EXPECT(runFinishFunction(table64ElementsHex).value() == 1);
+        BEAST_EXPECT(
+            runFinishFunction(table65ElementsHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(table2TablesHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(table0ElementsHex).value() == 1);
+        BEAST_EXPECT(runFinishFunction(tableUintMaxHex).has_value() == false);
+    }
+
+    void
+    testWasmProposal()
+    {
+        testcase("Wasm disabled proposal tests");
+        BEAST_EXPECT(
+            runFinishFunction(proposalMutableGlobalHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalGcStructNewHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalMultiValueHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalSignExtHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalFloatToIntHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalBulkMemoryHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalRefTypesHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalTailCallHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(proposalExtendedConstHex).has_value() == false);
+    }
+
+    void
+    testWasmTrap()
+    {
+        testcase("Wasm trap tests");
+        BEAST_EXPECT(runFinishFunction(trapDivideBy0Hex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(trapIntOverflowHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(trapUnreachableHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(trapNullCallHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(trapFuncSigMismatchHex).has_value() == false);
+    }
+
+    void
+    testWasmWasi()
+    {
+        testcase("Wasm Wasi tests");
+        BEAST_EXPECT(runFinishFunction(wasiGetTimeHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(wasiPrintHex).has_value() == false);
+    }
+
+    void
+    testWasmSectionCorruption()
+    {
+        testcase("Wasm Section Corruption tests");
+        BEAST_EXPECT(runFinishFunction(badMagicNumberHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(badVersionNumberHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(lyingHeaderHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(neverEndingNumberHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(vectorLieHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(sectionOrderingHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(ghostPayloadHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(junkAfterSectionHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(invalidSectionIdHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(localVariableBombHex).has_value() == false);
+    }
+
+    void
+    testStartFunctionLoop()
+    {
+        testcase("infinite loop in start function");
+
+        using namespace test::jtx;
+        Env env(*this);
+
+        auto wasmStr = boost::algorithm::unhex(startLoopHex);
+        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        TestLedgerDataProvider ledgerDataProvider(env);
+        ImportVec imports;
+
+        auto& engine = WasmEngine::instance();
+        auto checkRes = engine.check(
+            wasm, "finish", {}, imports, &ledgerDataProvider, env.journal);
+        BEAST_EXPECTS(
+            checkRes == tesSUCCESS, std::to_string(TERtoInt(checkRes)));
+
+        auto re = engine.run(
+            wasm,
+            ESCROW_FUNCTION_NAME,
+            {},
+            imports,
+            &ledgerDataProvider,
+            1'000'000,
+            env.journal);
+        BEAST_EXPECTS(
+            re.error() == tecFAILED_PROCESSING,
+            std::to_string(TERtoInt(re.error())));
+    }
+
+    void
+    testBadAlloc()
+    {
+        testcase("Wasm Bad Alloc");
+
+        // bad_alloc.c
+        auto wasmStr = boost::algorithm::unhex(badAllocHex);
+        Bytes wasm(wasmStr.begin(), wasmStr.end());
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        TestLedgerDataProvider hf(env);
+
+        // ImportVec imports;
+        uint8_t buf1[8] = {7, 8, 9, 10, 11, 12, 13, 14};
+        {  // forged "allocate" return valid address
+            std::vector<WasmParam> params = {
+                {.type = WT_U8V,
+                 .of = {.u8v = {.d = buf1, .sz = sizeof(buf1)}}}};
+            auto& engine = WasmEngine::instance();
+
+            auto re = engine.run(
+                wasm, "test", params, {}, &hf, 1'000'000, env.journal);
+            if (BEAST_EXPECT(re))
+            {
+                BEAST_EXPECTS(re->result == 7, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 10, std::to_string(re->result));
+            }
+        }
+
+        {  // return 0 whithout calling wasm
+            std::vector<WasmParam> params = {
+                {.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 0}}}};
+            auto& engine = WasmEngine::instance();
+            auto re = engine.run(
+                wasm, "test", params, {}, &hf, 1'000'000, env.journal);
+            BEAST_EXPECT(!re) &&
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+        }
+
+        {  // forged "allocate" return 8Mb (which is more than memory limit)
+            std::vector<WasmParam> params = {
+                {.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 1}}}};
+            auto& engine = WasmEngine::instance();
+            auto re = engine.run(
+                wasm, "test", params, {}, &hf, 1'000'000, env.journal);
+            BEAST_EXPECT(!re) &&
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+        }
+
+        {  // forged "allocate" return 0
+            std::vector<WasmParam> params = {
+                {.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 2}}}};
+            auto& engine = WasmEngine::instance();
+            auto re = engine.run(
+                wasm, "test", params, {}, &hf, 1'000'000, env.journal);
+            BEAST_EXPECT(!re) &&
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+        }
+
+        {  // forged "allocate" return -1
+            std::vector<WasmParam> params = {
+                {.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 3}}}};
+            auto& engine = WasmEngine::instance();
+            auto re = engine.run(
+                wasm, "test", params, {}, &hf, 1'000'000, env.journal);
+
+            BEAST_EXPECT(!re) &&
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+        }
+
+        env.close();
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -736,11 +978,21 @@ struct Wasm_test : public beast::unit_test::suite
         testCodecovWasm();
         testDisabledFloat();
 
+        testWasmMemory();
+        testWasmTable();
+        testWasmProposal();
+        testWasmTrap();
+        testWasmWasi();
+        testWasmSectionCorruption();
+
+        testStartFunctionLoop();
+        testBadAlloc();
+
         // perfTest();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Wasm, app, ripple);
+BEAST_DEFINE_TESTSUITE(Wasm, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

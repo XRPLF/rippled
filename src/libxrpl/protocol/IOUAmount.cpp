@@ -14,11 +14,11 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
-// Use a static inside a function to help prevent order-of-initialzation issues
+// Use a static inside a function to help prevent order-of-initialization issues
 LocalValue<bool>&
 getStaticSTNumberSwitchover()
 {
@@ -297,4 +297,4 @@ mulRatio(
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -9,7 +9,7 @@
 
 #include <fstream>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 /**
@@ -158,6 +158,6 @@ public:
 };
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // TEST_UNIT_TEST_DIRGUARD_H

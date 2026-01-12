@@ -1,11 +1,12 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/core/Job.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-namespace ripple {
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobQueue.h>
+
+namespace xrpl {
 namespace RPC {
 
 LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app) : m_isOk(false)
@@ -49,4 +50,4 @@ LegacyPathFind::~LegacyPathFind()
 std::atomic<int> LegacyPathFind::inProgress(0);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
