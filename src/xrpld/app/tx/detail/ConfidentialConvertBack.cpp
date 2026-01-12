@@ -143,11 +143,7 @@ ConfidentialConvertBack::doApply()
     (*sleMptoken)[sfConfidentialBalanceVersion] =
         (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
 
-    bool const hasAuditor = ctx_.tx.isFieldPresent(sfAuditorEncryptedAmount);
-
-    std::optional<Slice> const auditorEc = hasAuditor
-        ? std::optional<Slice>{ctx_.tx[sfAuditorEncryptedAmount]}
-        : std::nullopt;
+    std::optional<Slice> const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];
 
     // homomorphically subtract holder's encrypted balance
     {
