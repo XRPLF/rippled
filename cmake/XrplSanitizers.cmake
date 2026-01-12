@@ -79,6 +79,7 @@ set(SANITIZERS_RELOCATION_FLAGS)
 if(is_gcc)
     # Disable mold, gold and lld linkers for GCC with sanitizers
     # Use default linker (bfd/ld) which is more lenient with mixed code models
+    # This is needed since the size of instrumented binary exceeds the limits set by mold, lld and gold linkers
     set(use_mold OFF CACHE BOOL "Use mold linker" FORCE)
     set(use_gold OFF CACHE BOOL "Use gold linker" FORCE)
     set(use_lld OFF CACHE BOOL "Use lld linker" FORCE)

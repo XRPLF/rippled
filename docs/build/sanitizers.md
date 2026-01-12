@@ -14,7 +14,7 @@ Corresponding suppression files are located in the `sanitizers/suppressions` dir
     - [AddressSanitizer (ASAN)](#addresssanitizer-asan)
     - [ThreadSanitizer (TSan)](#threadsanitizer-tsan)
     - [LeakSanitizer (LSan)](#leaksanitizer-lsan)
-    - [undefinedbehaviorSanitizer (UBSan)](#undefinedbehaviorsanitizer-ubsan)
+    - [UndefinedBehaviorSanitizer (UBSan)](#undefinedbehaviorsanitizer-ubsan)
   - [Suppression Files](#suppression-files)
     - [`asan.supp`](#asansupp)
     - [`lsan.supp`](#lsansupp)
@@ -125,7 +125,7 @@ export ASAN_OPTIONS="detect_leaks=0"
 
 More details [here](https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer).
 
-### undefinedbehaviorSanitizer (UBSan)
+### UndefinedBehaviorSanitizer (UBSan)
 
 ```bash
 export UBSAN_OPTIONS="suppressions=path/to/ubsan.supp:print_stacktrace=1:halt_on_error=0:log_path=ubsan.log"

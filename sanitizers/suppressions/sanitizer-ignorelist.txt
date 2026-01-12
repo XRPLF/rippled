@@ -3,20 +3,17 @@
 # We should fix the underlying issues(if any) and remove these entries.
 
 deadlock:libxrpl/beast/utility/beast_Journal.cpp
-deadlock:libxrpl/beast/utility/beast_Journal.cpp
 deadlock:libxrpl/beast/utility/beast_PropertyStream.cpp
 deadlock:test/beast/beast_PropertyStream_test.cpp
 deadlock:xrpld/core/detail/Workers.cpp
 deadlock:xrpld/core/JobQueue.cpp
 
 race:libxrpl/beast/utility/beast_Journal.cpp
-race:libxrpl/beast/utility/beast_Journal.cpp
 race:libxrpl/beast/utility/beast_PropertyStream.cpp
 race:test/beast/beast_PropertyStream_test.cpp
 race:xrpld/core/detail/Workers.cpp
 race:xrpld/core/JobQueue.cpp
 
-signal:libxrpl/beast/utility/beast_Journal.cpp
 signal:libxrpl/beast/utility/beast_Journal.cpp
 signal:libxrpl/beast/utility/beast_PropertyStream.cpp
 signal:test/beast/beast_PropertyStream_test.cpp
