@@ -249,9 +249,9 @@ ModuleWrapper::ModuleWrapper(
     : module_(init(s, wasmBin, j)), j_(j)
 {
     wasm_module_exports(module_.get(), &exportTypes_.vec_);
+    auto wimports = buildImports(s, imports);
     if (instantiate)
     {
-        auto wimports = buildImports(s, imports);
         addInstance(s, wimports);
     }
 }
@@ -415,6 +415,7 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports)
                 "/" + std::to_string(importTypes.vec_.size),
             nullptr,
             j_);
+        throw std::runtime_error("Missing imports");
     }
 
     return wimports;
@@ -424,6 +425,26 @@ FuncInfo
 ModuleWrapper::getFunc(std::string_view funcName) const
 {
     return instanceWrap_.getFunc(funcName, exportTypes_);
+}
+
+wasm_functype_t*
+ModuleWrapper::getFuncType(std::string_view funcName) const
+{
+    for (size_t i = 0; i < exportTypes_.vec_.size; i++)
+    {
+        auto const* exp_type(exportTypes_.vec_.data[i]);
+        wasm_name_t const* name = wasm_exporttype_name(exp_type);
+        wasm_externtype_t const* exn_type = wasm_exporttype_type(exp_type);
+        if (wasm_externtype_kind(exn_type) == WASM_EXTERN_FUNC &&
+            funcName == std::string_view(name->data, name->size))
+        {
+            return wasm_externtype_as_functype(
+                const_cast<wasm_externtype_t*>(exn_type));
+        }
+    }
+
+    throw std::runtime_error(
+        "can't find function <" + std::string(funcName) + ">");
 }
 
 wmem
@@ -888,13 +909,14 @@ WasmiEngine::checkHlp(
     if (wasmCode.empty())
         throw std::runtime_error("empty nodule");
 
-    int const m = addModule(wasmCode, true, -1, imports);
-    if ((m < 0) || !moduleWrap_ || !moduleWrap_->instanceWrap_)
-        throw std::runtime_error("no instance");  // LCOV_EXCL_LINE
+    int const m = addModule(wasmCode, false, -1, imports);
+    if ((m < 0) || !moduleWrap_)
+        throw std::runtime_error("no module");  // LCOV_EXCL_LINE
 
     // Looking for a func and compare parameter types
-    auto const f = getFunc(!funcName.empty() ? funcName : "_start");
-    auto const* ftp = wasm_functype_params(f.second);
+    auto const f =
+        moduleWrap_->getFuncType(!funcName.empty() ? funcName : "_start");
+    auto const* ftp = wasm_functype_params(f);
     auto const p = convertParams(params);
 
     if (int const comp = compareParamTypes(ftp, p); comp >= 0)
@@ -929,13 +951,24 @@ WasmiEngine::getRT(int m, int i)
 int32_t
 WasmiEngine::allocate(int32_t sz)
 {
-    auto res = call<1>(W_ALLOC, static_cast<int32_t>(sz));
-
-    if (res.f || !res.r.vec_.size || (res.r.vec_.data[0].kind != WASM_I32) ||
-        !res.r.vec_.data[0].of.i32)
+    if (sz <= 0)
         throw std::runtime_error(
             "can't allocate memory, " + std::to_string(sz) + " bytes");
-    return res.r.vec_.data[0].of.i32;
+
+    auto res = call<1>(W_ALLOC, static_cast<int32_t>(sz));
+
+    if (res.f || !res.r.vec_.size || (res.r.vec_.data[0].kind != WASM_I32))
+        throw std::runtime_error(
+            "can't allocate memory, " + std::to_string(sz) +
+            " bytes");  // LCOV_EXCL_LINE
+
+    int32_t const p = res.r.vec_.data[0].of.i32;
+    auto const mem = getMem();
+    if (p <= 0 || p + sz > mem.s)
+        throw std::runtime_error(
+            "invalid memory allocation, " + std::to_string(sz) + " bytes");
+
+    return p;
 }
 
 wasm_trap_t*
