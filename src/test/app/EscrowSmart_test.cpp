@@ -1046,25 +1046,27 @@ struct EscrowSmart_test : public beast::unit_test::suite
 
         // Generator for Large Data Section
         auto generateDataBlob = [pushLeb128](uint32_t data_size) {
+            // Magic + Version
             std::vector<uint8_t> wasm = {
                 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00};
 
-            // Type Section: () -> ()
+            // 1. Type Section (ID 1): () -> ()
             wasm.insert(wasm.end(), {0x01, 0x04, 0x01, 0x60, 0x00, 0x00});
-            // Function Section: Func 0 uses Type 0
+
+            // 2. Function Section (ID 3): One function using Type 0
             wasm.insert(wasm.end(), {0x03, 0x02, 0x01, 0x00});
 
-            // Memory Section: Calculate pages (64KB per page)
+            // 3. Memory Section (ID 5): Must be large enough for data_size
             uint32_t pages = (data_size + 65535) / 65536;
             std::vector<uint8_t> mem_p;
-            pushLeb128(mem_p, 1);      // Count
-            mem_p.push_back(0x00);     // Flag: min only
-            pushLeb128(mem_p, pages);  // Initial pages
+            pushLeb128(mem_p, 1);      // 1 memory defined
+            mem_p.push_back(0x00);     // Flags (minimum only)
+            pushLeb128(mem_p, pages);  // Page count
             wasm.push_back(0x05);
             pushLeb128(wasm, (uint32_t)mem_p.size());
             wasm.insert(wasm.end(), mem_p.begin(), mem_p.end());
 
-            // Export Section: "finish"
+            // 4. Export Section (ID 7): Export func 0 as "finish"
             wasm.insert(
                 wasm.end(),
                 {0x07,
@@ -1080,21 +1082,32 @@ struct EscrowSmart_test : public beast::unit_test::suite
                  0x00,
                  0x00});
 
-            // Data Section: Segment + Content
-            std::vector<uint8_t> data_p;
-            pushLeb128(data_p, 1);   // 1 segment
-            data_p.push_back(0x00);  // mem index 0
-            data_p.insert(
-                data_p.end(), {0x41, 0x00, 0x0b});  // offset i32.const 0, end
-            pushLeb128(data_p, data_size);
+            // 5. Code Section (ID 10): Body for "finish" - MUST come before
+            // Data Section
+            std::vector<uint8_t> code_body = {0x00, 0x0b};  // 0 locals, end
+            std::vector<uint8_t> code_p;
+            pushLeb128(code_p, 1);  // 1 function body
+            pushLeb128(code_p, (uint32_t)code_body.size());
+            code_p.insert(code_p.end(), code_body.begin(), code_body.end());
+            wasm.push_back(0x0a);
+            pushLeb128(wasm, (uint32_t)code_p.size());
+            wasm.insert(wasm.end(), code_p.begin(), code_p.end());
 
-            wasm.push_back(0x0b);
+            // 6. Data Section (ID 11): The actual bloat
+            std::vector<uint8_t> data_seg;
+            data_seg.push_back(0x00);  // Memory index 0
+            // Offset: i32.const 0, end
+            data_seg.insert(data_seg.end(), {0x41, 0x00, 0x0b});
+            pushLeb128(data_seg, data_size);  // Content length
+
+            std::vector<uint8_t> data_p;
+            pushLeb128(data_p, 1);  // 1 segment
+            data_p.insert(data_p.end(), data_seg.begin(), data_seg.end());
+
+            wasm.push_back(0x0b);  // Data Section ID
             pushLeb128(wasm, (uint32_t)(data_p.size() + data_size));
             wasm.insert(wasm.end(), data_p.begin(), data_p.end());
-            wasm.insert(wasm.end(), data_size, 0xEE);  // Content
-
-            // Code Section: body for "finish"
-            wasm.insert(wasm.end(), {0x0a, 0x04, 0x01, 0x02, 0x00, 0x0b});
+            wasm.insert(wasm.end(), data_size, 0xEE);  // Junk data
 
             return wasm;
         };
@@ -1119,7 +1132,6 @@ struct EscrowSmart_test : public beast::unit_test::suite
             env.close();
 
             auto const wasmHex = strHex(wasm);
-            std::cerr << "Wasm size: " << wasm.size() << " bytes" << std::endl;
             try
             {
                 env(escrow::create(alice, alice, XRP(1000)),
@@ -1166,13 +1178,17 @@ struct EscrowSmart_test : public beast::unit_test::suite
             ExpectedStatus::Crash);  // just over 1MB of JSON
 
         runTest(generateDataBlob(99946));  // just under 100kb
-        // runTest(
-        //     generateDataBlob(99950), std::nullopt,
-        //     ExpectedStatus::Malformed);    // just over 100kb
-        // runTest(generateDataBlob(200'000), 1'000'000);        // ~200kb
-        // runTest(generateDataBlob(999950), 10'000'000);        // just under
-        // 0.5mb runTest(generateDataBlob(999950), 1'000'000,
-        // ExpectedStatus::Crash);  // just over 1MB of JSON
+        runTest(
+            generateDataBlob(99948),
+            std::nullopt,
+            ExpectedStatus::Malformed);                 // just over 100kb
+        runTest(generateDataBlob(200'000), 1'000'000);  // ~200kb
+        runTest(
+            generateDataBlob(490'000), 10'000'000);  // just under 1MB of JSON
+        runTest(
+            generateDataBlob(999950),
+            1'000'000,
+            ExpectedStatus::Crash);  // just over 1MB of JSON
     }
 
     void
