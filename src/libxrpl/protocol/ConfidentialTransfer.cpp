@@ -1057,4 +1057,28 @@ getEqualityProofs(Slice const& zkp)
     return zkps;
 }
 
+NotTEC
+checkEncryptedAmountFormat(STObject const& object)
+{
+    if (object[sfHolderEncryptedAmount].length() !=
+            ecGamalEncryptedTotalLength ||
+        object[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
+        return temBAD_CIPHERTEXT;
+
+    bool const hasAuditor = object.isFieldPresent(sfAuditorEncryptedAmount);
+    if (hasAuditor &&
+        object[sfAuditorEncryptedAmount].length() !=
+            ecGamalEncryptedTotalLength)
+        return temBAD_CIPHERTEXT;
+
+    if (!isValidCiphertext(object[sfHolderEncryptedAmount]) ||
+        !isValidCiphertext(object[sfIssuerEncryptedAmount]))
+        return temBAD_CIPHERTEXT;
+
+    if (hasAuditor && !isValidCiphertext(object[sfAuditorEncryptedAmount]))
+        return temBAD_CIPHERTEXT;
+
+    return tesSUCCESS;
+}
+
 }  // namespace ripple

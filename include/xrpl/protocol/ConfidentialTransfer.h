@@ -283,6 +283,9 @@ verifyClawbackEqualityProof(
 std::vector<Buffer>
 getEqualityProofs(Slice const& zkp);
 
+NotTEC
+checkEncryptedAmountFormat(STObject const& object);
+
 }  // namespace ripple
 
 #endif

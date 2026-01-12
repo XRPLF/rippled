@@ -20,25 +20,11 @@ ConfidentialConvertBack::preflight(PreflightContext const& ctx)
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;
 
-    if (ctx.tx[sfHolderEncryptedAmount].length() !=
-            ecGamalEncryptedTotalLength ||
-        ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
-        return temBAD_CIPHERTEXT;
-
-    bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
-    if (hasAuditor &&
-        ctx.tx[sfHolderEncryptedAmount].length() != ecGamalEncryptedTotalLength)
-        return temBAD_CIPHERTEXT;
+    if (auto const res = checkEncryptedAmountFormat(ctx.tx); !isTesSuccess(res))
+        return res;
 
     if (ctx.tx[sfMPTAmount] == 0 || ctx.tx[sfMPTAmount] > maxMPTokenAmount)
         return temBAD_AMOUNT;
-
-    if (!isValidCiphertext(ctx.tx[sfHolderEncryptedAmount]) ||
-        !isValidCiphertext(ctx.tx[sfIssuerEncryptedAmount]))
-        return temBAD_CIPHERTEXT;
-
-    if (hasAuditor && !isValidCiphertext(ctx.tx[sfAuditorEncryptedAmount]))
-        return temBAD_CIPHERTEXT;
 
     // todo: update with correct size of proof since it might also contain range
     // proof
