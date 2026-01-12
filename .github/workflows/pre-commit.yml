@@ -9,7 +9,7 @@ on:
 jobs:
   # Call the workflow in the XRPLF/actions repo that runs the pre-commit hooks.
   run-hooks:
-    uses: XRPLF/actions/.github/workflows/pre-commit.yml@34790936fae4c6c751f62ec8c06696f9c1a5753a
+    uses: XRPLF/actions/.github/workflows/pre-commit.yml@5ca417783f0312ab26d6f48b85c78edf1de99bbd
     with:
       runs_on: ubuntu-latest
       container: '{ "image": "ghcr.io/xrplf/ci/tools-rippled-pre-commit:sha-a8c7be1" }'
