@@ -158,6 +158,9 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (hasHolder && (hasIssuerElGamalKey || hasAuditorElGamalKey))
         return temMALFORMED;
 
+    if (hasAuditorElGamalKey && !hasIssuerElGamalKey)
+        return temMALFORMED;
+
     if (hasIssuerElGamalKey &&
         ctx.tx[sfIssuerElGamalPublicKey].length() != ecPubKeyLength)
         return temMALFORMED;
@@ -338,7 +341,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     // cannot upload key if there's circulating supply of COA
     if ((ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) ||
          ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey)) &&
-        ctx.tx.isFieldPresent(sfConfidentialOutstandingAmount))
+        sleMptIssuance->isFieldPresent(sfConfidentialOutstandingAmount))
     {
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
     }
