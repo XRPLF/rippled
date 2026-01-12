@@ -573,7 +573,6 @@ Number::operator+=(Number const& y)
         isnormal() && y.isnormal(),
         "xrpl::Number::operator+=(Number) : is normal");
     // *n = negative
-    // *s = sign
     // *m = mantissa
     // *e = exponent
 
