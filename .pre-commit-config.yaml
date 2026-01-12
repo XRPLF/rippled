@@ -32,12 +32,12 @@ repos:
       - id: prettier
 
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.11.0
+    rev: 831207fd435b47aeffdf6af853097e64322b4d44 # frozen: v25.12.0
     hooks:
       - id: black
 
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: v9.2.0
+    rev: 1cfa010f078c354f3ffb8413616280cc28f5ba21 # frozen: v9.4.0
     hooks:
       - id: cspell # Spell check changed files
         exclude: .config/cspell.config.yaml
