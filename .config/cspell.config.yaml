@@ -62,6 +62,7 @@ words:
   - compr
   - conanfile
   - conanrun
+  - confs
   - connectability
   - coro
   - coros
@@ -71,6 +72,7 @@ words:
   - cryptoconditions
   - csprng
   - ctid
+  - ctest
   - currenttxhash
   - daria
   - dcmake
@@ -90,6 +92,7 @@ words:
   - finalizers
   - firewalled
   - fmtdur
+  - fsanitize
   - funclets
   - gcov
   - gcovr
@@ -104,6 +107,7 @@ words:
   - insuff
   - iou
   - ious
+  - itype
   - isrdc
   - jemalloc
   - jlog
@@ -194,10 +198,12 @@ words:
   - roundings
   - sahyadri
   - Satoshi
+  - scons
   - secp
   - sendq
   - seqit
   - sf
+  - SFIELD
   - shamap
   - shamapitem
   - sidechain
