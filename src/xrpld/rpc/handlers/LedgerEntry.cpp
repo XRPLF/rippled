@@ -429,7 +429,7 @@ parseLoan(Json::Value const& params, Json::StaticString const fieldName)
     }
 
     auto const id = LedgerEntryHelpers::requiredUInt256(
-        params, jss::loan_broker_id, "malformedOwner");
+        params, jss::loan_broker_id, "malformedBroker");
     if (!id)
         return Unexpected(id.error());
     auto const seq = LedgerEntryHelpers::requiredUInt32(
