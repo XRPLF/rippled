@@ -68,6 +68,12 @@ jobs:
       matrix:
         os: [linux, macos, windows]
     with:
+      # Enable ccache only for events targeting the XRPLF repository, since
+      # other accounts will not have access to our remote cache storage.
+      # However, we do not enable ccache for events targeting the master or a
+      # release branch, to protect against the rare case that the output
+      # produced by ccache is not identical to a regular compilation.
+      ccache_enabled: ${{ github.repository_owner == 'XRPLF' && !(github.base_ref == 'master' || startsWith(github.base_ref, 'release')) }}
       os: ${{ matrix.os }}
       strategy_matrix: ${{ github.event_name == 'schedule' && 'all' || 'minimal' }}
     secrets:

@@ -32,7 +32,7 @@ to_string(ProtocolVersion const& p);
 
     Given a comma-separated string, extract and return all those that look
     like valid protocol versions (i.e. XRPL/2.0 and later). Strings that are
-    not parseable as valid protocol strings are excluded from the result set.
+    not parsable as valid protocol strings are excluded from the result set.
 
     @return A list of all apparently valid protocol versions.
 

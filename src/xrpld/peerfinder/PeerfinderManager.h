@@ -97,7 +97,7 @@ struct Config
 
 //------------------------------------------------------------------------------
 
-/** Describes a connectible peer address along with some metadata. */
+/** Describes a connectable peer address along with some metadata. */
 struct Endpoint
 {
     Endpoint() = default;

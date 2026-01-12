@@ -334,7 +334,7 @@ doSubscribe(RPC::JsonContext& context)
                             field == jss::asks ? reversed(book) : book,
                             takerID ? *takerID : noAccount(),
                             false,
-                            RPC::Tuning::bookOffers.rdefault,
+                            RPC::Tuning::bookOffers.rDefault,
                             jvMarker,
                             jvOffers);
 

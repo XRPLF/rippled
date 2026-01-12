@@ -2913,7 +2913,7 @@ protected:
 
         /*
         LoanPay fails with tecINVARIANT_FAILED  error when loan_broker(also
-        borrower) tries to do the payment. Here's the sceanrio: Create a XRP
+        borrower) tries to do the payment. Here's the scenario: Create a XRP
         loan with loan broker as borrower, loan origination fee and loan service
         fee. Loan broker makes the first payment with periodic payment and loan
         service fee.

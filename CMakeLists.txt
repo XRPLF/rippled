@@ -28,6 +28,9 @@ elseif(MSVC)
     add_compile_options(/wd4068) # Ignore unknown pragmas
 endif()
 
+# Enable ccache to speed up builds.
+include(Ccache)
+
 # make GIT_COMMIT_HASH define available to all sources
 find_package(Git)
 if(Git_FOUND)
