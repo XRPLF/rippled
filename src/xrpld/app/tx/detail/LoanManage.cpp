@@ -106,7 +106,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     if (loanBrokerSle->at(sfOwner) != account)
     {
         JLOG(ctx.j.warn())
-            << "LoanBroker for Loan does not belong to the account. LoanModify "
+            << "LoanBroker for Loan does not belong to the account. LoanManage "
                "can only be submitted by the Loan Broker.";
         return tecNO_PERMISSION;
     }
@@ -158,7 +158,7 @@ LoanManage::defaultLoan(
         auto const minimumCover =
             tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
         // Round the liquidation amount up, too
-        return roundToAsset(
+        auto const covered = roundToAsset(
             vaultAsset,
             /*
              * This formula is from the XLS-66 spec, section 3.2.3.2 (State
@@ -169,6 +169,9 @@ LoanManage::defaultLoan(
                 tenthBipsOfValue(minimumCover, coverRateLiquidation),
                 totalDefaultAmount),
             loanScale);
+        auto const coverAvailable = *brokerSle->at(sfCoverAvailable);
+
+        return std::min(covered, coverAvailable);
     }();
 
     auto const vaultDefaultAmount = totalDefaultAmount - defaultCovered;
@@ -178,7 +181,7 @@ LoanManage::defaultLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getVaultScale(vaultSle);
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     {
         // Decrease the Total Value of the Vault:
@@ -223,11 +226,13 @@ LoanManage::defaultLoan(
         }
         if (*vaultAvailableProxy > *vaultTotalProxy)
         {
-            JLOG(j.warn()) << "Vault assets available must not be greater "
-                              "than assets outstanding. Available: "
-                           << *vaultAvailableProxy
-                           << ", Total: " << *vaultTotalProxy;
-            return tecLIMIT_EXCEEDED;
+            // LCOV_EXCL_START
+            JLOG(j.fatal())
+                << "Vault assets available must not be greater "
+                   "than assets outstanding. Available: "
+                << *vaultAvailableProxy << ", Total: " << *vaultTotalProxy;
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
 
         // The loss has been realized
@@ -242,7 +247,11 @@ LoanManage::defaultLoan(
                 return tefBAD_LEDGER;
                 // LCOV_EXCL_STOP
             }
-            vaultLossUnrealizedProxy -= totalDefaultAmount;
+            adjustImpreciseNumber(
+                vaultLossUnrealizedProxy,
+                -totalDefaultAmount,
+                vaultAsset,
+                vaultScale);
         }
         view.update(vaultSle);
     }
@@ -250,11 +259,9 @@ LoanManage::defaultLoan(
     // Update the LoanBroker object:
 
     {
-        auto const asset = *vaultSle->at(sfAsset);
-
         // Decrease the Debt of the LoanBroker:
         adjustImpreciseNumber(
-            brokerDebtTotalProxy, -totalDefaultAmount, asset, vaultScale);
+            brokerDebtTotalProxy, -totalDefaultAmount, vaultAsset, vaultScale);
         // Decrease the First-Loss Capital Cover Available:
         auto coverAvailableProxy = brokerSle->at(sfCoverAvailable);
         if (coverAvailableProxy < defaultCovered)
@@ -297,13 +304,20 @@ LoanManage::impairLoan(
     ApplyView& view,
     SLE::ref loanSle,
     SLE::ref vaultSle,
+    Asset const& vaultAsset,
     beast::Journal j)
 {
     Number const lossUnrealized = owedToVault(loanSle);
 
+    // The vault may be at a different scale than the loan. Reduce rounding
+    // errors during the accounting by rounding some of the values to that
+    // scale.
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
+
     // Update the Vault object(set "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-    vaultLossUnrealizedProxy += lossUnrealized;
+    adjustImpreciseNumber(
+        vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
     if (vaultLossUnrealizedProxy >
         vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
     {
@@ -329,13 +343,19 @@ LoanManage::impairLoan(
     return tesSUCCESS;
 }
 
-TER
+[[nodiscard]] TER
 LoanManage::unimpairLoan(
     ApplyView& view,
     SLE::ref loanSle,
     SLE::ref vaultSle,
+    Asset const& vaultAsset,
     beast::Journal j)
 {
+    // The vault may be at a different scale than the loan. Reduce rounding
+    // errors during the accounting by rounding some of the values to that
+    // scale.
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
+
     // Update the Vault object(clear "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
     Number const lossReversed = owedToVault(loanSle);
@@ -347,14 +367,18 @@ LoanManage::unimpairLoan(
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    vaultLossUnrealizedProxy -= lossReversed;
+    // Reverse the "paper loss"
+    adjustImpreciseNumber(
+        vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
+
     view.update(vaultSle);
 
     // Update the Loan object
     loanSle->clearFlag(lsfLoanImpaired);
     auto const paymentInterval = loanSle->at(sfPaymentInterval);
     auto const normalPaymentDueDate =
-        std::max(loanSle->at(sfPreviousPaymentDate), loanSle->at(sfStartDate)) +
+        std::max(
+            loanSle->at(sfPreviousPaymentDueDate), loanSle->at(sfStartDate)) +
         paymentInterval;
     if (!hasExpired(view, normalPaymentDueDate))
     {
@@ -396,22 +420,12 @@ LoanManage::doApply()
     // Valid flag combinations are checked in preflight. No flags is valid -
     // just a noop.
     if (tx.isFlag(tfLoanDefault))
-    {
-        if (auto const ter =
-                defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_))
-            return ter;
-    }
-    else if (tx.isFlag(tfLoanImpair))
-    {
-        if (auto const ter = impairLoan(view, loanSle, vaultSle, j_))
-            return ter;
-    }
-    else if (tx.isFlag(tfLoanUnimpair))
-    {
-        if (auto const ter = unimpairLoan(view, loanSle, vaultSle, j_))
-            return ter;
-    }
-
+        return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
+    if (tx.isFlag(tfLoanImpair))
+        return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+    if (tx.isFlag(tfLoanUnimpair))
+        return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+    // Noop, as described above.
     return tesSUCCESS;
 }
 

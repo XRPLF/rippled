@@ -270,7 +270,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "LoanBroker cover is already at minimum.";
         return findClawAmount.error();
     }
-    STAmount const clawAmount = *findClawAmount;
+    STAmount const& clawAmount = *findClawAmount;
 
     // Explicitly check the balance of the trust line / MPT to make sure the
     // balance is actually there. It should always match `sfCoverAvailable`, so
@@ -287,6 +287,14 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     // Check if the vault asset issuer has the correct flags
     auto const sleIssuer =
         ctx.view.read(keylet::account(vaultAsset.getIssuer()));
+    if (!sleIssuer)
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "Issuer account does not exist.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
     return std::visit(
         [&]<typename T>(T const&) {
             return preclaimHelper<T>(ctx, *sleIssuer, clawAmount);
@@ -321,7 +329,7 @@ LoanBrokerCoverClawback::doApply()
         determineClawAmount(*sleBroker, vaultAsset, amount);
     if (!findClawAmount)
         return tecINTERNAL;  // LCOV_EXCL_LINE
-    STAmount const clawAmount = *findClawAmount;
+    STAmount const& clawAmount = *findClawAmount;
     // Just for paranoia's sake
     if (clawAmount.native())
         return tecINTERNAL;  // LCOV_EXCL_LINE
