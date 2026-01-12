@@ -89,7 +89,7 @@ cmake --build . --parallel 4
 **IMPORTANT**: ASAN with Boost produces many false positives. Use these options:
 
 ```bash
-export ASAN_OPTIONS="detect_container_overflow=0:suppressions=path/to/asan.supp:halt_on_error=0:log_path=asan.log"
+export ASAN_OPTIONS="print_stacktrace=1:detect_container_overflow=0:suppressions=path/to/asan.supp:halt_on_error=0:log_path=asan.log"
 export LSAN_OPTIONS="suppressions=path/to/lsan.supp:halt_on_error=0:log_path=lsan.log"
 
 # Run tests

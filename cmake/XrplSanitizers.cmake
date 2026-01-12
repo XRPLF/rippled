@@ -105,7 +105,7 @@ if(is_gcc)
 
     # Add sanitizer to compile and link flags
     list(APPEND SANITIZERS_COMPILE_FLAGS "-fsanitize=${SANITIZERS_FLAGS_STR}")
-	    set(SANITIZERS_LINK_FLAGS "${SANITIZERS_RELOCATION_FLAGS}" "-fsanitize=${SANITIZERS_FLAGS_STR}")
+    set(SANITIZERS_LINK_FLAGS "${SANITIZERS_RELOCATION_FLAGS}" "-fsanitize=${SANITIZERS_FLAGS_STR}")
 
 elseif(is_clang)
     # Add ignorelist for Clang (GCC doesn't support this)

@@ -1,6 +1,6 @@
-# The idea is to empty this file gradually by fixing the underlying issues and removing suppresions.
+# The idea is to empty this file gradually by fixing the underlying issues and removing suppressions.
 #
-# ASAN_OPTIONS="detect_container_overflow=0:suppressions=sanitizers/suppressions/asan.supp:halt_on_error=0"
+# ASAN_OPTIONS="print_stacktrace=1:detect_container_overflow=0:suppressions=sanitizers/suppressions/asan.supp:halt_on_error=0"
 #
 # The detect_container_overflow=0 option disables false positives from:
 # - Boost intrusive containers (slist_iterator.hpp, hashtable.hpp, aged_unordered_container.h)

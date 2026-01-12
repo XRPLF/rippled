@@ -68,7 +68,8 @@ endif()
 set(IS_AMD64 ${is_amd64})
 
 # Sanitizer configuration read from environment. We then set appropriate flags in XrplSanitizers.cmake
-if($ENV{SANITIZERS} AND $ENV{SANITIZERS} MATCHES "address|thread|undefinedbehavior")
+set(sanitizers_val "$ENV{SANITIZERS}")
+if(sanitizers_val AND sanitizers_val MATCHES "address|thread|undefinedbehavior")
   set(SANITIZERS_ENABLED TRUE)
 else()
   set(SANITIZERS_ENABLED FALSE)

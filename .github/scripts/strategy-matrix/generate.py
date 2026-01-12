@@ -260,8 +260,8 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                 }
             )
             # TSAN is deactivated due to seg faults with latest compilers.
-            activateTSAN = False
-            if activateTSAN:
+            activate_tsan = False
+            if activate_tsan:
                 configurations.append(
                     {
                         "config_name": config_name + "-tsan-ubsan",
