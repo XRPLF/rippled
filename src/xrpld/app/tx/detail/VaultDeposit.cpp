@@ -135,13 +135,14 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(ter))
         return ter;
 
-    if (accountSpendable(
+    if (accountHolds(
             ctx.view,
             account,
             vaultAsset,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahZERO_IF_UNAUTHORIZED,
-            ctx.j) < assets)
+            ctx.j,
+            SpendableHandling::shFULL_BALANCE) < assets)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;

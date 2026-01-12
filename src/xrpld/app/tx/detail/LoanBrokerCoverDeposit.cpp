@@ -77,13 +77,14 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
             requireAuth(ctx.view, vaultAsset, account, AuthType::StrongAuth))
         return ret;
 
-    if (accountSpendable(
+    if (accountHolds(
             ctx.view,
             account,
             vaultAsset,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahZERO_IF_UNAUTHORIZED,
-            ctx.j) < amount)
+            ctx.j,
+            SpendableHandling::shFULL_BALANCE) < amount)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;

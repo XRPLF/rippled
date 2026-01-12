@@ -48,16 +48,23 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "LoanBrokerDelete: Owner count is " << ownerCount;
         return tecHAS_OBLIGATIONS;
     }
+
+    auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+    if (!vault)
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "Vault is missing for Broker " << brokerID;
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
+    Asset const asset = vault->at(sfAsset);
+
     if (auto const debtTotal = sleBroker->at(sfDebtTotal);
         debtTotal != beast::zero)
     {
         // Any remaining debt should have been wiped out by the last Loan
         // Delete. This check is purely defensive.
-        auto const vault =
-            ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
-        if (!vault)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-        auto const asset = vault->at(sfAsset);
         auto const scale = getAssetsTotalScale(vault);
 
         auto const rounded =
@@ -72,17 +79,6 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
             // LCOV_EXCL_STOP
         }
     }
-
-    auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
-    if (!vault)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx.j.fatal()) << "Vault is missing for Broker " << brokerID;
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    Asset const asset = vault->at(sfAsset);
 
     auto const coverAvailable =
         STAmount{asset, sleBroker->at(sfCoverAvailable)};

@@ -421,23 +421,12 @@ LoanManage::doApply()
     // Valid flag combinations are checked in preflight. No flags is valid -
     // just a noop.
     if (tx.isFlag(tfLoanDefault))
-    {
-        if (auto const ter =
-                defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_))
-            return ter;
-    }
-    else if (tx.isFlag(tfLoanImpair))
-    {
-        if (auto const ter =
-                impairLoan(view, loanSle, vaultSle, vaultAsset, j_))
-            return ter;
-    }
-    else if (tx.isFlag(tfLoanUnimpair))
-    {
-        if (auto const ter =
-                unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_))
-            return ter;
-    }
+        return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
+    if (tx.isFlag(tfLoanImpair))
+        return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+    if (tx.isFlag(tfLoanUnimpair))
+        return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+    // Noop, as described above.
 
     associateAsset(*loanSle, vaultAsset);
     associateAsset(*brokerSle, vaultAsset);
