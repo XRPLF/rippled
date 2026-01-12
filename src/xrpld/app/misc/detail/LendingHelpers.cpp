@@ -748,25 +748,21 @@ computeLatePayment(
     // this to keep the logic clear. This preserves all the other fields without
     // having to enumerate them.
 
-    ExtendedPaymentComponents const late = [&]() {
-        auto inner = periodic;
+    ExtendedPaymentComponents const late{
+        periodic,
+        // Untracked management fee includes:
+        // 1. Regular service fee (from periodic.untrackedManagementFee)
+        // 2. Late payment fee (fixed penalty)
+        // 3. Management fee portion of late interest
+        periodic.untrackedManagementFee + latePaymentFee +
+            roundedLateManagementFee,
 
-        return ExtendedPaymentComponents{
-            inner,
-            // Untracked management fee includes:
-            // 1. Regular service fee (from periodic.untrackedManagementFee)
-            // 2. Late payment fee (fixed penalty)
-            // 3. Management fee portion of late interest
-            periodic.untrackedManagementFee + latePaymentFee +
-                roundedLateManagementFee,
-
-            // Untracked interest includes:
-            // 1. Any untracked interest from the regular payment (usually 0)
-            // 2. Late penalty interest (increases loan value)
-            // This positive value indicates the loan's value increased due
-            // to the late payment.
-            periodic.untrackedInterest + roundedLateInterest};
-    }();
+        // Untracked interest includes:
+        // 1. Any untracked interest from the regular payment (usually 0)
+        // 2. Late penalty interest (increases loan value)
+        // This positive value indicates the loan's value increased due
+        // to the late payment.
+        periodic.untrackedInterest + roundedLateInterest};
 
     XRPL_ASSERT_PARTS(
         isRounded(asset, late.totalDue, loanScale),
@@ -856,9 +852,8 @@ computeFullPayment(
     auto const [roundedFullInterest, roundedFullManagementFee] = [&]() {
         auto const interest = roundToAsset(
             asset, fullPaymentInterest, loanScale, Number::downward);
-        auto const parts = computeInterestAndFeeParts(
+        return computeInterestAndFeeParts(
             asset, interest, managementFeeRate, loanScale);
-        return std::make_tuple(parts.first, parts.second);
     }();
 
     ExtendedPaymentComponents const full{
@@ -941,6 +936,8 @@ PaymentComponents::trackedInterestPart() const
  *
  * Special handling for the final payment: all remaining balances are paid off
  * regardless of the periodic payment amount.
+ *
+ * Implements the pseudo-code function `compute_payment_due()`.
  */
 PaymentComponents
 computePaymentComponents(
@@ -1406,6 +1403,9 @@ computeFullPaymentInterest(
  *
  * If paymentRemaining is 0, returns a fully zeroed-out LoanState,
  *       representing a completely paid-off loan.
+ *
+ * Implements the `calculate_true_loan_state` function from the XLS-66 spec
+ * section 3.2.4.4 Transaction Pseudo-code
  */
 LoanState
 computeTheoreticalLoanState(
@@ -1517,6 +1517,11 @@ computeManagementFee(
 
 /*
  * Given the loan parameters, compute the derived properties of the loan.
+ *
+ * Pulls together several formulas from the XLS-66 spec, which are noted at each
+ * step, plus the concepts from 3.2.4.3 Conceptual Loan Value. They are used for
+ * to check some of the conditions in 3.2.1.5 Failure Conditions for the LoanSet
+ * transaction.
  */
 LoanProperties
 computeLoanProperties(
@@ -1541,6 +1546,14 @@ computeLoanProperties(
         minimumScale);
 }
 
+/*
+ * Given the loan parameters, compute the derived properties of the loan.
+ *
+ * Pulls together several formulas from the XLS-66 spec, which are noted at each
+ * step, plus the concepts from 3.2.4.3 Conceptual Loan Value. They are used for
+ * to check some of the conditions in 3.2.1.5 Failure Conditions for the LoanSet
+ * transaction.
+ */
 LoanProperties
 computeLoanProperties(
     Asset const& asset,
