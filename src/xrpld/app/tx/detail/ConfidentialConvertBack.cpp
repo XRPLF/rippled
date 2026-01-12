@@ -189,7 +189,7 @@ ConfidentialConvertBack::doApply()
         (*sleMptoken)[sfIssuerEncryptedBalance] = res;
     }
 
-    if (hasAuditor && auditorEc)
+    if (auditorEc)
     {
         Buffer res(ecGamalEncryptedTotalLength);
         if (TER const ter = homomorphicSubtract(

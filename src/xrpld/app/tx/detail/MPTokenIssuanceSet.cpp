@@ -96,20 +96,6 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (mutatePrivacy && hasHolder)
         return temMALFORMED;
 
-    if (hasIssuerElGamalKey && hasHolder)
-        return temMALFORMED;
-
-    if (hasIssuerElGamalKey &&
-        ctx.tx[sfIssuerElGamalPublicKey].length() != ecPubKeyLength)
-        return temMALFORMED;
-
-    if (hasAuditorElGamalKey && hasHolder)
-        return temMALFORMED;
-
-    if (hasAuditorElGamalKey &&
-        ctx.tx[sfAuditorElGamalPublicKey].length() != ecPubKeyLength)
-        return temMALFORMED;
-
     // fails if both flags are set
     if ((txFlags & tfMPTLock) && (txFlags & tfMPTUnlock))
         return temINVALID_FLAG;
@@ -168,6 +154,17 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
                 return temMALFORMED;
         }
     }
+
+    if (hasHolder && (hasIssuerElGamalKey || hasAuditorElGamalKey))
+        return temMALFORMED;
+
+    if (hasIssuerElGamalKey &&
+        ctx.tx[sfIssuerElGamalPublicKey].length() != ecPubKeyLength)
+        return temMALFORMED;
+
+    if (hasAuditorElGamalKey &&
+        ctx.tx[sfAuditorElGamalPublicKey].length() != ecPubKeyLength)
+        return temMALFORMED;
 
     return tesSUCCESS;
 }
@@ -341,7 +338,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     // cannot upload key if there's circulating supply of COA
     if ((ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) ||
          ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey)) &&
-        (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0) != 0)
+        ctx.tx.isFieldPresent(sfConfidentialOutstandingAmount))
     {
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
     }

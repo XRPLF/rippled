@@ -28,7 +28,8 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
     if (hasAuditor &&
-        ctx.tx[sfHolderEncryptedAmount].length() != ecGamalEncryptedTotalLength)
+        ctx.tx[sfAuditorEncryptedAmount].length() !=
+            ecGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
     if (ctx.tx[sfMPTAmount] > maxMPTokenAmount)
@@ -74,9 +75,10 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance->isFieldPresent(sfIssuerElGamalPublicKey))
         return tecNO_PERMISSION;
 
+    bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
+
     // tx must include auditor ciphertext if the issuance has enabled auditing
-    if (sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey) &&
-        !ctx.tx.isFieldPresent(sfAuditorEncryptedAmount))
+    if (sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey) && !hasAuditor)
         return tecNO_PERMISSION;
 
     auto const sleMptoken = ctx.view.read(
@@ -118,8 +120,6 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         ctx.tx[sfSequence],
         ctx.tx[sfMPTokenIssuanceID],
         ctx.tx[sfMPTAmount]);
-
-    bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
 
     std::vector<Buffer> const zkps = getEqualityProofs(ctx.tx[sfZKProof]);
 
@@ -225,7 +225,7 @@ ConfidentialConvert::doApply()
         }
 
         // homomorphically add auditor's encrypted balance
-        if (hasAuditor && auditorEc)
+        if (auditorEc)
         {
             Buffer sum(ecGamalEncryptedTotalLength);
             if (TER const ter = homomorphicAdd(
@@ -245,7 +245,7 @@ ConfidentialConvert::doApply()
         (*sleMptoken)[sfIssuerEncryptedBalance] = issuerEc;
         (*sleMptoken)[sfConfidentialBalanceVersion] = 0;
 
-        if (hasAuditor && auditorEc)
+        if (auditorEc)
             (*sleMptoken)[sfAuditorEncryptedBalance] = *auditorEc;
 
         try

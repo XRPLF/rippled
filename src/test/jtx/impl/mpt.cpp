@@ -1402,7 +1402,7 @@ MPTTester::getPrivKey(Account const& account) const
 }
 
 CiphertextComponents
-MPTTester::encryptAmount(Account const& account, uint64_t amt) const
+MPTTester::encryptAmount(Account const& account, uint64_t const amt) const
 {
     return ripple::encryptAmount(amt, getPubKey(account));
 }

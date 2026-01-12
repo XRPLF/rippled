@@ -243,7 +243,7 @@ proveEquality(
 
 // returns ciphertext and the blinding factor used
 CiphertextComponents
-encryptAmount(uint64_t amt, Slice const& pubKeySlice);
+encryptAmount(uint64_t const amt, Slice const& pubKeySlice);
 
 Buffer
 encryptCanonicalZeroAmount(

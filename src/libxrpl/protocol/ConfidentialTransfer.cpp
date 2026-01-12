@@ -857,7 +857,7 @@ proveEquality(
 }
 
 CiphertextComponents
-encryptAmount(uint64_t amt, Slice const& pubKeySlice)
+encryptAmount(uint64_t const amt, Slice const& pubKeySlice)
 {
     Buffer buf(ecGamalEncryptedTotalLength);
 
@@ -884,7 +884,7 @@ encryptAmount(uint64_t amt, Slice const& pubKeySlice)
         Throw<std::runtime_error>(
             "Failed to serialize into 66 byte compressed format");
 
-    return {buf, Buffer(blindingFactor, 32)};
+    return {std::move(buf), Buffer(blindingFactor, 32)};
 }
 
 Buffer

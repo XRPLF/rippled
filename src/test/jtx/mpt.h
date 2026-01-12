@@ -417,7 +417,7 @@ public:
     getPrivKey(Account const& account) const;
 
     CiphertextComponents
-    encryptAmount(Account const& account, uint64_t amt) const;
+    encryptAmount(Account const& account, uint64_t const amt) const;
 
     uint64_t
     decryptAmount(Account const& account, Buffer const& amt) const;

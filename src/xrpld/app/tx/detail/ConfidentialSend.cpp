@@ -222,7 +222,7 @@ ConfidentialSend::doApply()
     }
 
     // Subtract from auditor's balance if present
-    if (hasAuditor && auditorEc)
+    if (auditorEc)
     {
         Slice const curAuditorEnc = (*sleSender)[sfAuditorEncryptedBalance];
         Buffer newAuditorEnc(ecGamalEncryptedTotalLength);
@@ -265,7 +265,7 @@ ConfidentialSend::doApply()
     }
 
     // Add to auditor's balance if present
-    if (hasAuditor && auditorEc)
+    if (auditorEc)
     {
         Slice const curAuditorEnc =
             (*sleDestination)[sfAuditorEncryptedBalance];
