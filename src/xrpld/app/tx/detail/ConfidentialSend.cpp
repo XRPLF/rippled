@@ -189,11 +189,8 @@ ConfidentialSend::doApply()
     Slice const senderEc = ctx_.tx[sfSenderEncryptedAmount];
     Slice const destEc = ctx_.tx[sfDestinationEncryptedAmount];
     Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
-    bool const hasAuditor = ctx_.tx.isFieldPresent(sfAuditorEncryptedAmount);
 
-    std::optional<Slice> const auditorEc = hasAuditor
-        ? std::optional<Slice>{ctx_.tx[sfAuditorEncryptedAmount]}
-        : std::nullopt;
+    std::optional<Slice> const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];
 
     // Subtract from sender's spending balance
     {

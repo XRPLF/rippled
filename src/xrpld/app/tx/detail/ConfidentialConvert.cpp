@@ -175,11 +175,8 @@ ConfidentialConvert::doApply()
 
     Slice const holderEc = ctx_.tx[sfHolderEncryptedAmount];
     Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
-    bool const hasAuditor = ctx_.tx.isFieldPresent(sfAuditorEncryptedAmount);
 
-    std::optional<Slice> const auditorEc = hasAuditor
-        ? std::optional<Slice>{ctx_.tx[sfAuditorEncryptedAmount]}
-        : std::nullopt;
+    std::optional<Slice> const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];
 
     // todo: we should check sfConfidentialBalanceSpending depending on
     // if we encrypt zero amount
