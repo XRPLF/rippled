@@ -100,9 +100,9 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@2ece4ec6ab7de266859a6f053571425b2bd684b6
+        uses: XRPLF/actions/prepare-runner@121d1de2775d486d46140b9a91b32d5002c08153
         with:
-          disable_ccache: ${{ !inputs.ccache_enabled }}
+          enable_ccache: ${{ inputs.ccache_enabled }}
 
       - name: Set ccache log file
         if: ${{ inputs.ccache_enabled && runner.debug == '1' }}

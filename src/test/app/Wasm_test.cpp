@@ -829,6 +829,135 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testWasmSectionCorruption()
+    {
+        testcase("Wasm Section Corruption tests");
+        BEAST_EXPECT(runFinishFunction(badMagicNumberHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(badVersionNumberHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(lyingHeaderHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(neverEndingNumberHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(vectorLieHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(sectionOrderingHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(ghostPayloadHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(junkAfterSectionHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(invalidSectionIdHex).has_value() == false);
+        BEAST_EXPECT(
+            runFinishFunction(localVariableBombHex).has_value() == false);
+    }
+
+    void
+    testStartFunctionLoop()
+    {
+        testcase("infinite loop in start function");
+
+        using namespace test::jtx;
+        Env env(*this);
+
+        auto wasmStr = boost::algorithm::unhex(startLoopHex);
+        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        TestLedgerDataProvider ledgerDataProvider(env);
+        ImportVec imports;
+
+        auto& engine = WasmEngine::instance();
+        auto checkRes = engine.check(
+            wasm, "finish", {}, imports, &ledgerDataProvider, env.journal);
+        BEAST_EXPECTS(
+            checkRes == tesSUCCESS, std::to_string(TERtoInt(checkRes)));
+
+        auto re = engine.run(
+            wasm,
+            ESCROW_FUNCTION_NAME,
+            {},
+            imports,
+            &ledgerDataProvider,
+            1'000'000,
+            env.journal);
+        BEAST_EXPECTS(
+            re.error() == tecFAILED_PROCESSING,
+            std::to_string(TERtoInt(re.error())));
+    }
+
+    void
+    testBadAlloc()
+    {
+        testcase("Wasm Bad Alloc");
+
+        // bad_alloc.c
+        auto wasmStr = boost::algorithm::unhex(badAllocHex);
+        Bytes wasm(wasmStr.begin(), wasmStr.end());
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        TestLedgerDataProvider hf(env);
+
+        // ImportVec imports;
+        uint8_t buf1[8] = {7, 8, 9, 10, 11, 12, 13, 14};
+        {  // forged "allocate" return valid address
+            std::vector<WasmParam> params = {
+                {.type = WT_U8V,
+                 .of = {.u8v = {.d = buf1, .sz = sizeof(buf1)}}}};
+            auto& engine = WasmEngine::instance();
+
+            auto re = engine.run(
+                wasm, "test", params, {}, &hf, 1'000'000, env.journal);
+            if (BEAST_EXPECT(re))
+            {
+                BEAST_EXPECTS(re->result == 7, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 10, std::to_string(re->result));
+            }
+        }
+
+        {  // return 0 whithout calling wasm
+            std::vector<WasmParam> params = {
+                {.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 0}}}};
+            auto& engine = WasmEngine::instance();
+            auto re = engine.run(
+                wasm, "test", params, {}, &hf, 1'000'000, env.journal);
+            BEAST_EXPECT(!re) &&
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+        }
+
+        {  // forged "allocate" return 8Mb (which is more than memory limit)
+            std::vector<WasmParam> params = {
+                {.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 1}}}};
+            auto& engine = WasmEngine::instance();
+            auto re = engine.run(
+                wasm, "test", params, {}, &hf, 1'000'000, env.journal);
+            BEAST_EXPECT(!re) &&
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+        }
+
+        {  // forged "allocate" return 0
+            std::vector<WasmParam> params = {
+                {.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 2}}}};
+            auto& engine = WasmEngine::instance();
+            auto re = engine.run(
+                wasm, "test", params, {}, &hf, 1'000'000, env.journal);
+            BEAST_EXPECT(!re) &&
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+        }
+
+        {  // forged "allocate" return -1
+            std::vector<WasmParam> params = {
+                {.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 3}}}};
+            auto& engine = WasmEngine::instance();
+            auto re = engine.run(
+                wasm, "test", params, {}, &hf, 1'000'000, env.journal);
+
+            BEAST_EXPECT(!re) &&
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+        }
+
+        env.close();
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -854,6 +983,11 @@ struct Wasm_test : public beast::unit_test::suite
         testWasmProposal();
         testWasmTrap();
         testWasmWasi();
+        testWasmSectionCorruption();
+
+        testStartFunctionLoop();
+        testBadAlloc();
+
         // perfTest();
     }
 };
