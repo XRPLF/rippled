@@ -752,30 +752,36 @@ class LoanBroker_test : public beast::unit_test::suite
                     // LoanBrokerID
                     env(set(alice, vault.vaultID),
                         loanBrokerID(nextKeylet.key),
-                        ter(tecNO_ENTRY));
+                        ter(tecNO_ENTRY),
+                        THISLINE);
                     // VaultID
                     env(set(alice, nextKeylet.key),
                         loanBrokerID(broker->key()),
-                        ter(tecNO_PERMISSION));
+                        ter(tecNO_ENTRY),
+                        THISLINE);
                     // Owner
                     env(set(evan, vault.vaultID),
                         loanBrokerID(broker->key()),
-                        ter(tecNO_PERMISSION));
+                        ter(tecNO_PERMISSION),
+                        THISLINE);
                     // ManagementFeeRate
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         managementFeeRate(maxManagementFeeRate),
-                        ter(temINVALID));
+                        ter(temINVALID),
+                        THISLINE);
                     // CoverRateMinimum
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         coverRateMinimum(maxManagementFeeRate),
-                        ter(temINVALID));
+                        ter(temINVALID),
+                        THISLINE);
                     // CoverRateLiquidation
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         coverRateLiquidation(maxManagementFeeRate),
-                        ter(temINVALID));
+                        ter(temINVALID),
+                        THISLINE);
 
                     // fields that can be changed
                     testData = "Test Data 1234";
@@ -783,23 +789,43 @@ class LoanBroker_test : public beast::unit_test::suite
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         data(std::string(maxDataPayloadLength + 1, 'W')),
-                        ter(temINVALID));
+                        ter(temINVALID),
+                        THISLINE);
 
                     // Bad debt maximum
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         debtMaximum(Number(-175, -1)),
-                        ter(temINVALID));
+                        ter(temINVALID),
+                        THISLINE);
+                    Number debtMax{175, -1};
+                    if (vault.asset.integral())
+                    {
+                        env(set(alice, vault.vaultID),
+                            loanBrokerID(broker->key()),
+                            data(testData),
+                            debtMaximum(debtMax),
+                            ter(tecPRECISION_LOSS),
+                            THISLINE);
+                        roundToAsset(vault.asset, debtMax);
+                    }
                     // Data & Debt maximum
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         data(testData),
-                        debtMaximum(Number(175, -1)));
+                        debtMaximum(debtMax),
+                        THISLINE);
                 },
                 [&](SLE::const_ref broker) {
                     // Check the updated fields
                     BEAST_EXPECT(checkVL(broker->at(sfData), testData));
-                    BEAST_EXPECT(broker->at(sfDebtMaximum) == Number(175, -1));
+                    Number const expected =
+                        STAmount{vault.asset, Number(175, -1)};
+                    auto const actual = broker->at(sfDebtMaximum);
+                    BEAST_EXPECTS(
+                        actual == expected,
+                        "Expected: " + to_string(expected) +
+                            ", Actual: " + to_string(actual));
                 });
 
             lifecycle(
@@ -1457,9 +1483,14 @@ class LoanBroker_test : public beast::unit_test::suite
         env.close();
 
         PrettyAsset const asset = [&]() {
-            env(trust(alice, issuer["IOU"](1'000'000)), THISLINE);
+            MPTTester mptt{env, issuer, mptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
             env.close();
-            return PrettyAsset(issuer["IOU"]);
+            PrettyAsset const mptAsset = mptt["MPT"];
+            mptt.authorize({.account = alice});
+            env.close();
+            return mptAsset;
         }();
 
         env(pay(issuer, alice, asset(100'000)), THISLINE);
@@ -1511,6 +1542,40 @@ class LoanBroker_test : public beast::unit_test::suite
         env(tx2, ter(tesSUCCESS), THISLINE);
 
         tx2[sfDebtMaximum] = 0;
+        env(tx2, ter(tesSUCCESS), THISLINE);
+
+        tx2[sfDebtMaximum] = Json::Value::maxInt;
+        env(tx2, ter(tesSUCCESS), THISLINE);
+
+        {
+            auto const dm = power(2, 64) - 1;
+            BEAST_EXPECT(dm > maxMPTokenAmount);
+            tx2[sfDebtMaximum] = dm;
+            env(tx2, ter(temINVALID), THISLINE);
+        }
+
+        {
+            auto const dm = power(2, 63) - 1;
+            BEAST_EXPECTS(dm > maxMPTokenAmount, to_string(dm));
+            tx2[sfDebtMaximum] = dm;
+            env(tx2, ter(temINVALID), THISLINE);
+        }
+
+        {
+            auto const dm = power(2, 63) - 3;
+            BEAST_EXPECTS(dm == maxMPTokenAmount, to_string(dm));
+            tx2[sfDebtMaximum] = dm;
+            env(tx2, ter(tesSUCCESS), THISLINE);
+        }
+
+        {
+            auto const dm = 2 * (power(2, 62) - 1) + 1;
+            BEAST_EXPECTS(dm == maxMPTokenAmount, to_string(dm));
+            tx2[sfDebtMaximum] = dm;
+            env(tx2, ter(tesSUCCESS), THISLINE);
+        }
+
+        tx2[sfDebtMaximum] = Number{9223372036854775807, 0};
         env(tx2, ter(tesSUCCESS), THISLINE);
     }
 
