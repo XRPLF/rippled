@@ -2,6 +2,8 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
+#include <xrpl/protocol/STTakesAsset.h>
+
 namespace xrpl {
 
 bool
@@ -337,6 +339,8 @@ LoanBrokerCoverClawback::doApply()
     // Decrease the LoanBroker's CoverAvailable by Amount
     sleBroker->at(sfCoverAvailable) -= clawAmount;
     view().update(sleBroker);
+
+    associateAsset(*sleBroker, vaultAsset);
 
     // Transfer assets from pseudo-account to depositor.
     return accountSend(

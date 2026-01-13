@@ -9,6 +9,7 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -134,6 +135,7 @@ VaultDeposit::doApply()
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+    auto const vaultAsset = vault->at(sfAsset);
 
     auto const amount = ctx_.tx[sfAmount];
     // Make sure the depositor can hold shares.
@@ -281,6 +283,8 @@ VaultDeposit::doApply()
             WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
+
+    associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
 }
