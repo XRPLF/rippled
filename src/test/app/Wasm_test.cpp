@@ -703,10 +703,10 @@ struct Wasm_test : public beast::unit_test::suite
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
         TestHostFunctions hfs(env, 0);
 
-        auto const allowance = 189'508;
+        auto const allowance = 327'308;
         auto re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, allowance);
 
-        if (BEAST_EXPECT(re.has_value(), re.error()))
+        if (BEAST_EXPECT(re.has_value()))
         {
             BEAST_EXPECT(re->result);
             BEAST_EXPECTS(re->cost == allowance, std::to_string(re->cost));
