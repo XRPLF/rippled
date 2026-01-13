@@ -383,9 +383,12 @@ public:
     Expected<int32_t, HostFunctionError>
     trace(std::string_view const& msg, Slice const& data, bool asHex) override
     {
+        auto const ret = msg.size() + data.size() * (asHex ? 2 : 1);
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
+        if (!getJournal().active(beast::severities::kTrace))
+            return ret;
         auto j = getJournal().trace();
 #endif
         if (!asHex)
@@ -407,15 +410,18 @@ public:
         j << std::endl;
 #endif
 
-        return msg.size() + data.size() * (asHex ? 2 : 1);
+        return ret;
     }
 
     Expected<int32_t, HostFunctionError>
     traceNum(std::string_view const& msg, int64_t data) override
     {
+        auto const ret = msg.size() + sizeof(data);
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
+        if (!getJournal().active(beast::severities::kTrace))
+            return ret;
         auto j = getJournal().trace();
 #endif
         j << "WASM TRACE NUM: " << msg << " " << data;
@@ -423,15 +429,18 @@ public:
 #ifdef DEBUG_OUTPUT
         j << std::endl;
 #endif
-        return msg.size() + sizeof(data);
+        return ret;
     }
 
     Expected<int32_t, HostFunctionError>
     traceAccount(std::string_view const& msg, AccountID const& account) override
     {
+        auto const ret = msg.size() + account.size();
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
+        if (!getJournal().active(beast::severities::kTrace))
+            return ret;
         auto j = getJournal().trace();
 #endif
         if (!account)
@@ -440,15 +449,23 @@ public:
         auto const accountStr = toBase58(account);
 
         j << "WASM TRACE ACCOUNT: " << msg << " " << accountStr;
-        return msg.size() + accountStr.size();
+
+#ifdef DEBUG_OUTPUT
+        j << std::endl;
+#endif
+
+        return ret;
     }
 
     Expected<int32_t, HostFunctionError>
     traceFloat(std::string_view const& msg, Slice const& data) override
     {
+        auto const ret = msg.size() + data.size();
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
+        if (!getJournal().active(beast::severities::kTrace))
+            return ret;
         auto j = getJournal().trace();
 #endif
         auto const s = floatToString(data);
@@ -457,20 +474,29 @@ public:
 #ifdef DEBUG_OUTPUT
         j << std::endl;
 #endif
-        return msg.size() + s.size();
+
+        return ret;
     }
 
     Expected<int32_t, HostFunctionError>
     traceAmount(std::string_view const& msg, STAmount const& amount) override
     {
+        auto const ret = msg.size();
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
+        if (!getJournal().active(beast::severities::kTrace))
+            return ret;
         auto j = getJournal().trace();
 #endif
         auto const amountStr = amount.getFullText();
         j << "WASM TRACE AMOUNT: " << msg << " " << amountStr;
-        return msg.size() + amountStr.size();
+
+#ifdef DEBUG_OUTPUT
+        j << std::endl;
+#endif
+
+        return ret;
     }
 
     Expected<Bytes, HostFunctionError>

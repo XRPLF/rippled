@@ -723,11 +723,15 @@ WasmHostFunctionsImpl::trace(
     Slice const& data,
     bool asHex)
 {
+    auto const ret = msg.size() + data.size() * (asHex ? 2 : 1);
 #ifdef DEBUG_OUTPUT
-    auto j = getJournal().error();
+    auto& j = std::cerr;
 #else
+    if (!getJournal().active(beast::severities::kTrace))
+        return ret;
     auto j = getJournal().trace();
 #endif
+
     if (!asHex)
     {
         j << "HF TRACE (" << leKey.key << "): " << msg << " "
@@ -743,19 +747,32 @@ WasmHostFunctionsImpl::trace(
         j << "HF DEV TRACE (" << leKey.key << "): " << msg << " " << hex;
     }
 
-    return msg.size() + data.size() * (asHex ? 2 : 1);
+#ifdef DEBUG_OUTPUT
+    j << std::endl;
+#endif
+
+    return ret;
 }
 
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
 {
+    auto const ret = msg.size() + sizeof(data);
 #ifdef DEBUG_OUTPUT
-    auto j = getJournal().error();
+    auto& j = std::cerr;
 #else
+    if (!getJournal().active(beast::severities::kTrace))
+        return ret;
     auto j = getJournal().trace();
 #endif
+
     j << "HF TRACE NUM(" << leKey.key << "): " << msg << " " << data;
-    return msg.size() + sizeof(data);
+
+#ifdef DEBUG_OUTPUT
+    j << std::endl;
+#endif
+
+    return ret;
 }
 
 Expected<int32_t, HostFunctionError>
@@ -763,16 +780,24 @@ WasmHostFunctionsImpl::traceAccount(
     std::string_view const& msg,
     AccountID const& account)
 {
+    auto const ret = msg.size() + account.size();
 #ifdef DEBUG_OUTPUT
-    auto j = getJournal().error();
+    auto& j = std::cerr;
 #else
+    if (!getJournal().active(beast::severities::kTrace))
+        return ret;
     auto j = getJournal().trace();
 #endif
 
     auto const accountStr = toBase58(account);
 
     j << "HF TRACE ACCOUNT(" << leKey.key << "): " << msg << " " << accountStr;
-    return msg.size() + accountStr.size();
+
+#ifdef DEBUG_OUTPUT
+    j << std::endl;
+#endif
+
+    return ret;
 }
 
 Expected<int32_t, HostFunctionError>
@@ -780,14 +805,22 @@ WasmHostFunctionsImpl::traceFloat(
     std::string_view const& msg,
     Slice const& data)
 {
+    auto const ret = msg.size() + data.size();
 #ifdef DEBUG_OUTPUT
-    auto j = getJournal().error();
+    auto& j = std::cerr;
 #else
+    if (!getJournal().active(beast::severities::kTrace))
+        return ret;
     auto j = getJournal().trace();
 #endif
     auto const s = floatToString(data);
     j << "HF TRACE FLOAT(" << leKey.key << "): " << msg << " " << s;
-    return msg.size() + s.size();
+
+#ifdef DEBUG_OUTPUT
+    j << std::endl;
+#endif
+
+    return ret;
 }
 
 Expected<int32_t, HostFunctionError>
@@ -795,14 +828,22 @@ WasmHostFunctionsImpl::traceAmount(
     std::string_view const& msg,
     STAmount const& amount)
 {
+    auto const ret = msg.size();
 #ifdef DEBUG_OUTPUT
-    auto j = getJournal().error();
+    auto& j = std::cerr;
 #else
+    if (!getJournal().active(beast::severities::kTrace))
+        return ret;
     auto j = getJournal().trace();
 #endif
     auto const amountStr = amount.getFullText();
     j << "HF TRACE AMOUNT(" << leKey.key << "): " << msg << " " << amountStr;
-    return msg.size() + amountStr.size();
+
+#ifdef DEBUG_OUTPUT
+    j << std::endl;
+#endif
+
+    return ret;
 }
 
 Expected<Bytes, HostFunctionError>
