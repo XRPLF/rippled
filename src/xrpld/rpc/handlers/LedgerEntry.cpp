@@ -21,14 +21,14 @@ namespace xrpl {
 using FunctionType = std::function<Expected<uint256, Json::Value>(
     Json::Value const&,
     Json::StaticString const,
-    unsigned apiVersion)>;
+    unsigned const apiVersion)>;
 
 static Expected<uint256, Json::Value>
 parseFixed(
     Keylet const& keylet,
     Json::Value const& params,
     Json::StaticString const& fieldName,
-    unsigned apiVersion);
+    unsigned const apiVersion);
 
 // Helper function to return FunctionType for objects that have a fixed
 // location. That is, they don't take parameters to compute the index.
@@ -36,10 +36,10 @@ parseFixed(
 static FunctionType
 fixed(Keylet const& keylet)
 {
-    return [&keylet](
+    return [keylet](
                Json::Value const& params,
                Json::StaticString const fieldName,
-               unsigned apiVersion) -> Expected<uint256, Json::Value> {
+               unsigned const apiVersion) -> Expected<uint256, Json::Value> {
         return parseFixed(keylet, params, fieldName, apiVersion);
     };
 }
@@ -62,7 +62,7 @@ static Expected<uint256, Json::Value>
 parseIndex(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    unsigned const apiVersion)
 {
     if (apiVersion > 2u && params.isString())
     {
@@ -85,7 +85,7 @@ static Expected<uint256, Json::Value>
 parseAccountRoot(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (auto const account = LedgerEntryHelpers::parse<AccountID>(params))
     {
@@ -102,7 +102,7 @@ static Expected<uint256, Json::Value>
 parseAMM(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -133,7 +133,7 @@ static Expected<uint256, Json::Value>
 parseBridge(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isMember(jss::bridge))
     {
@@ -167,7 +167,7 @@ static Expected<uint256, Json::Value>
 parseCheck(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     return parseObjectID(params, fieldName, "hex string");
 }
@@ -176,7 +176,7 @@ static Expected<uint256, Json::Value>
 parseCredential(
     Json::Value const& cred,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!cred.isObject())
     {
@@ -210,7 +210,7 @@ static Expected<uint256, Json::Value>
 parseDelegate(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -304,7 +304,7 @@ static Expected<uint256, Json::Value>
 parseDepositPreauth(
     Json::Value const& dp,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!dp.isObject())
     {
@@ -360,7 +360,7 @@ static Expected<uint256, Json::Value>
 parseDID(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     auto const account = LedgerEntryHelpers::parse<AccountID>(params);
     if (!account)
@@ -376,7 +376,7 @@ static Expected<uint256, Json::Value>
 parseDirectoryNode(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -432,7 +432,7 @@ static Expected<uint256, Json::Value>
 parseEscrow(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -458,7 +458,7 @@ parseFixed(
     Keylet const& keylet,
     Json::Value const& params,
     Json::StaticString const& fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isBool())
     {
@@ -477,7 +477,7 @@ static Expected<uint256, Json::Value>
 parseLedgerHashes(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    unsigned const apiVersion)
 {
     if (params.isUInt() || params.isInt())
     {
@@ -497,7 +497,7 @@ static Expected<uint256, Json::Value>
 parseLoanBroker(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -520,7 +520,7 @@ static Expected<uint256, Json::Value>
 parseLoan(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -543,7 +543,7 @@ static Expected<uint256, Json::Value>
 parseMPToken(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -567,7 +567,7 @@ static Expected<uint256, Json::Value>
 parseMPTokenIssuance(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     auto const mptIssuanceID = LedgerEntryHelpers::parse<uint192>(params);
     if (!mptIssuanceID)
@@ -581,7 +581,7 @@ static Expected<uint256, Json::Value>
 parseNFTokenOffer(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     return parseObjectID(params, fieldName, "hex string");
 }
@@ -590,7 +590,7 @@ static Expected<uint256, Json::Value>
 parseNFTokenPage(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     return parseObjectID(params, fieldName, "hex string");
 }
@@ -601,7 +601,7 @@ static Expected<uint256, Json::Value>
 parseOffer(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -625,7 +625,7 @@ static Expected<uint256, Json::Value>
 parseOracle(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -649,7 +649,7 @@ static Expected<uint256, Json::Value>
 parsePayChannel(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     return parseObjectID(params, fieldName, "hex string");
 }
@@ -658,7 +658,7 @@ static Expected<uint256, Json::Value>
 parsePermissionedDomain(
     Json::Value const& pd,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (pd.isString())
     {
@@ -688,7 +688,7 @@ static Expected<uint256, Json::Value>
 parseRippleState(
     Json::Value const& jvRippleState,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     Currency uCurrency;
 
@@ -741,7 +741,7 @@ static Expected<uint256, Json::Value>
 parseSignerList(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     return parseObjectID(params, fieldName, "hex string");
 }
@@ -750,7 +750,7 @@ static Expected<uint256, Json::Value>
 parseTicket(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -774,7 +774,7 @@ static Expected<uint256, Json::Value>
 parseVault(
     Json::Value const& params,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
@@ -798,7 +798,7 @@ static Expected<uint256, Json::Value>
 parseXChainOwnedClaimID(
     Json::Value const& claim_id,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!claim_id.isObject())
     {
@@ -824,7 +824,7 @@ static Expected<uint256, Json::Value>
 parseXChainOwnedCreateAccountClaimID(
     Json::Value const& claim_id,
     Json::StaticString const fieldName,
-    unsigned apiVersion)
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!claim_id.isObject())
     {
