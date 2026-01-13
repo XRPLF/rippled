@@ -223,7 +223,7 @@ saveValidatedLedger(
         aLedger = app.getAcceptedLedgerCache().fetch(ledger->header().hash);
         if (!aLedger)
         {
-            aLedger = std::make_shared<AcceptedLedger>(ledger, app);
+            aLedger = std::make_shared<AcceptedLedger>(ledger);
             app.getAcceptedLedgerCache().canonicalize_replace_client(
                 ledger->header().hash, aLedger);
         }

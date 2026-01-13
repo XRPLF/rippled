@@ -154,6 +154,7 @@ target_link_libraries(xrpl.libxrpl.ledger PUBLIC
   xrpl.libxrpl.json
   xrpl.libxrpl.protocol
   xrpl.libxrpl.rdb
+  xrpl.libxrpl.server
   xrpl.libxrpl.conditions
 )
 

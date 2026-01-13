@@ -267,6 +267,18 @@ ServiceRegistryImpl::logs()
     return app_.logs();
 }
 
+std::optional<uint256> const&
+ServiceRegistryImpl::trapTxID() const
+{
+    return app_.trapTxID();
+}
+
+DatabaseCon&
+ServiceRegistryImpl::getWalletDB()
+{
+    return app_.getWalletDB();
+}
+
 Application&
 ServiceRegistryImpl::app()
 {

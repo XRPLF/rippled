@@ -181,7 +181,12 @@ public:
         Section const& vetoed)
     {
         return make_AmendmentTable(
-            app, majorityTime, supported, enabled, vetoed, journal_);
+            app.getServiceRegistry(),
+            majorityTime,
+            supported,
+            enabled,
+            vetoed,
+            journal_);
     }
 
     std::unique_ptr<AmendmentTable>

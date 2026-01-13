@@ -10,6 +10,7 @@
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/TxSearched.h>
 #include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/protocol/LedgerHeader.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/variant.hpp>

@@ -1,15 +1,15 @@
-#ifndef XRPL_APP_LEDGER_ACCEPTEDLEDGERTX_H_INCLUDED
-#define XRPL_APP_LEDGER_ACCEPTEDLEDGERTX_H_INCLUDED
+#ifndef XRPL_LEDGER_ACCEPTEDLEDGERTX_H_INCLUDED
+#define XRPL_LEDGER_ACCEPTEDLEDGERTX_H_INCLUDED
 
-#include <xrpld/app/ledger/Ledger.h>
-
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TxMeta.h>
 
 #include <boost/container/flat_set.hpp>
 
 namespace xrpl {
-
-class Logs;
 
 /**
     A transaction that is in a closed ledger.

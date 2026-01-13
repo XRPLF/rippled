@@ -1,7 +1,7 @@
-#include <xrpld/app/ledger/AcceptedLedgerTx.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/ledger/AcceptedLedgerTx.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 

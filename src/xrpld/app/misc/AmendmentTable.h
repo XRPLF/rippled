@@ -4,6 +4,7 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STValidation.h>
@@ -170,7 +171,7 @@ public:
 
 std::unique_ptr<AmendmentTable>
 make_AmendmentTable(
-    Application& app,
+    ServiceRegistry& registry,
     std::chrono::seconds majorityTime,
     std::vector<AmendmentTable::FeatureInfo> const& supported,
     Section const& enabled,
