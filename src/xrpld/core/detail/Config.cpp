@@ -4,6 +4,7 @@
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/YamlConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_reader.h>
@@ -15,6 +16,8 @@
 #include <boost/format.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>
+
+#include <yaml-cpp/yaml.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -453,7 +456,11 @@ Config::load()
         return;
     }
 
-    loadFromString(fileContents);
+    // Detect format based on file extension
+    if (isYamlFile(CONFIG_FILE))
+        loadFromYamlString(fileContents);
+    else
+        loadFromString(fileContents);
     checkZeroPorts(*this);
 }
 
@@ -461,7 +468,24 @@ void
 Config::loadFromString(std::string const& fileContents)
 {
     IniFileSections secConfig = parseIniFile(fileContents, true);
+    loadFromIniFileSections(secConfig);
+}
 
+void
+Config::loadFromYamlString(std::string const& fileContents)
+{
+    auto const yamlNode = parseYamlString(fileContents, j_);
+    if (!yamlNode)
+    {
+        Throw<std::runtime_error>("Failed to parse YAML configuration");
+    }
+    IniFileSections secConfig = yamlToIniFileSections(*yamlNode, j_);
+    loadFromIniFileSections(secConfig);
+}
+
+void
+Config::loadFromIniFileSections(IniFileSections& secConfig)
+{
     build(secConfig);
 
     if (auto s = getIniFileSection(secConfig, SECTION_IPS))
@@ -938,33 +962,49 @@ Config::loadFromString(std::string const& fileContents)
                     std::to_string(ec.value()) + ": " + ec.message());
             }
 
-            auto iniFile = parseIniFile(data, true);
+            // Parse as YAML or INI depending on file extension
+            IniFileSections valFile;
+            if (isYamlFile(validatorsFile))
+            {
+                auto const yamlNode = parseYamlString(data, j_);
+                if (!yamlNode)
+                {
+                    Throw<std::runtime_error>(
+                        "Failed to parse YAML validators file: " +
+                        validatorsFile.string());
+                }
+                valFile = yamlToIniFileSections(*yamlNode, j_);
+            }
+            else
+            {
+                valFile = parseIniFile(data, true);
+            }
 
-            auto entries = getIniFileSection(iniFile, SECTION_VALIDATORS);
+            auto entries = getIniFileSection(valFile, SECTION_VALIDATORS);
 
             if (entries)
                 section(SECTION_VALIDATORS).append(*entries);
 
             auto valKeyEntries =
-                getIniFileSection(iniFile, SECTION_VALIDATOR_KEYS);
+                getIniFileSection(valFile, SECTION_VALIDATOR_KEYS);
 
             if (valKeyEntries)
                 section(SECTION_VALIDATOR_KEYS).append(*valKeyEntries);
 
             auto valSiteEntries =
-                getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_SITES);
+                getIniFileSection(valFile, SECTION_VALIDATOR_LIST_SITES);
 
             if (valSiteEntries)
                 section(SECTION_VALIDATOR_LIST_SITES).append(*valSiteEntries);
 
             auto valListKeys =
-                getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_KEYS);
+                getIniFileSection(valFile, SECTION_VALIDATOR_LIST_KEYS);
 
             if (valListKeys)
                 section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);
 
             auto valListThreshold =
-                getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_THRESHOLD);
+                getIniFileSection(valFile, SECTION_VALIDATOR_LIST_THRESHOLD);
 
             if (valListThreshold)
                 section(SECTION_VALIDATOR_LIST_THRESHOLD)
