@@ -9,6 +9,8 @@
 
 namespace xrpl {
 
+namespace detail {
+
 class Number2 : public Number
 {
 protected:
@@ -158,10 +160,12 @@ struct SetRound
     }
 };
 
+}  // namespace detail
+
 std::string
 floatToString(Slice const& data)
 {
-    Number2 const num(data);
+    detail::Number2 const num(data);
     if (!num)
     {
         std::string hex;
@@ -180,11 +184,11 @@ floatFromIntImpl(int64_t x, int32_t mode)
 {
     try
     {
-        SetRound rm(mode);
+        detail::SetRound rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        Number2 num(x);
+        detail::Number2 num(x);
         return num.toBytes();
     }
     // LCOV_EXCL_START
@@ -200,11 +204,11 @@ floatFromUintImpl(uint64_t x, int32_t mode)
 {
     try
     {
-        SetRound rm(mode);
+        detail::SetRound rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        Number2 num(x);
+        detail::Number2 num(x);
         return num.toBytes();
     }
     // LCOV_EXCL_START
@@ -220,10 +224,10 @@ floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode)
 {
     try
     {
-        SetRound rm(mode);
+        detail::SetRound rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 num(mantissa, exponent);
+        detail::Number2 num(mantissa, exponent);
         return num.toBytes();
     }
     catch (...)
@@ -237,10 +241,10 @@ floatCompareImpl(Slice const& x, Slice const& y)
 {
     try
     {
-        Number2 xx(x);
+        detail::Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 yy(y);
+        detail::Number2 yy(y);
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         return xx < yy ? 2 : (xx == yy ? 0 : 1);
@@ -258,17 +262,17 @@ floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
-        SetRound rm(mode);
+        detail::SetRound rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        Number2 xx(x);
+        detail::Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 yy(y);
+        detail::Number2 yy(y);
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 res = xx + yy;
+        detail::Number2 res = xx + yy;
 
         return res.toBytes();
     }
@@ -285,16 +289,16 @@ floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
-        SetRound rm(mode);
+        detail::SetRound rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 xx(x);
+        detail::Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 yy(y);
+        detail::Number2 yy(y);
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 res = xx - yy;
+        detail::Number2 res = xx - yy;
 
         return res.toBytes();
     }
@@ -311,16 +315,16 @@ floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
-        SetRound rm(mode);
+        detail::SetRound rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 xx(x);
+        detail::Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 yy(y);
+        detail::Number2 yy(y);
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 res = xx * yy;
+        detail::Number2 res = xx * yy;
 
         return res.toBytes();
     }
@@ -337,16 +341,16 @@ floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
-        SetRound rm(mode);
+        detail::SetRound rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 xx(x);
+        detail::Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 yy(y);
+        detail::Number2 yy(y);
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 res = xx / yy;
+        detail::Number2 res = xx / yy;
 
         return res.toBytes();
     }
@@ -364,15 +368,15 @@ floatRootImpl(Slice const& x, int32_t n, int32_t mode)
         if (n < 1)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        SetRound rm(mode);
+        detail::SetRound rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        Number2 xx(x);
+        detail::Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        Number2 res(root(xx, n));
+        detail::Number2 res(root(xx, n));
 
         return res.toBytes();
     }
@@ -392,17 +396,17 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
         if ((n < 0) || (n > IOUAmount::maxExponent))
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        SetRound rm(mode);
+        detail::SetRound rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        Number2 xx(x);
+        detail::Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         if (xx == Number() && !n)
             return Unexpected(HostFunctionError::INVALID_PARAMS);
 
-        Number2 res(power(xx, n, 1));
+        detail::Number2 res(power(xx, n, 1));
 
         return res.toBytes();
     }
@@ -419,15 +423,15 @@ floatLogImpl(Slice const& x, int32_t mode)
 {
     try
     {
-        SetRound rm(mode);
+        detail::SetRound rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        Number2 xx(x);
+        detail::Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        Number2 res(lg(xx));
+        detail::Number2 res(lg(xx));
 
         return res.toBytes();
     }

@@ -9,6 +9,8 @@
 
 namespace xrpl {
 
+namespace detail {
+
 static Expected<Bytes, HostFunctionError>
 getAnyFieldData(STBase const* obj)
 {
@@ -109,7 +111,7 @@ locateField(STObject const& obj, Slice const& locator)
 
         auto const& fname(*it->second);
         field = obj.peekAtPField(fname);
-        if (noField(field))
+        if (detail::noField(field))
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
     }
 
@@ -140,12 +142,14 @@ locateField(STObject const& obj, Slice const& locator)
             return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
         }
 
-        if (noField(field))
+        if (detail::noField(field))
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
     }
 
     return field;
 }
+
+}  // namespace detail
 
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
@@ -179,7 +183,7 @@ WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getTxField(SField const& fname)
 {
-    return getAnyFieldData(ctx.tx.peekAtPField(fname));
+    return detail::getAnyFieldData(ctx.tx.peekAtPField(fname));
 }
 
 Expected<Bytes, HostFunctionError>
@@ -188,7 +192,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjField(SField const& fname)
     auto const sle = getCurrentLedgerObj();
     if (!sle.has_value())
         return Unexpected(sle.error());
-    return getAnyFieldData(sle.value()->peekAtPField(fname));
+    return detail::getAnyFieldData(sle.value()->peekAtPField(fname));
 }
 
 Expected<Bytes, HostFunctionError>
@@ -197,7 +201,8 @@ WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
     if (!normalizedIdx.has_value())
         return Unexpected(normalizedIdx.error());
-    return getAnyFieldData(cache[normalizedIdx.value()]->peekAtPField(fname));
+    return detail::getAnyFieldData(
+        cache[normalizedIdx.value()]->peekAtPField(fname));
 }
 
 // Subsection: nested getters
@@ -205,11 +210,11 @@ WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getTxNestedField(Slice const& locator)
 {
-    auto const r = locateField(ctx.tx, locator);
+    auto const r = detail::locateField(ctx.tx, locator);
     if (!r)
         return Unexpected(r.error());
 
-    return getAnyFieldData(r.value());
+    return detail::getAnyFieldData(r.value());
 }
 
 Expected<Bytes, HostFunctionError>
@@ -219,11 +224,11 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
     if (!sle.has_value())
         return Unexpected(sle.error());
 
-    auto const r = locateField(*sle.value(), locator);
+    auto const r = detail::locateField(*sle.value(), locator);
     if (!r)
         return Unexpected(r.error());
 
-    return getAnyFieldData(r.value());
+    return detail::getAnyFieldData(r.value());
 }
 
 Expected<Bytes, HostFunctionError>
@@ -235,11 +240,11 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(
     if (!normalizedIdx.has_value())
         return Unexpected(normalizedIdx.error());
 
-    auto const r = locateField(*cache[normalizedIdx.value()], locator);
+    auto const r = detail::locateField(*cache[normalizedIdx.value()], locator);
     if (!r)
         return Unexpected(r.error());
 
-    return getAnyFieldData(r.value());
+    return detail::getAnyFieldData(r.value());
 }
 
 // Subsection: array length getters
@@ -251,7 +256,7 @@ WasmHostFunctionsImpl::getTxArrayLen(SField const& fname)
         return Unexpected(HostFunctionError::NO_ARRAY);
 
     auto const* field = ctx.tx.peekAtPField(fname);
-    if (noField(field))
+    if (detail::noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     if (field->getSType() != STI_ARRAY)
@@ -272,7 +277,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
         return Unexpected(sle.error());
 
     auto const* field = sle.value()->peekAtPField(fname);
-    if (noField(field))
+    if (detail::noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     if (field->getSType() != STI_ARRAY)
@@ -295,7 +300,7 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
         return Unexpected(normalizedIdx.error());
 
     auto const* field = cache[normalizedIdx.value()]->peekAtPField(fname);
-    if (noField(field))
+    if (detail::noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     if (field->getSType() != STI_ARRAY)
@@ -311,7 +316,7 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
 {
-    auto const r = locateField(ctx.tx, locator);
+    auto const r = detail::locateField(ctx.tx, locator);
     if (!r)
         return Unexpected(r.error());
 
@@ -329,7 +334,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
     auto const sle = getCurrentLedgerObj();
     if (!sle.has_value())
         return Unexpected(sle.error());
-    auto const r = locateField(*sle.value(), locator);
+    auto const r = detail::locateField(*sle.value(), locator);
     if (!r)
         return Unexpected(r.error());
 
@@ -350,7 +355,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
     if (!normalizedIdx.has_value())
         return Unexpected(normalizedIdx.error());
 
-    auto const r = locateField(*cache[normalizedIdx.value()], locator);
+    auto const r = detail::locateField(*cache[normalizedIdx.value()], locator);
     if (!r)
         return Unexpected(r.error());
 
