@@ -55,6 +55,10 @@ extern std::string const proposalBulkMemoryHex;
 extern std::string const proposalRefTypesHex;
 extern std::string const proposalTailCallHex;
 extern std::string const proposalExtendedConstHex;
+extern std::string const proposalMultiMemoryHex;
+extern std::string const proposalCustomPageSizesHex;
+extern std::string const proposalMemory64Hex;
+extern std::string const proposalWideArithmeticHex;
 
 extern std::string const trapDivideBy0Hex;
 extern std::string const trapIntOverflowHex;
@@ -65,4 +69,18 @@ extern std::string const trapFuncSigMismatchHex;
 extern std::string const wasiGetTimeHex;
 extern std::string const wasiPrintHex;
 
+extern std::string const badMagicNumberHex;
+extern std::string const badVersionNumberHex;
+extern std::string const lyingHeaderHex;
+extern std::string const neverEndingNumberHex;
+extern std::string const vectorLieHex;
+extern std::string const sectionOrderingHex;
+extern std::string const ghostPayloadHex;
+extern std::string const junkAfterSectionHex;
+extern std::string const invalidSectionIdHex;
+extern std::string const localVariableBombHex;
+
 extern std::string const infiniteLoopWasmHex;
+extern std::string const startLoopHex;
+
+extern std::string const badAllocHex;
