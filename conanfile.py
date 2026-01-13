@@ -35,7 +35,7 @@ class Xrpl(ConanFile):
         "openssl/3.5.4",
         "secp256k1/0.7.0",
         "soci/4.0.3",
-        "wasmi/0.42.1",
+        "wasmi/1.0.6",
         "zlib/1.3.1",
     ]
 
