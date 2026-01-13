@@ -179,6 +179,10 @@ public:
 
     FuncInfo
     getFunc(std::string_view funcName) const;
+
+    wasm_functype_t*
+    getFuncType(std::string_view funcName) const;
+
     wmem
     getMem() const;
 
