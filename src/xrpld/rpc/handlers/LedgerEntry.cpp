@@ -528,7 +528,7 @@ parseLoan(
     }
 
     auto const id = LedgerEntryHelpers::requiredUInt256(
-        params, jss::loan_broker_id, "malformedLoanBrokerID");
+        params, jss::loan_broker_id, "malformedBroker");
     if (!id)
         return Unexpected(id.error());
     auto const seq = LedgerEntryHelpers::requiredUInt32(

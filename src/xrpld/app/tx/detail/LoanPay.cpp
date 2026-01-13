@@ -152,9 +152,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     }
 
     auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
-    TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
     auto const paymentRemaining = loanSle->at(sfPaymentRemaining);
-    TenthBips32 const lateInterestRate{loanSle->at(sfLateInterestRate)};
 
     if (paymentRemaining == 0 || principalOutstanding == 0)
     {
@@ -211,13 +209,14 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     // Do not support "partial payments" - if the transaction says to pay X,
     // then the account must have X available, even if the loan payment takes
     // less.
-    if (auto const balance = accountSpendable(
+    if (auto const balance = accountHolds(
             ctx.view,
             account,
             asset,
             fhZERO_IF_FROZEN,
             ahZERO_IF_UNAUTHORIZED,
-            ctx.j);
+            ctx.j,
+            SpendableHandling::shFULL_BALANCE);
         balance < amount)
     {
         JLOG(ctx.j.warn()) << "Payment amount too large. Amount: "
@@ -262,11 +261,12 @@ LoanPay::doApply()
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
     // Send the broker fee to the owner if they have sufficient cover available,
-    // _and_ if the owner can receive funds. If not, so as not to block the
-    // payment, add it to the cover balance (send it to the broker pseudo
-    // account).
+    // _and_ if the owner can receive funds
+    // _and_ if the broker is authorized to hold funds. If not, so as not to
+    // block the payment, add it to the cover balance (send it to the broker
+    // pseudo account).
     //
-    // Normally freeze status is checked in preflight, but we do it here to
+    // Normally freeze status is checked in preclaim, but we do it here to
     // avoid duplicating the check. It'll claim a fee either way.
     bool const sendBrokerFeeToOwner = [&]() {
         // Round the minimum required cover up to be conservative. This ensures
@@ -278,7 +278,8 @@ LoanPay::doApply()
                    asset,
                    tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum),
                    loanScale) &&
-            !isDeepFrozen(view, brokerOwner, asset);
+            !isDeepFrozen(view, brokerOwner, asset) &&
+            !requireAuth(view, asset, brokerOwner, AuthType::StrongAuth);
     }();
 
     auto const brokerPayee =
@@ -305,7 +306,12 @@ LoanPay::doApply()
     // change will be discarded.
     if (loanSle->isFlag(lsfLoanImpaired))
     {
-        LoanManage::unimpairLoan(view, loanSle, vaultSle, j_);
+        if (auto const ret =
+                LoanManage::unimpairLoan(view, loanSle, vaultSle, asset, j_))
+        {
+            JLOG(j_.fatal()) << "Failed to unimpair loan before payment.";
+            return ret;  // LCOV_EXCL_LINE
+        }
     }
 
     LoanPaymentType const paymentType = [&tx]() {
@@ -377,7 +383,7 @@ LoanPay::doApply()
 
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the payment by rounding some of the values to that scale.
-    auto const vaultScale = assetsTotalProxy.value().exponent();
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     auto const totalPaidToVaultRaw =
         paymentParts->principalPaid + paymentParts->interestPaid;
@@ -421,35 +427,41 @@ LoanPay::doApply()
     // Vault object state changes
     view.update(vaultSle);
 
-    Number const assetsAvailableBefore = *assetsAvailableProxy;
-    Number const pseudoAccountBalanceBefore = accountHolds(
-        view,
-        vaultPseudoAccount,
-        asset,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
-        j_);
-
+#if !NDEBUG
     {
+        Number const assetsAvailableBefore = *assetsAvailableProxy;
+        Number const pseudoAccountBalanceBefore = accountHolds(
+            view,
+            vaultPseudoAccount,
+            asset,
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j_);
+
         XRPL_ASSERT_PARTS(
             assetsAvailableBefore == pseudoAccountBalanceBefore,
             "xrpl::LoanPay::doApply",
             "vault pseudo balance agrees before");
+    }
+#endif
 
-        assetsAvailableProxy += totalPaidToVaultRounded;
-        assetsTotalProxy += paymentParts->valueChange;
+    assetsAvailableProxy += totalPaidToVaultRounded;
+    assetsTotalProxy += paymentParts->valueChange;
 
-        XRPL_ASSERT_PARTS(
-            *assetsAvailableProxy <= *assetsTotalProxy,
-            "xrpl::LoanPay::doApply",
-            "assets available must not be greater than assets outstanding");
+    XRPL_ASSERT_PARTS(
+        *assetsAvailableProxy <= *assetsTotalProxy,
+        "xrpl::LoanPay::doApply",
+        "assets available must not be greater than assets outstanding");
 
-        if (*assetsAvailableProxy > *assetsTotalProxy)
-        {
-            // LCOV_EXCL_START
-            return tecINTERNAL;
-            // LCOV_EXCL_STOP
-        }
+    if (*assetsAvailableProxy > *assetsTotalProxy)
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.fatal()) << "Vault assets available must not be greater "
+                            "than assets outstanding. Available: "
+                         << *assetsAvailableProxy
+                         << ", Total: " << *assetsTotalProxy;
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     JLOG(j_.debug()) << "total paid to vault raw: " << totalPaidToVaultRaw
@@ -474,21 +486,34 @@ LoanPay::doApply()
     }
 
 #if !NDEBUG
-    auto const accountBalanceBefore = accountSpendable(
-        view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+    auto const accountBalanceBefore = accountHolds(
+        view,
+        account_,
+        asset,
+        fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
+        j_,
+        SpendableHandling::shFULL_BALANCE);
     auto const vaultBalanceBefore = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
-        : accountSpendable(
+        : accountHolds(
               view,
               vaultPseudoAccount,
               asset,
               fhIGNORE_FREEZE,
               ahIGNORE_AUTH,
-              j_);
+              j_,
+              SpendableHandling::shFULL_BALANCE);
     auto const brokerBalanceBefore = account_ == brokerPayee
         ? STAmount{asset, 0}
-        : accountSpendable(
-              view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+        : accountHolds(
+              view,
+              brokerPayee,
+              asset,
+              fhIGNORE_FREEZE,
+              ahIGNORE_AUTH,
+              j_,
+              SpendableHandling::shFULL_BALANCE);
 #endif
 
     if (totalPaidToVaultRounded != beast::zero)
@@ -529,6 +554,7 @@ LoanPay::doApply()
             WaiveTransferFee::Yes))
         return ter;
 
+#if !NDEBUG
     Number const assetsAvailableAfter = *assetsAvailableProxy;
     Number const pseudoAccountBalanceAfter = accountHolds(
         view,
@@ -542,22 +568,34 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "vault pseudo balance agrees after");
 
-#if !NDEBUG
-    auto const accountBalanceAfter = accountSpendable(
-        view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+    auto const accountBalanceAfter = accountHolds(
+        view,
+        account_,
+        asset,
+        fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
+        j_,
+        SpendableHandling::shFULL_BALANCE);
     auto const vaultBalanceAfter = account_ == vaultPseudoAccount
         ? STAmount{asset, 0}
-        : accountSpendable(
+        : accountHolds(
               view,
               vaultPseudoAccount,
               asset,
               fhIGNORE_FREEZE,
               ahIGNORE_AUTH,
-              j_);
+              j_,
+              SpendableHandling::shFULL_BALANCE);
     auto const brokerBalanceAfter = account_ == brokerPayee
         ? STAmount{asset, 0}
-        : accountSpendable(
-              view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+        : accountHolds(
+              view,
+              brokerPayee,
+              asset,
+              fhIGNORE_FREEZE,
+              ahIGNORE_AUTH,
+              j_,
+              SpendableHandling::shFULL_BALANCE);
 
     XRPL_ASSERT_PARTS(
         accountBalanceBefore + vaultBalanceBefore + brokerBalanceBefore ==

@@ -81,7 +81,8 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
             vaultAsset,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahZERO_IF_UNAUTHORIZED,
-            ctx.j) < amount)
+            ctx.j,
+            SpendableHandling::shFULL_BALANCE) < amount)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
