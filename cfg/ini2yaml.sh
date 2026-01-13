@@ -100,7 +100,6 @@ format_value() {
 
             current_section="${BASH_REMATCH[1]}"
             in_section=true
-            echo ""
             echo "${current_section}:"
             continue
         fi
