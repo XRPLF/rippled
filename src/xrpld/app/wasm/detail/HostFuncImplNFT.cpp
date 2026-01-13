@@ -4,10 +4,6 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/digest.h>
 
-#ifdef _DEBUG
-// #define DEBUG_OUTPUT 1
-#endif
-
 namespace xrpl {
 
 // =========================================================
