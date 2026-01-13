@@ -8,6 +8,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -117,6 +118,7 @@ VaultWithdraw::doApply()
 
     auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
+
     MPTIssue const share{mptIssuanceID};
     STAmount sharesRedeemed = {share};
     STAmount assetsWithdrawn;
@@ -240,6 +242,8 @@ VaultWithdraw::doApply()
     }
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
+
+    associateAsset(*vault, vaultAsset);
 
     return doWithdraw(
         view(),
