@@ -196,14 +196,23 @@ public:
             BEAST_EXPECT(!result.has_value());
         }
 
-        // bad indentation - no crash
+        // bad indentation - verify no crash/exception
         {
             // This specific pattern may or may not fail depending on yaml-cpp.
             // The test verifies that we handle errors gracefully without
             // crashing, regardless of whether yaml-cpp accepts this input.
-            auto result = parseYamlString("a:\n b: 1\n   c: 2", j_);
-            // Either succeeds or fails gracefully - both are acceptable
-            BEAST_EXPECT(result.has_value() || !result.has_value());
+            try
+            {
+                auto result = parseYamlString("a:\n b: 1\n   c: 2", j_);
+                // If we get here, parsing succeeded or returned nullopt
+                // gracefully - both are acceptable
+                BEAST_EXPECT(true);
+            }
+            catch (...)
+            {
+                // Should not throw - parseYamlString should catch exceptions
+                BEAST_EXPECT(false);
+            }
         }
 
         // unclosed quote
@@ -612,12 +621,29 @@ validator_list_keys:
             BEAST_EXPECT(ini["equation"][0] == "a=b+c");
         }
 
-        // null section value
+        // null section value (explicit null)
         {
             auto node = YAML::Load("nullsection: null");
             auto ini = yamlToIniFileSections(node, j_);
             BEAST_EXPECT(ini.find("nullsection") != ini.end());
-            // null is converted to "null" string or empty
+            // null creates an empty section
+            BEAST_EXPECT(ini["nullsection"].empty());
+        }
+
+        // null section value (tilde syntax)
+        {
+            auto node = YAML::Load("nullsection: ~");
+            auto ini = yamlToIniFileSections(node, j_);
+            BEAST_EXPECT(ini.find("nullsection") != ini.end());
+            BEAST_EXPECT(ini["nullsection"].empty());
+        }
+
+        // null section value (empty after colon)
+        {
+            auto node = YAML::Load("emptysection:");
+            auto ini = yamlToIniFileSections(node, j_);
+            BEAST_EXPECT(ini.find("emptysection") != ini.end());
+            BEAST_EXPECT(ini["emptysection"].empty());
         }
     }
 

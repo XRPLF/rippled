@@ -43,11 +43,16 @@ parseYamlString(std::string const& input, beast::Journal j);
  * these mapping rules:
  *
  * 1. Top-level YAML keys correspond to INI section names.
- * 2. Scalar sections (single value) become a single line in the section.
- * 3. Mapping sections become key=value pairs in the section.
- * 4. Sequence sections become multiple lines in the section.
- * 5. The special "server.ports" nested structure is flattened into separate
+ * 2. Null sections become empty sections.
+ * 3. Scalar sections (single value) become a single line in the section.
+ * 4. Mapping sections become key=value pairs in the section.
+ * 5. Sequence sections become multiple lines in the section.
+ * 6. The special "server.ports" nested structure is flattened into separate
  *    port sections.
+ * 7. Sequences of maps with "host" and "port" keys are converted to
+ *    "host port" format for compatibility with the ips section format.
+ *    Example: [{host: "r.ripple.com", port: 51235}] becomes "r.ripple.com
+ * 51235"
  *
  * @param node The YAML node to convert.
  * @param j Journal for logging errors.

@@ -139,7 +139,11 @@ yamlToIniFileSections(YAML::Node const& node, beast::Journal j)
         auto const& sectionValue = section.second;
         std::vector<std::string> lines;
 
-        if (sectionValue.IsScalar())
+        if (sectionValue.IsNull())
+        {
+            // Null/empty section - lines remains empty
+        }
+        else if (sectionValue.IsScalar())
         {
             // Single value section (e.g., database_path: "/path")
             lines.push_back(sectionValue.as<std::string>());

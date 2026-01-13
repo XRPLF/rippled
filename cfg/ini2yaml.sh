@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # ini2yaml.sh - Convert xrpld INI configuration files to YAML format
 #

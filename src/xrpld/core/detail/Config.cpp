@@ -477,7 +477,9 @@ Config::loadFromYamlString(std::string const& fileContents)
     auto const yamlNode = parseYamlString(fileContents, j_);
     if (!yamlNode)
     {
-        Throw<std::runtime_error>("Failed to parse YAML configuration");
+        Throw<std::runtime_error>(
+            "Failed to parse YAML configuration. "
+            "Check the log for detailed error information.");
     }
     IniFileSections secConfig = yamlToIniFileSections(*yamlNode, j_);
     loadFromIniFileSections(secConfig);
