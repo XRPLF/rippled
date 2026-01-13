@@ -981,7 +981,7 @@ NetworkOPsImp::setHeartbeatTimer()
         heartbeatTimer_,
         mConsensus.parms().ledgerGRANULARITY,
         [this]() {
-            m_job_queue.addJob(jtNETOP_TIMER, "NetOPs.heartbeat", [this]() {
+            m_job_queue.addJob(jtNETOP_TIMER, "Net.heartbeat", [this]() {
                 processHeartbeatTimer();
             });
         },
@@ -997,7 +997,7 @@ NetworkOPsImp::setClusterTimer()
         clusterTimer_,
         10s,
         [this]() {
-            m_job_queue.addJob(jtNETOP_CLUSTER, "NetOPs.cluster", [this]() {
+            m_job_queue.addJob(jtNETOP_CLUSTER, "Net.cluster", [this]() {
                 processClusterTimer();
             });
         },
@@ -1370,9 +1370,8 @@ NetworkOPsImp::doTransactionSyncBatch(
             if (mTransactions.size())
             {
                 // More transactions need to be applied, but by another job.
-                if (m_job_queue.addJob(jtBATCH, "transactionBatch", [this]() {
-                        transactionBatch();
-                    }))
+                if (m_job_queue.addJob(
+                        jtBATCH, "txnBatch", [this]() { transactionBatch(); }))
                 {
                     mDispatchState = DispatchState::scheduled;
                 }

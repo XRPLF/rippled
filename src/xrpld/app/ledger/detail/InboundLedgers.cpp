@@ -192,7 +192,7 @@ public:
             // dispatch
             if (ledger->gotData(std::weak_ptr<Peer>(peer), packet))
                 app_.getJobQueue().addJob(
-                    jtLEDGER_DATA, "processLedgerData", [ledger]() {
+                    jtLEDGER_DATA, "processLData", [ledger]() {
                         ledger->runData();
                     });
 

@@ -1876,7 +1876,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue().addJob(
         isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
-        "recvPropose->checkPropose",
+        "checkPropose",
         [weak, isTrusted, m, proposal]() {
             if (auto peer = weak.lock())
                 peer->checkPropose(isTrusted, m, proposal);
