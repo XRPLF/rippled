@@ -615,7 +615,7 @@ public:
 };
 
 /**
- * @brief Invariants: Pseudo-accounts have valid and consisent properties
+ * @brief Invariants: Pseudo-accounts have valid and consistent properties
  *
  * Pseudo-accounts have certain properties, and some of those properties are
  * unique to pseudo-accounts. Check that all pseudo-accounts are following the
@@ -863,6 +863,7 @@ class ValidVault
         uint256 key = beast::zero;
         Asset asset = {};
         AccountID pseudoId = {};
+        AccountID owner = {};
         uint192 shareMPTID = beast::zero;
         Number assetsTotal = 0;
         Number assetsAvailable = 0;

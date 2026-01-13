@@ -4311,7 +4311,7 @@ public:
     }
 
     void
-    testReexecutePreflight()
+    testReExecutePreflight()
     {
         // The TxQ caches preflight results.  But there are situations where
         // that cache must become invalidated, like if amendments change.
@@ -5036,7 +5036,7 @@ public:
         testScaling();
         testInLedgerSeq();
         testInLedgerTicket();
-        testReexecutePreflight();
+        testReExecutePreflight();
         testQueueFullDropPenalty();
         testCancelQueuedOffers();
         testZeroReferenceFee();

@@ -940,7 +940,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"escrow specifies invalid amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
-                // mpissuance outstanding is negative
+                // mptissuance outstanding is negative
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
@@ -958,7 +958,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"escrow specifies invalid amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
-                // mpissuance locked is less than locked
+                // mptissuance locked is less than locked
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
@@ -976,7 +976,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"escrow specifies invalid amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
-                // mpissuance outstanding is less than locked
+                // mptissuance outstanding is less than locked
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
@@ -2125,7 +2125,7 @@ class Invariants_test : public beast::unit_test::suite
             for (auto const& mod : mods)
             {
                 doInvariantCheck(
-                    {{"changed an unchangable field"}},
+                    {{"changed an unchangeable field"}},
                     [&](Account const& A1, Account const&, ApplyContext& ac) {
                         auto sle = ac.view().peek(loanBrokerKeylet);
                         if (!sle)
@@ -2155,7 +2155,7 @@ class Invariants_test : public beast::unit_test::suite
             for (auto const& mod : mods)
             {
                 doInvariantCheck(
-                    {{"changed an unchangable field"}},
+                    {{"changed an unchangeable field"}},
                     [&](Account const& A1, Account const&, ApplyContext& ac) {
                         auto sle = ac.view().peek(keylet::account(A1.id()));
                         if (!sle)
@@ -3442,7 +3442,7 @@ class Invariants_test : public beast::unit_test::suite
                 sleShares->at(sfSequence) = sequence;
 
                 // sleVault->at(sfAccount) = pseudoId;
-                // Setting wrong pseudo acocunt ID
+                // Setting wrong pseudo account ID
                 sleVault->at(sfAccount) = A2.id();
                 sleVault->at(sfFlags) = 0;
                 sleVault->at(sfSequence) = sequence;
@@ -3485,7 +3485,7 @@ class Invariants_test : public beast::unit_test::suite
                 sleShares->setFieldU64(sfOwnerNode, *sharesPage);
 
                 sleShares->at(sfFlags) = 0;
-                // Setting wrong pseudo acocunt ID
+                // Setting wrong pseudo account ID
                 sleShares->at(sfIssuer) = AccountID(uint160(42));
                 sleShares->at(sfOutstandingAmount) = 0;
                 sleShares->at(sfSequence) = sequence;

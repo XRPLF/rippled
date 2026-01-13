@@ -206,7 +206,7 @@ if(xrpld)
   )
   exclude_if_included(xrpld)
   # define a macro for tests that might need to
-  # be exluded or run differently in CI environment
+  # be excluded or run differently in CI environment
   if(is_ci)
     target_compile_definitions(xrpld PRIVATE XRPL_RUNNING_IN_CI)
   endif ()

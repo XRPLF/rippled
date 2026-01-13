@@ -204,8 +204,14 @@ Transactor::preflight2(PreflightContext const& ctx)
         // regardless of success or failure
         return *ret;
 
+    // It should be impossible for the InnerBatchTxn flag to be set without
+    // featureBatch being enabled
+    XRPL_ASSERT_PARTS(
+        !ctx.tx.isFlag(tfInnerBatchTxn) || ctx.rules.enabled(featureBatch),
+        "xrpl::Transactor::preflight2",
+        "InnerBatch flag only set if feature enabled");
     // Skip signature check on batch inner transactions
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch))
         return tesSUCCESS;
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
@@ -1133,7 +1139,7 @@ Transactor::operator()()
     // raii classes for the current ledger rules.
     // fixUniversalNumber predate the rulesGuard and should be replaced.
     NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
-    CurrentTransactionRulesGuard currentTransctionRulesGuard(view().rules());
+    CurrentTransactionRulesGuard currentTransactionRulesGuard(view().rules());
 
 #ifdef DEBUG
     {
