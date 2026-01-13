@@ -1,13 +1,13 @@
 #include <test/jtx/Env.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STValidation.h>

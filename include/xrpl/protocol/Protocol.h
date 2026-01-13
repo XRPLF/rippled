@@ -255,6 +255,14 @@ std::uint8_t constexpr maxAssetCheckDepth = 5;
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
 
+std::uint32_t constexpr FLAG_LEDGER_INTERVAL = 256;
+/** Returns true if the given ledgerIndex is a voting ledgerIndex */
+bool
+isVotingLedger(LedgerIndex seq);
+/** Returns true if the given ledgerIndex is a flag ledgerIndex */
+bool
+isFlagLedger(LedgerIndex seq);
+
 /** A transaction identifier.
     The value is computed as the hash of the
     canonicalized, serialized transaction object.

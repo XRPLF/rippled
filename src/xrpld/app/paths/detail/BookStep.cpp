@@ -1,9 +1,5 @@
-#include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/paths/AMMLiquidity.h>
 #include <xrpld/app/paths/AMMOffer.h>
-#include <xrpld/app/paths/detail/FlatSets.h>
-#include <xrpld/app/paths/detail/Steps.h>
-#include <xrpld/app/tx/detail/OfferStream.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
@@ -14,6 +10,10 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/OfferStream.h>
+#include <xrpl/tx/paths/detail/FlatSets.h>
+#include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/tx/transactors/AMM/AMMUtils.h>
 
 #include <boost/container/flat_set.hpp>
 

@@ -1,14 +1,13 @@
 #ifndef XRPL_APP_TX_AMMLIQUIDITY_H_INCLUDED
 #define XRPL_APP_TX_AMMLIQUIDITY_H_INCLUDED
 
-#include <xrpld/app/misc/AMMHelpers.h>
-#include <xrpld/app/misc/AMMUtils.h>
-#include <xrpld/app/paths/AMMContext.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/tx/transactors/AMM/AMMContext.h>
+#include <xrpl/tx/transactors/AMM/AMMHelpers.h>
+#include <xrpl/tx/transactors/AMM/AMMUtils.h>
 
 namespace xrpl {
 

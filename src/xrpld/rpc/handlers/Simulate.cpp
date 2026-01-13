@@ -2,7 +2,6 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
@@ -15,6 +14,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 

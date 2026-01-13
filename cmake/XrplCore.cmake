@@ -154,8 +154,14 @@ target_link_libraries(xrpl.libxrpl.ledger PUBLIC
   xrpl.libxrpl.json
   xrpl.libxrpl.protocol
   xrpl.libxrpl.rdb
+  xrpl.libxrpl.shamap
   xrpl.libxrpl.server
   xrpl.libxrpl.conditions
+)
+
+add_module(xrpl tx)
+target_link_libraries(xrpl.libxrpl.tx PUBLIC
+  xrpl.libxrpl.ledger
 )
 
 add_library(xrpl.libxrpl)
@@ -183,6 +189,7 @@ target_link_modules(xrpl PUBLIC
   server
   conditions
   ledger
+  tx
 )
 
 # All headers in libxrpl are in modules.
