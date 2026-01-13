@@ -590,6 +590,24 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             }
         }
 
+        {
+            // unaligned locator
+            std::vector<uint8_t> locatorVec(sizeof(int32_t) + 1);
+            memcpy(
+                locatorVec.data() + 1, &sfAccount.fieldCode, sizeof(int32_t));
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data() + 1),
+                sizeof(int32_t));
+
+            auto const account = hfs.getTxNestedField(locator);
+            if (BEAST_EXPECTS(
+                    account.has_value(),
+                    std::to_string(static_cast<int>(account.error()))))
+            {
+                BEAST_EXPECT(std::ranges::equal(*account, env.master.id()));
+            }
+        }
+
         auto expectError = [&](std::vector<int32_t> const& locatorVec,
                                HostFunctionError expectedError) {
             Slice locator(
