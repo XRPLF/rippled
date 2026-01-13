@@ -19,48 +19,50 @@ public:
     void
     testIsYamlFile()
     {
-        testcase("yaml extension");
+        testcase("isYamlFile");
+        // yaml extension
         BEAST_EXPECT(isYamlFile("config.yaml"));
 
-        testcase("yml extension");
+        // yml extension
         BEAST_EXPECT(isYamlFile("config.yml"));
 
-        testcase("uppercase YAML");
+        // uppercase YAML
         BEAST_EXPECT(isYamlFile("config.YAML"));
 
-        testcase("uppercase YML");
+        // uppercase YML
         BEAST_EXPECT(isYamlFile("config.YML"));
 
-        testcase("mixed case");
+        // mixed case
         BEAST_EXPECT(isYamlFile("config.YaMl"));
 
-        testcase("cfg extension");
+        // cfg extension
         BEAST_EXPECT(!isYamlFile("config.cfg"));
 
-        testcase("txt extension");
+        // txt extension
         BEAST_EXPECT(!isYamlFile("config.txt"));
 
-        testcase("no extension");
+        // no extension
         BEAST_EXPECT(!isYamlFile("config"));
 
-        testcase("yaml in middle");
+        // yaml in middle
         BEAST_EXPECT(!isYamlFile("config.yaml.bak"));
 
-        testcase("empty path");
+        // empty path
         BEAST_EXPECT(!isYamlFile(""));
     }
 
     void
     testParseYamlString()
     {
-        testcase("empty string");
+        testcase("parseYamlString");
+        // empty string
         {
             auto result = parseYamlString("", j_);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT(result->IsNull());
         }
 
-        testcase("simple scalar");
+        // simple scalar
         {
             auto result = parseYamlString("hello", j_);
             BEAST_EXPECT(result.has_value());
@@ -68,7 +70,7 @@ public:
             BEAST_EXPECT(result->as<std::string>() == "hello");
         }
 
-        testcase("simple mapping");
+        // simple mapping
         {
             auto result = parseYamlString("key: value", j_);
             BEAST_EXPECT(result.has_value());
@@ -76,7 +78,7 @@ public:
             BEAST_EXPECT((*result)["key"].as<std::string>() == "value");
         }
 
-        testcase("nested mapping");
+        // nested mapping
         {
             auto result = parseYamlString("parent:\n  child: value", j_);
             BEAST_EXPECT(result.has_value());
@@ -85,7 +87,7 @@ public:
                 (*result)["parent"]["child"].as<std::string>() == "value");
         }
 
-        testcase("simple sequence");
+        // simple sequence
         {
             auto result = parseYamlString("- one\n- two\n- three", j_);
             BEAST_EXPECT(result.has_value());
@@ -96,7 +98,7 @@ public:
             BEAST_EXPECT((*result)[2].as<std::string>() == "three");
         }
 
-        testcase("mapping with sequence");
+        // mapping with sequence
         {
             auto result = parseYamlString("items:\n  - a\n  - b", j_);
             BEAST_EXPECT(result.has_value());
@@ -104,56 +106,56 @@ public:
             BEAST_EXPECT((*result)["items"].size() == 2);
         }
 
-        testcase("quoted strings");
+        // quoted strings
         {
             auto result = parseYamlString("key: 'quoted value'", j_);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT((*result)["key"].as<std::string>() == "quoted value");
         }
 
-        testcase("double quoted");
+        // double quoted
         {
             auto result = parseYamlString("key: \"double quoted\"", j_);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT((*result)["key"].as<std::string>() == "double quoted");
         }
 
-        testcase("integer value");
+        // integer value
         {
             auto result = parseYamlString("port: 5005", j_);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT((*result)["port"].as<int>() == 5005);
         }
 
-        testcase("float value");
+        // float value
         {
             auto result = parseYamlString("ratio: 1.5", j_);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT((*result)["ratio"].as<double>() == 1.5);
         }
 
-        testcase("boolean true");
+        // boolean true
         {
             auto result = parseYamlString("enabled: true", j_);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT((*result)["enabled"].as<bool>() == true);
         }
 
-        testcase("boolean false");
+        // boolean false
         {
             auto result = parseYamlString("disabled: false", j_);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT((*result)["disabled"].as<bool>() == false);
         }
 
-        testcase("comments ignored");
+        // comments ignored
         {
             auto result = parseYamlString("# comment\nkey: value", j_);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT((*result)["key"].as<std::string>() == "value");
         }
 
-        testcase("inline JSON string");
+        // inline JSON string
         {
             auto result = parseYamlString("cmd: '{ \"x\": 1 }'", j_);
             BEAST_EXPECT(result.has_value());
@@ -164,7 +166,8 @@ public:
     void
     testParseYamlStringContinued()
     {
-        testcase("multiline literal");
+        testcase("parseYamlString 2");
+        // multiline literal
         {
             auto result = parseYamlString("text: |\n  line1\n  line2\n", j_);
             BEAST_EXPECT(result.has_value());
@@ -174,7 +177,7 @@ public:
             BEAST_EXPECT(text.find("line2") != std::string::npos);
         }
 
-        testcase("multiple sections");
+        // multiple sections
         {
             auto result = parseYamlString("a: 1\nb: 2\nc: 3", j_);
             BEAST_EXPECT(result.has_value());
@@ -186,13 +189,14 @@ public:
     void
     testParseYamlStringInvalid()
     {
-        testcase("invalid syntax");
+        testcase("parseYamlString invalid");
+        // invalid syntax
         {
             auto result = parseYamlString("key: [unclosed", j_);
             BEAST_EXPECT(!result.has_value());
         }
 
-        testcase("bad indentation - no crash");
+        // bad indentation - no crash
         {
             // This specific pattern may or may not fail depending on yaml-cpp.
             // The test verifies that we handle errors gracefully without
@@ -202,13 +206,13 @@ public:
             BEAST_EXPECT(result.has_value() || !result.has_value());
         }
 
-        testcase("unclosed quote");
+        // unclosed quote
         {
             auto result = parseYamlString("key: 'unclosed", j_);
             BEAST_EXPECT(!result.has_value());
         }
 
-        testcase("invalid characters - no crash");
+        // invalid characters - no crash
         {
             // yaml-cpp may handle @ differently across versions.
             // The test verifies graceful handling without crashing.
@@ -221,9 +225,10 @@ public:
     void
     testParseYamlFile()
     {
+        testcase("parseYamlFile");
         using namespace xrpl::detail;
 
-        testcase("valid file");
+        // valid file
         {
             FileDirGuard file(
                 *this, "yaml_test", "config.yaml", "key: value", true, true);
@@ -232,7 +237,7 @@ public:
             BEAST_EXPECT((*result)["key"].as<std::string>() == "value");
         }
 
-        testcase("empty file");
+        // empty file
         {
             FileDirGuard file(*this, "yaml_test", "empty.yaml", "", true, true);
             auto result = parseYamlFile(file.file(), j_);
@@ -240,7 +245,7 @@ public:
             BEAST_EXPECT(result->IsNull());
         }
 
-        testcase("complex file");
+        // complex file
         {
             std::string content = R"yaml(
 server:
@@ -263,13 +268,13 @@ validators:
             BEAST_EXPECT((*result)["validators"].IsSequence());
         }
 
-        testcase("non-existent file");
+        // non-existent file
         {
             auto result = parseYamlFile("/nonexistent/path/config.yaml", j_);
             BEAST_EXPECT(!result.has_value());
         }
 
-        testcase("invalid yaml file");
+        // invalid yaml file
         {
             FileDirGuard file(
                 *this, "yaml_test", "invalid.yaml", "key: [bad", true, true);
@@ -281,7 +286,8 @@ validators:
     void
     testYamlToIniBasic()
     {
-        testcase("scalar section");
+        testcase("yamlToIni basic");
+        // scalar section
         {
             auto node = YAML::Load("database_path: /var/db");
             auto ini = yamlToIniFileSections(node, j_);
@@ -290,7 +296,7 @@ validators:
             BEAST_EXPECT(ini["database_path"][0] == "/var/db");
         }
 
-        testcase("mapping section");
+        // mapping section
         {
             auto node = YAML::Load("node_db:\n  type: NuDB\n  path: /db");
             auto ini = yamlToIniFileSections(node, j_);
@@ -309,7 +315,7 @@ validators:
             BEAST_EXPECT(hasPath);
         }
 
-        testcase("sequence section");
+        // sequence section
         {
             auto node = YAML::Load("validators:\n  - key1\n  - key2");
             auto ini = yamlToIniFileSections(node, j_);
@@ -320,7 +326,7 @@ validators:
             BEAST_EXPECT(lines[1] == "key2");
         }
 
-        testcase("empty section");
+        // empty section
         {
             auto node = YAML::Load("empty:");
             auto ini = yamlToIniFileSections(node, j_);
@@ -328,7 +334,7 @@ validators:
             BEAST_EXPECT(ini["empty"].empty());
         }
 
-        testcase("multiple sections");
+        // multiple sections
         {
             auto node = YAML::Load("a: 1\nb: 2");
             auto ini = yamlToIniFileSections(node, j_);
@@ -338,7 +344,7 @@ validators:
             BEAST_EXPECT(ini["b"][0] == "2");
         }
 
-        testcase("numeric values");
+        // numeric values
         {
             auto node = YAML::Load("port: 5005");
             auto ini = yamlToIniFileSections(node, j_);
@@ -349,7 +355,8 @@ validators:
     void
     testYamlToIniServer()
     {
-        testcase("server with ports");
+        testcase("yamlToIni server section");
+        // server with ports
         {
             std::string yaml = R"yaml(
 server:
@@ -385,7 +392,7 @@ server:
             BEAST_EXPECT(ini.find("port_peer") != ini.end());
         }
 
-        testcase("single port");
+        // single port
         {
             std::string yaml = R"yaml(
 server:
@@ -402,7 +409,7 @@ server:
             BEAST_EXPECT(ini["server"].size() >= 1);
         }
 
-        testcase("port with all options");
+        // port with all options
         {
             std::string yaml = R"yaml(
 server:
@@ -437,7 +444,7 @@ server:
             BEAST_EXPECT(hasAdmin);
         }
 
-        testcase("server without ports key");
+        // server without ports key
         {
             // Server section as simple sequence (alternative format)
             std::string yaml = R"yaml(
@@ -459,7 +466,8 @@ server:
     void
     testYamlToIniSpecialCases()
     {
-        testcase("rpc_startup JSON");
+        testcase("yamlToIni special cases");
+        // rpc_startup JSON
         {
             std::string yaml =
                 "rpc_startup:\n  - '{ \"command\": \"log_level\", "
@@ -474,7 +482,7 @@ server:
                 "{ \"command\": \"log_level\", \"severity\": \"warning\" }");
         }
 
-        testcase("ips host port");
+        // ips host port
         {
             std::string yaml =
                 "ips:\n  - {host: r.ripple.com, port: 51235}\n  - {host: "
@@ -488,7 +496,7 @@ server:
             BEAST_EXPECT(ini["ips"][1] == "s.ripple.com 51235");
         }
 
-        testcase("validator keys");
+        // validator keys
         {
             std::string yaml = R"yaml(
 validator_list_keys:
@@ -505,7 +513,7 @@ validator_list_keys:
                 "4734");
         }
 
-        testcase("features list");
+        // features list
         {
             std::string yaml = "features:\n  - MultiSign\n  - Escrow";
             auto node = YAML::Load(yaml);
@@ -517,7 +525,7 @@ validator_list_keys:
             BEAST_EXPECT(ini["features"][1] == "Escrow");
         }
 
-        testcase("sntp servers");
+        // sntp servers
         {
             std::string yaml =
                 "sntp_servers:\n  - time.google.com\n  - time.apple.com";
@@ -528,7 +536,7 @@ validator_list_keys:
             BEAST_EXPECT(ini["sntp_servers"].size() == 2);
         }
 
-        testcase("sequence in mapping value");
+        // sequence in mapping value
         {
             // When a mapping has a sequence value, it should be comma-joined
             std::string yaml = "node_db:\n  protocol:\n    - http\n    - https";
@@ -549,21 +557,22 @@ validator_list_keys:
     void
     testYamlToIniEdgeCases()
     {
-        testcase("non-map root");
+        testcase("yamlToIni edge cases");
+        // non-map root
         {
             auto node = YAML::Load("- item1\n- item2");
             auto ini = yamlToIniFileSections(node, j_);
             BEAST_EXPECT(ini.empty());
         }
 
-        testcase("scalar root");
+        // scalar root
         {
             auto node = YAML::Load("just a string");
             auto ini = yamlToIniFileSections(node, j_);
             BEAST_EXPECT(ini.empty());
         }
 
-        testcase("special chars in value");
+        // special chars in value
         {
             auto node = YAML::Load("url: http://example.com:8080/path?q=1");
             auto ini = yamlToIniFileSections(node, j_);
@@ -571,7 +580,7 @@ validator_list_keys:
             BEAST_EXPECT(ini["url"][0] == "http://example.com:8080/path?q=1");
         }
 
-        testcase("empty string value");
+        // empty string value
         {
             auto node = YAML::Load("key: ''");
             auto ini = yamlToIniFileSections(node, j_);
@@ -579,7 +588,7 @@ validator_list_keys:
             BEAST_EXPECT(ini["key"][0].empty());
         }
 
-        testcase("whitespace value");
+        // whitespace value
         {
             auto node = YAML::Load("key: '   '");
             auto ini = yamlToIniFileSections(node, j_);
@@ -587,7 +596,7 @@ validator_list_keys:
             BEAST_EXPECT(ini["key"][0] == "   ");
         }
 
-        testcase("unicode values");
+        // unicode values
         {
             auto node = YAML::Load("name: 日本語");
             auto ini = yamlToIniFileSections(node, j_);
@@ -595,7 +604,7 @@ validator_list_keys:
             BEAST_EXPECT(ini["name"][0] == "日本語");
         }
 
-        testcase("value with equals sign");
+        // value with equals sign
         {
             auto node = YAML::Load("equation: a=b+c");
             auto ini = yamlToIniFileSections(node, j_);
@@ -603,7 +612,7 @@ validator_list_keys:
             BEAST_EXPECT(ini["equation"][0] == "a=b+c");
         }
 
-        testcase("null section value");
+        // null section value
         {
             auto node = YAML::Load("nullsection: null");
             auto ini = yamlToIniFileSections(node, j_);
@@ -615,9 +624,10 @@ validator_list_keys:
     void
     testYamlConfigIntegration()
     {
+        testcase("yaml config integration");
         using namespace xrpl::detail;
 
-        testcase("full config structure");
+        // full config structure
         {
             std::string yaml = R"yaml(
 server:
@@ -678,7 +688,7 @@ rpc_startup:
             BEAST_EXPECT(ini["ips"][0] == "r.ripple.com 51235");
         }
 
-        testcase("yaml ini equivalence");
+        // yaml ini equivalence
         {
             // Parse equivalent YAML and verify structure
             std::string yaml = R"yaml(
@@ -692,7 +702,7 @@ ledger_history: 256
             BEAST_EXPECT(ini["ledger_history"][0] == "256");
         }
 
-        testcase("validators yaml format");
+        // validators yaml format
         {
             std::string yaml = R"yaml(
 validator_list_sites:
