@@ -528,7 +528,7 @@ splitMessageParts(
             "xrpl::splitMessageParts : maximum message size");
 
         messages.emplace_back(
-            std::make_shared<Message>(smallMsg, protocol::mtVALIDATORLIST),
+            std::make_shared<Message>(smallMsg, protocol::mtVALIDATOR_LIST),
             sha512Half(smallMsg),
             1);
         return messages.back().numVLs;
@@ -555,7 +555,7 @@ splitMessageParts(
         {
             messages.emplace_back(
                 std::make_shared<Message>(
-                    *smallMsg, protocol::mtVALIDATORLISTCOLLECTION),
+                    *smallMsg, protocol::mtVALIDATOR_LIST_COLLECTION),
                 sha512Half(*smallMsg),
                 smallMsg->blobs_size());
             return messages.back().numVLs;
@@ -592,7 +592,7 @@ buildValidatorListMessage(
         "xrpl::buildValidatorListMessage(ValidatorBlobInfo) : maximum "
         "message size");
     messages.emplace_back(
-        std::make_shared<Message>(msg, protocol::mtVALIDATORLIST),
+        std::make_shared<Message>(msg, protocol::mtVALIDATOR_LIST),
         sha512Half(msg),
         1);
     return 1;
@@ -640,7 +640,8 @@ buildValidatorListMessage(
     else
     {
         messages.emplace_back(
-            std::make_shared<Message>(msg, protocol::mtVALIDATORLISTCOLLECTION),
+            std::make_shared<Message>(
+                msg, protocol::mtVALIDATOR_LIST_COLLECTION),
             sha512Half(msg),
             msg.blobs_size());
         return messages.back().numVLs;

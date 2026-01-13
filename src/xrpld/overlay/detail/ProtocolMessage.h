@@ -63,9 +63,9 @@ protocolMessageName(int type)
             return "status";
         case protocol::mtHAVE_SET:
             return "have_set";
-        case protocol::mtVALIDATORLIST:
+        case protocol::mtVALIDATOR_LIST:
             return "validator_list";
-        case protocol::mtVALIDATORLISTCOLLECTION:
+        case protocol::mtVALIDATOR_LIST_COLLECTION:
             return "validator_list_collection";
         case protocol::mtVALIDATION:
             return "validation";
@@ -411,11 +411,11 @@ invokeProtocolMessage(
             success = detail::invoke<protocol::TMValidation>(
                 *header, buffers, handler);
             break;
-        case protocol::mtVALIDATORLIST:
+        case protocol::mtVALIDATOR_LIST:
             success = detail::invoke<protocol::TMValidatorList>(
                 *header, buffers, handler);
             break;
-        case protocol::mtVALIDATORLISTCOLLECTION:
+        case protocol::mtVALIDATOR_LIST_COLLECTION:
             success = detail::invoke<protocol::TMValidatorListCollection>(
                 *header, buffers, handler);
             break;
