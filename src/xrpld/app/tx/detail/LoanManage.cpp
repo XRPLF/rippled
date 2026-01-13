@@ -2,6 +2,7 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace xrpl {
@@ -158,7 +159,7 @@ LoanManage::defaultLoan(
         auto const minimumCover =
             tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
         // Round the liquidation amount up, too
-        return roundToAsset(
+        auto const covered = roundToAsset(
             vaultAsset,
             /*
              * This formula is from the XLS-66 spec, section 3.2.3.2 (State
@@ -169,6 +170,9 @@ LoanManage::defaultLoan(
                 tenthBipsOfValue(minimumCover, coverRateLiquidation),
                 totalDefaultAmount),
             loanScale);
+        auto const coverAvailable = *brokerSle->at(sfCoverAvailable);
+
+        return std::min(covered, coverAvailable);
     }();
 
     auto const vaultDefaultAmount = totalDefaultAmount - defaultCovered;
@@ -223,11 +227,13 @@ LoanManage::defaultLoan(
         }
         if (*vaultAvailableProxy > *vaultTotalProxy)
         {
-            JLOG(j.warn()) << "Vault assets available must not be greater "
-                              "than assets outstanding. Available: "
-                           << *vaultAvailableProxy
-                           << ", Total: " << *vaultTotalProxy;
-            return tecLIMIT_EXCEEDED;
+            // LCOV_EXCL_START
+            JLOG(j.fatal())
+                << "Vault assets available must not be greater "
+                   "than assets outstanding. Available: "
+                << *vaultAvailableProxy << ", Total: " << *vaultTotalProxy;
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
 
         // The loss has been realized
@@ -338,7 +344,7 @@ LoanManage::impairLoan(
     return tesSUCCESS;
 }
 
-TER
+[[nodiscard]] TER
 LoanManage::unimpairLoan(
     ApplyView& view,
     SLE::ref loanSle,
@@ -372,7 +378,8 @@ LoanManage::unimpairLoan(
     loanSle->clearFlag(lsfLoanImpaired);
     auto const paymentInterval = loanSle->at(sfPaymentInterval);
     auto const normalPaymentDueDate =
-        std::max(loanSle->at(sfPreviousPaymentDate), loanSle->at(sfStartDate)) +
+        std::max(
+            loanSle->at(sfPreviousPaymentDueDate), loanSle->at(sfStartDate)) +
         paymentInterval;
     if (!hasExpired(view, normalPaymentDueDate))
     {
@@ -406,7 +413,7 @@ LoanManage::doApply()
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
+    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
@@ -414,23 +421,16 @@ LoanManage::doApply()
     // Valid flag combinations are checked in preflight. No flags is valid -
     // just a noop.
     if (tx.isFlag(tfLoanDefault))
-    {
-        if (auto const ter =
-                defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_))
-            return ter;
-    }
-    else if (tx.isFlag(tfLoanImpair))
-    {
-        if (auto const ter =
-                impairLoan(view, loanSle, vaultSle, vaultAsset, j_))
-            return ter;
-    }
-    else if (tx.isFlag(tfLoanUnimpair))
-    {
-        if (auto const ter =
-                unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_))
-            return ter;
-    }
+        return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
+    if (tx.isFlag(tfLoanImpair))
+        return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+    if (tx.isFlag(tfLoanUnimpair))
+        return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+    // Noop, as described above.
+
+    associateAsset(*loanSle, vaultAsset);
+    associateAsset(*brokerSle, vaultAsset);
+    associateAsset(*vaultSle, vaultAsset);
 
     return tesSUCCESS;
 }
