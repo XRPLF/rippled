@@ -104,7 +104,7 @@ class LendingHelpers_test : public beast::unit_test::suite
                 .name = "Multiple payments remaining",
                 .periodicRate = Number{5, -2},
                 .paymentsRemaining = 3,
-                .expectedPaymentFactor = Number{367208564631245, -15},
+                .expectedPaymentFactor = Number{3672085646312450436, -19},
             },  // from calc
             {
                 .name = "Zero payments remaining",
@@ -172,7 +172,7 @@ class LendingHelpers_test : public beast::unit_test::suite
                     loanPeriodicRate(TenthBips32(100'000), 30 * 24 * 60 * 60),
                 .paymentsRemaining = 3,
                 .expectedPeriodicPayment =
-                    Number{3895690663961231, -13},  // from calc
+                    Number{389569066396123265, -15},  // from calc
             },
         };
 
@@ -229,7 +229,8 @@ class LendingHelpers_test : public beast::unit_test::suite
             },
             {
                 .name = "Standard case",
-                .periodicPayment = Number{3895690663961231, -13},  // from calc
+                .periodicPayment =
+                    Number{389569066396123265, -15},  // from calc
                 .periodicRate =
                     loanPeriodicRate(TenthBips32(100'000), 30 * 24 * 60 * 60),
                 .paymentsRemaining = 3,
@@ -426,7 +427,7 @@ class LendingHelpers_test : public beast::unit_test::suite
                     NetClock::time_point{NetClock::duration{3'000}},
                 .nextPaymentDueDate = 2'000,
                 .expectedLateInterest =
-                    Number{3170979198376459, -17},  // from calc
+                    Number{317097919837645865, -19},  // from calc
             },
         };
 
@@ -519,7 +520,7 @@ class LendingHelpers_test : public beast::unit_test::suite
                 .prevPaymentDate = 2'000,
                 .paymentInterval = 30 * 24 * 60 * 60,
                 .expectedAccruedInterest =
-                    Number{1929012345679012, -17},  // from calc
+                    Number{1929012345679012346, -20},  // from calc
             },
         };
 
@@ -587,7 +588,7 @@ class LendingHelpers_test : public beast::unit_test::suite
                 .startDate = 1'000,
                 .closeInterestRate = TenthBips32{0},
                 .expectedFullPaymentInterest =
-                    Number{1929012345679012, -17},  // from calc
+                    Number{1929012345679012346, -20},  // from calc
             },
             {
                 .name = "Standard case",
@@ -600,7 +601,7 @@ class LendingHelpers_test : public beast::unit_test::suite
                 .startDate = 1'000,
                 .closeInterestRate = TenthBips32{10'000},
                 .expectedFullPaymentInterest =
-                    Number{1000192901234568, -13},  // from calc
+                    Number{1000192901234567901, -16},  // from calc
             },
         };
 

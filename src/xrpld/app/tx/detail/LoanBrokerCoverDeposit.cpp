@@ -2,6 +2,8 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
+#include <xrpl/protocol/STTakesAsset.h>
+
 namespace xrpl {
 
 bool
@@ -100,6 +102,12 @@ LoanBrokerCoverDeposit::doApply()
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
+    auto const vault = view().read(keylet::vault(broker->at(sfVaultID)));
+    if (!vault)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const vaultAsset = vault->at(sfAsset);
+
     auto const brokerPseudoID = broker->at(sfAccount);
 
     // Transfer assets from depositor to pseudo-account.
@@ -115,6 +123,8 @@ LoanBrokerCoverDeposit::doApply()
     // Increase the LoanBroker's CoverAvailable by Amount
     broker->at(sfCoverAvailable) += amount;
     view().update(broker);
+
+    associateAsset(*broker, vaultAsset);
 
     return tesSUCCESS;
 }

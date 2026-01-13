@@ -2,6 +2,8 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
+#include <xrpl/protocol/STTakesAsset.h>
+
 namespace xrpl {
 
 bool
@@ -184,6 +186,8 @@ LoanBrokerDelete::doApply()
         // one for the pseudo-account.
         adjustOwnerCount(view(), owner, -2, j_);
     }
+
+    associateAsset(*broker, vaultAsset);
 
     return tesSUCCESS;
 }

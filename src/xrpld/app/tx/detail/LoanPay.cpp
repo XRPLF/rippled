@@ -5,6 +5,7 @@
 
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
 
 #include <bit>
@@ -484,6 +485,16 @@ LoanPay::doApply()
         // it for future needs.
         coverAvailableProxy += totalPaidToBroker;
     }
+
+    associateAsset(*loanSle, asset);
+    associateAsset(*brokerSle, asset);
+    associateAsset(*vaultSle, asset);
+
+    // Duplicate some checks after rounding
+    XRPL_ASSERT_PARTS(
+        *assetsAvailableProxy <= *assetsTotalProxy,
+        "xrpl::LoanPay::doApply",
+        "assets available must not be greater than assets outstanding");
 
 #if !NDEBUG
     auto const accountBalanceBefore = accountHolds(
