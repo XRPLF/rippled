@@ -4,13 +4,13 @@
 
 #include <doctest/doctest.h>
 
-using namespace ripple;
+using namespace xrpl;
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
-namespace ripple::detail {
+namespace xrpl::detail {
 long
 parseVmRSSkB(std::string const& status);
-}  // namespace ripple::detail
+}  // namespace xrpl::detail
 #endif
 
 TEST_CASE("MallocTrimReport structure")
@@ -42,7 +42,7 @@ TEST_CASE("MallocTrimReport structure")
 #if defined(__GLIBC__) && BOOST_OS_LINUX
 TEST_CASE("parseVmRSSkB")
 {
-    using ripple::detail::parseVmRSSkB;
+    using xrpl::detail::parseVmRSSkB;
 
     // Test standard format
     {
@@ -54,7 +54,7 @@ TEST_CASE("parseVmRSSkB")
     // Test with multiple lines
     {
         std::string status =
-            "Name:   rippled\n"
+            "Name:   xrpld\n"
             "VmPeak:  1234567 kB\n"
             "VmSize:  1234567 kB\n"
             "VmRSS:      987654 kB\n"
@@ -96,7 +96,7 @@ TEST_CASE("parseVmRSSkB")
     // Test missing VmRSS
     {
         std::string status =
-            "Name:   rippled\n"
+            "Name:   xrpld\n"
             "VmPeak:  1234567 kB\n"
             "VmSize:  1234567 kB\n";
         long result = parseVmRSSkB(status);

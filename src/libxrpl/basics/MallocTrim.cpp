@@ -15,7 +15,7 @@ pid_t const cachedPid = ::getpid();
 }  // namespace
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -118,4 +118,4 @@ mallocTrim(
     return report;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

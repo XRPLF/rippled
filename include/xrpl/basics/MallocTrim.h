@@ -6,7 +6,9 @@
 #include <optional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
+
+// cSpell:ignore ptmalloc
 
 // -----------------------------------------------------------------------------
 // Allocator interaction note:
@@ -65,6 +67,6 @@ struct MallocTrimReport
 MallocTrimReport
 mallocTrim(std::optional<std::string> const& tag, beast::Journal journal);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif
