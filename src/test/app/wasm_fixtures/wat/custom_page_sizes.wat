@@ -1,6 +1,6 @@
 (module
   ;; Define a memory with 1 initial page.
-  ;; CRITICAL: We explicitly set the page size to 1 byte.
+  ;; CRITICAL: We explicitly set the page size to 1 kilobyte.
   ;; Standard Wasm implies (pagesize 65536).
   (memory 1 (pagesize 1024))
 
