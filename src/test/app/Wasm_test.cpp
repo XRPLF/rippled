@@ -703,7 +703,7 @@ struct Wasm_test : public beast::unit_test::suite
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
         TestHostFunctions hfs(env, 0);
 
-        auto const allowance = 189'508;
+        auto const allowance = 185'974;
         auto re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, allowance);
 
         if (BEAST_EXPECT(re.has_value()))
@@ -966,6 +966,33 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testBadAlign()
+    {
+        testcase("Wasm Bad Align");
+
+        // bad_align.c
+        auto wasmStr = boost::algorithm::unhex(badAlignHex);
+        Bytes wasm(wasmStr.begin(), wasmStr.end());
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        TestHostFunctions hf(env);
+        ImportVec imports = createWasmImport(hf);
+
+        {  // Calls float_from_uint with bad aligment.
+           // Can be checked through codecov
+            auto& engine = WasmEngine::instance();
+
+            auto re = engine.run(
+                wasm, "test", {}, imports, &hf, 1'000'000, env.journal);
+            BEAST_EXPECT(re && re->result == 0xbab88d46);
+        }
+
+        env.close();
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -995,6 +1022,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         testStartFunctionLoop();
         testBadAlloc();
+        testBadAlign();
 
         // perfTest();
     }

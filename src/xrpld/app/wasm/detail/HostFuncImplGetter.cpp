@@ -100,6 +100,16 @@ locateField(STObject const& obj, Slice const& locator)
 
     int32_t const* locPtr = reinterpret_cast<int32_t const*>(locator.data());
     int32_t const locSize = locator.size() / 4;
+    int32_t locBuf[maxWasmParamLength / sizeof(int32_t)];
+    int32_t const* locPtr = &locBuf[0];
+    int32_t const locSize = locator.size() / sizeof(int32_t);
+
+    uintptr_t p = reinterpret_cast<uintptr_t>(locator.data());
+    if (p & (alignof(int32_t) - 1))  // unaligned
+        memcpy(&locBuf[0], locator.data(), locator.size());
+    else
+        locPtr = reinterpret_cast<int32_t const*>(locator.data());
+
     STBase const* field = nullptr;
     auto const& knownSFields = SField::getKnownCodeToField();
 
@@ -108,17 +118,14 @@ locateField(STObject const& obj, Slice const& locator)
         auto const it = knownSFields.find(sfieldCode);
         if (it == knownSFields.end())
             return Unexpected(HostFunctionError::INVALID_FIELD);
-
         auto const& fname(*it->second);
         field = obj.peekAtPField(fname);
-        if (detail::noField(field))
+        if (noField(field))
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
     }
-
     for (int i = 1; i < locSize; ++i)
     {
         int32_t const sfieldCode = locPtr[i];
-
         if (STI_ARRAY == field->getSType())
         {
             auto const* arr = static_cast<STArray const*>(field);
@@ -129,11 +136,9 @@ locateField(STObject const& obj, Slice const& locator)
         else if (STI_OBJECT == field->getSType())
         {
             auto const* o = static_cast<STObject const*>(field);
-
             auto const it = knownSFields.find(sfieldCode);
             if (it == knownSFields.end())
                 return Unexpected(HostFunctionError::INVALID_FIELD);
-
             auto const& fname(*it->second);
             field = o->peekAtPField(fname);
         }
@@ -141,11 +146,9 @@ locateField(STObject const& obj, Slice const& locator)
         {
             return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
         }
-
-        if (detail::noField(field))
+        if (noField(field))
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
     }
-
     return field;
 }
 
