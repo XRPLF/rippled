@@ -11,57 +11,57 @@
 server:
   ports:
     port_rpc_admin_local:
-      ip: "127.0.0.1"
+      ip: 127.0.0.1
       port: 5005
-      protocol: "http"
-      admin: "127.0.0.1"
+      protocol: http
+      admin: 127.0.0.1
     port_peer:
-      ip: "0.0.0.0"
+      ip: 0.0.0.0
       port: 51235
-      protocol: "peer"
+      protocol: peer
     port_ws_admin_local:
-      ip: "127.0.0.1"
+      ip: 127.0.0.1
       port: 6006
-      protocol: "ws"
-      admin: "127.0.0.1"
+      protocol: ws
+      admin: 127.0.0.1
 
 # Peer Protocol Configuration
 ips:
-  - "r.ripple.com 51235"
-  - "sahyadri.isrdc.in 51235"
-  - "hubs.xrpkuwait.com 51235"
-  - "hub.xrpl-commons.org 51235"
+  - r.ripple.com 51235
+  - sahyadri.isrdc.in 51235
+  - hubs.xrpkuwait.com 51235
+  - hub.xrpl-commons.org 51235
 
 # Network ID (main=0, testnet=1, devnet=2)
-network_id: "main"
+network_id: main
 
 # Node Database Configuration
 node_db:
-  type: "NuDB"
-  path: "db/nudb"
+  type: NuDB
+  path: db/nudb
   online_delete: 512
   advisory_delete: 0
 
 # SQLite Database Path
-database_path: "db"
+database_path: db
 
 # Ledger History
 ledger_history: 256
 
 # Logging
-debug_logfile: "debug.log"
+debug_logfile: debug.log
 
 # Node Size (tiny, small, medium, large, huge)
-node_size: "medium"
+node_size: medium
 
 # Validators File
-validators_file: "validators.yaml"
+validators_file: validators.yaml
 
 # SSL Configuration
 ssl_verify: 1
 
 # Amendment Majority Time
-amendment_majority_time: "2 weeks"
+amendment_majority_time: 2 weeks
 
 # Beta RPC API
 beta_rpc_api: 0

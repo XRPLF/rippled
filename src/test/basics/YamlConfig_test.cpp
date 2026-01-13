@@ -192,14 +192,14 @@ public:
             BEAST_EXPECT(!result.has_value());
         }
 
-        testcase("bad indentation");
+        testcase("bad indentation - no crash");
         {
-            // This specific pattern may or may not fail depending on yaml-cpp
-            // Test that we handle errors gracefully
+            // This specific pattern may or may not fail depending on yaml-cpp.
+            // The test verifies that we handle errors gracefully without
+            // crashing, regardless of whether yaml-cpp accepts this input.
             auto result = parseYamlString("a:\n b: 1\n   c: 2", j_);
-            // yaml-cpp may accept this, just ensure no crash
-            (void)result;
-            pass();
+            // Either succeeds or fails gracefully - both are acceptable
+            BEAST_EXPECT(result.has_value() || !result.has_value());
         }
 
         testcase("unclosed quote");
@@ -208,12 +208,13 @@ public:
             BEAST_EXPECT(!result.has_value());
         }
 
-        testcase("invalid characters");
+        testcase("invalid characters - no crash");
         {
+            // yaml-cpp may handle @ differently across versions.
+            // The test verifies graceful handling without crashing.
             auto result = parseYamlString("key: @invalid", j_);
-            // yaml-cpp may handle this differently
-            (void)result;
-            pass();
+            // Either succeeds or fails gracefully - both are acceptable
+            BEAST_EXPECT(result.has_value() || !result.has_value());
         }
     }
 

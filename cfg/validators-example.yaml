@@ -8,13 +8,13 @@
 # Validator List Sites
 # List of URIs serving lists of recommended validators.
 # Examples:
-#   - "https://vl.ripple.com"
-#   - "https://unl.xrplf.org"
-#   - "http://127.0.0.1:8000"
-#   - "file:///etc/opt/ripple/vl.txt"
+#   - https://vl.ripple.com
+#   - https://unl.xrplf.org
+#   - http://127.0.0.1:8000
+#   - file:///etc/opt/ripple/vl.txt
 validator_list_sites:
-  - "https://vl.ripple.com"
-  - "https://unl.xrplf.org"
+  - https://vl.ripple.com
+  - https://unl.xrplf.org
 
 # Validator List Keys
 # List of keys belonging to trusted validator list publishers.
@@ -23,9 +23,9 @@ validator_list_sites:
 # Keys should be hex-encoded.
 validator_list_keys:
   # vl.ripple.com
-  - "ED2677ABFFD1B33AC6FBC3062B71F1E8397C1505E1C42C64D11AD1B28FF73F4734"
+  - ED2677ABFFD1B33AC6FBC3062B71F1E8397C1505E1C42C64D11AD1B28FF73F4734
   # unl.xrplf.org
-  - "ED42AEC58B701EEBB77356FFFEC26F83C1F0407263530F068C7C73D392C7E06FD1"
+  - ED42AEC58B701EEBB77356FFFEC26F83C1F0407263530F068C7C73D392C7E06FD1
 
 # Validator List Threshold
 # Minimum number of validator lists on which a validator must be listed
@@ -47,18 +47,18 @@ validator_list_threshold: 0
 #
 # Examples:
 # validators:
-#   - "n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5"
-#   - "n9MqiExBcoG19UXwoLjBJnhsxEhAZMuWwJDRdkyDz1EkEkwzQTNt"
+#   - n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5
+#   - n9MqiExBcoG19UXwoLjBJnhsxEhAZMuWwJDRdkyDz1EkEkwzQTNt
 
 # Validator Keys (alternative to validators section)
 # validator_keys:
-#   - "n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5"
+#   - n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5
 
 # For Test Network Configuration:
 # Use the following configuration instead of the production settings above:
 #
 # validator_list_sites:
-#   - "https://vl.altnet.rippletest.net"
+#   - https://vl.altnet.rippletest.net
 #
 # validator_list_keys:
-#   - "ED264807102805220DA0F312E71FC2C69E1552C9C5790F6C25E3729DEB573D5860"
+#   - ED264807102805220DA0F312E71FC2C69E1552C9C5790F6C25E3729DEB573D5860

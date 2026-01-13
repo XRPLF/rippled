@@ -46,15 +46,6 @@ parseYamlString(std::string const& input, beast::Journal j)
 
 namespace {
 
-// Helper to convert a YAML scalar to string
-std::string
-nodeToString(YAML::Node const& node)
-{
-    if (node.IsScalar())
-        return node.as<std::string>();
-    return {};
-}
-
 // Helper to process a YAML mapping into key=value lines
 void
 processMapping(
@@ -120,6 +111,11 @@ processSequence(
                 // Generic map handling: key=value on separate lines
                 processMapping(item, lines, j);
             }
+        }
+        else if (item.IsSequence())
+        {
+            // Nested sequences are not supported in INI format
+            JLOG(j.warn()) << "Skipping nested sequence in YAML config";
         }
     }
 }
