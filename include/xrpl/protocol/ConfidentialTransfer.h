@@ -47,6 +47,13 @@ getConvertContextHash(
     uint192 const& issuanceID,
     std::uint64_t amount);
 
+uint256
+getConvertBackContextHash(
+    AccountID const& account,
+    std::uint32_t sequence,
+    uint192 const& issuanceID,
+    std::uint64_t amount,
+    std::uint32_t version);
 /**
  * @brief Generates a new secp256k1 key pair.
  */

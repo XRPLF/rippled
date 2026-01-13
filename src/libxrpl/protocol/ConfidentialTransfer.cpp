@@ -53,6 +53,23 @@ getConvertContextHash(
     return s.getSHA512Half();
 }
 
+uint256
+getConvertBackContextHash(
+    AccountID const& account,
+    std::uint32_t sequence,
+    uint192 const& issuanceID,
+    std::uint64_t amount,
+    std::uint32_t version)
+{
+    Serializer s;
+    addCommonZKPFields(
+        s, ttCONFIDENTIAL_CONVERT_BACK, account, sequence, issuanceID, amount);
+
+    s.addInteger(version);
+
+    return s.getSHA512Half();
+}
+
 int
 secp256k1_elgamal_generate_keypair(
     secp256k1_context const* ctx,

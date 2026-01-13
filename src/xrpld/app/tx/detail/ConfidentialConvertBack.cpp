@@ -8,7 +8,25 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <cstddef>
+
 namespace ripple {
+
+size_t
+getEqualityProofSize(std::shared_ptr<SLE const> const& issuance)
+{
+    bool const hasAuditor = issuance->isFieldPresent(sfAuditorElGamalPublicKey);
+    return (hasAuditor ? 3 : 2) * ecEqualityProofLength;
+}
+
+size_t
+expectedProofSize(std::shared_ptr<SLE const> const& issuance)
+{
+    auto const equalityProofSize = getEqualityProofSize(issuance);
+
+    // todo: add pederson and range proof length
+    return equalityProofSize;
+}
 
 NotTEC
 ConfidentialConvertBack::preflight(PreflightContext const& ctx)
@@ -26,10 +44,65 @@ ConfidentialConvertBack::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfMPTAmount] == 0 || ctx.tx[sfMPTAmount] > maxMPTokenAmount)
         return temBAD_AMOUNT;
 
-    // todo: update with correct size of proof since it might also contain range
-    // proof
-    // if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
-    //     return temMALFORMED;
+    return tesSUCCESS;
+}
+
+TER
+verifyProofs(
+    STTx const& tx,
+    std::shared_ptr<SLE const> const& issuance,
+    std::shared_ptr<SLE const> const& mptoken)
+{
+    if (expectedProofSize(issuance) != tx[sfZKProof].size())
+        return tecBAD_PROOF;
+
+    auto const mptIssuanceID = tx[sfMPTokenIssuanceID];
+    auto const account = tx[sfAccount];
+    auto const amount = tx[sfMPTAmount];
+
+    auto const holderPubKey = (*mptoken)[sfHolderElGamalPublicKey];
+    bool const hasAuditor = issuance->isFieldPresent(sfAuditorElGamalPublicKey);
+
+    auto const contextHash = getConvertBackContextHash(
+        account,
+        tx[sfSequence],
+        mptIssuanceID,
+        amount,
+        (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
+
+    // verify equality proofs
+    {
+        auto const equalityZkps = getEqualityProofs(
+            Slice{tx[sfZKProof].data(), getEqualityProofSize(issuance)});
+
+        // check equality proof
+        if (!isTesSuccess(verifyEqualityProof(
+                amount,
+                equalityZkps[0],
+                holderPubKey,
+                tx[sfHolderEncryptedAmount],
+                contextHash)) ||
+            !isTesSuccess(verifyEqualityProof(
+                amount,
+                equalityZkps[1],
+                (*issuance)[sfIssuerElGamalPublicKey],
+                tx[sfIssuerEncryptedAmount],
+                contextHash)))
+        {
+            return tecBAD_PROOF;
+        }
+
+        if (hasAuditor &&
+            !isTesSuccess(verifyEqualityProof(
+                amount,
+                equalityZkps[2],
+                (*issuance)[sfAuditorElGamalPublicKey],
+                tx[sfAuditorEncryptedAmount],
+                contextHash)))
+        {
+            return tecBAD_PROOF;
+        }
+    }
 
     return tesSUCCESS;
 }
@@ -37,9 +110,12 @@ ConfidentialConvertBack::preflight(PreflightContext const& ctx)
 TER
 ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
 {
+    auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
+    auto const account = ctx.tx[sfAccount];
+    auto const amount = ctx.tx[sfMPTAmount];
+
     // ensure that issuance exists
-    auto const sleIssuance =
-        ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -53,11 +129,11 @@ ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
 
     // already checked in preflight, but should also check that issuer on
     // the issuance isn't the account either
-    if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
+    if (sleIssuance->getAccountID(sfIssuer) == account)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sleMptoken = ctx.view.read(
-        keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
+    auto const sleMptoken =
+        ctx.view.read(keylet::mptoken(mptIssuanceID, account));
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
@@ -70,14 +146,10 @@ ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
     // if the total circulating confidential balance is smaller than what the
     // holder is trying to convert back, we know for sure this txn should
     // fail
-    if ((*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) <
-        ctx.tx[sfMPTAmount])
+    if ((*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) < amount)
     {
         return tecINSUFFICIENT_FUNDS;
     }
-
-    auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
-    auto const account = ctx.tx[sfAccount];
 
     // Check lock
     MPTIssue const mptIssue(mptIssuanceID);
@@ -90,31 +162,9 @@ ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(ter))
         return ter;
 
-    // todo: need addtional parsing, the proof should contain multiple proofs
-    // auto checkEqualityProof = [&](auto const& encryptedAmount,
-    //                               auto const& pubKey) -> TER {
-    //     return proveEquality(
-    //         ctx.tx[sfZKProof],
-    //         encryptedAmount,
-    //         pubKey,
-    //         ctx.tx[sfMPTAmount],
-    //         ctx.tx.getTransactionID(),
-    //         (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0));
-    // };
-
-    // if (!isTesSuccess(checkEqualityProof(
-    //         ctx.tx[sfHolderEncryptedAmount],
-    //         (*sleMptoken)[sfHolderElGamalPublicKey])) ||
-    //     !isTesSuccess(checkEqualityProof(
-    //         ctx.tx[sfIssuerEncryptedAmount],
-    //         (*sleIssuance)[sfIssuerElGamalPublicKey])))
-    // {
-    //     return tecBAD_PROOF;
-    // }
-
-    // todo: also check range proof that
-    // sfHolderEncryptedAmount <= sfConfidentialBalanceSpending AND
-    // sfIssuerEncryptedAmount <= sfIssuerEncryptedBalance
+    if (TER const res = verifyProofs(ctx.tx, sleIssuance, sleMptoken);
+        !isTesSuccess(res))
+        return res;
 
     return tesSUCCESS;
 }
