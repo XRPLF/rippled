@@ -77,7 +77,7 @@ target_link_libraries(xrpl.libxrpl.beast PUBLIC xrpl.imports.main)
 
 # Level 02
 add_module(xrpl basics)
-target_link_libraries(xrpl.libxrpl.basics PUBLIC xrpl.libxrpl.beast)
+target_link_libraries(xrpl.libxrpl.basics PUBLIC xrpl.libxrpl.beast yaml-cpp::yaml-cpp)
 
 # Level 03
 add_module(xrpl json)
