@@ -44,6 +44,8 @@ HfErrorToInt(HostFunctionError e)
     return static_cast<int32_t>(e);
 }
 
+namespace wasm_float {
+
 std::string
 floatToString(Slice const& data);
 
@@ -79,6 +81,8 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode);
 
 Expected<Bytes, HostFunctionError>
 floatLogImpl(Slice const& x, int32_t mode);
+
+}  // namespace wasm_float
 
 struct HostFunctions
 {

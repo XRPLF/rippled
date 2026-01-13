@@ -9,6 +9,8 @@
 
 namespace xrpl {
 
+namespace wasm_float {
+
 namespace detail {
 
 class Number2 : public Number
@@ -443,6 +445,8 @@ floatLogImpl(Slice const& x, int32_t mode)
     // LCOV_EXCL_STOP
 }
 
+}  // namespace wasm_float
+
 // =========================================================
 // ACTUAL HOST FUNCTIONS
 // =========================================================
@@ -450,13 +454,13 @@ floatLogImpl(Slice const& x, int32_t mode)
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatFromInt(int64_t x, int32_t mode)
 {
-    return floatFromIntImpl(x, mode);
+    return wasm_float::floatFromIntImpl(x, mode);
 }
 
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatFromUint(uint64_t x, int32_t mode)
 {
-    return floatFromUintImpl(x, mode);
+    return wasm_float::floatFromUintImpl(x, mode);
 }
 
 Expected<Bytes, HostFunctionError>
@@ -465,19 +469,19 @@ WasmHostFunctionsImpl::floatSet(
     int32_t exponent,
     int32_t mode)
 {
-    return floatSetImpl(mantissa, exponent, mode);
+    return wasm_float::floatSetImpl(mantissa, exponent, mode);
 }
 
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::floatCompare(Slice const& x, Slice const& y)
 {
-    return floatCompareImpl(x, y);
+    return wasm_float::floatCompareImpl(x, y);
 }
 
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatAdd(Slice const& x, Slice const& y, int32_t mode)
 {
-    return floatAddImpl(x, y, mode);
+    return wasm_float::floatAddImpl(x, y, mode);
 }
 
 Expected<Bytes, HostFunctionError>
@@ -486,7 +490,7 @@ WasmHostFunctionsImpl::floatSubtract(
     Slice const& y,
     int32_t mode)
 {
-    return floatSubtractImpl(x, y, mode);
+    return wasm_float::floatSubtractImpl(x, y, mode);
 }
 
 Expected<Bytes, HostFunctionError>
@@ -495,31 +499,31 @@ WasmHostFunctionsImpl::floatMultiply(
     Slice const& y,
     int32_t mode)
 {
-    return floatMultiplyImpl(x, y, mode);
+    return wasm_float::floatMultiplyImpl(x, y, mode);
 }
 
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatDivide(Slice const& x, Slice const& y, int32_t mode)
 {
-    return floatDivideImpl(x, y, mode);
+    return wasm_float::floatDivideImpl(x, y, mode);
 }
 
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatRoot(Slice const& x, int32_t n, int32_t mode)
 {
-    return floatRootImpl(x, n, mode);
+    return wasm_float::floatRootImpl(x, n, mode);
 }
 
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatPower(Slice const& x, int32_t n, int32_t mode)
 {
-    return floatPowerImpl(x, n, mode);
+    return wasm_float::floatPowerImpl(x, n, mode);
 }
 
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatLog(Slice const& x, int32_t mode)
 {
-    return floatLogImpl(x, mode);
+    return wasm_float::floatLogImpl(x, mode);
 }
 
 }  // namespace xrpl

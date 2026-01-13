@@ -468,7 +468,7 @@ public:
             return ret;
         auto j = getJournal().trace();
 #endif
-        auto const s = floatToString(data);
+        auto const s = wasm_float::floatToString(data);
         j << "WASM TRACE FLOAT: " << msg << " " << s;
 
 #ifdef DEBUG_OUTPUT
@@ -502,67 +502,67 @@ public:
     Expected<Bytes, HostFunctionError>
     floatFromInt(int64_t x, int32_t mode) override
     {
-        return floatFromIntImpl(x, mode);
+        return wasm_float::floatFromIntImpl(x, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatFromUint(uint64_t x, int32_t mode) override
     {
-        return floatFromUintImpl(x, mode);
+        return wasm_float::floatFromUintImpl(x, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatSet(int64_t mantissa, int32_t exponent, int32_t mode) override
     {
-        return floatSetImpl(mantissa, exponent, mode);
+        return wasm_float::floatSetImpl(mantissa, exponent, mode);
     }
 
     Expected<int32_t, HostFunctionError>
     floatCompare(Slice const& x, Slice const& y) override
     {
-        return floatCompareImpl(x, y);
+        return wasm_float::floatCompareImpl(x, y);
     }
 
     Expected<Bytes, HostFunctionError>
     floatAdd(Slice const& x, Slice const& y, int32_t mode) override
     {
-        return floatAddImpl(x, y, mode);
+        return wasm_float::floatAddImpl(x, y, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatSubtract(Slice const& x, Slice const& y, int32_t mode) override
     {
-        return floatSubtractImpl(x, y, mode);
+        return wasm_float::floatSubtractImpl(x, y, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatMultiply(Slice const& x, Slice const& y, int32_t mode) override
     {
-        return floatMultiplyImpl(x, y, mode);
+        return wasm_float::floatMultiplyImpl(x, y, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatDivide(Slice const& x, Slice const& y, int32_t mode) override
     {
-        return floatDivideImpl(x, y, mode);
+        return wasm_float::floatDivideImpl(x, y, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatRoot(Slice const& x, int32_t n, int32_t mode) override
     {
-        return floatRootImpl(x, n, mode);
+        return wasm_float::floatRootImpl(x, n, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatPower(Slice const& x, int32_t n, int32_t mode) override
     {
-        return floatPowerImpl(x, n, mode);
+        return wasm_float::floatPowerImpl(x, n, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatLog(Slice const& x, int32_t mode) override
     {
-        return floatLogImpl(x, mode);
+        return wasm_float::floatLogImpl(x, mode);
     }
 };
 

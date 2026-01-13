@@ -105,7 +105,7 @@ WasmHostFunctionsImpl::traceFloat(
         return ret;
     auto j = getJournal().trace();
 #endif
-    auto const s = floatToString(data);
+    auto const s = wasm_float::floatToString(data);
     j << "HF TRACE FLOAT(" << leKey.key << "): " << msg << " " << s;
 
 #ifdef DEBUG_OUTPUT
