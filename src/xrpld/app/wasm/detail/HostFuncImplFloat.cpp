@@ -1,5 +1,11 @@
-#include <xrpl/basics/Number.h>
-#include <xrpl/basics/Slice.h>
+#include <xrpld/app/wasm/HostFuncImpl.h>
+
+#include <xrpl/protocol/STBitString.h>
+#include <xrpl/protocol/digest.h>
+
+#ifdef _DEBUG
+// #define DEBUG_OUTPUT 1
+#endif
 
 namespace xrpl {
 
@@ -431,6 +437,85 @@ floatLogImpl(Slice const& x, int32_t mode)
     }
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
     // LCOV_EXCL_STOP
+}
+
+// =========================================================
+// ACTUAL HOST FUNCTIONS
+// =========================================================
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatFromInt(int64_t x, int32_t mode)
+{
+    return floatFromIntImpl(x, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatFromUint(uint64_t x, int32_t mode)
+{
+    return floatFromUintImpl(x, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatSet(
+    int64_t mantissa,
+    int32_t exponent,
+    int32_t mode)
+{
+    return floatSetImpl(mantissa, exponent, mode);
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::floatCompare(Slice const& x, Slice const& y)
+{
+    return floatCompareImpl(x, y);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatAdd(Slice const& x, Slice const& y, int32_t mode)
+{
+    return floatAddImpl(x, y, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatSubtract(
+    Slice const& x,
+    Slice const& y,
+    int32_t mode)
+{
+    return floatSubtractImpl(x, y, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatMultiply(
+    Slice const& x,
+    Slice const& y,
+    int32_t mode)
+{
+    return floatMultiplyImpl(x, y, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatDivide(Slice const& x, Slice const& y, int32_t mode)
+{
+    return floatDivideImpl(x, y, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatRoot(Slice const& x, int32_t n, int32_t mode)
+{
+    return floatRootImpl(x, n, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatPower(Slice const& x, int32_t n, int32_t mode)
+{
+    return floatPowerImpl(x, n, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatLog(Slice const& x, int32_t mode)
+{
+    return floatLogImpl(x, mode);
 }
 
 }  // namespace xrpl
