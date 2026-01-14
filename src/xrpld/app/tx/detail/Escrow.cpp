@@ -223,7 +223,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
                 << "EscrowCreate.FinishFunction bad size " << code.size();
             return temMALFORMED;
         }
-        // validity of WASM code happens in `preflightSigValidated`
+        // actual validity of WASM code happens in `preflightSigValidated`
         // (after the signature is checked)
     }
 
