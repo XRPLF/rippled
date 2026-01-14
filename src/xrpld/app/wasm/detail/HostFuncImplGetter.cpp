@@ -309,7 +309,7 @@ WasmHostFunctionsImpl::getTxArrayLen(SField const& fname)
     if (detail::noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
-    return getArrayLen(field);
+    return detail::getArrayLen(field);
 }
 
 Expected<int32_t, HostFunctionError>
@@ -326,7 +326,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
     if (detail::noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
-    return getArrayLen(field);
+    return detail::getArrayLen(field);
 }
 
 Expected<int32_t, HostFunctionError>
@@ -345,7 +345,7 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
     if (detail::noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
-    return getArrayLen(field);
+    return detail::getArrayLen(field);
 }
 
 // Subsection: nested array length getters
@@ -358,7 +358,7 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
         return Unexpected(r.error());
 
     auto const& field = r.value();
-    return getArrayLen(field);
+    return detail::getArrayLen(field);
 }
 
 Expected<int32_t, HostFunctionError>
@@ -372,7 +372,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
         return Unexpected(r.error());
 
     auto const& field = r.value();
-    return getArrayLen(field);
+    return detail::getArrayLen(field);
 }
 
 Expected<int32_t, HostFunctionError>
@@ -389,7 +389,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
         return Unexpected(r.error());
 
     auto const& field = r.value();
-    return getArrayLen(field);
+    return detail::getArrayLen(field);
 }
 
 }  // namespace xrpl
