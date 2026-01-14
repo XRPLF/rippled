@@ -102,7 +102,7 @@ getAnyFieldData(FieldValue const& variantObj)
         return Bytes((*u)->begin(), (*u)->end());
     }
 
-    return Unexpected(HostFunctionError::INTERNAL);
+    return Unexpected(HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
 }
 
 static inline bool

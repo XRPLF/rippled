@@ -14,7 +14,7 @@ toBytes(std::uint8_t value)
 }
 
 static Bytes
-toBytes(std::uint16_t value)
+toBytes(std::uint16_t const value)
 {
     auto const* b = reinterpret_cast<uint8_t const*>(&value);
     auto const* e = reinterpret_cast<uint8_t const*>(&value + 1);
@@ -22,11 +22,17 @@ toBytes(std::uint16_t value)
 }
 
 static Bytes
-toBytes(std::uint32_t value)
+toBytes(std::uint32_t const value)
 {
     auto const* b = reinterpret_cast<uint8_t const*>(&value);
     auto const* e = reinterpret_cast<uint8_t const*>(&value + 1);
     return Bytes{b, e};
+}
+
+static Bytes
+toBytes(uint256 const& value)
+{
+    return Bytes{value.begin(), value.end()};
 }
 
 static Bytes
@@ -462,6 +468,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         if (BEAST_EXPECT(amountField.has_value()))
         {
             BEAST_EXPECT(*amountField == toBytes(XRP(100)));
+        }
+
+        // Should return the PreviousTxnID field from the escrow ledger object
+        auto const previousTxnId =
+            hfs.getCurrentLedgerObjField(sfPreviousTxnID);
+        if (BEAST_EXPECT(previousTxnId.has_value()))
+        {
+            BEAST_EXPECT(
+                *previousTxnId == toBytes(env.tx()->getTransactionID()));
         }
 
         // Should return nullopt for a field not present
@@ -1005,6 +1020,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testcase("getTxArrayLen");
         using namespace test::jtx;
 
+        std::string const credIdHex =
+            "0011223344556677889900112233445566778899001122334455667788990011";
+        uint256 credId;
+        BEAST_EXPECT(credId.parseHex(credIdHex));
+
         Env env{*this};
         OpenView ov{*env.current()};
 
@@ -1023,6 +1043,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 memos.push_back(memoObj);
             }
             obj.setFieldArray(sfMemos, memos);
+            STVector256 credIds;
+            credIds.push_back(credId);
+            obj.setFieldV256(sfCredentialIDs, credIds);
         });
 
         ApplyContext ac = createApplyContext(env, ov, stx);
@@ -1045,6 +1068,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         if (BEAST_EXPECT(!missingArray.has_value()))
             BEAST_EXPECT(
                 missingArray.error() == HostFunctionError::FIELD_NOT_FOUND);
+
+        // Should return 1 for sfCredentialIDs
+        auto const credIdsLen = hfs.getTxArrayLen(sfCredentialIDs);
+        if (BEAST_EXPECT(credIdsLen.has_value()))
+            BEAST_EXPECT(credIdsLen.value() == 1);
     }
 
     void
@@ -2244,9 +2272,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     // clang-format on
 
     void
-    testFloatTrace()
+    testTraceFloat()
     {
-        testcase("FloatTrace");
+        testcase("traceFloat");
         using namespace test::jtx;
 
         {
@@ -2300,7 +2328,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     testFloatFromInt()
     {
-        testcase("FloatFromInt");
+        testcase("floatFromInt");
         using namespace test::jtx;
 
         Env env{*this};
@@ -2347,7 +2375,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     testFloatFromUint()
     {
-        testcase("FloatFromUint");
+        testcase("floatFromUint");
         using namespace test::jtx;
 
         Env env{*this};
@@ -2388,7 +2416,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     testFloatSet()
     {
-        testcase("FloatSet");
+        testcase("floatSet");
         using namespace test::jtx;
 
         Env env{*this};
@@ -2475,7 +2503,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     testFloatCompare()
     {
-        testcase("FloatCompare");
+        testcase("floatCompare");
         using namespace test::jtx;
 
         Env env{*this};
@@ -3120,7 +3148,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     testFloats()
     {
-        testFloatTrace();
+        testTraceFloat();
         testFloatFromInt();
         testFloatFromUint();
         testFloatSet();
