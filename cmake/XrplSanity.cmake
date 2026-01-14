@@ -40,11 +40,6 @@ if (MSVC AND CMAKE_GENERATOR_PLATFORM STREQUAL "Win32")
   message (FATAL_ERROR "Visual Studio 32-bit build is not supported.")
 endif ()
 
-if (NOT is_64bit)
-  message (FATAL_ERROR "Xrpld requires a 64 bit target architecture.\n"
-    "The most likely cause of this warning is trying to build xrpld with a 32-bit OS.")
-endif ()
-
 if (APPLE AND NOT HOMEBREW)
   find_program (HOMEBREW brew)
 endif ()

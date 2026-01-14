@@ -41,16 +41,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 endif()
 
 # --------------------------------------------------------------------
-# Architecture / pointer size
+# Architecture
 # --------------------------------------------------------------------
-set(is_64bit FALSE)
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(is_64bit TRUE)
-else()
-  message(FATAL_ERROR "This project should only be built on 64bit architectures.")
-endif()
-set(pointer_size "${CMAKE_SIZEOF_VOID_P}")
-
 set(is_amd64 FALSE)
 set(is_arm64 FALSE)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
