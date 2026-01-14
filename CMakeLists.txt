@@ -91,34 +91,18 @@ endif()
 ###
 
 include(deps/Boost)
-find_package(OpenSSL 1.1.1 REQUIRED)
-set_target_properties(OpenSSL::SSL PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS OPENSSL_NO_SSL2
-)
 
 add_subdirectory(external/antithesis-sdk)
-find_package(gRPC REQUIRED)
-find_package(lz4 REQUIRED)
-# Target names with :: are not allowed in a generator expression.
-# We need to pull the include directories and imported location properties
-# from separate targets.
-find_package(LibArchive REQUIRED)
-find_package(SOCI REQUIRED)
-find_package(SQLite3 REQUIRED)
-
-option(rocksdb "Enable RocksDB" ON)
-if(rocksdb)
-  find_package(RocksDB REQUIRED)
-  set_target_properties(RocksDB::rocksdb PROPERTIES
-    INTERFACE_COMPILE_DEFINITIONS XRPL_ROCKSDB_AVAILABLE=1
-  )
-  target_link_libraries(xrpl_libs INTERFACE RocksDB::rocksdb)
-endif()
-
 find_package(date REQUIRED)
 find_package(ed25519 REQUIRED)
+find_package(gRPC REQUIRED)
+find_package(LibArchive REQUIRED)
+find_package(lz4 REQUIRED)
 find_package(nudb REQUIRED)
+find_package(OpenSSL REQUIRED)
 find_package(secp256k1 REQUIRED)
+find_package(SOCI REQUIRED)
+find_package(SQLite3 REQUIRED)
 find_package(xxHash REQUIRED)
 
 target_link_libraries(xrpl_libs INTERFACE
@@ -130,6 +114,15 @@ target_link_libraries(xrpl_libs INTERFACE
   soci::soci
   SQLite::SQLite3
 )
+
+option(rocksdb "Enable RocksDB" ON)
+if(rocksdb)
+    find_package(RocksDB REQUIRED)
+    set_target_properties(RocksDB::rocksdb PROPERTIES
+            INTERFACE_COMPILE_DEFINITIONS XRPL_ROCKSDB_AVAILABLE=1
+    )
+    target_link_libraries(xrpl_libs INTERFACE RocksDB::rocksdb)
+endif()
 
 # Work around changes to Conan recipe for now.
 if(TARGET nudb::core)

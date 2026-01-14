@@ -71,6 +71,7 @@ words:
   - cryptoconditional
   - cryptoconditions
   - csprng
+  - ctest
   - ctid
   - ctest
   - currenttxhash
@@ -109,6 +110,7 @@ words:
   - ious
   - itype
   - isrdc
+  - itype
   - jemalloc
   - jlog
   - keylet

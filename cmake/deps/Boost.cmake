@@ -1,7 +1,7 @@
 include(CompilationEnv)
 include(XrplSanitizers)
 
-find_package(Boost 1.82 REQUIRED
+find_package(Boost REQUIRED
   COMPONENTS
     chrono
     container

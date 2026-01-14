@@ -148,7 +148,8 @@ function extract_version {
 }
 
 # Define which recipes to export.
-recipes=(ed25519 grpc secp256k1 snappy soci)
+recipes=('ed25519' 'grpc' 'openssl' 'secp256k1' 'snappy' 'soci')
+folders=('all'     'all'  '3.x.x'   'all'       'all'    'all')
 
 # Selectively check out the recipes from our CCI fork.
 cd external
@@ -157,20 +158,24 @@ cd conan-center-index
 git init
 git remote add origin git@github.com:XRPLF/conan-center-index.git
 git sparse-checkout init
-for recipe in ${recipes[@]}; do
-  echo "Checking out ${recipe}..."
-  git sparse-checkout add recipes/${recipe}/all
+for ((index = 1; index <= ${#recipes[@]}; index++)); do
+  recipe=${recipes[index]}
+  folder=${folders[index]}
+  echo "Checking out recipe '${recipe}' from folder '${folder}'..."
+  git sparse-checkout add recipes/${recipe}/${folder}
 done
 git fetch origin master
 git checkout master
 cd ../..
 
 # Export the recipes into the local cache.
-for recipe in ${recipes[@]}; do
+for ((index = 1; index <= ${#recipes[@]}; index++)); do
+  recipe=${recipes[index]}
+  folder=${folders[index]}
   version=$(extract_version ${recipe})
-  echo "Exporting ${recipe}/${version}..."
+  echo "Exporting '${recipe}/${version}' from '${recipe}/${folder}'..."
   conan export --version $(extract_version ${recipe}) \
-    external/conan-center-index/recipes/${recipe}/all
+    external/conan-center-index/recipes/${recipe}/${folder}
 done
 ```
 
