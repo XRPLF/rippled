@@ -30,6 +30,9 @@ struct MallocTrimReport
     int trimResult{-1};
     long rssBeforeKB{-1};
     long rssAfterKB{-1};
+    long long durationUs{-1};
+    long minfltDelta{-1};
+    long majfltDelta{-1};
 
     [[nodiscard]] long
     deltaKB() const noexcept
