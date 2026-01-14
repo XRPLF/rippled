@@ -390,7 +390,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
         auto const& wasmHex = ledgerSqnWasmHex;
-        std::uint32_t const allowance = 65;
+        std::uint32_t const allowance = 178;
         auto escrowCreate = escrow::create(alice, carol, XRP(1000));
         auto [createFee, finishFee] = [&]() {
             Env env(*this, features);
@@ -683,7 +683,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
         {
             env.require(balance(alice, XRP(4000) - txnFees));
 
-            auto const allowance = 1014;
+            auto const allowance = 1420;
             XRPAmount const finishFee = env.current()->fees().base +
                 (allowance * env.current()->fees().gasPrice) /
                     MICRO_DROPS_PER_DROP +
@@ -727,7 +727,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
         auto const& wasmHex = ledgerSqnWasmHex;
-        uint64_t const allowance = 65;
+        uint64_t const allowance = 178;
         auto escrowCreate = escrow::create(alice, carol, XRP(1000));
         auto createFee = [&]() {
             Env env(*this, features);
@@ -873,7 +873,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECTS(
-                        txMeta->getFieldU32(sfGasUsed) == 38'054,
+                        txMeta->getFieldU32(sfGasUsed) == 62'715,
                         std::to_string(txMeta->getFieldU32(sfGasUsed)));
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
                     BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
@@ -958,7 +958,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 env.close();
                 env.close();
 
-                auto const allowance = 138'485;
+                auto const allowance = 182'903;
                 auto const finishFee = env.current()->fees().base +
                     (allowance * env.current()->fees().gasPrice) /
                         MICRO_DROPS_PER_DROP +
