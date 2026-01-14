@@ -3,7 +3,6 @@
 #]===================================================================]
 
 include(CompilationEnv)
-include(XrplSanitizers)
 
 #[=========================================================[
    TODO some/most of these common settings belong in a
@@ -11,6 +10,7 @@ include(XrplSanitizers)
 #]=========================================================]
 add_library (common INTERFACE)
 add_library (Xrpl::common ALIAS common)
+include(XrplSanitizers)
 # add a single global dependency on this interface lib
 link_libraries (Xrpl::common)
 # Respect CMAKE_POSITION_INDEPENDENT_CODE setting (may be set by Conan toolchain)
