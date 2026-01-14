@@ -45,12 +45,18 @@ class WasmHostFunctionsImpl : public HostFunctions
     log(std::string_view const& msg, auto const& data)
     {
 #ifdef DEBUG_OUTPUT
-        auto j = getJournal().error();
+        auto& j = std::cerr;
 #else
+        if (!getJournal().active(beast::severities::kTrace))
+            return ret;
         auto j = getJournal().trace();
 #endif
         j << "WasmTrace[" << to_short_string(leKey.key) << "]: " << msg << " "
           << data;
+
+#ifdef DEBUG_OUTPUT
+        j << std::endl;
+#endif
     }
 
 public:

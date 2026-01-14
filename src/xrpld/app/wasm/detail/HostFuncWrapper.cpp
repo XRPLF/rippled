@@ -71,7 +71,14 @@ getDataUInt64(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
     if (r->size() != sizeof(uint64_t))
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
-    return *reinterpret_cast<uint64_t const*>(r->data());
+    uint64_t x;
+    uintptr_t p = reinterpret_cast<uintptr_t>(r->data());
+    if (p & (alignof(uint64_t) - 1))  // unaligned
+        memcpy(&x, r->data(), sizeof(uint64_t));
+    else
+        x = *reinterpret_cast<uint64_t const*>(r->data());
+
+    return x;
 }
 
 template <class IW>

@@ -20,23 +20,25 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
     auto& j = std::cerr;
 #else
     auto j = jlog.warn();
+    if (jlog.active(beast::severities::kWarning))
 #endif
-
-    wasm_byte_vec_t error_message WASM_EMPTY_VEC;
-
-    if (trap)
-        wasm_trap_message(trap, &error_message);
-
-    if (error_message.size)
     {
-        j << "WASMI Error: " << msg << ", "
-          << std::string_view(error_message.data, error_message.size - 1);
-    }
-    else
-        j << "WASMI Error: " << msg;
+        wasm_byte_vec_t error_message WASM_EMPTY_VEC;
 
-    if (error_message.size)
-        wasm_byte_vec_delete(&error_message);
+        if (trap)
+            wasm_trap_message(trap, &error_message);
+
+        if (error_message.size)
+        {
+            j << "WASMI Error: " << msg << ", "
+              << std::string_view(error_message.data, error_message.size - 1);
+        }
+        else
+            j << "WASMI Error: " << msg;
+
+        if (error_message.size)
+            wasm_byte_vec_delete(&error_message);
+    }
 
     if (trap)
         wasm_trap_delete(trap);
