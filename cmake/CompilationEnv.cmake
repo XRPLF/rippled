@@ -24,9 +24,6 @@ else()
   message(FATAL_ERROR "Unsupported C++ compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()
 
-# Backwards-compat aliases used in some modules
-set(IS_CLANG ${is_clang})
-set(IS_GCC   ${is_gcc})
 
 # --------------------------------------------------------------------
 # Operating system detection
@@ -62,15 +59,4 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
   set(is_arm64 TRUE)
 else()
   message(FATAL_ERROR "Unknown architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-endif()
-
-# Keep legacy uppercase alias for existing code
-set(IS_AMD64 ${is_amd64})
-
-# Sanitizer configuration read from environment. We then set appropriate flags in XrplSanitizers.cmake
-set(sanitizers_val "$ENV{SANITIZERS}")
-if(sanitizers_val AND sanitizers_val MATCHES "address|thread|undefinedbehavior")
-  set(SANITIZERS_ENABLED TRUE)
-else()
-  set(SANITIZERS_ENABLED FALSE)
 endif()

@@ -9,9 +9,35 @@
      - "thread,undefinedbehavior"
      - "undefinedbehavior"
 
-	   The compiler type and platform are detected in CompilationEnv.cmake.
+   The compiler type and platform are detected in CompilationEnv.cmake.
    The sanitizer compile options are applied to the 'common' interface library
    which is linked to all targets in the project.
+
+   Internal flag variables set by this module:
+
+   - SANITIZER_TYPES: List of sanitizer types to enable (e.g., "address",
+     "thread", "undefined"). And two more flags for undefined behavior sanitizer (e.g., "float-divide-by-zero", "unsigned-integer-overflow").
+     This list is joined with commas and passed to -fsanitize=<list>.
+
+   - SANITIZERS_COMPILE_FLAGS: Compiler flags for sanitizer instrumentation.
+     Includes:
+     * -fno-omit-frame-pointer: Preserves frame pointers for stack traces
+     * -O1: Minimum optimization for reasonable performance
+     * -fsanitize=<types>: Enables sanitizer instrumentation
+     * -fsanitize-ignorelist=<path>: (Clang only) Compile-time ignorelist
+     * -mcmodel=large/medium: (GCC only) Code model for large binaries
+     * -Wno-stringop-overflow: (GCC only) Suppresses false positive warnings
+     * -Wno-tsan: (For GCC TSAN combination only) Suppresses atomic_thread_fence warnings
+
+   - SANITIZERS_LINK_FLAGS: Linker flags for sanitizer runtime libraries.
+     Includes:
+     * -fsanitize=<types>: Links sanitizer runtime libraries
+     * -mcmodel=large/medium: (GCC only) Matches compile-time code model
+
+   - SANITIZERS_RELOCATION_FLAGS: (GCC only) Code model flags for linking.
+     Used to handle large instrumented binaries on x86_64:
+     * -mcmodel=large: For AddressSanitizer (prevents relocation errors)
+     * -mcmodel=medium: For ThreadSanitizer (large model is incompatible)
 #]===================================================================]
 
 include(CompilationEnv)
@@ -19,8 +45,21 @@ include(CompilationEnv)
 # Read environment variable
 set(SANITIZERS $ENV{SANITIZERS})
 
+# Set SANITIZERS_ENABLED flag for use in other modules
+if(SANITIZERS MATCHES "address|thread|undefinedbehavior")
+  set(SANITIZERS_ENABLED TRUE)
+else()
+  set(SANITIZERS_ENABLED FALSE)
+endif()
+
 if(NOT SANITIZERS)
   return()
+endif()
+
+# Sanitizers are not supported on Windows/MSVC
+if(is_msvc)
+  message(FATAL_ERROR "Sanitizers are not supported on Windows/MSVC. "
+        "Please unset the SANITIZERS environment variable.")
 endif()
 
 message(STATUS "Configuring sanitizers: ${SANITIZERS}")
@@ -48,25 +87,30 @@ foreach(san IN LISTS san_list)
     endif()
 endforeach()
 
+# Validate sanitizer compatibility
+if(enable_asan AND enable_tsan)
+    message(FATAL_ERROR "AddressSanitizer and ThreadSanitizer are incompatible and cannot be enabled simultaneously. "
+          "Use 'address' or 'thread', optionally with 'undefinedbehavior'.")
+endif()
+
 # Frame pointer is required for meaningful stack traces. Sanitizers recommend minimum of -O1 for reasonable performance
 set(SANITIZERS_COMPILE_FLAGS "-fno-omit-frame-pointer" "-O1")
 
 # Build the sanitizer flags list
-set(SANITIZERS_FLAGS)
+set(SANITIZER_TYPES)
 
 if(enable_asan)
-    list(APPEND SANITIZERS_FLAGS "address")
+    list(APPEND SANITIZER_TYPES "address")
 elseif(enable_tsan)
-    list(APPEND SANITIZERS_FLAGS "thread")
+    list(APPEND SANITIZER_TYPES "thread")
 endif()
 
 if(enable_ubsan)
     # UB sanitizer flags
+    list(APPEND SANITIZER_TYPES "undefined" "float-divide-by-zero")
     if(is_clang)
         # Clang supports additional UB checks. More info here https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
-        list(APPEND SANITIZERS_FLAGS "undefined" "float-divide-by-zero" "unsigned-integer-overflow")
-    else()
-        list(APPEND SANITIZERS_FLAGS "undefined" "float-divide-by-zero")
+        list(APPEND SANITIZER_TYPES "unsigned-integer-overflow")
     endif()
 endif()
 
@@ -101,11 +145,11 @@ if(is_gcc)
     endif()
 
     # Join sanitizer flags with commas for -fsanitize option
-    list(JOIN SANITIZERS_FLAGS "," SANITIZERS_FLAGS_STR)
+    list(JOIN SANITIZER_TYPES "," SANITIZER_TYPES_STR)
 
     # Add sanitizer to compile and link flags
-    list(APPEND SANITIZERS_COMPILE_FLAGS "-fsanitize=${SANITIZERS_FLAGS_STR}")
-    set(SANITIZERS_LINK_FLAGS "${SANITIZERS_RELOCATION_FLAGS}" "-fsanitize=${SANITIZERS_FLAGS_STR}")
+    list(APPEND SANITIZERS_COMPILE_FLAGS "-fsanitize=${SANITIZER_TYPES_STR}")
+    set(SANITIZERS_LINK_FLAGS "${SANITIZERS_RELOCATION_FLAGS}" "-fsanitize=${SANITIZER_TYPES_STR}")
 
 elseif(is_clang)
     # Add ignorelist for Clang (GCC doesn't support this)
@@ -119,11 +163,11 @@ elseif(is_clang)
     message(STATUS "  Using sanitizer ignorelist: ${IGNORELIST_PATH}")
 
     # Join sanitizer flags with commas for -fsanitize option
-    list(JOIN SANITIZERS_FLAGS "," SANITIZERS_FLAGS_STR)
+    list(JOIN SANITIZER_TYPES "," SANITIZER_TYPES_STR)
 
     # Add sanitizer to compile and link flags
-    list(APPEND SANITIZERS_COMPILE_FLAGS "-fsanitize=${SANITIZERS_FLAGS_STR}")
-    set(SANITIZERS_LINK_FLAGS "-fsanitize=${SANITIZERS_FLAGS_STR}")
+    list(APPEND SANITIZERS_COMPILE_FLAGS "-fsanitize=${SANITIZER_TYPES_STR}")
+    set(SANITIZERS_LINK_FLAGS "-fsanitize=${SANITIZER_TYPES_STR}")
 endif()
 
 message(STATUS "  Compile flags: ${SANITIZERS_COMPILE_FLAGS}")

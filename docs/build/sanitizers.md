@@ -100,7 +100,8 @@ export LSAN_OPTIONS="suppressions=path/to/lsan.supp:halt_on_error=0:log_path=lsa
 
 - Boost intrusive containers (used in `aged_unordered_container`) trigger false positives
 - Boost context switching (used in `Workers.cpp`) confuses ASAN's stack tracking
-- Since we usually don't build Boost(because we don't want to instrument Boost and detect issues in Boost code) with ASAN but use Boost containers in ASAN instrumented rippled code, it generates false positives. Building dependencies with ASAN instrumentation reduces false positives.
+- Since we usually don't build Boost (because we don't want to instrument Boost and detect issues in Boost code) with ASAN but use Boost containers in ASAN instrumented rippled code, it generates false positives.
+- Building dependencies with ASAN instrumentation reduces false positives. But we don't want to instrument dependencies like Boost with ASAN because it is slow (to compile as well as run tests) and not necessary.
 - See: https://github.com/google/sanitizers/wiki/AddressSanitizerContainerOverflow
 - More such flags are detailed [here](https://github.com/google/sanitizers/wiki/AddressSanitizerFlags)
 

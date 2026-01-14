@@ -1,4 +1,5 @@
 include(CompilationEnv)
+include(XrplSanitizers)
 
 find_package(Boost 1.82 REQUIRED
   COMPONENTS

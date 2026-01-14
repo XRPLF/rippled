@@ -3,6 +3,7 @@
 #]===================================================================]
 
 include(CompilationEnv)
+include(XrplSanitizers)
 
 #[=========================================================[
    TODO some/most of these common settings belong in a
