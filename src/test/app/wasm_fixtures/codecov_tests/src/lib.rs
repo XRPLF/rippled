@@ -1502,6 +1502,50 @@ pub extern "C" fn finish() -> i32 {
         )
     });
 
+    // checkSignature lengths
+    check_result(
+        unsafe {
+            host::check_sig(
+                message.as_ptr(),
+                long_len,
+                pubkey.as_ptr(),
+                pubkey.len(),
+                signature.as_ptr(),
+                signature.len(),
+            )
+        },
+        error_codes::DATA_FIELD_TOO_LARGE,
+        "check_sig_message_too_long",
+    );
+    check_result(
+        unsafe {
+            host::check_sig(
+                message.as_ptr(),
+                message.len(),
+                pubkey.as_ptr(),
+                long_len,
+                signature.as_ptr(),
+                signature.len(),
+            )
+        },
+        error_codes::DATA_FIELD_TOO_LARGE,
+        "check_sig_pubkey_too_long",
+    );
+    check_result(
+        unsafe {
+            host::check_sig(
+                message.as_ptr(),
+                message.len(),
+                pubkey.as_ptr(),
+                pubkey.len(),
+                signature.as_ptr(),
+                long_len,
+            )
+        },
+        error_codes::DATA_FIELD_TOO_LARGE,
+        "check_sig_signature_too_long",
+    );
+
     // ensure that the Slice index desync issue is fixed
     let empty: &[u8] = b"";
     check_result(
