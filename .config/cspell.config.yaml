@@ -73,7 +73,6 @@ words:
   - csprng
   - ctest
   - ctid
-  - ctest
   - currenttxhash
   - daria
   - dcmake
@@ -108,7 +107,6 @@ words:
   - insuff
   - iou
   - ious
-  - itype
   - isrdc
   - itype
   - jemalloc
