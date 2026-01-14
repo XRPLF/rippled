@@ -77,12 +77,16 @@ public:
 #define HOST_FUNCTION_INT_RETURN(NAME, ...) \
     Expected<int32_t, HostFunctionError> NAME(__VA_ARGS__) override;
 
+#define HOST_FUNCTION_UINT_RETURN(NAME, ...) \
+    Expected<std::uint32_t, HostFunctionError> NAME(__VA_ARGS__) override;
+
 #include <xrpld/app/wasm/host_functions.macro>
 
 #undef HOST_FUNCTION_BYTES_RETURN
 #undef HOST_FUNCTION_HASH_RETURN
 #undef HOST_FUNCTION_NO_RETURN
 #undef HOST_FUNCTION_INT_RETURN
+#undef HOST_FUNCTION_UINT_RETURN
 };
 
 }  // namespace xrpl

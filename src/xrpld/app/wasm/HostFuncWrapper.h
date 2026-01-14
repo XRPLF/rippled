@@ -40,11 +40,13 @@ namespace xrpl {
 #define HOST_FUNCTION_INT_RETURN(NAME, ...) \
     using NAME##_proto = int32_t(__VA_ARGS__); \
     DECLARE_WRAP(NAME);
+#define HOST_FUNCTION_UINT_RETURN(NAME, ...) \
+    using NAME##_proto = int32_t(__VA_ARGS__ __VA_OPT__(,) uint8_t*, int32_t); \
+    DECLARE_WRAP(NAME);
 
 #include <xrpld/app/wasm/host_functions.macro>
 
 #undef HOST_FUNCTION_BYTES_RETURN
-#undef HOST_FUNCTION_HASH_RETURN
 #undef HOST_FUNCTION_NO_RETURN
 #undef HOST_FUNCTION_INT_RETURN
 #undef DECLARE_WRAP

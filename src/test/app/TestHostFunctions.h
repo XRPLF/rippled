@@ -350,7 +350,7 @@ public:
         return Bytes(accountID_.begin(), accountID_.end());
     }
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getNFTTaxon(uint256 const& nftId) override
     {
         return 4;
@@ -368,7 +368,7 @@ public:
         return 10;
     }
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getNFTSerial(uint256 const& nftId) override
     {
         return 4;
@@ -1325,7 +1325,7 @@ struct PerfHostFunctions : public TestHostFunctions
         return Bytes{issuer.begin(), issuer.end()};
     }
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getNFTTaxon(uint256 const& nftId) override
     {
         return nft::toUInt32(nft::getTaxon(nftId));
@@ -1343,7 +1343,7 @@ struct PerfHostFunctions : public TestHostFunctions
         return nft::getTransferFee(nftId);
     }
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getNFTSerial(uint256 const& nftId) override
     {
         return nft::getSerial(nftId);

@@ -149,12 +149,19 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);                  \
     }
 
+#define HOST_FUNCTION_UINT_RETURN(NAME, ...)                             \
+    virtual Expected<std::uint32_t, HostFunctionError> NAME(__VA_ARGS__)          \
+    {                                                                    \
+        return Unexpected(HostFunctionError::INTERNAL);                  \
+    }
+
 #include <xrpld/app/wasm/host_functions.macro>
 
 #undef HOST_FUNCTION_BYTES_RETURN
 #undef HOST_FUNCTION_HASH_RETURN
 #undef HOST_FUNCTION_NO_RETURN
 #undef HOST_FUNCTION_INT_RETURN
+#undef HOST_FUNCTION_UINT_RETURN
     // clang-format on
 
     virtual ~HostFunctions() = default;
