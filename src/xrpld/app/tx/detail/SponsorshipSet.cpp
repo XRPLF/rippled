@@ -309,29 +309,23 @@ SponsorshipSet::doApply()
     // Update
     if (feeAmount)
     {
+        auto const currentFeeAmount =
+            (*sponsorObjSle)[~sfFeeAmount].value_or(XRPAmount(0));
+        auto feeAmountDelta = XRPAmount(*feeAmount - currentFeeAmount);
+
         // transfer feeAmount to ledger entry
-        (*sponsorAccSle)[sfBalance] -= *feeAmount;
-        if ((*sponsorObjSle).isFieldPresent(sfFeeAmount))
+        if (feeAmountDelta != beast::zero)
         {
-            auto const oldFeeAmount =
-                (*sponsorObjSle).getFieldAmount(sfFeeAmount);
-            auto const newFeeAmount = oldFeeAmount + *feeAmount;
-            (*sponsorObjSle).setFieldAmount(sfFeeAmount, newFeeAmount);
-        }
-        else
-        {
+            (*sponsorAccSle)[sfBalance] -= feeAmountDelta;
             (*sponsorObjSle).setFieldAmount(sfFeeAmount, *feeAmount);
         }
     }
 
     if (maxFee)
-    {
         (*sponsorObjSle)[sfMaxFee] = *maxFee;
-    }
 
     if (reserveCount)
-        (*sponsorObjSle)[sfReserveCount] =
-            (*sponsorObjSle).getFieldU32(sfReserveCount) + *reserveCount;
+        (*sponsorObjSle)[sfReserveCount] = *reserveCount;
 
     // update Flags
     auto flags = sponsorObjSle->getFieldU32(sfFlags);
@@ -350,7 +344,7 @@ SponsorshipSet::doApply()
     if (flags != (*sponsorObjSle)[sfFlags])
         (*sponsorObjSle)[sfFlags] = flags;
 
-    ctx_.view().update(sponsorObjSle);
+    view().update(sponsorObjSle);
 
     return tesSUCCESS;
 }
