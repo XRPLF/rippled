@@ -1098,4 +1098,51 @@ checkEncryptedAmountFormat(STObject const& object)
     return tesSUCCESS;
 }
 
+TER
+verifyEqualityProofs(
+    std::uint64_t amount,
+    std::vector<Buffer> const& zkps,
+    EncryptedAmountInfo const& holder,
+    EncryptedAmountInfo const& issuer,
+    std::optional<EncryptedAmountInfo> const& auditor,
+    uint256 const& contextHash)
+{
+    // Sanity check: Ensure we have enough proofs
+    size_t const required = auditor.has_value() ? 3 : 2;
+    if (zkps.size() != required)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    // 1. Verify Holder Proof (Index 0)
+    if (!isTesSuccess(verifyEqualityProof(
+            amount,
+            zkps[0],
+            holder.publicKey,
+            holder.encryptedAmount,
+            contextHash)))
+        return tecBAD_PROOF;
+
+    // 2. Verify Issuer Proof (Index 1)
+    if (!isTesSuccess(verifyEqualityProof(
+            amount,
+            zkps[1],
+            issuer.publicKey,
+            issuer.encryptedAmount,
+            contextHash)))
+        return tecBAD_PROOF;
+
+    // 3. Verify Auditor Proof (Index 2) - if applicable
+    if (auditor)
+    {
+        if (!isTesSuccess(verifyEqualityProof(
+                amount,
+                zkps[2],
+                auditor->publicKey,
+                auditor->encryptedAmount,
+                contextHash)))
+            return tecBAD_PROOF;
+    }
+
+    return tesSUCCESS;
+}
+
 }  // namespace ripple

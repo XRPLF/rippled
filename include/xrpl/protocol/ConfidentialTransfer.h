@@ -293,6 +293,25 @@ getEqualityProofs(Slice const& zkp);
 NotTEC
 checkEncryptedAmountFormat(STObject const& object);
 
+// Helper struct to bundle the ElGamal Public Key and the associated Ciphertext
+struct EncryptedAmountInfo
+{
+    Slice const publicKey;
+    Slice const encryptedAmount;
+};
+
+/**
+ * Verifies equality proofs for Holder, Issuer, and optionally Auditor.
+ */
+TER
+verifyEqualityProofs(
+    std::uint64_t amount,
+    std::vector<Buffer> const& zkps,
+    EncryptedAmountInfo const& holder,
+    EncryptedAmountInfo const& issuer,
+    std::optional<EncryptedAmountInfo> const& auditor,
+    uint256 const& contextHash);
+
 }  // namespace ripple
 
 #endif

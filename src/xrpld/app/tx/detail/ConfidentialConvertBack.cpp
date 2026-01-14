@@ -60,9 +60,6 @@ verifyProofs(
     auto const account = tx[sfAccount];
     auto const amount = tx[sfMPTAmount];
 
-    auto const holderPubKey = (*mptoken)[sfHolderElGamalPublicKey];
-    bool const hasAuditor = issuance->isFieldPresent(sfAuditorElGamalPublicKey);
-
     auto const contextHash = getConvertBackContextHash(
         account,
         tx[sfSequence],
@@ -70,38 +67,32 @@ verifyProofs(
         amount,
         (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
 
+    // Prepare Auditor Info
+    std::optional<EncryptedAmountInfo> auditor;
+    if (issuance->isFieldPresent(sfAuditorElGamalPublicKey))
+    {
+        auditor.emplace(
+            EncryptedAmountInfo{
+                (*issuance)[sfAuditorElGamalPublicKey],
+                tx[sfAuditorEncryptedAmount]});
+    }
+
     // verify equality proofs
     {
         auto const equalityZkps = getEqualityProofs(
             Slice{tx[sfZKProof].data(), getEqualityProofSize(issuance)});
 
-        // check equality proof
-        if (!isTesSuccess(verifyEqualityProof(
-                amount,
-                equalityZkps[0],
-                holderPubKey,
-                tx[sfHolderEncryptedAmount],
-                contextHash)) ||
-            !isTesSuccess(verifyEqualityProof(
-                amount,
-                equalityZkps[1],
+        return verifyEqualityProofs(
+            amount,
+            equalityZkps,
+            EncryptedAmountInfo{
+                (*mptoken)[sfHolderElGamalPublicKey],
+                tx[sfHolderEncryptedAmount]},  // Holder
+            EncryptedAmountInfo{
                 (*issuance)[sfIssuerElGamalPublicKey],
-                tx[sfIssuerEncryptedAmount],
-                contextHash)))
-        {
-            return tecBAD_PROOF;
-        }
-
-        if (hasAuditor &&
-            !isTesSuccess(verifyEqualityProof(
-                amount,
-                equalityZkps[2],
-                (*issuance)[sfAuditorElGamalPublicKey],
-                tx[sfAuditorEncryptedAmount],
-                contextHash)))
-        {
-            return tecBAD_PROOF;
-        }
+                tx[sfIssuerEncryptedAmount]},  // Issuer
+            auditor,                           // Optional auditor
+            contextHash);
     }
 
     return tesSUCCESS;

@@ -438,6 +438,15 @@ public:
         uint256 const& txHash) const;
 
     Buffer
+    generateEqualityZKP(
+        Account const& holder,
+        std::uint64_t amount,
+        uint256 const& ctxHash,
+        CiphertextComponents const& holderCiphertext,
+        CiphertextComponents const& issuerCiphertext,
+        std::optional<CiphertextComponents> const& auditorCiphertext) const;
+
+    Buffer
     getConvertProof(
         Account const& holder,
         std::uint64_t amount,
@@ -445,6 +454,18 @@ public:
         CiphertextComponents holderCiphertext,
         CiphertextComponents issuerCiphertext,
         std::optional<CiphertextComponents> auditorCiphertext) const;
+
+    Buffer
+    getConvertBackProof(
+        Account const& holder,
+        std::uint64_t amount,
+        uint256 const& ctxHash,
+        CiphertextComponents holderCiphertext,
+        CiphertextComponents issuerCiphertext,
+        std::optional<CiphertextComponents> auditorCiphertext) const;
+
+    std::uint32_t
+    getMPTokenVersion(Account const account) const;
 
 private:
     using SLEP = SLE::const_pointer;

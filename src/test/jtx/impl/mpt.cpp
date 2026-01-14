@@ -805,13 +805,13 @@ MPTTester::getClawbackProof(
 }
 
 Buffer
-MPTTester::getConvertProof(
+MPTTester::generateEqualityZKP(
     Account const& holder,
     std::uint64_t amount,
     uint256 const& ctxHash,
-    CiphertextComponents holderCiphertext,
-    CiphertextComponents issuerCiphertext,
-    std::optional<CiphertextComponents> auditorCiphertext) const
+    CiphertextComponents const& holderCiphertext,
+    CiphertextComponents const& issuerCiphertext,
+    std::optional<CiphertextComponents> const& auditorCiphertext) const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -906,6 +906,46 @@ MPTTester::getConvertProof(
     }
 
     return zkp;
+}
+
+Buffer
+MPTTester::getConvertProof(
+    Account const& holder,
+    std::uint64_t amount,
+    uint256 const& ctxHash,
+    CiphertextComponents holderCiphertext,
+    CiphertextComponents issuerCiphertext,
+    std::optional<CiphertextComponents> auditorCiphertext) const
+{
+    return generateEqualityZKP(
+        holder,
+        amount,
+        ctxHash,
+        holderCiphertext,
+        issuerCiphertext,
+        auditorCiphertext);
+}
+
+Buffer
+MPTTester::getConvertBackProof(
+    Account const& holder,
+    std::uint64_t amount,
+    uint256 const& ctxHash,
+    CiphertextComponents holderCiphertext,
+    CiphertextComponents issuerCiphertext,
+    std::optional<CiphertextComponents> auditorCiphertext) const
+{
+    Buffer const equalityZkp = generateEqualityZKP(
+        holder,
+        amount,
+        ctxHash,
+        holderCiphertext,
+        issuerCiphertext,
+        auditorCiphertext);
+
+    // todo: incoporate pederson and range proof
+
+    return equalityZkp;
 }
 
 std::optional<Buffer>
@@ -1514,6 +1554,22 @@ MPTTester::getIssuanceOutstandingBalance() const
     return (*sle)[sfOutstandingAmount];
 }
 
+std::uint32_t
+MPTTester::getMPTokenVersion(Account const account) const
+{
+    if (!id_)
+        Throw<std::runtime_error>("Issuance ID does not exist");
+
+    auto const sle = env_.current()->read(keylet::mptoken(*id_, account));
+
+    // return 0 here instead of throwing an exception since tests for
+    // preclaim will check if the MPToken exists
+    if (!sle)
+        return 0;
+
+    return (*sle)[~sfConfidentialBalanceVersion].value_or(0);
+}
+
 void
 MPTTester::convertBack(MPTConvertBack const& arg)
 {
@@ -1535,17 +1591,26 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 
     if (arg.amt)
         jv[sfMPTAmount.jsonName] = std::to_string(*arg.amt);
+
+    CiphertextComponents holderCiphertext;
     if (arg.holderEncryptedAmt)
         jv[sfHolderEncryptedAmount.jsonName] = strHex(*arg.holderEncryptedAmt);
     else
+    {
+        holderCiphertext = encryptAmount(*arg.account, *arg.amt);
         jv[sfHolderEncryptedAmount.jsonName] =
-            strHex(encryptAmount(*arg.account, *arg.amt).ciphertext);
+            strHex(holderCiphertext.ciphertext);
+    }
 
+    CiphertextComponents issuerCiphertext;
     if (arg.issuerEncryptedAmt)
         jv[sfIssuerEncryptedAmount.jsonName] = strHex(*arg.issuerEncryptedAmt);
     else
+    {
+        issuerCiphertext = encryptAmount(issuer_, *arg.amt);
         jv[sfIssuerEncryptedAmount.jsonName] =
-            strHex(encryptAmount(issuer_, *arg.amt).ciphertext);
+            strHex(issuerCiphertext.ciphertext);
+    }
 
     std::optional<CiphertextComponents> auditorCiphertext;
     if (arg.auditorEncryptedAmt)
@@ -1560,6 +1625,23 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 
     if (arg.proof)
         jv[sfZKProof.jsonName] = *arg.proof;
+    else
+    {
+        auto const version = getMPTokenVersion(*arg.account);
+
+        // if the caller generated ciphertexts themselves, they should also
+        // generate the proof themselves from the randomness factor
+        uint256 const ctxHash = getConvertBackContextHash(
+            arg.account->id(), env_.seq(*arg.account), *id_, *arg.amt, version);
+        Buffer proof = getConvertBackProof(
+            *arg.account,
+            *arg.amt,
+            ctxHash,
+            holderCiphertext,
+            issuerCiphertext,
+            auditorCiphertext);
+        jv[sfZKProof] = strHex(proof);
+    }
 
     auto const holderAmt = getBalance(*arg.account);
     auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
