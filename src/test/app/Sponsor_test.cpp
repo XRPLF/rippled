@@ -1120,19 +1120,55 @@ public:
     {
         testcase("Sponsor Account");
         using namespace test::jtx;
-        Env env{*this, testable_amendments()};
+        Env env{*this, testable_amendments() - featureSponsor};
 
         Account const alice("alice");
         Account const sponsor("sponsor");
         Account const bob("bob");
         Account const charlie("charlie");
+        Account const gw("gw");
+        auto const USD = gw["USD"];
         env.fund(XRP(10000), alice, sponsor);
+
+        // Disabled
+        env(pay(alice, bob, XRP(100)),
+            txflags(tfSponsorCreatedAccount),
+            ter(temDISABLED));
+        env.close();
+
+        env.enableFeature(featureSponsor);
+        env.close();
+
+        // Invalid flags
+        for (auto flag : {
+                 tfNoRippleDirect,
+                 tfPartialPayment,
+                 tfLimitQuality,
+             })
+        {
+            env(pay(alice, bob, XRP(100)),
+                txflags(tfSponsorCreatedAccount | flag),
+                ter(temINVALID_FLAG));
+            env.close();
+        }
+
+        // Invalid amount(iou)
+        env(pay(alice, bob, USD(100)),
+            txflags(tfSponsorCreatedAccount),
+            ter(temBAD_AMOUNT));
+        env.close();
+
+        // Insufficient reserve
+        env(pay(alice,
+                bob,
+                (env.current()->fees().accountReserve(0) - drops(1))),
+            txflags(tfSponsorCreatedAccount),
+            ter(tecNO_DST_INSUF_XRP));
+        env.close();
 
         // Account is not sponsored by normal Sponsor specification
         {
-            env(pay(alice,
-                    bob,
-                    STAmount(env.current()->fees().accountReserve(0))),
+            env(pay(alice, bob, drops(env.current()->fees().accountReserve(0))),
                 sponsor::as(sponsor, tfSponsorReserve),
                 sig(sfSponsorSignature, sponsor));
             env.close();
@@ -1145,17 +1181,17 @@ public:
 
         // Use tfSponsorCreatedAccount to sponsor an account
         {
-            // to funded accoutn
+            // to funded account
             env(pay(sponsor,
                     bob,
-                    STAmount(env.current()->fees().accountReserve(0))),
+                    drops(env.current()->fees().accountReserve(0))),
                 txflags(tfSponsorCreatedAccount),
                 ter(tecNO_SPONSOR_PERMISSION));
 
             // to non-funded account
             env(pay(sponsor,
                     charlie,
-                    STAmount(env.current()->fees().accountReserve(0))),
+                    drops(env.current()->fees().accountReserve(0))),
                 txflags(tfSponsorCreatedAccount));
             env.close();
 

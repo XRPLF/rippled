@@ -1063,7 +1063,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
 #   include <xrpld/app/tx/detail/SponsorshipTransfer.h>
 #endif
 TRANSACTION(ttSPONSORSHIP_TRANSFER, 85, SponsorshipTransfer,
-    Delegation::delegatable,
+    Delegation::delegable,
     featureSponsor,
     noPriv,
     ({
@@ -1075,7 +1075,7 @@ TRANSACTION(ttSPONSORSHIP_TRANSFER, 85, SponsorshipTransfer,
 #   include <xrpld/app/tx/detail/SponsorshipSet.h>
 #endif
 TRANSACTION(ttSPONSORSHIP_SET, 86, SponsorshipSet,
-    Delegation::delegatable,
+    Delegation::delegable,
     featureSponsor,
     noPriv,
     ({

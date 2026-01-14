@@ -87,10 +87,14 @@ Payment::preflight(PreflightContext const& ctx)
     if (txFlags & tfSponsorCreatedAccount)
     {
         if (!ctx.rules.enabled(featureSponsor))
+            return temDISABLED;
+
+        if (txFlags & tfNoRippleDirect || txFlags & tfPartialPayment ||
+            txFlags & tfLimitQuality)
             return temINVALID_FLAG;
 
         if (!dstAmount.native())
-            return temMALFORMED;
+            return temBAD_AMOUNT;
     }
 
     if (mptDirect && ctx.tx.isFieldPresent(sfPaths))
