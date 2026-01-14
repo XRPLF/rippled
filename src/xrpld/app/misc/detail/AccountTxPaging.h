@@ -1,7 +1,7 @@
 #ifndef XRPL_APP_MISC_IMPL_ACCOUNTTXPAGING_H_INCLUDED
 #define XRPL_APP_MISC_IMPL_ACCOUNTTXPAGING_H_INCLUDED
 
-#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 
 #include <cstdint>
 

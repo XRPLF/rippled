@@ -10,213 +10,8 @@
 
 namespace xrpl {
 
-class SQLiteDatabaseImp final : public SQLiteDatabase
-{
-public:
-    SQLiteDatabaseImp(
-        ServiceRegistry& registry,
-        Config const& config,
-        JobQueue& jobQueue)
-        : registry_(registry)
-        , useTxTables_(config.useTxTables())
-        , j_(registry.journal("SQLiteDatabaseImp"))
-    {
-        DatabaseCon::Setup const setup = setup_DatabaseCon(config, j_);
-        if (!makeLedgerDBs(
-                config,
-                setup,
-                DatabaseCon::CheckpointerSetup{&jobQueue, &registry_.logs()}))
-        {
-            std::string_view constexpr error =
-                "Failed to create ledger databases";
-
-            JLOG(j_.fatal()) << error;
-            Throw<std::runtime_error>(error.data());
-        }
-    }
-
-    std::optional<LedgerIndex>
-    getMinLedgerSeq() override;
-
-    std::optional<LedgerIndex>
-    getTransactionsMinLedgerSeq() override;
-
-    std::optional<LedgerIndex>
-    getAccountTransactionsMinLedgerSeq() override;
-
-    std::optional<LedgerIndex>
-    getMaxLedgerSeq() override;
-
-    void
-    deleteTransactionByLedgerSeq(LedgerIndex ledgerSeq) override;
-
-    void
-    deleteBeforeLedgerSeq(LedgerIndex ledgerSeq) override;
-
-    void
-    deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq) override;
-
-    void
-    deleteAccountTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq) override;
-
-    std::size_t
-    getTransactionCount() override;
-
-    std::size_t
-    getAccountTransactionCount() override;
-
-    RelationalDatabase::CountMinMax
-    getLedgerCountMinMax() override;
-
-    bool
-    saveValidatedLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        bool current) override;
-
-    std::optional<LedgerHeader>
-    getLedgerInfoByIndex(LedgerIndex ledgerSeq) override;
-
-    std::optional<LedgerHeader>
-    getNewestLedgerInfo() override;
-
-    std::optional<LedgerHeader>
-    getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex) override;
-
-    std::optional<LedgerHeader>
-    getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex) override;
-
-    std::optional<LedgerHeader>
-    getLedgerInfoByHash(uint256 const& ledgerHash) override;
-
-    uint256
-    getHashByIndex(LedgerIndex ledgerIndex) override;
-
-    std::optional<LedgerHashPair>
-    getHashesByIndex(LedgerIndex ledgerIndex) override;
-
-    std::map<LedgerIndex, LedgerHashPair>
-    getHashesByIndex(LedgerIndex minSeq, LedgerIndex maxSeq) override;
-
-    std::vector<std::shared_ptr<Transaction>>
-    getTxHistory(LedgerIndex startIndex) override;
-
-    AccountTxs
-    getOldestAccountTxs(AccountTxOptions const& options) override;
-
-    AccountTxs
-    getNewestAccountTxs(AccountTxOptions const& options) override;
-
-    MetaTxsList
-    getOldestAccountTxsB(AccountTxOptions const& options) override;
-
-    MetaTxsList
-    getNewestAccountTxsB(AccountTxOptions const& options) override;
-
-    std::pair<AccountTxs, std::optional<AccountTxMarker>>
-    oldestAccountTxPage(AccountTxPageOptions const& options) override;
-
-    std::pair<AccountTxs, std::optional<AccountTxMarker>>
-    newestAccountTxPage(AccountTxPageOptions const& options) override;
-
-    std::pair<MetaTxsList, std::optional<AccountTxMarker>>
-    oldestAccountTxPageB(AccountTxPageOptions const& options) override;
-
-    std::pair<MetaTxsList, std::optional<AccountTxMarker>>
-    newestAccountTxPageB(AccountTxPageOptions const& options) override;
-
-    std::variant<AccountTx, TxSearched>
-    getTransaction(
-        uint256 const& id,
-        std::optional<ClosedInterval<std::uint32_t>> const& range,
-        error_code_i& ec) override;
-
-    bool
-    ledgerDbHasSpace(Config const& config) override;
-
-    bool
-    transactionDbHasSpace(Config const& config) override;
-
-    std::uint32_t
-    getKBUsedAll() override;
-
-    std::uint32_t
-    getKBUsedLedger() override;
-
-    std::uint32_t
-    getKBUsedTransaction() override;
-
-    void
-    closeLedgerDB() override;
-
-    void
-    closeTransactionDB() override;
-
-private:
-    ServiceRegistry& registry_;
-    bool const useTxTables_;
-    beast::Journal j_;
-    std::unique_ptr<DatabaseCon> ledgerDb_, txdb_;
-
-    /**
-     * @brief makeLedgerDBs Opens ledger and transaction databases for the node
-     *        store, and stores their descriptors in private member variables.
-     * @param config Config object.
-     * @param setup Path to the databases and other opening parameters.
-     * @param checkpointerSetup Checkpointer parameters.
-     * @return True if node databases opened successfully.
-     */
-    bool
-    makeLedgerDBs(
-        Config const& config,
-        DatabaseCon::Setup const& setup,
-        DatabaseCon::CheckpointerSetup const& checkpointerSetup);
-
-    /**
-     * @brief existsLedger Checks if the node store ledger database exists.
-     * @return True if the node store ledger database exists.
-     */
-    bool
-    existsLedger()
-    {
-        return static_cast<bool>(ledgerDb_);
-    }
-
-    /**
-     * @brief existsTransaction Checks if the node store transaction database
-     *        exists.
-     * @return True if the node store transaction database exists.
-     */
-    bool
-    existsTransaction()
-    {
-        return static_cast<bool>(txdb_);
-    }
-
-    /**
-     * @brief checkoutTransaction Checks out and returns node store ledger
-     *        database.
-     * @return Session to the node store ledger database.
-     */
-    auto
-    checkoutLedger()
-    {
-        return ledgerDb_->checkoutDb();
-    }
-
-    /**
-     * @brief checkoutTransaction Checks out and returns the node store
-     *        transaction database.
-     * @return Session to the node store transaction database.
-     */
-    auto
-    checkoutTransaction()
-    {
-        return txdb_->checkoutDb();
-    }
-};
-
 bool
-SQLiteDatabaseImp::makeLedgerDBs(
+SQLiteDatabase::makeLedgerDBs(
     Config const& config,
     DatabaseCon::Setup const& setup,
     DatabaseCon::CheckpointerSetup const& checkpointerSetup)
@@ -229,7 +24,7 @@ SQLiteDatabaseImp::makeLedgerDBs(
 }
 
 std::optional<LedgerIndex>
-SQLiteDatabaseImp::getMinLedgerSeq()
+SQLiteDatabase::getMinLedgerSeq()
 {
     /* if databases exists, use it */
     if (existsLedger())
@@ -243,7 +38,7 @@ SQLiteDatabaseImp::getMinLedgerSeq()
 }
 
 std::optional<LedgerIndex>
-SQLiteDatabaseImp::getTransactionsMinLedgerSeq()
+SQLiteDatabase::getTransactionsMinLedgerSeq()
 {
     if (!useTxTables_)
         return {};
@@ -258,7 +53,7 @@ SQLiteDatabaseImp::getTransactionsMinLedgerSeq()
 }
 
 std::optional<LedgerIndex>
-SQLiteDatabaseImp::getAccountTransactionsMinLedgerSeq()
+SQLiteDatabase::getAccountTransactionsMinLedgerSeq()
 {
     if (!useTxTables_)
         return {};
@@ -274,7 +69,7 @@ SQLiteDatabaseImp::getAccountTransactionsMinLedgerSeq()
 }
 
 std::optional<LedgerIndex>
-SQLiteDatabaseImp::getMaxLedgerSeq()
+SQLiteDatabase::getMaxLedgerSeq()
 {
     if (existsLedger())
     {
@@ -286,7 +81,7 @@ SQLiteDatabaseImp::getMaxLedgerSeq()
 }
 
 void
-SQLiteDatabaseImp::deleteTransactionByLedgerSeq(LedgerIndex ledgerSeq)
+SQLiteDatabase::deleteTransactionByLedgerSeq(LedgerIndex ledgerSeq)
 {
     if (!useTxTables_)
         return;
@@ -301,7 +96,7 @@ SQLiteDatabaseImp::deleteTransactionByLedgerSeq(LedgerIndex ledgerSeq)
 }
 
 void
-SQLiteDatabaseImp::deleteBeforeLedgerSeq(LedgerIndex ledgerSeq)
+SQLiteDatabase::deleteBeforeLedgerSeq(LedgerIndex ledgerSeq)
 {
     if (existsLedger())
     {
@@ -313,7 +108,7 @@ SQLiteDatabaseImp::deleteBeforeLedgerSeq(LedgerIndex ledgerSeq)
 }
 
 void
-SQLiteDatabaseImp::deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
+SQLiteDatabase::deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
 {
     if (!useTxTables_)
         return;
@@ -328,8 +123,7 @@ SQLiteDatabaseImp::deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
 }
 
 void
-SQLiteDatabaseImp::deleteAccountTransactionsBeforeLedgerSeq(
-    LedgerIndex ledgerSeq)
+SQLiteDatabase::deleteAccountTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
 {
     if (!useTxTables_)
         return;
@@ -344,7 +138,7 @@ SQLiteDatabaseImp::deleteAccountTransactionsBeforeLedgerSeq(
 }
 
 std::size_t
-SQLiteDatabaseImp::getTransactionCount()
+SQLiteDatabase::getTransactionCount()
 {
     if (!useTxTables_)
         return 0;
@@ -359,7 +153,7 @@ SQLiteDatabaseImp::getTransactionCount()
 }
 
 std::size_t
-SQLiteDatabaseImp::getAccountTransactionCount()
+SQLiteDatabase::getAccountTransactionCount()
 {
     if (!useTxTables_)
         return 0;
@@ -374,7 +168,7 @@ SQLiteDatabaseImp::getAccountTransactionCount()
 }
 
 RelationalDatabase::CountMinMax
-SQLiteDatabaseImp::getLedgerCountMinMax()
+SQLiteDatabase::getLedgerCountMinMax()
 {
     if (existsLedger())
     {
@@ -386,7 +180,7 @@ SQLiteDatabaseImp::getLedgerCountMinMax()
 }
 
 bool
-SQLiteDatabaseImp::saveValidatedLedger(
+SQLiteDatabase::saveValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
@@ -401,7 +195,7 @@ SQLiteDatabaseImp::saveValidatedLedger(
 }
 
 std::optional<LedgerHeader>
-SQLiteDatabaseImp::getLedgerInfoByIndex(LedgerIndex ledgerSeq)
+SQLiteDatabase::getLedgerInfoByIndex(LedgerIndex ledgerSeq)
 {
     if (existsLedger())
     {
@@ -416,7 +210,7 @@ SQLiteDatabaseImp::getLedgerInfoByIndex(LedgerIndex ledgerSeq)
 }
 
 std::optional<LedgerHeader>
-SQLiteDatabaseImp::getNewestLedgerInfo()
+SQLiteDatabase::getNewestLedgerInfo()
 {
     if (existsLedger())
     {
@@ -431,7 +225,7 @@ SQLiteDatabaseImp::getNewestLedgerInfo()
 }
 
 std::optional<LedgerHeader>
-SQLiteDatabaseImp::getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex)
+SQLiteDatabase::getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex)
 {
     if (existsLedger())
     {
@@ -447,7 +241,7 @@ SQLiteDatabaseImp::getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex)
 }
 
 std::optional<LedgerHeader>
-SQLiteDatabaseImp::getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex)
+SQLiteDatabase::getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex)
 {
     if (existsLedger())
     {
@@ -463,7 +257,7 @@ SQLiteDatabaseImp::getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex)
 }
 
 std::optional<LedgerHeader>
-SQLiteDatabaseImp::getLedgerInfoByHash(uint256 const& ledgerHash)
+SQLiteDatabase::getLedgerInfoByHash(uint256 const& ledgerHash)
 {
     if (existsLedger())
     {
@@ -478,7 +272,7 @@ SQLiteDatabaseImp::getLedgerInfoByHash(uint256 const& ledgerHash)
 }
 
 uint256
-SQLiteDatabaseImp::getHashByIndex(LedgerIndex ledgerIndex)
+SQLiteDatabase::getHashByIndex(LedgerIndex ledgerIndex)
 {
     if (existsLedger())
     {
@@ -493,7 +287,7 @@ SQLiteDatabaseImp::getHashByIndex(LedgerIndex ledgerIndex)
 }
 
 std::optional<LedgerHashPair>
-SQLiteDatabaseImp::getHashesByIndex(LedgerIndex ledgerIndex)
+SQLiteDatabase::getHashesByIndex(LedgerIndex ledgerIndex)
 {
     if (existsLedger())
     {
@@ -508,7 +302,7 @@ SQLiteDatabaseImp::getHashesByIndex(LedgerIndex ledgerIndex)
 }
 
 std::map<LedgerIndex, LedgerHashPair>
-SQLiteDatabaseImp::getHashesByIndex(LedgerIndex minSeq, LedgerIndex maxSeq)
+SQLiteDatabase::getHashesByIndex(LedgerIndex minSeq, LedgerIndex maxSeq)
 {
     if (existsLedger())
     {
@@ -523,7 +317,7 @@ SQLiteDatabaseImp::getHashesByIndex(LedgerIndex minSeq, LedgerIndex maxSeq)
 }
 
 std::vector<std::shared_ptr<Transaction>>
-SQLiteDatabaseImp::getTxHistory(LedgerIndex startIndex)
+SQLiteDatabase::getTxHistory(LedgerIndex startIndex)
 {
     if (!useTxTables_)
         return {};
@@ -542,7 +336,7 @@ SQLiteDatabaseImp::getTxHistory(LedgerIndex startIndex)
 }
 
 RelationalDatabase::AccountTxs
-SQLiteDatabaseImp::getOldestAccountTxs(AccountTxOptions const& options)
+SQLiteDatabase::getOldestAccountTxs(AccountTxOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -561,7 +355,7 @@ SQLiteDatabaseImp::getOldestAccountTxs(AccountTxOptions const& options)
 }
 
 RelationalDatabase::AccountTxs
-SQLiteDatabaseImp::getNewestAccountTxs(AccountTxOptions const& options)
+SQLiteDatabase::getNewestAccountTxs(AccountTxOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -580,7 +374,7 @@ SQLiteDatabaseImp::getNewestAccountTxs(AccountTxOptions const& options)
 }
 
 RelationalDatabase::MetaTxsList
-SQLiteDatabaseImp::getOldestAccountTxsB(AccountTxOptions const& options)
+SQLiteDatabase::getOldestAccountTxsB(AccountTxOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -596,7 +390,7 @@ SQLiteDatabaseImp::getOldestAccountTxsB(AccountTxOptions const& options)
 }
 
 RelationalDatabase::MetaTxsList
-SQLiteDatabaseImp::getNewestAccountTxsB(AccountTxOptions const& options)
+SQLiteDatabase::getNewestAccountTxsB(AccountTxOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -614,7 +408,7 @@ SQLiteDatabaseImp::getNewestAccountTxsB(AccountTxOptions const& options)
 std::pair<
     RelationalDatabase::AccountTxs,
     std::optional<RelationalDatabase::AccountTxMarker>>
-SQLiteDatabaseImp::oldestAccountTxPage(AccountTxPageOptions const& options)
+SQLiteDatabase::oldestAccountTxPage(AccountTxPageOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -647,7 +441,7 @@ SQLiteDatabaseImp::oldestAccountTxPage(AccountTxPageOptions const& options)
 std::pair<
     RelationalDatabase::AccountTxs,
     std::optional<RelationalDatabase::AccountTxMarker>>
-SQLiteDatabaseImp::newestAccountTxPage(AccountTxPageOptions const& options)
+SQLiteDatabase::newestAccountTxPage(AccountTxPageOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -680,7 +474,7 @@ SQLiteDatabaseImp::newestAccountTxPage(AccountTxPageOptions const& options)
 std::pair<
     RelationalDatabase::MetaTxsList,
     std::optional<RelationalDatabase::AccountTxMarker>>
-SQLiteDatabaseImp::oldestAccountTxPageB(AccountTxPageOptions const& options)
+SQLiteDatabase::oldestAccountTxPageB(AccountTxPageOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -713,7 +507,7 @@ SQLiteDatabaseImp::oldestAccountTxPageB(AccountTxPageOptions const& options)
 std::pair<
     RelationalDatabase::MetaTxsList,
     std::optional<RelationalDatabase::AccountTxMarker>>
-SQLiteDatabaseImp::newestAccountTxPageB(AccountTxPageOptions const& options)
+SQLiteDatabase::newestAccountTxPageB(AccountTxPageOptions const& options)
 {
     if (!useTxTables_)
         return {};
@@ -744,7 +538,7 @@ SQLiteDatabaseImp::newestAccountTxPageB(AccountTxPageOptions const& options)
 }
 
 std::variant<RelationalDatabase::AccountTx, TxSearched>
-SQLiteDatabaseImp::getTransaction(
+SQLiteDatabase::getTransaction(
     uint256 const& id,
     std::optional<ClosedInterval<std::uint32_t>> const& range,
     error_code_i& ec)
@@ -762,7 +556,7 @@ SQLiteDatabaseImp::getTransaction(
 }
 
 bool
-SQLiteDatabaseImp::ledgerDbHasSpace(Config const& config)
+SQLiteDatabase::ledgerDbHasSpace(Config const& config)
 {
     if (existsLedger())
     {
@@ -774,7 +568,7 @@ SQLiteDatabaseImp::ledgerDbHasSpace(Config const& config)
 }
 
 bool
-SQLiteDatabaseImp::transactionDbHasSpace(Config const& config)
+SQLiteDatabase::transactionDbHasSpace(Config const& config)
 {
     if (!useTxTables_)
         return true;
@@ -789,7 +583,7 @@ SQLiteDatabaseImp::transactionDbHasSpace(Config const& config)
 }
 
 std::uint32_t
-SQLiteDatabaseImp::getKBUsedAll()
+SQLiteDatabase::getKBUsedAll()
 {
     if (existsLedger())
     {
@@ -800,7 +594,7 @@ SQLiteDatabaseImp::getKBUsedAll()
 }
 
 std::uint32_t
-SQLiteDatabaseImp::getKBUsedLedger()
+SQLiteDatabase::getKBUsedLedger()
 {
     if (existsLedger())
     {
@@ -811,7 +605,7 @@ SQLiteDatabaseImp::getKBUsedLedger()
 }
 
 std::uint32_t
-SQLiteDatabaseImp::getKBUsedTransaction()
+SQLiteDatabase::getKBUsedTransaction()
 {
     if (!useTxTables_)
         return 0;
@@ -825,24 +619,24 @@ SQLiteDatabaseImp::getKBUsedTransaction()
 }
 
 void
-SQLiteDatabaseImp::closeLedgerDB()
+SQLiteDatabase::closeLedgerDB()
 {
     ledgerDb_.reset();
 }
 
 void
-SQLiteDatabaseImp::closeTransactionDB()
+SQLiteDatabase::closeTransactionDB()
 {
     txdb_.reset();
 }
 
-std::unique_ptr<RelationalDatabase>
-getSQLiteDatabase(
+std::unique_ptr<SQLiteDatabase>
+setup_RelationalDatabase(
     ServiceRegistry& registry,
     Config const& config,
     JobQueue& jobQueue)
 {
-    return std::make_unique<SQLiteDatabaseImp>(registry, config, jobQueue);
+    return std::make_unique<SQLiteDatabase>(registry, config, jobQueue);
 }
 
 }  // namespace xrpl

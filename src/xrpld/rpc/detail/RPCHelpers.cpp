@@ -1,6 +1,5 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/paths/TrustLine.h>
-#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
@@ -10,6 +9,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/nftPageMask.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
 
 #include <boost/algorithm/string/case_conv.hpp>

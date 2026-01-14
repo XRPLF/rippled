@@ -9,6 +9,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
 
 #include <optional>
 #include <variant>
@@ -35,8 +36,6 @@ enum TransStatus {
     OBSOLETE = 7,    // a compatible transaction has taken precedence
     INCOMPLETE = 8   // needs more signatures
 };
-
-enum class TxSearched { all, some, unknown };
 
 // This class is for constructing and examining transactions.
 // Transactions are static so manipulation functions are unnecessary.

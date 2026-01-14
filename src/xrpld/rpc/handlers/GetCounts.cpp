@@ -53,23 +53,19 @@ getCountsJson(Application& app, int minObjectCount)
 
     if (app.config().useTxTables())
     {
-        auto const db =
-            dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());
+        auto& db = app.getRelationalDatabase();
 
-        if (!db)
-            Throw<std::runtime_error>("Failed to get relational database");
-
-        auto dbKB = db->getKBUsedAll();
+        auto dbKB = db.getKBUsedAll();
 
         if (dbKB > 0)
             ret[jss::dbKBTotal] = dbKB;
 
-        dbKB = db->getKBUsedLedger();
+        dbKB = db.getKBUsedLedger();
 
         if (dbKB > 0)
             ret[jss::dbKBLedger] = dbKB;
 
-        dbKB = db->getKBUsedTransaction();
+        dbKB = db.getKBUsedTransaction();
 
         if (dbKB > 0)
             ret[jss::dbKBTransaction] = dbKB;

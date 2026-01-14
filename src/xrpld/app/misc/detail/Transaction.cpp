@@ -2,13 +2,13 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/CTID.h>
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 
 namespace xrpl {
 
@@ -127,14 +127,9 @@ Transaction::load(
     std::optional<ClosedInterval<uint32_t>> const& range,
     error_code_i& ec)
 {
-    auto const db = dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());
+    auto& db = app.getRelationalDatabase();
 
-    if (!db)
-    {
-        Throw<std::runtime_error>("Failed to get relational database");
-    }
-
-    return db->getTransaction(id, range, ec);
+    return db.getTransaction(id, range, ec);
 }
 
 // options 1 to include the date of the transaction
