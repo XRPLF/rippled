@@ -41,18 +41,19 @@ class WasmHostFunctionsImpl : public HostFunctions
         return cacheIdx;
     }
 
+    template <typename F>
     void
-    log(std::string_view const& msg, auto const& data)
+    log(std::string_view const& msg, F&& dataFn)
     {
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
         if (!getJournal().active(beast::severities::kTrace))
-            return ret;
+            return;
         auto j = getJournal().trace();
 #endif
         j << "WasmTrace[" << to_short_string(leKey.key) << "]: " << msg << " "
-          << data;
+          << dataFn();
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;

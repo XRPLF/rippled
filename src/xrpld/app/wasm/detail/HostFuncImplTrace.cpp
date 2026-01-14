@@ -19,17 +19,20 @@ WasmHostFunctionsImpl::trace(
 
     if (!asHex)
     {
-        log(msg,
-            std::string_view(
-                reinterpret_cast<char const*>(data.data()), data.size()));
+        log(msg, [&data] {
+            return std::string_view(
+                reinterpret_cast<char const*>(data.data()), data.size());
+        });
     }
     else
     {
-        std::string hex;
-        hex.reserve(data.size() * 2);
-        boost::algorithm::hex(
-            data.begin(), data.end(), std::back_inserter(hex));
-        log(msg, hex);
+        log(msg, [&data] {
+            std::string hex;
+            hex.reserve(data.size() * 2);
+            boost::algorithm::hex(
+                data.begin(), data.end(), std::back_inserter(hex));
+            return hex;
+        });
     }
 
     return ret;
@@ -39,7 +42,7 @@ Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
 {
     auto const ret = msg.size() + sizeof(data);
-    log(msg, data);
+    log(msg, [data] { return data; });
     return ret;
 }
 
@@ -49,8 +52,7 @@ WasmHostFunctionsImpl::traceAccount(
     AccountID const& account)
 {
     auto const ret = msg.size() + account.size();
-    auto const accountStr = toBase58(account);
-    log(msg, accountStr);
+    log(msg, [&account] { return toBase58(account); });
     return ret;
 }
 
@@ -60,8 +62,7 @@ WasmHostFunctionsImpl::traceFloat(
     Slice const& data)
 {
     auto const ret = msg.size() + data.size();
-    auto const s = wasm_float::floatToString(data);
-    log(msg, s);
+    log(msg, [&data] { return wasm_float::floatToString(data); });
     return ret;
 }
 
@@ -71,8 +72,7 @@ WasmHostFunctionsImpl::traceAmount(
     STAmount const& amount)
 {
     auto const ret = msg.size();
-    auto const amountStr = amount.getFullText();
-    log(msg, amountStr);
+    log(msg, [&amount] { return amount.getFullText(); });
     return ret;
 }
 
