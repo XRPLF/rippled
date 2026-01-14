@@ -31,9 +31,8 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
         ctx.tx[sfHolderElGamalPublicKey].length() != ecPubKeyLength)
         return temMALFORMED;
 
-    auto const expectedCount =
-        ctx.tx.isFieldPresent(sfAuditorEncryptedAmount) ? 3 : 2;
-    if (ctx.tx[sfZKProof].size() != expectedCount * ecEqualityProofLength)
+    if (ctx.tx[sfZKProof].size() !=
+        getEqualityProofLength(ctx.tx.isFieldPresent(sfAuditorEncryptedAmount)))
         return temMALFORMED;
 
     return tesSUCCESS;

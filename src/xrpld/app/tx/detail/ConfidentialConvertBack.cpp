@@ -13,19 +13,13 @@
 namespace ripple {
 
 size_t
-getEqualityProofSize(std::shared_ptr<SLE const> const& issuance)
+expectedProofLength(std::shared_ptr<SLE const> const& issuance)
 {
-    bool const hasAuditor = issuance->isFieldPresent(sfAuditorElGamalPublicKey);
-    return (hasAuditor ? 3 : 2) * ecEqualityProofLength;
-}
-
-size_t
-expectedProofSize(std::shared_ptr<SLE const> const& issuance)
-{
-    auto const equalityProofSize = getEqualityProofSize(issuance);
+    auto const equalityProofLength = getEqualityProofLength(
+        issuance->isFieldPresent(sfAuditorElGamalPublicKey));
 
     // todo: add pederson and range proof length
-    return equalityProofSize;
+    return equalityProofLength;
 }
 
 NotTEC
@@ -53,7 +47,7 @@ verifyProofs(
     std::shared_ptr<SLE const> const& issuance,
     std::shared_ptr<SLE const> const& mptoken)
 {
-    if (expectedProofSize(issuance) != tx[sfZKProof].size())
+    if (expectedProofLength(issuance) != tx[sfZKProof].size())
         return tecBAD_PROOF;
 
     auto const mptIssuanceID = tx[sfMPTokenIssuanceID];
@@ -69,7 +63,8 @@ verifyProofs(
 
     // Prepare Auditor Info
     std::optional<EncryptedAmountInfo> auditor;
-    if (issuance->isFieldPresent(sfAuditorElGamalPublicKey))
+    bool const hasAuditor = issuance->isFieldPresent(sfAuditorElGamalPublicKey);
+    if (hasAuditor)
     {
         auditor.emplace(
             EncryptedAmountInfo{
@@ -80,7 +75,7 @@ verifyProofs(
     // verify equality proofs
     {
         auto const equalityZkps = getEqualityProofs(
-            Slice{tx[sfZKProof].data(), getEqualityProofSize(issuance)});
+            Slice{tx[sfZKProof].data(), getEqualityProofLength(hasAuditor)});
 
         return verifyEqualityProofs(
             amount,

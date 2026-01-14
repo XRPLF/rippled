@@ -312,6 +312,18 @@ verifyEqualityProofs(
     std::optional<EncryptedAmountInfo> const& auditor,
     uint256 const& contextHash);
 
+// returns the number of number of entries
+size_t inline getEqualityProofSize(bool const hasAuditor)
+{
+    return (hasAuditor ? 3 : 2);
+}
+
+// returns the total byte length of all the equality proofs combined
+size_t inline getEqualityProofLength(bool const hasAuditor)
+{
+    return getEqualityProofSize(hasAuditor) * ecEqualityProofLength;
+}
+
 }  // namespace ripple
 
 #endif

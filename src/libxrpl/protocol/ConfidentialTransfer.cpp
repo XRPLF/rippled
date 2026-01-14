@@ -1108,7 +1108,7 @@ verifyEqualityProofs(
     uint256 const& contextHash)
 {
     // Sanity check: Ensure we have enough proofs
-    size_t const required = auditor.has_value() ? 3 : 2;
+    size_t const required = getEqualityProofSize(auditor.has_value());
     if (zkps.size() != required)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
