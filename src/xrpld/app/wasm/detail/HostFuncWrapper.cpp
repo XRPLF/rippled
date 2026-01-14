@@ -814,6 +814,12 @@ checkSignature_wrap(
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
+    if (params->data[1].of.i32 > maxWasmParamLength ||
+        params->data[3].of.i32 > maxWasmParamLength ||
+        params->data[5].of.i32 > maxWasmParamLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
     auto const message = getDataSlice(runtime, params, index);
     if (!message)
     {
