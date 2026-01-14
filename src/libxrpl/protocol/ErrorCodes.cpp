@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 namespace detail {
@@ -160,6 +160,24 @@ constexpr ErrorInfo unknownError;
 
 //------------------------------------------------------------------------------
 
+void
+inject_error(error_code_i code, Json::Value& json)
+{
+    ErrorInfo const& info(get_error_info(code));
+    json[jss::error] = info.token;
+    json[jss::error_code] = info.code;
+    json[jss::error_message] = info.message;
+}
+
+void
+inject_error(error_code_i code, std::string const& message, Json::Value& json)
+{
+    ErrorInfo const& info(get_error_info(code));
+    json[jss::error] = info.token;
+    json[jss::error_code] = info.code;
+    json[jss::error_message] = message;
+}
+
 ErrorInfo const&
 get_error_info(error_code_i code)
 {
@@ -205,8 +223,8 @@ rpcErrorString(Json::Value const& jv)
 {
     XRPL_ASSERT(
         RPC::contains_error(jv),
-        "ripple::RPC::rpcErrorString : input contains an error");
+        "xrpl::RPC::rpcErrorString : input contains an error");
     return jv[jss::error].asString() + jv[jss::error_message].asString();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -26,7 +26,7 @@
 #include <mutex>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents an active connection. */
 template <class Handler, class Impl>
@@ -511,6 +511,6 @@ BaseHTTPPeer<Handler, Impl>::close(bool graceful)
     boost::beast::get_lowest_layer(impl().stream_).close();
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

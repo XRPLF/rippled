@@ -5,7 +5,7 @@
 
 #include <initializer_list>
 
-namespace ripple {
+namespace xrpl {
 
 LedgerFormats::LedgerFormats()
 {
@@ -40,4 +40,4 @@ LedgerFormats::getInstance()
     return instance;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

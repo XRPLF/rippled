@@ -4,7 +4,7 @@
 
 #include <type_traits>
 
-using namespace ripple;
+using namespace xrpl;
 
 struct Tag1
 {

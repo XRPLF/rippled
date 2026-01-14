@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
@@ -26,7 +26,7 @@ DelegateSet::preflight(PreflightContext const& ctx)
         if (!permissionSet.insert(permission[sfPermissionValue]).second)
             return temMALFORMED;
 
-        if (!Permission::getInstance().isDelegatable(
+        if (!Permission::getInstance().isDelegable(
                 permission[sfPermissionValue], ctx.rules))
             return temMALFORMED;
     }
@@ -129,4 +129,4 @@ DelegateSet::deleteDelegate(
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

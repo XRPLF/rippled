@@ -16,7 +16,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Map/cache combination.
     This class implements a cache and a map. The cache keeps objects alive
@@ -315,6 +315,6 @@ private:
     std::uint64_t m_misses;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -434,6 +434,6 @@ Scheduler::step_for(std::chrono::duration<Period, Rep> const& amount)
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

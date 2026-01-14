@@ -10,9 +10,9 @@
 #include <algorithm>
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
-constexpr std::size_t maximiumMessageSize = megabytes(64);
+constexpr std::size_t maximumMessageSize = megabytes(64);
 
 // VFALCO NOTE If we forward declare Message and write out shared_ptr
 //             instead of using the in-class type alias, we can remove the
@@ -117,6 +117,6 @@ private:
     getType(std::uint8_t const* in) const;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

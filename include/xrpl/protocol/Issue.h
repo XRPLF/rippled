@@ -5,7 +5,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** A currency issued by an account.
     @see Currency, AccountID, Issue, Book
@@ -113,6 +113,6 @@ isXRP(Issue const& issue)
     return issue.native();
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

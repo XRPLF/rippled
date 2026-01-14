@@ -26,7 +26,7 @@
 #include <optional>
 #include <queue>
 
-namespace ripple {
+namespace xrpl {
 
 struct ValidatorBlobInfo;
 class SHAMap;
@@ -202,7 +202,7 @@ private:
         {
             XRPL_ASSERT(
                 f >= fee,
-                "ripple::PeerImp::ChargeWithContext::update : fee increases");
+                "xrpl::PeerImp::ChargeWithContext::update : fee increases");
             fee = f;
             if (!context.empty())
             {
@@ -323,7 +323,7 @@ public:
     virtual ~PeerImp();
 
     beast::Journal const&
-    pjournal() const
+    pJournal() const
     {
         return p_journal_;
     }
@@ -903,6 +903,6 @@ PeerImp::sendEndpoints(FwdIt first, FwdIt last)
     send(std::make_shared<Message>(tm, protocol::mtENDPOINTS));
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class AccountInfo_test : public beast::unit_test::suite
@@ -693,15 +693,14 @@ public:
         testSignerListsApiVersion2();
         testSignerListsV2();
 
-        FeatureBitset const allFeatures{
-            ripple::test::jtx::testable_amendments()};
+        FeatureBitset const allFeatures{xrpl::test::jtx::testable_amendments()};
         testAccountFlags(allFeatures);
         testAccountFlags(allFeatures - featureClawback);
         testAccountFlags(allFeatures - featureClawback - featureTokenEscrow);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountInfo, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AccountInfo, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

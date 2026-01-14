@@ -4,7 +4,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 TrustLineBase::TrustLineBase(
     std::shared_ptr<SLE const> const& sle,
@@ -103,4 +103,4 @@ RPCTrustLine::getItems(AccountID const& accountID, ReadView const& view)
     return detail::getTrustLineItems<RPCTrustLine>(accountID, view);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

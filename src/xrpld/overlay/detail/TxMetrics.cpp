@@ -4,7 +4,7 @@
 
 #include <numeric>
 
-namespace ripple {
+namespace xrpl {
 
 namespace metrics {
 
@@ -83,11 +83,11 @@ SingleMetrics::addMetrics(std::uint32_t val)
     if (timeElapsedInSecs >= 1s)
     {
         auto const avg = accum / (perTimeUnit ? timeElapsedInSecs.count() : N);
-        rollingAvgAggreg.push_back(avg);
+        rollingAvgAggregate.push_back(avg);
 
         auto const total = std::accumulate(
-            rollingAvgAggreg.begin(), rollingAvgAggreg.end(), 0ull);
-        rollingAvg = total / rollingAvgAggreg.size();
+            rollingAvgAggregate.begin(), rollingAvgAggregate.end(), 0ull);
+        rollingAvg = total / rollingAvgAggregate.size();
 
         intervalStart = clock_type::now();
         accum = 0;
@@ -130,4 +130,4 @@ TxMetrics::json() const
 
 }  // namespace metrics
 
-}  // namespace ripple
+}  // namespace xrpl

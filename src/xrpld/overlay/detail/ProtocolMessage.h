@@ -16,7 +16,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 inline protocol::MessageType
 protocolMessageType(protocol::TMGetLedger const&)
@@ -63,9 +63,9 @@ protocolMessageName(int type)
             return "status";
         case protocol::mtHAVE_SET:
             return "have_set";
-        case protocol::mtVALIDATORLIST:
+        case protocol::mtVALIDATOR_LIST:
             return "validator_list";
-        case protocol::mtVALIDATORLISTCOLLECTION:
+        case protocol::mtVALIDATOR_LIST_COLLECTION:
             return "validator_list_collection";
         case protocol::mtVALIDATION:
             return "validation";
@@ -114,7 +114,7 @@ struct MessageHeader
     std::uint16_t message_type = 0;
 
     /** Indicates which compression algorithm the payload is compressed with.
-     * Currenly only lz4 is supported. If None then the message is not
+     * Currently only lz4 is supported. If None then the message is not
      * compressed.
      */
     compression::Algorithm algorithm = compression::Algorithm::None;
@@ -152,13 +152,13 @@ parseMessageHeader(
     BufferSequence const& bufs,
     std::size_t size)
 {
-    using namespace ripple::compression;
+    using namespace xrpl::compression;
 
     MessageHeader hdr;
     auto iter = buffersBegin(bufs);
     XRPL_ASSERT(
         iter != buffersEnd(bufs),
-        "ripple::detail::parseMessageHeader : non-empty buffer");
+        "xrpl::detail::parseMessageHeader : non-empty buffer");
 
     // Check valid header compressed message:
     // - 4 bits are the compression algorithm, 1st bit is always set to 1
@@ -256,7 +256,7 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
         std::vector<std::uint8_t> payload;
         payload.resize(header.uncompressed_size);
 
-        auto const payloadSize = ripple::compression::decompress(
+        auto const payloadSize = xrpl::compression::decompress(
             stream,
             header.payload_wire_size,
             payload.data(),
@@ -285,7 +285,7 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
     if (!m)
         return false;
 
-    using namespace ripple::compression;
+    using namespace xrpl::compression;
     handler.onMessageBegin(
         header.message_type,
         m,
@@ -340,8 +340,8 @@ invokeProtocolMessage(
     // whose size exceeds this may result in the connection being dropped. A
     // larger message size may be supported in the future or negotiated as
     // part of a protocol upgrade.
-    if (header->payload_wire_size > maximiumMessageSize ||
-        header->uncompressed_size > maximiumMessageSize)
+    if (header->payload_wire_size > maximumMessageSize ||
+        header->uncompressed_size > maximumMessageSize)
     {
         result.second = make_error_code(boost::system::errc::message_size);
         return result;
@@ -411,11 +411,11 @@ invokeProtocolMessage(
             success = detail::invoke<protocol::TMValidation>(
                 *header, buffers, handler);
             break;
-        case protocol::mtVALIDATORLIST:
+        case protocol::mtVALIDATOR_LIST:
             success = detail::invoke<protocol::TMValidatorList>(
                 *header, buffers, handler);
             break;
-        case protocol::mtVALIDATORLISTCOLLECTION:
+        case protocol::mtVALIDATOR_LIST_COLLECTION:
             success = detail::invoke<protocol::TMValidatorListCollection>(
                 *header, buffers, handler);
             break;
@@ -465,6 +465,6 @@ invokeProtocolMessage(
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

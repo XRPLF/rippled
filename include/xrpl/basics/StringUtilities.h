@@ -12,7 +12,7 @@
 #include <optional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /** Format arbitrary binary data as an SQLite "blob literal".
 
@@ -31,7 +31,7 @@ template <class Iterator>
 std::optional<Blob>
 strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 {
-    static constexpr std::array<int, 256> const unxtab = []() {
+    static constexpr std::array<int, 256> const digitLookupTable = []() {
         std::array<int, 256> t{};
 
         for (auto& x : t)
@@ -57,7 +57,7 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     if (strSize & 1)
     {
-        int c = unxtab[*iter++];
+        int c = digitLookupTable[*iter++];
 
         if (c < 0)
             return {};
@@ -67,12 +67,12 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     while (iter != end)
     {
-        int cHigh = unxtab[*iter++];
+        int cHigh = digitLookupTable[*iter++];
 
         if (cHigh < 0)
             return {};
 
-        int cLow = unxtab[*iter++];
+        int cLow = digitLookupTable[*iter++];
 
         if (cLow < 0)
             return {};
@@ -132,6 +132,6 @@ to_uint64(std::string const& s);
 bool
 isProperlyFormedTomlDomain(std::string_view domain);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

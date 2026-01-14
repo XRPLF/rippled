@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 //------------------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ concept CAdoptTag = std::is_same_v<T, SharedIntrusiveAdoptIncrementStrongTag> ||
     When the strong pointer count goes to zero, the "partialDestructor" is
     called. This can be used to destroy as much of the object as possible while
     still retaining the reference counts. For example, for SHAMapInnerNodes the
-    children may be reset in that function. Note that std::shared_poiner WILL
+    children may be reset in that function. Note that std::shared_pointer WILL
     run the destructor when the strong count reaches zero, but may not free the
     memory used by the object until the weak count reaches zero. In rippled, we
     typically allocate shared pointers with the `make_shared` function. When
@@ -492,5 +492,5 @@ dynamic_pointer_cast(TT const& v)
     return SharedPtr<T>(DynamicCastTagSharedIntrusive{}, v);
 }
 }  // namespace intr_ptr
-}  // namespace ripple
+}  // namespace xrpl
 #endif

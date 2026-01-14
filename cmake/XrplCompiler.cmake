@@ -44,6 +44,7 @@ if (MSVC)
     # omit debug info completely under CI (not needed)
     if (is_ci)
       string (REPLACE "/Zi" " " ${var_} "${${var_}}")
+      string (REPLACE "/Z7" " " ${var_} "${${var_}}")
     endif ()
   endforeach ()
 
@@ -149,7 +150,7 @@ elseif (use_gold AND is_gcc)
     ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
     #[=========================================================[
        NOTE: THE gold linker inserts -rpath as DT_RUNPATH by
-       default intead of DT_RPATH, so you might have slightly
+       default instead of DT_RPATH, so you might have slightly
        unexpected runtime ld behavior if you were expecting
        DT_RPATH.  Specify --disable-new-dtags to gold if you do
        not want the default DT_RUNPATH behavior. This rpath

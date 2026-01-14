@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class AccountDelete_test : public beast::unit_test::suite
@@ -103,7 +103,7 @@ public:
         env(trust(becky, gw["USD"](1000)));
         env.close();
 
-        // Give carol a deposit preauthorization, an offer, a ticket,
+        // Give carol a deposit pre-authorization, an offer, a ticket,
         // a signer list, and a DID.  Even with all that she's still deletable.
         env(deposit::auth(carol, becky));
         std::uint32_t const carolOfferSeq{env.seq(carol)};
@@ -176,7 +176,7 @@ public:
             auto const carolOldBalance{env.balance(carol)};
 
             // Verify that Carol's account, directory, deposit
-            // preauthorization, offer, ticket, and signer list exist.
+            // pre-authorization, offer, ticket, and signer list exist.
             BEAST_EXPECT(env.closed()->exists(keylet::account(carol.id())));
             BEAST_EXPECT(env.closed()->exists(keylet::ownerDir(carol.id())));
             BEAST_EXPECT(env.closed()->exists(
@@ -886,7 +886,7 @@ public:
                         env, eaton, carol, credType)[jss::result][jss::index]
                         .asString();
 
-                // fred make preauthorization through authorized account
+                // fred make pre-authorization through authorized account
                 env(fset(fred, asfDepositAuth));
                 env.close();
                 env(deposit::auth(fred, eaton));
@@ -922,7 +922,7 @@ public:
 
                 auto jv = credentials::create(john, carol, credType);
                 uint32_t const t = env.current()
-                                       ->info()
+                                       ->header()
                                        .parentCloseTime.time_since_epoch()
                                        .count() +
                     20;
@@ -1104,7 +1104,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AccountDelete, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(AccountDelete, app, xrpl, 2);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

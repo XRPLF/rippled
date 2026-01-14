@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class FixNFTokenPageLinks_test : public beast::unit_test::suite
 {
@@ -135,7 +135,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         // Preflight
 
         {
-            // Fail preflight1.  Can't combine AcccountTxnID and ticket.
+            // Fail preflight1.  Can't combine AccountTxnID and ticket.
             Json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);
             tx[sfAccountTxnID.jsonName] =
                 "00000000000000000000000000000000"
@@ -642,6 +642,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FixNFTokenPageLinks, app, ripple);
+BEAST_DEFINE_TESTSUITE(FixNFTokenPageLinks, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

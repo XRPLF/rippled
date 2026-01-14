@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class DepositAuthorized_test : public beast::unit_test::suite
@@ -224,7 +224,10 @@ public:
             Json::Value args{depositAuthArgs(alice, becky, "-1")};
             Json::Value const result{
                 env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "invalidParams", "ledgerIndexMalformed");
+            verifyErr(
+                result,
+                "invalidParams",
+                "Invalid field 'ledger_index', not string or number.");
         }
         {
             // Request a ledger that doesn't exist yet as a string.
@@ -552,9 +555,9 @@ public:
             testcase("deposit_authorized with expired credentials");
 
             // check expired credentials
-            char const credType2[] = "fghijk";
+            char const credType2[] = "random";
             std::uint32_t const x = env.current()
-                                        ->info()
+                                        ->header()
                                         .parentCloseTime.time_since_epoch()
                                         .count() +
                 40;
@@ -619,7 +622,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DepositAuthorized, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(DepositAuthorized, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -67,9 +67,6 @@ enum class HashPrefix : std::uint32_t {
     /** Payment Channel Claim */
     paymentChannelClaim = detail::make_hash_prefix('C', 'L', 'M'),
 
-    /** Credentials signature */
-    credential = detail::make_hash_prefix('C', 'R', 'D'),
-
     /** Batch */
     batch = detail::make_hash_prefix('B', 'C', 'H'),
 };
@@ -82,6 +79,6 @@ hash_append(Hasher& h, HashPrefix const& hp) noexcept
     hash_append(h, static_cast<std::uint32_t>(hp));
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

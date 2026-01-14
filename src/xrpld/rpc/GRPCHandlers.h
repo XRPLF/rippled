@@ -7,14 +7,14 @@
 
 #include <grpcpp/grpcpp.h>
 
-namespace ripple {
+namespace xrpl {
 
 /*
  * These handlers are for gRPC. They each take in a protobuf message that is
  * nested inside RPC::GRPCContext<T>, where T is the request type
  * The return value is the response type, as well as a status
  * If the status is not Status::OK (meaning an error occurred), then only
- * the status will be sent to the client, and the response will be ommitted
+ * the status will be sent to the client, and the response will be omitted
  */
 
 std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
@@ -32,6 +32,6 @@ std::pair<org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status>
 doLedgerDiffGrpc(
     RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& context);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

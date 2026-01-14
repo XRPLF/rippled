@@ -4,11 +4,11 @@
 #include <test/csf/SimTime.h>
 #include <test/csf/events.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
-/** Holds a type-erased reference to an arbitray collector.
+/** Holds a type-erased reference to an arbitrary collector.
 
     A collector is any class that implements
 
@@ -327,6 +327,6 @@ public:
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

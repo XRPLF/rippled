@@ -5,7 +5,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Protocol.h>
 
-namespace ripple {
+namespace xrpl {
 
 /*
 I guess you can put some items in, make sure they're still there. Let some
@@ -132,6 +132,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TaggedCache, basics, ripple);
+BEAST_DEFINE_TESTSUITE(TaggedCache, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

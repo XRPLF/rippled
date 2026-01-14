@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 struct ApiVersion_test : beast::unit_test::suite
 {
@@ -49,7 +49,7 @@ struct ApiVersion_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ApiVersion, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(ApiVersion, protocol, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

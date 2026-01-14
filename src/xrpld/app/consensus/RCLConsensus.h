@@ -8,9 +8,9 @@
 #include <xrpld/app/misc/FeeVote.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
 #include <xrpld/consensus/Consensus.h>
-#include <xrpld/core/JobQueue.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/shamap/SHAMap.h>
 
@@ -21,7 +21,7 @@
 #include <sstream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class InboundTransactions;
 class LocalTxs;
@@ -59,7 +59,7 @@ class RCLConsensus
         // The timestamp of the last validation we used
         NetClock::time_point lastValidationTime_;
 
-        // These members are queried via public accesors and are atomic for
+        // These members are queried via public accessors and are atomic for
         // thread safety.
         std::atomic<bool> validating_{false};
         std::atomic<std::size_t> prevProposers_{0};
@@ -548,6 +548,6 @@ public:
         return ss_;
     }
 };
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

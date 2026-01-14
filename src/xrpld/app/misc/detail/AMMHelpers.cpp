@@ -1,6 +1,6 @@
 #include <xrpld/app/misc/AMMHelpers.h>
 
-namespace ripple {
+namespace xrpl {
 
 STAmount
 ammLPTokens(
@@ -236,7 +236,7 @@ adjustAmountsByLPTokens(
 
     XRPL_ASSERT(
         lpTokensActual == lpTokens,
-        "ripple::adjustAmountsByLPTokens : LP tokens match actual");
+        "xrpl::adjustAmountsByLPTokens : LP tokens match actual");
 
     return {amount, amount2, lpTokensActual};
 }
@@ -390,4 +390,4 @@ adjustFracByTokens(
     return tokens / lptAMMBalance;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

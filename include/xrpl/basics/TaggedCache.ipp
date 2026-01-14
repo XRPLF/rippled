@@ -4,7 +4,7 @@
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/TaggedCache.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <
     class Key,
@@ -1005,6 +1005,6 @@ TaggedCache<
     });
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

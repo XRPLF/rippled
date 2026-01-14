@@ -14,7 +14,7 @@
 #include <optional>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Env_test : public beast::unit_test::suite
@@ -33,7 +33,7 @@ public:
     {
         using namespace jtx;
         {
-            Account a("chenna");
+            Account a("chad");
             Account b(a);
             a = b;
             a = std::move(b);
@@ -162,8 +162,8 @@ public:
             // flags
             env.fund(n, noripple("xavier"));
             env.require(nflags("xavier", asfDefaultRipple));
-            env.fund(n, "yana");
-            env.require(flags("yana", asfDefaultRipple));
+            env.fund(n, "zachary");
+            env.require(flags("zachary", asfDefaultRipple));
         }
 
         // trust
@@ -596,12 +596,9 @@ public:
         using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice");
-        env(noop("alice"), memodata("data"));
-        env(noop("alice"), memoformat("format"));
-        env(noop("alice"), memotype("type"));
-        env(noop("alice"), memondata("format", "type"));
-        env(noop("alice"), memonformat("data", "type"));
-        env(noop("alice"), memontype("data", "format"));
+        env(noop("alice"), memo_data("data"));
+        env(noop("alice"), memo_format("format"));
+        env(noop("alice"), memo_type("type"));
         env(noop("alice"), memo("data", "format", "type"));
         env(noop("alice"),
             memo("data1", "format1", "type1"),
@@ -798,16 +795,18 @@ public:
 
         {
             // a Env FeatureBitset has *only* those features
-            Env env{*this, FeatureBitset{featureDynamicMPT | featureFlow}};
+            Env env{
+                *this, FeatureBitset{featureDynamicMPT | featureTokenEscrow}};
             BEAST_EXPECT(env.app().config().features.size() == 2);
             foreachFeature(supported, [&](uint256 const& f) {
-                bool const has = (f == featureDynamicMPT || f == featureFlow);
+                bool const has =
+                    (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
         }
 
         auto const missingSomeFeatures =
-            testable_amendments() - featureDynamicMPT - featureFlow;
+            testable_amendments() - featureDynamicMPT - featureTokenEscrow;
         BEAST_EXPECT(missingSomeFeatures.count() == (supported.count() - 2));
         {
             // a Env supported_features_except is missing *only* those features
@@ -815,7 +814,8 @@ public:
             BEAST_EXPECT(
                 env.app().config().features.size() == (supported.count() - 2));
             foreachFeature(supported, [&](uint256 const& f) {
-                bool hasnot = (f == featureDynamicMPT || f == featureFlow);
+                bool hasnot =
+                    (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -828,7 +828,9 @@ public:
             Env env{
                 *this,
                 FeatureBitset{
-                    featureDynamicMPT, featureFlow, *neverSupportedFeat}};
+                    featureDynamicMPT,
+                    featureTokenEscrow,
+                    *neverSupportedFeat}};
 
             // this app will have just 2 supported amendments and
             // one additional never supported feature flag
@@ -836,7 +838,7 @@ public:
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
 
             foreachFeature(supported, [&](uint256 const& f) {
-                bool has = (f == featureDynamicMPT || f == featureFlow);
+                bool has = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
         }
@@ -856,7 +858,8 @@ public:
                 (supported.count() - 2 + 1));
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
             foreachFeature(supported, [&](uint256 const& f) {
-                bool hasnot = (f == featureDynamicMPT || f == featureFlow);
+                bool hasnot =
+                    (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -922,7 +925,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Env, jtx, ripple);
+BEAST_DEFINE_TESTSUITE(Env, jtx, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -22,7 +22,7 @@
 #include <string_view>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 class ManagerImp : public Manager
@@ -140,7 +140,7 @@ private:
     void
     run()
     {
-        beast::setCurrentThreadName("Resource::Manager");
+        beast::setCurrentThreadName("Resource::Mngr");
         for (;;)
         {
             logic_.periodicActivity();
@@ -171,4 +171,4 @@ make_Manager(
 }
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl

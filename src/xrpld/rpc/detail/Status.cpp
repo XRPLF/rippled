@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 std::string
@@ -19,7 +19,7 @@ Status::codeString() const
         std::string s1, s2;
 
         [[maybe_unused]] auto const success = transResultInfo(toTER(), s1, s2);
-        XRPL_ASSERT(success, "ripple::RPC::codeString : valid TER result");
+        XRPL_ASSERT(success, "xrpl::RPC::codeString : valid TER result");
 
         return s1 + ": " + s2;
     }
@@ -33,7 +33,7 @@ Status::codeString() const
     }
 
     // LCOV_EXCL_START
-    UNREACHABLE("ripple::RPC::codeString : invalid type");
+    UNREACHABLE("xrpl::RPC::codeString : invalid type");
     return "";
     // LCOV_EXCL_STOP
 }
@@ -80,4 +80,4 @@ Status::toString() const
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

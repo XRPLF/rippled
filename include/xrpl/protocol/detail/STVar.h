@@ -8,7 +8,7 @@
 #include <cstddef>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 struct defaultObject_t
@@ -42,7 +42,7 @@ concept ValidConstructSTArgs =
 class STVar
 {
 private:
-    // The largest "small object" we can accomodate
+    // The largest "small object" we can accommodate
     static std::size_t constexpr max_size = 72;
 
     std::aligned_storage<max_size>::type d_;
@@ -162,6 +162,6 @@ operator!=(STVar const& lhs, STVar const& rhs)
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

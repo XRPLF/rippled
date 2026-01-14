@@ -21,7 +21,7 @@ class TMValidatorList;
 class TMValidatorListCollection;
 }  // namespace protocol
 
-namespace ripple {
+namespace xrpl {
 
 class Overlay;
 class HashRouter;
@@ -237,7 +237,7 @@ class ValidatorList
     // config file under the title of SECTION_VALIDATORS or [validators].
     // This list is not associated with the masterKey of any publisher.
 
-    // Appropos PublisherListCollection fields, localPublisherList does not
+    // Apropos PublisherListCollection fields, localPublisherList does not
     // have any "remaining" manifests. It is assumed to be perennially
     // "available". The "validUntil" field is set to the highest possible
     // value of the field, hence this list is always valid.
@@ -365,7 +365,7 @@ public:
         std::string const& rawManifest,
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         std::vector<MessageWithHash>& messages,
-        std::size_t maxSize = maximiumMessageSize);
+        std::size_t maxSize = maximumMessageSize);
 
     /** Apply multiple published lists of public keys, then broadcast it to all
         peers that have not seen it or sent it.
@@ -927,7 +927,7 @@ hash_append(Hasher& h, std::map<std::size_t, ValidatorBlobInfo> const& blobs)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 namespace protocol {
 
@@ -945,10 +945,7 @@ hash_append(Hasher& h, TMValidatorListCollection const& msg)
 {
     using beast::hash_append;
     hash_append(
-        h,
-        msg.manifest(),
-        ripple::ValidatorList::parseBlobs(msg),
-        msg.version());
+        h, msg.manifest(), xrpl::ValidatorList::parseBlobs(msg), msg.version());
 }
 
 }  // namespace protocol

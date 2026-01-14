@@ -5,7 +5,7 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -210,7 +210,7 @@ FeeVoteImpl::doVoting(
     // LCL must be flag ledger
     XRPL_ASSERT(
         lastClosedLedger && isFlagLedger(lastClosedLedger->seq()),
-        "ripple::FeeVoteImpl::doVoting : has a flag ledger");
+        "xrpl::FeeVoteImpl::doVoting : has a flag ledger");
 
     detail::VotableValue baseFeeVote(
         lastClosedLedger->fees().base, target_.reference_fee);
@@ -269,12 +269,11 @@ FeeVoteImpl::doVoting(
                          auto const& valueField) {
             if (auto const field = val->at(~valueField))
             {
-                using xrptype = XRPAmount::value_type;
+                using XRPType = XRPAmount::value_type;
                 auto const vote = *field;
-                if (vote <= std::numeric_limits<xrptype>::max() &&
-                    isLegalAmountSigned(XRPAmount{unsafe_cast<xrptype>(vote)}))
-                    value.addVote(
-                        XRPAmount{unsafe_cast<XRPAmount::value_type>(vote)});
+                if (vote <= std::numeric_limits<XRPType>::max() &&
+                    isLegalAmountSigned(XRPAmount{unsafe_cast<XRPType>(vote)}))
+                    value.addVote(XRPAmount{unsafe_cast<XRPType>(vote)});
                 else
                     // Invalid amounts will be treated as if they're
                     // not provided. Don't throw because this value is
@@ -332,7 +331,7 @@ FeeVoteImpl::doVoting(
     auto const extensionSize = extensionSizeVote.getVotes();
     auto const gasPrice = gasPriceVote.getVotes();
 
-    auto const seq = lastClosedLedger->info().seq + 1;
+    auto const seq = lastClosedLedger->header().seq + 1;
 
     // add transactions to our position
     if (baseFee.second || baseReserve.second || incReserve.second ||
@@ -396,4 +395,4 @@ make_FeeVote(FeeSetup const& setup, beast::Journal journal)
     return std::make_unique<FeeVoteImpl>(setup, journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

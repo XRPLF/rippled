@@ -6,7 +6,7 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/digest.h>
 
-namespace ripple {
+namespace xrpl {
 
 using SFieldCRef = std::reference_wrapper<SField const>;
 
@@ -80,11 +80,11 @@ getDataSField(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const& m = SField::getKnownCodeToField();
     auto const it = m.find(params->data[i].of.i32);
+    i++;
     if (it == m.end())
     {
         return Unexpected(HostFunctionError::INVALID_FIELD);
     }
-    i++;
     return *it->second;
 }
 
@@ -98,6 +98,7 @@ getDataSlice(
 {
     int64_t const ptr = params->data[i].of.i32;
     int64_t const size = params->data[i + 1].of.i32;
+    i += 2;
     if (ptr < 0 || size < 0)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
@@ -117,7 +118,6 @@ getDataSlice(
         return Unexpected(HostFunctionError::POINTER_OUT_OF_BOUNDS);
 
     Slice data(memory.p + ptr, size);
-    i += 2;
     return data;
 }
 
@@ -2182,4 +2182,4 @@ testGetDataIncrement()
 }  // namespace test
 // LCOV_EXCL_STOP
 
-}  // namespace ripple
+}  // namespace xrpl

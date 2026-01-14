@@ -9,7 +9,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 /**
  * We have both transaction type permissions and granular type permissions.
  * Since we will reuse the TransactionFormats to parse the Transaction
@@ -29,7 +29,7 @@ enum GranularPermissionType : std::uint32_t {
 #pragma pop_macro("PERMISSION")
 };
 
-enum Delegation { delegatable, notDelegatable };
+enum Delegation { delegable, notDelegable };
 
 class Permission
 {
@@ -38,7 +38,7 @@ private:
 
     std::unordered_map<std::uint16_t, uint256> txFeatureMap_;
 
-    std::unordered_map<std::uint16_t, Delegation> delegatableTx_;
+    std::unordered_map<std::uint16_t, Delegation> delegableTx_;
 
     std::unordered_map<std::string, GranularPermissionType>
         granularPermissionMap_;
@@ -71,8 +71,7 @@ public:
     getTxFeature(TxType txType) const;
 
     bool
-    isDelegatable(std::uint32_t const& permissionValue, Rules const& rules)
-        const;
+    isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const;
 
     // for tx level permission, permission value is equal to tx type plus one
     uint32_t
@@ -83,6 +82,6 @@ public:
     permissionToTxType(uint32_t const& value) const;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

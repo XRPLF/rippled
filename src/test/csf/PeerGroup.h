@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -193,7 +193,7 @@ public:
     /** Establish network connections based on trust relations
 
         For each peers in this group, create outbound network connection
-        to the set of peers it trusts. If a coonnection already exists, it is
+        to the set of peers it trusts. If a connection already exists, it is
         not recreated.
 
         @param delay The fixed messaging delay for all established connections
@@ -351,5 +351,5 @@ randomRankedConnect(
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 #endif

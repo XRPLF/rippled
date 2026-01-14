@@ -17,7 +17,7 @@
 #include <exception>
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 class NuDBBackend : public Backend
@@ -113,7 +113,7 @@ public:
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::NodeStore::NuDBBackend::open : database is already "
+                "xrpl::NodeStore::NuDBBackend::open : database is already "
                 "open");
             JLOG(j_.error()) << "database is already open";
             return;
@@ -455,4 +455,4 @@ registerNuDBFactory(Manager& manager)
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

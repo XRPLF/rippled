@@ -27,7 +27,7 @@ test-applied to all new open ledgers until seen in a fully-
 validated ledger
 */
 
-namespace ripple {
+namespace xrpl {
 
 // This class wraps a pointer to a transaction along with
 // its expiration ledger. It also caches the issuing account.
@@ -126,7 +126,7 @@ public:
         std::lock_guard lock(m_lock);
 
         m_txns.remove_if([&view](auto const& txn) {
-            if (txn.isExpired(view.info().seq))
+            if (txn.isExpired(view.header().seq))
                 return true;
             if (view.txExists(txn.getID()))
                 return true;
@@ -175,4 +175,4 @@ make_LocalTxs()
     return std::make_unique<LocalTxsImp>();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

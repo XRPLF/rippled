@@ -18,7 +18,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
     : transactionID_(txid)
@@ -31,8 +31,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
     auto affectedNodes =
         dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
     XRPL_ASSERT(
-        affectedNodes,
-        "ripple::TxMeta::TxMeta(STObject) : type cast succeeded");
+        affectedNodes, "xrpl::TxMeta::TxMeta(STObject) : type cast succeeded");
     if (affectedNodes)
         nodes_ = *affectedNodes;
 
@@ -84,7 +83,7 @@ TxMeta::setAffectedNode(
 
     XRPL_ASSERT(
         obj.getFName() == type,
-        "ripple::TxMeta::setAffectedNode : field type match");
+        "xrpl::TxMeta::setAffectedNode : field type match");
     obj.setFieldH256(sfLedgerIndex, node);
     obj.setFieldU16(sfLedgerEntryType, nodeType);
 }
@@ -108,7 +107,7 @@ TxMeta::getAffectedAccounts() const
                 dynamic_cast<STObject const*>(&node.peekAtIndex(index));
             XRPL_ASSERT(
                 inner,
-                "ripple::getAffectedAccounts : STObject type cast succeeded");
+                "xrpl::getAffectedAccounts : STObject type cast succeeded");
             if (inner)
             {
                 for (auto const& field : *inner)
@@ -117,7 +116,7 @@ TxMeta::getAffectedAccounts() const
                     {
                         XRPL_ASSERT(
                             !sa->isDefault(),
-                            "ripple::getAffectedAccounts : account is set");
+                            "xrpl::getAffectedAccounts : account is set");
                         if (!sa->isDefault())
                             list.insert(sa->value());
                     }
@@ -130,7 +129,7 @@ TxMeta::getAffectedAccounts() const
                         auto lim = dynamic_cast<STAmount const*>(&field);
                         XRPL_ASSERT(
                             lim,
-                            "ripple::getAffectedAccounts : STAmount type cast "
+                            "xrpl::getAffectedAccounts : STAmount type cast "
                             "succeeded");
 
                         if (lim != nullptr)
@@ -175,7 +174,7 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 
     XRPL_ASSERT(
         obj.getFName() == type,
-        "ripple::TxMeta::getAffectedNode(SLE::ref) : field type match");
+        "xrpl::TxMeta::getAffectedNode(SLE::ref) : field type match");
     obj.setFieldH256(sfLedgerIndex, index);
     obj.setFieldU16(sfLedgerEntryType, node->getFieldU16(sfLedgerEntryType));
 
@@ -191,7 +190,7 @@ TxMeta::getAffectedNode(uint256 const& node)
             return n;
     }
     // LCOV_EXCL_START
-    UNREACHABLE("ripple::TxMeta::getAffectedNode(uint256) : node not found");
+    UNREACHABLE("xrpl::TxMeta::getAffectedNode(uint256) : node not found");
     Throw<std::runtime_error>("Affected node not found");
     return *(nodes_.begin());  // Silence compiler warning.
     // LCOV_EXCL_STOP
@@ -201,7 +200,7 @@ STObject
 TxMeta::getAsObject() const
 {
     STObject metaData(sfTransactionMetaData);
-    XRPL_ASSERT(result_ != 255, "ripple::TxMeta::getAsObject : result_ is set");
+    XRPL_ASSERT(result_ != 255, "xrpl::TxMeta::getAsObject : result_ is set");
     metaData.setFieldU8(sfTransactionResult, result_);
     metaData.setFieldU32(sfTransactionIndex, index_);
     metaData.emplace_back(nodes_);
@@ -227,7 +226,7 @@ TxMeta::addRaw(Serializer& s, TER result, std::uint32_t index)
     index_ = index;
     XRPL_ASSERT(
         (result_ == 0) || ((result_ > 100) && (result_ <= 255)),
-        "ripple::TxMeta::addRaw : valid TER input");
+        "xrpl::TxMeta::addRaw : valid TER input");
 
     nodes_.sort([](STObject const& o1, STObject const& o2) {
         return o1.getFieldH256(sfLedgerIndex) < o2.getFieldH256(sfLedgerIndex);
@@ -236,4 +235,4 @@ TxMeta::addRaw(Serializer& s, TER result, std::uint32_t index)
     getAsObject().add(s);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

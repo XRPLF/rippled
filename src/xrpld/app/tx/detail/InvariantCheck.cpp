@@ -25,7 +25,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /*
 assert(enforce)
@@ -70,6 +70,8 @@ enum Privilege {
         0x0400,  // The transaction MAY delete an MPT object. May not create.
     mustModifyVault =
         0x0800,  // The transaction must modify, delete or create, a vault
+    mayModifyVault =
+        0x1000,  // The transaction MAY modify, delete or create, a vault
 };
 constexpr Privilege
 operator|(Privilege lhs, Privilege rhs)
@@ -82,9 +84,9 @@ operator|(Privilege lhs, Privilege rhs)
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, amendment, privileges, ...) \
-    case tag: {                                                                \
-        return (privileges) & priv;                                            \
+#define TRANSACTION(tag, value, name, delegable, amendment, privileges, ...) \
+    case tag: {                                                              \
+        return (privileges) & priv;                                          \
     }
 
 bool
@@ -93,6 +95,7 @@ hasPrivilege(STTx const& tx, Privilege priv)
     switch (tx.getTxnType())
     {
 #include <xrpl/protocol/detail/transactions.macro>
+
         // Deprecated types
         default:
             return false;
@@ -479,10 +482,10 @@ void
 AccountRootsDeletedClean::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const&)
+    std::shared_ptr<SLE const> const& after)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
-        accountsDeleted_.emplace_back(before);
+        accountsDeleted_.emplace_back(before, after);
 }
 
 bool
@@ -499,7 +502,8 @@ AccountRootsDeletedClean::finalize(
     // be logged
     [[maybe_unused]] bool const enforce =
         view.rules().enabled(featureInvariantsV1_1) ||
-        view.rules().enabled(featureSingleAssetVault);
+        view.rules().enabled(featureSingleAssetVault) ||
+        view.rules().enabled(featureLendingProtocol);
 
     auto const objectExists = [&view, enforce, &j](auto const& keylet) {
         (void)enforce;
@@ -522,16 +526,40 @@ AccountRootsDeletedClean::finalize(
             // assert.
             XRPL_ASSERT(
                 enforce,
-                "ripple::AccountRootsDeletedClean::finalize::objectExists : "
+                "xrpl::AccountRootsDeletedClean::finalize::objectExists : "
                 "account deletion left no objects behind");
             return true;
         }
         return false;
     };
 
-    for (auto const& accountSLE : accountsDeleted_)
+    for (auto const& [before, after] : accountsDeleted_)
     {
-        auto const accountID = accountSLE->getAccountID(sfAccount);
+        auto const accountID = before->getAccountID(sfAccount);
+        // An account should not be deleted with a balance
+        if (after->at(sfBalance) != beast::zero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: account deletion left "
+                               "behind a non-zero balance";
+            XRPL_ASSERT(
+                enforce,
+                "xrpl::AccountRootsDeletedClean::finalize : "
+                "deleted account has zero balance");
+            if (enforce)
+                return false;
+        }
+        // An account should not be deleted with a non-zero owner count
+        if (after->at(sfOwnerCount) != 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: account deletion left "
+                               "behind a non-zero owner count";
+            XRPL_ASSERT(
+                enforce,
+                "xrpl::AccountRootsDeletedClean::finalize : "
+                "deleted account has zero owner count");
+            if (enforce)
+                return false;
+        }
         // Simple types
         for (auto const& [keyletfunc, _, __] : directAccountKeylets)
         {
@@ -540,7 +568,7 @@ AccountRootsDeletedClean::finalize(
         }
 
         {
-            // NFT pages. ntfpage_min and nftpage_max were already explicitly
+            // NFT pages. nftpage_min and nftpage_max were already explicitly
             // checked above as entries in directAccountKeylets. This uses
             // view.succ() to check for any NFT pages in between the two
             // endpoints.
@@ -558,9 +586,9 @@ AccountRootsDeletedClean::finalize(
         // also be deleted. e.g. AMM, Vault, etc.
         for (auto const& field : getPseudoAccountFields())
         {
-            if (accountSLE->isFieldPresent(*field))
+            if (before->isFieldPresent(*field))
             {
-                auto const key = accountSLE->getFieldH256(*field);
+                auto const key = before->getFieldH256(*field);
                 if (objectExists(keylet::unchecked(key)) && enforce)
                     return false;
             }
@@ -769,7 +797,7 @@ TransfersNotFrozen::finalize(
             // assert.
             XRPL_ASSERT(
                 enforce,
-                "ripple::TransfersNotFrozen::finalize : enforce "
+                "xrpl::TransfersNotFrozen::finalize : enforce "
                 "invariant.");
             if (enforce)
             {
@@ -793,8 +821,7 @@ TransfersNotFrozen::isValidEntry(
     std::shared_ptr<SLE const> const& after)
 {
     // `after` can never be null, even if the trust line is deleted.
-    XRPL_ASSERT(
-        after, "ripple::TransfersNotFrozen::isValidEntry : valid after.");
+    XRPL_ASSERT(after, "xrpl::TransfersNotFrozen::isValidEntry : valid after.");
     if (!after)
     {
         return false;
@@ -850,7 +877,7 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 {
     XRPL_ASSERT(
         change.balanceChangeSign,
-        "ripple::TransfersNotFrozen::recordBalance : valid trustline "
+        "xrpl::TransfersNotFrozen::recordBalance : valid trustline "
         "balance sign.");
     auto& changes = balanceChanges_[issue];
     if (change.balanceChangeSign < 0)
@@ -969,7 +996,7 @@ TransfersNotFrozen::validateFrozenState(
     // The comment above starting with "assert(enforce)" explains this assert.
     XRPL_ASSERT(
         enforce,
-        "ripple::TransfersNotFrozen::validateFrozenState : enforce "
+        "xrpl::TransfersNotFrozen::validateFrozenState : enforce "
         "invariant.");
 
     if (enforce)
@@ -1019,7 +1046,9 @@ ValidNewAccountRoot::finalize(
     if (hasPrivilege(tx, createAcct | createPseudoAcct) && result == tesSUCCESS)
     {
         bool const pseudoAccount =
-            (pseudoAccount_ && view.rules().enabled(featureSingleAssetVault));
+            (pseudoAccount_ &&
+             (view.rules().enabled(featureSingleAssetVault) ||
+              view.rules().enabled(featureLendingProtocol)));
 
         if (pseudoAccount && !hasPrivilege(tx, createPseudoAcct))
         {
@@ -1055,7 +1084,7 @@ ValidNewAccountRoot::finalize(
 
     JLOG(j.fatal()) << "Invariant failed: account root created illegally";
     return false;
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 
@@ -1426,7 +1455,12 @@ ValidMPTIssuance::visitEntry(
         if (isDelete)
             mptokensDeleted_++;
         else if (!before)
+        {
             mptokensCreated_++;
+            MPTIssue const mptIssue{after->at(sfMPTokenIssuanceID)};
+            if (mptIssue.getIssuer() == after->at(sfAccount))
+                mptCreatedByIssuer_ = true;
+        }
     }
 }
 
@@ -1440,6 +1474,25 @@ ValidMPTIssuance::finalize(
 {
     if (result == tesSUCCESS)
     {
+        auto const& rules = view.rules();
+        [[maybe_unused]]
+        bool enforceCreatedByIssuer = rules.enabled(featureSingleAssetVault) ||
+            rules.enabled(featureLendingProtocol);
+        if (mptCreatedByIssuer_)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: MPToken created for the MPT issuer";
+            // The comment above starting with "assert(enforce)" explains this
+            // assert.
+            XRPL_ASSERT_PARTS(
+                enforceCreatedByIssuer,
+                "xrpl::ValidMPTIssuance::finalize",
+                "no issuer MPToken");
+            if (enforceCreatedByIssuer)
+                return false;
+        }
+
+        auto const txnType = tx.getTxnType();
         if (hasPrivilege(tx, createMPTIssuance))
         {
             if (mptIssuancesCreated_ == 0)
@@ -1482,15 +1535,14 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
         }
 
+        bool const lendingProtocolEnabled =
+            view.rules().enabled(featureLendingProtocol);
         // ttESCROW_FINISH may authorize an MPT, but it can't have the
         // mayAuthorizeMPT privilege, because that may cause
         // non-amendment-gated side effects.
-        bool const enforceEscrowFinish = (tx.getTxnType() == ttESCROW_FINISH) &&
-            (view.rules().enabled(featureSingleAssetVault)
-             /*
-               TODO: Uncomment when LendingProtocol is defined
-               || view.rules().enabled(featureLendingProtocol)*/
-            );
+        bool const enforceEscrowFinish = (txnType == ttESCROW_FINISH) &&
+            (view.rules().enabled(featureSingleAssetVault) ||
+             lendingProtocolEnabled);
         if (hasPrivilege(tx, mustAuthorizeMPT | mayAuthorizeMPT) ||
             enforceEscrowFinish)
         {
@@ -1506,6 +1558,14 @@ ValidMPTIssuance::finalize(
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize "
                                    "succeeded but deleted issuances";
+                return false;
+            }
+            else if (
+                lendingProtocolEnabled &&
+                mptokensCreated_ + mptokensDeleted_ > 1)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
+                                   "but created/deleted bad number mptokens";
                 return false;
             }
             else if (
@@ -1531,14 +1591,14 @@ ValidMPTIssuance::finalize(
 
             return true;
         }
-        if (tx.getTxnType() == ttESCROW_FINISH)
+        if (txnType == ttESCROW_FINISH)
         {
             // ttESCROW_FINISH may authorize an MPT, but it can't have the
             // mayAuthorizeMPT privilege, because that may cause
             // non-amendment-gated side effects.
             XRPL_ASSERT_PARTS(
                 !enforceEscrowFinish,
-                "ripple::ValidMPTIssuance::finalize",
+                "xrpl::ValidMPTIssuance::finalize",
                 "not escrow finish tx");
             return true;
         }
@@ -1749,11 +1809,9 @@ ValidPseudoAccounts::finalize(
     beast::Journal const& j)
 {
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
-
-    // The comment above starting with "assert(enforce)" explains this assert.
     XRPL_ASSERT(
         errors_.empty() || enforce,
-        "ripple::ValidPseudoAccounts::finalize : no bad "
+        "xrpl::ValidPseudoAccounts::finalize : no bad "
         "changes or enforce invariant");
     if (!errors_.empty())
     {
@@ -2031,8 +2089,8 @@ ValidAMM::finalizeDEX(bool enforce, beast::Journal const& j) const
 
 bool
 ValidAMM::generalInvariant(
-    ripple::STTx const& tx,
-    ripple::ReadView const& view,
+    xrpl::STTx const& tx,
+    xrpl::ReadView const& view,
     ZeroAllowed zeroAllowed,
     beast::Journal const& j) const
 {
@@ -2077,8 +2135,8 @@ ValidAMM::generalInvariant(
 
 bool
 ValidAMM::finalizeDeposit(
-    ripple::STTx const& tx,
-    ripple::ReadView const& view,
+    xrpl::STTx const& tx,
+    xrpl::ReadView const& view,
     bool enforce,
     beast::Journal const& j) const
 {
@@ -2098,8 +2156,8 @@ ValidAMM::finalizeDeposit(
 
 bool
 ValidAMM::finalizeWithdraw(
-    ripple::STTx const& tx,
-    ripple::ReadView const& view,
+    xrpl::STTx const& tx,
+    xrpl::ReadView const& view,
     bool enforce,
     beast::Journal const& j) const
 {
@@ -2159,6 +2217,401 @@ ValidAMM::finalize(
 
 //------------------------------------------------------------------------------
 
+void
+NoModifiedUnmodifiableFields::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (isDelete || !before)
+        // Creation and deletion are ignored
+        return;
+
+    changedEntries_.emplace(before, after);
+}
+
+bool
+NoModifiedUnmodifiableFields::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    static auto const fieldChanged =
+        [](auto const& before, auto const& after, auto const& field) {
+            bool const beforeField = before->isFieldPresent(field);
+            bool const afterField = after->isFieldPresent(field);
+            return beforeField != afterField ||
+                (afterField && before->at(field) != after->at(field));
+        };
+    for (auto const& slePair : changedEntries_)
+    {
+        auto const& before = slePair.first;
+        auto const& after = slePair.second;
+        auto const type = after->getType();
+        bool bad = false;
+        [[maybe_unused]] bool enforce = false;
+        switch (type)
+        {
+            case ltLOAN_BROKER:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                    fieldChanged(before, after, sfLedgerIndex) ||
+                    fieldChanged(before, after, sfSequence) ||
+                    fieldChanged(before, after, sfOwnerNode) ||
+                    fieldChanged(before, after, sfVaultNode) ||
+                    fieldChanged(before, after, sfVaultID) ||
+                    fieldChanged(before, after, sfAccount) ||
+                    fieldChanged(before, after, sfOwner) ||
+                    fieldChanged(before, after, sfManagementFeeRate) ||
+                    fieldChanged(before, after, sfCoverRateMinimum) ||
+                    fieldChanged(before, after, sfCoverRateLiquidation);
+                break;
+            case ltLOAN:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                    fieldChanged(before, after, sfLedgerIndex) ||
+                    fieldChanged(before, after, sfSequence) ||
+                    fieldChanged(before, after, sfOwnerNode) ||
+                    fieldChanged(before, after, sfLoanBrokerNode) ||
+                    fieldChanged(before, after, sfLoanBrokerID) ||
+                    fieldChanged(before, after, sfBorrower) ||
+                    fieldChanged(before, after, sfLoanOriginationFee) ||
+                    fieldChanged(before, after, sfLoanServiceFee) ||
+                    fieldChanged(before, after, sfLatePaymentFee) ||
+                    fieldChanged(before, after, sfClosePaymentFee) ||
+                    fieldChanged(before, after, sfOverpaymentFee) ||
+                    fieldChanged(before, after, sfInterestRate) ||
+                    fieldChanged(before, after, sfLateInterestRate) ||
+                    fieldChanged(before, after, sfCloseInterestRate) ||
+                    fieldChanged(before, after, sfOverpaymentInterestRate) ||
+                    fieldChanged(before, after, sfStartDate) ||
+                    fieldChanged(before, after, sfPaymentInterval) ||
+                    fieldChanged(before, after, sfGracePeriod) ||
+                    fieldChanged(before, after, sfLoanScale);
+                break;
+            default:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 *
+                 * We use the lending protocol as a gate, even though
+                 * all transactions are affected because that's when it
+                 * was added.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                    fieldChanged(before, after, sfLedgerIndex);
+        }
+        XRPL_ASSERT(
+            !bad || enforce,
+            "xrpl::NoModifiedUnmodifiableFields::finalize : no bad "
+            "changes or enforce invariant");
+        if (bad)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: changed an unchangeable field for "
+                << tx.getTransactionID();
+            if (enforce)
+                return false;
+        }
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidLoanBroker::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after)
+    {
+        if (after->getType() == ltLOAN_BROKER)
+        {
+            auto& broker = brokers_[after->key()];
+            broker.brokerBefore = before;
+            broker.brokerAfter = after;
+        }
+        else if (
+            after->getType() == ltACCOUNT_ROOT &&
+            after->isFieldPresent(sfLoanBrokerID))
+        {
+            auto const& loanBrokerID = after->at(sfLoanBrokerID);
+            // create an entry if one doesn't already exist
+            brokers_.emplace(loanBrokerID, BrokerInfo{});
+        }
+        else if (after->getType() == ltRIPPLE_STATE)
+        {
+            lines_.emplace_back(after);
+        }
+        else if (after->getType() == ltMPTOKEN)
+        {
+            mpts_.emplace_back(after);
+        }
+    }
+}
+
+bool
+ValidLoanBroker::goodZeroDirectory(
+    ReadView const& view,
+    SLE::const_ref dir,
+    beast::Journal const& j) const
+{
+    auto const next = dir->at(~sfIndexNext);
+    auto const prev = dir->at(~sfIndexPrevious);
+    if ((prev && *prev) || (next && *next))
+    {
+        JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "
+                           "OwnerCount has multiple directory pages";
+        return false;
+    }
+    auto indexes = dir->getFieldV256(sfIndexes);
+    if (indexes.size() > 1)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: Loan Broker with zero "
+               "OwnerCount has multiple indexes in the Directory root";
+        return false;
+    }
+    if (indexes.size() == 1)
+    {
+        auto const index = indexes.value().front();
+        auto const sle = view.read(keylet::unchecked(index));
+        if (!sle)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker directory corrupt";
+            return false;
+        }
+        if (sle->getType() != ltRIPPLE_STATE && sle->getType() != ltMPTOKEN)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker with zero "
+                   "OwnerCount has an unexpected entry in the directory";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool
+ValidLoanBroker::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // Loan Brokers will not exist on ledger if the Lending Protocol amendment
+    // is not enabled, so there's no need to check it.
+
+    for (auto const& line : lines_)
+    {
+        for (auto const& field : {&sfLowLimit, &sfHighLimit})
+        {
+            auto const account =
+                view.read(keylet::account(line->at(*field).getIssuer()));
+            // This Invariant doesn't know about the rules for Trust Lines, so
+            // if the account is missing, don't treat it as an error. This
+            // loop is only concerned with finding Broker pseudo-accounts
+            if (account && account->isFieldPresent(sfLoanBrokerID))
+            {
+                auto const& loanBrokerID = account->at(sfLoanBrokerID);
+                // create an entry if one doesn't already exist
+                brokers_.emplace(loanBrokerID, BrokerInfo{});
+            }
+        }
+    }
+    for (auto const& mpt : mpts_)
+    {
+        auto const account = view.read(keylet::account(mpt->at(sfAccount)));
+        // This Invariant doesn't know about the rules for MPTokens, so
+        // if the account is missing, don't treat is as an error. This
+        // loop is only concerned with finding Broker pseudo-accounts
+        if (account && account->isFieldPresent(sfLoanBrokerID))
+        {
+            auto const& loanBrokerID = account->at(sfLoanBrokerID);
+            // create an entry if one doesn't already exist
+            brokers_.emplace(loanBrokerID, BrokerInfo{});
+        }
+    }
+
+    for (auto const& [brokerID, broker] : brokers_)
+    {
+        auto const& after = broker.brokerAfter
+            ? broker.brokerAfter
+            : view.read(keylet::loanbroker(brokerID));
+
+        if (!after)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan Broker missing";
+            return false;
+        }
+
+        auto const& before = broker.brokerBefore;
+
+        // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3123-invariants
+        // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most
+        // one node (the root), which will only hold entries for `RippleState`
+        // or `MPToken` objects.
+        if (after->at(sfOwnerCount) == 0)
+        {
+            auto const dir = view.read(keylet::ownerDir(after->at(sfAccount)));
+            if (dir)
+            {
+                if (!goodZeroDirectory(view, dir, j))
+                {
+                    return false;
+                }
+            }
+        }
+        if (before && before->at(sfLoanSequence) > after->at(sfLoanSequence))
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan Broker sequence number "
+                               "decreased";
+            return false;
+        }
+        if (after->at(sfDebtTotal) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker debt total is negative";
+            return false;
+        }
+        if (after->at(sfCoverAvailable) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker cover available is negative";
+            return false;
+        }
+        auto const vault = view.read(keylet::vault(after->at(sfVaultID)));
+        if (!vault)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker vault ID is invalid";
+            return false;
+        }
+        auto const& vaultAsset = vault->at(sfAsset);
+        if (after->at(sfCoverAvailable) < accountHolds(
+                                              view,
+                                              after->at(sfAccount),
+                                              vaultAsset,
+                                              FreezeHandling::fhIGNORE_FREEZE,
+                                              AuthHandling::ahIGNORE_AUTH,
+                                              j))
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan Broker cover available "
+                               "is less than pseudo-account asset balance";
+            return false;
+        }
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidLoan::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltLOAN)
+    {
+        loans_.emplace_back(before, after);
+    }
+}
+
+bool
+ValidLoan::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // Loans will not exist on ledger if the Lending Protocol amendment
+    // is not enabled, so there's no need to check it.
+
+    for (auto const& [before, after] : loans_)
+    {
+        // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3223-invariants
+        // If `Loan.PaymentRemaining = 0` then the loan MUST be fully paid off
+        if (after->at(sfPaymentRemaining) == 0 &&
+            (after->at(sfTotalValueOutstanding) != beast::zero ||
+             after->at(sfPrincipalOutstanding) != beast::zero ||
+             after->at(sfManagementFeeOutstanding) != beast::zero))
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan with zero payments "
+                               "remaining has not been paid off";
+            return false;
+        }
+        // If `Loan.PaymentRemaining != 0` then the loan MUST NOT be fully paid
+        // off
+        if (after->at(sfPaymentRemaining) != 0 &&
+            after->at(sfTotalValueOutstanding) == beast::zero &&
+            after->at(sfPrincipalOutstanding) == beast::zero &&
+            after->at(sfManagementFeeOutstanding) == beast::zero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan with zero payments "
+                               "remaining has not been paid off";
+            return false;
+        }
+        if (before &&
+            (before->isFlag(lsfLoanOverpayment) !=
+             after->isFlag(lsfLoanOverpayment)))
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Overpayment flag changed";
+            return false;
+        }
+        // Must not be negative - STNumber
+        for (auto const field :
+             {&sfLoanServiceFee,
+              &sfLatePaymentFee,
+              &sfClosePaymentFee,
+              &sfPrincipalOutstanding,
+              &sfTotalValueOutstanding,
+              &sfManagementFeeOutstanding})
+        {
+            if (after->at(*field) < 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: " << field->getName()
+                                << " is negative ";
+                return false;
+            }
+        }
+        // Must be positive - STNumber
+        for (auto const field : {
+                 &sfPeriodicPayment,
+             })
+        {
+            if (after->at(*field) <= 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: " << field->getName()
+                                << " is zero or negative ";
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 ValidVault::Vault
 ValidVault::Vault::make(SLE const& from)
 {
@@ -2170,6 +2623,7 @@ ValidVault::Vault::make(SLE const& from)
     self.key = from.key();
     self.asset = from.at(sfAsset);
     self.pseudoId = from.getAccountID(sfAccount);
+    self.owner = from.at(sfOwner);
     self.shareMPTID = from.getFieldH192(sfShareMPTID);
     self.assetsTotal = from.at(sfAssetsTotal);
     self.assetsAvailable = from.at(sfAssetsAvailable);
@@ -2204,7 +2658,7 @@ ValidVault::visitEntry(
     // `isDelete` indicates whether an object is being deleted or modified.
     XRPL_ASSERT(
         after != nullptr && (before != nullptr || !isDelete),
-        "ripple::ValidVault::visitEntry : some object is available");
+        "xrpl::ValidVault::visitEntry : some object is available");
 
     // Number balanceDelta will capture the difference (delta) between "before"
     // state (zero if created) and "after" state (zero if destroyed), so the
@@ -2302,19 +2756,20 @@ ValidVault::finalize(
                 "Invariant failed: vault operation succeeded without modifying "
                 "a vault";
             XRPL_ASSERT(
-                enforce, "ripple::ValidVault::finalize : vault noop invariant");
+                enforce, "xrpl::ValidVault::finalize : vault noop invariant");
             return !enforce;
         }
 
         return true;  // Not a vault operation
     }
-    else if (!hasPrivilege(tx, mustModifyVault))  // TODO: mayModifyVault
+    else if (!(hasPrivilege(tx, mustModifyVault) ||
+               hasPrivilege(tx, mayModifyVault)))
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault updated by a wrong transaction type";
         XRPL_ASSERT(
             enforce,
-            "ripple::ValidVault::finalize : illegal vault transaction "
+            "xrpl::ValidVault::finalize : illegal vault transaction "
             "invariant");
         return !enforce;  // Also not a vault operation
     }
@@ -2324,7 +2779,7 @@ ValidVault::finalize(
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault operation updated more than single vault";
         XRPL_ASSERT(
-            enforce, "ripple::ValidVault::finalize : single vault invariant");
+            enforce, "xrpl::ValidVault::finalize : single vault invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -2340,7 +2795,7 @@ ValidVault::finalize(
                 "Invariant failed: vault deleted by a wrong transaction type";
             XRPL_ASSERT(
                 enforce,
-                "ripple::ValidVault::finalize : illegal vault deletion "
+                "xrpl::ValidVault::finalize : illegal vault deletion "
                 "invariant");
             return !enforce;  // That's all we can do here
         }
@@ -2367,7 +2822,7 @@ ValidVault::finalize(
                                "delete shares";
             XRPL_ASSERT(
                 enforce,
-                "ripple::ValidVault::finalize : shares deletion invariant");
+                "xrpl::ValidVault::finalize : shares deletion invariant");
             return !enforce;  // That's all we can do here
         }
 
@@ -2398,7 +2853,7 @@ ValidVault::finalize(
         JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without "
                            "deleting a vault";
         XRPL_ASSERT(
-            enforce, "ripple::ValidVault::finalize : vault deletion invariant");
+            enforce, "xrpl::ValidVault::finalize : vault deletion invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -2406,7 +2861,7 @@ ValidVault::finalize(
     auto const& afterVault = afterVault_[0];
     XRPL_ASSERT(
         beforeVault_.empty() || beforeVault_[0].key == afterVault.key,
-        "ripple::ValidVault::finalize : single vault operation");
+        "xrpl::ValidVault::finalize : single vault operation");
 
     auto const updatedShares = [&]() -> std::optional<Shares> {
         // At this moment we only know that a vault is being updated and there
@@ -2447,8 +2902,7 @@ ValidVault::finalize(
     {
         JLOG(j.fatal()) << "Invariant failed: updated vault must have shares";
         XRPL_ASSERT(
-            enforce,
-            "ripple::ValidVault::finalize : vault has shares invariant");
+            enforce, "xrpl::ValidVault::finalize : vault has shares invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -2518,12 +2972,13 @@ ValidVault::finalize(
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault created by a wrong transaction type";
         XRPL_ASSERT(
-            enforce, "ripple::ValidVault::finalize : vault creation invariant");
+            enforce, "xrpl::ValidVault::finalize : vault creation invariant");
         return !enforce;  // That's all we can do here
     }
 
     if (!beforeVault_.empty() &&
-        afterVault.lossUnrealized != beforeVault_[0].lossUnrealized)
+        afterVault.lossUnrealized != beforeVault_[0].lossUnrealized &&
+        txnType != ttLOAN_MANAGE && txnType != ttLOAN_PAY)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault transaction must not change loss "
@@ -2552,7 +3007,7 @@ ValidVault::finalize(
         JLOG(j.fatal()) << "Invariant failed: vault operation succeeded "
                            "without updating shares";
         XRPL_ASSERT(
-            enforce, "ripple::ValidVault::finalize : shares noop invariant");
+            enforce, "xrpl::ValidVault::finalize : shares noop invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -2611,6 +3066,10 @@ ValidVault::finalize(
 
         return it != deltas_.end() ? std::optional<Number>(it->second)
                                    : std::nullopt;
+    };
+
+    auto const vaultHoldsNoAssets = [&](Vault const& vault) {
+        return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
     };
 
     // Technically this does not need to be a lambda, but it's more
@@ -2682,7 +3141,7 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "ripple::ValidVault::finalize : set updated a vault");
+                    "xrpl::ValidVault::finalize : set updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
                 auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
@@ -2734,7 +3193,7 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "ripple::ValidVault::finalize : deposit updated a vault");
+                    "xrpl::ValidVault::finalize : deposit updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
                 auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
@@ -2861,7 +3320,7 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "ripple::ValidVault::finalize : withdrawal updated a "
+                    "xrpl::ValidVault::finalize : withdrawal updated a "
                     "vault");
                 auto const& beforeVault = beforeVault_[0];
 
@@ -2989,33 +3448,60 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "ripple::ValidVault::finalize : clawback updated a vault");
+                    "xrpl::ValidVault::finalize : clawback updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
                 if (vaultAsset.native() ||
                     vaultAsset.getIssuer() != tx[sfAccount])
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback may only be performed by "
-                        "the asset issuer";
-                    return false;  // That's all we can do
+                    // The owner can use clawback to force-burn shares when the
+                    // vault is empty but there are outstanding shares
+                    if (!(beforeShares && beforeShares->sharesTotal > 0 &&
+                          vaultHoldsNoAssets(beforeVault) &&
+                          beforeVault.owner == tx[sfAccount]))
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback may only be performed "
+                            "by the asset issuer, or by the vault owner of an "
+                            "empty vault";
+                        return false;  // That's all we can do
+                    }
                 }
 
                 auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+                if (vaultDeltaAssets)
+                {
+                    if (*vaultDeltaAssets >= zero)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must decrease vault "
+                            "balance";
+                        result = false;
+                    }
 
-                if (!vaultDeltaAssets)
+                    if (beforeVault.assetsTotal + *vaultDeltaAssets !=
+                        afterVault.assetsTotal)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback and assets outstanding "
+                            "must add up";
+                        result = false;
+                    }
+
+                    if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
+                        afterVault.assetsAvailable)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback and assets available "
+                            "must add up";
+                        result = false;
+                    }
+                }
+                else if (!vaultHoldsNoAssets(beforeVault))
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback must change vault balance";
                     return false;  // That's all we can do
-                }
-
-                if (*vaultDeltaAssets >= zero)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must decrease vault "
-                        "balance";
-                    result = false;
                 }
 
                 auto const accountDeltaShares = deltaShares(tx[sfHolder]);
@@ -3050,31 +3536,20 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                if (beforeVault.assetsTotal + *vaultDeltaAssets !=
-                    afterVault.assetsTotal)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback and assets outstanding "
-                        "must add up";
-                    result = false;
-                }
-
-                if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
-                    afterVault.assetsAvailable)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback and assets available must "
-                        "add up";
-                    result = false;
-                }
-
                 return result;
+            }
+
+            case ttLOAN_SET:
+            case ttLOAN_MANAGE:
+            case ttLOAN_PAY: {
+                // TBD
+                return true;
             }
 
             default:
                 // LCOV_EXCL_START
                 UNREACHABLE(
-                    "ripple::ValidVault::finalize : unknown transaction type");
+                    "xrpl::ValidVault::finalize : unknown transaction type");
                 return false;
                 // LCOV_EXCL_STOP
         }
@@ -3084,11 +3559,11 @@ ValidVault::finalize(
     {
         // The comment at the top of this file starting with "assert(enforce)"
         // explains this assert.
-        XRPL_ASSERT(enforce, "ripple::ValidVault::finalize : vault invariants");
+        XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault invariants");
         return !enforce;
     }
 
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
