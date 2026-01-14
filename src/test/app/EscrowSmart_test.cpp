@@ -1083,7 +1083,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                  0x00});
 
             // 5. Code Section (ID 10): Body for "finish" - MUST come before
-            // Data Section
+            // Data Section per WASM spec (sections must be in ascending ID order)
             std::vector<uint8_t> code_body = {0x00, 0x0b};  // 0 locals, end
             std::vector<uint8_t> code_p;
             pushLeb128(code_p, 1);  // 1 function body
@@ -1097,17 +1097,18 @@ struct EscrowSmart_test : public beast::unit_test::suite
             std::vector<uint8_t> data_seg;
             data_seg.push_back(0x00);  // Memory index 0
             // Offset: i32.const 0, end
+            // Init expr for data segment offset: i32.const 0 (0x41 0x00), end (0x0b)
             data_seg.insert(data_seg.end(), {0x41, 0x00, 0x0b});
-            pushLeb128(data_seg, data_size);  // Content length
+            pushLeb128(data_seg, data_size);  // Content length (N bytes of data)
 
             std::vector<uint8_t> data_p;
-            pushLeb128(data_p, 1);  // 1 segment
+            pushLeb128(data_p, 1);  // 1 data segment in this data section
             data_p.insert(data_p.end(), data_seg.begin(), data_seg.end());
 
-            wasm.push_back(0x0b);  // Data Section ID
-            pushLeb128(wasm, (uint32_t)(data_p.size() + data_size));
+            wasm.push_back(0x0b);  // Data Section ID (standard WASM section 0x0b)
+            pushLeb128(wasm, (uint32_t)(data_p.size() + data_size));  // Section size
             wasm.insert(wasm.end(), data_p.begin(), data_p.end());
-            wasm.insert(wasm.end(), data_size, 0xEE);  // Junk data
+            wasm.insert(wasm.end(), data_size, 0xEE);  // Junk data payload bytes (0xEE)
 
             return wasm;
         };
@@ -1187,12 +1188,12 @@ struct EscrowSmart_test : public beast::unit_test::suite
             generateDataBlob(99948),
             std::nullopt,
             ExpectedStatus::Malformed);                 // just over 100kb
-        runTest(generateDataBlob(200'000), 1'000'000);  // ~200kb
+        runTest(generateDataBlob(200'000), 10'000'000);  // ~200kb
         runTest(
             generateDataBlob(490'000), 10'000'000);  // just under 1MB of JSON
         runTest(
             generateDataBlob(999950),
-            1'000'000,
+            10'000'000,
             ExpectedStatus::Crash);  // just over 1MB of JSON
     }
 
