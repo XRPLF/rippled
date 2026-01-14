@@ -1083,7 +1083,8 @@ struct EscrowSmart_test : public beast::unit_test::suite
                  0x00});
 
             // 5. Code Section (ID 10): Body for "finish" - MUST come before
-            // Data Section per WASM spec (sections must be in ascending ID order)
+            // Data Section per WASM spec (sections must be in ascending ID
+            // order)
             std::vector<uint8_t> code_body = {0x00, 0x0b};  // 0 locals, end
             std::vector<uint8_t> code_p;
             pushLeb128(code_p, 1);  // 1 function body
@@ -1097,18 +1098,23 @@ struct EscrowSmart_test : public beast::unit_test::suite
             std::vector<uint8_t> data_seg;
             data_seg.push_back(0x00);  // Memory index 0
             // Offset: i32.const 0, end
-            // Init expr for data segment offset: i32.const 0 (0x41 0x00), end (0x0b)
+            // Init expr for data segment offset: i32.const 0 (0x41 0x00), end
+            // (0x0b)
             data_seg.insert(data_seg.end(), {0x41, 0x00, 0x0b});
-            pushLeb128(data_seg, data_size);  // Content length (N bytes of data)
+            pushLeb128(
+                data_seg, data_size);  // Content length (N bytes of data)
 
             std::vector<uint8_t> data_p;
             pushLeb128(data_p, 1);  // 1 data segment in this data section
             data_p.insert(data_p.end(), data_seg.begin(), data_seg.end());
 
-            wasm.push_back(0x0b);  // Data Section ID (standard WASM section 0x0b)
-            pushLeb128(wasm, (uint32_t)(data_p.size() + data_size));  // Section size
+            wasm.push_back(
+                0x0b);  // Data Section ID (standard WASM section 0x0b)
+            pushLeb128(
+                wasm, (uint32_t)(data_p.size() + data_size));  // Section size
             wasm.insert(wasm.end(), data_p.begin(), data_p.end());
-            wasm.insert(wasm.end(), data_size, 0xEE);  // Junk data payload bytes (0xEE)
+            wasm.insert(
+                wasm.end(), data_size, 0xEE);  // Junk data payload bytes (0xEE)
 
             return wasm;
         };
@@ -1117,7 +1123,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
 
         auto runTest = [&](std::vector<uint8_t> const& wasm,
                            std::optional<uint32_t> sizeLimit = std::nullopt,
-                           ExpectedStatus expectSuccess =
+                           ExpectedStatus expectedStatus =
                                ExpectedStatus::Success) {
             auto makeEnv = [&]() -> Env {
                 if (sizeLimit)
@@ -1145,10 +1151,10 @@ struct EscrowSmart_test : public beast::unit_test::suite
                     escrow::cancel_time(env.now() + 100s),
                     fee(env.current()->fees().base * 10 +
                         wasmHex.size() / 2 * 5),
-                    ter(expectSuccess == ExpectedStatus::Success
+                    ter(expectedStatus == ExpectedStatus::Success
                             ? TER{tesSUCCESS}
                             : TER{temMALFORMED}));
-                if (expectSuccess == ExpectedStatus::Crash)
+                if (expectedStatus == ExpectedStatus::Crash)
                 {
                     fail("Expected crash");
                 }
@@ -1159,7 +1165,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             }
             catch (std::exception const& e)
             {
-                if (expectSuccess == ExpectedStatus::Crash)
+                if (expectedStatus == ExpectedStatus::Crash)
                 {
                     pass();
                 }
@@ -1172,9 +1178,9 @@ struct EscrowSmart_test : public beast::unit_test::suite
 
         runTest(generateCodeBlob(99'959));  // just under 100kb
         runTest(
-            generateCodeBlob(99'961),
+            generateCodeBlob(99'961),  // just over 100kb, including header etc
             std::nullopt,
-            ExpectedStatus::Malformed);                  // just over 100kb
+            ExpectedStatus::Malformed);
         runTest(generateCodeBlob(200'000), 10'000'000);  // ~200kb
         runTest(
             generateCodeBlob(490'000), 10'000'000);  // just under 1MB of JSON
@@ -1187,7 +1193,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
         runTest(
             generateDataBlob(99948),
             std::nullopt,
-            ExpectedStatus::Malformed);                 // just over 100kb
+            ExpectedStatus::Malformed);  // just over 100kb, including header
         runTest(generateDataBlob(200'000), 10'000'000);  // ~200kb
         runTest(
             generateDataBlob(490'000), 10'000'000);  // just under 1MB of JSON
