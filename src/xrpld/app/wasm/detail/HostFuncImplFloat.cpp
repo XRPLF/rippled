@@ -107,12 +107,12 @@ public:
             return Unexpected(
                 HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
         }
-        else if (exponent() > maxExponent)
+        else if (exponent() > detail::Number2::maxExponent)
             return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-        else if (exponent() < minExponent)
+        else if (exponent() < detail::Number2::minExponent)
             return FLOAT_NULL;
 
-        int const e = exponent() - minExponent + 1;  //+97
+        int const e = exponent() - detail::Number2::minExponent + 1;  //+97
         v |= absM;
         v |= ((uint64_t)e) << 54;
 
@@ -395,7 +395,7 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
     {
-        if ((n < 0) || (n > maxExponent))
+        if ((n < 0) || (n > detail::Number2::maxExponent))
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
         detail::SetRound rm(mode);

@@ -4,6 +4,8 @@
 
 #include <xrpl/protocol/digest.h>
 
+#include <limits>
+
 namespace xrpl {
 namespace test {
 
@@ -218,7 +220,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Test by id
         {
-            auto const result = hfs.isAmendmentEnabled(amendmentId);
+            Slice const idSlice(amendmentId.data(), amendmentId.size());
+            auto const result = hfs.isAmendmentEnabled(idSlice);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT(result.value() == 1);
         }
@@ -226,7 +229,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Test by name
         std::string const amendmentName = "TokenEscrow";
         {
-            auto const result = hfs.isAmendmentEnabled(amendmentName);
+            Slice const nameSlice(amendmentName.data(), amendmentName.size());
+            auto const result = hfs.isAmendmentEnabled(nameSlice);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT(result.value() == 1);
         }
@@ -234,7 +238,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Test with a fake amendment id (all zeros)
         uint256 fakeId;
         {
-            auto const result = hfs.isAmendmentEnabled(fakeId);
+            Slice const idSlice(fakeId.data(), fakeId.size());
+            auto const result = hfs.isAmendmentEnabled(idSlice);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT(result.value() == 0);
         }
@@ -242,7 +247,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Test with a fake amendment name
         std::string fakeName = "FakeAmendment";
         {
-            auto const result = hfs.isAmendmentEnabled(fakeName);
+            Slice const nameSlice(fakeName.data(), fakeName.size());
+            auto const result = hfs.isAmendmentEnabled(nameSlice);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT(result.value() == 0);
         }
@@ -2374,7 +2380,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::maxExponent + normalExp + 1, 0);
+                hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
             BEAST_EXPECT(!result) &&
                 BEAST_EXPECT(
                     result.error() ==
@@ -2383,37 +2389,37 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::minExponent + normalExp - 1, 0);
+                hfs.floatSet(1, Number::minExponent + normalExp - 1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
         }
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::maxExponent + normalExp, 0);
+                hfs.floatSet(1, Number::maxExponent + normalExp, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
         }
 
         {
             auto const result =
-                hfs.floatSet(-1, wasm_float::maxExponent + normalExp, 0);
+                hfs.floatSet(-1, Number::maxExponent + normalExp, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinusMaxExp);
         }
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::maxExponent + normalExp - 1, 0);
+                hfs.floatSet(1, Number::maxExponent + normalExp - 1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatPreMaxExp);
         }
 
         {
             auto const result = hfs.floatSet(
-                wasm_float::maxMantissa, wasm_float::maxExponent, 0);
+                std::numeric_limits<int64_t>::max(), Number::maxExponent, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
         }
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::minExponent + normalExp, 0);
+                hfs.floatSet(1, Number::minExponent + normalExp, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinExp);
         }
 
@@ -2713,7 +2719,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const y = hfs.floatSet(
-                wasm_float::maxMantissa, -normalExp - 1, 0);  // 0.9999999...
+                std::numeric_limits<int64_t>::max(),
+                -normalExp - 1,
+                0);  // 0.9999999...
             if (BEAST_EXPECT(y))
             {
                 auto const result =

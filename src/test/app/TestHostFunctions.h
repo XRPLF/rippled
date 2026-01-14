@@ -97,13 +97,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(uint256 const& amendmentId) override
-    {
-        return 1;
-    }
-
-    Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(std::string_view const& amendmentName) override
+    isAmendmentEnabled(Slice const& amendmentId) override
     {
         return 1;
     }
@@ -356,7 +350,7 @@ public:
         return Bytes(accountID_.begin(), accountID_.end());
     }
 
-    Expected<std::uint32_t, HostFunctionError>
+    Expected<int32_t, HostFunctionError>
     getNFTTaxon(uint256 const& nftId) override
     {
         return 4;
@@ -374,7 +368,7 @@ public:
         return 10;
     }
 
-    Expected<std::uint32_t, HostFunctionError>
+    Expected<int32_t, HostFunctionError>
     getNFTSerial(uint256 const& nftId) override
     {
         return 4;
@@ -642,14 +636,19 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(uint256 const& amendmentId) override
+    isAmendmentEnabled(Slice const& data) override
     {
-        return env_.current()->rules().enabled(amendmentId);
-    }
+        if (data.size() == uint256::bytes)
+        {
+            if (env_.current()->rules().enabled(uint256::fromVoid(data.data())))
+                return 1;
+        }
+        // Otherwise interpret as amendment name string
+        if (data.size() > 64)
+            return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-    Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(std::string_view const& amendmentName) override
-    {
+        auto const amendmentName = std::string_view(
+            reinterpret_cast<char const*>(data.data()), data.size());
         auto const& table = env_.app().getAmendmentTable();
         auto const amendment = table.find(std::string(amendmentName));
         return env_.current()->rules().enabled(amendment);
@@ -1326,7 +1325,7 @@ struct PerfHostFunctions : public TestHostFunctions
         return Bytes{issuer.begin(), issuer.end()};
     }
 
-    Expected<std::uint32_t, HostFunctionError>
+    Expected<int32_t, HostFunctionError>
     getNFTTaxon(uint256 const& nftId) override
     {
         return nft::toUInt32(nft::getTaxon(nftId));
@@ -1344,7 +1343,7 @@ struct PerfHostFunctions : public TestHostFunctions
         return nft::getTransferFee(nftId);
     }
 
-    Expected<std::uint32_t, HostFunctionError>
+    Expected<int32_t, HostFunctionError>
     getNFTSerial(uint256 const& nftId) override
     {
         return nft::getSerial(nftId);

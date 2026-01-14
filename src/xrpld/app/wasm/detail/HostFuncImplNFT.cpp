@@ -41,10 +41,13 @@ WasmHostFunctionsImpl::getNFTIssuer(uint256 const& nftId)
     return Bytes{issuer.begin(), issuer.end()};
 }
 
-Expected<std::uint32_t, HostFunctionError>
+Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getNFTTaxon(uint256 const& nftId)
 {
-    return nft::toUInt32(nft::getTaxon(nftId));
+    auto const taxon = nft::getTaxon(nftId);
+    if (taxon > std::numeric_limits<int32_t>::max())
+        return Unexpected(HostFunctionError::INTERNAL);
+    return static_cast<int32_t>(taxon);
 }
 
 Expected<int32_t, HostFunctionError>
@@ -59,10 +62,13 @@ WasmHostFunctionsImpl::getNFTTransferFee(uint256 const& nftId)
     return nft::getTransferFee(nftId);
 }
 
-Expected<std::uint32_t, HostFunctionError>
+Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getNFTSerial(uint256 const& nftId)
 {
-    return nft::getSerial(nftId);
+    auto const serial = nft::getSerial(nftId);
+    if (serial > std::numeric_limits<int32_t>::max())
+        return Unexpected(HostFunctionError::INTERNAL);
+    return static_cast<int32_t>(serial);
 }
 
 }  // namespace xrpl

@@ -424,24 +424,8 @@ isAmendmentEnabled_wrap(
         return hfResult(results, slice.error());
     }
 
-    if (slice->size() == uint256::bytes)
-    {
-        if (auto ret = hf->isAmendmentEnabled(uint256::fromVoid(slice->data()));
-            *ret == 1)
-        {
-            return returnResult(runtime, params, results, ret, index);
-        }
-    }
-
-    if (slice->size() > 64)
-    {
-        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
-    }
-
-    auto const str = std::string_view(
-        reinterpret_cast<char const*>(slice->data()), slice->size());
     return returnResult(
-        runtime, params, results, hf->isAmendmentEnabled(str), index);
+        runtime, params, results, hf->isAmendmentEnabled(*slice), index);
 }
 
 wasm_trap_t*
