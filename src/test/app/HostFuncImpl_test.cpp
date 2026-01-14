@@ -2143,7 +2143,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             if (BEAST_EXPECT(result.has_value()))
             {
                 BEAST_EXPECT(
-                    result.value() == msg.size() + env.master.id().size());
+                    result.value() ==
+                    msg.size() + toBase58(env.master.id()).size());
                 auto const messages = sink.messages().str();
                 BEAST_EXPECT(messages.find(msg) != std::string::npos);
                 BEAST_EXPECT(
@@ -2165,7 +2166,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             std::string msg = "trace account";
             auto const result = hfs.traceAccount(msg, env.master.id());
             BEAST_EXPECT(
-                result && *result == msg.size() + env.master.id().size());
+                result &&
+                *result == msg.size() + toBase58(env.master.id()).size());
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }

@@ -435,8 +435,9 @@ public:
     Expected<int32_t, HostFunctionError>
     traceAccount(std::string_view const& msg, AccountID const& account) override
     {
-        auto const ret = msg.size() + account.size();
-        log(msg, [&account] { return toBase58(account); });
+        auto const accountStr = toBase58(account);
+        auto const ret = msg.size() + accountStr.size();
+        log(msg, [&account] { return accountStr; });
         return ret;
     }
 
