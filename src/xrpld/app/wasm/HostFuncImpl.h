@@ -89,4 +89,14 @@ public:
 #undef HOST_FUNCTION_UINT_RETURN
 };
 
+namespace wasm_float {
+
+// The range for the mantissa and exponent when normalized
+static std::int64_t constexpr minMantissa = STAmount::cMinValue;
+static std::int64_t constexpr maxMantissa = STAmount::cMaxValue;
+static int constexpr minExponent = STAmount::cMinOffset;
+static int constexpr maxExponent = STAmount::cMaxOffset;
+
+}  // namespace wasm_float
+
 }  // namespace xrpl
