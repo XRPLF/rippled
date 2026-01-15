@@ -47,19 +47,16 @@ set(SANITIZERS $ENV{SANITIZERS})
 
 # Set SANITIZERS_ENABLED flag for use in other modules
 if(SANITIZERS MATCHES "address|thread|undefinedbehavior")
-  set(SANITIZERS_ENABLED TRUE)
+    set(SANITIZERS_ENABLED TRUE)
 else()
-  set(SANITIZERS_ENABLED FALSE)
-endif()
-
-if(NOT SANITIZERS)
-  return()
+    set(SANITIZERS_ENABLED FALSE)
+    return()
 endif()
 
 # Sanitizers are not supported on Windows/MSVC
-if(is_msvc)
-  message(FATAL_ERROR "Sanitizers are not supported on Windows/MSVC. "
-        "Please unset the SANITIZERS environment variable.")
+if(is_msvc AND SANITIZERS_ENABLED)
+    message(FATAL_ERROR "Sanitizers are not supported on Windows/MSVC. "
+            "Please unset the SANITIZERS environment variable.")
 endif()
 
 message(STATUS "Configuring sanitizers: ${SANITIZERS}")
