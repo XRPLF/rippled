@@ -37,6 +37,7 @@ runs:
   steps:
     - name: Calculate Conan reference
       id: ref
+      shell: bash
       env:
         CONAN_RECIPE_NAME: ${{ inputs.conan_recipe_name }}
         CONAN_RECIPE_VERSION: ${{ inputs.conan_recipe_version }}
@@ -54,12 +55,14 @@ runs:
         conan_remote_name: ${{ inputs.conan_remote_name }}
         conan_remote_url: ${{ inputs.conan_remote_url }}
     - name: Log into Conan remote
+      shell: bash
       env:
         CONAN_REMOTE_NAME: ${{ inputs.conan_remote_name }}
         CONAN_REMOTE_USERNAME: ${{ inputs.conan_remote_username }}
         CONAN_REMOTE_PASSWORD: ${{ inputs.conan_remote_password }}
       run: conan remote login "${CONAN_REMOTE_NAME}" "${CONAN_REMOTE_USERNAME}" --password "${CONAN_REMOTE_PASSWORD}"
     - name: Upload package
+      shell: bash
       env:
         CONAN_RECIPE_CHANNEL: ${{ inputs.conan_recipe_channel }}
         CONAN_RECIPE_USER: ${{ inputs.conan_recipe_user }}
