@@ -44,37 +44,29 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: Extract version
+        id: version
+        uses: ./.github/actions/extract-version
       - name: Generate outputs
         id: generate
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          echo 'Generating user and channel.'
           echo "user=clio" >> "${GITHUB_OUTPUT}"
           echo "channel=pr_${PR_NUMBER}" >> "${GITHUB_OUTPUT}"
-          echo 'Extracting version.'
-          echo "version=$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')" >> "${GITHUB_OUTPUT}"
-      - name: Calculate conan reference
-        id: conan_ref
-        run: |
-          echo "conan_ref=${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.user }}/${{ steps.generate.outputs.channel }}" >> "${GITHUB_OUTPUT}"
-      - name: Set up Conan
-        uses: ./.github/actions/setup-conan
+      - name: Upload recipe
+        uses: ./.github/actions/upload-recipe
+        id: upload
         with:
+          conan_recipe_version: ${{ steps.version.outputs.version }}
+          conan_recipe_channel: ${{ steps.generate.outputs.channel }}
+          conan_recipe_user: ${{ steps.generate.outputs.user }}
           conan_remote_name: ${{ inputs.conan_remote_name }}
           conan_remote_url: ${{ inputs.conan_remote_url }}
-      - name: Log into Conan remote
-        env:
-          CONAN_REMOTE_NAME: ${{ inputs.conan_remote_name }}
-        run: conan remote login "${CONAN_REMOTE_NAME}" "${{ secrets.conan_remote_username }}" --password "${{ secrets.conan_remote_password }}"
-      - name: Upload package
-        env:
-          CONAN_REMOTE_NAME: ${{ inputs.conan_remote_name }}
-        run: |
-          conan export --user=${{ steps.generate.outputs.user }} --channel=${{ steps.generate.outputs.channel }} .
-          conan upload --confirm --check --remote="${CONAN_REMOTE_NAME}" xrpl/${{ steps.conan_ref.outputs.conan_ref }}
+          conan_remote_username: ${{ secrets.conan_remote_username }}
+          conan_remote_password: ${{ secrets.conan_remote_password }}
     outputs:
-      conan_ref: ${{ steps.conan_ref.outputs.conan_ref }}
+      conan_ref: ${{ steps.upload.outputs.conan_ref }}
 
   notify:
     needs: upload
