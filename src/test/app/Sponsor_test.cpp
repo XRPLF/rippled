@@ -298,6 +298,7 @@ public:
             sponsor::as(sponsor, tfSponsorReserve),
             msig(sfSponsorSignature, {signer1}),
             ter(tesSUCCESS));
+        env.close();
 
         env(signers(sponsor, 2, {{signer1, 1}, {signer2, 1}}));
         env.close();

@@ -589,7 +589,7 @@ AMMWithdraw::withdraw(
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             auto const balance = (*sleAccount)[sfBalance].xrp();
             std::uint32_t const count =
-                ownerCount(sponsorSle ? *sponsorSle : sleAccount);
+                ownerCount(sponsorSle ? sponsorSle : sleAccount);
             if (count >= 2)
             {
                 if (auto const ret = checkInsufficientReserve(
@@ -598,7 +598,7 @@ AMMWithdraw::withdraw(
                         sleAccount,
                         std::max(priorBalance, balance),
                         sponsor ? view.read(keylet::account(*sponsor))
-                                : std::optional<std::shared_ptr<SLE const>>{},
+                                : std::shared_ptr<SLE const>(),
                         1);
                     !isTesSuccess(ret))
                     return ret;

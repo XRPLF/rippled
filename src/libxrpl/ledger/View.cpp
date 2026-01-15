@@ -1167,7 +1167,7 @@ checkInsufficientReserve(
     STTx const& tx,
     std::shared_ptr<SLE const> accSle,
     STAmount const& accBalance,
-    std::optional<std::shared_ptr<SLE const>> const& sponsorSle,
+    std::shared_ptr<SLE const> const& sponsorSle,
     std::int32_t ownerCountDelta,
     std::int32_t accountCountDelta)
 {
@@ -1176,7 +1176,7 @@ checkInsufficientReserve(
         auto const isCoSigning = isSponsorReserveCoSigning(tx);
 
         auto const sle = view.read(keylet::sponsor(
-            (*sponsorSle)->getAccountID(sfAccount),
+            sponsorSle->getAccountID(sfAccount),
             accSle->getAccountID(sfAccount)));
 
         if (isCoSigning)
@@ -1190,15 +1190,14 @@ checkInsufficientReserve(
 
                 return tesSUCCESS;
             }
-            auto const sponsorBalance =
-                (*sponsorSle)->getFieldAmount(sfBalance);
+            auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
             STAmount const sponsorReserve{view.fees().accountReserve(
-                (*sponsorSle)->getFieldU32(sfOwnerCount),
-                (*sponsorSle)->getFieldU32(sfSponsoredOwnerCount),
-                (*sponsorSle)->getFieldU32(sfSponsoringOwnerCount) +
+                sponsorSle->getFieldU32(sfOwnerCount),
+                sponsorSle->getFieldU32(sfSponsoredOwnerCount),
+                sponsorSle->getFieldU32(sfSponsoringOwnerCount) +
                     ownerCountDelta,
-                (*sponsorSle)->isFieldPresent(sfSponsorAccount),
-                (*sponsorSle)->getFieldU32(sfSponsoringAccountCount) +
+                sponsorSle->isFieldPresent(sfSponsorAccount),
+                sponsorSle->getFieldU32(sfSponsoringAccountCount) +
                     accountCountDelta)};
 
             if (sponsorBalance < sponsorReserve)
@@ -1239,65 +1238,65 @@ getTxReserveSponsorAccountID(STTx const& tx)
         if (sponsorObj.isFlag(tfSponsorReserve))
             return sponsorObj.getAccountID(sfAccount);
     }
-    return std::nullopt;
+    return {};
 }
 
-std::optional<std::shared_ptr<SLE>>
+std::shared_ptr<SLE>
 getTxReserveSponsor(ApplyView& view, STTx const& tx)
 {
     auto const sponsorID = getTxReserveSponsorAccountID(tx);
     if (sponsorID)
         return view.peek(keylet::account(*sponsorID));
-    return std::nullopt;
+    return {};
 }
 
-std::optional<std::shared_ptr<SLE const>>
+std::shared_ptr<SLE const> const
 getTxReserveSponsor(ReadView const& view, STTx const& tx)
 {
     auto const sponsorID = getTxReserveSponsorAccountID(tx);
     if (sponsorID)
         return view.read(keylet::account(*sponsorID));
-    return std::nullopt;
+    return {};
 }
 
 std::optional<AccountID>
 getLedgerEntryReserveSponsorAccountID(
-    std::shared_ptr<SLE const> sle,
+    std::shared_ptr<SLE const> const& sle,
     SF_ACCOUNT const& field)
 {
     if (sle->isFieldPresent(field))
         return sle->getAccountID(field);
-    return std::nullopt;
+    return {};
 }
 
-std::optional<std::shared_ptr<SLE>>
+std::shared_ptr<SLE>
 getLedgerEntryReserveSponsor(
     ApplyView& view,
-    std::shared_ptr<SLE> sle,
+    std::shared_ptr<SLE> const& sle,
     SF_ACCOUNT const& field)
 {
     auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
     if (sponsorID)
         return view.peek(keylet::account(*sponsorID));
-    return std::nullopt;
+    return {};
 }
 
-std::optional<std::shared_ptr<SLE const>>
+std::shared_ptr<SLE const> const
 getLedgerEntryReserveSponsor(
     ReadView const& view,
-    std::shared_ptr<SLE const> sle,
+    std::shared_ptr<SLE const> const& sle,
     SF_ACCOUNT const& field)
 {
     auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
     if (sponsorID)
         return view.read(keylet::account(*sponsorID));
-    return std::nullopt;
+    return {};
 }
 
 void
 addSponsorToLedgerEntry(
     std::shared_ptr<SLE> const& sle,
-    std::optional<std::shared_ptr<SLE>> const& sponsorSle,
+    std::shared_ptr<SLE> const& sponsorSle,
     SF_ACCOUNT const& field)
 {
     XRPL_ASSERT(
@@ -1306,7 +1305,7 @@ addSponsorToLedgerEntry(
             (sle->getType() != ltRIPPLE_STATE && field == sfSponsorAccount),
         "addSponsorToLedgerEntry : Invalid field to the LedgerEntry");
     if (sponsorSle)
-        sle->setAccountID(field, (*sponsorSle)->getAccountID(sfAccount));
+        sle->setAccountID(field, sponsorSle->getAccountID(sfAccount));
 }
 
 void
@@ -1333,7 +1332,7 @@ void
 adjustOwnerCount(
     ApplyView& view,
     std::shared_ptr<SLE> const& accountSle,
-    std::optional<std::shared_ptr<SLE>> const& sponsorSle,
+    std::shared_ptr<SLE> const& sponsorSle,
     std::int32_t amount,
     beast::Journal j)
 {
@@ -1345,19 +1344,19 @@ adjustOwnerCount(
     {
         XRPL_ASSERT(sponsorSle, "xrpl::adjustOwnerCount : sponsor exists");
         auto const account = accountSle->getAccountID(sfAccount);
-        auto const sponsorAcc = (*sponsorSle)->getAccountID(sfAccount);
+        auto const sponsorAcc = (sponsorSle)->getAccountID(sfAccount);
         {
             // modify sponsor's SponsoringOwnerCount
             std::uint32_t const current{
-                (*sponsorSle)->getFieldU32(sfSponsoringOwnerCount)};
+                (sponsorSle)->getFieldU32(sfSponsoringOwnerCount)};
             std::uint32_t const adjusted =
                 confineOwnerCount(current, amount, sponsorAcc, j);
             view.adjustOwnerCountHook(sponsorAcc, current, adjusted);
             if (adjusted == 0)
-                (*sponsorSle)->makeFieldAbsent(sfSponsoringOwnerCount);
+                (sponsorSle)->makeFieldAbsent(sfSponsoringOwnerCount);
             else
-                (*sponsorSle)->setFieldU32(sfSponsoringOwnerCount, adjusted);
-            view.update(*sponsorSle);
+                (sponsorSle)->setFieldU32(sfSponsoringOwnerCount, adjusted);
+            view.update(sponsorSle);
         }
         {
             // modify account's SponsoredOwnerCount
@@ -1741,9 +1740,8 @@ addEmptyHolding(
             tx,
             sleDst,
             priorBalance,
-            sponsorAccountID
-                ? view.peek(keylet::account(*sponsorAccountID))
-                : std::optional<std::shared_ptr<SLE>>(std::nullopt),
+            sponsorAccountID ? view.peek(keylet::account(*sponsorAccountID))
+                             : std::shared_ptr<SLE>(),
             1);
         !isTesSuccess(ret))
         return tecNO_LINE_INSUF_RESERVE;
@@ -1850,7 +1848,7 @@ authorizeMPToken(
         // items. This is similar to the reserve requirements of trust lines.
         // If PreFunded Sponsor, it must be checked whether sufficient
         // ReserveCount exists.
-        if (ownerCount(sponsor.value_or(sleAcct)) >= 2 ||
+        if (ownerCount(sponsor ? sponsor : sleAcct) >= 2 ||
             isSponsoredAndPreFunded)
         {
             if (auto const ret = checkInsufficientReserve(
@@ -2036,7 +2034,7 @@ trustCreate(
         uFlags |= (bSetHigh ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
-    std::optional<std::shared_ptr<SLE>> sponsorSle = std::nullopt;
+    std::shared_ptr<SLE> sponsorSle = {};
     if (sponsorAccountID)
         sponsorSle = view.peek(keylet::account(*sponsorAccountID));
 
@@ -2098,7 +2096,7 @@ removeEmptyHolding(
         if (!sleLowAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        adjustOwnerCount(view, sleLowAccount, std::nullopt, -1, journal);
+        adjustOwnerCount(view, sleLowAccount, {}, -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -2113,7 +2111,7 @@ removeEmptyHolding(
         if (!sleHighAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        adjustOwnerCount(view, sleHighAccount, std::nullopt, -1, journal);
+        adjustOwnerCount(view, sleHighAccount, {}, -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.

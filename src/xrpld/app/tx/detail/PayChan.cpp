@@ -369,12 +369,7 @@ PayChanFund::doApply()
             return ret;
 
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(),
-                ctx_.tx,
-                sle,
-                balance - ctx_.tx[sfAmount],
-                std::optional<std::shared_ptr<SLE const>>(),
-                0);
+                ctx_.view(), ctx_.tx, sle, balance - ctx_.tx[sfAmount], {}, 0);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }

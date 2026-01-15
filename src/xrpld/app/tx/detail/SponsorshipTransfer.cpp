@@ -179,7 +179,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
             {
                 // transfer sponsor
                 // check if the object owner isn't the same as the new sponsor
-                if ((*newSponsor)->getAccountID(sfAccount) == owner)
+                if (newSponsor->getAccountID(sfAccount) == owner)
                     // checked in above
                     return tecINTERNAL;  // LCOV_EXCL_LINE
             }
@@ -210,7 +210,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
             if (accSle->isFieldPresent(sfSponsorAccount))
             {
                 // check not same account
-                if ((*newSponsor)->getAccountID(sfAccount) ==
+                if (newSponsor->getAccountID(sfAccount) ==
                     accSle->getAccountID(sfAccount))
                     // already checked in Transactor::preflight1()
                     return tecINTERNAL;  // LCOV_EXCL_LINE

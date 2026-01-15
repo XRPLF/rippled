@@ -88,8 +88,9 @@ MPTokenIssuanceCreate::create(
     if (!acct)
         return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
-    auto const sponsor =
-        !isPseudoAccount((acct)) ? getTxReserveSponsor(view, tx) : std::nullopt;
+    auto const sponsor = !isPseudoAccount((acct))
+        ? getTxReserveSponsor(view, tx)
+        : std::shared_ptr<SLE>();
     if (args.priorBalance)
     {
         if (auto const ret = checkInsufficientReserve(

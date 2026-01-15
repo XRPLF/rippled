@@ -1058,9 +1058,8 @@ applyCreateAccountAttestations(
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            auto const sponsor = std::optional<std::shared_ptr<SLE const>>();
-            if (auto const ret = checkInsufficientReserve(
-                    psb, tx, sleDoor, balance, sponsor, 1);
+            if (auto const ret =
+                    checkInsufficientReserve(psb, tx, sleDoor, balance, {}, 1);
                 !isTesSuccess(ret))
                 return Unexpected(ret);  // tecINSUFFICIENT_RESERVE
         }

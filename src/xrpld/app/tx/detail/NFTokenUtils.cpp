@@ -280,9 +280,9 @@ insertToken(
            std::shared_ptr<SLE> const& newPage,
            AccountID const& owner,
            std::optional<AccountID> const& sponsor) -> TER {
-            std::optional<std::shared_ptr<SLE>> const sponsorSle = sponsor
+            std::shared_ptr<SLE> const sponsorSle = sponsor
                 ? view.peek(keylet::account(*sponsor))
-                : std::optional<std::shared_ptr<SLE>>{std::nullopt};
+                : std::shared_ptr<SLE>();
 
             if (isReserveSponsored(tx))
             {

@@ -171,7 +171,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
 static bool
 adjustOwnerCount(
     ApplyContext& ctx,
-    std::optional<std::shared_ptr<SLE>> const& sponsor,
+    std::shared_ptr<SLE> const& sponsor,
     int count)
 {
     if (auto const sleAccount =

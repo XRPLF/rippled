@@ -354,11 +354,12 @@ SetTrust::doApply()
     // could use the extra XRP for their own purposes.
     auto const txSponsorAcc = getTxReserveSponsorAccountID(ctx_.tx);
 
-    std::optional<std::shared_ptr<SLE>> txSponsorSle = std::nullopt;
+    std::shared_ptr<SLE> txSponsorSle = {};
     if (txSponsorAcc)
         txSponsorSle = view().peek(keylet::account(*txSponsorAcc));
 
-    std::uint32_t const uOwnerCount = ownerCount(txSponsorSle.value_or(sle));
+    std::uint32_t const uOwnerCount =
+        ownerCount(txSponsorSle ? txSponsorSle : sle);
 
     bool const isSponsoredAndPreFunded =
         txSponsorSle && !isSponsorReserveCoSigning(ctx_.tx);

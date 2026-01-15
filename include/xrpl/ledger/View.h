@@ -565,40 +565,40 @@ checkInsufficientReserve(
     STTx const& tx,
     std::shared_ptr<SLE const> accSle,
     STAmount const& accBalance,
-    std::optional<std::shared_ptr<SLE const>> const& sponsorSle,
+    std::shared_ptr<SLE const> const& sponsorSle,
     std::int32_t ownerCountDelta,
     std::int32_t accountCountDelta = 0);
 
 std::optional<AccountID>
 getTxReserveSponsorAccountID(STTx const& tx);
 
-std::optional<std::shared_ptr<SLE>>
+std::shared_ptr<SLE>
 getTxReserveSponsor(ApplyView& view, STTx const& tx);
 
-std::optional<std::shared_ptr<SLE const>>
+std::shared_ptr<SLE const> const
 getTxReserveSponsor(ReadView const& view, STTx const& tx);
 
 std::optional<AccountID>
 getLedgerEntryReserveSponsorAccountID(
-    std::shared_ptr<SLE const> sle,
+    std::shared_ptr<SLE const> const& sle,
     SF_ACCOUNT const& field = sfSponsorAccount);
 
-std::optional<std::shared_ptr<SLE>>
+std::shared_ptr<SLE>
 getLedgerEntryReserveSponsor(
     ApplyView& view,
-    std::shared_ptr<SLE> sle,
+    std::shared_ptr<SLE> const& sle,
     SF_ACCOUNT const& field = sfSponsorAccount);
 
-std::optional<std::shared_ptr<SLE const>>
+std::shared_ptr<SLE const> const
 getLedgerEntryReserveSponsor(
     ReadView const& view,
-    std::shared_ptr<SLE const> sle,
+    std::shared_ptr<SLE const> const& sle,
     SF_ACCOUNT const& field = sfSponsorAccount);
 
 void
 addSponsorToLedgerEntry(
     std::shared_ptr<SLE> const& sle,
-    std::optional<std::shared_ptr<SLE>> const& sponsorSle,
+    std::shared_ptr<SLE> const& sponsorSle,
     SF_ACCOUNT const& field = sfSponsorAccount);
 
 void
@@ -617,7 +617,7 @@ void
 adjustOwnerCount(
     ApplyView& view,
     std::shared_ptr<SLE> const& accountSle,
-    std::optional<std::shared_ptr<SLE>> const& sponsorSle,
+    std::shared_ptr<SLE> const& sponsorSle,
     std::int32_t amount,
     beast::Journal j);
 
@@ -626,7 +626,7 @@ adjustOwnerCount(
     ApplyView& view,
     STTx const& tx,
     std::shared_ptr<SLE> const& accountSle,
-    std::optional<std::shared_ptr<SLE>> const& sponsorSle,
+    std::shared_ptr<SLE> const& sponsorSle,
     std::int32_t amount,
     beast::Journal j)
 {
@@ -646,8 +646,7 @@ adjustOwnerCount(
         view,
         tx,
         view.peek(keylet::account(account)),
-        sponsor ? view.peek(keylet::account(*sponsor))
-                : std::optional<std::shared_ptr<SLE>>(),
+        sponsor ? view.peek(keylet::account(*sponsor)) : std::shared_ptr<SLE>(),
         amount,
         j);
 }

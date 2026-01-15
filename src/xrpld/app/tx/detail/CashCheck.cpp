@@ -329,7 +329,7 @@ CashCheck::doApply()
                 auto const sleDst = psb.peek(keylet::account(account_));
 
                 auto const sponsorAcc = getTxReserveSponsorAccountID(ctx_.tx);
-                std::optional<std::shared_ptr<SLE>> sponsorSle = std::nullopt;
+                std::shared_ptr<SLE> sponsorSle = {};
                 if (sponsorAcc)
                     sponsorSle = psb.peek(keylet::account(*sponsorAcc));
 

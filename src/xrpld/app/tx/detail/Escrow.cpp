@@ -444,7 +444,7 @@ EscrowCreate::doApply()
                 ctx_.tx,
                 sle,
                 mSourceBalance - STAmount(amount).xrp(),
-                std::optional<std::shared_ptr<SLE const>>(),
+                {},
                 1);
             !isTesSuccess(ret))
             return tecUNFUNDED;
@@ -780,7 +780,7 @@ escrowUnlockApplyHelper<Issue>(
     {
         // Can the account cover the trust line's reserve?
         auto const sponsorAcc = getTxReserveSponsorAccountID(tx);
-        std::optional<std::shared_ptr<SLE>> sponsorSle = std::nullopt;
+        std::shared_ptr<SLE> sponsorSle = {};
         if (sponsorAcc)
             sponsorSle = view.peek(keylet::account(*sponsorAcc));
         if (auto const ret = checkInsufficientReserve(

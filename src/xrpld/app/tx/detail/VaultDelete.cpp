@@ -138,7 +138,7 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    adjustOwnerCount(view(), pseudoAcct, std::nullopt, -1, j_);
+    adjustOwnerCount(view(), pseudoAcct, {}, -1, j_);
 
     view().erase(mpt);
 
