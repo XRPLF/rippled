@@ -559,12 +559,15 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(pay(gw, bob, USD(1)));
             env.close();
 
+            bool const largeMantissa = features[featureSingleAssetVault] ||
+                features[featureLendingProtocol];
+
             // alice cannot create escrow for 1/10 iou - precision loss
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
-                ter(tecPRECISION_LOSS));
+                ter(largeMantissa ? (TER)tesSUCCESS : (TER)tecPRECISION_LOSS));
             env.close();
         }
     }
@@ -2076,12 +2079,15 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(pay(gw, bob, USD(1)));
             env.close();
 
+            bool const largeMantissa = features[featureSingleAssetVault] ||
+                features[featureLendingProtocol];
+
             // alice cannot create escrow for 1/10 iou - precision loss
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
                 fee(baseFee * 150),
-                ter(tecPRECISION_LOSS));
+                ter(largeMantissa ? (TER)tesSUCCESS : (TER)tecPRECISION_LOSS));
             env.close();
 
             auto const seq1 = env.seq(alice);
@@ -3924,9 +3930,13 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{testable_amendments()};
-        testIOUWithFeats(all);
-        testMPTWithFeats(all);
-        testMPTWithFeats(all - fixTokenEscrowV1);
+        for (FeatureBitset const& feats :
+             {all - featureSingleAssetVault - featureLendingProtocol, all})
+        {
+            testIOUWithFeats(feats);
+            testMPTWithFeats(feats);
+            testMPTWithFeats(feats - fixTokenEscrowV1);
+        }
     }
 };
 

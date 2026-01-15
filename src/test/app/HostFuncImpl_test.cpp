@@ -62,17 +62,21 @@ static ApplyContext
 createApplyContext(
     test::jtx::Env& env,
     OpenView& ov,
+    beast::Journal j,
     STTx const& tx = STTx(ttESCROW_FINISH, [](STObject&) {}))
 {
     ApplyContext ac{
-        env.app(),
-        ov,
-        tx,
-        tesSUCCESS,
-        env.current()->fees().base,
-        tapNONE,
-        env.journal};
+        env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, tapNONE, j};
     return ac;
+}
+
+static ApplyContext
+createApplyContext(
+    test::jtx::Env& env,
+    OpenView& ov,
+    STTx const& tx = STTx(ttESCROW_FINISH, [](STObject&) {}))
+{
+    return createApplyContext(env, ov, env.journal, tx);
 }
 
 struct HostFuncImpl_test : public beast::unit_test::suite
@@ -580,6 +584,24 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Slice locator(
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
+
+            auto const account = hfs.getTxNestedField(locator);
+            if (BEAST_EXPECTS(
+                    account.has_value(),
+                    std::to_string(static_cast<int>(account.error()))))
+            {
+                BEAST_EXPECT(std::ranges::equal(*account, env.master.id()));
+            }
+        }
+
+        {
+            // unaligned locator
+            std::vector<uint8_t> locatorVec(sizeof(int32_t) + 1);
+            memcpy(
+                locatorVec.data() + 1, &sfAccount.fieldCode, sizeof(int32_t));
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data() + 1),
+                sizeof(int32_t));
 
             auto const account = hfs.getTxNestedField(locator);
             if (BEAST_EXPECTS(
@@ -1913,24 +1935,63 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testcase("trace");
         using namespace test::jtx;
 
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
+        {
+            Env env(*this);
+            OpenView ov{*env.current()};
+            test::StreamSink sink{beast::severities::kTrace};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
 
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master));
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        std::string msg = "test trace";
-        std::string data = "abc";
-        auto const slice = Slice(data.data(), data.size());
-        auto const result = hfs.trace(msg, slice, false);
-        BEAST_EXPECT(result.has_value());
-        BEAST_EXPECT(result.value() == msg.size() + data.size());
+            std::string msg = "test trace";
+            std::string data = "abc";
+            auto const slice = Slice(data.data(), data.size());
+            auto const result = hfs.trace(msg, slice, false);
+            if (BEAST_EXPECT(result.has_value()))
+            {
+                BEAST_EXPECT(result.value() == msg.size() + data.size());
+                auto const messages = sink.messages().str();
+                BEAST_EXPECT(messages.find(msg) != std::string::npos);
+            }
 
-        auto const resultHex = hfs.trace(msg, slice, true);
-        BEAST_EXPECT(resultHex.has_value());
-        BEAST_EXPECT(resultHex.value() == msg.size() + data.size() * 2);
+            auto const resultHex = hfs.trace(msg, slice, true);
+            if (BEAST_EXPECT(resultHex.has_value()))
+            {
+                BEAST_EXPECT(resultHex.has_value());
+                BEAST_EXPECT(resultHex.value() == msg.size() + data.size() * 2);
+                auto const messages = sink.messages().str();
+                std::string hex;
+                hex.reserve(data.size() * 2);
+                boost::algorithm::hex(
+                    data.begin(), data.end(), std::back_inserter(hex));
+                BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                BEAST_EXPECT(messages.find(hex) != std::string::npos);
+            }
+        }
+
+        {
+            // logs disabled (trace < error)
+            Env env(*this);
+            OpenView ov{*env.current()};
+            test::StreamSink sink{beast::severities::kError};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
+
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master));
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            std::string msg = "test trace";
+            std::string data = "abc";
+            auto const slice = Slice(data.data(), data.size());
+            auto const result = hfs.trace(msg, slice, false);
+            BEAST_EXPECT(result && *result == msg.size() + data.size());
+            auto const messages = sink.messages().str();
+            BEAST_EXPECT(messages.empty());
+        }
     }
 
     void
@@ -1939,19 +2000,49 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testcase("traceNum");
         using namespace test::jtx;
 
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
+        {
+            Env env(*this);
+            OpenView ov{*env.current()};
+            test::StreamSink sink{beast::severities::kTrace};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
 
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master));
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        std::string msg = "trace number";
-        int64_t num = 123456789;
-        auto const result = hfs.traceNum(msg, num);
-        BEAST_EXPECT(result.has_value());
-        BEAST_EXPECT(result.value() == msg.size() + sizeof(num));
+            std::string msg = "trace number";
+            int64_t num = 123456789;
+            auto const result = hfs.traceNum(msg, num);
+            if (BEAST_EXPECT(result.has_value()))
+            {
+                BEAST_EXPECT(result.value() == msg.size() + sizeof(num));
+                auto const messages = sink.messages().str();
+                BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                BEAST_EXPECT(
+                    messages.find(std::to_string(num)) != std::string::npos);
+            }
+        }
+
+        {
+            // logs disabled
+            Env env(*this);
+            OpenView ov{*env.current()};
+            test::StreamSink sink{beast::severities::kError};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
+
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master));
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            std::string msg = "trace number";
+            int64_t num = 123456789;
+            auto const result = hfs.traceNum(msg, num);
+            BEAST_EXPECT(result && *result == msg.size() + sizeof(int64_t));
+            auto const messages = sink.messages().str();
+            BEAST_EXPECT(messages.empty());
+        }
     }
 
     void
@@ -1960,22 +2051,47 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testcase("traceAccount");
         using namespace test::jtx;
 
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        std::string msg = "trace account";
-        // Valid account
         {
+            Env env(*this);
+            OpenView ov{*env.current()};
+            test::StreamSink sink{beast::severities::kTrace};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
+
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master));
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            std::string msg = "trace account";
             auto const result = hfs.traceAccount(msg, env.master.id());
             if (BEAST_EXPECT(result.has_value()))
+            {
                 BEAST_EXPECT(
-                    result.value() ==
-                    msg.size() + toBase58(env.master.id()).size());
+                    result.value() == msg.size() + env.master.id().size());
+                auto const messages = sink.messages().str();
+                BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                BEAST_EXPECT(
+                    messages.find(env.master.human()) != std::string::npos);
+            }
+        }
+
+        {
+            // logs disabled
+            Env env(*this);
+            OpenView ov{*env.current()};
+            test::StreamSink sink{beast::severities::kError};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
+
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master));
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            std::string msg = "trace account";
+            auto const result = hfs.traceAccount(msg, env.master.id());
+            BEAST_EXPECT(
+                result && *result == msg.size() + env.master.id().size());
+            auto const messages = sink.messages().str();
+            BEAST_EXPECT(messages.empty());
         }
     }
 
@@ -1985,46 +2101,72 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testcase("traceAmount");
         using namespace test::jtx;
 
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        std::string msg = "trace amount";
-        STAmount amount = XRP(12345);
         {
+            Env env(*this);
+            OpenView ov{*env.current()};
+            test::StreamSink sink{beast::severities::kTrace};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
+
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master));
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            std::string msg = "trace amount";
+            STAmount amount = XRP(12345);
+            {
+                auto const result = hfs.traceAmount(msg, amount);
+                if (BEAST_EXPECT(result.has_value()))
+                {
+                    BEAST_EXPECT(*result == msg.size());
+                    auto const messages = sink.messages().str();
+                    BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                    BEAST_EXPECT(
+                        messages.find(amount.getFullText()) !=
+                        std::string::npos);
+                }
+            }
+
+            // IOU amount
+            Account const alice("alice");
+            env.fund(XRP(1000), alice);
+            env.close();
+            STAmount iouAmount = env.master["USD"](100);
+            {
+                auto const result = hfs.traceAmount(msg, iouAmount);
+                if (BEAST_EXPECT(result.has_value()))
+                    BEAST_EXPECT(*result == msg.size());
+            }
+
+            // MPT amount
+            {
+                auto const mptId = makeMptID(42, env.master.id());
+                Asset mptAsset = Asset(mptId);
+                STAmount mptAmount(mptAsset, 123456);
+                auto const result = hfs.traceAmount(msg, mptAmount);
+                if (BEAST_EXPECT(result.has_value()))
+                    BEAST_EXPECT(*result == msg.size());
+            }
+        }
+
+        {
+            // logs disabled
+            Env env(*this);
+            OpenView ov{*env.current()};
+            test::StreamSink sink{beast::severities::kError};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
+
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master));
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            std::string msg = "trace amount";
+            STAmount amount = XRP(12345);
             auto const result = hfs.traceAmount(msg, amount);
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(
-                    result.value() == msg.size() + amount.getFullText().size());
-        }
-
-        // IOU amount
-        Account const alice("alice");
-        env.fund(XRP(1000), alice);
-        env.close();
-        STAmount iouAmount = env.master["USD"](100);
-        {
-            auto const result = hfs.traceAmount(msg, iouAmount);
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(
-                    result.value() ==
-                    msg.size() + iouAmount.getFullText().size());
-        }
-
-        // MPT amount
-        {
-            auto const mptId = makeMptID(42, env.master.id());
-            Asset mptAsset = Asset(mptId);
-            STAmount mptAmount(mptAsset, 123456);
-            auto const result = hfs.traceAmount(msg, mptAmount);
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(
-                    result.value() ==
-                    msg.size() + mptAmount.getFullText().size());
+            BEAST_EXPECT(result && *result == msg.size());
+            auto const messages = sink.messages().str();
+            BEAST_EXPECT(messages.empty());
         }
     }
 
@@ -2035,7 +2177,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     Bytes const floatIntMin        =  {0x99, 0x20, 0xc4, 0x9b, 0xa5, 0xe3, 0x53, 0xf8};  // -2^63
     Bytes const floatIntZero       =  {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};  // 0
     Bytes const floatIntMax        =  {0xd9, 0x20, 0xc4, 0x9b, 0xa5, 0xe3, 0x53, 0xf8};  // 2^63-1
-    Bytes const floatUIntMax       =  {0xd9, 0x46, 0x8d, 0xb8, 0xba, 0xc7, 0x10, 0xcb};  // 2^64
+    Bytes const floatUIntMax       =  {0xd9, 0x46, 0x8d, 0xb8, 0xba, 0xc7, 0x10, 0xcb};  // 2^64-1
     Bytes const floatMaxExp        =  {0xEC, 0x43, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00};  // 1e(80+15)
     Bytes const floatPreMaxExp     =  {0xEC, 0x03, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00};  // 1e(79+15)
     Bytes const floatMinusMaxExp   =  {0xAC, 0x43, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00};  // -1e(80+15)
@@ -2059,28 +2201,51 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testcase("FloatTrace");
         using namespace test::jtx;
 
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        std::string msg = "trace float";
-
         {
-            auto const result = hfs.traceFloat(msg, makeSlice(invalid));
-            BEAST_EXPECT(
-                result &&
-                *result ==
-                    msg.size() + 14 /* error msg size*/ + invalid.size() * 2);
+            Env env{*this};
+            OpenView ov{*env.current()};
+            ApplyContext ac = createApplyContext(env, ov);
+
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master));
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            std::string msg = "trace float";
+
+            {
+                auto const result = hfs.traceFloat(msg, makeSlice(invalid));
+                BEAST_EXPECT(
+                    result &&
+                    *result == msg.size() + makeSlice(invalid).size());
+            }
+
+            {
+                auto const result = hfs.traceFloat(msg, makeSlice(floatMaxExp));
+                BEAST_EXPECT(
+                    result &&
+                    *result == msg.size() + makeSlice(floatMaxExp).size());
+            }
         }
 
         {
-            auto const result = hfs.traceFloat(msg, makeSlice(floatMaxExp));
+            // logs disabled
+            Env env(*this);
+            OpenView ov{*env.current()};
+            test::StreamSink sink{beast::severities::kError};
+            beast::Journal jlog{sink};
+            ApplyContext ac = createApplyContext(env, ov, jlog);
+
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master));
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            std::string msg = "trace float";
+
+            auto const result = hfs.traceFloat(msg, makeSlice(invalid));
             BEAST_EXPECT(
-                result && *result == msg.size() + 19 /* string represenation*/);
+                result && *result == msg.size() + makeSlice(invalid).size());
+            auto const messages = sink.messages().str();
+            BEAST_EXPECT(messages.empty());
         }
     }
 
@@ -2201,7 +2366,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result =
-                hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
+                hfs.floatSet(1, wasm_float::maxExponent + normalExp + 1, 0);
             BEAST_EXPECT(!result) &&
                 BEAST_EXPECT(
                     result.error() ==
@@ -2210,7 +2375,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result =
-                hfs.floatSet(1, IOUAmount::maxExponent + normalExp + 1, 0);
+                hfs.floatSet(1, wasm_float::maxExponent + normalExp + 1, 0);
             BEAST_EXPECT(!result) &&
                 BEAST_EXPECT(
                     result.error() ==
@@ -2219,37 +2384,37 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result =
-                hfs.floatSet(1, IOUAmount::minExponent + normalExp - 1, 0);
+                hfs.floatSet(1, wasm_float::minExponent + normalExp - 1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
         }
 
         {
             auto const result =
-                hfs.floatSet(1, IOUAmount::maxExponent + normalExp, 0);
+                hfs.floatSet(1, wasm_float::maxExponent + normalExp, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
         }
 
         {
             auto const result =
-                hfs.floatSet(-1, IOUAmount::maxExponent + normalExp, 0);
+                hfs.floatSet(-1, wasm_float::maxExponent + normalExp, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinusMaxExp);
         }
 
         {
             auto const result =
-                hfs.floatSet(1, IOUAmount::maxExponent + normalExp - 1, 0);
+                hfs.floatSet(1, wasm_float::maxExponent + normalExp - 1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatPreMaxExp);
         }
 
         {
             auto const result =
-                hfs.floatSet(IOUAmount::maxMantissa, IOUAmount::maxExponent, 0);
+                hfs.floatSet(STAmount::cMaxValue, wasm_float::maxExponent, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
         }
 
         {
             auto const result =
-                hfs.floatSet(1, IOUAmount::minExponent + normalExp, 0);
+                hfs.floatSet(1, wasm_float::minExponent + normalExp, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinExp);
         }
 
@@ -2549,7 +2714,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const y = hfs.floatSet(
-                IOUAmount::maxMantissa, -normalExp - 1, 0);  // 0.9999999...
+                STAmount::cMaxValue, -normalExp - 1, 0);  // 0.9999999...
             if (BEAST_EXPECT(y))
             {
                 auto const result =
