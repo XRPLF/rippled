@@ -407,6 +407,9 @@ DeleteAccount::doApply()
     if (ter != tesSUCCESS)
         return ter;
 
+    if (src->isFieldPresent(sfSponsoredOwnerCount))
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
     // Transfer any XRP remaining after the fee is paid to the destination:
     (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
@@ -416,6 +419,10 @@ DeleteAccount::doApply()
     {
         auto const sponsorAcc = src->getAccountID(sfSponsorAccount);
         auto sponsorSle = view().peek(keylet::account(sponsorAcc));
+
+        if (!sponsorSle ||
+            !sponsorSle->isFieldPresent(sfSponsoringAccountCount))
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         auto const sponsoringAccountCount =
             sponsorSle->getFieldU32(sfSponsoringAccountCount);
@@ -427,6 +434,9 @@ DeleteAccount::doApply()
                 sfSponsoringAccountCount, sponsoringAccountCount - 1);
         view().update(sponsorSle);
 
+        // Following line might look redundant, but without it, sfSponsorAccount
+        // would end up remaining in after-ltAccountRoot during the
+        // InvariantCheck.
         (*src).makeFieldAbsent(sfSponsorAccount);
     }
 
