@@ -42,8 +42,7 @@ runFinishFunction(std::string const& code)
 
 void
 checkResult(
-    WasmResult<int32_t>,
-    TER > re,
+    WasmResult<int32_t, TER> re,
     int32_t expectedResult,
     int64_t expectedCost)
 {
