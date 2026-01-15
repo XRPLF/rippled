@@ -45,7 +45,7 @@ public:
         if (!m)
             return;
 
-        Number x(m, e + minExponent - 1);
+        Number x(makeNumber(m, e + wasm_float::minExponent - 1));
         *static_cast<Number*>(this) = x;
         good_ = true;
     }
@@ -54,7 +54,7 @@ public:
     {
     }
 
-    Number2(int64_t x) : Number(x), good_(true)
+    Number2(int64_t x) : Number(makeNumber(x, 0)), good_(true)
     {
     }
 
@@ -62,20 +62,34 @@ public:
     {
         using mtype = std::invoke_result_t<decltype(&Number::mantissa), Number>;
         if (x <= std::numeric_limits<mtype>::max())
-            *this = Number(x);
+            *this = makeNumber(x, 0);
         else
-            *this = Number(x / 10, 1) + Number(x % 10);
-
+            *this = makeNumber(x / 10, 1);
         good_ = true;
     }
 
     Number2(int64_t mantissa, int32_t exponent)
-        : Number(mantissa, exponent), good_(true)
+        : Number(makeNumber(mantissa, exponent)), good_(true)
     {
     }
 
-    Number2(Number const& n) : Number(n), good_(true)
+    Number2(Number const& n)
+        : Number(makeNumber(n.mantissa(), n.exponent())), good_(true)
     {
+    }
+
+    static Number
+    makeNumber(int64_t mantissa, int32_t exponent)
+    {
+        if (mantissa < 0)
+            return Number(true, -mantissa, exponent, Number::normalized());
+        return Number(false, mantissa, exponent, Number::normalized());
+    }
+
+    static Number
+    makeNumber(uint64_t mantissa, int32_t exponent)
+    {
+        return Number(false, mantissa, exponent, Number::normalized());
     }
 
     operator bool() const
@@ -102,17 +116,17 @@ public:
             }
             return FLOAT_NULL;
         }
-        else if (absM > ((1ull << 54) - 1))
+        else if (absM > wasm_float::maxMantissa)
         {
             return Unexpected(
                 HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
         }
-        else if (exponent() > maxExponent)
+        else if (exponent() > wasm_float::maxExponent)
             return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-        else if (exponent() < minExponent)
+        else if (exponent() < wasm_float::minExponent)
             return FLOAT_NULL;
 
-        int const e = exponent() - minExponent + 1;  //+97
+        int const e = exponent() - wasm_float::minExponent + 1;  //+97
         v |= absM;
         v |= ((uint64_t)e) << 54;
 
@@ -136,24 +150,30 @@ public:
 Bytes const Number2::FLOAT_NULL =
     {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-struct SetRound
+struct FloatState
 {
     Number::rounding_mode oldMode_;
+    MantissaRange::mantissa_scale oldScale_;
     bool good_;
 
-    SetRound(int32_t mode) : oldMode_(Number::getround()), good_(false)
+    FloatState(int32_t mode)
+        : oldMode_(Number::getround())
+        , oldScale_(Number::getMantissaScale())
+        , good_(false)
     {
         if (mode < Number::rounding_mode::to_nearest ||
             mode > Number::rounding_mode::upward)
             return;
 
         Number::setround(static_cast<Number::rounding_mode>(mode));
+        Number::setMantissaScale(MantissaRange::mantissa_scale::small);
         good_ = true;
     }
 
-    ~SetRound()
+    ~FloatState()
     {
         Number::setround(oldMode_);
+        Number::setMantissaScale(oldScale_);
     }
 
     operator bool() const
@@ -186,7 +206,7 @@ floatFromIntImpl(int64_t x, int32_t mode)
 {
     try
     {
-        detail::SetRound rm(mode);
+        detail::FloatState rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
@@ -206,12 +226,13 @@ floatFromUintImpl(uint64_t x, int32_t mode)
 {
     try
     {
-        detail::SetRound rm(mode);
+        detail::FloatState rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
         detail::Number2 num(x);
-        return num.toBytes();
+        auto r = num.toBytes();
+        return r;
     }
     // LCOV_EXCL_START
     catch (...)
@@ -226,7 +247,7 @@ floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode)
 {
     try
     {
-        detail::SetRound rm(mode);
+        detail::FloatState rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         detail::Number2 num(mantissa, exponent);
@@ -264,7 +285,7 @@ floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
-        detail::SetRound rm(mode);
+        detail::FloatState rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
@@ -291,7 +312,7 @@ floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
-        detail::SetRound rm(mode);
+        detail::FloatState rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         detail::Number2 xx(x);
@@ -317,7 +338,7 @@ floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
-        detail::SetRound rm(mode);
+        detail::FloatState rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         detail::Number2 xx(x);
@@ -343,7 +364,7 @@ floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
-        detail::SetRound rm(mode);
+        detail::FloatState rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         detail::Number2 xx(x);
@@ -370,7 +391,7 @@ floatRootImpl(Slice const& x, int32_t n, int32_t mode)
         if (n < 1)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::SetRound rm(mode);
+        detail::FloatState rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
@@ -395,10 +416,10 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
     {
-        if ((n < 0) || (n > maxExponent))
+        if ((n < 0) || (n > wasm_float::maxExponent))
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::SetRound rm(mode);
+        detail::FloatState rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
@@ -425,7 +446,7 @@ floatLogImpl(Slice const& x, int32_t mode)
 {
     try
     {
-        detail::SetRound rm(mode);
+        detail::FloatState rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 

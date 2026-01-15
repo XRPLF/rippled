@@ -274,10 +274,10 @@ public:
 namespace wasm_float {
 
 // The range for the mantissa and exponent when normalized
-static std::int64_t constexpr minMantissa = STAmount::cMinValue;
-static std::int64_t constexpr maxMantissa = STAmount::cMaxValue;
-static int constexpr minExponent = STAmount::cMinOffset;
-static int constexpr maxExponent = STAmount::cMaxOffset;
+static std::int64_t constexpr minMantissa = 1'000'000'000'000'000ll;
+static std::int64_t constexpr maxMantissa = (1ull << 54) - 1;
+static int constexpr minExponent = -96;
+static int constexpr maxExponent = 80;
 
 }  // namespace wasm_float
 
