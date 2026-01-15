@@ -180,6 +180,8 @@ struct MPTConvert
     std::optional<Buffer> holderEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
+    // not an txn param, only used for autofilling
+    std::optional<Buffer> randomness = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -209,6 +211,8 @@ struct MPTConfidentialSend
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
     std::optional<std::vector<std::string>> credentials = std::nullopt;
+    // not an txn param, only used for autofilling
+    std::optional<Buffer> randomness = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -224,6 +228,8 @@ struct MPTConvertBack
     std::optional<Buffer> holderEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
+    // not an txn param, only used for autofilling
+    std::optional<Buffer> randomness = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -416,8 +422,11 @@ public:
     Buffer
     getPrivKey(Account const& account) const;
 
-    CiphertextComponents
-    encryptAmount(Account const& account, uint64_t const amt) const;
+    Buffer
+    encryptAmount(
+        Account const& account,
+        uint64_t const amt,
+        Slice const& randomnessFactor) const;
 
     uint64_t
     decryptAmount(Account const& account, Buffer const& amt) const;
@@ -442,27 +451,30 @@ public:
         Account const& holder,
         std::uint64_t amount,
         uint256 const& ctxHash,
-        CiphertextComponents const& holderCiphertext,
-        CiphertextComponents const& issuerCiphertext,
-        std::optional<CiphertextComponents> const& auditorCiphertext) const;
+        Slice const& holderCiphertext,
+        Slice const& issuerCiphertext,
+        std::optional<Slice> const& auditorCiphertext,
+        Slice const& randomnessFactor) const;
 
     Buffer
     getConvertProof(
         Account const& holder,
         std::uint64_t amount,
         uint256 const& ctxHash,
-        CiphertextComponents holderCiphertext,
-        CiphertextComponents issuerCiphertext,
-        std::optional<CiphertextComponents> auditorCiphertext) const;
+        Slice const& holderCiphertext,
+        Slice const& issuerCiphertext,
+        std::optional<Slice> const& auditorCiphertext,
+        Slice const& randomnessFactor) const;
 
     Buffer
     getConvertBackProof(
         Account const& holder,
         std::uint64_t amount,
         uint256 const& ctxHash,
-        CiphertextComponents holderCiphertext,
-        CiphertextComponents issuerCiphertext,
-        std::optional<CiphertextComponents> auditorCiphertext) const;
+        Slice const& holderCiphertext,
+        Slice const& issuerCiphertext,
+        std::optional<Slice> const& auditorCiphertext,
+        Slice const& randomnessFactor) const;
 
     std::uint32_t
     getMPTokenVersion(Account const account) const;
@@ -500,6 +512,16 @@ private:
 
     std::uint32_t
     getFlags(std::optional<Account> const& holder) const;
+
+    template <typename T>
+    void
+    fillConversionCiphertexts(
+        T const& arg,
+        Json::Value& jv,
+        Buffer& holderCiphertext,
+        Buffer& issuerCiphertext,
+        std::optional<Buffer>& auditorCiphertext,
+        Buffer& randomnessFactor) const;
 };
 
 }  // namespace jtx

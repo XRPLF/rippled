@@ -223,8 +223,9 @@ ConfidentialConvert::doApply()
         {
             // encrypt sfConfidentialBalanceSpending with zero balance
             Buffer out;
-            out = encryptAmount(0, (*sleMptoken)[sfHolderElGamalPublicKey])
-                      .ciphertext;
+            auto const randomnessFactor = generateRandomnessFactor();
+            out = encryptAmount(
+                0, (*sleMptoken)[sfHolderElGamalPublicKey], randomnessFactor);
             (*sleMptoken)[sfConfidentialBalanceSpending] = out;
         }
         catch (std::exception const& e)

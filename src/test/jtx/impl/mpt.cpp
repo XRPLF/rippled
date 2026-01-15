@@ -809,9 +809,10 @@ MPTTester::generateEqualityZKP(
     Account const& holder,
     std::uint64_t amount,
     uint256 const& ctxHash,
-    CiphertextComponents const& holderCiphertext,
-    CiphertextComponents const& issuerCiphertext,
-    std::optional<CiphertextComponents> const& auditorCiphertext) const
+    Slice const& holderCiphertext,
+    Slice const& issuerCiphertext,
+    std::optional<Slice> const& auditorCiphertext,
+    Slice const& randomnessFactor) const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -822,8 +823,8 @@ MPTTester::generateEqualityZKP(
     size_t const zkpSize = auditorCiphertext ? 3 : 2;
     size_t const zkpByteLength = zkpSize * ecEqualityProofLength;
 
-    if (!sleHolder || !sleIssuance || holderCiphertext.ciphertext.size() == 0 ||
-        issuerCiphertext.ciphertext.size() == 0)
+    if (!sleHolder || !sleIssuance || holderCiphertext.size() == 0 ||
+        issuerCiphertext.size() == 0)
         return Buffer(zkpByteLength);
 
     auto const generateProof = [amount, ctxHash](
@@ -864,15 +865,11 @@ MPTTester::generateEqualityZKP(
 
     Buffer zkp(zkpByteLength);
 
-    Buffer holderZkp = generateProof(
-        holderCiphertext.ciphertext,
-        getPubKey(holder),
-        holderCiphertext.randomness);
+    Buffer holderZkp =
+        generateProof(holderCiphertext, getPubKey(holder), randomnessFactor);
 
-    Buffer issuerZkp = generateProof(
-        issuerCiphertext.ciphertext,
-        getPubKey(issuer_),
-        issuerCiphertext.randomness);
+    Buffer issuerZkp =
+        generateProof(issuerCiphertext, getPubKey(issuer_), randomnessFactor);
 
     // Pointer arithmetic to copy data into place
     std::uint8_t* ptr = zkp.data();
@@ -895,9 +892,7 @@ MPTTester::generateEqualityZKP(
                 sleIssuance->getFieldVL(sfAuditorElGamalPublicKey).data(),
                 sleIssuance->getFieldVL(sfAuditorElGamalPublicKey).size());
             auditorZkp = generateProof(
-                auditorCiphertext->ciphertext,
-                auditorPubKey,
-                auditorCiphertext->randomness);
+                *auditorCiphertext, auditorPubKey, randomnessFactor);
         }
 
         // Copy auditor
@@ -913,9 +908,10 @@ MPTTester::getConvertProof(
     Account const& holder,
     std::uint64_t amount,
     uint256 const& ctxHash,
-    CiphertextComponents holderCiphertext,
-    CiphertextComponents issuerCiphertext,
-    std::optional<CiphertextComponents> auditorCiphertext) const
+    Slice const& holderCiphertext,
+    Slice const& issuerCiphertext,
+    std::optional<Slice> const& auditorCiphertext,
+    Slice const& randomnessFactor) const
 {
     return generateEqualityZKP(
         holder,
@@ -923,7 +919,8 @@ MPTTester::getConvertProof(
         ctxHash,
         holderCiphertext,
         issuerCiphertext,
-        auditorCiphertext);
+        auditorCiphertext,
+        randomnessFactor);
 }
 
 Buffer
@@ -931,9 +928,10 @@ MPTTester::getConvertBackProof(
     Account const& holder,
     std::uint64_t amount,
     uint256 const& ctxHash,
-    CiphertextComponents holderCiphertext,
-    CiphertextComponents issuerCiphertext,
-    std::optional<CiphertextComponents> auditorCiphertext) const
+    Slice const& holderCiphertext,
+    Slice const& issuerCiphertext,
+    std::optional<Slice> const& auditorCiphertext,
+    Slice const& randomnessFactor) const
 {
     Buffer const equalityZkp = generateEqualityZKP(
         holder,
@@ -941,7 +939,8 @@ MPTTester::getConvertBackProof(
         ctxHash,
         holderCiphertext,
         issuerCiphertext,
-        auditorCiphertext);
+        auditorCiphertext,
+        randomnessFactor);
 
     // todo: incoporate pederson and range proof
 
@@ -1009,6 +1008,64 @@ MPTTester::operator()(std::uint64_t amount) const
     return MPT("", issuanceID())(amount);
 }
 
+template <typename T>
+void
+MPTTester::fillConversionCiphertexts(
+    T const& arg,
+    Json::Value& jv,
+    Buffer& holderCiphertext,
+    Buffer& issuerCiphertext,
+    std::optional<Buffer>& auditorCiphertext,
+    Buffer& randomnessFactor) const
+{
+    // 1. Check randomness requirement
+    if ((arg.holderEncryptedAmt || arg.issuerEncryptedAmt ||
+         arg.auditorEncryptedAmt || arg.proof) &&
+        !arg.randomness)
+        Throw<std::runtime_error>("MPTTester: did not provide randomness");
+
+    randomnessFactor =
+        arg.randomness ? *arg.randomness : generateRandomnessFactor();
+
+    // 2. Handle Holder
+    if (arg.holderEncryptedAmt)
+    {
+        holderCiphertext = *arg.holderEncryptedAmt;
+        jv[sfHolderEncryptedAmount.jsonName] = strHex(holderCiphertext);
+    }
+    else
+    {
+        holderCiphertext =
+            encryptAmount(*arg.account, *arg.amt, randomnessFactor);
+        jv[sfHolderEncryptedAmount.jsonName] = strHex(holderCiphertext);
+    }
+
+    // 3. Handle Issuer
+    if (arg.issuerEncryptedAmt)
+    {
+        issuerCiphertext = *arg.issuerEncryptedAmt;
+        jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerCiphertext);
+    }
+    else
+    {
+        issuerCiphertext = encryptAmount(issuer_, *arg.amt, randomnessFactor);
+        jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerCiphertext);
+    }
+
+    // 4. Handle Auditor
+    if (arg.auditorEncryptedAmt)
+    {
+        auditorCiphertext = *arg.auditorEncryptedAmt;
+        jv[sfAuditorEncryptedAmount.jsonName] = strHex(*auditorCiphertext);
+    }
+    else if (auditor())
+    {
+        auditorCiphertext =
+            encryptAmount(*auditor(), *arg.amt, randomnessFactor);
+        jv[sfAuditorEncryptedAmount.jsonName] = strHex(*auditorCiphertext);
+    }
+}
+
 void
 MPTTester::convert(MPTConvert const& arg)
 {
@@ -1033,36 +1090,18 @@ MPTTester::convert(MPTConvert const& arg)
     if (arg.holderPubKey)
         jv[sfHolderElGamalPublicKey.jsonName] = strHex(*arg.holderPubKey);
 
-    CiphertextComponents holderCiphertext;
-    if (arg.holderEncryptedAmt)
-        jv[sfHolderEncryptedAmount.jsonName] = strHex(*arg.holderEncryptedAmt);
-    else
-    {
-        holderCiphertext = encryptAmount(*arg.account, *arg.amt);
-        jv[sfHolderEncryptedAmount.jsonName] =
-            strHex(holderCiphertext.ciphertext);
-    }
+    Buffer holderCiphertext;
+    Buffer issuerCiphertext;
+    std::optional<Buffer> auditorCiphertext;
+    Buffer randomnessFactor;
 
-    CiphertextComponents issuerCiphertext;
-    if (arg.issuerEncryptedAmt)
-        jv[sfIssuerEncryptedAmount.jsonName] = strHex(*arg.issuerEncryptedAmt);
-    else
-    {
-        issuerCiphertext = encryptAmount(issuer_, *arg.amt);
-        jv[sfIssuerEncryptedAmount.jsonName] =
-            strHex(issuerCiphertext.ciphertext);
-    }
-
-    std::optional<CiphertextComponents> auditorCiphertext;
-    if (arg.auditorEncryptedAmt)
-        jv[sfAuditorEncryptedAmount.jsonName] =
-            strHex(*arg.auditorEncryptedAmt);
-    else if (auditor())
-    {
-        auditorCiphertext = encryptAmount(*auditor(), *arg.amt);
-        jv[sfAuditorEncryptedAmount.jsonName] =
-            strHex(auditorCiphertext->ciphertext);
-    }
+    fillConversionCiphertexts(
+        arg,
+        jv,
+        holderCiphertext,
+        issuerCiphertext,
+        auditorCiphertext,
+        randomnessFactor);
 
     if (arg.proof)
         jv[sfZKProof.jsonName] = *arg.proof;
@@ -1078,7 +1117,8 @@ MPTTester::convert(MPTConvert const& arg)
             ctxHash,
             holderCiphertext,
             issuerCiphertext,
-            auditorCiphertext);
+            auditorCiphertext,
+            randomnessFactor);
         jv[sfZKProof] = strHex(proof);
     }
 
@@ -1183,30 +1223,42 @@ MPTTester::send(MPTConfidentialSend const& arg)
         jv[sfMPTokenIssuanceID] = to_string(*id_);
     }
 
+    // if the user generated at least one ciphertext/proof, they must provide
+    // the randomness they used (so that it can be used to auto-generate other
+    // ciphertexts and proofs if necessary)
+    if ((arg.senderEncryptedAmt || arg.destEncryptedAmt ||
+         arg.issuerEncryptedAmt || arg.auditorEncryptedAmt || arg.proof) &&
+        !arg.randomness)
+        Throw<std::runtime_error>(
+            "MPTTester::send: did not provide randomness");
+
+    Buffer const randomnessFactor =
+        arg.randomness ? *arg.randomness : generateRandomnessFactor();
+
     // Generate the encrypted amounts if not provided
     if (arg.senderEncryptedAmt)
         jv[sfSenderEncryptedAmount] = strHex(*arg.senderEncryptedAmt);
     else
         jv[sfSenderEncryptedAmount] =
-            strHex(encryptAmount(*arg.account, *arg.amt).ciphertext);
+            strHex(encryptAmount(*arg.account, *arg.amt, randomnessFactor));
 
     if (arg.destEncryptedAmt)
         jv[sfDestinationEncryptedAmount] = strHex(*arg.destEncryptedAmt);
     else
         jv[sfDestinationEncryptedAmount] =
-            strHex(encryptAmount(*arg.dest, *arg.amt).ciphertext);
+            strHex(encryptAmount(*arg.dest, *arg.amt, randomnessFactor));
 
     if (arg.issuerEncryptedAmt)
         jv[sfIssuerEncryptedAmount] = strHex(*arg.issuerEncryptedAmt);
     else
         jv[sfIssuerEncryptedAmount] =
-            strHex(encryptAmount(issuer_, *arg.amt).ciphertext);
+            strHex(encryptAmount(issuer_, *arg.amt, randomnessFactor));
 
     if (arg.auditorEncryptedAmt)
         jv[sfAuditorEncryptedAmount] = strHex(*arg.auditorEncryptedAmt);
     else if (auditor())
         jv[sfAuditorEncryptedAmount] =
-            strHex(encryptAmount(*auditor(), *arg.amt).ciphertext);
+            strHex(encryptAmount(*auditor(), *arg.amt, randomnessFactor));
 
     if (arg.proof)
         jv[sfZKProof] = *arg.proof;
@@ -1441,10 +1493,13 @@ MPTTester::getPrivKey(Account const& account) const
     Throw<std::runtime_error>("Account does not have private key");
 }
 
-CiphertextComponents
-MPTTester::encryptAmount(Account const& account, uint64_t const amt) const
+Buffer
+MPTTester::encryptAmount(
+    Account const& account,
+    uint64_t const amt,
+    Slice const& randomnessFactor) const
 {
-    return ripple::encryptAmount(amt, getPubKey(account));
+    return ripple::encryptAmount(amt, getPubKey(account), randomnessFactor);
 }
 
 uint64_t
@@ -1592,36 +1647,18 @@ MPTTester::convertBack(MPTConvertBack const& arg)
     if (arg.amt)
         jv[sfMPTAmount.jsonName] = std::to_string(*arg.amt);
 
-    CiphertextComponents holderCiphertext;
-    if (arg.holderEncryptedAmt)
-        jv[sfHolderEncryptedAmount.jsonName] = strHex(*arg.holderEncryptedAmt);
-    else
-    {
-        holderCiphertext = encryptAmount(*arg.account, *arg.amt);
-        jv[sfHolderEncryptedAmount.jsonName] =
-            strHex(holderCiphertext.ciphertext);
-    }
+    Buffer holderCiphertext;
+    Buffer issuerCiphertext;
+    std::optional<Buffer> auditorCiphertext;
+    Buffer randomnessFactor;
 
-    CiphertextComponents issuerCiphertext;
-    if (arg.issuerEncryptedAmt)
-        jv[sfIssuerEncryptedAmount.jsonName] = strHex(*arg.issuerEncryptedAmt);
-    else
-    {
-        issuerCiphertext = encryptAmount(issuer_, *arg.amt);
-        jv[sfIssuerEncryptedAmount.jsonName] =
-            strHex(issuerCiphertext.ciphertext);
-    }
-
-    std::optional<CiphertextComponents> auditorCiphertext;
-    if (arg.auditorEncryptedAmt)
-        jv[sfAuditorEncryptedAmount.jsonName] =
-            strHex(*arg.auditorEncryptedAmt);
-    else if (auditor())
-    {
-        auditorCiphertext = encryptAmount(*auditor(), *arg.amt);
-        jv[sfAuditorEncryptedAmount.jsonName] =
-            strHex(auditorCiphertext->ciphertext);
-    }
+    fillConversionCiphertexts(
+        arg,
+        jv,
+        holderCiphertext,
+        issuerCiphertext,
+        auditorCiphertext,
+        randomnessFactor);
 
     if (arg.proof)
         jv[sfZKProof.jsonName] = *arg.proof;
@@ -1639,7 +1676,8 @@ MPTTester::convertBack(MPTConvertBack const& arg)
             ctxHash,
             holderCiphertext,
             issuerCiphertext,
-            auditorCiphertext);
+            auditorCiphertext,
+            randomnessFactor);
         jv[sfZKProof] = strHex(proof);
     }
 

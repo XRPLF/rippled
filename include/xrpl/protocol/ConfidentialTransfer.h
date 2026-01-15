@@ -17,12 +17,6 @@
 
 namespace ripple {
 
-struct CiphertextComponents
-{
-    Buffer ciphertext;
-    Buffer randomness;
-};
-
 void
 addCommonZKPFields(
     Serializer& s,
@@ -249,8 +243,11 @@ proveEquality(
     std::uint32_t const spendVersion);
 
 // returns ciphertext and the blinding factor used
-CiphertextComponents
-encryptAmount(uint64_t const amt, Slice const& pubKeySlice);
+Buffer
+encryptAmount(
+    uint64_t const amt,
+    Slice const& pubKeySlice,
+    Slice const& randomnessFactor);
 
 Buffer
 encryptCanonicalZeroAmount(
@@ -325,6 +322,10 @@ size_t inline getEqualityProofLength(bool const hasAuditor)
 {
     return getEqualityProofSize(hasAuditor) * ecEqualityProofLength;
 }
+
+// generates a 32 byte randomness factor to be used in encryption and proofs
+Buffer
+generateRandomnessFactor();
 
 }  // namespace ripple
 
