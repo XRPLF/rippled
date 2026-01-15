@@ -7,7 +7,7 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 
-#include <doctest/doctest.h>
+#include <gtest/gtest.h>
 
 #include <atomic>
 #include <iostream>
@@ -273,7 +273,7 @@ runHTTPTest(
 
 }  // anonymous namespace
 
-TEST_CASE("HTTPClient case insensitive Content-Length")
+TEST(HTTPClient, case_insensitive_content_length)
 {
     logger l("HTTPClient case insensitive Content-Length");
 
@@ -308,14 +308,14 @@ TEST_CASE("HTTPClient case insensitive Content-Length")
             result_error);
 
         // Verify results
-        CHECK(test_completed);
-        CHECK(!result_error);
-        CHECK(result_status == 200);
-        CHECK(result_data == test_body);
+        EXPECT_TRUE(test_completed);
+        EXPECT_FALSE(result_error);
+        EXPECT_EQ(result_status, 200);
+        EXPECT_EQ(result_data, test_body);
     }
 }
 
-TEST_CASE("HTTPClient basic HTTP request")
+TEST(HTTPClient, basic_http_request)
 {
     logger l("HTTPClient basic HTTP request");
     TestHTTPServer server;
@@ -331,13 +331,13 @@ TEST_CASE("HTTPClient basic HTTP request")
     bool test_completed = runHTTPTest(
         server, "/basic", completed, result_status, result_data, result_error);
 
-    CHECK(test_completed);
-    CHECK(!result_error);
-    CHECK(result_status == 200);
-    CHECK(result_data == test_body);
+    EXPECT_TRUE(test_completed);
+    EXPECT_FALSE(result_error);
+    EXPECT_EQ(result_status, 200);
+    EXPECT_EQ(result_data, test_body);
 }
 
-TEST_CASE("HTTPClient empty response")
+TEST(HTTPClient, empty_response)
 {
     logger l("HTTPClient empty response");
     TestHTTPServer server;
@@ -352,13 +352,13 @@ TEST_CASE("HTTPClient empty response")
     bool test_completed = runHTTPTest(
         server, "/empty", completed, result_status, result_data, result_error);
 
-    CHECK(test_completed);
-    CHECK(!result_error);
-    CHECK(result_status == 200);
-    CHECK(result_data.empty());
+    EXPECT_TRUE(test_completed);
+    EXPECT_FALSE(result_error);
+    EXPECT_EQ(result_status, 200);
+    EXPECT_TRUE(result_data.empty());
 }
 
-TEST_CASE("HTTPClient different status codes")
+TEST(HTTPClient, different_status_codes)
 {
     logger l("HTTPClient different status codes");
     std::vector<unsigned int> status_codes = {200, 404, 500};
@@ -382,8 +382,8 @@ TEST_CASE("HTTPClient different status codes")
             result_data,
             result_error);
 
-        CHECK(test_completed);
-        CHECK(!result_error);
-        CHECK(result_status == static_cast<int>(status));
+        EXPECT_TRUE(test_completed);
+        EXPECT_FALSE(result_error);
+        EXPECT_EQ(result_status, static_cast<int>(status));
     }
 }
