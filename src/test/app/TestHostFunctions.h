@@ -435,7 +435,8 @@ public:
     Expected<int32_t, HostFunctionError>
     traceAccount(std::string_view const& msg, AccountID const& account) override
     {
-        auto const ret = msg.size() + account.size();
+        auto const accountStr = toBase58(account);
+        auto const ret = msg.size() + accountStr.size();
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
@@ -443,10 +444,6 @@ public:
             return ret;
         auto j = getJournal().trace();
 #endif
-        if (!account)
-            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
-
-        auto const accountStr = toBase58(account);
 
         j << "WASM TRACE ACCOUNT: " << msg << " " << accountStr;
 

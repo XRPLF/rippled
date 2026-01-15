@@ -248,7 +248,7 @@ pub extern "C" fn finish() -> i32 {
                 account.0.len(),
             )
         },
-        (message.len() + 20) as i32,
+        47,
         "trace_account",
     );
     let amount = &[0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5F]; // 95 drops of XRP

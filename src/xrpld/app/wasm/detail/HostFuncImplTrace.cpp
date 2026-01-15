@@ -72,7 +72,8 @@ WasmHostFunctionsImpl::traceAccount(
     std::string_view const& msg,
     AccountID const& account)
 {
-    auto const ret = msg.size() + account.size();
+    auto const accountStr = toBase58(account);
+    auto const ret = msg.size() + accountStr.size();
 #ifdef DEBUG_OUTPUT
     auto& j = std::cerr;
 #else
@@ -80,8 +81,6 @@ WasmHostFunctionsImpl::traceAccount(
         return ret;
     auto j = getJournal().trace();
 #endif
-
-    auto const accountStr = toBase58(account);
 
     j << "HF TRACE ACCOUNT(" << leKey.key << "): " << msg << " " << accountStr;
 
