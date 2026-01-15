@@ -2,6 +2,8 @@
    xrpld compile options/settings via an interface library
 #]===================================================================]
 
+include(CompilationEnv)
+
 add_library (opts INTERFACE)
 add_library (Xrpl::opts ALIAS opts)
 target_compile_definitions (opts
@@ -40,22 +42,6 @@ if(jemalloc)
   find_package(jemalloc REQUIRED)
   target_compile_definitions(opts INTERFACE PROFILE_JEMALLOC)
   target_link_libraries(opts INTERFACE jemalloc::jemalloc)
-endif ()
-
-if (san)
-  target_compile_options (opts
-    INTERFACE
-      # sanitizers recommend minimum of -O1 for reasonable performance
-      $<$<CONFIG:Debug>:-O1>
-      ${SAN_FLAG}
-      -fno-omit-frame-pointer)
-  target_compile_definitions (opts
-    INTERFACE
-      $<$<STREQUAL:${san},address>:SANITIZER=ASAN>
-      $<$<STREQUAL:${san},thread>:SANITIZER=TSAN>
-      $<$<STREQUAL:${san},memory>:SANITIZER=MSAN>
-      $<$<STREQUAL:${san},undefined>:SANITIZER=UBSAN>)
-  target_link_libraries (opts INTERFACE ${SAN_FLAG} ${SAN_LIB})
 endif ()
 
 #[===================================================================[
