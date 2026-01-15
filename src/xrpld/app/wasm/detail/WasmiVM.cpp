@@ -103,6 +103,8 @@ InstanceWrapper::operator=(InstanceWrapper&& o)
     store_ = o.store_;
     o.store_ = nullptr;
     exports_ = std::move(o.exports_);
+    memIdx_ = o.memIdx_;
+    o.memIdx_ = -1;
     instance_ = std::move(o.instance_);
 
     j_ = o.j_;
@@ -162,22 +164,29 @@ InstanceWrapper::getFunc(
 wmem
 InstanceWrapper::getMem() const
 {
-    if (!instance_)
-        throw std::runtime_error("no instance");  // LCOV_EXCL_LINE
+    if (memIdx_ >= 0)
+    {
+        auto* e(exports_.vec_.data[memIdx_]);
+        wasm_memory_t* mem = wasm_extern_as_memory(e);
+        return {
+            reinterpret_cast<std::uint8_t*>(wasm_memory_data(mem)),
+            wasm_memory_data_size(mem)};
+    }
 
     wasm_memory_t* mem = nullptr;
-    for (unsigned i = 0; i < exports_.vec_.size; ++i)
+    for (int i = 0; i < exports_.vec_.size; ++i)
     {
         auto* e(exports_.vec_.data[i]);
         if (wasm_extern_kind(e) == WASM_EXTERN_MEMORY)
         {
+            memIdx_ = i;
             mem = wasm_extern_as_memory(e);
             break;
         }
     }
 
     if (!mem)
-        throw std::runtime_error("no memory exported");  // LCOV_EXCL_LINE
+        return {};  // LCOV_EXCL_LINE
 
     return {
         reinterpret_cast<std::uint8_t*>(wasm_memory_data(mem)),
@@ -209,7 +218,7 @@ InstanceWrapper::setGas(std::int64_t gas) const
         // LCOV_EXCL_START
         print_wasm_error("Can't set instance gas", nullptr, j_);
         wasmi_error_delete(err);
-        throw std::runtime_error("Can't set instance gas");
+        return -1;
         // LCOV_EXCL_STOP
     }
 
@@ -592,11 +601,13 @@ WasmiEngine::convertParams(std::vector<WasmParam> const& params)
                 break;
             // LCOV_EXCL_STOP
             case WT_U8V: {
+                auto mem = getMem();
+                if (!mem.s)
+                    throw std::runtime_error(
+                        "no memory exported");  // LCOV_EXCL_LINE
                 auto const sz = p.of.u8v.sz;
                 auto const ptr = allocate(sz);
-                auto mem = getMem();
                 memcpy(mem.p + ptr, p.of.u8v.d, sz);
-
                 v.push_back(WASM_I32_VAL(ptr));
                 v.push_back(WASM_I32_VAL(sz));
             }
@@ -751,8 +762,11 @@ WasmiEngine::call(
     std::size_t sz,
     Types&&... args)
 {
-    auto const ptr = allocate(sz);
     auto mem = getMem();
+    if (!mem.s)
+        throw std::runtime_error("no memory exported");  // LCOV_EXCL_LINE
+
+    auto const ptr = allocate(sz);
     memcpy(mem.p + ptr, d, sz);
 
     add_param(in, ptr);
