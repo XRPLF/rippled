@@ -15,6 +15,7 @@
 namespace xrpl {
 
 class Transaction;
+class Ledger;
 
 struct LedgerHashPair
 {
