@@ -16,14 +16,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+include(CompilationEnv)
+
+if(is_gcc)
     # GCC-specific fixes
     add_compile_options(-Wno-unknown-pragmas -Wno-subobject-linkage)
     # -Wno-subobject-linkage can be removed when we upgrade GCC version to at least 13.3
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+elseif(is_clang)
     # Clang-specific fixes
     add_compile_options(-Wno-unknown-warning-option) # Ignore unknown warning options
-elseif(MSVC)
+elseif(is_msvc)
     # MSVC-specific fixes
     add_compile_options(/wd4068) # Ignore unknown pragmas
 endif()
@@ -77,6 +79,7 @@ if (packages_only)
   return ()
 endif ()
 include(XrplCompiler)
+include(XrplSanitizers)
 include(XrplInterface)
 
 option(only_docs "Include only the docs target?" FALSE)

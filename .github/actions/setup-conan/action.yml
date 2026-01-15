@@ -28,7 +28,7 @@ runs:
       shell: bash
       run: |
         echo 'Installing profile.'
-        conan config install conan/profiles/default -tf $(conan config home)/profiles/
+        conan config install conan/profiles/ -tf $(conan config home)/profiles/
 
         echo 'Conan profile:'
         conan profile show
