@@ -195,6 +195,7 @@ ServiceRegistryImpl::openLedger()
 OpenLedger const&
 ServiceRegistryImpl::openLedger() const
 {
+    // We lose const-ness here because app_ is a reference.
     return const_cast<Application const&>(app_).openLedger();
 }
 

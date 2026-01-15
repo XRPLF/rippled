@@ -613,11 +613,88 @@ class ServiceRegistry_test : public beast::unit_test::suite
         BEAST_EXPECT(mockApp.getPerfLogCalled);
     }
 
+    void
+    testServicesIdentical()
+    {
+        testcase("Services Identical");
+
+        jtx::Env env{*this};
+        auto& app = env.app();
+        auto& registry = app.getServiceRegistry();
+
+        // Test core infrastructure services
+        BEAST_EXPECT(
+            &app.getCollectorManager() == &registry.getCollectorManager());
+        BEAST_EXPECT(&app.getNodeFamily() == &registry.getNodeFamily());
+        BEAST_EXPECT(&app.timeKeeper() == &registry.timeKeeper());
+        BEAST_EXPECT(&app.getJobQueue() == &registry.getJobQueue());
+        BEAST_EXPECT(&app.getTempNodeCache() == &registry.getTempNodeCache());
+        BEAST_EXPECT(&app.cachedSLEs() == &registry.cachedSLEs());
+
+        // Test protocol and validation services
+        BEAST_EXPECT(&app.getAmendmentTable() == &registry.getAmendmentTable());
+        BEAST_EXPECT(&app.getHashRouter() == &registry.getHashRouter());
+        BEAST_EXPECT(&app.getFeeTrack() == &registry.getFeeTrack());
+        BEAST_EXPECT(&app.getLoadManager() == &registry.getLoadManager());
+        BEAST_EXPECT(&app.getValidations() == &registry.getValidations());
+        BEAST_EXPECT(&app.validators() == &registry.validators());
+        BEAST_EXPECT(&app.validatorSites() == &registry.validatorSites());
+        BEAST_EXPECT(
+            &app.validatorManifests() == &registry.validatorManifests());
+        BEAST_EXPECT(
+            &app.publisherManifests() == &registry.publisherManifests());
+
+        // Test network services
+        BEAST_EXPECT(&app.overlay() == &registry.overlay());
+        BEAST_EXPECT(&app.cluster() == &registry.cluster());
+        BEAST_EXPECT(&app.peerReservations() == &registry.peerReservations());
+        BEAST_EXPECT(
+            &app.getResourceManager() == &registry.getResourceManager());
+
+        // Test storage services
+        BEAST_EXPECT(&app.getNodeStore() == &registry.getNodeStore());
+        BEAST_EXPECT(&app.getSHAMapStore() == &registry.getSHAMapStore());
+        BEAST_EXPECT(
+            &app.getRelationalDatabase() == &registry.getRelationalDatabase());
+
+        // Test ledger services
+        BEAST_EXPECT(&app.getInboundLedgers() == &registry.getInboundLedgers());
+        BEAST_EXPECT(
+            &app.getInboundTransactions() ==
+            &registry.getInboundTransactions());
+        BEAST_EXPECT(
+            &app.getAcceptedLedgerCache() ==
+            &registry.getAcceptedLedgerCache());
+        BEAST_EXPECT(&app.getLedgerMaster() == &registry.getLedgerMaster());
+        BEAST_EXPECT(&app.getLedgerCleaner() == &registry.getLedgerCleaner());
+        BEAST_EXPECT(&app.getLedgerReplayer() == &registry.getLedgerReplayer());
+        BEAST_EXPECT(&app.pendingSaves() == &registry.pendingSaves());
+        BEAST_EXPECT(&app.openLedger() == &registry.openLedger());
+
+        // Test const version of openLedger
+        auto const& constApp = app;
+        auto const& constRegistry = registry;
+        BEAST_EXPECT(&constApp.openLedger() == &constRegistry.openLedger());
+
+        // Test transaction and operation services
+        BEAST_EXPECT(&app.getOPs() == &registry.getOPs());
+        BEAST_EXPECT(&app.getOrderBookDB() == &registry.getOrderBookDB());
+        BEAST_EXPECT(
+            &app.getMasterTransaction() == &registry.getMasterTransaction());
+        BEAST_EXPECT(&app.getTxQ() == &registry.getTxQ());
+        BEAST_EXPECT(&app.getPathRequests() == &registry.getPathRequests());
+
+        // Test server services
+        BEAST_EXPECT(&app.getServerHandler() == &registry.getServerHandler());
+        BEAST_EXPECT(&app.getPerfLog() == &registry.getPerfLog());
+    }
+
 public:
     void
     run() override
     {
         testGetServices();
+        testServicesIdentical();
     }
 };
 
