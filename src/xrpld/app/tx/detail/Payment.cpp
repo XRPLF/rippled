@@ -337,6 +337,9 @@ Payment::preclaim(PreclaimContext const& ctx)
     }
     else
     {
+        // The tfSponsorCreatedAccount flag is specific to account creation via
+        // sponsorship. If the destination account already exists, applying this
+        // flag is invalid.
         if (txFlags & tfSponsorCreatedAccount)
             return tecNO_SPONSOR_PERMISSION;
 
@@ -425,12 +428,11 @@ Payment::doApply()
         {
             auto const sponsor = view().peek(keylet::account(account_));
             if (!sponsor)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
+                return tefINTERNAL;  // LCOV_EXCL_LINE
             auto const currentSponsoringAccountCount =
                 sponsor->getFieldU32(sfSponsoringAccountCount);
             sponsor->setFieldU32(
                 sfSponsoringAccountCount, currentSponsoringAccountCount + 1);
-            view().update(sponsor);
 
             addSponsorToLedgerEntry(sleDst, sponsor);
             view().update(sponsor);

@@ -805,8 +805,8 @@ Transactor::checkSign(
         auto const sponsorAcc = sponsorObj.getAccountID(sfAccount);
         auto const sponsorSignature =
             sigObject.getFieldObject(sfSponsorSignature);
-        if (auto const ret =
-                checkSign(view, flags, {}, sponsorAcc, sponsorSignature, j);
+        if (auto const ret = checkSign(
+                view, flags, std::nullopt, sponsorAcc, sponsorSignature, j);
             !isTesSuccess(ret))
             return ret;
     }
