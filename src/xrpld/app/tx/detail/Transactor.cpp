@@ -795,22 +795,20 @@ Transactor::checkSign(
 
     if (sigObject.isFieldPresent(sfSponsorSignature))
     {
+        // Co-signed sponsorship
+
         // Sanity check: already checked in preflight1
         if (!sigObject.isFieldPresent(sfSponsor))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         auto const sponsorObj = sigObject.getFieldObject(sfSponsor);
-        auto const isCoSigned = sigObject.isFieldPresent(sfSponsorSignature);
-        if (isCoSigned)
-        {
-            auto const sponsorAcc = sponsorObj.getAccountID(sfAccount);
-            auto const sponsorSignature =
-                sigObject.getFieldObject(sfSponsorSignature);
-            if (auto const ret =
-                    checkSign(view, flags, {}, sponsorAcc, sponsorSignature, j);
-                !isTesSuccess(ret))
-                return ret;
-        }
+        auto const sponsorAcc = sponsorObj.getAccountID(sfAccount);
+        auto const sponsorSignature =
+            sigObject.getFieldObject(sfSponsorSignature);
+        if (auto const ret =
+                checkSign(view, flags, {}, sponsorAcc, sponsorSignature, j);
+            !isTesSuccess(ret))
+            return ret;
     }
 
     // If the pk is empty and not simulate or simulate and signers,
