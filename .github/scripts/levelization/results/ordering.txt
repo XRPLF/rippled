@@ -65,6 +65,7 @@ test.core > test.toplevel
 test.core > test.unit_test
 test.core > xrpl.basics
 test.core > xrpl.core
+test.core > xrpld.app
 test.core > xrpld.core
 test.core > xrpl.json
 test.core > xrpl.server
