@@ -312,9 +312,11 @@ verifyEqualityProofs(
     std::optional<EncryptedAmountInfo> const& auditor,
     uint256 const& contextHash);
 
-// returns the number of number of entries
+// returns the number of entries
 size_t inline getEqualityProofSize(bool const hasAuditor)
 {
+    // Be careful if we ever need to change the numbers below, it will be a
+    // breaking change!
     return (hasAuditor ? 3 : 2);
 }
 
