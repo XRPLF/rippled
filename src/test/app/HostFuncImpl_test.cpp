@@ -14,7 +14,7 @@ toBytes(std::uint8_t value)
 }
 
 static Bytes
-toBytes(std::uint16_t const value)
+toBytes(std::uint16_t value)
 {
     auto const* b = reinterpret_cast<uint8_t const*>(&value);
     auto const* e = reinterpret_cast<uint8_t const*>(&value + 1);
@@ -22,7 +22,7 @@ toBytes(std::uint16_t const value)
 }
 
 static Bytes
-toBytes(std::uint32_t const value)
+toBytes(std::uint32_t value)
 {
     auto const* b = reinterpret_cast<uint8_t const*>(&value);
     auto const* e = reinterpret_cast<uint8_t const*>(&value + 1);
