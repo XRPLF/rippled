@@ -399,7 +399,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    trace(std::string_view const& msg, Slice const& data, bool asHex) override1
+    trace(std::string_view const& msg, Slice const& data, bool asHex) override
     {
         auto const ret = msg.size() + data.size() * (asHex ? 2 : 1);
 
@@ -425,7 +425,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    traceNum(std::string_view const& msg, int64_t data) override1
+    traceNum(std::string_view const& msg, int64_t data) override
     {
         auto const ret = msg.size() + sizeof(data);
         log(msg, [data] { return data; });
@@ -433,8 +433,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    traceAccount(std::string_view const& msg, AccountID const& account)
-        override1
+    traceAccount(std::string_view const& msg, AccountID const& account) override
     {
         auto const ret = msg.size() + account.size();
         log(msg, [&account] { return toBase58(account); });
@@ -442,7 +441,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    traceFloat(std::string_view const& msg, Slice const& data) override1
+    traceFloat(std::string_view const& msg, Slice const& data) override
     {
         auto const ret = msg.size() + data.size();
         log(msg, [&data] { return wasm_float::floatToString(data); });
@@ -450,7 +449,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    traceAmount(std::string_view const& msg, STAmount const& amount) override1
+    traceAmount(std::string_view const& msg, STAmount const& amount) override
     {
         auto const ret = msg.size();
         log(msg, [&amount] { return amount.getFullText(); });
