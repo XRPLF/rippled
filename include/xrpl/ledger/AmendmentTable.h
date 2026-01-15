@@ -12,6 +12,8 @@
 
 namespace xrpl {
 
+class ServiceRegistry;
+
 /** The amendment table stores the list of enabled and potential amendments.
     Individuals amendments are voted on by validators during the consensus
     process.

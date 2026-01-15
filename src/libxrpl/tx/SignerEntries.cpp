@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/tx/SignerEntries.h>
 
 #include <cstdint>
