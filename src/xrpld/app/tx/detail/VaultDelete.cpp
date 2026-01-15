@@ -4,6 +4,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -85,6 +86,7 @@ VaultDelete::doApply()
 
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
+
     if (auto ter = removeEmptyHolding(
             view(), ctx_.tx, vault->at(sfAccount), asset, j_);
         !isTesSuccess(ter))
@@ -206,6 +208,8 @@ VaultDelete::doApply()
 
     // Destroy the vault.
     view().erase(vault);
+
+    associateAsset(*vault, asset);
 
     return tesSUCCESS;
 }

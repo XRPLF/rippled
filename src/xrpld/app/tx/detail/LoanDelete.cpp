@@ -2,6 +2,8 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
+#include <xrpl/protocol/STTakesAsset.h>
+
 namespace xrpl {
 
 bool
@@ -78,9 +80,10 @@ LoanDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerPseudoAccount = brokerSle->at(sfAccount);
 
-    auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
+    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const vaultAsset = vaultSle->at(sfAsset);
 
     // Remove LoanID from Directory of the LoanBroker pseudo-account.
     if (!view.dirRemove(
@@ -113,7 +116,7 @@ LoanDelete::doApply()
                 roundToAsset(
                     vaultSle->at(sfAsset),
                     debtTotalProxy,
-                    getVaultScale(vaultSle),
+                    getAssetsTotalScale(vaultSle),
                     Number::towards_zero) == beast::zero,
                 "xrpl::LoanDelete::doApply",
                 "last loan, remaining debt rounds to zero");
@@ -126,6 +129,11 @@ LoanDelete::doApply()
 
     // Delete the Loan object
     view.erase(loanSle);
+
+    // These associations shouldn't do anything, but do them just to be safe
+    associateAsset(*loanSle, vaultAsset);
+    associateAsset(*brokerSle, vaultAsset);
+    associateAsset(*vaultSle, vaultAsset);
 
     return tesSUCCESS;
 }
