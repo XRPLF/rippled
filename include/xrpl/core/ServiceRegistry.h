@@ -27,6 +27,7 @@ class PerfLog;
 
 class AcceptedLedger;
 class AmendmentTable;
+class Application;
 class Cluster;
 class CollectorManager;
 class DatabaseCon;
