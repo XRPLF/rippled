@@ -54,7 +54,7 @@ else()
 endif()
 
 # Sanitizers are not supported on Windows/MSVC
-if(is_msvc AND SANITIZERS_ENABLED)
+if(is_msvc)
     message(FATAL_ERROR "Sanitizers are not supported on Windows/MSVC. "
             "Please unset the SANITIZERS environment variable.")
 endif()
