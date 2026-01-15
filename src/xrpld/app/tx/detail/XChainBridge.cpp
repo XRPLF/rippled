@@ -428,20 +428,7 @@ transferHelper(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         {
-            auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
-            std::size_t sponsoredOwnerCount =
-                sleSrc->getFieldU32(sfSponsoredOwnerCount);
-            std::size_t sponsoringOwnerCount =
-                sleSrc->getFieldU32(sfSponsoringOwnerCount);
-            bool isAccountSponsored = sleSrc->isFieldPresent(sfSponsorAccount);
-            std::size_t sponsoringAccountCount =
-                sleSrc->getFieldU32(sfSponsoringAccountCount);
-            auto const reserve = psb.fees().accountReserve(
-                ownerCount,
-                sponsoredOwnerCount,
-                sponsoringOwnerCount,
-                isAccountSponsored,
-                sponsoringAccountCount);
+            auto const reserve = calculateReserve(sleSrc, psb.fees());
 
             auto const availableBalance = [&]() -> STAmount {
                 STAmount const curBal = (*sleSrc)[sfBalance];

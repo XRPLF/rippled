@@ -553,6 +553,9 @@ areCompatible(
 uint32_t
 ownerCount(std::shared_ptr<SLE const> const& sponsorSle);
 
+XRPAmount
+calculateReserve(std::shared_ptr<SLE const> const& sle, Fees const& fees);
+
 bool
 isReserveSponsored(STTx const& tx);
 

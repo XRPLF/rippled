@@ -612,24 +612,9 @@ Payment::doApply()
     if (!sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // ownerCount is the number of entries in this ledger for this
-    // account that require a reserve.
-    auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
-
-    // This is the total reserve in drops.
-    std::size_t sponsoredOwnerCount =
-        sleSrc->getFieldU32(sfSponsoredOwnerCount);
-    std::size_t sponsoringOwnerCount =
-        sleSrc->getFieldU32(sfSponsoringOwnerCount);
-    bool isAccountSponsored = sleSrc->isFieldPresent(sfSponsorAccount);
-    std::size_t sponsoringAccountCount =
-        sleSrc->getFieldU32(sfSponsoringAccountCount);
-    auto const reserve = view().fees().accountReserve(
-        ownerCount,
-        sponsoredOwnerCount,
-        sponsoringOwnerCount,
-        isAccountSponsored,
-        sponsoringAccountCount);
+    // the number of reserves in this ledger for this account that require a
+    // reserve.
+    auto const reserve = calculateReserve(sleSrc, view().fees());
 
     // mPriorBalance is the balance on the sending account BEFORE the
     // fees were charged. We want to make sure we have enough reserve

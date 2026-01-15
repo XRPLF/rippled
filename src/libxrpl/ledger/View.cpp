@@ -732,20 +732,10 @@ xrpLiquid(
     std::uint32_t const ownerCount = confineOwnerCount(
         view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
-    std::size_t sponsoredOwnerCount = sle->getFieldU32(sfSponsoredOwnerCount);
-    std::size_t sponsoringOwnerCount = sle->getFieldU32(sfSponsoringOwnerCount);
-    bool isAccountSponsored = sle->isFieldPresent(sfSponsorAccount);
-    std::size_t sponsoringAccountCount =
-        sle->getFieldU32(sfSponsoringAccountCount);
-
     // Pseudo-accounts have no reserve requirement
-    auto const reserve = isPseudoAccount(sle) ? XRPAmount{0}
-                                              : view.fees().accountReserve(
-                                                    ownerCount,
-                                                    sponsoredOwnerCount,
-                                                    sponsoringOwnerCount,
-                                                    isAccountSponsored,
-                                                    sponsoringAccountCount);
+    auto const reserve = isPseudoAccount(sle)
+        ? XRPAmount{0}
+        : calculateReserve(sle, view.fees());
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
@@ -1144,6 +1134,21 @@ ownerCount(std::shared_ptr<SLE const> const& sponsorSle)
         sponsorSle->getFieldU32(sfSponsoringOwnerCount);
 
     return ownerCount + sponsoringOwnerCount - sponsoredOwnerCount;
+}
+
+XRPAmount
+calculateReserve(std::shared_ptr<SLE const> const& sle, Fees const& fees)
+{
+    XRPL_ASSERT(
+        sle->getType() == ltACCOUNT_ROOT,
+        "xrpl::calculateReserve : valid sle type");
+
+    return fees.accountReserve(
+        sle->getFieldU32(sfOwnerCount),
+        sle->getFieldU32(sfSponsoredOwnerCount),
+        sle->getFieldU32(sfSponsoringOwnerCount),
+        sle->isFieldPresent(sfSponsorAccount),
+        sle->getFieldU32(sfSponsoringAccountCount));
 }
 
 bool
