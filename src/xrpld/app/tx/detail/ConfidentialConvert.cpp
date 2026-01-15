@@ -60,9 +60,17 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
+    bool const requiresAuditor =
+        sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
 
-    // tx must include auditor ciphertext if the issuance has enabled auditing
-    if (sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey) && !hasAuditor)
+    // tx must include auditor ciphertext if the issuance has enabled
+    // auditing
+    if (requiresAuditor && !hasAuditor)
+        return tecNO_PERMISSION;
+
+    // if auditing is not supported then user should not upload auditor
+    // ciphertext
+    if (!requiresAuditor && hasAuditor)
         return tecNO_PERMISSION;
 
     auto const sleMptoken = ctx.view.read(
@@ -127,8 +135,6 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
             ctx.tx[sfIssuerEncryptedAmount]},  // Issuer
         auditor,
         contextHash);
-
-    return tesSUCCESS;
 }
 
 TER

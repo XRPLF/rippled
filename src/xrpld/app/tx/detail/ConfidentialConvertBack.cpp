@@ -108,9 +108,18 @@ ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance->isFlag(lsfMPTCanPrivacy))
         return tecNO_PERMISSION;
 
-    // tx must include auditor ciphertext if the issuance has enabled auditing
-    if (sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey) &&
-        !ctx.tx.isFieldPresent(sfAuditorEncryptedAmount))
+    bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
+    bool const requiresAuditor =
+        sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
+
+    // tx must include auditor ciphertext if the issuance has enabled
+    // auditing
+    if (requiresAuditor && !hasAuditor)
+        return tecNO_PERMISSION;
+
+    // if auditing is not supported then user should not upload auditor
+    // ciphertext
+    if (!requiresAuditor && hasAuditor)
         return tecNO_PERMISSION;
 
     // already checked in preflight, but should also check that issuer on
