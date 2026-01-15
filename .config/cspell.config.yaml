@@ -276,6 +276,7 @@ words:
   - xbridge
   - xchain
   - ximinez
+  - EXPECT_STREQ
   - XMACRO
   - xrpkuwait
   - xrpl
