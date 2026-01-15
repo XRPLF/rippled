@@ -1156,7 +1156,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                             : TER{temMALFORMED}));
                 if (expectedStatus == ExpectedStatus::Crash)
                 {
-                    fail("Expected crash");
+                    fail("Expected crash", __FILE__, __LINE__);
                 }
                 else
                 {
