@@ -40,21 +40,22 @@ runFinishFunction(std::string const& code)
     }
 }
 
-void
-checkResult(
-    WasmResult<int32_t, TER> re,
-    int32_t expectedResult,
-    int64_t expectedCost)
-{
-    if (BEAST_EXPECTS(re.has_value(), transToken(re.error())))
-    {
-        BEAST_EXPECTS(re->result == expectedResult, std::to_string(re->result));
-        BEAST_EXPECTS(re->cost == expectedCost, std::to_string(re->cost));
-    }
-}
-
 struct Wasm_test : public beast::unit_test::suite
 {
+    void
+    checkResult(
+        Expected<WasmResult<int32_t>, TER> re,
+        int32_t expectedResult,
+        int64_t expectedCost)
+    {
+        if (BEAST_EXPECTS(re.has_value(), transToken(re.error())))
+        {
+            BEAST_EXPECTS(
+                re->result == expectedResult, std::to_string(re->result));
+            BEAST_EXPECTS(re->cost == expectedCost, std::to_string(re->cost));
+        }
+    }
+
     void
     testGetDataHelperFunctions()
     {
