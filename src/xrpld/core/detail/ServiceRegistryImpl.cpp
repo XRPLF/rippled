@@ -195,7 +195,7 @@ ServiceRegistryImpl::openLedger()
 OpenLedger const&
 ServiceRegistryImpl::openLedger() const
 {
-    return app_.openLedger();
+    return const_cast<Application const&>(app_).openLedger();
 }
 
 // Transaction and operation services
