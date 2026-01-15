@@ -2,6 +2,8 @@
 
 #include <boost/format.hpp>
 
+#include <iostream>
+
 namespace xrpl {
 
 bool
