@@ -20,8 +20,8 @@ class Config:
 Generate a strategy matrix for GitHub Actions CI.
 
 On each PR commit we will build a selection of Debian, RHEL, Ubuntu, MacOS, and
-Windows configurations, while upon merge into the develop, release, or master
-branches, we will build all configurations, and test most of them.
+Windows configurations, while upon merge into the develop or release branches,
+we will build all configurations, and test most of them.
 
 We will further set additional CMake arguments as follows:
 - All builds will have the `tests`, `werr`, and `xrpld` options.
