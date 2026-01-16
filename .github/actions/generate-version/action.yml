@@ -14,7 +14,7 @@ runs:
       shell: bash
       env:
         # Only append the commit hash for the develop branch. For releases the
-        # version is used as-is.
+        # version is used as-is. We will shorten it to 6 characters below.
         COMMIT_HASH: ${{ github.ref == 'refs/heads/develop' && github.sha || '' }}
       run: |
         echo 'Extracting version from BuildInfo.cpp.'
@@ -25,8 +25,8 @@ runs:
         fi
 
         if [[ -n "${COMMIT_HASH}" ]]; then
-          echo 'Appending commit hash to version.'
-          VERSION="${VERSION}-${COMMIT_HASH}"
+          echo 'Appending shortened commit hash to version.'
+          VERSION="${VERSION}-${COMMIT_HASH:0:6}"
         fi
 
         echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
