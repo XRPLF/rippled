@@ -26,6 +26,7 @@ on:
       - ".github/workflows/reusable-build-test.yml"
       - ".github/workflows/reusable-strategy-matrix.yml"
       - ".github/workflows/reusable-test.yml"
+      - ".github/workflows/reusable-upload-recipe.yml"
       - ".codecov.yml"
       - "cmake/**"
       - "conan/**"
@@ -78,3 +79,14 @@ jobs:
       strategy_matrix: ${{ github.event_name == 'schedule' && 'all' || 'minimal' }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  upload-recipe:
+    needs: build-test
+    # Only run when pushing to the develop branch in the XRPLF repository. We
+    # also upload the recipe when committing to a release branch, but that is
+    # handled in the on-pr.yml workflow.
+    if: ${{ github.repository_owner == 'XRPLF' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+    uses: ./.github/workflows/reusable-upload-recipe.yml
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}

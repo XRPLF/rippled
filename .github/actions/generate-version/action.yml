@@ -1,0 +1,32 @@
+name: Generate build version number
+description: "Generate build version number."
+
+outputs:
+  version:
+    description: "The generated build version number."
+    value: ${{ steps.version.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Generate version
+      id: version
+      shell: bash
+      env:
+        # Only append the commit hash for the develop branch. For releases the
+        # version is used as-is.
+        COMMIT_HASH: ${{ github.ref == 'refs/heads/develop' && github.sha || '' }}
+      run: |
+        echo 'Extracting version from BuildInfo.cpp.'
+        VERSION="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')"
+        if [[ -z "${VERSION}" ]]; then
+          echo 'Unable to extract version from BuildInfo.cpp.'
+          exit 1
+        fi
+
+        if [[ -n "${COMMIT_HASH}" ]]; then
+          echo 'Appending commit hash to version.'
+          VERSION="${VERSION}-${COMMIT_HASH}"
+        fi
+
+        echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"

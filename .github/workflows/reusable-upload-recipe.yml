@@ -1,7 +1,7 @@
-# This workflow exports the built libxrpl package to the Conan remote on a
-# a channel named after the pull request, and notifies the Clio repository about
-# the new version so it can check for compatibility.
-name: Notify Clio
+# This workflow exports the built libxrpl package to the Conan remote, and for
+# releases also notifies the Clio repository about the new version, so it can
+#check for compatibility.
+name: Upload Conan recipe
 
 # This workflow can only be triggered by other workflows.
 on:
@@ -20,7 +20,7 @@ on:
     secrets:
       clio_notify_token:
         description: "The GitHub token to notify Clio about new versions."
-        required: true
+        required: false
       conan_remote_username:
         description: "The username for logging into the Conan remote."
         required: true
@@ -29,7 +29,7 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-clio
+  group: ${{ github.workflow }}-${{ github.ref }}-upload-recipe
   cancel-in-progress: true
 
 defaults:
@@ -38,38 +38,35 @@ defaults:
 
 jobs:
   upload:
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     container: ghcr.io/xrplf/ci/ubuntu-noble:gcc-13-sha-5dd7158
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-      - name: Extract version
+
+      - name: Generate build version number
         id: version
-        uses: ./.github/actions/extract-version
-      - name: Generate outputs
-        id: generate
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          echo "user=clio" >> "${GITHUB_OUTPUT}"
-          echo "channel=pr_${PR_NUMBER}" >> "${GITHUB_OUTPUT}"
+        uses: ./.github/actions/generate-version
+
+      - name: Determine recipe reference
+        id: ref
+        run: echo "ref=xrpl/${{ steps.version.outputs.version }}" >> "${GITHUB_OUTPUT}"
+
       - name: Upload recipe
         uses: ./.github/actions/upload-recipe
         id: upload
         with:
-          conan_recipe_version: ${{ steps.version.outputs.version }}
-          conan_recipe_channel: ${{ steps.generate.outputs.channel }}
-          conan_recipe_user: ${{ steps.generate.outputs.user }}
+          conan_recipe_ref: ${{ steps.version.outputs.version }}
           conan_remote_name: ${{ inputs.conan_remote_name }}
           conan_remote_url: ${{ inputs.conan_remote_url }}
           conan_remote_username: ${{ secrets.conan_remote_username }}
           conan_remote_password: ${{ secrets.conan_remote_password }}
     outputs:
-      conan_ref: ${{ steps.upload.outputs.conan_ref }}
+      conan_ref: ${{ steps.ref.outputs.ref }}
 
   notify:
     needs: upload
+    if: ${{ secrets.clio_notify_token != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Notify Clio

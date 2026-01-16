@@ -53,7 +53,6 @@ jobs:
             .github/scripts/rename/**
             .github/workflows/reusable-check-levelization.yml
             .github/workflows/reusable-check-rename.yml
-            .github/workflows/reusable-notify-clio.yml
             .github/workflows/on-pr.yml
 
             # Keep the paths below in sync with those in `on-trigger.yml`.
@@ -66,6 +65,7 @@ jobs:
             .github/workflows/reusable-build-test.yml
             .github/workflows/reusable-strategy-matrix.yml
             .github/workflows/reusable-test.yml
+            .github/workflows/reusable-upload-recipe.yml
             .codecov.yml
             cmake/**
             conan/**
@@ -121,12 +121,15 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  notify-clio:
+  upload-recipe:
     needs:
       - should-run
       - build-test
-    if: ${{ needs.should-run.outputs.go == 'true' && (startsWith(github.base_ref, 'release') || github.base_ref == 'master') }}
-    uses: ./.github/workflows/reusable-notify-clio.yml
+    # Only run when committing to the release branch in the XRPLF repository. We
+    # also upload the recipe when merging into the develop branch, but that is
+    # handled in the on-trigger.yml workflow.
+    if: ${{ github.repository_owner == 'XRPLF' && needs.should-run.outputs.go == 'true' && startsWith(github.ref, 'refs/heads/release') }}
+    uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
@@ -137,6 +140,7 @@ jobs:
     needs:
       - build-test
       - check-levelization
+      - upload-recipe
     runs-on: ubuntu-latest
     steps:
       - name: Fail
