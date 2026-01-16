@@ -1928,9 +1928,12 @@ loanMakePayment(
 
     // -------------------------------------------------------------
     // overpayment handling
+    auto const roundedAmount =
+        roundToAsset(asset, amount, loanScale, Number::towards_zero);
     if (paymentType == LoanPaymentType::overpayment &&
         loan->isFlag(lsfLoanOverpayment) && paymentRemainingProxy > 0 &&
-        totalPaid < amount && numPayments < loanMaximumPaymentsPerTransaction)
+        totalPaid < roundedAmount &&
+        numPayments < loanMaximumPaymentsPerTransaction)
     {
         TenthBips32 const overpaymentInterestRate{
             loan->at(sfOverpaymentInterestRate)};
@@ -1940,7 +1943,7 @@ loanMakePayment(
         // totalValueOutstanding, because that would have been processed as
         // another normal payment. But cap it just in case.
         Number const overpayment =
-            std::min(amount - totalPaid, *totalValueOutstandingProxy);
+            std::min(roundedAmount - totalPaid, *totalValueOutstandingProxy);
 
         detail::ExtendedPaymentComponents const overpaymentComponents =
             detail::computeOverpaymentComponents(
