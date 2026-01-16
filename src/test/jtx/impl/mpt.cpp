@@ -841,7 +841,7 @@ MPTTester::generateEqualityZKP(
                 ciphertext.data() + ecGamalEncryptedLength,
                 ecGamalEncryptedLength))
         {
-            Throw<std::runtime_error>("Invalid Ciphertext");
+            return Buffer(ecEqualityProofLength);
         }
 
         secp256k1_pubkey pk;
@@ -1018,12 +1018,6 @@ MPTTester::fillConversionCiphertexts(
     std::optional<Buffer>& auditorCiphertext,
     Buffer& randomnessFactor) const
 {
-    // 1. Check randomness requirement
-    if ((arg.holderEncryptedAmt || arg.issuerEncryptedAmt ||
-         arg.auditorEncryptedAmt || arg.proof) &&
-        !arg.randomness)
-        Throw<std::runtime_error>("MPTTester: did not provide randomness");
-
     randomnessFactor =
         arg.randomness ? *arg.randomness : generateRandomnessFactor();
 
@@ -1222,15 +1216,6 @@ MPTTester::send(MPTConfidentialSend const& arg)
             Throw<std::runtime_error>("MPT has not been created");
         jv[sfMPTokenIssuanceID] = to_string(*id_);
     }
-
-    // if the user generated at least one ciphertext/proof, they must provide
-    // the randomness they used (so that it can be used to auto-generate other
-    // ciphertexts and proofs if necessary)
-    if ((arg.senderEncryptedAmt || arg.destEncryptedAmt ||
-         arg.issuerEncryptedAmt || arg.auditorEncryptedAmt || arg.proof) &&
-        !arg.randomness)
-        Throw<std::runtime_error>(
-            "MPTTester::send: did not provide randomness");
 
     Buffer const randomnessFactor =
         arg.randomness ? *arg.randomness : generateRandomnessFactor();
