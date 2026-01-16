@@ -226,7 +226,7 @@ ConfidentialConvert::doApply()
             out = encryptAmount(
                 0,
                 (*sleMptoken)[sfHolderElGamalPublicKey],
-                generateRandomnessFactor());
+                generateBlindingFactor());
             (*sleMptoken)[sfConfidentialBalanceSpending] = out;
         }
         catch (std::exception const& e)

@@ -311,6 +311,9 @@ std::size_t constexpr ecPubKeyLength = 64;
 
 /** Length of EC private key */
 std::size_t constexpr ecPrivKeyLength = 32;
+
+/** Length of the EC blinding factor */
+std::size_t constexpr ecBlindingFactorLength = 32;
 }  // namespace ripple
 
 #endif

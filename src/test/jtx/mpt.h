@@ -181,7 +181,7 @@ struct MPTConvert
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
     // not an txn param, only used for autofilling
-    std::optional<Buffer> randomness = std::nullopt;
+    std::optional<Buffer> blindingFactor = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -212,7 +212,7 @@ struct MPTConfidentialSend
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
     std::optional<std::vector<std::string>> credentials = std::nullopt;
     // not an txn param, only used for autofilling
-    std::optional<Buffer> randomness = std::nullopt;
+    std::optional<Buffer> blindingFactor = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -229,7 +229,7 @@ struct MPTConvertBack
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
     // not an txn param, only used for autofilling
-    std::optional<Buffer> randomness = std::nullopt;
+    std::optional<Buffer> blindingFactor = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -426,7 +426,7 @@ public:
     encryptAmount(
         Account const& account,
         uint64_t const amt,
-        Buffer const& randomnessFactor) const;
+        Buffer const& blindingFactor) const;
 
     uint64_t
     decryptAmount(Account const& account, Buffer const& amt) const;
@@ -454,7 +454,7 @@ public:
         Buffer const& holderCiphertext,
         Buffer const& issuerCiphertext,
         std::optional<Buffer> const& auditorCiphertext,
-        Buffer const& randomnessFactor) const;
+        Buffer const& blindingFactor) const;
 
     Buffer
     getConvertProof(
@@ -464,7 +464,7 @@ public:
         Buffer const& holderCiphertext,
         Buffer const& issuerCiphertext,
         std::optional<Buffer> const& auditorCiphertext,
-        Buffer const& randomnessFactor) const;
+        Buffer const& blindingFactor) const;
 
     Buffer
     getConvertBackProof(
@@ -474,7 +474,7 @@ public:
         Buffer const& holderCiphertext,
         Buffer const& issuerCiphertext,
         std::optional<Buffer> const& auditorCiphertext,
-        Buffer const& randomnessFactor) const;
+        Buffer const& blindingFactor) const;
 
     std::uint32_t
     getMPTokenVersion(Account const account) const;
@@ -521,7 +521,7 @@ private:
         Buffer& holderCiphertext,
         Buffer& issuerCiphertext,
         std::optional<Buffer>& auditorCiphertext,
-        Buffer& randomnessFactor) const;
+        Buffer& blindingFactor) const;
 };
 
 }  // namespace jtx

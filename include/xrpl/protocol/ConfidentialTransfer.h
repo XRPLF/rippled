@@ -247,7 +247,7 @@ Buffer
 encryptAmount(
     uint64_t const amt,
     Slice const& pubKeySlice,
-    Slice const& randomnessFactor);
+    Slice const& blindingFactor);
 
 Buffer
 encryptCanonicalZeroAmount(
@@ -325,7 +325,7 @@ size_t inline getEqualityProofLength(bool const hasAuditor)
 
 // generates a 32 byte randomness factor to be used in encryption and proofs
 Buffer
-generateRandomnessFactor();
+generateBlindingFactor();
 
 }  // namespace ripple
 
