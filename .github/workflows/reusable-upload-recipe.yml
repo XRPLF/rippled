@@ -1,6 +1,6 @@
 # This workflow exports the built libxrpl package to the Conan remote, and for
 # releases also notifies the Clio repository about the new version, so it can
-#check for compatibility.
+# check for compatibility.
 name: Upload Conan recipe
 
 # This workflow can only be triggered by other workflows.
