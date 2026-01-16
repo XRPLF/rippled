@@ -108,6 +108,7 @@ struct InstanceWrapper
 {
     wasm_store_t* store_ = nullptr;
     WasmExternVec exports_;
+    mutable int memIdx_ = -1;
     InstancePtr instance_;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
