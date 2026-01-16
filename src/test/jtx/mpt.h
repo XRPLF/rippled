@@ -426,7 +426,7 @@ public:
     encryptAmount(
         Account const& account,
         uint64_t const amt,
-        Slice const& randomnessFactor) const;
+        Buffer const& randomnessFactor) const;
 
     uint64_t
     decryptAmount(Account const& account, Buffer const& amt) const;
@@ -451,30 +451,30 @@ public:
         Account const& holder,
         std::uint64_t amount,
         uint256 const& ctxHash,
-        Slice const& holderCiphertext,
-        Slice const& issuerCiphertext,
-        std::optional<Slice> const& auditorCiphertext,
-        Slice const& randomnessFactor) const;
+        Buffer const& holderCiphertext,
+        Buffer const& issuerCiphertext,
+        std::optional<Buffer> const& auditorCiphertext,
+        Buffer const& randomnessFactor) const;
 
     Buffer
     getConvertProof(
         Account const& holder,
         std::uint64_t amount,
         uint256 const& ctxHash,
-        Slice const& holderCiphertext,
-        Slice const& issuerCiphertext,
-        std::optional<Slice> const& auditorCiphertext,
-        Slice const& randomnessFactor) const;
+        Buffer const& holderCiphertext,
+        Buffer const& issuerCiphertext,
+        std::optional<Buffer> const& auditorCiphertext,
+        Buffer const& randomnessFactor) const;
 
     Buffer
     getConvertBackProof(
         Account const& holder,
         std::uint64_t amount,
         uint256 const& ctxHash,
-        Slice const& holderCiphertext,
-        Slice const& issuerCiphertext,
-        std::optional<Slice> const& auditorCiphertext,
-        Slice const& randomnessFactor) const;
+        Buffer const& holderCiphertext,
+        Buffer const& issuerCiphertext,
+        std::optional<Buffer> const& auditorCiphertext,
+        Buffer const& randomnessFactor) const;
 
     std::uint32_t
     getMPTokenVersion(Account const account) const;

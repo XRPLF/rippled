@@ -809,10 +809,10 @@ MPTTester::generateEqualityZKP(
     Account const& holder,
     std::uint64_t amount,
     uint256 const& ctxHash,
-    Slice const& holderCiphertext,
-    Slice const& issuerCiphertext,
-    std::optional<Slice> const& auditorCiphertext,
-    Slice const& randomnessFactor) const
+    Buffer const& holderCiphertext,
+    Buffer const& issuerCiphertext,
+    std::optional<Buffer> const& auditorCiphertext,
+    Buffer const& randomnessFactor) const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -828,9 +828,9 @@ MPTTester::generateEqualityZKP(
         return Buffer(zkpByteLength);
 
     auto const generateProof = [amount, ctxHash](
-                                   Slice const& ciphertext,
-                                   Slice const& pubKey,
-                                   Slice const& randomness) {
+                                   Buffer const& ciphertext,
+                                   Buffer const& pubKey,
+                                   Buffer const& randomness) {
         secp256k1_pubkey c1, c2;
         auto const ctx = secp256k1Context();
         if (!secp256k1_ec_pubkey_parse(
@@ -908,10 +908,10 @@ MPTTester::getConvertProof(
     Account const& holder,
     std::uint64_t amount,
     uint256 const& ctxHash,
-    Slice const& holderCiphertext,
-    Slice const& issuerCiphertext,
-    std::optional<Slice> const& auditorCiphertext,
-    Slice const& randomnessFactor) const
+    Buffer const& holderCiphertext,
+    Buffer const& issuerCiphertext,
+    std::optional<Buffer> const& auditorCiphertext,
+    Buffer const& randomnessFactor) const
 {
     return generateEqualityZKP(
         holder,
@@ -928,10 +928,10 @@ MPTTester::getConvertBackProof(
     Account const& holder,
     std::uint64_t amount,
     uint256 const& ctxHash,
-    Slice const& holderCiphertext,
-    Slice const& issuerCiphertext,
-    std::optional<Slice> const& auditorCiphertext,
-    Slice const& randomnessFactor) const
+    Buffer const& holderCiphertext,
+    Buffer const& issuerCiphertext,
+    std::optional<Buffer> const& auditorCiphertext,
+    Buffer const& randomnessFactor) const
 {
     Buffer const equalityZkp = generateEqualityZKP(
         holder,
@@ -1482,7 +1482,7 @@ Buffer
 MPTTester::encryptAmount(
     Account const& account,
     uint64_t const amt,
-    Slice const& randomnessFactor) const
+    Buffer const& randomnessFactor) const
 {
     return ripple::encryptAmount(amt, getPubKey(account), randomnessFactor);
 }
