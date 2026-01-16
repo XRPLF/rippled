@@ -119,7 +119,7 @@ mallocTrim(
         bool const have_ru0 = getRusageThread(ru0);
 
         auto const t0 = std::chrono::steady_clock::now();
-        report.trimResult = ::malloc_trim(256 * 1024);
+        report.trimResult = ::malloc_trim(1 * 1024 * 1024);
         auto const t1 = std::chrono::steady_clock::now();
 
         struct rusage ru1
@@ -151,7 +151,7 @@ mallocTrim(
     }
     else
     {
-        report.trimResult = ::malloc_trim(256 * 1024);
+        report.trimResult = ::malloc_trim(1 * 1024 * 1024);
     }
 #endif
 
