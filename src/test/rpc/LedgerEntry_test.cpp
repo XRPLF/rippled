@@ -5,6 +5,8 @@
 #include <test/jtx/multisign.h>
 #include <test/jtx/xchain_bridge.h>
 
+#include <xrpld/app/tx/apply.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
@@ -30,6 +32,7 @@ enum class FieldType {
     CurrencyField,
     HashField,
     HashOrObjectField,
+    FixedHashField,
     IssueField,
     ObjectField,
     StringField,
@@ -86,6 +89,7 @@ getTypeName(FieldType typeID)
         case FieldType::CurrencyField:
             return "Currency";
         case FieldType::HashField:
+        case FieldType::FixedHashField:
             return "hex string";
         case FieldType::HashOrObjectField:
             return "hex string or object";
@@ -202,6 +206,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         static auto const& badBlobValues = remove({3, 7, 8, 16});
         static auto const& badCurrencyValues = remove({14});
         static auto const& badHashValues = remove({2, 3, 7, 8, 16});
+        static auto const& badFixedHashValues = remove({1, 2, 3, 4, 7, 8, 16});
         static auto const& badIndexValues = remove({12, 16, 18, 19});
         static auto const& badUInt32Values = remove({2, 3});
         static auto const& badUInt64Values = remove({2, 3});
@@ -222,6 +227,8 @@ class LedgerEntry_test : public beast::unit_test::suite
                 return badHashValues;
             case FieldType::HashOrObjectField:
                 return badIndexValues;
+            case FieldType::FixedHashField:
+                return badFixedHashValues;
             case FieldType::IssueField:
                 return badIssueValues;
             case FieldType::UInt32Field:
@@ -717,7 +724,12 @@ class LedgerEntry_test : public beast::unit_test::suite
         }
 
         // negative tests
-        runLedgerEntryTest(env, jss::amendments);
+        testMalformedField(
+            env,
+            Json::Value{},
+            jss::amendments,
+            FieldType::FixedHashField,
+            "malformedRequest");
     }
 
     void
@@ -1538,7 +1550,12 @@ class LedgerEntry_test : public beast::unit_test::suite
         }
 
         // negative tests
-        runLedgerEntryTest(env, jss::fee);
+        testMalformedField(
+            env,
+            Json::Value{},
+            jss::fee,
+            FieldType::FixedHashField,
+            "malformedRequest");
     }
 
     void
@@ -1561,7 +1578,12 @@ class LedgerEntry_test : public beast::unit_test::suite
         }
 
         // negative tests
-        runLedgerEntryTest(env, jss::hashes);
+        testMalformedField(
+            env,
+            Json::Value{},
+            jss::hashes,
+            FieldType::FixedHashField,
+            "malformedRequest");
     }
 
     void
@@ -1686,7 +1708,12 @@ class LedgerEntry_test : public beast::unit_test::suite
         }
 
         // negative tests
-        runLedgerEntryTest(env, jss::nunl);
+        testMalformedField(
+            env,
+            Json::Value{},
+            jss::nunl,
+            FieldType::FixedHashField,
+            "malformedRequest");
     }
 
     void
@@ -2343,6 +2370,438 @@ class LedgerEntry_test : public beast::unit_test::suite
         }
     }
 
+    /// Test the ledger entry types that don't take parameters
+    void
+    testFixed()
+    {
+        using namespace test::jtx;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        Env env{*this, envconfig([](auto cfg) {
+                    cfg->START_UP = Config::FRESH;
+                    return cfg;
+                })};
+
+        env.close();
+
+        /** Verifies that the RPC result has the expected data
+         *
+         * @param good: Indicates that the request should have succeeded
+         *   and returned a ledger object of `expectedType` type.
+         * @param jv: The RPC result Json value
+         * @param expectedType: The type that the ledger object should
+         *   have if "good".
+         * @param expectedError: Optional. The expected error if not
+         *   good. Defaults to "entryNotFound".
+         */
+        auto checkResult =
+            [&](bool good,
+                Json::Value const& jv,
+                Json::StaticString const& expectedType,
+                std::optional<std::string> const& expectedError = {}) {
+                if (good)
+                {
+                    BEAST_EXPECTS(
+                        jv.isObject() && jv.isMember(jss::result) &&
+                            !jv[jss::result].isMember(jss::error) &&
+                            jv[jss::result].isMember(jss::node) &&
+                            jv[jss::result][jss::node].isMember(
+                                sfLedgerEntryType.jsonName) &&
+                            jv[jss::result][jss::node]
+                              [sfLedgerEntryType.jsonName] == expectedType,
+                        to_string(jv));
+                }
+                else
+                {
+                    BEAST_EXPECTS(
+                        jv.isObject() && jv.isMember(jss::result) &&
+                            jv[jss::result].isMember(jss::error) &&
+                            !jv[jss::result].isMember(jss::node) &&
+                            jv[jss::result][jss::error] ==
+                                expectedError.value_or("entryNotFound"),
+                        to_string(jv));
+                }
+            };
+
+        /** Runs a series of tests for a given fixed-position ledger
+         * entry.
+         *
+         * @param field: The Json request field to use.
+         * @param expectedType: The type that the ledger object should
+         *   have if "good".
+         * @param expectedKey: The keylet of the fixed object.
+         * @param good: Indicates whether the object is expected to
+         *   exist.
+         */
+        auto test = [&](Json::StaticString const& field,
+                        Json::StaticString const& expectedType,
+                        Keylet const& expectedKey,
+                        bool good) {
+            testcase << expectedType.c_str() << (good ? "" : " not")
+                     << " found";
+
+            auto const hexKey = strHex(expectedKey.key);
+
+            {
+                // Test bad values
+                // "field":null
+                Json::Value params;
+                params[jss::ledger_index] = jss::validated;
+                params[field] = Json::nullValue;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(false, jv, expectedType, "malformedRequest");
+                BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
+            }
+
+            {
+                Json::Value params;
+                // "field":"string"
+                params[jss::ledger_index] = jss::validated;
+                params[field] = "arbitrary string";
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(false, jv, expectedType, "malformedRequest");
+                BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
+            }
+
+            {
+                Json::Value params;
+                // "field":false
+                params[jss::ledger_index] = jss::validated;
+                params[field] = false;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(false, jv, expectedType, "invalidParams");
+                BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
+            }
+
+            {
+                Json::Value params;
+
+                // "field":[incorrect index hash]
+                auto const badKey = strHex(expectedKey.key + uint256{1});
+                params[jss::ledger_index] = jss::validated;
+                params[field] = badKey;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(false, jv, expectedType, "entryNotFound");
+                BEAST_EXPECTS(
+                    jv[jss::result][jss::index] == badKey, to_string(jv));
+            }
+
+            {
+                Json::Value params;
+                // "index":"field" using API 2
+                params[jss::ledger_index] = jss::validated;
+                params[jss::index] = field;
+                params[jss::api_version] = 2;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(false, jv, expectedType, "malformedRequest");
+                BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
+            }
+
+            std::string const pdIdx = [&]() {
+                {
+                    Json::Value params;
+                    // Test good values
+                    // Use the "field":true notation
+                    params[jss::ledger_index] = jss::validated;
+                    params[field] = true;
+                    auto const jv =
+                        env.rpc("json", "ledger_entry", to_string(params));
+                    // Index will always be returned for valid parameters.
+                    std::string const pdIdx =
+                        jv[jss::result][jss::index].asString();
+                    BEAST_EXPECTS(hexKey == pdIdx, to_string(jv));
+                    checkResult(good, jv, expectedType);
+
+                    return pdIdx;
+                }
+            }();
+
+            {
+                Json::Value params;
+                // "field":"[index hash]"
+                params[jss::ledger_index] = jss::validated;
+                params[field] = hexKey;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(good, jv, expectedType);
+                BEAST_EXPECT(jv[jss::result][jss::index].asString() == hexKey);
+            }
+
+            {
+                // Bad value
+                // Use the "index":"field" notation with API 2
+                Json::Value params;
+                params[jss::ledger_index] = jss::validated;
+                params[jss::index] = field;
+                params[jss::api_version] = 2;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(false, jv, expectedType, "malformedRequest");
+                BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
+            }
+
+            {
+                Json::Value params;
+                // Use the "index":"field" notation with API 3
+                params[jss::ledger_index] = jss::validated;
+                params[jss::index] = field;
+                params[jss::api_version] = 3;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                // Index is correct either way
+                BEAST_EXPECT(jv[jss::result][jss::index].asString() == hexKey);
+                checkResult(good, jv, expectedType);
+            }
+
+            {
+                Json::Value params;
+                // Use the "index":"[index hash]" notation
+                params[jss::ledger_index] = jss::validated;
+                params[jss::index] = pdIdx;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                // Index is correct either way
+                BEAST_EXPECT(jv[jss::result][jss::index].asString() == hexKey);
+                checkResult(good, jv, expectedType);
+            }
+        };
+
+        test(jss::amendments, jss::Amendments, keylet::amendments(), true);
+        test(jss::fee, jss::FeeSettings, keylet::fees(), true);
+        // There won't be an nunl
+        test(jss::nunl, jss::NegativeUNL, keylet::negativeUNL(), false);
+        // Can only get the short skip list this way
+        test(jss::hashes, jss::LedgerHashes, keylet::skip(), true);
+    }
+
+    void
+    testHashes()
+    {
+        using namespace test::jtx;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        Env env{*this, envconfig([](auto cfg) {
+                    cfg->START_UP = Config::FRESH;
+                    return cfg;
+                })};
+
+        env.close();
+
+        /** Verifies that the RPC result has the expected data
+         *
+         * @param good: Indicates that the request should have succeeded
+         *   and returned a ledger object of `expectedType` type.
+         * @param jv: The RPC result Json value
+         * @param expectedCount: The number of Hashes expected in the
+         *   object if "good".
+         * @param expectedError: Optional. The expected error if not
+         *   good. Defaults to "entryNotFound".
+         */
+        auto checkResult =
+            [&](bool good,
+                Json::Value const& jv,
+                int expectedCount,
+                std::optional<std::string> const& expectedError = {}) {
+                if (good)
+                {
+                    BEAST_EXPECTS(
+                        jv.isObject() && jv.isMember(jss::result) &&
+                            !jv[jss::result].isMember(jss::error) &&
+                            jv[jss::result].isMember(jss::node) &&
+                            jv[jss::result][jss::node].isMember(
+                                sfLedgerEntryType.jsonName) &&
+                            jv[jss::result][jss::node]
+                              [sfLedgerEntryType.jsonName] == jss::LedgerHashes,
+                        to_string(jv));
+                    BEAST_EXPECTS(
+                        jv[jss::result].isMember(jss::node) &&
+                            jv[jss::result][jss::node].isMember("Hashes") &&
+                            jv[jss::result][jss::node]["Hashes"].size() ==
+                                expectedCount,
+                        to_string(jv[jss::result][jss::node]["Hashes"].size()));
+                }
+                else
+                {
+                    BEAST_EXPECTS(
+                        jv.isObject() && jv.isMember(jss::result) &&
+                            jv[jss::result].isMember(jss::error) &&
+                            !jv[jss::result].isMember(jss::node) &&
+                            jv[jss::result][jss::error] ==
+                                expectedError.value_or("entryNotFound"),
+                        to_string(jv));
+                }
+            };
+
+        /** Runs a series of tests for a given ledger index.
+         *
+         * @param ledger: The ledger index value of the "hashes" request
+         *   parameter. May not necessarily be a number.
+         * @param expectedKey: The expected keylet of the object.
+         * @param good: Indicates whether the object is expected to
+         *   exist.
+         * @param expectedCount: The number of Hashes expected in the
+         *   object if "good".
+         */
+        auto test = [&](Json::Value ledger,
+                        Keylet const& expectedKey,
+                        bool good,
+                        int expectedCount = 0) {
+            testcase << "LedgerHashes: seq: " << env.current()->header().seq
+                     << " \"hashes\":" << to_string(ledger)
+                     << (good ? "" : " not") << " found";
+
+            auto const hexKey = strHex(expectedKey.key);
+
+            {
+                // Test bad values
+                // "hashes":null
+                Json::Value params;
+                params[jss::ledger_index] = jss::validated;
+                params[jss::hashes] = Json::nullValue;
+                auto jv = env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(false, jv, 0, "malformedRequest");
+                BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
+            }
+
+            {
+                Json::Value params;
+                // "hashes":"non-uint string"
+                params[jss::ledger_index] = jss::validated;
+                params[jss::hashes] = "arbitrary string";
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(false, jv, 0, "malformedRequest");
+                BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
+            }
+
+            {
+                Json::Value params;
+                // "hashes":"uint string" is invalid, too
+                params[jss::ledger_index] = jss::validated;
+                params[jss::hashes] = "10";
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(false, jv, 0, "malformedRequest");
+                BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
+            }
+
+            {
+                Json::Value params;
+                // "hashes":false
+                params[jss::ledger_index] = jss::validated;
+                params[jss::hashes] = false;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(false, jv, 0, "invalidParams");
+                BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
+            }
+
+            {
+                Json::Value params;
+                // "hashes":-1
+                params[jss::ledger_index] = jss::validated;
+                params[jss::hashes] = -1;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(false, jv, 0, "internal");
+                BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
+            }
+
+            // "hashes":[incorrect index hash]
+            {
+                Json::Value params;
+                auto const badKey = strHex(expectedKey.key + uint256{1});
+                params[jss::ledger_index] = jss::validated;
+                params[jss::hashes] = badKey;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(false, jv, 0, "entryNotFound");
+                BEAST_EXPECT(jv[jss::result][jss::index] == badKey);
+            }
+
+            {
+                Json::Value params;
+                // Test good values
+                // Use the "hashes":ledger notation
+                params[jss::ledger_index] = jss::validated;
+                params[jss::hashes] = ledger;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(good, jv, expectedCount);
+                // Index will always be returned for valid parameters.
+                std::string const pdIdx =
+                    jv[jss::result][jss::index].asString();
+                BEAST_EXPECTS(hexKey == pdIdx, strHex(pdIdx));
+            }
+
+            {
+                Json::Value params;
+                // "hashes":"[index hash]"
+                params[jss::ledger_index] = jss::validated;
+                params[jss::hashes] = hexKey;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(good, jv, expectedCount);
+                // Index is correct either way
+                BEAST_EXPECTS(
+                    hexKey == jv[jss::result][jss::index].asString(),
+                    strHex(jv[jss::result][jss::index].asString()));
+            }
+
+            {
+                Json::Value params;
+                // Use the "index":"[index hash]" notation
+                params[jss::ledger_index] = jss::validated;
+                params[jss::index] = hexKey;
+                auto const jv =
+                    env.rpc("json", "ledger_entry", to_string(params));
+                checkResult(good, jv, expectedCount);
+                // Index is correct either way
+                BEAST_EXPECTS(
+                    hexKey == jv[jss::result][jss::index].asString(),
+                    strHex(jv[jss::result][jss::index].asString()));
+            }
+        };
+
+        // short skip list
+        test(true, keylet::skip(), true, 2);
+        // long skip list at index 0
+        test(1, keylet::skip(1), false);
+        // long skip list at index 1
+        test(1 << 17, keylet::skip(1 << 17), false);
+
+        // Close more ledgers, but stop short of the flag ledger
+        for (auto i = env.current()->seq(); i <= 250; ++i)
+            env.close();
+
+        // short skip list
+        test(true, keylet::skip(), true, 249);
+        // long skip list at index 0
+        test(1, keylet::skip(1), false);
+        // long skip list at index 1
+        test(1 << 17, keylet::skip(1 << 17), false);
+
+        // Close a flag ledger so the first "long" skip list is created
+        for (auto i = env.current()->seq(); i <= 260; ++i)
+            env.close();
+
+        // short skip list
+        test(true, keylet::skip(), true, 256);
+        // long skip list at index 0
+        test(1, keylet::skip(1), true, 1);
+        // long skip list at index 1
+        test(1 << 17, keylet::skip(1 << 17), false);
+    }
+
     void
     testCLI()
     {
@@ -2400,6 +2859,8 @@ public:
         testOracleLedgerEntry();
         testMPT();
         testPermissionedDomain();
+        testFixed();
+        testHashes();
         testCLI();
     }
 };
