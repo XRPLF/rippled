@@ -140,8 +140,7 @@ MPTTester::MPTTester(MPTInitDef const& arg)
 {
 }
 
-MPTTester::
-operator MPT() const
+MPTTester::operator MPT() const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -695,8 +694,7 @@ MPTTester::mpt(std::int64_t amount) const
     return ripple::test::jtx::MPT(issuer_.name(), *id_)(amount);
 }
 
-MPTTester::
-operator Asset() const
+MPTTester::operator Asset() const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -805,122 +803,30 @@ MPTTester::getClawbackProof(
 }
 
 Buffer
-MPTTester::generateEqualityZKP(
-    Account const& holder,
-    std::uint64_t amount,
-    uint256 const& ctxHash,
-    Buffer const& holderCiphertext,
-    Buffer const& issuerCiphertext,
-    std::optional<Buffer> const& auditorCiphertext,
-    Buffer const& blindingFactor) const
+MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
 {
-    if (!id_)
-        Throw<std::runtime_error>("MPT has not been created");
+    auto const pubKey = getPubKey(account);
+    auto const privKey = getPrivKey(account);
 
-    auto const sleHolder = env_.le(keylet::mptoken(*id_, holder.id()));
-    auto const sleIssuance = env_.le(keylet::mptIssuance(*id_));
+    if (pubKey.size() != ecPubKeyLength)
+        Throw<std::runtime_error>("Invalid public key size");
 
-    size_t const zkpSize = auditorCiphertext ? 3 : 2;
-    size_t const zkpByteLength = zkpSize * ecEqualityProofLength;
+    secp256k1_pubkey pk;
+    std::memcpy(pk.data, pubKey.data(), ecPubKeyLength);
 
-    if (!sleHolder || !sleIssuance || holderCiphertext.size() == 0 ||
-        issuerCiphertext.size() == 0)
-        return Buffer(zkpByteLength);
+    Buffer proof(ecSchnorrProofLength);
 
-    auto const generateProof = [amount, ctxHash](
-                                   Buffer const& ciphertext,
-                                   Buffer const& pubKey,
-                                   Buffer const& blindingFactor) {
-        secp256k1_pubkey c1, c2;
-        auto const ctx = secp256k1Context();
-        if (!secp256k1_ec_pubkey_parse(
-                ctx, &c1, ciphertext.data(), ecGamalEncryptedLength) ||
-            !secp256k1_ec_pubkey_parse(
-                ctx,
-                &c2,
-                ciphertext.data() + ecGamalEncryptedLength,
-                ecGamalEncryptedLength))
-        {
-            return Buffer(ecEqualityProofLength);
-        }
-
-        secp256k1_pubkey pk;
-        std::memcpy(pk.data, pubKey.data(), ecPubKeyLength);
-        Buffer proof(ecEqualityProofLength);
-
-        if (secp256k1_equality_plaintext_prove(
-                ctx,
-                proof.data(),
-                &c1,
-                &c2,
-                &pk,
-                amount,
-                blindingFactor.data(),
-                ctxHash.data()) != 1)
-        {
-            Throw<std::runtime_error>("Proof generation failed");
-        }
-        return proof;
-    };
-
-    Buffer zkp(zkpByteLength);
-
-    Buffer holderZkp =
-        generateProof(holderCiphertext, getPubKey(holder), blindingFactor);
-
-    Buffer issuerZkp =
-        generateProof(issuerCiphertext, getPubKey(issuer_), blindingFactor);
-
-    // Pointer arithmetic to copy data into place
-    std::uint8_t* ptr = zkp.data();
-
-    // Copy Holder
-    std::memcpy(ptr, holderZkp.data(), holderZkp.size());
-    ptr += holderZkp.size();
-
-    // Copy Issuer
-    std::memcpy(ptr, issuerZkp.data(), issuerZkp.size());
-    ptr += issuerZkp.size();
-
-    if (auditorCiphertext)
+    if (secp256k1_mpt_pok_sk_prove(
+            secp256k1Context(),
+            proof.data(),
+            &pk,
+            privKey.data(),
+            ctxHash.data()) != 1)
     {
-        Buffer auditorZkp(ecEqualityProofLength);
-
-        if (sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey))
-        {
-            Buffer const auditorPubKey(
-                sleIssuance->getFieldVL(sfAuditorElGamalPublicKey).data(),
-                sleIssuance->getFieldVL(sfAuditorElGamalPublicKey).size());
-            auditorZkp = generateProof(
-                *auditorCiphertext, auditorPubKey, blindingFactor);
-        }
-
-        // Copy auditor
-        std::memcpy(ptr, auditorZkp.data(), auditorZkp.size());
-        ptr += auditorZkp.size();
+        Throw<std::runtime_error>("Schnorr Proof generation failed");
     }
 
-    return zkp;
-}
-
-Buffer
-MPTTester::getConvertProof(
-    Account const& holder,
-    std::uint64_t amount,
-    uint256 const& ctxHash,
-    Buffer const& holderCiphertext,
-    Buffer const& issuerCiphertext,
-    std::optional<Buffer> const& auditorCiphertext,
-    Buffer const& blindingFactor) const
-{
-    return generateEqualityZKP(
-        holder,
-        amount,
-        ctxHash,
-        holderCiphertext,
-        issuerCiphertext,
-        auditorCiphertext,
-        blindingFactor);
+    return proof;
 }
 
 Buffer
@@ -933,18 +839,9 @@ MPTTester::getConvertBackProof(
     std::optional<Buffer> const& auditorCiphertext,
     Buffer const& blindingFactor) const
 {
-    Buffer const equalityZkp = generateEqualityZKP(
-        holder,
-        amount,
-        ctxHash,
-        holderCiphertext,
-        issuerCiphertext,
-        auditorCiphertext,
-        blindingFactor);
-
     // todo: incoporate pederson and range proof
 
-    return equalityZkp;
+    return Buffer{};
 }
 
 std::optional<Buffer>
@@ -1086,23 +983,20 @@ MPTTester::convert(MPTConvert const& arg)
         auditorCiphertext,
         blindingFactor);
 
+    jv[sfBlindingFactor.jsonName] = strHex(blindingFactor);
     if (arg.proof)
         jv[sfZKProof.jsonName] = *arg.proof;
-    else
+    else if (arg.fillSchnorrProof.value_or(arg.holderPubKey.has_value()))
     {
-        // if the caller generated ciphertexts themselves, they should also
-        // generate the proof themselves from the blinding factor
-        uint256 const ctxHash = getConvertContextHash(
+        // whether to automatically generate and attach a Schnorr proof:
+        // if fillSchnorrProof is explicitly set, follow its value;
+        // otherwise, default to generating the proof only if holder pub key is
+        // present.
+        auto const ctxHash = getConvertContextHash(
             arg.account->id(), env_.seq(*arg.account), *id_, *arg.amt);
-        Buffer proof = getConvertProof(
-            *arg.account,
-            *arg.amt,
-            ctxHash,
-            holderCiphertext,
-            issuerCiphertext,
-            auditorCiphertext,
-            blindingFactor);
-        jv[sfZKProof] = strHex(proof);
+
+        Buffer proof = getSchnorrProof(*arg.account, ctxHash);
+        jv[sfZKProof.jsonName] = strHex(proof);
     }
 
     auto const holderAmt = getBalance(*arg.account);
@@ -1473,7 +1367,15 @@ MPTTester::encryptAmount(
     uint64_t const amt,
     Buffer const& blindingFactor) const
 {
-    return ripple::encryptAmount(amt, getPubKey(account), blindingFactor);
+    auto const result =
+        ripple::encryptAmount(amt, getPubKey(account), blindingFactor);
+
+    if (result)
+        return *result;
+
+    // Return a dummy buffer on failure to allow testing of
+    // failures that occur prior to encryption.
+    return Buffer(ecGamalEncryptedTotalLength);
 }
 
 uint64_t
@@ -1633,6 +1535,8 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         issuerCiphertext,
         auditorCiphertext,
         blindingFactor);
+
+    jv[sfBlindingFactor] = strHex(blindingFactor);
 
     if (arg.proof)
         jv[sfZKProof.jsonName] = *arg.proof;

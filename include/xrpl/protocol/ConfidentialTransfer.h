@@ -207,6 +207,43 @@ secp256k1_equality_plaintext_verify(
     uint64_t amount,
     unsigned char const* tx_context_id);
 
+void
+build_pok_challenge(
+    unsigned char* e,
+    secp256k1_context const* ctx,
+    secp256k1_pubkey const* pk,
+    secp256k1_pubkey const* T,
+    unsigned char const* context_id);
+
+/** Proof of Knowledge of Secret Key for Registration */
+int
+secp256k1_mpt_pok_sk_prove(
+    secp256k1_context const* ctx,
+    unsigned char* proof, /* Expected size: 65 bytes */
+    secp256k1_pubkey const* pk,
+    unsigned char const* sk,
+    unsigned char const* context_id);
+
+int
+secp256k1_mpt_pok_sk_verify(
+    secp256k1_context const* ctx,
+    unsigned char const* proof, /* Expected size: 65 bytes */
+    secp256k1_pubkey const* pk,
+    unsigned char const* context_id);
+
+/**
+ * Verifies that (c1, c2) is a valid ElGamal encryption of 'amount'
+ * for 'pubkey_Q' using the revealed 'blinding_factor'.
+ */
+int
+secp256k1_elgamal_verify_encryption(
+    secp256k1_context const* ctx,
+    secp256k1_pubkey const* c1,
+    secp256k1_pubkey const* c2,
+    secp256k1_pubkey const* pubkey_Q,
+    uint64_t amount,
+    unsigned char const* blinding_factor);
+
 // breaks a 66-byte encrypted amount into two 33-byte components
 // then parses each 33-byte component into 64-byte secp256k1_pubkey format
 bool
@@ -243,7 +280,7 @@ proveEquality(
     std::uint32_t const spendVersion);
 
 // returns ciphertext and the blinding factor used
-Buffer
+std::optional<Buffer>
 encryptAmount(
     uint64_t const amt,
     Slice const& pubKeySlice,
@@ -256,25 +293,17 @@ encryptCanonicalZeroAmount(
     MPTID const& mptId);
 
 TER
-verifyConfidentialSendProof(
-    Slice const& proof,
-    Slice const& encSenderBalance,
-    Slice const& encSenderAmt,
-    Slice const& encDestAmt,
-    Slice const& encIssuerAmt,
-    Slice const& senderPubKey,
-    Slice const& destPubKey,
-    Slice const& issuerPubKey,
-    std::uint32_t const version,
-    uint256 const& txHash);
+verifySchnorrProof(
+    Slice const& pubKeySlice,
+    Slice const& proofSlice,
+    uint256 const& contextHash);
 
 TER
-verifyEqualityProof(
-    uint64_t const amount,
-    Slice const& proof,
+verifyElGamalEncryption(
+    std::uint64_t const amount,
+    Slice const& blindingFactor,
     Slice const& pubKeySlice,
-    Slice const& ciphertext,
-    uint256 const& contextHash);
+    Slice const& ciphertext);
 
 TER
 verifyClawbackEqualityProof(
@@ -297,17 +326,13 @@ struct EncryptedAmountInfo
     Slice const encryptedAmount;
 };
 
-/**
- * Verifies equality proofs for Holder, Issuer, and optionally Auditor.
- */
 TER
-verifyEqualityProofs(
-    std::uint64_t amount,
-    std::vector<Buffer> const& zkps,
+verifyRevealedAmount(
+    std::uint64_t const amount,
+    Slice const& blindingFactor,
     EncryptedAmountInfo const& holder,
     EncryptedAmountInfo const& issuer,
-    std::optional<EncryptedAmountInfo> const& auditor,
-    uint256 const& contextHash);
+    std::optional<EncryptedAmountInfo> const& auditor);
 
 // returns the number of entries
 size_t inline getEqualityProofSize(bool const hasAuditor)

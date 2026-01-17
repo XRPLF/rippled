@@ -176,10 +176,17 @@ struct MPTConvert
     std::optional<MPTID> id = std::nullopt;
     std::optional<std::uint64_t> amt = std::nullopt;
     std::optional<std::string> proof = std::nullopt;
+
+    // indicates whether to autofill schnorr proof.
+    // default : auto generate proof if holderPubKey is present.
+    // true: force proof generation.
+    // false: force proof omission.
+    std::optional<bool> fillSchnorrProof = std::nullopt;
     std::optional<Buffer> holderPubKey = std::nullopt;
     std::optional<Buffer> holderEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
+
     // not an txn param, only used for autofilling
     std::optional<Buffer> blindingFactor = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
@@ -447,24 +454,7 @@ public:
         uint256 const& txHash) const;
 
     Buffer
-    generateEqualityZKP(
-        Account const& holder,
-        std::uint64_t amount,
-        uint256 const& ctxHash,
-        Buffer const& holderCiphertext,
-        Buffer const& issuerCiphertext,
-        std::optional<Buffer> const& auditorCiphertext,
-        Buffer const& blindingFactor) const;
-
-    Buffer
-    getConvertProof(
-        Account const& holder,
-        std::uint64_t amount,
-        uint256 const& ctxHash,
-        Buffer const& holderCiphertext,
-        Buffer const& issuerCiphertext,
-        std::optional<Buffer> const& auditorCiphertext,
-        Buffer const& blindingFactor) const;
+    getSchnorrProof(Account const& account, uint256 const& ctxHash) const;
 
     Buffer
     getConvertBackProof(

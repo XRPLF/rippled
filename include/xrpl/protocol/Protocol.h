@@ -314,6 +314,9 @@ std::size_t constexpr ecPrivKeyLength = 32;
 
 /** Length of the EC blinding factor */
 std::size_t constexpr ecBlindingFactorLength = 32;
+
+/** Length of Schnorr ZKProof for public key registration */
+std::size_t constexpr ecSchnorrProofLength = 65;
 }  // namespace ripple
 
 #endif

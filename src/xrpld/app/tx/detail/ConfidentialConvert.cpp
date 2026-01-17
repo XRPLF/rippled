@@ -21,19 +21,37 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;
 
-    if (auto const res = checkEncryptedAmountFormat(ctx.tx); !isTesSuccess(res))
-        return res;
-
     if (ctx.tx[sfMPTAmount] > maxMPTokenAmount)
         return temBAD_AMOUNT;
 
-    if (ctx.tx.isFieldPresent(sfHolderElGamalPublicKey) &&
-        ctx.tx[sfHolderElGamalPublicKey].length() != ecPubKeyLength)
+    if (ctx.tx[sfBlindingFactor].size() != ecBlindingFactorLength)
         return temMALFORMED;
 
-    if (ctx.tx[sfZKProof].size() !=
-        getEqualityProofLength(ctx.tx.isFieldPresent(sfAuditorEncryptedAmount)))
-        return temMALFORMED;
+    if (ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
+    {
+        if (ctx.tx[sfHolderElGamalPublicKey].length() != ecPubKeyLength)
+            return temMALFORMED;
+
+        // proof of knowledge of the secret key corresponding to the provided
+        // public key is needed when holder ec public key is being set.
+        if (!ctx.tx.isFieldPresent(sfZKProof))
+            return temMALFORMED;
+
+        // verify schnorr proof length when registerring holder ec public key
+        if (ctx.tx[sfZKProof].size() != ecSchnorrProofLength)
+            return temMALFORMED;
+    }
+    else
+    {
+        // zkp should not be present if public key was already set
+        if (ctx.tx.isFieldPresent(sfZKProof))
+            return temMALFORMED;
+    }
+
+    // check encrypted amount format after the above basic checks
+    // this check is more expensive so put it at the end
+    if (auto const res = checkEncryptedAmountFormat(ctx.tx); !isTesSuccess(res))
+        return res;
 
     return tesSUCCESS;
 }
@@ -41,9 +59,12 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
 TER
 ConfidentialConvert::preclaim(PreclaimContext const& ctx)
 {
+    auto const account = ctx.tx[sfAccount];
+    auto const issuanceID = ctx.tx[sfMPTokenIssuanceID];
+    auto const amount = ctx.tx[sfMPTAmount];
+
     // ensure that issuance exists
-    auto const sleIssuance =
-        ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(issuanceID));
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -52,7 +73,7 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
 
     // already checked in preflight, but should also check that issuer on the
     // issuance isn't the account either
-    if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
+    if (sleIssuance->getAccountID(sfIssuer) == account)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // issuer has not uploaded their pub key yet
@@ -73,18 +94,16 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     if (!requiresAuditor && hasAuditor)
         return tecNO_PERMISSION;
 
-    auto const sleMptoken = ctx.view.read(
-        keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
+    auto const sleMptoken = ctx.view.read(keylet::mptoken(issuanceID, account));
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
-    auto const mptIssue = MPTIssue{ctx.tx[sfMPTokenIssuanceID]};
+    auto const mptIssue = MPTIssue{issuanceID};
     STAmount const mptAmount = STAmount(
-        MPTAmount{static_cast<MPTAmount::value_type>(ctx.tx[sfMPTAmount])},
-        mptIssue);
+        MPTAmount{static_cast<MPTAmount::value_type>(amount)}, mptIssue);
     if (accountHolds(
             ctx.view,
-            ctx.tx[sfAccount],
+            account,
             mptIssue,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahZERO_IF_UNAUTHORIZED,
@@ -103,38 +122,42 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
         return tecDUPLICATE;
 
-    auto const holderPubKey = ctx.tx.isFieldPresent(sfHolderElGamalPublicKey)
-        ? ctx.tx[sfHolderElGamalPublicKey]
-        : (*sleMptoken)[sfHolderElGamalPublicKey];
+    Slice holderPubKey;
+    if (ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
+    {
+        holderPubKey = ctx.tx[sfHolderElGamalPublicKey];
 
-    auto const contextHash = getConvertContextHash(
-        ctx.tx[sfAccount],
-        ctx.tx[sfSequence],
-        ctx.tx[sfMPTokenIssuanceID],
-        ctx.tx[sfMPTAmount]);
+        auto const contextHash = getConvertContextHash(
+            account, ctx.tx[sfSequence], issuanceID, amount);
 
-    std::vector<Buffer> const zkps = getEqualityProofs(ctx.tx[sfZKProof]);
+        // when register new pk, verify through schnorr proof
+        if (!isTesSuccess(verifySchnorrProof(
+                holderPubKey, ctx.tx[sfZKProof], contextHash)))
+        {
+            return tecBAD_PROOF;
+        }
+    }
+    else
+    {
+        holderPubKey = (*sleMptoken)[sfHolderElGamalPublicKey];
+    }
 
     // Prepare Auditor Info
     std::optional<EncryptedAmountInfo> auditor;
     if (hasAuditor)
     {
-        auditor.emplace(
-            EncryptedAmountInfo{
-                (*sleIssuance)[sfAuditorElGamalPublicKey],
-                ctx.tx[sfAuditorEncryptedAmount]});
+        auditor.emplace(EncryptedAmountInfo{
+            (*sleIssuance)[sfAuditorElGamalPublicKey],
+            ctx.tx[sfAuditorEncryptedAmount]});
     }
 
-    return verifyEqualityProofs(
-        ctx.tx[sfMPTAmount],
-        zkps,
-        EncryptedAmountInfo{
-            holderPubKey, ctx.tx[sfHolderEncryptedAmount]},  // Holder
-        EncryptedAmountInfo{
-            (*sleIssuance)[sfIssuerElGamalPublicKey],
-            ctx.tx[sfIssuerEncryptedAmount]},  // Issuer
-        auditor,
-        contextHash);
+    return verifyRevealedAmount(
+        amount,
+        ctx.tx[sfBlindingFactor],
+        {holderPubKey, ctx.tx[sfHolderEncryptedAmount]},
+        {(*sleIssuance)[sfIssuerElGamalPublicKey],
+         ctx.tx[sfIssuerEncryptedAmount]},
+        auditor);
 }
 
 TER
@@ -219,20 +242,16 @@ ConfidentialConvert::doApply()
         if (auditorEc)
             (*sleMptoken)[sfAuditorEncryptedBalance] = *auditorEc;
 
-        try
-        {
-            // encrypt sfConfidentialBalanceSpending with zero balance
-            Buffer out;
-            out = encryptAmount(
-                0,
-                (*sleMptoken)[sfHolderElGamalPublicKey],
-                generateBlindingFactor());
-            (*sleMptoken)[sfConfidentialBalanceSpending] = out;
-        }
-        catch (std::exception const& e)
-        {
+        // encrypt sfConfidentialBalanceSpending with zero balance
+        auto const zeroBalance = encryptAmount(
+            0,
+            (*sleMptoken)[sfHolderElGamalPublicKey],
+            generateBlindingFactor());
+
+        if (!zeroBalance)
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
+
+        (*sleMptoken)[sfConfidentialBalanceSpending] = *zeroBalance;
     }
     else
     {

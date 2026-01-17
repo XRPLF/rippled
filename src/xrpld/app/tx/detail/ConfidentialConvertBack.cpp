@@ -28,15 +28,20 @@ ConfidentialConvertBack::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureConfidentialTransfer))
         return temDISABLED;
 
-    // issuer cannot convert
+    // issuer cannot convert back
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;
 
-    if (auto const res = checkEncryptedAmountFormat(ctx.tx); !isTesSuccess(res))
-        return res;
-
     if (ctx.tx[sfMPTAmount] == 0 || ctx.tx[sfMPTAmount] > maxMPTokenAmount)
         return temBAD_AMOUNT;
+
+    if (ctx.tx[sfBlindingFactor].size() != ecBlindingFactorLength)
+        return temMALFORMED;
+
+    // check encrypted amount format after the above basic checks
+    // this check is more expensive so put it at the end
+    if (auto const res = checkEncryptedAmountFormat(ctx.tx); !isTesSuccess(res))
+        return res;
 
     return tesSUCCESS;
 }
@@ -47,47 +52,43 @@ verifyProofs(
     std::shared_ptr<SLE const> const& issuance,
     std::shared_ptr<SLE const> const& mptoken)
 {
-    if (expectedProofLength(issuance) != tx[sfZKProof].size())
-        return tecBAD_PROOF;
+    if (!mptoken->isFieldPresent(sfHolderElGamalPublicKey))
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const mptIssuanceID = tx[sfMPTokenIssuanceID];
-    auto const account = tx[sfAccount];
+    // auto const mptIssuanceID = tx[sfMPTokenIssuanceID];
+    // auto const account = tx[sfAccount];
     auto const amount = tx[sfMPTAmount];
+    auto const blindingFactor = tx[sfBlindingFactor];
+    auto const holderPubKey = (*mptoken)[sfHolderElGamalPublicKey];
 
-    auto const contextHash = getConvertBackContextHash(
-        account,
-        tx[sfSequence],
-        mptIssuanceID,
-        amount,
-        (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
+    // todo: commented out for now, will use for range proof
+    // auto const contextHash = getConvertBackContextHash(
+    //     account,
+    //     tx[sfSequence],
+    //     mptIssuanceID,
+    //     amount,
+    //     (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
 
     // Prepare Auditor Info
     std::optional<EncryptedAmountInfo> auditor;
     bool const hasAuditor = issuance->isFieldPresent(sfAuditorElGamalPublicKey);
     if (hasAuditor)
     {
-        auditor.emplace(
-            EncryptedAmountInfo{
-                (*issuance)[sfAuditorElGamalPublicKey],
-                tx[sfAuditorEncryptedAmount]});
+        auditor.emplace(EncryptedAmountInfo{
+            (*issuance)[sfAuditorElGamalPublicKey],
+            tx[sfAuditorEncryptedAmount]});
     }
 
-    // verify equality proofs
-    {
-        auto const equalityZkps = getEqualityProofs(
-            Slice{tx[sfZKProof].data(), getEqualityProofLength(hasAuditor)});
-
-        return verifyEqualityProofs(
+    if (auto const ter = verifyRevealedAmount(
             amount,
-            equalityZkps,
-            EncryptedAmountInfo{
-                (*mptoken)[sfHolderElGamalPublicKey],
-                tx[sfHolderEncryptedAmount]},  // Holder
-            EncryptedAmountInfo{
-                (*issuance)[sfIssuerElGamalPublicKey],
-                tx[sfIssuerEncryptedAmount]},  // Issuer
-            auditor,                           // Optional auditor
-            contextHash);
+            blindingFactor,
+            {holderPubKey, tx[sfHolderEncryptedAmount]},
+            {(*issuance)[sfIssuerElGamalPublicKey],
+             tx[sfIssuerEncryptedAmount]},
+            auditor);
+        !isTesSuccess(ter))
+    {
+        return ter;
     }
 
     return tesSUCCESS;

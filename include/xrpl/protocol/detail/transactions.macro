@@ -1075,7 +1075,8 @@ TRANSACTION(ttCONFIDENTIAL_CONVERT, 85, ConfidentialConvert,
     {sfHolderEncryptedAmount, soeREQUIRED},
     {sfIssuerEncryptedAmount, soeREQUIRED},
     {sfAuditorEncryptedAmount, soeOPTIONAL},
-    {sfZKProof, soeREQUIRED},
+    {sfBlindingFactor, soeREQUIRED},
+    {sfZKProof, soeOPTIONAL},
 }))
 
 /** This transaction type merges MPT inbox. */
@@ -1104,6 +1105,7 @@ TRANSACTION(ttCONFIDENTIAL_CONVERT_BACK, 87, ConfidentialConvertBack,
     {sfHolderEncryptedAmount, soeREQUIRED},
     {sfIssuerEncryptedAmount, soeREQUIRED},
     {sfAuditorEncryptedAmount, soeOPTIONAL},
+    {sfBlindingFactor, soeREQUIRED},
     {sfZKProof, soeREQUIRED},
 }))
 
