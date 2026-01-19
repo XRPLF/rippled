@@ -954,6 +954,28 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testReturnType()
+    {
+        // (module
+        //   (memory (export "memory") 1)
+        //   (func (export "finish") (result i64)
+        //     i64.const 0x100000000))
+        auto const wasmHex =
+            "0061736d010000000105016000017e030201000503010001"
+            "071302066d656d6f727902000666696e69736800000a0a01"
+            "08004280808080100b";
+        auto const wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+        Bytes const wasm(wasmStr.begin(), wasmStr.end());
+
+        using namespace test::jtx;
+        Env env(*this);
+        TestHostFunctions hf(env, 0);
+        auto const re =
+            runEscrowWasm(wasm, hf, ESCROW_FUNCTION_NAME, {}, 100'000);
+        BEAST_EXPECT(!re);
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -984,6 +1006,7 @@ struct Wasm_test : public beast::unit_test::suite
         testStartFunctionLoop();
         testBadAlloc();
         testBadAlign();
+        testReturnType();
 
         // perfTest();
     }
