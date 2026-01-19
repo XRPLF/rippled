@@ -765,6 +765,10 @@ WasmiEngine::call(
     auto mem = getMem();
     if (!mem.s)
         throw std::runtime_error("no memory exported");  // LCOV_EXCL_LINE
+    if (sz > std::numeric_limits<int32_t>::max())
+        throw std::runtime_error(
+            "can't allocate memory, size: " +
+            std::to_string(sz));  // LCOV_EXCL_LINE
 
     auto const ptr = allocate(sz);
     memcpy(mem.p + ptr, d, sz);
@@ -987,7 +991,7 @@ WasmiEngine::allocate(int32_t sz)
         throw std::runtime_error(
             "can't allocate memory, " + std::to_string(sz) + " bytes");
 
-    auto res = call<1>(W_ALLOC, static_cast<int32_t>(sz));
+    auto res = call<1>(W_ALLOC, sz);
 
     if (res.f || !res.r.vec_.size || (res.r.vec_.data[0].kind != WASM_I32))
         throw std::runtime_error(
