@@ -6,7 +6,7 @@
 #include <chrono>
 #include <cstdio>
 #include <fstream>
-#include <thread>
+// #include <thread>
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
 #include <sys/resource.h>
@@ -97,74 +97,73 @@ mallocTrim(
     report.supported = true;
 
     // Launch malloc_trim on a separate thread (async, fire-and-forget)
-    std::thread trimThread([tag, journal]() {
-        if (journal.debug())
+    // std::thread trimThread([tag, journal]() {
+    if (journal.debug())
+    {
+        auto readFile = [](std::string const& path) -> std::string {
+            std::ifstream ifs(path);
+            if (!ifs.is_open())
+                return {};
+            return std::string(
+                std::istreambuf_iterator<char>(ifs),
+                std::istreambuf_iterator<char>());
+        };
+
+        std::string const tagStr = tag.value_or("default");
+        std::string const statusPath =
+            "/proc/" + std::to_string(cachedPid) + "/status";
+
+        auto const statusBefore = readFile(statusPath);
+        long const rssBeforeKB = detail::parseVmRSSkB(statusBefore);
+
+        struct rusage ru0
         {
-            auto readFile = [](std::string const& path) -> std::string {
-                std::ifstream ifs(path);
-                if (!ifs.is_open())
-                    return {};
-                return std::string(
-                    std::istreambuf_iterator<char>(ifs),
-                    std::istreambuf_iterator<char>());
-            };
+        };
+        bool const have_ru0 = getRusageThread(ru0);
 
-            std::string const tagStr = tag.value_or("default");
-            std::string const statusPath =
-                "/proc/" + std::to_string(cachedPid) + "/status";
+        auto const t0 = std::chrono::steady_clock::now();
+        int const trimResult = ::malloc_trim(0);
+        auto const t1 = std::chrono::steady_clock::now();
 
-            auto const statusBefore = readFile(statusPath);
-            long const rssBeforeKB = detail::parseVmRSSkB(statusBefore);
-
-            struct rusage ru0
-            {
-            };
-            bool const have_ru0 = getRusageThread(ru0);
-
-            auto const t0 = std::chrono::steady_clock::now();
-            int const trimResult = ::malloc_trim(0);
-            auto const t1 = std::chrono::steady_clock::now();
-
-            struct rusage ru1
-            {
-            };
-            bool const have_ru1 = getRusageThread(ru1);
-
-            auto const statusAfter = readFile(statusPath);
-            long const rssAfterKB = detail::parseVmRSSkB(statusAfter);
-
-            long long const durationUs =
-                std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0)
-                    .count();
-
-            long minfltDelta = -1;
-            long majfltDelta = -1;
-            if (have_ru0 && have_ru1)
-            {
-                minfltDelta = ru1.ru_minflt - ru0.ru_minflt;
-                majfltDelta = ru1.ru_majflt - ru0.ru_majflt;
-            }
-
-            long const deltaKB = (rssBeforeKB < 0 || rssAfterKB < 0)
-                ? 0
-                : (rssAfterKB - rssBeforeKB);
-
-            JLOG(journal.debug())
-                << "malloc_trim tag=" << tagStr << " result=" << trimResult
-                << " rss_before=" << rssBeforeKB << "kB"
-                << " rss_after=" << rssAfterKB << "kB"
-                << " delta=" << deltaKB << "kB"
-                << " duration_us=" << durationUs
-                << " minflt_delta=" << minfltDelta
-                << " majflt_delta=" << majfltDelta;
-        }
-        else
+        struct rusage ru1
         {
-            ::malloc_trim(0);
-        }
-    });
+        };
+        bool const have_ru1 = getRusageThread(ru1);
 
-    trimThread.detach();
+        auto const statusAfter = readFile(statusPath);
+        long const rssAfterKB = detail::parseVmRSSkB(statusAfter);
+
+        long long const durationUs =
+            std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0)
+                .count();
+
+        long minfltDelta = -1;
+        long majfltDelta = -1;
+        if (have_ru0 && have_ru1)
+        {
+            minfltDelta = ru1.ru_minflt - ru0.ru_minflt;
+            majfltDelta = ru1.ru_majflt - ru0.ru_majflt;
+        }
+
+        long const deltaKB = (rssBeforeKB < 0 || rssAfterKB < 0)
+            ? 0
+            : (rssAfterKB - rssBeforeKB);
+
+        JLOG(journal.debug())
+            << "malloc_trim tag=" << tagStr << " result=" << trimResult
+            << " rss_before=" << rssBeforeKB << "kB"
+            << " rss_after=" << rssAfterKB << "kB"
+            << " delta=" << deltaKB << "kB"
+            << " duration_us=" << durationUs << " minflt_delta=" << minfltDelta
+            << " majflt_delta=" << majfltDelta;
+    }
+    else
+    {
+        ::malloc_trim(0);
+    }
+    // });
+
+    // trimThread.detach();
 
 #endif
 

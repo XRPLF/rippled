@@ -2552,13 +2552,13 @@ NetworkOPsImp::setMode(OperatingMode om)
     if (mMode == om)
         return;
 
-    auto const oldMode = mMode.load(std::memory_order_relaxed);
+    // auto const oldMode = mMode.load(std::memory_order_relaxed);
     mMode = om;
 
     accounting_.mode(om);
 
-    if (oldMode != OperatingMode::FULL && om == OperatingMode::FULL)
-        mallocTrim(std::optional<std::string>("SyncComplete"), m_journal);
+    // if (oldMode != OperatingMode::FULL && om == OperatingMode::FULL)
+    //     mallocTrim(std::optional<std::string>("SyncComplete"), m_journal);
 
     JLOG(m_journal.info()) << "STATE->" << strOperatingMode();
     pubServer();
