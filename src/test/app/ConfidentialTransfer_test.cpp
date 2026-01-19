@@ -369,9 +369,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock});
 
             mptAlice.authorize({.account = bob});
-            env.close();
             mptAlice.pay(alice, bob, 100);
-            env.close();
 
             mptAlice.generateKeyPair(alice);
             mptAlice.generateKeyPair(bob);
@@ -558,13 +556,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create(
                 {.ownerCount = 1,
-                 .holderCount = 0,
                  .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
             mptAlice.authorize({.account = bob});
-            env.close();
             mptAlice.pay(alice, bob, 100);
-            env.close();
 
             mptAlice.generateKeyPair(alice);
 
@@ -600,15 +595,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create(
                 {.ownerCount = 1,
-                 .holderCount = 0,
                  .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth |
                      tfMPTCanPrivacy});
 
             mptAlice.authorize({.account = bob});
             mptAlice.authorize({.account = alice, .holder = bob});
-            env.close();
             mptAlice.pay(alice, bob, 100);
-            env.close();
 
             mptAlice.generateKeyPair(alice);
 
@@ -682,13 +674,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.create(
             {.ownerCount = 1,
-             .holderCount = 0,
              .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
         mptAlice.authorize({.account = bob});
-        env.close();
         mptAlice.pay(alice, bob, 100);
-        env.close();
 
         mptAlice.generateKeyPair(alice);
 
@@ -720,13 +709,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.create(
             {.ownerCount = 1,
-             .holderCount = 0,
              .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
         mptAlice.authorize({.account = bob});
-        env.close();
         mptAlice.pay(alice, bob, 100);
-        env.close();
 
         mptAlice.generateKeyPair(alice);
 
@@ -792,9 +778,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .flags = tfMPTCanTransfer | tfMPTCanLock});
 
             mptAlice.authorize({.account = bob});
-            env.close();
             mptAlice.pay(alice, bob, 100);
-            env.close();
 
             mptAlice.generateKeyPair(alice);
             mptAlice.generateKeyPair(bob);
@@ -835,9 +819,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
             mptAlice.authorize({.account = bob});
-            env.close();
             mptAlice.pay(alice, bob, 100);
-            env.close();
 
             mptAlice.generateKeyPair(alice);
 
@@ -1084,7 +1066,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.create();
             mptAlice.authorize({.account = bob});
             mptAlice.authorize({.account = carol});
-            env.close();
 
             mptAlice.send(
                 {.account = bob,
@@ -1122,7 +1103,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
             mptAlice.pay(alice, bob, 100);
             mptAlice.pay(alice, carol, 50);
-            env.close();
 
             // issuer can not be the same as sender
             mptAlice.send(
@@ -1257,7 +1237,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // fund bob, carol (not dave or eve)
         mptAlice.pay(alice, bob, 100);
         mptAlice.pay(alice, carol, 50);
-        env.close();
 
         mptAlice.generateKeyPair(alice);
         mptAlice.generateKeyPair(bob);
@@ -1265,7 +1244,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.generateKeyPair(dave);
         mptAlice.set(
             {.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-        env.close();
 
         // bob and carol convert some funds to confidential
         mptAlice.convert(
@@ -1306,7 +1284,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             // destroy the issuance
             mptAlice.destroy();
-            env.close();
 
             Json::Value jv;
             jv[jss::Account] = bob.human();
@@ -1533,13 +1510,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create(
                 {.ownerCount = 1,
-                 .holderCount = 0,
                  .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
             mptAlice.authorize({.account = bob});
-            env.close();
             mptAlice.pay(alice, bob, 100);
-            env.close();
 
             mptAlice.generateKeyPair(alice);
 
@@ -1575,9 +1549,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.authorize({.account = bob});
             mptAlice.authorize({.account = carol});
-            env.close();
             mptAlice.pay(alice, bob, 100);
-            env.close();
 
             mptAlice.generateKeyPair(alice);
 
@@ -1619,9 +1591,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
             mptAlice.authorize({.account = bob});
-
-            env.close();
-
             mptAlice.generateKeyPair(alice);
 
             mptAlice.set(
@@ -1651,13 +1620,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.create(
                 {.ownerCount = 1,
-                 .holderCount = 0,
                  .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
             mptAlice.authorize({.account = bob});
-
-            env.close();
-
             mptAlice.generateKeyPair(alice);
 
             mptAlice.set(
@@ -1698,9 +1663,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
              .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
         mptAlice.authorize({.account = bob});
-        env.close();
         mptAlice.pay(alice, bob, 100);
-        env.close();
 
         mptAlice.generateKeyPair(alice);
 
@@ -1743,9 +1706,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
              .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
 
         mptAlice.authorize({.account = bob});
-        env.close();
         mptAlice.pay(alice, bob, 100);
-        env.close();
 
         mptAlice.generateKeyPair(alice);
         mptAlice.generateKeyPair(auditor);
@@ -2457,7 +2418,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
             mptAlice.pay(alice, bob, 100);
             mptAlice.pay(alice, carol, 50);
-            env.close();
 
             // only issuer can clawback
             mptAlice.confidentialClaw(
@@ -2592,7 +2552,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.generateKeyPair(alice);
             mptAlice.set(
                 {.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-            env.close();
 
             mptAlice.confidentialClaw(
                 {.account = alice,
@@ -2610,7 +2569,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.create({.flags = tfMPTCanClawback | tfMPTCanPrivacy});
             mptAlice.authorize({.account = bob});
             mptAlice.generateKeyPair(alice);
-            env.close();
 
             mptAlice.confidentialClaw(
                 {.account = alice,
@@ -2633,7 +2591,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             // destroy the issuance
             mptAlice.destroy();
-            env.close();
 
             Json::Value jv;
             jv[jss::Account] = alice.human();
