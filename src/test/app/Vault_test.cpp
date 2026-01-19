@@ -2076,7 +2076,7 @@ class Vault_test : public beast::unit_test::suite
                 PrettyAsset const& asset,
                 Vault& vault,
                 MPTTester& mptt) {
-                testcase("MPT failed reserve to re-create MPToken");
+                testcase("MPT fail reserve to re-create MPToken");
 
                 auto [tx, keylet] =
                     vault.create({.owner = owner, .asset = asset});
