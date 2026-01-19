@@ -1158,7 +1158,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
         fee_.update(Resource::feeModerateBurdenPeer, "oversize");
 
     app_.getJobQueue().addJob(
-        jtMANIFEST, "receiveManifests", [this, that = shared_from_this(), m]() {
+        jtMANIFEST, "rcvManifests", [this, that = shared_from_this(), m]() {
             overlay_.onManifests(m, that);
         });
 }

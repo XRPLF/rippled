@@ -1323,7 +1323,7 @@ NetworkOPsImp::doTransactionAsync(
     if (mDispatchState == DispatchState::none)
     {
         if (m_job_queue.addJob(
-                jtBATCH, "transactionBatch", [this]() { transactionBatch(); }))
+                jtBATCH, "txBatch", [this]() { transactionBatch(); }))
         {
             mDispatchState = DispatchState::scheduled;
         }
@@ -3207,19 +3207,16 @@ NetworkOPsImp::reportFeeChange()
     if (f != mLastFeeSummary)
     {
         m_job_queue.addJob(
-            jtCLIENT_FEE_CHANGE, "reportFeeChange->pubServer", [this]() {
-                pubServer();
-            });
+            jtCLIENT_FEE_CHANGE, "pubFee", [this]() { pubServer(); });
     }
 }
 
 void
 NetworkOPsImp::reportConsensusStateChange(ConsensusPhase phase)
 {
-    m_job_queue.addJob(
-        jtCLIENT_CONSENSUS,
-        "reportConsensusStateChange->pubConsensus",
-        [this, phase]() { pubConsensus(phase); });
+    m_job_queue.addJob(jtCLIENT_CONSENSUS, "pubCons", [this, phase]() {
+        pubConsensus(phase);
+    });
 }
 
 inline void
