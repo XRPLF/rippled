@@ -1740,12 +1740,12 @@ MPTTester::generatePedersenLinkageProof(
     if (secp256k1_elgamal_pedersen_link_prove(
             ctx,
             proof.data(),
-            &c1,
-            &c2,
             &pk,
+            &c2,
+            &c1,
             &pcm,
             amount,
-            blindingFactor.data(),
+            getPrivKey(account).data(),
             pcBlindingFactor.data(),
             ctxHash.data()) != 1)
         Throw<std::runtime_error>("Pedersen proof generation failed");

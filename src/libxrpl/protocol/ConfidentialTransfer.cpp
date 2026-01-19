@@ -434,9 +434,9 @@ verifyPedersenLinkage(
     if (secp256k1_elgamal_pedersen_link_verify(
             secp256k1Context(),
             proof.data(),
-            &c1,
-            &c2,
             &pubKey,
+            &c2,
+            &c1,
             &pcm,
             contextHash.data()) != 1)
         return tecBAD_PROOF;
