@@ -2490,18 +2490,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         }
         else if (isTrusted || !app_.getFeeTrack().isLoadedLocal())
         {
-            std::string const name = [isTrusted, val]() {
-                std::string ret =
-                    isTrusted ? "Trusted validation" : "Untrusted validation";
-
-#ifdef DEBUG
-                ret += " " +
-                    std::to_string(val->getFieldU32(sfLedgerSequence)) + ": " +
-                    to_string(val->getNodeID());
-#endif
-
-                return ret;
-            }();
+            std::string const name =
+                isTrusted ? "chkTrustVal" : "chkUntrustVal";
 
             std::weak_ptr<PeerImp> weak = shared_from_this();
             app_.getJobQueue().addJob(
