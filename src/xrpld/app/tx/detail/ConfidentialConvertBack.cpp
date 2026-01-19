@@ -12,16 +12,6 @@
 
 namespace ripple {
 
-size_t
-expectedProofLength(std::shared_ptr<SLE const> const& issuance)
-{
-    auto const equalityProofLength = getEqualityProofLength(
-        issuance->isFieldPresent(sfAuditorElGamalPublicKey));
-
-    // todo: add pederson and range proof length
-    return equalityProofLength;
-}
-
 NotTEC
 ConfidentialConvertBack::preflight(PreflightContext const& ctx)
 {
@@ -74,9 +64,10 @@ verifyProofs(
     bool const hasAuditor = issuance->isFieldPresent(sfAuditorElGamalPublicKey);
     if (hasAuditor)
     {
-        auditor.emplace(EncryptedAmountInfo{
-            (*issuance)[sfAuditorElGamalPublicKey],
-            tx[sfAuditorEncryptedAmount]});
+        auditor.emplace(
+            EncryptedAmountInfo{
+                (*issuance)[sfAuditorElGamalPublicKey],
+                tx[sfAuditorEncryptedAmount]});
     }
 
     if (auto const ter = verifyRevealedAmount(
