@@ -425,6 +425,12 @@ verifyPedersenLinkage(
     secp256k1_pubkey pcm;
     std::memcpy(pcm.data, pcmSlice.data(), ecPubKeyLength);
 
+    // if (secp256k1_ec_pubkey_parse(
+    //         secp256k1Context(),
+    //         &pcm,
+    //         reinterpret_cast<unsigned char const*>(pcmSlice.data()),
+    //         pcmSlice.length()) != 1)
+    //     return tecBAD_PROOF;
     if (secp256k1_elgamal_pedersen_link_verify(
             secp256k1Context(),
             proof.data(),

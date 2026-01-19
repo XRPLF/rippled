@@ -313,6 +313,7 @@ TYPED_SFIELD(sfAuditorEncryptedBalance,  VL,        42)
 TYPED_SFIELD(sfAuditorEncryptedAmount,   VL,        43)
 TYPED_SFIELD(sfAuditorElGamalPublicKey,  VL,        44)
 TYPED_SFIELD(sfBlindingFactor,           VL,        45)
+TYPED_SFIELD(sfPedersenCommitment,       VL,        46)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)

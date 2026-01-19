@@ -140,7 +140,8 @@ MPTTester::MPTTester(MPTInitDef const& arg)
 {
 }
 
-MPTTester::operator MPT() const
+MPTTester::
+operator MPT() const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -694,7 +695,8 @@ MPTTester::mpt(std::int64_t amount) const
     return ripple::test::jtx::MPT(issuer_.name(), *id_)(amount);
 }
 
-MPTTester::operator Asset() const
+MPTTester::
+operator Asset() const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -830,6 +832,28 @@ MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
 }
 
 Buffer
+MPTTester::generatePedersenCommitment(
+    std::uint64_t amount,
+    Buffer const& pedersenBlindingFactor)
+{
+    // Blinding factor (rho) must be a 32-byte scalar
+    if (pedersenBlindingFactor.size() != ecBlindingFactorLength)
+        Throw<std::runtime_error>("Invalid blinding factor size");
+
+    secp256k1_pubkey commitment;
+    auto const ctx = secp256k1Context();
+
+    // Compute PC = m*G + rho*H
+    if (secp256k1_mpt_pedersen_commit(
+            ctx, &commitment, amount, pedersenBlindingFactor.data()) != 1)
+    {
+        Throw<std::runtime_error>("Pedersen commitment generation failed");
+    }
+
+    return Buffer{commitment.data, ecPubKeyLength};
+}
+
+Buffer
 MPTTester::getConvertBackProof(
     Account const& holder,
     std::uint64_t amount,
@@ -837,11 +861,39 @@ MPTTester::getConvertBackProof(
     Buffer const& holderCiphertext,
     Buffer const& issuerCiphertext,
     std::optional<Buffer> const& auditorCiphertext,
-    Buffer const& blindingFactor) const
+    Buffer const& blindingFactor,
+    Buffer const& pedersenCommitment) const
 {
-    // todo: incoporate pederson and range proof
+    auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
+    if (!sleMptoken)
+        return Buffer{};
 
-    return Buffer{};
+    uint64_t const holderSpendingBalance =
+        getDecryptedBalance(holder, HOLDER_ENCRYPTED_SPENDING);
+
+    auto const holderSpendingCiphertext = Buffer{
+        {(*sleMptoken)[sfConfidentialBalanceSpending].data(),
+         (*sleMptoken)[sfConfidentialBalanceSpending].size()}};
+
+    Buffer const pedersenProof = generatePedersenLinkageProof(
+        holder,
+        holderSpendingBalance,
+        ctxHash,
+        holderSpendingCiphertext,
+        getPubKey(holder),
+        blindingFactor,
+        pedersenCommitment);
+    // if (auto const ter = verifyPedersenLinkage(
+    //         pedersenProof,
+    //         holderSpendingCiphertext,
+    //         getPubKey(holder),
+    //         pedersenCommitment,
+    //         ctxHash);
+    //     !isTesSuccess(ter))
+    //     Throw<std::runtime_error>("pedersen proof validation failed!!");
+
+    // todo: incoporate range proof
+    return pedersenProof;
 }
 
 std::optional<Buffer>
@@ -1538,6 +1590,18 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 
     jv[sfBlindingFactor] = strHex(blindingFactor);
 
+    uint64_t prevSpendingBalance =
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+    Buffer pedersenCommitment;
+    if (arg.pedersenCommitment)
+        pedersenCommitment = *arg.pedersenCommitment;
+    else
+        pedersenCommitment = generatePedersenCommitment(
+            prevSpendingBalance, generateBlindingFactor());
+
+    jv[sfPedersenCommitment] = strHex(pedersenCommitment);
+
     if (arg.proof)
         jv[sfZKProof.jsonName] = *arg.proof;
     else
@@ -1555,7 +1619,8 @@ MPTTester::convertBack(MPTConvertBack const& arg)
             holderCiphertext,
             issuerCiphertext,
             auditorCiphertext,
-            blindingFactor);
+            blindingFactor,
+            pedersenCommitment);
         jv[sfZKProof] = strHex(proof);
     }
 
@@ -1564,8 +1629,6 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 
     uint64_t prevInboxBalance =
         getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
-    uint64_t prevSpendingBalance =
-        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
     uint64_t prevIssuerBalance =
         getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
     [[maybe_unused]] uint64_t prevAuditorBalance =
@@ -1618,6 +1681,53 @@ MPTTester::convertBack(MPTConvertBack const& arg)
             return postInboxBalance + postSpendingBalance == postIssuerBalance;
         }));
     }
+}
+
+Buffer
+MPTTester::generatePedersenLinkageProof(
+    Account const& account,
+    std::uint64_t amount,
+    uint256 const& ctxHash,
+    Buffer const& ciphertext,
+    Buffer const& pubKey,
+    Buffer const& blindingFactor,
+    Buffer const& pedersenCommitment) const
+{
+    secp256k1_pubkey c1, c2;
+    auto const ctx = secp256k1Context();
+    if (!secp256k1_ec_pubkey_parse(
+            ctx, &c1, ciphertext.data(), ecGamalEncryptedLength) ||
+        !secp256k1_ec_pubkey_parse(
+            ctx,
+            &c2,
+            ciphertext.data() + ecGamalEncryptedLength,
+            ecGamalEncryptedLength))
+    {
+        return Buffer();
+    }
+
+    secp256k1_pubkey pk;
+    std::memcpy(pk.data, pubKey.data(), ecPubKeyLength);
+
+    secp256k1_pubkey pcm;
+    std::memcpy(pcm.data, pedersenCommitment.data(), ecPubKeyLength);
+
+    Buffer proof(ecPedersenProofLength);
+
+    if (secp256k1_elgamal_pedersen_link_prove(
+            ctx,
+            proof.data(),
+            &c1,
+            &c2,
+            &pk,
+            &pcm,
+            amount,
+            blindingFactor.data(),
+            generateBlindingFactor().data(),
+            ctxHash.data()) != 1)
+        Throw<std::runtime_error>("Pedersen proof generation failed");
+
+    return proof;
 }
 
 }  // namespace jtx

@@ -28,6 +28,9 @@ ConfidentialConvertBack::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfBlindingFactor].size() != ecBlindingFactorLength)
         return temMALFORMED;
 
+    if (ctx.tx[sfPedersenCommitment].size() != ecPubKeyLength)
+        return temMALFORMED;
+
     // check encrypted amount format after the above basic checks
     // this check is more expensive so put it at the end
     if (auto const res = checkEncryptedAmountFormat(ctx.tx); !isTesSuccess(res))
@@ -45,19 +48,18 @@ verifyProofs(
     if (!mptoken->isFieldPresent(sfHolderElGamalPublicKey))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // auto const mptIssuanceID = tx[sfMPTokenIssuanceID];
-    // auto const account = tx[sfAccount];
+    auto const mptIssuanceID = tx[sfMPTokenIssuanceID];
+    auto const account = tx[sfAccount];
     auto const amount = tx[sfMPTAmount];
     auto const blindingFactor = tx[sfBlindingFactor];
     auto const holderPubKey = (*mptoken)[sfHolderElGamalPublicKey];
 
-    // todo: commented out for now, will use for range proof
-    // auto const contextHash = getConvertBackContextHash(
-    //     account,
-    //     tx[sfSequence],
-    //     mptIssuanceID,
-    //     amount,
-    //     (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
+    auto const contextHash = getConvertBackContextHash(
+        account,
+        tx[sfSequence],
+        mptIssuanceID,
+        amount,
+        (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
 
     // Prepare Auditor Info
     std::optional<EncryptedAmountInfo> auditor;
@@ -80,6 +82,28 @@ verifyProofs(
         !isTesSuccess(ter))
     {
         return ter;
+    }
+
+    // Use a pointer to parse each proof component
+    Buffer zkps = Buffer(tx[sfZKProof].data(), tx[sfZKProof].size());
+    std::uint8_t* ptr = zkps.data();
+
+    // verify el gamal pedersen linkage
+    {
+        Buffer const pedersen{ptr, ecPedersenProofLength};
+        if (auto const ter = verifyPedersenLinkage(
+                pedersen,
+                (*mptoken)[sfConfidentialBalanceSpending],
+                holderPubKey,
+                tx[sfPedersenCommitment],
+                contextHash);
+            !isTesSuccess(ter))
+        {
+            return ter;
+        }
+
+        // increment pointer
+        ptr += ecPedersenProofLength;
     }
 
     return tesSUCCESS;

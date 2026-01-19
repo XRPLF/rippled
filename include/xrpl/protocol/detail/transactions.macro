@@ -1107,6 +1107,7 @@ TRANSACTION(ttCONFIDENTIAL_CONVERT_BACK, 87, ConfidentialConvertBack,
     {sfAuditorEncryptedAmount, soeOPTIONAL},
     {sfBlindingFactor, soeREQUIRED},
     {sfZKProof, soeREQUIRED},
+    {sfPedersenCommitment, soeREQUIRED}
 }))
 
 #if TRANSACTION_INCLUDE

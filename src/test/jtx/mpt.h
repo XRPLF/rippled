@@ -187,7 +187,6 @@ struct MPTConvert
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
 
-    // not an txn param, only used for autofilling
     std::optional<Buffer> blindingFactor = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
@@ -235,8 +234,8 @@ struct MPTConvertBack
     std::optional<Buffer> holderEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
-    // not an txn param, only used for autofilling
     std::optional<Buffer> blindingFactor = std::nullopt;
+    std::optional<Buffer> pedersenCommitment = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -464,10 +463,26 @@ public:
         Buffer const& holderCiphertext,
         Buffer const& issuerCiphertext,
         std::optional<Buffer> const& auditorCiphertext,
-        Buffer const& blindingFactor) const;
+        Buffer const& blindingFactor,
+        Buffer const& pedersenCommitment) const;
 
     std::uint32_t
     getMPTokenVersion(Account const account) const;
+
+    Buffer
+    generatePedersenLinkageProof(
+        Account const& account,
+        std::uint64_t amount,
+        uint256 const& ctxHash,
+        Buffer const& ciphertext,
+        Buffer const& pubKey,
+        Buffer const& blindingFactor,
+        Buffer const& pedersenCommitment) const;
+
+    Buffer
+    generatePedersenCommitment(
+        std::uint64_t amount,
+        Buffer const& pedersenBlindingFactor);
 
 private:
     using SLEP = SLE::const_pointer;
