@@ -464,7 +464,8 @@ public:
         Buffer const& issuerCiphertext,
         std::optional<Buffer> const& auditorCiphertext,
         Buffer const& blindingFactor,
-        Buffer const& pedersenCommitment) const;
+        Buffer const& pedersenCommitment,
+        Buffer const& pcBlindingFactor) const;
 
     std::uint32_t
     getMPTokenVersion(Account const account) const;
@@ -477,7 +478,8 @@ public:
         Buffer const& ciphertext,
         Buffer const& pubKey,
         Buffer const& blindingFactor,
-        Buffer const& pedersenCommitment) const;
+        Buffer const& pedersenCommitment,
+        Buffer const& pcBlindingFactor) const;
 
     Buffer
     generatePedersenCommitment(

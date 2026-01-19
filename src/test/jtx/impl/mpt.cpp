@@ -862,7 +862,8 @@ MPTTester::getConvertBackProof(
     Buffer const& issuerCiphertext,
     std::optional<Buffer> const& auditorCiphertext,
     Buffer const& blindingFactor,
-    Buffer const& pedersenCommitment) const
+    Buffer const& pedersenCommitment,
+    Buffer const& pcBlindingFactor) const
 {
     auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
     if (!sleMptoken)
@@ -882,7 +883,26 @@ MPTTester::getConvertBackProof(
         holderSpendingCiphertext,
         getPubKey(holder),
         blindingFactor,
-        pedersenCommitment);
+        pedersenCommitment,
+        pcBlindingFactor);
+
+    // if (auto const ter = verifyPedersenLinkage(
+    //         pedersenProof,
+    //         holderCiphertext,
+    //         getPubKey(holder),
+    //         pedersenCommitment,
+    //         ctxHash);
+    //     !isTesSuccess(ter))
+    //     Throw<std::runtime_error>("pedersen proof validation failed!!");
+
+    // Buffer const pedersenProof = generatePedersenLinkageProof(
+    //     holder,
+    //     holderSpendingBalance,
+    //     ctxHash,
+    //     holderSpendingCiphertext,
+    //     getPubKey(holder),
+    //     blindingFactor,
+    //     pedersenCommitment);
     // if (auto const ter = verifyPedersenLinkage(
     //         pedersenProof,
     //         holderSpendingCiphertext,
@@ -1594,11 +1614,12 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
 
     Buffer pedersenCommitment;
+    Buffer pcBlindingFactor = generateBlindingFactor();
     if (arg.pedersenCommitment)
         pedersenCommitment = *arg.pedersenCommitment;
     else
-        pedersenCommitment = generatePedersenCommitment(
-            prevSpendingBalance, generateBlindingFactor());
+        pedersenCommitment =
+            generatePedersenCommitment(prevSpendingBalance, pcBlindingFactor);
 
     jv[sfPedersenCommitment] = strHex(pedersenCommitment);
 
@@ -1620,7 +1641,8 @@ MPTTester::convertBack(MPTConvertBack const& arg)
             issuerCiphertext,
             auditorCiphertext,
             blindingFactor,
-            pedersenCommitment);
+            pedersenCommitment,
+            pcBlindingFactor);
         jv[sfZKProof] = strHex(proof);
     }
 
@@ -1691,7 +1713,8 @@ MPTTester::generatePedersenLinkageProof(
     Buffer const& ciphertext,
     Buffer const& pubKey,
     Buffer const& blindingFactor,
-    Buffer const& pedersenCommitment) const
+    Buffer const& pedersenCommitment,
+    Buffer const& pcBlindingFactor) const
 {
     secp256k1_pubkey c1, c2;
     auto const ctx = secp256k1Context();
@@ -1723,7 +1746,7 @@ MPTTester::generatePedersenLinkageProof(
             &pcm,
             amount,
             blindingFactor.data(),
-            generateBlindingFactor().data(),
+            pcBlindingFactor.data(),
             ctxHash.data()) != 1)
         Throw<std::runtime_error>("Pedersen proof generation failed");
 
