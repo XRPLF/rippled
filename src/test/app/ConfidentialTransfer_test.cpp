@@ -248,23 +248,23 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
-                 .holderPubKey = mptAlice.getPubKey(bob),
                  .fillSchnorrProof = false,
+                 .holderPubKey = mptAlice.getPubKey(bob),
                  .err = temMALFORMED});
 
             mptAlice.convert(
                 {.account = bob,
                  .amt = 0,
-                 .holderPubKey = mptAlice.getPubKey(bob),
                  .fillSchnorrProof = false,
+                 .holderPubKey = mptAlice.getPubKey(bob),
                  .err = temMALFORMED});
 
             // proof length is invalid
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
-                 .holderPubKey = mptAlice.getPubKey(bob),
                  .proof = std::string(10, 'A'),
+                 .holderPubKey = mptAlice.getPubKey(bob),
                  .err = temMALFORMED});
         }
 
@@ -656,8 +656,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
-                 .holderPubKey = mptAlice.getPubKey(bob),
                  .proof = std::string(ecSchnorrProofLength * 2, 'A'),
+                 .holderPubKey = mptAlice.getPubKey(bob),
                  .err = tecBAD_PROOF});
         }
     }

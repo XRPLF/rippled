@@ -48,6 +48,108 @@ getConvertBackContextHash(
     uint192 const& issuanceID,
     std::uint64_t amount,
     std::uint32_t version);
+
+// breaks a 66-byte encrypted amount into two 33-byte components
+// then parses each 33-byte component into 64-byte secp256k1_pubkey format
+bool
+makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2);
+
+// serialize two secp256k1_pubkey components back into compressed 66-byte form
+bool
+serializeEcPair(
+    secp256k1_pubkey const& in1,
+    secp256k1_pubkey const& in2,
+    Buffer& buffer);
+
+/**
+ * @brief Verifies that a buffer contains two valid, parsable EC public keys.
+ * @param buffer The input buffer containing two concatenated components.
+ * @return true if both components can be parsed successfully, false otherwise.
+ */
+bool
+isValidCiphertext(Slice const& buffer);
+
+TER
+homomorphicAdd(Slice const& a, Slice const& b, Buffer& out);
+
+TER
+homomorphicSubtract(Slice const& a, Slice const& b, Buffer& out);
+
+// returns ciphertext and the blinding factor used
+std::optional<Buffer>
+encryptAmount(
+    uint64_t const amt,
+    Slice const& pubKeySlice,
+    Slice const& blindingFactor);
+
+Buffer
+encryptCanonicalZeroAmount(
+    Slice const& pubKeySlice,
+    AccountID const& account,
+    MPTID const& mptId);
+
+TER
+verifySchnorrProof(
+    Slice const& pubKeySlice,
+    Slice const& proofSlice,
+    uint256 const& contextHash);
+
+TER
+verifyElGamalEncryption(
+    std::uint64_t const amount,
+    Slice const& blindingFactor,
+    Slice const& pubKeySlice,
+    Slice const& ciphertext);
+
+TER
+verifyClawbackEqualityProof(
+    uint64_t const amount,
+    Slice const& proof,
+    Slice const& pubKeySlice,
+    Slice const& ciphertext,
+    uint256 const& contextHash);
+
+std::vector<Buffer>
+getEqualityProofs(Slice const& zkp);
+
+NotTEC
+checkEncryptedAmountFormat(STObject const& object);
+
+// Helper struct to bundle the ElGamal Public Key and the associated Ciphertext
+struct EncryptedAmountInfo
+{
+    Slice const publicKey;
+    Slice const encryptedAmount;
+};
+
+TER
+verifyRevealedAmount(
+    std::uint64_t const amount,
+    Slice const& blindingFactor,
+    EncryptedAmountInfo const& holder,
+    EncryptedAmountInfo const& issuer,
+    std::optional<EncryptedAmountInfo> const& auditor);
+
+// returns the number of entries
+size_t inline getEqualityProofSize(bool const hasAuditor)
+{
+    // Be careful if we ever need to change the numbers below, it will be a
+    // breaking change!
+    return (hasAuditor ? 3 : 2);
+}
+
+// returns the total byte length of all the equality proofs combined
+size_t inline getEqualityProofLength(bool const hasAuditor)
+{
+    return getEqualityProofSize(hasAuditor) * ecEqualityProofLength;
+}
+
+// generates a 32 byte randomness factor to be used in encryption and proofs
+Buffer
+generateBlindingFactor();
+
+// The following functions belong to the mpt-crypto library,
+// they will be finally removed and we will use conan2 to manage the dependency.
 /**
  * @brief Generates a new secp256k1 key pair.
  */
@@ -243,114 +345,6 @@ secp256k1_elgamal_verify_encryption(
     secp256k1_pubkey const* pubkey_Q,
     uint64_t amount,
     unsigned char const* blinding_factor);
-
-// breaks a 66-byte encrypted amount into two 33-byte components
-// then parses each 33-byte component into 64-byte secp256k1_pubkey format
-bool
-makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2);
-
-// serialize two secp256k1_pubkey components back into compressed 66-byte form
-bool
-serializeEcPair(
-    secp256k1_pubkey const& in1,
-    secp256k1_pubkey const& in2,
-    Buffer& buffer);
-
-/**
- * @brief Verifies that a buffer contains two valid, parsable EC public keys.
- * @param buffer The input buffer containing two concatenated components.
- * @return true if both components can be parsed successfully, false otherwise.
- */
-bool
-isValidCiphertext(Slice const& buffer);
-
-TER
-homomorphicAdd(Slice const& a, Slice const& b, Buffer& out);
-
-TER
-homomorphicSubtract(Slice const& a, Slice const& b, Buffer& out);
-
-TER
-proveEquality(
-    Slice const& proof,
-    Slice const& encAmt,  // encrypted amount
-    Slice const& pubkey,
-    uint64_t const amount,
-    uint256 const& txHash,  // Transaction context data
-    std::uint32_t const spendVersion);
-
-// returns ciphertext and the blinding factor used
-std::optional<Buffer>
-encryptAmount(
-    uint64_t const amt,
-    Slice const& pubKeySlice,
-    Slice const& blindingFactor);
-
-Buffer
-encryptCanonicalZeroAmount(
-    Slice const& pubKeySlice,
-    AccountID const& account,
-    MPTID const& mptId);
-
-TER
-verifySchnorrProof(
-    Slice const& pubKeySlice,
-    Slice const& proofSlice,
-    uint256 const& contextHash);
-
-TER
-verifyElGamalEncryption(
-    std::uint64_t const amount,
-    Slice const& blindingFactor,
-    Slice const& pubKeySlice,
-    Slice const& ciphertext);
-
-TER
-verifyClawbackEqualityProof(
-    uint64_t const amount,
-    Slice const& proof,
-    Slice const& pubKeySlice,
-    Slice const& ciphertext,
-    uint256 const& contextHash);
-
-std::vector<Buffer>
-getEqualityProofs(Slice const& zkp);
-
-NotTEC
-checkEncryptedAmountFormat(STObject const& object);
-
-// Helper struct to bundle the ElGamal Public Key and the associated Ciphertext
-struct EncryptedAmountInfo
-{
-    Slice const publicKey;
-    Slice const encryptedAmount;
-};
-
-TER
-verifyRevealedAmount(
-    std::uint64_t const amount,
-    Slice const& blindingFactor,
-    EncryptedAmountInfo const& holder,
-    EncryptedAmountInfo const& issuer,
-    std::optional<EncryptedAmountInfo> const& auditor);
-
-// returns the number of entries
-size_t inline getEqualityProofSize(bool const hasAuditor)
-{
-    // Be careful if we ever need to change the numbers below, it will be a
-    // breaking change!
-    return (hasAuditor ? 3 : 2);
-}
-
-// returns the total byte length of all the equality proofs combined
-size_t inline getEqualityProofLength(bool const hasAuditor)
-{
-    return getEqualityProofSize(hasAuditor) * ecEqualityProofLength;
-}
-
-// generates a 32 byte randomness factor to be used in encryption and proofs
-Buffer
-generateBlindingFactor();
 
 }  // namespace ripple
 
