@@ -137,7 +137,7 @@ verifyPedersenLinkage(
     Slice const& encAmt,
     Slice const& pubKeySlice,
     Slice const& pcmSlice,
-    uint256 const& context_id);
+    uint256 const& contextHash);
 
 // The following functions belong to the mpt-crypto library,
 // they will be finally removed and we will use conan2 to manage the dependency.
