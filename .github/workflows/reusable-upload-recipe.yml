@@ -53,14 +53,26 @@ jobs:
         id: ref
         run: echo "ref=xrpl/${{ steps.version.outputs.version }}" >> "${GITHUB_OUTPUT}"
 
-      - name: Upload recipe
-        uses: ./.github/actions/upload-recipe
-        id: upload
+      - name: Set up Conan
+        uses: ./.github/actions/setup-conan
         with:
-          recipe_ref: ${{ steps.ref.outputs.ref }}
           remote_name: ${{ inputs.remote_name }}
           remote_url: ${{ inputs.remote_url }}
-          remote_username: ${{ secrets.remote_username }}
-          remote_password: ${{ secrets.remote_password }}
+
+      - name: Log into Conan remote
+        env:
+          REMOTE_NAME: ${{ inputs.remote_name }}
+          REMOTE_USERNAME: ${{ inputs.remote_username }}
+          REMOTE_PASSWORD: ${{ inputs.remote_password }}
+        run: conan remote login "${REMOTE_NAME}" "${REMOTE_USERNAME}" --password "${REMOTE_PASSWORD}"
+
+      - name: Upload Conan recipe
+        env:
+          RECIPE_REF: ${{ steps.ref.outputs.ref }}
+          REMOTE_NAME: ${{ inputs.remote_name }}
+        run: |
+          conan export .
+          conan upload --confirm --check --remote="${REMOTE_NAME}" ${RECIPE_REF}
+
     outputs:
       ref: ${{ steps.ref.outputs.ref }}
