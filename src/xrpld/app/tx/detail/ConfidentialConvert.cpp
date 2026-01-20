@@ -1,4 +1,3 @@
-#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/ConfidentialConvert.h>
 
 #include <xrpl/ledger/View.h>
@@ -85,13 +84,8 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
 
     // tx must include auditor ciphertext if the issuance has enabled
-    // auditing
-    if (requiresAuditor && !hasAuditor)
-        return tecNO_PERMISSION;
-
-    // if auditing is not supported then user should not upload auditor
-    // ciphertext
-    if (!requiresAuditor && hasAuditor)
+    // auditing, and must not include it if auditing is not enabled
+    if (requiresAuditor != hasAuditor)
         return tecNO_PERMISSION;
 
     auto const sleMptoken = ctx.view.read(keylet::mptoken(issuanceID, account));
@@ -112,18 +106,21 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         return tecINSUFFICIENT_FUNDS;
     }
 
+    auto const hasHolderKeyOnLedger =
+        sleMptoken->isFieldPresent(sfHolderElGamalPublicKey);
+    auto const hasHolderKeyInTx =
+        ctx.tx.isFieldPresent(sfHolderElGamalPublicKey);
+
     // must have pk to convert
-    if (!sleMptoken->isFieldPresent(sfHolderElGamalPublicKey) &&
-        !ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
+    if (!hasHolderKeyOnLedger && !hasHolderKeyInTx)
         return tecNO_PERMISSION;
 
     // can't update if there's already a pk
-    if (sleMptoken->isFieldPresent(sfHolderElGamalPublicKey) &&
-        ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
+    if (hasHolderKeyOnLedger && hasHolderKeyInTx)
         return tecDUPLICATE;
 
     Slice holderPubKey;
-    if (ctx.tx.isFieldPresent(sfHolderElGamalPublicKey))
+    if (hasHolderKeyInTx)
     {
         holderPubKey = ctx.tx[sfHolderElGamalPublicKey];
 
@@ -188,7 +185,7 @@ ConfidentialConvert::doApply()
     Slice const holderEc = ctx_.tx[sfHolderEncryptedAmount];
     Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
 
-    std::optional<Slice> const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];
+    auto const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];
 
     // todo: we should check sfConfidentialBalanceSpending depending on
     // if we encrypt zero amount
@@ -243,10 +240,8 @@ ConfidentialConvert::doApply()
             (*sleMptoken)[sfAuditorEncryptedBalance] = *auditorEc;
 
         // encrypt sfConfidentialBalanceSpending with zero balance
-        auto const zeroBalance = encryptAmount(
-            0,
-            (*sleMptoken)[sfHolderElGamalPublicKey],
-            generateBlindingFactor());
+        auto const zeroBalance = encryptCanonicalZeroAmount(
+            (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
 
         if (!zeroBalance)
             return tecINTERNAL;  // LCOV_EXCL_LINE

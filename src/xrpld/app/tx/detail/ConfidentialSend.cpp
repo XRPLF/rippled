@@ -1,4 +1,3 @@
-#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/ConfidentialSend.h>
 
 #include <xrpl/ledger/CredentialHelpers.h>
@@ -30,6 +29,7 @@ ConfidentialSend::preflight(PreflightContext const& ctx)
     if (account == ctx.tx[sfDestination])
         return temMALFORMED;
 
+    // Check the length of the encrypted amounts
     if (ctx.tx[sfSenderEncryptedAmount].length() !=
             ecGamalEncryptedTotalLength ||
         ctx.tx[sfDestinationEncryptedAmount].length() !=
@@ -43,16 +43,18 @@ ConfidentialSend::preflight(PreflightContext const& ctx)
             ecGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
-    if (!isValidCiphertext(ctx.tx[sfSenderEncryptedAmount]) ||
-        !isValidCiphertext(ctx.tx[sfDestinationEncryptedAmount]) ||
-        !isValidCiphertext(ctx.tx[sfIssuerEncryptedAmount]))
-        return temBAD_CIPHERTEXT;
-
     if (hasAuditor && !isValidCiphertext(ctx.tx[sfAuditorEncryptedAmount]))
         return temBAD_CIPHERTEXT;
 
     // if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
     //     return temMALFORMED;
+
+    // Check the encrypted amount formats, this is more expensive so put it at
+    // the end
+    if (!isValidCiphertext(ctx.tx[sfSenderEncryptedAmount]) ||
+        !isValidCiphertext(ctx.tx[sfDestinationEncryptedAmount]) ||
+        !isValidCiphertext(ctx.tx[sfIssuerEncryptedAmount]))
+        return temBAD_CIPHERTEXT;
 
     return tesSUCCESS;
 }
@@ -92,22 +94,16 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
     bool const requiresAuditor =
         sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
 
-    // tx must include auditor ciphertext if the issuance has enabled
-    // auditing
-    if (requiresAuditor && !hasAuditor)
+    // Tx must include auditor ciphertext if the issuance has enabled
+    // auditing, and must not include it if auditing is not enabled
+    if (requiresAuditor != hasAuditor)
         return tecNO_PERMISSION;
 
-    // if auditing is not supported then user should not upload auditor
-    // ciphertext
-    if (!requiresAuditor && hasAuditor)
-        return tecNO_PERMISSION;
-
-    // already checked in preflight, but should also check that issuer on the
-    // issuance isn't the account either
+    // Sanity check: issuer isn't the sender
     if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // Check sender's MPToken
+    // Check sender's MPToken existence
     auto const sleSenderMPToken =
         ctx.view.read(keylet::mptoken(mptIssuanceID, account));
     if (!sleSenderMPToken)
@@ -119,7 +115,13 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
         !sleSenderMPToken->isFieldPresent(sfIssuerEncryptedBalance))
         return tecNO_PERMISSION;
 
-    // Check destination's MPToken
+    // Sanity check: MPToken's auditor field must be present if auditing is
+    // enabled
+    if (requiresAuditor &&
+        !sleSenderMPToken->isFieldPresent(sfAuditorEncryptedBalance))
+        return tefINTERNAL;
+
+    // Check destination's MPToken existence
     auto const sleDestinationMPToken =
         ctx.view.read(keylet::mptoken(mptIssuanceID, destination));
     if (!sleDestinationMPToken)
@@ -149,23 +151,6 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, mptIssue, destination);
         !isTesSuccess(ter))
         return ter;
-
-    // todo: check zkproof. equality proof and range proof, combined or separate
-    // TBD. TER const terProof = verifyConfidentialSendProof(
-    //     ctx.tx[sfZKProof],
-    //     (*sleSender)[sfConfidentialBalanceSpending],
-    //     ctx.tx[sfSenderEncryptedAmount],
-    //     ctx.tx[sfDestinationEncryptedAmount],
-    //     ctx.tx[sfIssuerEncryptedAmount],
-    //     (*sleSender)[sfHolderElGamalPublicKey],
-    //     (*sleDestination)[sfHolderElGamalPublicKey],
-    //     (*sleIssuance)[sfIssuerElGamalPublicKey],
-    //     (*sleSender)[~sfConfidentialBalanceVersion].value_or(0),
-    //     ctx.tx.getTransactionID()
-    // );
-
-    // if (!isTesSuccess(terProof))
-    //     return tecBAD_PROOF;
 
     return tesSUCCESS;
 }
@@ -199,7 +184,7 @@ ConfidentialSend::doApply()
     Slice const destEc = ctx_.tx[sfDestinationEncryptedAmount];
     Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
 
-    std::optional<Slice> const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];
+    auto const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];
 
     // Subtract from sender's spending balance
     {
