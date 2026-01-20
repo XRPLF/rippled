@@ -2490,8 +2490,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         }
         else if (isTrusted || !app_.getFeeTrack().isLoadedLocal())
         {
-            std::string const name =
-                isTrusted ? "chkTrustVal" : "chkUntrustVal";
+            std::string const name = isTrusted ? "chkTrust" : "chkUntrust";
 
             std::weak_ptr<PeerImp> weak = shared_from_this();
             app_.getJobQueue().addJob(
