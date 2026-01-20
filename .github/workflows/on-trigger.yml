@@ -86,5 +86,5 @@ jobs:
     if: ${{ github.repository_owner == 'XRPLF' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+      remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
