@@ -82,7 +82,7 @@ encryptAmount(
     Slice const& pubKeySlice,
     Slice const& blindingFactor);
 
-Buffer
+std::optional<Buffer>
 encryptCanonicalZeroAmount(
     Slice const& pubKeySlice,
     AccountID const& account,

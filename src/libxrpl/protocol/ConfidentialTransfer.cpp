@@ -1,6 +1,5 @@
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/TER.h>
 
 #include <openssl/rand.h>
 #include <openssl/sha.h>
@@ -219,15 +218,15 @@ encryptAmount(
     return buf;
 }
 
-Buffer
+std::optional<Buffer>
 encryptCanonicalZeroAmount(
     Slice const& pubKeySlice,
     AccountID const& account,
     MPTID const& mptId)
 {
-    Buffer buf(ecGamalEncryptedTotalLength);
+    if (pubKeySlice.size() != ecPubKeyLength)
+        return std::nullopt;  // LCOV_EXCL_LINE
 
-    // Allocate ciphertext placeholders
     secp256k1_pubkey c1, c2;
     secp256k1_pubkey pubKey;
 
@@ -241,12 +240,13 @@ encryptCanonicalZeroAmount(
             &pubKey,
             account.data(),
             mptId.data()))
-        Throw<std::runtime_error>("Failed to encrypt amount");
+        return std::nullopt;
+
+    Buffer buf(ecGamalEncryptedTotalLength);
 
     // Serialize the ciphertext pair into the buffer
     if (!serializeEcPair(c1, c2, buf))
-        Throw<std::runtime_error>(
-            "Failed to serialize into 66 byte compressed format");
+        return std::nullopt;
 
     return buf;
 }

@@ -1,4 +1,3 @@
-#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/ConfidentialClawback.h>
 
 #include <xrpl/ledger/View.h>
@@ -18,20 +17,21 @@ ConfidentialClawback::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     auto const account = ctx.tx[sfAccount];
-    auto const issuer = MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer();
 
     // Only issuer can clawback
-    if (account != issuer)
+    if (account != MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer())
         return temMALFORMED;
 
     // Cannot clawback from self
     if (account == ctx.tx[sfHolder])
         return temMALFORMED;
 
+    // Check invalid claw amount
     auto const clawAmount = ctx.tx[sfMPTAmount];
     if (clawAmount == 0 || clawAmount > maxMPTokenAmount)
         return temBAD_AMOUNT;
 
+    // Verify proof length
     if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
         return temMALFORMED;
 
@@ -84,13 +84,17 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
     if (amount > (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0))
         return tecINSUFFICIENT_FUNDS;
 
-    auto const ciphertext = (*sleHolderMPToken)[sfIssuerEncryptedBalance];
-    auto const pubKeySlice = (*sleIssuance)[sfIssuerElGamalPublicKey];
-
     auto const contextHash = getClawbackContextHash(
         account, ctx.tx[sfSequence], mptIssuanceID, amount, holder);
+
+    // Verify the revealed confidential amount by the issuer matches the exact
+    // confidential balance of the holder.
     return verifyClawbackEqualityProof(
-        amount, ctx.tx[sfZKProof], pubKeySlice, ciphertext, contextHash);
+        amount,
+        ctx.tx[sfZKProof],
+        (*sleIssuance)[sfIssuerElGamalPublicKey],
+        (*sleHolderMPToken)[sfIssuerEncryptedBalance],
+        contextHash);
 }
 
 TER
@@ -110,53 +114,39 @@ ConfidentialClawback::doApply()
     Slice const holderPubKey = (*sleHolderMPToken)[sfHolderElGamalPublicKey];
     Slice const issuerPubKey = (*sleIssuance)[sfIssuerElGamalPublicKey];
 
-    // Encrypt zero amount
-    Buffer encZeroForHolder;
-    Buffer encZeroForIssuer;
-    try
-    {
-        encZeroForHolder =
-            encryptCanonicalZeroAmount(holderPubKey, holder, mptIssuanceID);
-
-        encZeroForIssuer =
-            encryptCanonicalZeroAmount(issuerPubKey, holder, mptIssuanceID);
-    }
-    catch (std::exception const& e)
-    {
-        JLOG(ctx_.journal.error())
-            << "ConfidentialClawback: Failed to generate canonical zero: "
-            << e.what();
+    // After clawback, the balance should be encrypted zero.
+    auto const encZeroForHolder =
+        encryptCanonicalZeroAmount(holderPubKey, holder, mptIssuanceID);
+    if (!encZeroForHolder)
         return tecINTERNAL;  // LCOV_EXCL_LINE
-    }
+
+    auto const encZeroForIssuer =
+        encryptCanonicalZeroAmount(issuerPubKey, holder, mptIssuanceID);
+    if (!encZeroForIssuer)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Set holder's confidential balances to encrypted zero
-    (*sleHolderMPToken)[sfConfidentialBalanceInbox] = encZeroForHolder;
-    (*sleHolderMPToken)[sfConfidentialBalanceSpending] = encZeroForHolder;
-    (*sleHolderMPToken)[sfIssuerEncryptedBalance] = encZeroForIssuer;
+    (*sleHolderMPToken)[sfConfidentialBalanceInbox] = *encZeroForHolder;
+    (*sleHolderMPToken)[sfConfidentialBalanceSpending] = *encZeroForHolder;
+    (*sleHolderMPToken)[sfIssuerEncryptedBalance] = *encZeroForIssuer;
     (*sleHolderMPToken)[sfConfidentialBalanceVersion] = 0;
 
     if (sleHolderMPToken->isFieldPresent(sfAuditorEncryptedBalance))
     {
-        // check that issuance has auditor's pubkey before accessing it, if the
-        // field is absent, something has gone bad
+        // Sanity check: the issuance must have an auditor public key if
+        // auditing is enabled.
         if (!sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         Slice const auditorPubKey = (*sleIssuance)[sfAuditorElGamalPublicKey];
 
-        try
-        {
-            Buffer const encZeroForAuditor = encryptCanonicalZeroAmount(
-                auditorPubKey, holder, mptIssuanceID);
-            (*sleHolderMPToken)[sfAuditorEncryptedBalance] = encZeroForAuditor;
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(ctx_.journal.error())
-                << "ConfidentialClawback: Failed to generate canonical zero: "
-                << e.what();
+        auto const encZeroForAuditor =
+            encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
+
+        if (!encZeroForAuditor)
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
+
+        (*sleHolderMPToken)[sfAuditorEncryptedBalance] = *encZeroForAuditor;
     }
 
     // Decrease Global Confidential Outstanding Amount

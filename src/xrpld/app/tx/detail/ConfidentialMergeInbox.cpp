@@ -44,7 +44,8 @@ ConfidentialMergeInbox::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     if (!sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
-        !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
+        !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
+        !sleMptoken->isFieldPresent(sfHolderElGamalPublicKey))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -58,6 +59,14 @@ ConfidentialMergeInbox::doApply()
     if (!sleMptoken)
         return tecINTERNAL;
 
+    // sanity check
+    if (!sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
+        !sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
+        !sleMptoken->isFieldPresent(sfHolderElGamalPublicKey))
+    {
+        return tecINTERNAL;
+    }
+
     // homomorphically add holder's encrypted balance
     Buffer sum(ecGamalEncryptedTotalLength);
     if (TER const ter = homomorphicAdd(
@@ -69,17 +78,13 @@ ConfidentialMergeInbox::doApply()
 
     (*sleMptoken)[sfConfidentialBalanceSpending] = sum;
 
-    try
-    {
-        Buffer zeroEncyption;
-        zeroEncyption = encryptCanonicalZeroAmount(
-            (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
-        (*sleMptoken)[sfConfidentialBalanceInbox] = zeroEncyption;
-    }
-    catch (std::exception const& e)
-    {
-        return tecINTERNAL;
-    }
+    auto const zeroEncryption = encryptCanonicalZeroAmount(
+        (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
+
+    if (!zeroEncryption)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    (*sleMptoken)[sfConfidentialBalanceInbox] = *zeroEncryption;
 
     // it's fine if it reaches max uint32, it just resets to 0
     (*sleMptoken)[sfConfidentialBalanceVersion] =
