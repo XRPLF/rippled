@@ -3029,39 +3029,39 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        // testConvert(features);
-        // testConvertPreflight(features);
-        // testConvertPreclaim(features);
-        // testConvertWithAuditor(features);
+        testConvert(features);
+        testConvertPreflight(features);
+        testConvertPreclaim(features);
+        testConvertWithAuditor(features);
 
-        // testMergeInbox(features);
-        // testMergeInboxPreflight(features);
-        // testMergeInboxPreclaim(features);
+        testMergeInbox(features);
+        testMergeInboxPreflight(features);
+        testMergeInboxPreclaim(features);
 
-        // testSetPreflight(features);
+        testSetPreflight(features);
 
-        // // ConfidentialSend
-        // testSend(features);
-        // testSendPreflight(features);
-        // testSendPreclaim(features);
-        // testSendDepositPreauth(features);
-        // testSendWithAuditor(features);
+        // ConfidentialSend
+        testSend(features);
+        testSendPreflight(features);
+        testSendPreclaim(features);
+        testSendDepositPreauth(features);
+        testSendWithAuditor(features);
 
-        // // ConfidentialClawback
-        // testClawback(features);
-        // testClawbackPreflight(features);
-        // testClawbackPreclaim(features);
-        // testClawbackProof(features);
-        // testClawbackWithAuditor(features);
+        // ConfidentialClawback
+        testClawback(features);
+        testClawbackPreflight(features);
+        testClawbackPreclaim(features);
+        testClawbackProof(features);
+        testClawbackWithAuditor(features);
 
-        // testDelete(features);
+        testDelete(features);
 
         testConvertBack(features);
-        // testConvertBackPreflight(features);
-        // testConvertBackPreclaim(features);
-        // testConvertBackWithAuditor(features);
+        testConvertBackPreflight(features);
+        testConvertBackPreclaim(features);
+        testConvertBackWithAuditor(features);
 
-        // testMutatePrivacy(features);
+        testMutatePrivacy(features);
     }
 
 public:

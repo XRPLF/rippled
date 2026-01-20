@@ -840,6 +840,10 @@ MPTTester::generatePedersenCommitment(
     if (pedersenBlindingFactor.size() != ecBlindingFactorLength)
         Throw<std::runtime_error>("Invalid blinding factor size");
 
+    // current pedersen generation implementation fails if amount is 0
+    if (amount == 0)
+        return Buffer{ecPubKeyLength};
+
     secp256k1_pubkey commitment;
     auto const ctx = secp256k1Context();
 
@@ -866,7 +870,8 @@ MPTTester::getConvertBackProof(
     Buffer const& pcBlindingFactor) const
 {
     auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
-    if (!sleMptoken)
+    if (!sleMptoken ||
+        !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
         return Buffer{};
 
     uint64_t const holderSpendingBalance =
@@ -885,32 +890,6 @@ MPTTester::getConvertBackProof(
         blindingFactor,
         pedersenCommitment,
         pcBlindingFactor);
-
-    // if (auto const ter = verifyPedersenLinkage(
-    //         pedersenProof,
-    //         holderCiphertext,
-    //         getPubKey(holder),
-    //         pedersenCommitment,
-    //         ctxHash);
-    //     !isTesSuccess(ter))
-    //     Throw<std::runtime_error>("pedersen proof validation failed!!");
-
-    // Buffer const pedersenProof = generatePedersenLinkageProof(
-    //     holder,
-    //     holderSpendingBalance,
-    //     ctxHash,
-    //     holderSpendingCiphertext,
-    //     getPubKey(holder),
-    //     blindingFactor,
-    //     pedersenCommitment);
-    // if (auto const ter = verifyPedersenLinkage(
-    //         pedersenProof,
-    //         holderSpendingCiphertext,
-    //         getPubKey(holder),
-    //         pedersenCommitment,
-    //         ctxHash);
-    //     !isTesSuccess(ter))
-    //     Throw<std::runtime_error>("pedersen proof validation failed!!");
 
     // todo: incoporate range proof
     return pedersenProof;
