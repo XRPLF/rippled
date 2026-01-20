@@ -7,7 +7,6 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 
-#include "../helpers/DebugSink.h"
 #include <gtest/gtest.h>
 #include <helpers/DebugSink.h>
 
