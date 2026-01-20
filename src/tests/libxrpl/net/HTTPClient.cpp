@@ -7,7 +7,9 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 
+#include "../helpers/DebugSink.h"
 #include <gtest/gtest.h>
+#include <helpers/DebugSink.h>
 
 #include <atomic>
 #include <map>
@@ -177,7 +179,7 @@ runHTTPTest(
     boost::system::error_code& result_error)
 {
     // Create a null journal for testing
-    beast::Journal j{beast::Journal::getNullSink()};
+    beast::Journal j{DebugSink::instance()};
 
     // Initialize HTTPClient SSL context
     HTTPClient::initializeSSLContext("", "", false, j);
