@@ -13,6 +13,7 @@
 
 #include <atomic>
 #include <map>
+#include <memory>
 #include <thread>
 
 using namespace xrpl;
@@ -30,9 +31,9 @@ private:
     unsigned short port_;
 
     // Custom headers to return
-    std::map<std::string, std::string> custom_headers_;
-    std::string response_body_;
-    unsigned int status_code_{200};
+    std::map<std::string, std::string> customHeaders_;
+    std::string responseBody_;
+    unsigned int statusCode_{200};
 
 public:
     TestHTTPServer() : acceptor_(ioc_), port_(0)
@@ -70,19 +71,19 @@ public:
     void
     setHeader(std::string const& name, std::string const& value)
     {
-        custom_headers_[name] = value;
+        customHeaders_[name] = value;
     }
 
     void
     setResponseBody(std::string const& body)
     {
-        response_body_ = body;
+        responseBody_ = body;
     }
 
     void
     setStatusCode(unsigned int code)
     {
-        status_code_ = code;
+        statusCode_ = code;
     }
 
 private:
@@ -117,54 +118,69 @@ private:
     void
     handleConnection(boost::asio::ip::tcp::socket socket)
     {
-        try
-        {
-            // Read the HTTP request
-            boost::beast::flat_buffer buffer;
-            boost::beast::http::request<boost::beast::http::string_body> req;
-            boost::beast::http::read(socket, buffer, req);
+        // Use async operations to avoid blocking the io_context thread
+        // Use shared_ptr to keep objects alive during async operations
+        auto socketPtr =
+            std::make_shared<boost::asio::ip::tcp::socket>(std::move(socket));
+        auto buffer = std::make_shared<boost::beast::flat_buffer>();
+        auto req = std::make_shared<
+            boost::beast::http::request<boost::beast::http::string_body>>();
 
-            // Create response
-            boost::beast::http::response<boost::beast::http::string_body> res;
-            res.version(req.version());
-            res.result(status_code_);
-            res.set(boost::beast::http::field::server, "TestServer");
-
-            // Add custom headers
-            for (auto const& [name, value] : custom_headers_)
-            {
-                res.set(name, value);
-            }
-
-            // Set body and prepare payload first
-            res.body() = response_body_;
-            res.prepare_payload();
-
-            // Override Content-Length with custom headers after prepare_payload
-            // This allows us to test case-insensitive header parsing
-            for (auto const& [name, value] : custom_headers_)
-            {
-                if (boost::iequals(name, "Content-Length"))
+        // Read the HTTP request asynchronously
+        boost::beast::http::async_read(
+            *socketPtr,
+            *buffer,
+            *req,
+            [this, socketPtr, buffer, req](
+                boost::beast::error_code ec, std::size_t) {
+                if (ec)
                 {
-                    res.erase(boost::beast::http::field::content_length);
-                    res.set(name, value);
+                    // Error reading, just close the connection
+                    return;
                 }
-            }
 
-            // Send response
-            boost::beast::http::write(socket, res);
+                // Create response
+                auto res = std::make_shared<boost::beast::http::response<
+                    boost::beast::http::string_body>>();
+                res->version(req->version());
+                res->result(statusCode_);
+                res->set(boost::beast::http::field::server, "TestServer");
 
-            // Shutdown socket gracefully
-            boost::system::error_code ec;
-            socket.shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
-        }
-        catch (std::exception const&)
-        {
-            // Connection handling errors are expected
-        }
+                // Add custom headers
+                for (auto const& [name, value] : customHeaders_)
+                {
+                    res->set(name, value);
+                }
 
-        if (running_)
-            accept();
+                // Set body and prepare payload first
+                res->body() = responseBody_;
+                res->prepare_payload();
+
+                // Override Content-Length with custom headers after
+                // prepare_payload This allows us to test case-insensitive
+                // header parsing
+                for (auto const& [name, value] : customHeaders_)
+                {
+                    if (boost::iequals(name, "Content-Length"))
+                    {
+                        res->erase(boost::beast::http::field::content_length);
+                        res->set(name, value);
+                    }
+                }
+
+                // Send response asynchronously
+                boost::beast::http::async_write(
+                    *socketPtr,
+                    *res,
+                    [socketPtr, res](boost::beast::error_code ec, std::size_t) {
+                        // Shutdown socket gracefully
+                        boost::system::error_code shutdownEc;
+                        socketPtr->shutdown(
+                            boost::asio::ip::tcp::socket::shutdown_send,
+                            shutdownEc);
+                        // Socket will close when shared_ptr is destroyed
+                    });
+            });
     }
 };
 
