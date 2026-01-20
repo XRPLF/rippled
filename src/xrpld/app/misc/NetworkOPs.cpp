@@ -3725,7 +3725,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
     app_.getJobQueue().addJob(
         jtCLIENT_ACCT_HIST,
-        "AccountHistoryTxStream",
+        "HistTxStream",
         [this, dbType = databaseType, subInfo]() {
             auto const& accountId = subInfo.index_->accountId_;
             auto& lastLedgerSeq = subInfo.index_->historyLastLedgerSeq_;
