@@ -880,11 +880,19 @@ class ValidVault
         Shares static make(SLE const&);
     };
 
+public:
+    struct DeltaInfo final
+    {
+        Number delta = numZero;
+        int scale = 0;
+    };
+
+private:
     std::vector<Vault> afterVault_ = {};
     std::vector<Shares> afterMPTs_ = {};
     std::vector<Vault> beforeVault_ = {};
     std::vector<Shares> beforeMPTs_ = {};
-    std::unordered_map<uint256, Number> deltas_ = {};
+    std::unordered_map<uint256, DeltaInfo> deltas_ = {};
 
 public:
     void
@@ -905,7 +913,7 @@ public:
     [[nodiscard]] static std::int32_t
     computeMinScale(
         Asset const& asset,
-        std::initializer_list<Number const> numbers);
+        std::initializer_list<DeltaInfo const> numbers);
 };
 
 // additional invariant checks can be declared above and then added to this

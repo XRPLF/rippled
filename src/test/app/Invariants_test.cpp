@@ -3904,10 +3904,15 @@ class Invariants_test : public beast::unit_test::suite
         {
             std::string name;
             std::int32_t expectedMinScale;
-            std::initializer_list<Number const> values;
+            std::initializer_list<ValidVault::DeltaInfo const> values;
         };
 
         NumberMantissaScaleGuard g{MantissaRange::large};
+
+        auto makeDelta =
+            [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
+            return {n, n.scale<STAmount>(vaultAsset.raw())};
+        };
 
         auto const testCases = std::vector<TestCase>{
             {
@@ -3918,26 +3923,33 @@ class Invariants_test : public beast::unit_test::suite
             {
                 .name = "Mixed integer and Number values",
                 .expectedMinScale = -15,
-                .values = {1, -1, Number{10, -1}},
+                .values =
+                    {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
             },
             {
                 .name = "Mixed scales",
                 .expectedMinScale = -17,
-                .values = {Number{1, -2}, Number{5, -3}, Number{3, -2}},
+                .values =
+                    {makeDelta(Number{1, -2}),
+                     makeDelta(Number{5, -3}),
+                     makeDelta(Number{3, -2})},
             },
             {
                 .name = "Equal scales",
-                .expectedMinScale = -14,
-                .values = {Number{1, -1}, Number{5, -1}, Number{1, -1}},
+                .expectedMinScale = -16,
+                .values =
+                    {makeDelta(Number{1, -1}),
+                     makeDelta(Number{5, -1}),
+                     makeDelta(Number{1, -1})},
             },
             {
                 .name = "Mixed mantissa sizes",
                 .expectedMinScale = -12,
                 .values =
-                    {Number{1},
-                     Number{1234, -3},
-                     Number{12345, -6},
-                     Number{123, 1}},
+                    {makeDelta(Number{1}),
+                     makeDelta(Number{1234, -3}),
+                     makeDelta(Number{12345, -6}),
+                     makeDelta(Number{123, 1})},
             },
         };
 
@@ -3958,10 +3970,10 @@ class Invariants_test : public beast::unit_test::suite
                 // values would lose information, so check that the rounded
                 // value matches the original.
                 auto const actualRounded =
-                    roundToAsset(vaultAsset, num, actualScale);
+                    roundToAsset(vaultAsset, num.delta, actualScale);
                 BEAST_EXPECTS(
-                    actualRounded == num,
-                    "number " + to_string(num) + " rounded to scale " +
+                    actualRounded == num.delta,
+                    "number " + to_string(num.delta) + " rounded to scale " +
                         std::to_string(actualScale) + " is " +
                         to_string(actualRounded));
             }
@@ -3973,9 +3985,9 @@ class Invariants_test : public beast::unit_test::suite
                 .expectedMinScale = -15,
                 .values =
                     {
-                        Number{1234567890123456789, -18},
-                        Number{12345, -4},
-                        Number{1},
+                        makeDelta(Number{1234567890123456789, -18}),
+                        makeDelta(Number{12345, -4}),
+                        makeDelta(Number{1}),
                     },
             },
         };
@@ -3999,16 +4011,17 @@ class Invariants_test : public beast::unit_test::suite
             {
                 if (!first)
                 {
-                    first = num;
-                    firstRounded = roundToAsset(vaultAsset, num, actualScale);
+                    first = num.delta;
+                    firstRounded =
+                        roundToAsset(vaultAsset, num.delta, actualScale);
                     continue;
                 }
                 auto const numRounded =
-                    roundToAsset(vaultAsset, num, actualScale);
+                    roundToAsset(vaultAsset, num.delta, actualScale);
                 BEAST_EXPECTS(
                     numRounded != firstRounded,
                     "at a scale of " + std::to_string(actualScale) + " " +
-                        to_string(num) + " == " + to_string(*first));
+                        to_string(num.delta) + " == " + to_string(*first));
             }
         }
     }
