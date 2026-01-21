@@ -158,11 +158,7 @@ private:
                 // header parsing.
                 for (auto const& [name, value] : customHeaders_)
                 {
-                    if (boost::iequals(name, "Content-Length"))
-                    {
-                        res->erase(boost::beast::http::field::content_length);
-                        res->set(name, value);
-                    }
+                    res->set(name, value);
                 }
 
                 // Send response asynchronously
