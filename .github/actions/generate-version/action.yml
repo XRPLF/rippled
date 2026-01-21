@@ -9,26 +9,33 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Generate version
-      id: version
+    # When a tag is pushed, the version is used as-is.
+    - name: Generate version for tag event
+      if: ${{ github.event_name == 'tag' }}
       shell: bash
       env:
-        # When a tag is applied, the version is used as-is. When a tag is not
-        # applied, then the version is extracted from the BuildInfo.cpp file and
-        # the shortened commit hash appended to it.
-        VERSION: ${{ github.event_name == 'tag' && github.ref_name || '' }}
+        VERSION: ${{ github.ref_name }}
+      run: echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
+
+    # When a tag is not pushed, then the version is extracted from the
+    # BuildInfo.cpp file and the shortened commit hash appended to it.
+    - name: Generate version for non-tag event
+      if: ${{ github.event_name != 'tag' }}
+      shell: bash
       run: |
+        echo 'Extracting version from BuildInfo.cpp.'
+        VERSION="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')"
         if [[ -z "${VERSION}" ]]; then
-          echo 'Extracting version from BuildInfo.cpp.'
-          VERSION="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')"
-          if [[ -z "${VERSION}" ]]; then
-            echo 'Unable to extract version from BuildInfo.cpp.'
-            exit 1
-          fi
-
-          echo 'Appending shortened commit hash to version.'
-          VERSION="${VERSION}-${COMMIT_HASH:0:7}"
+          echo 'Unable to extract version from BuildInfo.cpp.'
+          exit 1
         fi
-        echo "Generated version: ${VERSION}"
 
-        echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+        echo 'Appending shortened commit hash to version.'
+        VERSION="${VERSION}-${COMMIT_HASH:0:7}"
+
+        echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
+
+    - name: Output version
+      id: version
+      shell: bash
+      run: echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
