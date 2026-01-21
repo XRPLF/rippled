@@ -13,20 +13,22 @@ runs:
       id: version
       shell: bash
       env:
-        # When a tag is applied, the version is used as-is. For all other cases,
-        # a shortened commit hash is appended to the version.
-        COMMIT_HASH: ${{ github.event_name == 'tag' && '' || github.sha }}
+        # When a tag is applied, the version is used as-is. When a tag is not
+        # applied, then the version is extracted from the BuildInfo.cpp file and
+        # the shortened commit hash appended to it.
+        VERSION: ${{ github.event_name == 'tag' && github.ref_name || '' }}
       run: |
-        echo 'Extracting version from BuildInfo.cpp.'
-        VERSION="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')"
         if [[ -z "${VERSION}" ]]; then
-          echo 'Unable to extract version from BuildInfo.cpp.'
-          exit 1
-        fi
+          echo 'Extracting version from BuildInfo.cpp.'
+          VERSION="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')"
+          if [[ -z "${VERSION}" ]]; then
+            echo 'Unable to extract version from BuildInfo.cpp.'
+            exit 1
+          fi
 
-        if [[ -n "${COMMIT_HASH}" ]]; then
           echo 'Appending shortened commit hash to version.'
           VERSION="${VERSION}-${COMMIT_HASH:0:7}"
         fi
+        echo "Generated version: ${VERSION}"
 
         echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
