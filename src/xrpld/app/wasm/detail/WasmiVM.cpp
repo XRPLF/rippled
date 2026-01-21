@@ -759,16 +759,12 @@ WasmiEngine::call(
     FuncInfo const& f,
     std::vector<wasm_val_t>& in,
     uint8_t const* d,
-    std::size_t sz,
+    int32_t sz,
     Types&&... args)
 {
     auto mem = getMem();
     if (!mem.s)
         throw std::runtime_error("no memory exported");  // LCOV_EXCL_LINE
-    if (sz > std::numeric_limits<int32_t>::max())
-        throw std::runtime_error(
-            "can't allocate memory, size: " +
-            std::to_string(sz));  // LCOV_EXCL_LINE
 
     auto const ptr = allocate(sz);
     memcpy(mem.p + ptr, d, sz);
