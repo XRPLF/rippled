@@ -8,7 +8,7 @@
 #include <boost/beast/version.hpp>
 
 #include <gtest/gtest.h>
-#include <helpers/DebugSink.h>
+#include <helpers/TestSink.h>
 
 #include <atomic>
 #include <map>
@@ -34,8 +34,10 @@ private:
     std::string responseBody_;
     unsigned int statusCode_{200};
 
+    beast::Journal j_;
+
 public:
-    TestHTTPServer() : acceptor_(ioc_), port_(0)
+    TestHTTPServer() : acceptor_(ioc_), port_(0), j_(TestSink::instance())
     {
         // Bind to any available port
         endpoint_ = {boost::asio::ip::tcp::v4(), 0};
@@ -119,7 +121,7 @@ private:
     {
         // Use async operations to avoid blocking the io_context thread
         // Use shared_ptr to keep objects alive during async operations
-        auto socketPtr =
+        auto sock =
             std::make_shared<boost::asio::ip::tcp::socket>(std::move(socket));
         auto buffer = std::make_shared<boost::beast::flat_buffer>();
         auto req = std::make_shared<
@@ -127,14 +129,16 @@ private:
 
         // Read the HTTP request asynchronously
         boost::beast::http::async_read(
-            *socketPtr,
+            *sock,
             *buffer,
             *req,
-            [this, socketPtr, buffer, req](
+            [this, sock, buffer, req](
                 boost::beast::error_code ec, std::size_t) {
                 if (ec)
                 {
                     // Error reading, just close the connection
+                    JLOG(j_.debug()) << "Error reading: " << ec.message()
+                                     << ", code: " << ec.value();
                     return;
                 }
 
@@ -169,12 +173,12 @@ private:
 
                 // Send response asynchronously
                 boost::beast::http::async_write(
-                    *socketPtr,
+                    *sock,
                     *res,
-                    [socketPtr, res](boost::beast::error_code ec, std::size_t) {
+                    [sock, res](boost::beast::error_code ec, std::size_t) {
                         // Shutdown socket gracefully
                         boost::system::error_code shutdownEc;
-                        socketPtr->shutdown(
+                        sock->shutdown(
                             boost::asio::ip::tcp::socket::shutdown_send,
                             shutdownEc);
                         // Socket will close when shared_ptr is destroyed
@@ -194,7 +198,7 @@ runHTTPTest(
     boost::system::error_code& result_error)
 {
     // Create a null journal for testing
-    beast::Journal j{DebugSink::instance()};
+    beast::Journal j{TestSink::instance()};
 
     // Initialize HTTPClient SSL context
     HTTPClient::initializeSSLContext("", "", false, j);
