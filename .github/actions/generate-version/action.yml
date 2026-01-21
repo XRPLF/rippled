@@ -31,7 +31,8 @@ runs:
         fi
 
         echo 'Appending shortened commit hash to version.'
-        VERSION="${VERSION}-${COMMIT_HASH:0:7}"
+        SHA='${{ github.sha }}'
+        VERSION="${VERSION}-${SHA:0:7}"
 
         echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
 
