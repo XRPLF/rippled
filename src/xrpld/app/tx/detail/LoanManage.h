@@ -44,15 +44,17 @@ public:
         ApplyView& view,
         SLE::ref loanSle,
         SLE::ref vaultSle,
+        Asset const& vaultAsset,
         beast::Journal j);
 
     /** Helper function that might be needed by other transactors
      */
-    static TER
+    [[nodiscard]] static TER
     unimpairLoan(
         ApplyView& view,
         SLE::ref loanSle,
         SLE::ref vaultSle,
+        Asset const& vaultAsset,
         beast::Journal j);
 
     TER

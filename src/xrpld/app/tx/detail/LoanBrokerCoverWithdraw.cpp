@@ -4,6 +4,7 @@
 #include <xrpld/app/tx/detail/Payment.h>
 
 #include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/protocol/STTakesAsset.h>
 
 namespace xrpl {
 
@@ -48,6 +49,11 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const dstAcct = tx[~sfDestination].value_or(account);
 
+    if (isPseudoAccount(ctx.view, dstAcct))
+    {
+        JLOG(ctx.j.warn()) << "Trying to withdraw into a pseudo-account.";
+        return tecPSEUDO_ACCOUNT;
+    }
     auto const sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
     if (!sleBroker)
     {
@@ -151,11 +157,19 @@ LoanBrokerCoverWithdraw::doApply()
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
+    auto const vault = view().read(keylet::vault(broker->at(sfVaultID)));
+    if (!vault)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const vaultAsset = vault->at(sfAsset);
+
     auto const brokerPseudoID = *broker->at(sfAccount);
 
     // Decrease the LoanBroker's CoverAvailable by Amount
     broker->at(sfCoverAvailable) -= amount;
     view().update(broker);
+
+    associateAsset(*broker, vaultAsset);
 
     return doWithdraw(
         view(),

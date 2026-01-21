@@ -37,6 +37,9 @@ public:
     bool
     native() const;
 
+    bool
+    integral() const;
+
     friend constexpr std::weak_ordering
     operator<=>(Issue const& lhs, Issue const& rhs);
 };
