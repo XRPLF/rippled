@@ -3658,20 +3658,12 @@ ValidVault::computeMinScale(
     // zeros from its mantissa
     auto const getNatScale = [](Asset const& asset,
                                 Number const& value) -> std::int32_t {
-        if (value == beast::zero || asset.integral())
+        if (asset.integral())
             return 0;
+        if (value == beast::zero)
+            return value.exponent();
 
-        auto mantissa = std::abs(value.mantissa());
-        auto scale = value.exponent();
-
-        // Remove trailing zeros from mantissa, adjusting scale accordingly
-        while (mantissa % 10 == 0)
-        {
-            mantissa /= 10;
-            ++scale;
-        }
-
-        return scale;
+        return value.scale<STAmount>(asset);
     };
 
     std::vector<std::int32_t> natScales;

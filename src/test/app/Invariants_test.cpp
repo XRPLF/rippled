@@ -4,6 +4,7 @@
 
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
+#include <xrpld/app/tx/detail/InvariantCheck.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -19,8 +20,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-
-#include "xrpld/app/tx/detail/InvariantCheck.h"
 
 #include <initializer_list>
 #include <string>
@@ -3908,6 +3907,8 @@ class Invariants_test : public beast::unit_test::suite
             std::initializer_list<Number const> values;
         };
 
+        NumberMantissaScaleGuard g{MantissaRange::large};
+
         auto const testCases = std::vector<TestCase>{
             {
                 .name = "No values",
@@ -3916,13 +3917,22 @@ class Invariants_test : public beast::unit_test::suite
             },
             {
                 .name = "Mixed integer and Number values",
-                .expectedMinScale = 0,
+                .expectedMinScale = -15,
                 .values = {1, -1, Number{10, -1}},
             },
             {
                 .name = "Mixed scales",
-                .expectedMinScale = -2,
+                .expectedMinScale = -17,
                 .values = {Number{1, -2}, Number{5, -3}, Number{3, -2}},
+            },
+            {
+                .name = "Mixed mantissa sizes",
+                .expectedMinScale = -12,
+                .values =
+                    {Number{1},
+                     Number{1234, -3},
+                     Number{12345, -6},
+                     Number{123, 1}},
             },
         };
 
@@ -3937,6 +3947,64 @@ class Invariants_test : public beast::unit_test::suite
                 actualScale == tc.expectedMinScale,
                 "expected: " + std::to_string(tc.expectedMinScale) +
                     ", actual: " + std::to_string(actualScale));
+            for (auto const& num : tc.values)
+            {
+                // None of these scales are far enough apart that rounding the
+                // values would lose information, so check that the rounded
+                // value matches the original.
+                auto const actualRounded =
+                    roundToAsset(vaultAsset, num, actualScale);
+                BEAST_EXPECTS(
+                    actualRounded == num,
+                    "number " + to_string(num) + " rounded to scale " +
+                        std::to_string(actualScale) + " is " +
+                        to_string(actualRounded));
+            }
+        }
+
+        auto const testCases2 = std::vector<TestCase>{
+            {
+                .name = "False equivalence",
+                .expectedMinScale = -15,
+                .values =
+                    {
+                        Number{1234567890123456789, -18},
+                        Number{12345, -4},
+                        Number{1},
+                    },
+            },
+        };
+
+        // Unlike the first set of test cases, the values in these test could
+        // look equivalent if using the wrong scale.
+        for (auto const& tc : testCases2)
+        {
+            testcase("vault computeMinScale: " + tc.name);
+
+            auto const actualScale =
+                ValidVault::computeMinScale(vaultAsset, tc.values);
+
+            BEAST_EXPECTS(
+                actualScale == tc.expectedMinScale,
+                "expected: " + std::to_string(tc.expectedMinScale) +
+                    ", actual: " + std::to_string(actualScale));
+            std::optional<Number> first;
+            Number firstRounded;
+            for (auto const& num : tc.values)
+            {
+                if (!first)
+                {
+                    first = num;
+                    firstRounded = roundToAsset(vaultAsset, num, actualScale);
+                    continue;
+                }
+                auto const numRounded =
+                    roundToAsset(vaultAsset, num, actualScale);
+                BEAST_EXPECTS(
+                    numRounded != firstRounded,
+                    "at a scale of " + std::to_string(actualScale) + " " +
+                        to_string(num) + " == " + to_string(*first));
+            }
         }
     }
 

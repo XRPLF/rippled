@@ -109,6 +109,10 @@ template <class T>
 concept Integral64 =
     std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::uint64_t>;
 
+template <class STAmount, class Asset>
+concept CanUseAsScale = requires(Asset a, Number n) { STAmount(a, n); } &&
+    requires(STAmount s) { s.exponent(); };
+
 /** Number is a floating point type that can represent a wide range of values.
  *
  * It can represent all values that can be represented by an STAmount -
@@ -267,6 +271,26 @@ public:
     mantissa() const noexcept;
     constexpr int
     exponent() const noexcept;
+
+    /** Get the scale of this Number for the given asset.
+     *
+     * "scale" is similar to "exponent", but from the perspective of STAmount,
+     * which has different rules for determining the exponent than Number.
+     *
+     * Because Number does not have access to STAmount or Asset, this function
+     * is implemented as a template, with the expectation that it will only be
+     * used by those types. Any types that fit the requirements will work,
+     * though, if there's a need.
+     *
+     * @tparam STAmount The STAmount type.
+     * @tparam Asset The Asset type.
+     * @param asset The asset to use for determining the scale.
+     * @return The scale of this Number for the given asset.
+     */
+    template <class STAmount, class Asset>
+    int
+    scale(Asset const& asset) const
+        requires CanUseAsScale<STAmount, Asset>;
 
     constexpr Number
     operator+() const noexcept;
@@ -600,6 +624,14 @@ Number::exponent() const noexcept
         ++e;
     }
     return e;
+}
+
+template <class STAmount, class Asset>
+int
+Number::scale(Asset const& asset) const
+    requires CanUseAsScale<STAmount, Asset>
+{
+    return STAmount{asset, *this}.exponent();
 }
 
 inline constexpr Number
