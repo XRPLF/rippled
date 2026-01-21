@@ -19,15 +19,11 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/nftPageMask.h>
 
 #include <algorithm>
 #include <cstddef>
-#include <cstdint>
 #include <initializer_list>
-#include <iostream>
-#include <iterator>
 #include <optional>
 
 namespace xrpl {
@@ -3735,4 +3731,5 @@ ValidVault::computeMinScale(
 
     return *std::max_element(natScales.begin(), natScales.end());
 }
+
 }  // namespace xrpl

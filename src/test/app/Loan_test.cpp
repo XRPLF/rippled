@@ -7792,6 +7792,7 @@ public:
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif
+        testWithdrawReflectsUnrealizedLoss();
         testInvalidLoanSet();
 
         testCoverDepositWithdrawNonTransferableMPT();
@@ -7837,7 +7838,6 @@ public:
         testLoanPayBrokerOwnerNoPermissionedDomainMPT();
         testLoanSetBrokerOwnerNoPermissionedDomainMPT();
         testSequentialFLCDepletion();
-        testWithdrawReflectsUnrealizedLoss();
     }
 };
 
