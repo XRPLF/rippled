@@ -50,10 +50,13 @@ TestSink::writeAlways(
 #if BOOST_OS_WINDOWS
         // Windows: Check if the output handle is a character device
         // _fileno(stdout) is usually 1
+        // _isatty returns non-zero if the handle is a character device, 0
+        // otherwise.
         return _isatty(_fileno(stdout)) != 0;
 #else
         // Linux/macOS: Check if file descriptor 1 (stdout) is a TTY
         // STDOUT_FILENO is 1
+        // isatty returns 1 if the file descriptor is a TTY, 0 otherwise.
         return isatty(STDOUT_FILENO) != 0;
 #endif
     }();
