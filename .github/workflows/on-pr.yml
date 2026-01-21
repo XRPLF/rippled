@@ -1,7 +1,8 @@
 # This workflow runs all workflows to check, build and test the project on
 # various Linux flavors, as well as on MacOS and Windows, on every push to a
 # user branch. However, it will not run if the pull request is a draft unless it
-# has the 'DraftRunCI' label.
+# has the 'DraftRunCI' label. For commits to PRs that target a release branch,
+# it also uploads the libxrpl recipe to the Conan remote.
 name: PR
 
 on:
@@ -125,9 +126,8 @@ jobs:
     needs:
       - should-run
       - build-test
-    # Only run when committing to the release branch in the XRPLF repository. We
-    # also upload the recipe when merging into the develop branch, but that is
-    # handled in the on-trigger.yml workflow.
+    # Only run when committing to a PR that targets a release branch in the
+    # XRPLF repository.
     if: ${{ github.repository_owner == 'XRPLF' && needs.should-run.outputs.go == 'true' && startsWith(github.ref, 'refs/heads/release') }}
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:

@@ -13,9 +13,9 @@ runs:
       id: version
       shell: bash
       env:
-        # Append a shortened commit hash for the develop branch. For releases
-        # the version is used as-is.
-        COMMIT_HASH: ${{ github.ref == 'refs/heads/develop' && github.sha || '' }}
+        # When a tag is applied, the version is used as-is. For all other cases,
+        # a shortened commit hash is appended to the version.
+        COMMIT_HASH: ${{ github.event_name == 'tag' && '' || github.sha }}
       run: |
         echo 'Extracting version from BuildInfo.cpp.'
         VERSION="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')"

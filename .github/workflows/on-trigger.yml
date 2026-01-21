@@ -1,8 +1,7 @@
 # This workflow runs all workflows to build and test the code on various Linux
 # flavors, as well as on MacOS and Windows, on a scheduled basis, on merge into
-# the 'develop' or 'release*' branches, or when requested manually. Upon
-# successful completion, it also uploads the built libxrpl package to the Conan
-# remote.
+# the 'develop' or 'release*' branches, or when requested manually. Upon pushes
+# to the develop branch it also uploads the libxrpl recipe to the Conan remote.
 name: Trigger
 
 on:
@@ -80,9 +79,7 @@ jobs:
 
   upload-recipe:
     needs: build-test
-    # Only run when pushing to the develop branch in the XRPLF repository. We
-    # also upload the recipe when committing to a release branch, but that is
-    # handled in the on-pr.yml workflow.
+    # Only run when pushing to the develop branch in the XRPLF repository.
     if: ${{ github.repository_owner == 'XRPLF' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
