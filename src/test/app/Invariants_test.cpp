@@ -3926,6 +3926,11 @@ class Invariants_test : public beast::unit_test::suite
                 .values = {Number{1, -2}, Number{5, -3}, Number{3, -2}},
             },
             {
+                .name = "Equal scales",
+                .expectedMinScale = -14,
+                .values = {Number{1, -1}, Number{5, -1}, Number{1, -1}},
+            },
+            {
                 .name = "Mixed mantissa sizes",
                 .expectedMinScale = -12,
                 .values =

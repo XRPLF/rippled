@@ -3256,7 +3256,7 @@ ValidVault::finalize(
                             "balance";
                         return false;
                     }
-                    auto const localMinScale = std::min(
+                    auto const localMinScale = std::max(
                         minScale,
                         computeMinScale(vaultAsset, {*maybeAccDeltaAssets}));
 
@@ -3300,7 +3300,7 @@ ValidVault::finalize(
                     return false;  // That's all we can do
                 }
                 // We don't need to round shares, they are integral MPT
-                auto const accountDeltaShares = *maybeAccDeltaShares;
+                auto const& accountDeltaShares = *maybeAccDeltaShares;
                 if (accountDeltaShares <= zero)
                 {
                     JLOG(j.fatal()) <<  //
@@ -3319,7 +3319,7 @@ ValidVault::finalize(
                 }
 
                 // We don't need to round shares, they are integral MPT
-                auto const vaultDeltaShares = *maybeVaultDeltaShares;
+                auto const& vaultDeltaShares = *maybeVaultDeltaShares;
                 if (vaultDeltaShares * -1 != accountDeltaShares)
                 {
                     JLOG(j.fatal()) <<  //
@@ -3422,7 +3422,7 @@ ValidVault::finalize(
 
                     // the scale of destinationDelta can be coarser than
                     // minScale, so we take that into account when rounding
-                    auto const localMinScale = std::min(
+                    auto const localMinScale = std::max(
                         minScale,
                         computeMinScale(vaultAsset, {destinationDelta}));
 

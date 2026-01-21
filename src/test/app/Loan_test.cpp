@@ -7641,6 +7641,149 @@ protected:
         BEAST_EXPECT(afterSecondCoverAvailable == 0);
     }
 
+    // Tests that vault withdrawals work correctly when the vault has unrealized
+    // loss from an impaired loan, ensuring the invariant check properly
+    // accounts for the loss.
+    void
+    testWithdrawReflectsUnrealizedLoss()
+    {
+        using namespace jtx;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        testcase("Vault withdraw reflects sfLossUnrealized");
+
+        // Test constants
+        static constexpr std::int64_t INITIAL_FUNDING = 1'000'000;
+        static constexpr std::int64_t LENDER_INITIAL_IOU = 5'000'000;
+        static constexpr std::int64_t DEPOSITOR_INITIAL_IOU = 1'000'000;
+        static constexpr std::int64_t BORROWER_INITIAL_IOU = 100'000;
+        static constexpr std::int64_t DEPOSIT_AMOUNT = 5'000;
+        static constexpr std::int64_t PRINCIPAL_AMOUNT = 99;
+        static constexpr std::uint64_t EXPECTED_SHARES_PER_DEPOSITOR =
+            5'000'000'000;
+        static constexpr std::uint32_t PAYMENT_INTERVAL = 600;
+        static constexpr std::uint32_t PAYMENT_TOTAL = 2;
+
+        Env env(*this, all);
+
+        // Setup accounts
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const depositorA{"lpA"};
+        Account const depositorB{"lpB"};
+        Account const borrower{"borrowerA"};
+
+        env.fund(
+            XRP(INITIAL_FUNDING),
+            issuer,
+            lender,
+            depositorA,
+            depositorB,
+            borrower);
+        env.close();
+
+        // Setup trust lines
+        PrettyAsset const iouAsset = issuer[iouCurrency];
+        env(trust(lender, iouAsset(10'000'000)));
+        env(trust(depositorA, iouAsset(10'000'000)));
+        env(trust(depositorB, iouAsset(10'000'000)));
+        env(trust(borrower, iouAsset(10'000'000)));
+        env.close();
+
+        // Fund accounts with IOUs
+        env(pay(issuer, lender, iouAsset(LENDER_INITIAL_IOU)));
+        env(pay(issuer, depositorA, iouAsset(DEPOSITOR_INITIAL_IOU)));
+        env(pay(issuer, depositorB, iouAsset(DEPOSITOR_INITIAL_IOU)));
+        env(pay(issuer, borrower, iouAsset(BORROWER_INITIAL_IOU)));
+        env.close();
+
+        // Create vault and broker, then add deposits from two depositors
+        auto const broker = createVaultAndBroker(env, iouAsset, lender);
+        Vault v{env};
+
+        env(v.deposit({
+                .depositor = depositorA,
+                .id = broker.vaultKeylet().key,
+                .amount = iouAsset(DEPOSIT_AMOUNT),
+            }),
+            ter(tesSUCCESS));
+        env(v.deposit({
+                .depositor = depositorB,
+                .id = broker.vaultKeylet().key,
+                .amount = iouAsset(DEPOSIT_AMOUNT),
+            }),
+            ter(tesSUCCESS));
+        env.close();
+
+        // Create a loan
+        auto const sleBroker = env.le(keylet::loanbroker(broker.brokerID));
+        if (!BEAST_EXPECT(sleBroker))
+            return;
+
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, sleBroker->at(sfLoanSequence));
+
+        env(set(borrower, broker.brokerID, PRINCIPAL_AMOUNT),
+            sig(sfCounterpartySignature, lender),
+            paymentTotal(PAYMENT_TOTAL),
+            paymentInterval(PAYMENT_INTERVAL),
+            fee(env.current()->fees().base * 2),
+            ter(tesSUCCESS));
+        env.close();
+
+        // Impair the loan to create unrealized loss
+        env(manage(lender, loanKeylet.key, tfLoanImpair), ter(tesSUCCESS));
+        env.close();
+
+        // Verify unrealized loss is recorded in the vault
+        auto const vaultAfterImpair = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultAfterImpair))
+            return;
+
+        BEAST_EXPECT(
+            vaultAfterImpair->at(sfLossUnrealized) ==
+            broker.asset(PRINCIPAL_AMOUNT).value());
+
+        // Helper to get share balance for a depositor
+        auto const shareAsset = vaultAfterImpair->at(sfShareMPTID);
+        auto const getShareBalance =
+            [&](Account const& depositor) -> std::uint64_t {
+            auto const token =
+                env.le(keylet::mptoken(shareAsset, depositor.id()));
+            return token ? token->getFieldU64(sfMPTAmount) : 0;
+        };
+
+        // Verify both depositors have equal shares
+        auto const sharesLpA = getShareBalance(depositorA);
+        auto const sharesLpB = getShareBalance(depositorB);
+        BEAST_EXPECT(sharesLpA == EXPECTED_SHARES_PER_DEPOSITOR);
+        BEAST_EXPECT(sharesLpB == EXPECTED_SHARES_PER_DEPOSITOR);
+        BEAST_EXPECT(sharesLpA == sharesLpB);
+
+        // Helper to attempt withdrawal
+        auto const attemptWithdrawShares = [&](Account const& depositor,
+                                               std::uint64_t shareAmount,
+                                               TER expected) {
+            STAmount const shareAmt{MPTIssue{shareAsset}, Number(shareAmount)};
+            env(v.withdraw(
+                    {.depositor = depositor,
+                     .id = broker.vaultKeylet().key,
+                     .amount = shareAmt}),
+                ter(expected));
+            env.close();
+        };
+
+        // Regression test: Both depositors should successfully withdraw despite
+        // unrealized loss. Previously failed with invariant violation:
+        // "withdrawal must change vault and destination balance by equal
+        // amount". This was caused by sharesToAssetsWithdraw rounding down,
+        // creating a mismatch where vaultDeltaAssets * -1 != destinationDelta
+        // when unrealized loss exists.
+        attemptWithdrawShares(depositorA, sharesLpA, tesSUCCESS);
+        attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
+    }
+
 public:
     void
     run() override
@@ -7694,6 +7837,7 @@ public:
         testLoanPayBrokerOwnerNoPermissionedDomainMPT();
         testLoanSetBrokerOwnerNoPermissionedDomainMPT();
         testSequentialFLCDepletion();
+        testWithdrawReflectsUnrealizedLoss();
     }
 };
 
