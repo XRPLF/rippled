@@ -3,7 +3,9 @@ name: Run pre-commit hooks
 on:
   pull_request:
   push:
-    branches: [develop, release, master]
+    branches:
+      - "develop"
+      - "release*"
   workflow_dispatch:
 
 jobs:
