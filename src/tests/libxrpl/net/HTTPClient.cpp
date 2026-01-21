@@ -156,8 +156,8 @@ private:
                 res->prepare_payload();
 
                 // Override Content-Length with custom headers after
-                // prepare_payload This allows us to test case-insensitive
-                // header parsing
+                // prepare_payload. This allows us to test case-insensitive
+                // header parsing.
                 for (auto const& [name, value] : customHeaders_)
                 {
                     if (boost::iequals(name, "Content-Length"))
