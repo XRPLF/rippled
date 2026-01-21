@@ -4,7 +4,8 @@
 
 include(create_symbolic_link)
 
-# Default suffix for executables (e.g., .exe on Windows)
+# If no suffix is defined for executables (e.g. Windows uses .exe but Linux
+# and macOS use none), then explicitly set it to the empty string.
 if(NOT DEFINED suffix)
   set(suffix "")
 endif()
