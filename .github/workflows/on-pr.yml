@@ -114,6 +114,9 @@ jobs:
       matrix:
         os: [linux, macos, windows]
     with:
+      # Enable ccache only for events targeting the XRPLF repository, since
+      # other accounts will not have access to our remote cache storage.
+      ccache_enabled: ${{ github.repository_owner == 'XRPLF' }}
       os: ${{ matrix.os }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -122,7 +125,7 @@ jobs:
     needs:
       - should-run
       - build-test
-    if: ${{ needs.should-run.outputs.go == 'true' && (startsWith(github.base_ref, 'release') || github.base_ref == 'master') }}
+    if: ${{ needs.should-run.outputs.go == 'true' && startsWith(github.ref, 'refs/heads/release') }}
     uses: ./.github/workflows/reusable-notify-clio.yml
     secrets:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}

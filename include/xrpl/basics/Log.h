@@ -221,7 +221,8 @@ public:
 private:
     enum {
         // Maximum line length for log messages.
-        // If the message exceeds this length it will be truncated with elipses.
+        // If the message exceeds this length it will be truncated with
+        // ellipses.
         maximumMessageCharacters = 12 * 1024
     };
 

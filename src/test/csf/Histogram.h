@@ -26,7 +26,7 @@ template <class T, class Compare = std::less<T>>
 class Histogram
 {
     // TODO: Consider logarithmic bins around expected median if this becomes
-    // unscaleable
+    // unscalable
     std::map<T, std::size_t, Compare> counts_;
     std::size_t samples = 0;
 

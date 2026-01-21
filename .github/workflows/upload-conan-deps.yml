@@ -70,9 +70,9 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@2ece4ec6ab7de266859a6f053571425b2bd684b6
+        uses: XRPLF/actions/prepare-runner@f05cab7b8541eee6473aa42beb9d2fe35608a190
         with:
-          disable_ccache: false
+          enable_ccache: false
 
       - name: Print build environment
         uses: ./.github/actions/print-env

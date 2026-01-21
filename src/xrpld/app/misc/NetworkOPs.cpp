@@ -290,7 +290,7 @@ public:
      * transactions and wait for this transaction to complete.
      *
      * @param transaction Transaction object.
-     * @param bUnliimited Whether a privileged client connection submitted it.
+     * @param bUnlimited Whether a privileged client connection submitted it.
      * @param failType fail_hard setting from transaction submission.
      */
     void
@@ -1260,7 +1260,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
         return false;
     }
 
-    // NOTE eahennis - I think this check is redundant,
+    // NOTE ximinez - I think this check is redundant,
     // but I'm not 100% sure yet.
     // If so, only cost is looking up HashRouter flags.
     auto const [validity, reason] =
@@ -1681,7 +1681,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     // only be set if the Batch feature is enabled. If Batch is
                     // not enabled, the flag is always invalid, so don't relay
                     // it regardless.
-                    !sttx.isFlag(tfInnerBatchTxn))
+                    !(sttx.isFlag(tfInnerBatchTxn)))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
@@ -2194,7 +2194,7 @@ NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
     {
         // check if the ledger is good enough to go to FULL
         // Note: Do not go to FULL if we don't have the previous ledger
-        // check if the ledger is bad enough to go to CONNECTE  D -- TODO
+        // check if the ledger is bad enough to go to CONNECTED -- TODO
         auto current = m_ledgerMaster.getCurrentLedger();
         if (app_.timeKeeper().now() <
             (current->header().parentCloseTime +
@@ -3461,10 +3461,10 @@ NetworkOPsImp::pubAccountTransaction(
                     }
                 }
 
-                if (auto histoIt = mSubAccountHistory.find(affectedAccount);
-                    histoIt != mSubAccountHistory.end())
+                if (auto historyIt = mSubAccountHistory.find(affectedAccount);
+                    historyIt != mSubAccountHistory.end())
                 {
-                    auto& subs = histoIt->second;
+                    auto& subs = historyIt->second;
                     auto it = subs.begin();
                     while (it != subs.end())
                     {
@@ -3487,7 +3487,7 @@ NetworkOPsImp::pubAccountTransaction(
                         }
                     }
                     if (subs.empty())
-                        mSubAccountHistory.erase(histoIt);
+                        mSubAccountHistory.erase(historyIt);
                 }
             }
         }
@@ -3638,7 +3638,7 @@ NetworkOPsImp::subAccount(
         auto simIterator = subMap.find(naAccountID);
         if (simIterator == subMap.end())
         {
-            // Not found, note that account has a new single listner.
+            // Not found, note that account has a new single listener.
             SubMapType usisElement;
             usisElement[isrListener->getSeq()] = isrListener;
             // VFALCO NOTE This is making a needless copy of naAccountID
@@ -4578,7 +4578,7 @@ NetworkOPsImp::getBookPage(
                 Rate offerRate = parityRate;
 
                 if (rate != parityRate
-                    // Have a tranfer fee.
+                    // Have a transfer fee.
                     && uTakerID != book.out.account
                     // Not taking offers of own IOUs.
                     && book.out.account != uOfferOwnerID)
@@ -4728,7 +4728,7 @@ NetworkOPsImp::getBookPage(
             Rate offerRate = parityRate;
 
             if (rate != parityRate
-                // Have a tranfer fee.
+                // Have a transfer fee.
                 && uTakerID != book.out.account
                 // Not taking offers of own IOUs.
                 && book.out.account != uOfferOwnerID)
@@ -4751,7 +4751,7 @@ NetworkOPsImp::getBookPage(
 
                 saTakerGetsFunded.setJson(jvOffer[jss::taker_gets_funded]);
 
-                // TOOD(tom): The result of this expression is not used - what's
+                // TODO(tom): The result of this expression is not used - what's
                 // going on here?
                 std::min(
                     saTakerPays,

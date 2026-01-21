@@ -37,7 +37,7 @@ public:
     static std::unique_ptr<Fulfillment>
     deserialize(Slice s, std::error_code& ec)
     {
-        // Per the RFC, a preimage fulfulliment is defined as
+        // Per the RFC, a preimage fulfillment is defined as
         // follows:
         //
         // PreimageFulfillment ::= SEQUENCE {

@@ -2,16 +2,23 @@
    setup project-wide compiler settings
 #]===================================================================]
 
+include(CompilationEnv)
+
 #[=========================================================[
    TODO some/most of these common settings belong in a
    toolchain file, especially the ABI-impacting ones
 #]=========================================================]
 add_library (common INTERFACE)
 add_library (Xrpl::common ALIAS common)
+include(XrplSanitizers)
 # add a single global dependency on this interface lib
 link_libraries (Xrpl::common)
+# Respect CMAKE_POSITION_INDEPENDENT_CODE setting (may be set by Conan toolchain)
+if(NOT DEFINED CMAKE_POSITION_INDEPENDENT_CODE)
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 set_target_properties (common
-  PROPERTIES INTERFACE_POSITION_INDEPENDENT_CODE ON)
+  PROPERTIES INTERFACE_POSITION_INDEPENDENT_CODE ${CMAKE_POSITION_INDEPENDENT_CODE})
 set(CMAKE_CXX_EXTENSIONS OFF)
 target_compile_definitions (common
   INTERFACE
@@ -44,6 +51,7 @@ if (MSVC)
     # omit debug info completely under CI (not needed)
     if (is_ci)
       string (REPLACE "/Zi" " " ${var_} "${${var_}}")
+      string (REPLACE "/Z7" " " ${var_} "${${var_}}")
     endif ()
   endforeach ()
 
@@ -115,8 +123,8 @@ else ()
       # link to static libc/c++ iff:
       #   * static option set and
       #   * NOT APPLE (AppleClang does not support static libc/c++) and
-      #   * NOT san (sanitizers typically don't work with static libc/c++)
-      $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>,$<NOT:$<BOOL:${san}>>>:
+      #   * NOT SANITIZERS (sanitizers typically don't work with static libc/c++)
+      $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>,$<NOT:$<BOOL:${SANITIZERS_ENABLED}>>>:
       -static-libstdc++
       -static-libgcc
       >)
@@ -149,7 +157,7 @@ elseif (use_gold AND is_gcc)
     ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
     #[=========================================================[
        NOTE: THE gold linker inserts -rpath as DT_RUNPATH by
-       default intead of DT_RPATH, so you might have slightly
+       default instead of DT_RPATH, so you might have slightly
        unexpected runtime ld behavior if you were expecting
        DT_RPATH.  Specify --disable-new-dtags to gold if you do
        not want the default DT_RUNPATH behavior. This rpath

@@ -16,7 +16,7 @@ public:
 
     Fixed(Fixed const&) = default;
 
-    /** Returns the time after which we shoud allow a connection attempt. */
+    /** Returns the time after which we should allow a connection attempt. */
     clock_type::time_point const&
     when() const
     {

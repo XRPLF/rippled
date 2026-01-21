@@ -332,10 +332,10 @@ DisputedTx<Tx_t, NodeID_t>::getJson() const
 
     if (!votes_.empty())
     {
-        Json::Value votesj(Json::objectValue);
+        Json::Value votes(Json::objectValue);
         for (auto const& [nodeId, vote] : votes_)
-            votesj[to_string(nodeId)] = vote;
-        ret["votes"] = std::move(votesj);
+            votes[to_string(nodeId)] = vote;
+        ret["votes"] = std::move(votes);
     }
 
     return ret;

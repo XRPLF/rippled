@@ -586,7 +586,7 @@ PeerImp::fail(std::string const& reason)
     if (!socket_.is_open())
         return;
 
-    // Call to name() locks, log only if the message will be outputed
+    // Call to name() locks, log only if the message will be outputted
     if (journal_.active(beast::severities::kWarning))
     {
         std::string const n = name();
@@ -1351,8 +1351,8 @@ PeerImp::handleTransaction(
     {
         // If we've never been in synch, there's nothing we can do
         // with a transaction
-        JLOG(p_journal_.debug()) << "Ignoring incoming transaction: "
-                                 << "Need network ledger";
+        JLOG(p_journal_.debug())
+            << "Ignoring incoming transaction: Need network ledger";
         return;
     }
 
@@ -2618,6 +2618,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                         newObj.set_ledgerseq(obj.ledgerseq());
 
                     // VFALCO NOTE "seq" in the message is obsolete
+
+                    // Check if by adding this object, reply has reached its
+                    // limit
+                    if (reply.objects_size() >= Tuning::hardMaxReplyNodes)
+                    {
+                        fee_.update(
+                            Resource::feeModerateBurdenPeer,
+                            " Reply limit reached. Truncating reply.");
+                        break;
+                    }
                 }
             }
         }

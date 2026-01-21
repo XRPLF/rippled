@@ -20,8 +20,8 @@ class Config:
 Generate a strategy matrix for GitHub Actions CI.
 
 On each PR commit we will build a selection of Debian, RHEL, Ubuntu, MacOS, and
-Windows configurations, while upon merge into the develop, release, or master
-branches, we will build all configurations, and test most of them.
+Windows configurations, while upon merge into the develop or release branches,
+we will build all configurations, and test most of them.
 
 We will further set additional CMake arguments as follows:
 - All builds will have the `tests`, `werr`, and `xrpld` options.
@@ -229,26 +229,64 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         if (n := os["compiler_version"]) != "":
             config_name += f"-{n}"
         config_name += (
-            f"-{architecture['platform'][architecture['platform'].find('/') + 1 :]}"
+            f"-{architecture['platform'][architecture['platform'].find('/')+1:]}"
         )
         config_name += f"-{build_type.lower()}"
+        if "-Dcoverage=ON" in cmake_args:
+            config_name += "-coverage"
         if "-Dunity=ON" in cmake_args:
             config_name += "-unity"
 
         # Add the configuration to the list, with the most unique fields first,
         # so that they are easier to identify in the GitHub Actions UI, as long
         # names get truncated.
-        configurations.append(
-            {
-                "config_name": config_name,
-                "cmake_args": cmake_args,
-                "cmake_target": cmake_target,
-                "build_only": build_only,
-                "build_type": build_type,
-                "os": os,
-                "architecture": architecture,
-            }
-        )
+        # Add Address and Thread (both coupled with UB) sanitizers for specific bookworm distros.
+        # GCC-Asan rippled-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
+        if (
+            os["distro_version"] == "bookworm"
+            and f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"
+        ):
+            # Add ASAN + UBSAN configuration.
+            configurations.append(
+                {
+                    "config_name": config_name + "-asan-ubsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "address,undefinedbehavior",
+                }
+            )
+            # TSAN is deactivated due to seg faults with latest compilers.
+            activate_tsan = False
+            if activate_tsan:
+                configurations.append(
+                    {
+                        "config_name": config_name + "-tsan-ubsan",
+                        "cmake_args": cmake_args,
+                        "cmake_target": cmake_target,
+                        "build_only": build_only,
+                        "build_type": build_type,
+                        "os": os,
+                        "architecture": architecture,
+                        "sanitizers": "thread,undefinedbehavior",
+                    }
+                )
+        else:
+            configurations.append(
+                {
+                    "config_name": config_name,
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "",
+                }
+            )
 
     return configurations
 

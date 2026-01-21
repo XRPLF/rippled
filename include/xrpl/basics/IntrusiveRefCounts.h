@@ -301,7 +301,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
     // change the counts and flags (the count could be atomically changed, but
     // the flags depend on the current value of the counts).
     //
-    // Note: If this becomes a perf bottleneck, the `partialDestoryStartedMask`
+    // Note: If this becomes a perf bottleneck, the `partialDestroyStartedMask`
     // may be able to be set non-atomically. But it is easier to reason about
     // the code if the flag is set atomically.
     while (1)
