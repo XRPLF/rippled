@@ -58,7 +58,7 @@ struct Wasm_test : public beast::unit_test::suite
         source_location const location = source_location::current())
     {
         auto const lineStr = " (" + std::to_string(location.line()) + ")";
-        if (BEAST_EXPECTS(re.has_value(), transToken(re.error())))
+        if (BEAST_EXPECTS(re.has_value(), transToken(re.error()) + lineStr))
         {
             BEAST_EXPECTS(
                 re->result == expectedResult,
