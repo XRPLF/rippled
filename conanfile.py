@@ -40,7 +40,7 @@ class Xrpl(ConanFile):
     ]
 
     test_requires = [
-        "doctest/2.4.12",
+        "gtest/1.17.0",
     ]
 
     tool_requires = [
