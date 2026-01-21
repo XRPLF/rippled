@@ -149,12 +149,6 @@ private:
                 res->result(statusCode_);
                 res->set(boost::beast::http::field::server, "TestServer");
 
-                // Add custom headers
-                for (auto const& [name, value] : customHeaders_)
-                {
-                    res->set(name, value);
-                }
-
                 // Set body and prepare payload first
                 res->body() = responseBody_;
                 res->prepare_payload();
@@ -193,9 +187,9 @@ runHTTPTest(
     TestHTTPServer& server,
     std::string const& path,
     std::atomic<bool>& completed,
-    std::atomic<int>& result_status,
-    std::string& result_data,
-    boost::system::error_code& result_error)
+    std::atomic<int>& resultStatus,
+    std::string& resultData,
+    boost::system::error_code& resultError)
 {
     // Create a null journal for testing
     beast::Journal j{TestSink::instance()};
@@ -214,9 +208,9 @@ runHTTPTest(
         [&](boost::system::error_code const& ec,
             int status,
             std::string const& data) -> bool {
-            result_error = ec;
-            result_status = status;
-            result_data = data;
+            resultError = ec;
+            resultStatus = status;
+            resultData = data;
             completed = true;
             return false;  // don't retry
         },
@@ -241,7 +235,7 @@ runHTTPTest(
 TEST(HTTPClient, case_insensitive_content_length)
 {
     // Test different cases of Content-Length header
-    std::vector<std::string> header_cases = {
+    std::vector<std::string> headerCases = {
         "Content-Length",  // Standard case
         "content-length",  // Lowercase - this tests the regex icase fix
         "CONTENT-LENGTH",  // Uppercase
@@ -249,53 +243,48 @@ TEST(HTTPClient, case_insensitive_content_length)
         "content-Length"   // Mixed case 2
     };
 
-    for (auto const& header_name : header_cases)
+    for (auto const& headerName : headerCases)
     {
         TestHTTPServer server;
-        std::string test_body = "Hello World!";
-        server.setResponseBody(test_body);
-        server.setHeader(header_name, std::to_string(test_body.size()));
+        std::string testBody = "Hello World!";
+        server.setResponseBody(testBody);
+        server.setHeader(headerName, std::to_string(testBody.size()));
 
         std::atomic<bool> completed{false};
-        std::atomic<int> result_status{0};
-        std::string result_data;
-        boost::system::error_code result_error;
+        std::atomic<int> resultStatus{0};
+        std::string resultData;
+        boost::system::error_code resultError;
 
-        bool test_completed = runHTTPTest(
-            server,
-            "/test",
-            completed,
-            result_status,
-            result_data,
-            result_error);
+        bool testCompleted = runHTTPTest(
+            server, "/test", completed, resultStatus, resultData, resultError);
 
         // Verify results
-        EXPECT_TRUE(test_completed);
-        EXPECT_FALSE(result_error);
-        EXPECT_EQ(result_status, 200);
-        EXPECT_EQ(result_data, test_body);
+        EXPECT_TRUE(testCompleted);
+        EXPECT_FALSE(resultError);
+        EXPECT_EQ(resultStatus, 200);
+        EXPECT_EQ(resultData, testBody);
     }
 }
 
 TEST(HTTPClient, basic_http_request)
 {
     TestHTTPServer server;
-    std::string test_body = "Test response body";
-    server.setResponseBody(test_body);
+    std::string testBody = "Test response body";
+    server.setResponseBody(testBody);
     server.setHeader("Content-Type", "text/plain");
 
     std::atomic<bool> completed{false};
-    std::atomic<int> result_status{0};
-    std::string result_data;
-    boost::system::error_code result_error;
+    std::atomic<int> resultStatus{0};
+    std::string resultData;
+    boost::system::error_code resultError;
 
-    bool test_completed = runHTTPTest(
-        server, "/basic", completed, result_status, result_data, result_error);
+    bool testCompleted = runHTTPTest(
+        server, "/basic", completed, resultStatus, resultData, resultError);
 
-    EXPECT_TRUE(test_completed);
-    EXPECT_FALSE(result_error);
-    EXPECT_EQ(result_status, 200);
-    EXPECT_EQ(result_data, test_body);
+    EXPECT_TRUE(testCompleted);
+    EXPECT_FALSE(resultError);
+    EXPECT_EQ(resultStatus, 200);
+    EXPECT_EQ(resultData, testBody);
 }
 
 TEST(HTTPClient, empty_response)
@@ -305,44 +294,44 @@ TEST(HTTPClient, empty_response)
     server.setHeader("Content-Length", "0");
 
     std::atomic<bool> completed{false};
-    std::atomic<int> result_status{0};
-    std::string result_data;
-    boost::system::error_code result_error;
+    std::atomic<int> resultStatus{0};
+    std::string resultData;
+    boost::system::error_code resultError;
 
-    bool test_completed = runHTTPTest(
-        server, "/empty", completed, result_status, result_data, result_error);
+    bool testCompleted = runHTTPTest(
+        server, "/empty", completed, resultStatus, resultData, resultError);
 
-    EXPECT_TRUE(test_completed);
-    EXPECT_FALSE(result_error);
-    EXPECT_EQ(result_status, 200);
-    EXPECT_TRUE(result_data.empty());
+    EXPECT_TRUE(testCompleted);
+    EXPECT_FALSE(resultError);
+    EXPECT_EQ(resultStatus, 200);
+    EXPECT_TRUE(resultData.empty());
 }
 
 TEST(HTTPClient, different_status_codes)
 {
-    std::vector<unsigned int> status_codes = {200, 404, 500};
+    std::vector<unsigned int> statusCodes = {200, 404, 500};
 
-    for (auto status : status_codes)
+    for (auto status : statusCodes)
     {
         TestHTTPServer server;
         server.setStatusCode(status);
         server.setResponseBody("Status " + std::to_string(status));
 
         std::atomic<bool> completed{false};
-        std::atomic<int> result_status{0};
-        std::string result_data;
-        boost::system::error_code result_error;
+        std::atomic<int> resultStatus{0};
+        std::string resultData;
+        boost::system::error_code resultError;
 
-        bool test_completed = runHTTPTest(
+        bool testCompleted = runHTTPTest(
             server,
             "/status",
             completed,
-            result_status,
-            result_data,
-            result_error);
+            resultStatus,
+            resultData,
+            resultError);
 
-        EXPECT_TRUE(test_completed);
-        EXPECT_FALSE(result_error);
-        EXPECT_EQ(result_status, static_cast<int>(status));
+        EXPECT_TRUE(testCompleted);
+        EXPECT_FALSE(resultError);
+        EXPECT_EQ(resultStatus, static_cast<int>(status));
     }
 }
