@@ -956,23 +956,60 @@ struct Wasm_test : public beast::unit_test::suite
     void
     testReturnType()
     {
-        // (module
-        //   (memory (export "memory") 1)
-        //   (func (export "finish") (result i64)
-        //     i64.const 0x100000000))
-        auto const wasmHex =
-            "0061736d010000000105016000017e030201000503010001"
-            "071302066d656d6f727902000666696e69736800000a0a01"
-            "08004280808080100b";
-        auto const wasmStr = boost::algorithm::unhex(std::string(wasmHex));
-        Bytes const wasm(wasmStr.begin(), wasmStr.end());
-
         using namespace test::jtx;
         Env env(*this);
-        TestHostFunctions hf(env, 0);
-        auto const re =
-            runEscrowWasm(wasm, hf, ESCROW_FUNCTION_NAME, {}, 100'000);
-        BEAST_EXPECT(!re);
+        std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
+
+        // return int64.
+        {  // (module
+            //   (memory (export "memory") 1)
+            //   (func (export "finish") (result i64)
+            //     i64.const 0x100000000))
+            auto const wasmHex =
+                "0061736d010000000105016000017e030201000503010001"
+                "071302066d656d6f727902000666696e69736800000a0a01"
+                "08004280808080100b";
+            auto const wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+            Bytes const wasm(wasmStr.begin(), wasmStr.end());
+            auto const re =
+                runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            BEAST_EXPECT(!re);
+        }
+
+        // return void. wasmi return execution error
+        {  //(module
+           //  (type (;0;) (func))
+           //  (func (;0;) (type 0)
+           //   return)
+           //  (memory (;0;) 1)
+           //  (export "memory" (memory 0))
+           //  (export "finish" (func 0)))
+            auto const wasmHex =
+                "0061736d01000000010401600000030201000503010001071302066d656d6f"
+                "727902000666696e69736800000a050103000f0b";
+            auto const wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+            Bytes const wasm(wasmStr.begin(), wasmStr.end());
+            auto const re =
+                runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            BEAST_EXPECT(!re);
+        }
+
+        // return i32, i32. wasmi doesn't create module
+        {  //(module
+           //  (memory (export "memory") 1)
+           //  (func (export "finish") (result i32 i32)
+           //   i32.const 0x10000000
+           //   i32.const 0x100000FF))
+            auto const wasmHex =
+                "0061736d010000000106016000027f7f030201000503010001071302066d65"
+                "6d6f727902000666696e69736800000a10010e0041808080800141ff818080"
+                "010b";
+            auto const wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+            Bytes const wasm(wasmStr.begin(), wasmStr.end());
+            auto const re =
+                runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            BEAST_EXPECT(!re);
+        }
     }
 
     void

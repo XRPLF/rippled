@@ -877,8 +877,7 @@ WasmiEngine::runHlp(
     else if (res.r.vec_.data[0].kind != WASM_I32)
         throw std::runtime_error(
             "<" + std::string(funcName) + "> return type mismatch, ret: " +
-            std::to_string(
-                static_cast<int>(res.r.vec_.data[0].kind)));  // LCOV_EXCL_LINE
+            std::to_string(static_cast<int>(res.r.vec_.data[0].kind)));
 
     if (gas == -1)
         gas = std::numeric_limits<decltype(gas)>::max();
