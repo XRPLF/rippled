@@ -437,7 +437,7 @@ public:
     {
         auto const accountStr = toBase58(account);
         auto const ret = msg.size() + accountStr.size();
-        log(msg, [&account] { return accountStr; });
+        log(msg, [&accountStr] { return accountStr; });
         return ret;
     }
 
