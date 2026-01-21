@@ -1,16 +1,16 @@
-#include <helpers/DebugSink.h>
+#include <helpers/TestSink.h>
 
 #include <iostream>
 
 namespace xrpl {
 
-DebugSink::DebugSink(beast::severities::Severity threshold)
+TestSink::TestSink(beast::severities::Severity threshold)
     : Sink(threshold, false)
 {
 }
 
 void
-DebugSink::write(beast::severities::Severity level, std::string const& text)
+TestSink::write(beast::severities::Severity level, std::string const& text)
 {
     if (level < threshold())
         return;
@@ -18,7 +18,7 @@ DebugSink::write(beast::severities::Severity level, std::string const& text)
 }
 
 void
-DebugSink::writeAlways(
+TestSink::writeAlways(
     beast::severities::Severity level,
     std::string const& text)
 {

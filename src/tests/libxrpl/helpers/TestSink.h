@@ -4,18 +4,17 @@
 #include <xrpl/beast/utility/Journal.h>
 
 namespace xrpl {
-class DebugSink : public beast::Journal::Sink
+class TestSink : public beast::Journal::Sink
 {
 public:
-    static DebugSink&
+    static TestSink&
     instance()
     {
-        static DebugSink _;
+        static TestSink _;
         return _;
     }
 
-    DebugSink(
-        beast::severities::Severity threshold = beast::severities::kDebug);
+    TestSink(beast::severities::Severity threshold = beast::severities::kDebug);
 
     void
     write(beast::severities::Severity level, std::string const& text) override;

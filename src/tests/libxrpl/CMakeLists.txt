@@ -9,7 +9,7 @@ add_custom_target(xrpl.tests)
 # Test helpers
 add_library(xrpl.helpers.test STATIC)
 target_sources(xrpl.helpers.test PRIVATE
-  helpers/DebugSink.cpp
+  helpers/TestSink.cpp
 )
 target_include_directories(xrpl.helpers.test PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
