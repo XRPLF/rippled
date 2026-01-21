@@ -56,7 +56,7 @@ public:
         gate g1, g2;
         std::shared_ptr<JobQueue::Coro> c;
         env.app().getJobQueue().postCoro(
-            jtCLIENT, "CrtTest", [&](auto const& cr) {
+            jtCLIENT, "CoroTest", [&](auto const& cr) {
                 c = cr;
                 g1.signal();
                 c->yield();
@@ -83,7 +83,7 @@ public:
 
         gate g;
         env.app().getJobQueue().postCoro(
-            jtCLIENT, "CrtTest", [&](auto const& c) {
+            jtCLIENT, "CoroTest", [&](auto const& c) {
                 c->post();
                 c->yield();
                 g.signal();
@@ -120,7 +120,7 @@ public:
 
         for (int i = 0; i < N; ++i)
         {
-            jq.postCoro(jtCLIENT, "CrtTest", [&, id = i](auto const& c) {
+            jq.postCoro(jtCLIENT, "CoroTest", [&, id = i](auto const& c) {
                 a[id] = c;
                 g.signal();
                 c->yield();
