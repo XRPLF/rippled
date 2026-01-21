@@ -105,9 +105,8 @@ TestSink::writeAlways(
             case beast::severities::kFatal:
                 return std::cerr;
             default:
-                break;
+                return std::cout;
         }
-        return std::cout;
     }();
 
     constexpr auto reset = "\033[0m";
