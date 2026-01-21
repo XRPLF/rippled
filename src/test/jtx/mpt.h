@@ -230,6 +230,8 @@ struct MPTConvertBack
     std::optional<Buffer> holderEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
+    std::optional<bool> fillAuditorEncryptedAmt = true;
+    // not an txn param, only used for autofilling
     std::optional<Buffer> blindingFactor = std::nullopt;
     std::optional<Buffer> pedersenCommitment = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
@@ -369,12 +371,6 @@ public:
     issuer() const
     {
         return issuer_;
-    }
-
-    std::optional<Account> const&
-    auditor() const
-    {
-        return auditor_;
     }
 
     Account const&
@@ -539,7 +535,8 @@ private:
         Buffer& holderCiphertext,
         Buffer& issuerCiphertext,
         std::optional<Buffer>& auditorCiphertext,
-        Buffer& blindingFactor) const;
+        Buffer& blindingFactor,
+        bool fillAuditorEncryptedAmt = true) const;
 };
 
 }  // namespace jtx
