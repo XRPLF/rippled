@@ -4,6 +4,11 @@
 
 include(create_symbolic_link)
 
+# Default suffix for executables (e.g., .exe on Windows)
+if(NOT DEFINED suffix)
+  set(suffix "")
+endif()
+
 install (
   TARGETS
     common
