@@ -600,7 +600,7 @@ STObject::delField(int index)
 }
 
 SOEStyle
-STObject::getStyle(SField const& field)
+STObject::getStyle(SField const& field) const
 {
     return mType ? mType->style(field) : soeINVALID;
 }
