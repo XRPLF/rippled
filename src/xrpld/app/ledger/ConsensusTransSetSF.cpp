@@ -65,7 +65,7 @@ ConsensusTransSetSF::gotNode(
                 "ripple::ConsensusTransSetSF::gotNode : transaction hash "
                 "match");
             auto const pap = &app_;
-            app_.getJobQueue().addJob(jtTRANSACTION, "TXS->TXN", [pap, stx]() {
+            app_.getJobQueue().addJob(jtTRANSACTION, "TxsToTxn", [pap, stx]() {
                 pap->getOPs().submitTransaction(stx);
             });
         }

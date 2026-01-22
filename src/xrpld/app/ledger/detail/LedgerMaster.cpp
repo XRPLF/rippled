@@ -1363,7 +1363,7 @@ LedgerMaster::tryAdvance()
     if (!mAdvanceThread && !mValidLedger.empty())
     {
         mAdvanceThread = true;
-        app_.getJobQueue().addJob(jtADVANCE, "advanceLedger", [this]() {
+        app_.getJobQueue().addJob(jtADVANCE, "AdvanceLedger", [this]() {
             std::unique_lock sl(m_mutex);
 
             XRPL_ASSERT(
@@ -1500,7 +1500,7 @@ bool
 LedgerMaster::newPathRequest()
 {
     std::unique_lock ml(m_mutex);
-    mPathFindNewRequest = newPFWork("pf:newRequest", ml);
+    mPathFindNewRequest = newPFWork("PthFindNewReq", ml);
     return mPathFindNewRequest;
 }
 
@@ -1521,7 +1521,7 @@ LedgerMaster::newOrderBookDB()
     std::unique_lock ml(m_mutex);
     mPathLedger.reset();
 
-    return newPFWork("pf:newOBDB", ml);
+    return newPFWork("PthFindOBDB", ml);
 }
 
 /** A thread needs to be dispatched to handle pathfinding work of some kind.
@@ -1859,7 +1859,7 @@ LedgerMaster::fetchForHistory(
                     mFillInProgress = seq;
                 }
                 app_.getJobQueue().addJob(
-                    jtADVANCE, "tryFill", [this, ledger]() {
+                    jtADVANCE, "TryFill", [this, ledger]() {
                         tryFill(ledger);
                     });
             }
@@ -1998,7 +1998,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
             }
 
             app_.getOPs().clearNeedNetworkLedger();
-            progress = newPFWork("pf:newLedger", sl);
+            progress = newPFWork("PthFindNewLed", sl);
         }
         if (progress)
             mAdvanceWork = true;
@@ -2029,7 +2029,7 @@ LedgerMaster::gotFetchPack(bool progress, std::uint32_t seq)
 {
     if (!mGotFetchPackThread.test_and_set(std::memory_order_acquire))
     {
-        app_.getJobQueue().addJob(jtLEDGER_DATA, "gotFetchPack", [&]() {
+        app_.getJobQueue().addJob(jtLEDGER_DATA, "GotFetchPack", [&]() {
             app_.getInboundLedgers().gotFetchPack();
             mGotFetchPackThread.clear(std::memory_order_release);
         });

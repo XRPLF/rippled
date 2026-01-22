@@ -39,7 +39,7 @@ LedgerDeltaAcquire::LedgerDeltaAcquire(
           ledgerHash,
           LedgerReplayParameters::SUB_TASK_TIMEOUT,
           {jtREPLAY_TASK,
-           "LedgerReplayDelta",
+           "LedReplDelta",
            LedgerReplayParameters::MAX_QUEUED_TASKS},
           app.journal("LedgerReplayDelta"))
     , inboundLedgers_(inboundLedgers)
@@ -243,7 +243,7 @@ LedgerDeltaAcquire::onLedgerBuilt(
     }
     app_.getJobQueue().addJob(
         jtREPLAY_TASK,
-        "onLedgerBuilt",
+        "OnLedBuilt",
         [=, ledger = this->fullLedger_, &app = this->app_]() {
             for (auto reason : reasons)
             {
