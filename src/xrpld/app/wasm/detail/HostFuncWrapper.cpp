@@ -332,7 +332,14 @@ checkGas(void* env)
     int64_t const gas = runtime->getGas();
     WasmImportFunc const& impFunc = udata->second;
     int64_t const x = gas >= impFunc.gas ? gas - impFunc.gas : 0;
-    runtime->setGas(x);
+
+    if (runtime->setGas(x) < 0)
+    {
+        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(
+            WasmEngine::instance().newTrap("can't set gas"));  // LCOV_EXCL_LINE
+        return Unexpected(trap);                               // LCOV_EXCL_LINE
+    }
+
     if (gas < impFunc.gas)
     {
         wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(

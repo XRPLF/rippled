@@ -380,35 +380,46 @@ public:
         return 4;
     }
 
-    Expected<int32_t, HostFunctionError>
-    trace(std::string_view const& msg, Slice const& data, bool asHex) override
+    template <typename F>
+    void
+    log(std::string_view const& msg, F&& dataFn)
     {
-        auto const ret = msg.size() + data.size() * (asHex ? 2 : 1);
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
         if (!getJournal().active(beast::severities::kTrace))
-            return ret;
+            return;
         auto j = getJournal().trace();
 #endif
-        if (!asHex)
-        {
-            j << "WASM TRACE: " << msg << " "
-              << std::string_view(
-                     reinterpret_cast<char const*>(data.data()), data.size());
-        }
-        else
-        {
-            std::string hex;
-            hex.reserve(data.size() * 2);
-            boost::algorithm::hex(
-                data.begin(), data.end(), std::back_inserter(hex));
-            j << "WASM DEV TRACE: " << msg << " " << hex;
-        }
+        j << "WasmTrace: " << msg << " " << dataFn();
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;
 #endif
+    }
+
+    Expected<int32_t, HostFunctionError>
+    trace(std::string_view const& msg, Slice const& data, bool asHex) override
+    {
+        auto const ret = msg.size() + data.size() * (asHex ? 2 : 1);
+
+        if (!asHex)
+        {
+            log(msg, [&data] {
+                return std::string_view(
+                    reinterpret_cast<char const*>(data.data()), data.size());
+            });
+        }
+        else
+        {
+            log(msg, [&data] {
+                std::string hex;
+                hex.reserve(data.size() * 2);
+                boost::algorithm::hex(
+                    data.begin(), data.end(), std::back_inserter(hex));
+                return hex;
+            });
+        }
 
         return ret;
     }
@@ -417,18 +428,7 @@ public:
     traceNum(std::string_view const& msg, int64_t data) override
     {
         auto const ret = msg.size() + sizeof(data);
-#ifdef DEBUG_OUTPUT
-        auto& j = std::cerr;
-#else
-        if (!getJournal().active(beast::severities::kTrace))
-            return ret;
-        auto j = getJournal().trace();
-#endif
-        j << "WASM TRACE NUM: " << msg << " " << data;
-
-#ifdef DEBUG_OUTPUT
-        j << std::endl;
-#endif
+        log(msg, [data] { return data; });
         return ret;
     }
 
@@ -436,24 +436,7 @@ public:
     traceAccount(std::string_view const& msg, AccountID const& account) override
     {
         auto const ret = msg.size() + account.size();
-#ifdef DEBUG_OUTPUT
-        auto& j = std::cerr;
-#else
-        if (!getJournal().active(beast::severities::kTrace))
-            return ret;
-        auto j = getJournal().trace();
-#endif
-        if (!account)
-            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
-
-        auto const accountStr = toBase58(account);
-
-        j << "WASM TRACE ACCOUNT: " << msg << " " << accountStr;
-
-#ifdef DEBUG_OUTPUT
-        j << std::endl;
-#endif
-
+        log(msg, [&account] { return toBase58(account); });
         return ret;
     }
 
@@ -461,20 +444,7 @@ public:
     traceFloat(std::string_view const& msg, Slice const& data) override
     {
         auto const ret = msg.size() + data.size();
-#ifdef DEBUG_OUTPUT
-        auto& j = std::cerr;
-#else
-        if (!getJournal().active(beast::severities::kTrace))
-            return ret;
-        auto j = getJournal().trace();
-#endif
-        auto const s = wasm_float::floatToString(data);
-        j << "WASM TRACE FLOAT: " << msg << " " << s;
-
-#ifdef DEBUG_OUTPUT
-        j << std::endl;
-#endif
-
+        log(msg, [&data] { return wasm_float::floatToString(data); });
         return ret;
     }
 
@@ -482,20 +452,7 @@ public:
     traceAmount(std::string_view const& msg, STAmount const& amount) override
     {
         auto const ret = msg.size();
-#ifdef DEBUG_OUTPUT
-        auto& j = std::cerr;
-#else
-        if (!getJournal().active(beast::severities::kTrace))
-            return ret;
-        auto j = getJournal().trace();
-#endif
-        auto const amountStr = amount.getFullText();
-        j << "WASM TRACE AMOUNT: " << msg << " " << amountStr;
-
-#ifdef DEBUG_OUTPUT
-        j << std::endl;
-#endif
-
+        log(msg, [&amount] { return amount.getFullText(); });
         return ret;
     }
 

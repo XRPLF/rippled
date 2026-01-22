@@ -217,7 +217,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
 
-        HostFunctions mock(ctx.j);
+        auto mock(std::make_shared<HostFunctions>(ctx.j));
         auto const re = preflightEscrowWasm(code, mock, ESCROW_FUNCTION_NAME);
         if (!isTesSuccess(re))
         {
@@ -1206,7 +1206,8 @@ EscrowFinish::doApply()
         auto const wasmStr = slep->getFieldVL(sfFinishFunction);
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
 
-        WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
+        auto ledgerDataProvider(
+            std::make_shared<WasmHostFunctionsImpl>(ctx_, k));
 
         if (!ctx_.tx.isFieldPresent(sfComputationAllowance))
         {
@@ -1218,7 +1219,7 @@ EscrowFinish::doApply()
             wasm, ledgerDataProvider, ESCROW_FUNCTION_NAME, {}, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
 
-        if (auto const& data = ledgerDataProvider.getData(); data.has_value())
+        if (auto const& data = ledgerDataProvider->getData(); data.has_value())
         {
             slep->setFieldVL(sfData, makeSlice(*data));
             ctx_.view().update(slep);

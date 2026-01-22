@@ -5,12 +5,13 @@
 
 namespace xrpl {
 
+typedef std::variant<STBase const*, uint256 const*> FieldValue;
+
 namespace detail {
 
 static Expected<Bytes, HostFunctionError>
 getAnyFieldData(STBase const* obj)
 {
-    // auto const& fname = obj.getFName();
     if (!obj)
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
@@ -25,6 +26,7 @@ getAnyFieldData(STBase const* obj)
         // LCOV_EXCL_STOP
         case STI_OBJECT:
         case STI_ARRAY:
+        case STI_VECTOR256:
             return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
             break;
         case STI_ACCOUNT: {
@@ -62,12 +64,19 @@ getAnyFieldData(STBase const* obj)
             auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
             return Bytes{b, e};
         }
+        break;
         case STI_UINT32: {
             auto const* num(static_cast<STInteger<std::uint32_t> const*>(obj));
             std::uint32_t const data = num->value();
             auto const* b = reinterpret_cast<uint8_t const*>(&data);
             auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
             return Bytes{b, e};
+        }
+        break;
+        case STI_UINT256: {
+            auto const* uint256Obj(static_cast<STUInt256 const*>(obj));
+            auto const& data = uint256Obj->value();
+            return Bytes{data.begin(), data.end()};
         }
         break;
         default:
@@ -81,6 +90,21 @@ getAnyFieldData(STBase const* obj)
     return data;
 }
 
+static Expected<Bytes, HostFunctionError>
+getAnyFieldData(FieldValue const& variantObj)
+{
+    if (STBase const* const* obj = std::get_if<STBase const*>(&variantObj))
+    {
+        return getAnyFieldData(*obj);
+    }
+    else if (uint256 const* const* u = std::get_if<uint256 const*>(&variantObj))
+    {
+        return Bytes((*u)->begin(), (*u)->end());
+    }
+
+    return Unexpected(HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
+}
+
 static inline bool
 noField(STBase const* field)
 {
@@ -88,7 +112,7 @@ noField(STBase const* field)
         (STI_UNKNOWN == field->getSType());
 }
 
-static Expected<STBase const*, HostFunctionError>
+static Expected<FieldValue, HostFunctionError>
 locateField(STObject const& obj, Slice const& locator)
 {
     if (locator.empty() || (locator.size() & 3))  // must be multiple of 4
@@ -141,6 +165,13 @@ locateField(STObject const& obj, Slice const& locator)
             auto const& fname(*it->second);
             field = o->peekAtPField(fname);
         }
+        else if (STI_VECTOR256 == field->getSType())
+        {
+            auto const* v = static_cast<STVector256 const*>(field);
+            if (sfieldCode >= v->size())
+                return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
+            return FieldValue(&(v->operator[](sfieldCode)));
+        }
         else  // simple field must be the last one
         {
             return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
@@ -150,7 +181,22 @@ locateField(STObject const& obj, Slice const& locator)
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
     }
 
-    return field;
+    return FieldValue(field);
+}
+
+static inline Expected<int32_t, HostFunctionError>
+getArrayLen(FieldValue const& variantField)
+{
+    if (STBase const* const* field = std::get_if<STBase const*>(&variantField))
+    {
+        if ((*field)->getSType() == STI_VECTOR256)
+            return static_cast<STVector256 const*>(*field)->size();
+        if ((*field)->getSType() == STI_ARRAY)
+            return static_cast<STArray const*>(*field)->size();
+    }
+    // uint256 is not an array so that variant should still return NO_ARRAY
+
+    return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
 }
 
 }  // namespace detail
@@ -256,24 +302,20 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getTxArrayLen(SField const& fname)
 {
-    if (fname.fieldType != STI_ARRAY)
+    if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
         return Unexpected(HostFunctionError::NO_ARRAY);
 
     auto const* field = ctx.tx.peekAtPField(fname);
     if (detail::noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
-    if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
-    int32_t const sz = static_cast<STArray const*>(field)->size();
-
-    return sz;
+    return detail::getArrayLen(field);
 }
 
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
 {
-    if (fname.fieldType != STI_ARRAY)
+    if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
         return Unexpected(HostFunctionError::NO_ARRAY);
 
     auto const sle = getCurrentLedgerObj();
@@ -284,11 +326,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
     if (detail::noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
-    if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
-    int32_t const sz = static_cast<STArray const*>(field)->size();
-
-    return sz;
+    return detail::getArrayLen(field);
 }
 
 Expected<int32_t, HostFunctionError>
@@ -296,7 +334,7 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
     int32_t cacheIdx,
     SField const& fname)
 {
-    if (fname.fieldType != STI_ARRAY)
+    if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
         return Unexpected(HostFunctionError::NO_ARRAY);
 
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
@@ -307,12 +345,7 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
     if (detail::noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
-    if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
-
-    int32_t const sz = static_cast<STArray const*>(field)->size();
-
-    return sz;
+    return detail::getArrayLen(field);
 }
 
 // Subsection: nested array length getters
@@ -324,12 +357,8 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
     if (!r)
         return Unexpected(r.error());
 
-    auto const* field = r.value();
-    if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
-    int32_t const sz = static_cast<STArray const*>(field)->size();
-
-    return sz;
+    auto const& field = r.value();
+    return detail::getArrayLen(field);
 }
 
 Expected<int32_t, HostFunctionError>
@@ -342,12 +371,8 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
     if (!r)
         return Unexpected(r.error());
 
-    auto const* field = r.value();
-    if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
-    int32_t const sz = static_cast<STArray const*>(field)->size();
-
-    return sz;
+    auto const& field = r.value();
+    return detail::getArrayLen(field);
 }
 
 Expected<int32_t, HostFunctionError>
@@ -363,12 +388,8 @@ WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
     if (!r)
         return Unexpected(r.error());
 
-    auto const* field = r.value();
-    if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
-    int32_t const sz = static_cast<STArray const*>(field)->size();
-
-    return sz;
+    auto const& field = r.value();
+    return detail::getArrayLen(field);
 }
 
 }  // namespace xrpl
