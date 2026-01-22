@@ -45,8 +45,8 @@ public:
     run(Bytes const& wasmCode,
         std::string_view funcName = {},
         std::vector<WasmParam> const& params = {},
-        ImportVec const& imports = {},
-        HostFunctions* hfs = nullptr,
+        std::shared_ptr<ImportVec> const& imports = {},
+        std::shared_ptr<HostFunctions> const& hfs = {},
         int64_t gasLimit = -1,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
@@ -55,8 +55,8 @@ public:
         Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params = {},
-        ImportVec const& imports = {},
-        HostFunctions* hfs = nullptr,
+        std::shared_ptr<ImportVec> const& imports = {},
+        std::shared_ptr<HostFunctions> const& hfs = {},
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
     // Host functions helper functionality
@@ -69,13 +69,13 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ImportVec
+std::shared_ptr<ImportVec>
 createWasmImport(HostFunctions& hfs);
 
 Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
-    HostFunctions& hfs,
+    std::shared_ptr<HostFunctions> const& hfs,
     std::string_view funcName = ESCROW_FUNCTION_NAME,
     std::vector<WasmParam> const& params = {},
     int64_t gasLimit = -1);
@@ -83,7 +83,7 @@ runEscrowWasm(
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
-    HostFunctions& hfs,
+    std::shared_ptr<HostFunctions> const& hfs,
     std::string_view funcName = ESCROW_FUNCTION_NAME,
     std::vector<WasmParam> const& params = {});
 

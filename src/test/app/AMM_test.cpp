@@ -30,7 +30,19 @@ namespace test {
  */
 struct AMM_test : public jtx::AMMTest
 {
+    // Use small Number mantissas for the life of this test.
+    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::small};
+
 private:
+    static FeatureBitset
+    testable_amendments()
+    {
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        return jtx::testable_amendments() - featureSingleAssetVault -
+            featureLendingProtocol;
+    }
+
     void
     testInstanceCreate()
     {
@@ -38,6 +50,7 @@ private:
 
         using namespace jtx;
 
+#if NUMBERTODO
         // XRP to IOU, with featureSingleAssetVault
         testAMM(
             [&](AMM& ammAlice, Env&) {
@@ -48,6 +61,7 @@ private:
             0,
             {},
             {testable_amendments() | featureSingleAssetVault});
+#endif
 
         // XRP to IOU, without featureSingleAssetVault
         testAMM(
@@ -1365,8 +1379,8 @@ private:
     {
         testcase("Deposit");
 
-        using namespace jtx;
         auto const all = testable_amendments();
+        using namespace jtx;
 
         // Equal deposit: 1000000 tokens, 10% of the current pool
         testAMM([&](AMM& ammAlice, Env& env) {
@@ -1384,15 +1398,14 @@ private:
         // equal asset deposit: unit test to exercise the rounding-down of
         // LPTokens in the AMMHelpers.cpp: adjustLPTokens calculations
         // The LPTokens need to have 16 significant digits and a fractional part
-        for (Number const deltaLPTokens :
+        for (Number const& deltaLPTokens :
              {Number{UINT64_C(100000'0000000009), -10},
               Number{UINT64_C(100000'0000000001), -10}})
         {
             testAMM([&](AMM& ammAlice, Env& env) {
                 // initial LPToken balance
                 IOUAmount const initLPToken = ammAlice.getLPTokensBalance();
-                IOUAmount const newLPTokens{
-                    deltaLPTokens.mantissa(), deltaLPTokens.exponent()};
+                IOUAmount const newLPTokens{deltaLPTokens};
 
                 // carol performs a two-asset deposit
                 ammAlice.deposit(
@@ -1417,11 +1430,9 @@ private:
                 Number const deltaXRP = fr * 1e10;
                 Number const deltaUSD = fr * 1e4;
 
-                STAmount const depositUSD =
-                    STAmount{USD, deltaUSD.mantissa(), deltaUSD.exponent()};
+                STAmount const depositUSD = STAmount{USD, deltaUSD};
 
-                STAmount const depositXRP =
-                    STAmount{XRP, deltaXRP.mantissa(), deltaXRP.exponent()};
+                STAmount const depositXRP = STAmount{XRP, deltaXRP};
 
                 // initial LPTokens (1e7) + newLPTokens
                 BEAST_EXPECT(ammAlice.expectBalances(
@@ -1487,7 +1498,7 @@ private:
         });
 
         // Single deposit: 100000 tokens worth of XRP
-        testAMM([&](AMM& ammAlice, Env&) {
+        testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, 100'000, XRP(205));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10'201), USD(10'000), IOUAmount{10'100'000, 0}));
@@ -1668,8 +1679,8 @@ private:
     {
         testcase("Invalid Withdraw");
 
-        using namespace jtx;
         auto const all = testable_amendments();
+        using namespace jtx;
 
         testAMM(
             [&](AMM& ammAlice, Env& env) {
@@ -2248,8 +2259,8 @@ private:
     {
         testcase("Withdraw");
 
-        using namespace jtx;
         auto const all = testable_amendments();
+        using namespace jtx;
 
         // Equal withdrawal by Carol: 1000000 of tokens, 10% of the current
         // pool
@@ -2669,8 +2680,8 @@ private:
     testFeeVote()
     {
         testcase("Fee Vote");
-        using namespace jtx;
         auto const all = testable_amendments();
+        using namespace jtx;
 
         // One vote sets fee to 1%.
         testAMM([&](AMM& ammAlice, Env& env) {
@@ -3013,6 +3024,10 @@ private:
         testcase("Bid");
         using namespace jtx;
         using namespace std::chrono;
+
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        features = features - featureSingleAssetVault - featureLendingProtocol;
 
         // Auction slot initially is owned by AMM creator, who pays 0 price.
 
@@ -3757,6 +3772,11 @@ private:
     {
         testcase("Basic Payment");
         using namespace jtx;
+
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        features = features - featureSingleAssetVault - featureLendingProtocol -
+            featureLendingProtocol;
 
         // Payment 100USD for 100XRP.
         // Force one path with tfNoRippleDirect.
@@ -4836,12 +4856,12 @@ private:
     testAmendment()
     {
         testcase("Amendment");
-        using namespace jtx;
         FeatureBitset const all{testable_amendments()};
         FeatureBitset const noAMM{all - featureAMM};
         FeatureBitset const noNumber{all - fixUniversalNumber};
         FeatureBitset const noAMMAndNumber{
             all - featureAMM - fixUniversalNumber};
+        using namespace jtx;
 
         for (auto const& feature : {noAMM, noNumber, noAMMAndNumber})
         {
@@ -6476,6 +6496,8 @@ private:
         Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
         auto rules = env.current()->rules();
         CurrentTransactionRulesGuard rg(rules);
+        NumberMantissaScaleGuard sg(MantissaRange::small);
+
         for (auto const& t : tests)
         {
             auto getPool = [&](std::string const& v, bool isXRP) {
@@ -7025,7 +7047,7 @@ private:
             {{xrpPool, iouPool}},
             889,
             std::nullopt,
-            {jtx::testable_amendments() | fixAMMv1_1});
+            {testable_amendments() | fixAMMv1_1});
     }
 
     void
@@ -7566,6 +7588,7 @@ private:
     {
         auto const [amount, amount2, lptBalance] = amm.balances(GBP, EUR);
 
+        NumberMantissaScaleGuard sg(MantissaRange::small);
         NumberRoundModeGuard g(
             env.enabled(fixAMMv1_3) ? Number::upward : Number::getround());
         auto const res = root2(amount * amount2);
@@ -7880,7 +7903,7 @@ private:
     void
     run() override
     {
-        FeatureBitset const all{jtx::testable_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testInvalidInstance();
         testInstanceCreate();
         testInvalidDeposit(all);

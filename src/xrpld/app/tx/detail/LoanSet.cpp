@@ -2,6 +2,7 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace xrpl {
@@ -88,10 +89,12 @@ LoanSet::preflight(PreflightContext const& ctx)
     if (auto const paymentInterval = tx[~sfPaymentInterval];
         !validNumericMinimum(paymentInterval, LoanSet::minPaymentInterval))
         return temINVALID;
-
-    else if (!validNumericRange(
-                 tx[~sfGracePeriod],
-                 paymentInterval.value_or(LoanSet::defaultPaymentInterval)))
+    // Grace period is between min default value and payment interval
+    else if (auto const gracePeriod = tx[~sfGracePeriod];  //
+             !validNumericRange(
+                 gracePeriod,
+                 paymentInterval.value_or(LoanSet::defaultPaymentInterval),
+                 defaultGracePeriod))
         return temINVALID;
 
     // Copied from preflight2
@@ -282,6 +285,15 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     if (!vault)
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    if (vault->at(sfAssetsMaximum) != 0 &&
+        vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
+    {
+        JLOG(ctx.j.warn())
+            << "Vault at maximum assets limit. Can't add another loan.";
+        return tecLIMIT_EXCEEDED;
+    }
+
     Asset const asset = vault->at(sfAsset);
 
     auto const vaultPseudo = vault->at(sfAccount);
@@ -290,17 +302,15 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     // This check is almost duplicated in doApply, but that check is done after
     // the overall loan scale is known. This is mostly only relevant for
     // integral (non-IOU) types
+    for (auto const& field : getValueFields())
     {
-        for (auto const& field : getValueFields())
+        if (auto const value = tx[field];
+            value && STAmount{asset, *value} != *value)
         {
-            if (auto const value = tx[field];
-                value && STAmount{asset, *value} != *value)
-            {
-                JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
-                                   << ") can not be represented as a(n) "
-                                   << to_string(asset) << ".";
-                return tecPRECISION_LOSS;
-            }
+            JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
+                               << ") can not be represented as a(n) "
+                               << to_string(asset) << ".";
+            return tecPRECISION_LOSS;
         }
     }
 
@@ -383,7 +393,7 @@ LoanSet::doApply()
 
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
-    auto const vaultScale = getVaultScale(vaultSle);
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
     if (vaultAvailableProxy < principalRequested)
     {
         JLOG(j_.warn())
@@ -406,21 +416,33 @@ LoanSet::doApply()
         TenthBips16{brokerSle->at(sfManagementFeeRate)},
         vaultScale);
 
+    LoanState const state = constructLoanState(
+        properties.loanState.valueOutstanding,
+        principalRequested,
+        properties.loanState.managementFeeDue);
+
+    auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
+    XRPL_ASSERT_PARTS(
+        vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
+        "xrpl::LoanSet::doApply",
+        "Vault is below maximum limit");
+    if (vaultMaximum != 0 && state.interestDue > vaultMaximum - vaultTotalProxy)
+    {
+        JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
+        return tecLIMIT_EXCEEDED;
+    }
     // Check that relevant values won't lose precision. This is mostly only
     // relevant for IOU assets.
+    for (auto const& field : getValueFields())
     {
-        for (auto const& field : getValueFields())
+        if (auto const value = tx[field];
+            value && !isRounded(vaultAsset, *value, properties.loanScale))
         {
-            if (auto const value = tx[field];
-                value && !isRounded(vaultAsset, *value, properties.loanScale))
-            {
-                JLOG(j_.warn())
-                    << field.f->getName() << " (" << *value
-                    << ") has too much precision. Total loan value is "
-                    << properties.totalValueOutstanding << " with a scale of "
-                    << properties.loanScale;
-                return tecPRECISION_LOSS;
-            }
+            JLOG(j_.warn()) << field.f->getName() << " (" << *value
+                            << ") has too much precision. Total loan value is "
+                            << properties.loanState.valueOutstanding
+                            << " with a scale of " << properties.loanScale;
+            return tecPRECISION_LOSS;
         }
     }
 
@@ -434,21 +456,19 @@ LoanSet::doApply()
         return ret;
 
     // Check that the other computed values are valid
-    if (properties.managementFeeOwedToBroker < 0 ||
-        properties.totalValueOutstanding <= 0 ||
+    if (properties.loanState.managementFeeDue < 0 ||
+        properties.loanState.valueOutstanding <= 0 ||
         properties.periodicPayment <= 0)
     {
         // LCOV_EXCL_START
         JLOG(j_.warn())
-            << "Computed loan properties are invalid. Does not compute.";
+            << "Computed loan properties are invalid. Does not compute."
+            << " Management fee: " << properties.loanState.managementFeeDue
+            << ". Total Value: " << properties.loanState.valueOutstanding
+            << ". PeriodicPayment: " << properties.periodicPayment;
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
-
-    LoanState const state = constructLoanState(
-        properties.totalValueOutstanding,
-        principalRequested,
-        properties.managementFeeOwedToBroker);
 
     auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
 
@@ -534,11 +554,11 @@ LoanSet::doApply()
             // ignore tecDUPLICATE. That means the holding already exists,
             // and is fine here
             return ter;
-
-        if (auto const ter = requireAuth(
-                view, vaultAsset, brokerOwner, AuthType::StrongAuth))
-            return ter;
     }
+
+    if (auto const ter =
+            requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
+        return ter;
 
     if (auto const ter = accountSendMulti(
             view,
@@ -588,9 +608,10 @@ LoanSet::doApply()
     // Set dynamic / computed fields to their initial values
     loan->at(sfPrincipalOutstanding) = principalRequested;
     loan->at(sfPeriodicPayment) = properties.periodicPayment;
-    loan->at(sfTotalValueOutstanding) = properties.totalValueOutstanding;
-    loan->at(sfManagementFeeOutstanding) = properties.managementFeeOwedToBroker;
-    loan->at(sfPreviousPaymentDate) = 0;
+    loan->at(sfTotalValueOutstanding) = properties.loanState.valueOutstanding;
+    loan->at(sfManagementFeeOutstanding) =
+        properties.loanState.managementFeeDue;
+    loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
     view.insert(loan);
@@ -623,6 +644,10 @@ LoanSet::doApply()
     // Borrower is the owner of the loan
     if (auto const ter = dirLink(view, borrower, loan, sfOwnerNode))
         return ter;
+
+    associateAsset(*vaultSle, vaultAsset);
+    associateAsset(*brokerSle, vaultAsset);
+    associateAsset(*loan, vaultAsset);
 
     return tesSUCCESS;
 }

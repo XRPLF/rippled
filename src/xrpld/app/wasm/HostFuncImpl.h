@@ -41,6 +41,25 @@ class WasmHostFunctionsImpl : public HostFunctions
         return cacheIdx;
     }
 
+    template <typename F>
+    void
+    log(std::string_view const& msg, F&& dataFn)
+    {
+#ifdef DEBUG_OUTPUT
+        auto& j = std::cerr;
+#else
+        if (!getJournal().active(beast::severities::kTrace))
+            return;
+        auto j = getJournal().trace();
+#endif
+        j << "WasmTrace[" << to_short_string(leKey.key) << "]: " << msg << " "
+          << dataFn();
+
+#ifdef DEBUG_OUTPUT
+        j << std::endl;
+#endif
+    }
+
 public:
     WasmHostFunctionsImpl(ApplyContext& ct, Keylet const& leKey)
         : HostFunctions(ct.journal), ctx(ct), leKey(leKey)
@@ -270,5 +289,15 @@ public:
     Expected<Bytes, HostFunctionError>
     floatLog(Slice const& x, int32_t mode) override;
 };
+
+namespace wasm_float {
+
+// The range for the mantissa and exponent when normalized
+static std::int64_t constexpr minMantissa = 1'000'000'000'000'000ll;
+static std::int64_t constexpr maxMantissa = (1ull << 54) - 1;
+static int constexpr minExponent = -96;
+static int constexpr maxExponent = 80;
+
+}  // namespace wasm_float
 
 }  // namespace xrpl

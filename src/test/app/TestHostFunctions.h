@@ -380,163 +380,146 @@ public:
         return 4;
     }
 
-    Expected<int32_t, HostFunctionError>
-    trace(std::string_view const& msg, Slice const& data, bool asHex) override
+    template <typename F>
+    void
+    log(std::string_view const& msg, F&& dataFn)
     {
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
+        if (!getJournal().active(beast::severities::kTrace))
+            return;
         auto j = getJournal().trace();
 #endif
-        if (!asHex)
-        {
-            j << "WASM TRACE: " << msg << " "
-              << std::string_view(
-                     reinterpret_cast<char const*>(data.data()), data.size());
-        }
-        else
-        {
-            std::string hex;
-            hex.reserve(data.size() * 2);
-            boost::algorithm::hex(
-                data.begin(), data.end(), std::back_inserter(hex));
-            j << "WASM DEV TRACE: " << msg << " " << hex;
-        }
+        j << "WasmTrace: " << msg << " " << dataFn();
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;
 #endif
+    }
 
-        return msg.size() + data.size() * (asHex ? 2 : 1);
+    Expected<int32_t, HostFunctionError>
+    trace(std::string_view const& msg, Slice const& data, bool asHex) override
+    {
+        auto const ret = msg.size() + data.size() * (asHex ? 2 : 1);
+
+        if (!asHex)
+        {
+            log(msg, [&data] {
+                return std::string_view(
+                    reinterpret_cast<char const*>(data.data()), data.size());
+            });
+        }
+        else
+        {
+            log(msg, [&data] {
+                std::string hex;
+                hex.reserve(data.size() * 2);
+                boost::algorithm::hex(
+                    data.begin(), data.end(), std::back_inserter(hex));
+                return hex;
+            });
+        }
+
+        return ret;
     }
 
     Expected<int32_t, HostFunctionError>
     traceNum(std::string_view const& msg, int64_t data) override
     {
-#ifdef DEBUG_OUTPUT
-        auto& j = std::cerr;
-#else
-        auto j = getJournal().trace();
-#endif
-        j << "WASM TRACE NUM: " << msg << " " << data;
-
-#ifdef DEBUG_OUTPUT
-        j << std::endl;
-#endif
-        return msg.size() + sizeof(data);
+        auto const ret = msg.size() + sizeof(data);
+        log(msg, [data] { return data; });
+        return ret;
     }
 
     Expected<int32_t, HostFunctionError>
     traceAccount(std::string_view const& msg, AccountID const& account) override
     {
-#ifdef DEBUG_OUTPUT
-        auto& j = std::cerr;
-#else
-        auto j = getJournal().trace();
-#endif
-        if (!account)
-            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
-
-        auto const accountStr = toBase58(account);
-
-        j << "WASM TRACE ACCOUNT: " << msg << " " << accountStr;
-        return msg.size() + accountStr.size();
+        auto const ret = msg.size() + account.size();
+        log(msg, [&account] { return toBase58(account); });
+        return ret;
     }
 
     Expected<int32_t, HostFunctionError>
     traceFloat(std::string_view const& msg, Slice const& data) override
     {
-#ifdef DEBUG_OUTPUT
-        auto& j = std::cerr;
-#else
-        auto j = getJournal().trace();
-#endif
-        auto const s = floatToString(data);
-        j << "WASM TRACE FLOAT: " << msg << " " << s;
-
-#ifdef DEBUG_OUTPUT
-        j << std::endl;
-#endif
-        return msg.size() + s.size();
+        auto const ret = msg.size() + data.size();
+        log(msg, [&data] { return wasm_float::floatToString(data); });
+        return ret;
     }
 
     Expected<int32_t, HostFunctionError>
     traceAmount(std::string_view const& msg, STAmount const& amount) override
     {
-#ifdef DEBUG_OUTPUT
-        auto& j = std::cerr;
-#else
-        auto j = getJournal().trace();
-#endif
-        auto const amountStr = amount.getFullText();
-        j << "WASM TRACE AMOUNT: " << msg << " " << amountStr;
-        return msg.size() + amountStr.size();
+        auto const ret = msg.size();
+        log(msg, [&amount] { return amount.getFullText(); });
+        return ret;
     }
 
     Expected<Bytes, HostFunctionError>
     floatFromInt(int64_t x, int32_t mode) override
     {
-        return floatFromIntImpl(x, mode);
+        return wasm_float::floatFromIntImpl(x, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatFromUint(uint64_t x, int32_t mode) override
     {
-        return floatFromUintImpl(x, mode);
+        return wasm_float::floatFromUintImpl(x, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatSet(int64_t mantissa, int32_t exponent, int32_t mode) override
     {
-        return floatSetImpl(mantissa, exponent, mode);
+        return wasm_float::floatSetImpl(mantissa, exponent, mode);
     }
 
     Expected<int32_t, HostFunctionError>
     floatCompare(Slice const& x, Slice const& y) override
     {
-        return floatCompareImpl(x, y);
+        return wasm_float::floatCompareImpl(x, y);
     }
 
     Expected<Bytes, HostFunctionError>
     floatAdd(Slice const& x, Slice const& y, int32_t mode) override
     {
-        return floatAddImpl(x, y, mode);
+        return wasm_float::floatAddImpl(x, y, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatSubtract(Slice const& x, Slice const& y, int32_t mode) override
     {
-        return floatSubtractImpl(x, y, mode);
+        return wasm_float::floatSubtractImpl(x, y, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatMultiply(Slice const& x, Slice const& y, int32_t mode) override
     {
-        return floatMultiplyImpl(x, y, mode);
+        return wasm_float::floatMultiplyImpl(x, y, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatDivide(Slice const& x, Slice const& y, int32_t mode) override
     {
-        return floatDivideImpl(x, y, mode);
+        return wasm_float::floatDivideImpl(x, y, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatRoot(Slice const& x, int32_t n, int32_t mode) override
     {
-        return floatRootImpl(x, n, mode);
+        return wasm_float::floatRootImpl(x, n, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatPower(Slice const& x, int32_t n, int32_t mode) override
     {
-        return floatPowerImpl(x, n, mode);
+        return wasm_float::floatPowerImpl(x, n, mode);
     }
 
     Expected<Bytes, HostFunctionError>
     floatLog(Slice const& x, int32_t mode) override
     {
-        return floatLogImpl(x, mode);
+        return wasm_float::floatLogImpl(x, mode);
     }
 };
 

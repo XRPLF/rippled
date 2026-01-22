@@ -248,7 +248,7 @@ pub extern "C" fn finish() -> i32 {
                 account.0.len(),
             )
         },
-        47,
+        (message.len() + 20) as i32,
         "trace_account",
     );
     let amount = &[0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5F]; // 95 drops of XRP
@@ -261,7 +261,7 @@ pub extern "C" fn finish() -> i32 {
                 amount.len(),
             )
         },
-        19,
+        message.len() as i32,
         "trace_amount",
     );
     let amount = &[0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]; // 0 drops of XRP
@@ -274,7 +274,7 @@ pub extern "C" fn finish() -> i32 {
                 amount.len(),
             )
         },
-        18,
+        message.len() as i32,
         "trace_amount_zero",
     );
 
@@ -307,32 +307,6 @@ pub extern "C" fn finish() -> i32 {
             "get_parent_ledger_hash_len_too_long",
         )
     });
-    let message = "testing trace";
-    check_result(
-        unsafe {
-            host::trace_account(
-                message.as_ptr(),
-                message.len(),
-                account.0.as_ptr(),
-                account.0.len(),
-            )
-        },
-        47,
-        "trace_account",
-    );
-    let amount = &[0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5F]; // 95 drops of XRP
-    check_result(
-        unsafe {
-            host::trace_amount(
-                message.as_ptr(),
-                message.len(),
-                amount.as_ptr(),
-                amount.len(),
-            )
-        },
-        19,
-        "trace_amount",
-    );
 
     // ########################################
     // Step #3: Test getData[Type] edge cases

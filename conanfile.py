@@ -40,7 +40,7 @@ class Xrpl(ConanFile):
     ]
 
     test_requires = [
-        "doctest/2.4.12",
+        "gtest/1.17.0",
     ]
 
     tool_requires = [
@@ -88,7 +88,13 @@ class Xrpl(ConanFile):
         "libarchive/*:with_xattr": False,
         "libarchive/*:with_zlib": False,
         "lz4/*:shared": False,
+        "openssl/*:no_dtls": True,
+        "openssl/*:no_ssl": True,
+        "openssl/*:no_ssl3": True,
+        "openssl/*:no_tls1": True,
+        "openssl/*:no_tls1_1": True,
         "openssl/*:shared": False,
+        "openssl/*:tls_security_level": 2,
         "protobuf/*:shared": False,
         "protobuf/*:with_zlib": True,
         "rocksdb/*:enable_sse": False,

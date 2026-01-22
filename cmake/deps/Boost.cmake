@@ -1,4 +1,7 @@
-find_package(Boost 1.82 REQUIRED
+include(CompilationEnv)
+include(XrplSanitizers)
+
+find_package(Boost REQUIRED
   COMPONENTS
     chrono
     container
@@ -32,7 +35,7 @@ target_link_libraries(xrpl_boost
 if(Boost_COMPILER)
   target_link_libraries(xrpl_boost INTERFACE Boost::disable_autolinking)
 endif()
-if(san AND is_clang)
+if(SANITIZERS_ENABLED AND is_clang)
   # TODO: gcc does not support -fsanitize-blacklist...can we do something else
   # for gcc ?
   if(NOT Boost_INCLUDE_DIRS AND TARGET Boost::headers)
