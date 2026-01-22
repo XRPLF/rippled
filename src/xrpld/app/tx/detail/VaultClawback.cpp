@@ -7,6 +7,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 
 #include <optional>
@@ -456,6 +457,8 @@ VaultClawback::doApply()
             // LCOV_EXCL_STOP
         }
     }
+
+    associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
 }

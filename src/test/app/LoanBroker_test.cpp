@@ -752,30 +752,36 @@ class LoanBroker_test : public beast::unit_test::suite
                     // LoanBrokerID
                     env(set(alice, vault.vaultID),
                         loanBrokerID(nextKeylet.key),
-                        ter(tecNO_ENTRY));
+                        ter(tecNO_ENTRY),
+                        THISLINE);
                     // VaultID
                     env(set(alice, nextKeylet.key),
                         loanBrokerID(broker->key()),
-                        ter(tecNO_PERMISSION));
+                        ter(tecNO_ENTRY),
+                        THISLINE);
                     // Owner
                     env(set(evan, vault.vaultID),
                         loanBrokerID(broker->key()),
-                        ter(tecNO_PERMISSION));
+                        ter(tecNO_PERMISSION),
+                        THISLINE);
                     // ManagementFeeRate
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         managementFeeRate(maxManagementFeeRate),
-                        ter(temINVALID));
+                        ter(temINVALID),
+                        THISLINE);
                     // CoverRateMinimum
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         coverRateMinimum(maxManagementFeeRate),
-                        ter(temINVALID));
+                        ter(temINVALID),
+                        THISLINE);
                     // CoverRateLiquidation
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         coverRateLiquidation(maxManagementFeeRate),
-                        ter(temINVALID));
+                        ter(temINVALID),
+                        THISLINE);
 
                     // fields that can be changed
                     testData = "Test Data 1234";
@@ -783,23 +789,43 @@ class LoanBroker_test : public beast::unit_test::suite
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         data(std::string(maxDataPayloadLength + 1, 'W')),
-                        ter(temINVALID));
+                        ter(temINVALID),
+                        THISLINE);
 
                     // Bad debt maximum
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         debtMaximum(Number(-175, -1)),
-                        ter(temINVALID));
+                        ter(temINVALID),
+                        THISLINE);
+                    Number debtMax{175, -1};
+                    if (vault.asset.integral())
+                    {
+                        env(set(alice, vault.vaultID),
+                            loanBrokerID(broker->key()),
+                            data(testData),
+                            debtMaximum(debtMax),
+                            ter(tecPRECISION_LOSS),
+                            THISLINE);
+                        roundToAsset(vault.asset, debtMax);
+                    }
                     // Data & Debt maximum
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         data(testData),
-                        debtMaximum(Number(175, -1)));
+                        debtMaximum(debtMax),
+                        THISLINE);
                 },
                 [&](SLE::const_ref broker) {
                     // Check the updated fields
                     BEAST_EXPECT(checkVL(broker->at(sfData), testData));
-                    BEAST_EXPECT(broker->at(sfDebtMaximum) == Number(175, -1));
+                    Number const expected =
+                        STAmount{vault.asset, Number(175, -1)};
+                    auto const actual = broker->at(sfDebtMaximum);
+                    BEAST_EXPECTS(
+                        actual == expected,
+                        "Expected: " + to_string(expected) +
+                            ", Actual: " + to_string(actual));
                 });
 
             lifecycle(
@@ -1023,6 +1049,12 @@ class LoanBroker_test : public beast::unit_test::suite
             env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
                 destination(dest),
                 ter(tecFROZEN),
+                THISLINE);
+
+            // preclaim: tecPSEUDO_ACCOUNT
+            env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
+                destination(vaultInfo.pseudoAccount),
+                ter(tecPSEUDO_ACCOUNT),
                 THISLINE);
         }
 
@@ -1436,10 +1468,506 @@ class LoanBroker_test : public beast::unit_test::suite
         });
     }
 
+    void
+    testLoanBrokerSetDebtMaximum()
+    {
+        testcase("testLoanBrokerSetDebtMaximum");
+        using namespace jtx;
+        using namespace loanBroker;
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Env env(*this);
+        Vault vault{env};
+
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        PrettyAsset const asset = [&]() {
+            MPTTester mptt{env, issuer, mptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+            env.close();
+            PrettyAsset const mptAsset = mptt["MPT"];
+            mptt.authorize({.account = alice});
+            env.close();
+            return mptAsset;
+        }();
+
+        env(pay(issuer, alice, asset(100'000)), THISLINE);
+        env.close();
+
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx, THISLINE);
+        env.close();
+        auto const le = env.le(vaultKeylet);
+        VaultInfo vaultInfo = [&]() {
+            if (BEAST_EXPECT(le))
+                return VaultInfo{asset, vaultKeylet.key, le->at(sfAccount)};
+            return VaultInfo{asset, {}, {}};
+        }();
+        if (vaultInfo.vaultID == uint256{})
+            return;
+
+        env(vault.deposit(
+                {.depositor = alice,
+                 .id = vaultKeylet.key,
+                 .amount = asset(50)}),
+            THISLINE);
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultInfo.vaultID), THISLINE);
+        env.close();
+
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000), borrower);
+        env(loan::set(borrower, brokerKeylet.key, asset(50).value()),
+            sig(sfCounterpartySignature, alice),
+            fee(env.current()->fees().base * 2),
+            THISLINE);
+        auto const broker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(broker))
+            return;
+
+        BEAST_EXPECT(broker->at(sfDebtTotal) == 50);
+        auto debtTotal = broker->at(sfDebtTotal);
+
+        auto tx2 = set(alice, vaultInfo.vaultID);
+        tx2[sfLoanBrokerID] = to_string(brokerKeylet.key);
+        tx2[sfDebtMaximum] = debtTotal - 1;
+        env(tx2, ter(tecLIMIT_EXCEEDED), THISLINE);
+
+        tx2[sfDebtMaximum] = debtTotal + 1;
+        env(tx2, ter(tesSUCCESS), THISLINE);
+
+        tx2[sfDebtMaximum] = 0;
+        env(tx2, ter(tesSUCCESS), THISLINE);
+
+        tx2[sfDebtMaximum] = Json::Value::maxInt;
+        env(tx2, ter(tesSUCCESS), THISLINE);
+
+        {
+            auto const dm = power(2, 64) - 1;
+            BEAST_EXPECT(dm > maxMPTokenAmount);
+            tx2[sfDebtMaximum] = dm;
+            env(tx2, ter(temINVALID), THISLINE);
+        }
+
+        {
+            auto const dm = power(2, 63) - 1;
+            BEAST_EXPECTS(dm > maxMPTokenAmount, to_string(dm));
+            tx2[sfDebtMaximum] = dm;
+            env(tx2, ter(temINVALID), THISLINE);
+        }
+
+        {
+            auto const dm = power(2, 63) - 3;
+            BEAST_EXPECTS(dm == maxMPTokenAmount, to_string(dm));
+            tx2[sfDebtMaximum] = dm;
+            env(tx2, ter(tesSUCCESS), THISLINE);
+        }
+
+        {
+            auto const dm = 2 * (power(2, 62) - 1) + 1;
+            BEAST_EXPECTS(dm == maxMPTokenAmount, to_string(dm));
+            tx2[sfDebtMaximum] = dm;
+            env(tx2, ter(tesSUCCESS), THISLINE);
+        }
+
+        tx2[sfDebtMaximum] = Number{9223372036854775807, 0};
+        env(tx2, ter(tesSUCCESS), THISLINE);
+    }
+
+    void
+    testRIPD4323()
+    {
+        testcase << "RIPD-4323";
+        using namespace jtx;
+        Account const issuer("issuer");
+        Account const holder("holder");
+        Account const& broker = issuer;
+
+        auto test = [&](auto&& getToken) {
+            Env env(*this);
+
+            env.fund(XRP(1'000), issuer, holder);
+            env.close();
+
+            auto const [token, deposit, err] = getToken(env);
+
+            Vault vault(env);
+            auto const [tx, keylet] =
+                vault.create({.owner = broker, .asset = token.asset()});
+            env(tx);
+            env.close();
+
+            env(vault.deposit(
+                    {.depositor = broker, .id = keylet.key, .amount = deposit}),
+                ter(err));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanbroker(broker, env.seq(broker));
+
+            env(loanBroker::set(broker, keylet.key));
+            env.close();
+
+            env(loanBroker::coverDeposit(broker, brokerKeylet.key, deposit),
+                ter(err));
+            env.close();
+        };
+
+        test([&](Env&) {
+            // issuer can issue any amount
+            auto const token = issuer["IOU"];
+            return std::make_tuple(token, token(1'000), tesSUCCESS);
+        });
+        std::vector<std::tuple<
+            std::uint64_t,                 // pay to holder
+            std::optional<std::uint64_t>,  // max amount
+            std::uint64_t,                 // deposit amount
+            TER>>                          // expected error
+            mptTests = {
+                // issuer can issue up to 2'000 tokens
+                {2'000, 4'000, 1'000, tesSUCCESS},
+                // issuer can issue 500 tokens (250 VaultDeposit +
+                // 250 LoanBrokerCoverDeposit)
+                {2'000, 2'500, 250, tesSUCCESS},
+                // issuer can issue 500 tokens (250 VaultDeposit +
+                // 250 LoanBrokerCoverDeposit). MaximumAmount is default.
+                {maxMPTokenAmount - 500, std::nullopt, 250, tesSUCCESS},
+                // issuer can issue 500, and fails on depositing 1'000
+                {2'000, 2'500, 1'000, tecINSUFFICIENT_FUNDS},
+                // issuer has already issued MaximumAmount
+                {2'000, 2'000, 1'000, tecINSUFFICIENT_FUNDS},
+                // issuer has already issued MaximumAmount. MaximumAmount is
+                // default.
+                {maxMPTokenAmount, std::nullopt, 250, tecINSUFFICIENT_FUNDS},
+            };
+        for (auto const& [pay, max, deposit, err] : mptTests)
+        {
+            test([&](Env& env) -> std::tuple<MPT, PrettyAmount, TER> {
+                MPT const token = MPTTester(
+                    {.env = env,
+                     .issuer = issuer,
+                     .holders = {holder},
+                     .pay = pay,
+                     .flags = MPTDEXFlags,
+                     .maxAmt = max});
+                return std::make_tuple(token, token(deposit), err);
+            });
+        }
+    }
+
+    void
+    testAMB06_VaultFreezeCheckMissing()
+    {
+        testcase << "RIPD-4466 - LoanBrokerSet disallows frozen vaults";
+        using namespace jtx;
+        Env env(*this);
+
+        Account const issuer{"issuer"}, lender{"lender"}, borrower{"borrower"};
+        env.fund(XRP(20'000), issuer, lender, borrower);
+        auto const IOU = issuer["IOU"];
+
+        Vault vault{env};
+        auto [tx, vaultKeylet] =
+            vault.create({.owner = lender, .asset = IOU.asset()});
+        env(tx);
+        env.close();
+
+        // Get vault pseudo-account and FREEZE it
+        auto const vaultSle = env.le(vaultKeylet);
+        auto const vaultPseudo = vaultSle->at(sfAccount);
+        auto const vaultPseudoAcct = Account("VaultPseudo", vaultPseudo);
+        env(trust(issuer, vaultPseudoAcct["IOU"](0), tfSetFreeze));
+
+        env(loanBroker::set(lender, vaultKeylet.key), ter(tecFROZEN));
+    }
+
+    void
+    testRIPD4274IOU()
+    {
+        using namespace jtx;
+        Account issuer("broker");
+        Account broker("issuer");
+        Account dest("destination");
+        auto const token = issuer["IOU"];
+
+        enum TrustState {
+            RequireAuth,
+            ZeroLimit,
+            ReachedLimit,
+            NearLimit,
+            NoTrustLine,
+        };
+
+        auto test = [&](TrustState trustState) {
+            Env env(*this);
+
+            testcase << "RIPD-4274 IOU with state: "
+                     << static_cast<int>(trustState);
+
+            auto setTrustLine = [&](Account const& acct, TrustState state) {
+                switch (state)
+                {
+                    case RequireAuth:
+                        env(trust(issuer, token(0), acct, tfSetfAuth));
+                        break;
+                    case ZeroLimit: {
+                        auto jv = trust(acct, token(0));
+                        // set QualityIn so that the trustline is not
+                        // auto-deleted
+                        jv[sfQualityIn] = 10'000'000;
+                        env(jv);
+                    }
+                    break;
+                    case ReachedLimit: {
+                        env(trust(acct, token(1'000)));
+                        env(pay(issuer, acct, token(1'000)));
+                        env.close();
+                    }
+                    break;
+                    case NearLimit: {
+                        env(trust(acct, token(1'000)));
+                        env(pay(issuer, acct, token(950)));
+                        env.close();
+                    }
+                    break;
+                    case NoTrustLine:
+                        // don't create a trustline
+                        break;
+                    default:
+                        BEAST_EXPECT(false);
+                }
+                env.close();
+            };
+
+            env.fund(XRP(1'000), issuer, broker, dest);
+            env.close();
+
+            if (trustState == RequireAuth)
+            {
+                env(fset(issuer, asfRequireAuth));
+                env.close();
+
+                setTrustLine(broker, RequireAuth);
+            }
+
+            setTrustLine(dest, trustState);
+
+            env(trust(broker, token(2'000), 0));
+            env(pay(issuer, broker, token(2'000)));
+            env.close();
+
+            Vault vault(env);
+            auto const [tx, keylet] =
+                vault.create({.owner = broker, .asset = token.asset()});
+            env(tx);
+            env.close();
+
+            // Test Vault withdraw
+            env(vault.deposit(
+                {.depositor = broker,
+                 .id = keylet.key,
+                 .amount = token(1'000)}));
+            env.close();
+
+            env(vault.withdraw(
+                    {.depositor = broker,
+                     .id = keylet.key,
+                     .amount = token(1'000)}),
+                loanBroker::destination(dest),
+                ter(std::ignore));
+            BEAST_EXPECT(env.ter() == tecNO_LINE);
+            env.close();
+
+            env(vault.withdraw(
+                {.depositor = broker,
+                 .id = keylet.key,
+                 .amount = token(1'000)}));
+
+            // Test LoanBroker withdraw
+            auto const brokerKeylet =
+                keylet::loanbroker(broker, env.seq(broker));
+
+            env(loanBroker::set(broker, keylet.key));
+            env.close();
+
+            env(loanBroker::coverDeposit(
+                broker, brokerKeylet.key, token(1'000)));
+            env.close();
+
+            env(loanBroker::coverWithdraw(broker, brokerKeylet.key, token(100)),
+                loanBroker::destination(dest),
+                ter(std::ignore));
+            BEAST_EXPECT(env.ter() == tecNO_LINE);
+            env.close();
+
+            // Clearing RequireAuth shouldn't change the result
+            if (trustState == RequireAuth)
+            {
+                env(fclear(issuer, asfRequireAuth));
+                env.close();
+
+                env(loanBroker::coverWithdraw(
+                        broker, brokerKeylet.key, token(100)),
+                    loanBroker::destination(dest),
+                    ter(std::ignore));
+                BEAST_EXPECT(env.ter() == tecNO_LINE);
+                env.close();
+            }
+        };
+
+        test(RequireAuth);
+        test(ZeroLimit);
+        test(ReachedLimit);
+        test(NearLimit);
+        test(NoTrustLine);
+    }
+
+    void
+    testRIPD4274MPT()
+    {
+        using namespace jtx;
+        Account issuer("broker");
+        Account broker("issuer");
+        Account dest("destination");
+
+        enum MPTState {
+            RequireAuth,
+            ReachedMAX,
+            NoMPT,
+        };
+
+        auto test = [&](MPTState MPTState) {
+            Env env(*this);
+
+            testcase << "RIPD-4274 MPT with state: "
+                     << static_cast<int>(MPTState);
+
+            env.fund(XRP(1'000), issuer, broker, dest);
+            env.close();
+
+            auto const maybeToken = [&]() -> std::optional<MPT> {
+                switch (MPTState)
+                {
+                    case RequireAuth: {
+                        auto tester = MPTTester(
+                            {.env = env,
+                             .issuer = issuer,
+                             .holders = {broker, dest},
+                             .pay = 2'000,
+                             .flags = MPTDEXFlags | tfMPTRequireAuth,
+                             .authHolder = true,
+                             .maxAmt = 5'000});
+                        // unauthorize dest
+                        tester.authorize(
+                            {.account = issuer,
+                             .holder = dest,
+                             .flags = tfMPTUnauthorize});
+                        return tester;
+                    }
+                    case ReachedMAX: {
+                        auto tester = MPTTester(
+                            {.env = env,
+                             .issuer = issuer,
+                             .holders = {broker, dest},
+                             .pay = 2'000,
+                             .flags = MPTDEXFlags,
+                             .maxAmt = 4'000});
+                        BEAST_EXPECT(
+                            env.balance(issuer, tester) == tester(-4'000));
+                        return tester;
+                    }
+                    case NoMPT: {
+                        return MPTTester(
+                            {.env = env,
+                             .issuer = issuer,
+                             .holders = {broker},
+                             .pay = 2'000,
+                             .flags = MPTDEXFlags,
+                             .maxAmt = 4'000});
+                    }
+                    default:
+                        return std::nullopt;
+                }
+            }();
+            if (!BEAST_EXPECT(maybeToken))
+                return;
+
+            auto const& token = *maybeToken;
+
+            Vault vault(env);
+            auto const [tx, keylet] =
+                vault.create({.owner = broker, .asset = token.asset()});
+            env(tx);
+            env.close();
+
+            // Test Vault withdraw
+            env(vault.deposit(
+                {.depositor = broker,
+                 .id = keylet.key,
+                 .amount = token(1'000)}));
+            env.close();
+
+            env(vault.withdraw(
+                    {.depositor = broker,
+                     .id = keylet.key,
+                     .amount = token(1'000)}),
+                loanBroker::destination(dest),
+                ter(std::ignore));
+
+            // Shouldn't fail if at MaximumAmount since no new tokens are issued
+            TER const err =
+                MPTState == ReachedMAX ? TER(tesSUCCESS) : tecNO_AUTH;
+            BEAST_EXPECT(env.ter() == err);
+            env.close();
+
+            if (err != tesSUCCESS)
+            {
+                env(vault.withdraw(
+                    {.depositor = broker,
+                     .id = keylet.key,
+                     .amount = token(1'000)}));
+            }
+
+            // Test LoanBroker withdraw
+            auto const brokerKeylet =
+                keylet::loanbroker(broker, env.seq(broker));
+
+            env(loanBroker::set(broker, keylet.key));
+            env.close();
+
+            env(loanBroker::coverDeposit(
+                broker, brokerKeylet.key, token(1'000)));
+            env.close();
+
+            env(loanBroker::coverWithdraw(broker, brokerKeylet.key, token(100)),
+                loanBroker::destination(dest),
+                ter(std::ignore));
+            BEAST_EXPECT(env.ter() == err);
+            env.close();
+        };
+
+        test(RequireAuth);
+        test(ReachedMAX);
+        test(NoMPT);
+    }
+
+    void
+    testRIPD4274()
+    {
+        testRIPD4274IOU();
+        testRIPD4274MPT();
+    }
+
 public:
     void
     run() override
     {
+        testLoanBrokerSetDebtMaximum();
         testLoanBrokerCoverDepositNullVault();
 
         testDisabled();
@@ -1450,6 +1978,11 @@ public:
         testInvalidLoanBrokerDelete();
         testInvalidLoanBrokerSet();
         testRequireAuth();
+
+        testRIPD4323();
+        testAMB06_VaultFreezeCheckMissing();
+
+        testRIPD4274();
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.

@@ -70,7 +70,7 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@65da1c59e81965eeb257caa3587b9d45066fb925
+        uses: XRPLF/actions/prepare-runner@f05cab7b8541eee6473aa42beb9d2fe35608a190
         with:
           enable_ccache: false
 
@@ -86,8 +86,8 @@ jobs:
       - name: Setup Conan
         uses: ./.github/actions/setup-conan
         with:
-          conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
-          conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
+          remote_name: ${{ env.CONAN_REMOTE_NAME }}
+          remote_url: ${{ env.CONAN_REMOTE_URL }}
 
       - name: Build dependencies
         uses: ./.github/actions/build-deps
