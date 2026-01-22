@@ -67,7 +67,7 @@ jobs:
           REMOTE_NAME: ${{ inputs.remote_name }}
         run: |
           conan export . --version=${{ steps.version.outputs.version }}
-          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/*
+          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/${{ steps.version.outputs.version }}
 
     outputs:
       ref: xrpl/${{ steps.version.outputs.version }}
