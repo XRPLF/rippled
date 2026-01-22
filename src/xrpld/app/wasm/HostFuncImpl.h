@@ -84,6 +84,12 @@ public:
         return data_;
     }
 
+#pragma push_macro("HOST_FUNCTION_BYTES_RETURN")
+#pragma push_macro("HOST_FUNCTION_HASH_RETURN")
+#pragma push_macro("HOST_FUNCTION_NO_RETURN")
+#pragma push_macro("HOST_FUNCTION_INT_RETURN")
+#pragma push_macro("HOST_FUNCTION_UINT_RETURN")
+
 #define HOST_FUNCTION_BYTES_RETURN(NAME, ...) \
     Expected<Bytes, HostFunctionError> NAME(__VA_ARGS__) override;
 
@@ -101,11 +107,11 @@ public:
 
 #include <xrpld/app/wasm/host_functions.macro>
 
-#undef HOST_FUNCTION_BYTES_RETURN
-#undef HOST_FUNCTION_HASH_RETURN
-#undef HOST_FUNCTION_NO_RETURN
-#undef HOST_FUNCTION_INT_RETURN
-#undef HOST_FUNCTION_UINT_RETURN
+#pragma pop_macro("HOST_FUNCTION_UINT_RETURN")
+#pragma pop_macro("HOST_FUNCTION_INT_RETURN")
+#pragma pop_macro("HOST_FUNCTION_NO_RETURN")
+#pragma pop_macro("HOST_FUNCTION_HASH_RETURN")
+#pragma pop_macro("HOST_FUNCTION_BYTES_RETURN")
 };
 
 namespace wasm_float {

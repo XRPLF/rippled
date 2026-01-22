@@ -124,45 +124,49 @@ struct HostFunctions
         return j_;
     }
 
-    // clang-format off
-#define HOST_FUNCTION_BYTES_RETURN(NAME, ...)                            \
-    virtual Expected<Bytes, HostFunctionError> NAME(__VA_ARGS__)         \
-    {                                                                    \
-        return Unexpected(HostFunctionError::INTERNAL);                  \
+#pragma push_macro("HOST_FUNCTION_BYTES_RETURN")
+#pragma push_macro("HOST_FUNCTION_HASH_RETURN")
+#pragma push_macro("HOST_FUNCTION_NO_RETURN")
+#pragma push_macro("HOST_FUNCTION_INT_RETURN")
+#pragma push_macro("HOST_FUNCTION_UINT_RETURN")
+
+#define HOST_FUNCTION_BYTES_RETURN(NAME, ...)                    \
+    virtual Expected<Bytes, HostFunctionError> NAME(__VA_ARGS__) \
+    {                                                            \
+        return Unexpected(HostFunctionError::INTERNAL);          \
     }
 
-#define HOST_FUNCTION_HASH_RETURN(NAME, ...)                             \
-    virtual Expected<Hash, HostFunctionError> NAME(__VA_ARGS__)          \
-    {                                                                    \
-        return Unexpected(HostFunctionError::INTERNAL);                  \
+#define HOST_FUNCTION_HASH_RETURN(NAME, ...)                    \
+    virtual Expected<Hash, HostFunctionError> NAME(__VA_ARGS__) \
+    {                                                           \
+        return Unexpected(HostFunctionError::INTERNAL);         \
     }
 
-#define HOST_FUNCTION_NO_RETURN(NAME, ...)                               \
-    virtual Expected<int32_t, HostFunctionError> NAME(__VA_ARGS__)       \
-    {                                                                    \
-        return Unexpected(HostFunctionError::INTERNAL);                  \
+#define HOST_FUNCTION_NO_RETURN(NAME, ...)                         \
+    virtual Expected<int32_t, HostFunctionError> NAME(__VA_ARGS__) \
+    {                                                              \
+        return Unexpected(HostFunctionError::INTERNAL);            \
     }
 
-#define HOST_FUNCTION_INT_RETURN(NAME, ...)                              \
-    virtual Expected<int32_t, HostFunctionError> NAME(__VA_ARGS__)       \
-    {                                                                    \
-        return Unexpected(HostFunctionError::INTERNAL);                  \
+#define HOST_FUNCTION_INT_RETURN(NAME, ...)                        \
+    virtual Expected<int32_t, HostFunctionError> NAME(__VA_ARGS__) \
+    {                                                              \
+        return Unexpected(HostFunctionError::INTERNAL);            \
     }
 
 #define HOST_FUNCTION_UINT_RETURN(NAME, ...)                             \
-    virtual Expected<std::uint32_t, HostFunctionError> NAME(__VA_ARGS__)          \
+    virtual Expected<std::uint32_t, HostFunctionError> NAME(__VA_ARGS__) \
     {                                                                    \
         return Unexpected(HostFunctionError::INTERNAL);                  \
     }
 
 #include <xrpld/app/wasm/host_functions.macro>
 
-#undef HOST_FUNCTION_BYTES_RETURN
-#undef HOST_FUNCTION_HASH_RETURN
-#undef HOST_FUNCTION_NO_RETURN
-#undef HOST_FUNCTION_INT_RETURN
-#undef HOST_FUNCTION_UINT_RETURN
-    // clang-format on
+#pragma pop_macro("HOST_FUNCTION_UINT_RETURN")
+#pragma pop_macro("HOST_FUNCTION_INT_RETURN")
+#pragma pop_macro("HOST_FUNCTION_NO_RETURN")
+#pragma pop_macro("HOST_FUNCTION_HASH_RETURN")
+#pragma pop_macro("HOST_FUNCTION_BYTES_RETURN")
 
     virtual ~HostFunctions() = default;
     // LCOV_EXCL_STOP

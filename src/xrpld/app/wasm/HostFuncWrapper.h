@@ -6,6 +6,27 @@
 
 namespace xrpl {
 
+#pragma push_macro("INT32_PARAM")
+#pragma push_macro("INT64_PARAM")
+#pragma push_macro("UINT32_PARAM")
+#pragma push_macro("UINT64_PARAM")
+#pragma push_macro("SFIELD_PARAM")
+#pragma push_macro("SLICE_PARAM")
+#pragma push_macro("ACCOUNT_PARAM")
+#pragma push_macro("UINT256_PARAM")
+#pragma push_macro("ASSET_PARAM")
+#pragma push_macro("CURRENCY_PARAM")
+#pragma push_macro("MPTID_PARAM")
+#pragma push_macro("STRING_VIEW_PARAM")
+#pragma push_macro("STAMOUNT_PARAM")
+#pragma push_macro("BOOL_PARAM")
+#pragma push_macro("BYTES_PARAM")
+#pragma push_macro("HOST_FUNCTION_BYTES_RETURN")
+#pragma push_macro("HOST_FUNCTION_HASH_RETURN")
+#pragma push_macro("HOST_FUNCTION_NO_RETURN")
+#pragma push_macro("HOST_FUNCTION_INT_RETURN")
+#pragma push_macro("HOST_FUNCTION_UINT_RETURN")
+
 #define INT32_PARAM int32_t
 #define INT64_PARAM int64_t
 #define UINT32_PARAM int32_t
@@ -27,28 +48,48 @@ namespace xrpl {
     wasm_trap_t* NAME##_wrap( \
         void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 
-// clang-format off
-#define HOST_FUNCTION_BYTES_RETURN(NAME, ...) \
-    using NAME##_proto = int32_t(__VA_ARGS__ __VA_OPT__(,) uint8_t*, int32_t); \
+#define HOST_FUNCTION_BYTES_RETURN(NAME, ...)                  \
+    using NAME##_proto =                                       \
+        int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
     DECLARE_WRAP(NAME);
-#define HOST_FUNCTION_HASH_RETURN(NAME, ...) \
-    using NAME##_proto = int32_t(__VA_ARGS__ __VA_OPT__(,) uint8_t*, int32_t); \
+#define HOST_FUNCTION_HASH_RETURN(NAME, ...)                   \
+    using NAME##_proto =                                       \
+        int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
     DECLARE_WRAP(NAME);
-#define HOST_FUNCTION_NO_RETURN(NAME, ...) \
+#define HOST_FUNCTION_NO_RETURN(NAME, ...)     \
     using NAME##_proto = int32_t(__VA_ARGS__); \
     DECLARE_WRAP(NAME);
-#define HOST_FUNCTION_INT_RETURN(NAME, ...) \
+#define HOST_FUNCTION_INT_RETURN(NAME, ...)    \
     using NAME##_proto = int32_t(__VA_ARGS__); \
     DECLARE_WRAP(NAME);
-#define HOST_FUNCTION_UINT_RETURN(NAME, ...) \
-    using NAME##_proto = int32_t(__VA_ARGS__ __VA_OPT__(,) uint8_t*, int32_t); \
+#define HOST_FUNCTION_UINT_RETURN(NAME, ...)                   \
+    using NAME##_proto =                                       \
+        int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
     DECLARE_WRAP(NAME);
 
 #include <xrpld/app/wasm/host_functions.macro>
 
-#undef HOST_FUNCTION_BYTES_RETURN
-#undef HOST_FUNCTION_NO_RETURN
-#undef HOST_FUNCTION_INT_RETURN
 #undef DECLARE_WRAP
+
+#pragma pop_macro("HOST_FUNCTION_UINT_RETURN")
+#pragma pop_macro("HOST_FUNCTION_INT_RETURN")
+#pragma pop_macro("HOST_FUNCTION_NO_RETURN")
+#pragma pop_macro("HOST_FUNCTION_HASH_RETURN")
+#pragma pop_macro("HOST_FUNCTION_BYTES_RETURN")
+#pragma pop_macro("BYTES_PARAM")
+#pragma pop_macro("BOOL_PARAM")
+#pragma pop_macro("STAMOUNT_PARAM")
+#pragma pop_macro("STRING_VIEW_PARAM")
+#pragma pop_macro("MPTID_PARAM")
+#pragma pop_macro("CURRENCY_PARAM")
+#pragma pop_macro("ASSET_PARAM")
+#pragma pop_macro("UINT256_PARAM")
+#pragma pop_macro("ACCOUNT_PARAM")
+#pragma pop_macro("SLICE_PARAM")
+#pragma pop_macro("SFIELD_PARAM")
+#pragma pop_macro("UINT64_PARAM")
+#pragma pop_macro("UINT32_PARAM")
+#pragma pop_macro("INT64_PARAM")
+#pragma pop_macro("INT32_PARAM")
 
 }  // namespace xrpl
