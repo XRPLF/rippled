@@ -31,7 +31,7 @@ runs:
         conan config install conan/profiles/ -tf $(conan config home)/profiles/
 
         echo 'Conan profile:'
-        conan profile show
+        conan profile show --profile ci
 
     - name: Set up Conan remote
       shell: bash
