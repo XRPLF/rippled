@@ -58,8 +58,8 @@ jobs:
       - name: Log into Conan remote
         env:
           REMOTE_NAME: ${{ inputs.remote_name }}
-          REMOTE_USERNAME: ${{ inputs.remote_username }}
-          REMOTE_PASSWORD: ${{ inputs.remote_password }}
+          REMOTE_USERNAME: ${{ secrets.remote_username }}
+          REMOTE_PASSWORD: ${{ secrets.remote_password }}
         run: conan remote login "${REMOTE_NAME}" "${REMOTE_USERNAME}" --password "${REMOTE_PASSWORD}"
 
       - name: Upload Conan recipe
