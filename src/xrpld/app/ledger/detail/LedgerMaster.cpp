@@ -1482,7 +1482,7 @@ bool
 LedgerMaster::newPathRequest()
 {
     std::unique_lock ml(m_mutex);
-    mPathFindNewRequest = newPFWork("pf:newRequest", ml);
+    mPathFindNewRequest = newPFWork("PthFindNewReq", ml);
     return mPathFindNewRequest;
 }
 
@@ -1503,7 +1503,7 @@ LedgerMaster::newOrderBookDB()
     std::unique_lock ml(m_mutex);
     mPathLedger.reset();
 
-    return newPFWork("pf:newOBDB", ml);
+    return newPFWork("PthFindOBDB", ml);
 }
 
 /** A thread needs to be dispatched to handle pathfinding work of some kind.
@@ -1980,7 +1980,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
             }
 
             app_.getOPs().clearNeedNetworkLedger();
-            progress = newPFWork("pf:newLedger", sl);
+            progress = newPFWork("PthFindNewLed", sl);
         }
         if (progress)
             mAdvanceWork = true;
