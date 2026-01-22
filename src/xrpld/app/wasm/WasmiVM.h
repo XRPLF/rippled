@@ -108,6 +108,7 @@ struct InstanceWrapper
 {
     wasm_store_t* store_ = nullptr;
     WasmExternVec exports_;
+    mutable int memIdx_ = -1;
     InstancePtr instance_;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
@@ -171,7 +172,7 @@ public:
         StorePtr& s,
         Bytes const& wasmBin,
         bool instantiate,
-        ImportVec const& imports,
+        std::shared_ptr<ImportVec> const& imports,
         beast::Journal j);
     ~ModuleWrapper() = default;
 
@@ -197,7 +198,7 @@ public:
 
 private:
     WasmExternVec
-    buildImports(StorePtr& s, ImportVec const& imports);
+    buildImports(StorePtr& s, std::shared_ptr<ImportVec> const& imports);
 };
 
 class WasmiEngine
@@ -208,6 +209,10 @@ class WasmiEngine
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
     std::mutex m_;  // 1 instance mutex
+
+    // to ensure lifetime during next executions with the same module
+    std::shared_ptr<ImportVec> imports_;
+    std::shared_ptr<HostFunctions> hfs_;
 
 public:
     WasmiEngine();
@@ -220,8 +225,8 @@ public:
     run(Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        ImportVec const& imports,
-        HostFunctions* hfs,
+        std::shared_ptr<ImportVec> const& imports,
+        std::shared_ptr<HostFunctions> const& hfs,
         int64_t gas,
         beast::Journal j);
 
@@ -230,8 +235,8 @@ public:
         Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        ImportVec const& imports,
-        HostFunctions* hfs,
+        std::shared_ptr<ImportVec> const& imports,
+        std::shared_ptr<HostFunctions> const& hfs,
         beast::Journal j);
 
     std::int64_t
@@ -259,23 +264,16 @@ private:
         Bytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        ImportVec const& imports,
-        HostFunctions* hfs,
         int64_t gas);
 
     NotTEC
     checkHlp(
         Bytes const& wasmCode,
         std::string_view funcName,
-        std::vector<WasmParam> const& params,
-        ImportVec const& imports);
+        std::vector<WasmParam> const& params);
 
     int
-    addModule(
-        Bytes const& wasmCode,
-        bool instantiate,
-        int64_t gas,
-        ImportVec const& imports);
+    addModule(Bytes const& wasmCode, bool instantiate, int64_t gas);
     void
     clearModules();
 

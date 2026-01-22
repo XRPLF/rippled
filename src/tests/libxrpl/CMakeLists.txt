@@ -1,14 +1,14 @@
 include(XrplAddTest)
 
 # Test requirements.
-find_package(doctest REQUIRED)
+find_package(GTest REQUIRED)
 
 # Custom target for all tests defined in this file
 add_custom_target(xrpl.tests)
 
 # Common library dependencies for the rest of the tests.
 add_library(xrpl.imports.test INTERFACE)
-target_link_libraries(xrpl.imports.test INTERFACE doctest::doctest xrpl.libxrpl)
+target_link_libraries(xrpl.imports.test INTERFACE gtest::gtest xrpl.libxrpl)
 
 # One test for each module.
 xrpl_add_test(basics)

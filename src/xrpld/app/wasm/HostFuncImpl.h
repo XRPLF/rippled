@@ -41,6 +41,25 @@ class WasmHostFunctionsImpl : public HostFunctions
         return cacheIdx;
     }
 
+    template <typename F>
+    void
+    log(std::string_view const& msg, F&& dataFn)
+    {
+#ifdef DEBUG_OUTPUT
+        auto& j = std::cerr;
+#else
+        if (!getJournal().active(beast::severities::kTrace))
+            return;
+        auto j = getJournal().trace();
+#endif
+        j << "WasmTrace[" << to_short_string(leKey.key) << "]: " << msg << " "
+          << dataFn();
+
+#ifdef DEBUG_OUTPUT
+        j << std::endl;
+#endif
+    }
+
 public:
     WasmHostFunctionsImpl(ApplyContext& ct, Keylet const& leKey)
         : HostFunctions(ct.journal), ctx(ct), leKey(leKey)

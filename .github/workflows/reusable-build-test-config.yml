@@ -51,6 +51,12 @@ on:
         type: number
         default: 2
 
+      sanitizers:
+        description: "The sanitizers to enable."
+        required: false
+        type: string
+        default: ""
+
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
@@ -91,6 +97,7 @@ jobs:
       # Determine if coverage and voidstar should be enabled.
       COVERAGE_ENABLED: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') }}
       VOIDSTAR_ENABLED: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
+      SANITIZERS_ENABLED: ${{ inputs.sanitizers != '' }}
     steps:
       - name: Cleanup workspace (macOS and Windows)
         if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
@@ -128,11 +135,13 @@ jobs:
           # Set the verbosity to "quiet" for Windows to avoid an excessive
           # amount of logs. For other OSes, the "verbose" logs are more useful.
           log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
+          sanitizers: ${{ inputs.sanitizers }}
 
       - name: Configure CMake
         working-directory: ${{ env.BUILD_DIR }}
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
+          SANITIZERS: ${{ inputs.sanitizers }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
         run: |
           cmake \
@@ -174,7 +183,7 @@ jobs:
           if-no-files-found: error
 
       - name: Check linking (Linux)
-        if: ${{ runner.os == 'Linux' }}
+        if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           ldd ./xrpld
@@ -190,6 +199,14 @@ jobs:
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           ./xrpld --version | grep libvoidstar
+
+      - name: Set sanitizer options
+        if: ${{ !inputs.build_only && env.SANITIZERS_ENABLED == 'true' }}
+        run: |
+          echo "ASAN_OPTIONS=print_stacktrace=1:detect_container_overflow=0:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/asan.supp" >> ${GITHUB_ENV}
+          echo "TSAN_OPTIONS=second_deadlock_stack=1:halt_on_error=0:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/tsan.supp" >> ${GITHUB_ENV}
+          echo "UBSAN_OPTIONS=suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/ubsan.supp" >> ${GITHUB_ENV}
+          echo "LSAN_OPTIONS=suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/lsan.supp" >> ${GITHUB_ENV}
 
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
