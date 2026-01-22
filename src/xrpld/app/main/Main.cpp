@@ -331,8 +331,7 @@ run(int argc, char** argv)
 {
     using namespace std;
 
-    beast::setCurrentThreadName(
-        "rippled: main " + BuildInfo::getVersionString());
+    beast::setCurrentThreadName("main");
 
     po::variables_map vm;
 
