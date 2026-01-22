@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <optional>
 #include <ostream>
