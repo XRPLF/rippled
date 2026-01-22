@@ -59,6 +59,7 @@ jobs:
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
             .github/actions/build-test/**
+            .github/actions/generate-version/**
             .github/actions/setup-conan/**
             .github/scripts/strategy-matrix/**
             .github/workflows/reusable-build.yml
