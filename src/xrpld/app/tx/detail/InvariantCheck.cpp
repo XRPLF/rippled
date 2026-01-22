@@ -2664,7 +2664,12 @@ ValidVault::visitEntry(
     // Number balanceDelta will capture the difference (delta) between "before"
     // state (zero if created) and "after" state (zero if destroyed), so the
     // invariants can validate that the change in account balances matches the
-    // change in vault balances, stored to deltas_ at the end of this function.
+    // balanceDelta captures the difference (delta) between "before"
+    // state (zero if created) and "after" state (zero if destroyed), and
+    // preserves value scale (exponent) to round values to the same scale during
+    // validation. It is used to validate that the change in account
+    // balances matches the change in vault balances, stored to deltas_ at the
+    // end of this function.
     DeltaInfo balanceDelta{numZero, STAmount::cMinOffset - 1};
 
     std::int8_t sign = 0;
