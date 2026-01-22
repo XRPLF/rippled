@@ -56,7 +56,7 @@ Expected<Bytes, HostFunctionError>
 floatFromUintImpl(uint64_t x, int32_t mode);
 
 Expected<Bytes, HostFunctionError>
-floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode);
+floatSetImpl(int32_t exponent, int64_t mantissa, int32_t mode);
 
 Expected<int32_t, HostFunctionError>
 floatCompareImpl(Slice const& x, Slice const& y);

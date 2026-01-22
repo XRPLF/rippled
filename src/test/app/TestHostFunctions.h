@@ -97,8 +97,16 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    isAmendmentEnabled(Slice const& amendmentId) override
+    isAmendmentEnabled(Slice const& data) override
     {
+        if (data.size() == uint256::bytes)
+        {
+            return 1;
+        }
+        // Otherwise interpret as amendment name string
+        if (data.size() > 64)
+            return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
+
         return 1;
     }
 
@@ -463,9 +471,9 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    floatSet(int64_t mantissa, int32_t exponent, int32_t mode) override
+    floatSet(int32_t exponent, int64_t mantissa, int32_t mode) override
     {
-        return wasm_float::floatSetImpl(mantissa, exponent, mode);
+        return wasm_float::floatSetImpl(exponent, mantissa, mode);
     }
 
     Expected<int32_t, HostFunctionError>

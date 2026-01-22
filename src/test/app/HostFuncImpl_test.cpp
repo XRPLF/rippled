@@ -2433,14 +2433,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         {
-            auto const result = hfs.floatSet(1, 0, -1);
+            auto const result = hfs.floatSet(0, 1, -1);
             BEAST_EXPECT(!result) &&
                 BEAST_EXPECT(
                     result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         {
-            auto const result = hfs.floatSet(1, 0, 4);
+            auto const result = hfs.floatSet(0, 1, 4);
             BEAST_EXPECT(!result) &&
                 BEAST_EXPECT(
                     result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
@@ -2448,7 +2448,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::maxExponent + normalExp + 1, 0);
+                hfs.floatSet(wasm_float::maxExponent + normalExp + 1, 1, 0);
             BEAST_EXPECT(!result) &&
                 BEAST_EXPECT(
                     result.error() ==
@@ -2457,7 +2457,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::maxExponent + normalExp + 1, 0);
+                hfs.floatSet(wasm_float::maxExponent + normalExp + 1, 1, 0);
             BEAST_EXPECT(!result) &&
                 BEAST_EXPECT(
                     result.error() ==
@@ -2466,42 +2466,42 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::minExponent + normalExp - 1, 0);
+                hfs.floatSet(wasm_float::minExponent + normalExp - 1, 1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
         }
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::maxExponent + normalExp, 0);
+                hfs.floatSet(wasm_float::maxExponent + normalExp, 1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
         }
 
         {
             auto const result =
-                hfs.floatSet(-1, wasm_float::maxExponent + normalExp, 0);
+                hfs.floatSet(wasm_float::maxExponent + normalExp, -1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinusMaxExp);
         }
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::maxExponent + normalExp - 1, 0);
+                hfs.floatSet(wasm_float::maxExponent + normalExp - 1, 1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatPreMaxExp);
         }
 
         {
             auto const result =
-                hfs.floatSet(STAmount::cMaxValue, wasm_float::maxExponent, 0);
+                hfs.floatSet(wasm_float::maxExponent, STAmount::cMaxValue, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
         }
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::minExponent + normalExp, 0);
+                hfs.floatSet(wasm_float::minExponent + normalExp, 1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinExp);
         }
 
         {
-            auto const result = hfs.floatSet(10, -1, 0);
+            auto const result = hfs.floatSet(-1, 10, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
         }
     }
@@ -2796,7 +2796,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const y = hfs.floatSet(
-                STAmount::cMaxValue, -normalExp - 1, 0);  // 0.9999999...
+                -normalExp - 1, STAmount::cMaxValue, 0);  // 0.9999999...
             if (BEAST_EXPECT(y))
             {
                 auto const result =
@@ -2866,7 +2866,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            auto const x = hfs.floatSet(100, 0, 0);  // 100
+            auto const x = hfs.floatSet(0, 100, 0);  // 100
             if (BEAST_EXPECT(x))
             {
                 auto const result = hfs.floatRoot(makeSlice(*x), 2, 0);
@@ -2875,7 +2875,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            auto const x = hfs.floatSet(1000, 0, 0);  // 1000
+            auto const x = hfs.floatSet(0, 1000, 0);  // 1000
             if (BEAST_EXPECT(x))
             {
                 auto const result = hfs.floatRoot(makeSlice(*x), 3, 0);
@@ -2884,8 +2884,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            auto const x = hfs.floatSet(1, -2, 0);  // 0.01
-            auto const y = hfs.floatSet(1, -1, 0);  // 0.1
+            auto const x = hfs.floatSet(-2, 1, 0);  // 0.01
+            auto const y = hfs.floatSet(-1, 1, 0);  // 0.1
             if (BEAST_EXPECT(x && y))
             {
                 auto const result = hfs.floatRoot(makeSlice(*x), 2, 0);
@@ -2962,7 +2962,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            auto const x = hfs.floatSet(100, 0, 0);  // 100
+            auto const x = hfs.floatSet(0, 100, 0);  // 100
             if (BEAST_EXPECT(x))
             {
                 auto const result = hfs.floatPower(makeSlice(float10), 2, 0);
@@ -2971,8 +2971,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            auto const x = hfs.floatSet(1, -1, 0);  // 0.1
-            auto const y = hfs.floatSet(1, -2, 0);  // 0.01
+            auto const x = hfs.floatSet(-1, 1, 0);  // 0.1
+            auto const y = hfs.floatSet(-2, 1, 0);  // 0.01
             if (BEAST_EXPECT(x && y))
             {
                 auto const result = hfs.floatPower(makeSlice(*x), 2, 0);
@@ -3050,7 +3050,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const x =
-                hfs.floatSet(9'500'000'000'000'001, -14, 0);  // almost 80+15
+                hfs.floatSet(-14, 9'500'000'000'000'001, 0);  // almost 80+15
             if (BEAST_EXPECT(x))
             {
                 auto const result = hfs.floatLog(makeSlice(floatMaxExp), 0);
@@ -3059,7 +3059,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            auto const x = hfs.floatSet(100, 0, 0);  // 100
+            auto const x = hfs.floatSet(0, 100, 0);  // 100
             if (BEAST_EXPECT(x))
             {
                 auto const result = hfs.floatLog(makeSlice(*x), 0);
@@ -3068,8 +3068,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            auto const x = hfs.floatSet(1000, 0, 0);  // 1000
-            auto const y = hfs.floatSet(3, 0, 0);     // 0.1
+            auto const x = hfs.floatSet(0, 1000, 0);  // 1000
+            auto const y = hfs.floatSet(0, 3, 0);     // 0.1
             if (BEAST_EXPECT(x && y))
             {
                 auto const result = hfs.floatLog(makeSlice(*x), 0);
@@ -3078,9 +3078,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            auto const x = hfs.floatSet(1, -2, 0);  // 0.01
+            auto const x = hfs.floatSet(-2, 1, 0);  // 0.01
             auto const y =
-                hfs.floatSet(-1999999993734431, -15, 0);  // almost -2
+                hfs.floatSet(-15, -1999999993734431, 0);  // almost -2
             if (BEAST_EXPECT(x && y))
             {
                 auto const result = hfs.floatLog(makeSlice(*x), 0);
@@ -3102,7 +3102,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto const y = hfs.floatSet(20, 0, 0);
+        auto const y = hfs.floatSet(0, 20, 0);
         if (!BEAST_EXPECT(y))
             return;
 
