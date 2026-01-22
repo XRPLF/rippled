@@ -61,7 +61,7 @@ Job::queue_time() const
 void
 Job::doJob()
 {
-    beast::setCurrentThreadName("doJob: " + mName);
+    beast::setCurrentThreadName("j:" + mName);
     m_loadEvent->start();
     m_loadEvent->setName(mName);
 
