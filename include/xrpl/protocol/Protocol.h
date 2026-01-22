@@ -320,6 +320,9 @@ std::size_t constexpr ecSchnorrProofLength = 65;
 
 /** Length of ElGamal Pedersen linkage proof */
 std::size_t constexpr ecPedersenProofLength = 195;
+
+/** Length of Pedersen Commitment proof */
+std::size_t constexpr ecPedersenCommitmentLength = 64;
 }  // namespace ripple
 
 #endif

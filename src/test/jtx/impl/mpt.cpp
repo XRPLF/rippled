@@ -738,7 +738,7 @@ MPTTester::getClawbackProof(
     Account const& holder,
     std::uint64_t amount,
     Buffer const& privateKey,
-    uint256 const& ctxHash) const
+    uint256 const& contextHash) const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -796,7 +796,7 @@ MPTTester::getClawbackProof(
             &c1,
             amount,
             privateKey.data(),
-            ctxHash.data()) != 1)
+            contextHash.data()) != 1)
     {
         Throw<std::runtime_error>("Proof generation failed");
     }
@@ -805,7 +805,8 @@ MPTTester::getClawbackProof(
 }
 
 Buffer
-MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
+MPTTester::getSchnorrProof(Account const& account, uint256 const& contextHash)
+    const
 {
     auto const pubKey = getPubKey(account);
     auto const privKey = getPrivKey(account);
@@ -823,7 +824,7 @@ MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
             proof.data(),
             &pk,
             privKey.data(),
-            ctxHash.data()) != 1)
+            contextHash.data()) != 1)
     {
         Throw<std::runtime_error>("Schnorr Proof generation failed");
     }
@@ -832,8 +833,8 @@ MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
 }
 
 Buffer
-MPTTester::generatePedersenCommitment(
-    std::uint64_t amount,
+MPTTester::getPedersenCommitment(
+    std::uint64_t const amount,
     Buffer const& pedersenBlindingFactor)
 {
     // Blinding factor (rho) must be a 32-byte scalar
@@ -842,7 +843,7 @@ MPTTester::generatePedersenCommitment(
 
     // current pedersen generation implementation fails if amount is 0
     if (amount == 0)
-        return Buffer{ecPubKeyLength};
+        return Buffer{ecPedersenCommitmentLength};
 
     secp256k1_pubkey commitment;
     auto const ctx = secp256k1Context();
@@ -854,42 +855,27 @@ MPTTester::generatePedersenCommitment(
         Throw<std::runtime_error>("Pedersen commitment generation failed");
     }
 
-    return Buffer{commitment.data, ecPubKeyLength};
+    return Buffer{commitment.data, ecPedersenCommitmentLength};
 }
 
 Buffer
 MPTTester::getConvertBackProof(
     Account const& holder,
-    std::uint64_t amount,
-    uint256 const& ctxHash,
+    std::uint64_t const amount,
+    uint256 const& contextHash,
     Buffer const& holderCiphertext,
     Buffer const& issuerCiphertext,
     std::optional<Buffer> const& auditorCiphertext,
     Buffer const& blindingFactor,
-    Buffer const& pedersenCommitment,
-    Buffer const& pcBlindingFactor) const
+    PedersenProofParams const& pcParams) const
 {
     auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
     if (!sleMptoken ||
         !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
         return Buffer{};
 
-    uint64_t const holderSpendingBalance =
-        getDecryptedBalance(holder, HOLDER_ENCRYPTED_SPENDING);
-
-    auto const holderSpendingCiphertext = Buffer{
-        {(*sleMptoken)[sfConfidentialBalanceSpending].data(),
-         (*sleMptoken)[sfConfidentialBalanceSpending].size()}};
-
     Buffer const pedersenProof = generatePedersenLinkageProof(
-        holder,
-        holderSpendingBalance,
-        ctxHash,
-        holderSpendingCiphertext,
-        getPubKey(holder),
-        blindingFactor,
-        pedersenCommitment,
-        pcBlindingFactor);
+        holder, contextHash, getPubKey(holder), pcParams);
 
     // todo: incoporate range proof
     return pedersenProof;
@@ -1043,10 +1029,10 @@ MPTTester::convert(MPTConvert const& arg)
         // if fillSchnorrProof is explicitly set, follow its value;
         // otherwise, default to generating the proof only if holder pub key is
         // present.
-        auto const ctxHash = getConvertContextHash(
+        auto const contextHash = getConvertContextHash(
             arg.account->id(), env_.seq(*arg.account), *id_, *arg.amt);
 
-        Buffer proof = getSchnorrProof(*arg.account, ctxHash);
+        Buffer proof = getSchnorrProof(*arg.account, contextHash);
         jv[sfZKProof.jsonName] = strHex(proof);
     }
 
@@ -1327,10 +1313,10 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
     else
     {
         std::uint32_t const seq = env_.seq(account);
-        uint256 const ctxHash = getClawbackContextHash(
+        uint256 const contextHash = getClawbackContextHash(
             account.id(), seq, *id_, *arg.amt, arg.holder->id());
         Buffer proof = getClawbackProof(
-            *arg.holder, *arg.amt, getPrivKey(account), ctxHash);
+            *arg.holder, *arg.amt, getPrivKey(account), contextHash);
 
         jv[sfZKProof] = strHex(proof);
     }
@@ -1598,30 +1584,45 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         pedersenCommitment = *arg.pedersenCommitment;
     else
         pedersenCommitment =
-            generatePedersenCommitment(prevSpendingBalance, pcBlindingFactor);
+            getPedersenCommitment(prevSpendingBalance, pcBlindingFactor);
 
     jv[sfPedersenCommitment] = strHex(pedersenCommitment);
 
     if (arg.proof)
-        jv[sfZKProof.jsonName] = *arg.proof;
+        jv[sfZKProof.jsonName] = strHex(*arg.proof);
     else
     {
         auto const version = getMPTokenVersion(*arg.account);
 
         // if the caller generated ciphertexts themselves, they should also
         // generate the proof themselves from the blinding factor
-        uint256 const ctxHash = getConvertBackContextHash(
+        uint256 const contextHash = getConvertBackContextHash(
             arg.account->id(), env_.seq(*arg.account), *id_, *arg.amt, version);
-        Buffer proof = getConvertBackProof(
-            *arg.account,
-            *arg.amt,
-            ctxHash,
-            holderCiphertext,
-            issuerCiphertext,
-            auditorCiphertext,
-            blindingFactor,
-            pedersenCommitment,
-            pcBlindingFactor);
+        auto const prevEncryptedSpendingBalance =
+            getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+        Buffer proof;
+        // generate a dummy proof if no encrypted amount field, so that other
+        // preflight/preclaim are checked
+        if (!prevEncryptedSpendingBalance)
+            proof = Buffer();
+        else
+        {
+            proof = getConvertBackProof(
+                *arg.account,
+                *arg.amt,
+                contextHash,
+                holderCiphertext,
+                issuerCiphertext,
+                auditorCiphertext,
+                blindingFactor,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = prevSpendingBalance,
+                    .encryptedAmt = *prevEncryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+        }
         jv[sfZKProof] = strHex(proof);
     }
 
@@ -1687,22 +1688,24 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 Buffer
 MPTTester::generatePedersenLinkageProof(
     Account const& account,
-    std::uint64_t amount,
-    uint256 const& ctxHash,
-    Buffer const& ciphertext,
+    uint256 const& contextHash,
     Buffer const& pubKey,
-    Buffer const& blindingFactor,
-    Buffer const& pedersenCommitment,
-    Buffer const& pcBlindingFactor) const
+    PedersenProofParams const& params) const
 {
+    if (params.blindingFactor.size() != ecBlindingFactorLength ||
+        params.pedersenCommitment.size() != ecPedersenCommitmentLength ||
+        pubKey.size() != ecPubKeyLength ||
+        params.encryptedAmt.size() != ecGamalEncryptedTotalLength)
+        return Buffer(ecPedersenProofLength);
+
     secp256k1_pubkey c1, c2;
     auto const ctx = secp256k1Context();
     if (!secp256k1_ec_pubkey_parse(
-            ctx, &c1, ciphertext.data(), ecGamalEncryptedLength) ||
+            ctx, &c1, params.encryptedAmt.data(), ecGamalEncryptedLength) ||
         !secp256k1_ec_pubkey_parse(
             ctx,
             &c2,
-            ciphertext.data() + ecGamalEncryptedLength,
+            params.encryptedAmt.data() + ecGamalEncryptedLength,
             ecGamalEncryptedLength))
     {
         return Buffer();
@@ -1712,7 +1715,8 @@ MPTTester::generatePedersenLinkageProof(
     std::memcpy(pk.data, pubKey.data(), ecPubKeyLength);
 
     secp256k1_pubkey pcm;
-    std::memcpy(pcm.data, pedersenCommitment.data(), ecPubKeyLength);
+    std::memcpy(
+        pcm.data, params.pedersenCommitment.data(), ecPedersenCommitmentLength);
 
     Buffer proof(ecPedersenProofLength);
 
@@ -1723,10 +1727,10 @@ MPTTester::generatePedersenLinkageProof(
             &c2,
             &c1,
             &pcm,
-            amount,
+            params.amt,
             getPrivKey(account).data(),
-            pcBlindingFactor.data(),
-            ctxHash.data()) != 1)
+            params.blindingFactor.data(),
+            contextHash.data()) != 1)
         Throw<std::runtime_error>("Pedersen proof generation failed");
 
     return proof;

@@ -28,7 +28,7 @@ ConfidentialConvertBack::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfBlindingFactor].size() != ecBlindingFactorLength)
         return temMALFORMED;
 
-    if (ctx.tx[sfPedersenCommitment].size() != ecPubKeyLength)
+    if (ctx.tx[sfPedersenCommitment].size() != ecPedersenCommitmentLength)
         return temMALFORMED;
 
     // check encrypted amount format after the above basic checks

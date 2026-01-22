@@ -230,7 +230,7 @@ struct MPTConvertBack
     std::optional<Account> account = std::nullopt;
     std::optional<MPTID> id = std::nullopt;
     std::optional<std::uint64_t> amt = std::nullopt;
-    std::optional<std::string> proof = std::nullopt;
+    std::optional<Buffer> proof = std::nullopt;
     std::optional<Buffer> holderEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
@@ -253,6 +253,18 @@ struct MPTConfidentialClawback
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<TER> err = std::nullopt;
+};
+
+/**
+ * @brief Stores the parameterss that are exclusively used to generate a
+ * pedersen linkage proof
+ */
+struct PedersenProofParams
+{
+    Buffer const pedersenCommitment;
+    uint64_t const amt;  // either spending balance or value to be transferred
+    Buffer const encryptedAmt;
+    Buffer const blindingFactor;
 };
 
 class MPTTester
@@ -453,19 +465,18 @@ public:
         uint256 const& txHash) const;
 
     Buffer
-    getSchnorrProof(Account const& account, uint256 const& ctxHash) const;
+    getSchnorrProof(Account const& account, uint256 const& contextHash) const;
 
     Buffer
     getConvertBackProof(
         Account const& holder,
-        std::uint64_t amount,
-        uint256 const& ctxHash,
+        std::uint64_t const amount,
+        uint256 const& contextHash,
         Buffer const& holderCiphertext,
         Buffer const& issuerCiphertext,
         std::optional<Buffer> const& auditorCiphertext,
         Buffer const& blindingFactor,
-        Buffer const& pedersenCommitment,
-        Buffer const& pcBlindingFactor) const;
+        PedersenProofParams const& pcParams) const;
 
     std::uint32_t
     getMPTokenVersion(Account const account) const;
@@ -473,17 +484,13 @@ public:
     Buffer
     generatePedersenLinkageProof(
         Account const& account,
-        std::uint64_t amount,
-        uint256 const& ctxHash,
-        Buffer const& ciphertext,
+        uint256 const& contextHash,
         Buffer const& pubKey,
-        Buffer const& blindingFactor,
-        Buffer const& pedersenCommitment,
-        Buffer const& pcBlindingFactor) const;
+        PedersenProofParams const& params) const;
 
     Buffer
-    generatePedersenCommitment(
-        std::uint64_t amount,
+    getPedersenCommitment(
+        std::uint64_t const amount,
         Buffer const& pedersenBlindingFactor);
 
 private:
