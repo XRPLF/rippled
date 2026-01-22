@@ -125,7 +125,7 @@ jobs:
     needs:
       - should-run
       - build-test
-    if: ${{ needs.should-run.outputs.go == 'true' && (startsWith(github.base_ref, 'release') || github.base_ref == 'master') }}
+    if: ${{ needs.should-run.outputs.go == 'true' && startsWith(github.ref, 'refs/heads/release') }}
     uses: ./.github/workflows/reusable-notify-clio.yml
     secrets:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
