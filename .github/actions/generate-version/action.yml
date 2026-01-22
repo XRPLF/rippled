@@ -1,0 +1,42 @@
+name: Generate build version number
+description: "Generate build version number."
+
+outputs:
+  version:
+    description: "The generated build version number."
+    value: ${{ steps.version.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    # When a tag is pushed, the version is used as-is.
+    - name: Generate version for tag event
+      if: ${{ github.event_name == 'tag' }}
+      shell: bash
+      env:
+        VERSION: ${{ github.ref_name }}
+      run: echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
+
+    # When a tag is not pushed, then the version is extracted from the
+    # BuildInfo.cpp file and the shortened commit hash appended to it.
+    - name: Generate version for non-tag event
+      if: ${{ github.event_name != 'tag' }}
+      shell: bash
+      run: |
+        echo 'Extracting version from BuildInfo.cpp.'
+        VERSION="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')"
+        if [[ -z "${VERSION}" ]]; then
+          echo 'Unable to extract version from BuildInfo.cpp.'
+          exit 1
+        fi
+
+        echo 'Appending shortened commit hash to version.'
+        SHA='${{ github.sha }}'
+        VERSION="${VERSION}-${SHA:0:7}"
+
+        echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
+
+    - name: Output version
+      id: version
+      shell: bash
+      run: echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"

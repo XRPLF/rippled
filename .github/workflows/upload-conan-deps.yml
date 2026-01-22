@@ -86,8 +86,8 @@ jobs:
       - name: Setup Conan
         uses: ./.github/actions/setup-conan
         with:
-          conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
-          conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
+          remote_name: ${{ env.CONAN_REMOTE_NAME }}
+          remote_url: ${{ env.CONAN_REMOTE_URL }}
 
       - name: Build dependencies
         uses: ./.github/actions/build-deps

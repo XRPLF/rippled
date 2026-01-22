@@ -1,8 +1,7 @@
 # This workflow runs all workflows to build and test the code on various Linux
 # flavors, as well as on MacOS and Windows, on a scheduled basis, on merge into
-# the 'develop' or 'release*' branches, or when requested manually. Upon
-# successful completion, it also uploads the built libxrpl package to the Conan
-# remote.
+# the 'develop' or 'release*' branches, or when requested manually. Upon pushes
+# to the develop branch it also uploads the libxrpl recipe to the Conan remote.
 name: Trigger
 
 on:
@@ -24,6 +23,7 @@ on:
       - ".github/workflows/reusable-build-test.yml"
       - ".github/workflows/reusable-strategy-matrix.yml"
       - ".github/workflows/reusable-test.yml"
+      - ".github/workflows/reusable-upload-recipe.yml"
       - ".codecov.yml"
       - "cmake/**"
       - "conan/**"
@@ -76,3 +76,12 @@ jobs:
       strategy_matrix: ${{ github.event_name == 'schedule' && 'all' || 'minimal' }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  upload-recipe:
+    needs: build-test
+    # Only run when pushing to the develop branch in the XRPLF repository.
+    if: ${{ github.repository_owner == 'XRPLF' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+    uses: ./.github/workflows/reusable-upload-recipe.yml
+    secrets:
+      remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
