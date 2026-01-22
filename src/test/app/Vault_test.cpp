@@ -5801,6 +5801,221 @@ class Vault_test : public beast::unit_test::suite
         testCase(MPT, "MPT", owner, depositor, issuer);
     }
 
+    void
+    testAssetsMaximum()
+    {
+        testcase("Assets Maximum");
+
+        using namespace test::jtx;
+
+        Env env{*this, testable_amendments() | featureSingleAssetVault};
+        Account const owner{"owner"};
+        Account const issuer{"issuer"};
+
+        Vault vault{env};
+        env.fund(XRP(1'000'000), issuer, owner);
+        env.close();
+
+        {
+            testcase("Assets Maximum: XRP");
+
+            PrettyAsset const xrpAsset = xrpIssue();
+
+            auto [tx, keylet] =
+                vault.create({.owner = owner, .asset = xrpAsset});
+            tx[sfData] = "4D65746144617461";
+
+            tx[sfAssetsMaximum] = "9223372036854775807";  // max int64
+            env(tx, ter(tefEXCEPTION), THISLINE);
+            env.close();
+
+            tx[sfAssetsMaximum] = to_string(INITIAL_XRP + 1);
+            env(tx, ter(tefEXCEPTION), THISLINE);
+            env.close();
+
+            tx[sfAssetsMaximum] = to_string(INITIAL_XRP);
+            env(tx, THISLINE);
+            env.close();
+
+            tx[sfAssetsMaximum] = "9223372036854775808";  // max int64+1
+            env(tx, ter(tefEXCEPTION), THISLINE);
+            env.close();
+
+            // This value will be rounded
+            tx[sfAssetsMaximum] =
+                "9223372036854775.808";  // (max int64+1) / 1000
+            auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+            env(tx, THISLINE);
+            env.close();
+
+            auto const vaultSle = env.le(newKeylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+
+            BEAST_EXPECT(vaultSle->at(sfAssetsMaximum) == 9223372036854776);
+        }
+
+        {
+            testcase("Assets Maximum: MPT");
+
+            PrettyAsset const mptAsset = [&]() {
+                MPTTester mptt{env, issuer, mptInitNoFund};
+                mptt.create(
+                    {.flags =
+                         tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+                env.close();
+                PrettyAsset const mptAsset = mptt["MPT"];
+                mptt.authorize({.account = owner});
+                env.close();
+                return mptAsset;
+            }();
+
+            env(pay(issuer, owner, mptAsset(100'000)), THISLINE);
+            env.close();
+
+            auto [tx, keylet] =
+                vault.create({.owner = owner, .asset = mptAsset});
+            tx[sfData] = "4D65746144617461";
+
+            tx[sfAssetsMaximum] = "9223372036854775807";  // max int64
+            env(tx, THISLINE);
+            env.close();
+
+            tx[sfAssetsMaximum] = to_string(INITIAL_XRP + 1);
+            env(tx, THISLINE);
+            env.close();
+
+            tx[sfAssetsMaximum] = to_string(INITIAL_XRP);
+            env(tx, THISLINE);
+            env.close();
+
+            tx[sfAssetsMaximum] = "9223372036854775808";  // max int64+1
+            env(tx, ter(tefEXCEPTION), THISLINE);
+            env.close();
+
+            // This value will be rounded
+            tx[sfAssetsMaximum] = "922337203685477580.8";  // (max int64+1) / 10
+            auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
+            env(tx, THISLINE);
+            env.close();
+
+            auto const vaultSle = env.le(newKeylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+
+            BEAST_EXPECT(vaultSle->at(sfAssetsMaximum) == 922337203685477581);
+        }
+
+        {
+            testcase("Assets Maximum: IOU");
+
+            // Almost anything goes with IOUs
+            PrettyAsset iouAsset = issuer["IOU"];
+            env.trust(iouAsset(1000), owner);
+            env(pay(issuer, owner, iouAsset(200)));
+            env.close();
+
+            auto [tx, keylet] =
+                vault.create({.owner = owner, .asset = iouAsset});
+            tx[sfData] = "4D65746144617461";
+
+            tx[sfAssetsMaximum] = "9223372036854775807";  // max int64
+            env(tx, THISLINE);
+            env.close();
+
+            tx[sfAssetsMaximum] = to_string(INITIAL_XRP + 1);
+            env(tx, THISLINE);
+            env.close();
+
+            tx[sfAssetsMaximum] = to_string(INITIAL_XRP);
+            env(tx, THISLINE);
+            env.close();
+
+            tx[sfAssetsMaximum] = "9223372036854775808";  // max int64+1
+            env(tx, THISLINE);
+            env.close();
+
+            tx[sfAssetsMaximum] = "1000000000000000e80";
+            env.close();
+
+            tx[sfAssetsMaximum] = "1000000000000000e-96";
+            env.close();
+
+            // These values will be rounded to 15 significant digits
+            {
+                tx[sfAssetsMaximum] =
+                    "922337203685477580.8";  // (max int64+1) / 10
+                auto const newKeylet =
+                    keylet::vault(owner.id(), env.seq(owner));
+                env(tx, THISLINE);
+                env.close();
+
+                auto const vaultSle = env.le(newKeylet);
+                if (!BEAST_EXPECT(vaultSle))
+                    return;
+
+                BEAST_EXPECT(
+                    (vaultSle->at(sfAssetsMaximum) ==
+                     Number{9223372036854776, 2, Number::normalized{}}));
+            }
+            {
+                tx[sfAssetsMaximum] =
+                    "9223372036854775807e40";  // max int64 * 10^40
+                auto const newKeylet =
+                    keylet::vault(owner.id(), env.seq(owner));
+                env(tx, THISLINE);
+                env.close();
+
+                auto const vaultSle = env.le(newKeylet);
+                if (!BEAST_EXPECT(vaultSle))
+                    return;
+
+                BEAST_EXPECT(
+                    (vaultSle->at(sfAssetsMaximum) ==
+                     Number{9223372036854776, 43, Number::normalized{}}));
+            }
+            {
+                tx[sfAssetsMaximum] =
+                    "9223372036854775807e-40";  // max int64 * 10^40
+                auto const newKeylet =
+                    keylet::vault(owner.id(), env.seq(owner));
+                env(tx, THISLINE);
+                env.close();
+
+                auto const vaultSle = env.le(newKeylet);
+                if (!BEAST_EXPECT(vaultSle))
+                    return;
+
+                BEAST_EXPECT(
+                    (vaultSle->at(sfAssetsMaximum) ==
+                     Number{9223372036854776, -37, Number::normalized{}}));
+            }
+
+            // What _can't_ IOUs do?
+            // 1. Exceed maximum exponent / offset
+            tx[sfAssetsMaximum] = "1000000000000000e81";
+            env(tx, ter(tefEXCEPTION), THISLINE);
+            env.close();
+
+            // 2. Mantissa larger than uint64 max
+            try
+            {
+                tx[sfAssetsMaximum] =
+                    "18446744073709551617e5";  // uint64 max + 1
+                env(tx, THISLINE);
+                BEAST_EXPECT(false);
+            }
+            catch (parse_error const& e)
+            {
+                using namespace std::string_literals;
+                BEAST_EXPECT(
+                    e.what() ==
+                    "invalidParamsField 'tx_json.AssetsMaximum' has invalid "
+                    "data."s);
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -5821,6 +6036,7 @@ public:
         testDelegate();
         testVaultClawbackBurnShares();
         testVaultClawbackAssets();
+        testAssetsMaximum();
     }
 };
 
