@@ -1344,7 +1344,7 @@ LedgerMaster::tryAdvance()
     if (!mAdvanceThread && !mValidLedger.empty())
     {
         mAdvanceThread = true;
-        app_.getJobQueue().addJob(jtADVANCE, "advanceLedger", [this]() {
+        app_.getJobQueue().addJob(jtADVANCE, "AdvanceLedger", [this]() {
             std::unique_lock sl(m_mutex);
 
             XRPL_ASSERT(
@@ -1841,7 +1841,7 @@ LedgerMaster::fetchForHistory(
                     mFillInProgress = seq;
                 }
                 app_.getJobQueue().addJob(
-                    jtADVANCE, "tryFill", [this, ledger]() {
+                    jtADVANCE, "TryFill", [this, ledger]() {
                         tryFill(ledger);
                     });
             }
@@ -2011,7 +2011,7 @@ LedgerMaster::gotFetchPack(bool progress, std::uint32_t seq)
 {
     if (!mGotFetchPackThread.test_and_set(std::memory_order_acquire))
     {
-        app_.getJobQueue().addJob(jtLEDGER_DATA, "gotFetchPack", [&]() {
+        app_.getJobQueue().addJob(jtLEDGER_DATA, "GotFetchPack", [&]() {
             app_.getInboundLedgers().gotFetchPack();
             mGotFetchPackThread.clear(std::memory_order_release);
         });
