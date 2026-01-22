@@ -12,6 +12,14 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
 
+#if (defined(__clang_major__) && __clang_major__ < 15)
+#include <experimental/source_location>
+using source_location = std::experimental::source_location;
+#else
+#include <source_location>
+using std::source_location;
+#endif
+
 namespace xrpl {
 namespace test {
 
@@ -980,7 +988,8 @@ class FeeVote_test : public beast::unit_test::suite
         BEAST_EXPECT(env.current()->fees().extensionSizeLimit == 0);
         BEAST_EXPECT(env.current()->fees().gasPrice == 0);
 
-        auto const createFeeTxFromVoting = [&](FeeSetup const& setup) -> STTx {
+        auto const createFeeTxFromVoting = [&](FeeSetup const& setup)
+            -> std::pair<STTx, std::shared_ptr<Ledger>> {
             auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
             auto ledger = std::make_shared<Ledger>(
                 create_genesis,
@@ -1042,45 +1051,54 @@ class FeeVote_test : public beast::unit_test::suite
 
             auto const txs = getTxs(txSet);
             BEAST_EXPECT(txs.size() == 1);
-            return txs[0];
+            return {txs[0], ledger};
         };
 
-        auto checkFeeTx = [&](FeeSetup const& setup, STTx const& feeTx) {
-            BEAST_EXPECT(feeTx.getTxnType() == ttFEE);
+        auto checkFeeTx = [&](FeeSetup const& setup,
+                              STTx const& feeTx,
+                              std::shared_ptr<Ledger> const& ledger,
+                              source_location const loc =
+                                  source_location::current()) {
+            auto const line = " (" + std::to_string(loc.line()) + ")";
+            BEAST_EXPECTS(feeTx.getTxnType() == ttFEE, line);
 
-            BEAST_EXPECT(feeTx.getAccountID(sfAccount) == AccountID());
+            BEAST_EXPECTS(feeTx.getAccountID(sfAccount) == AccountID(), line);
             BEAST_EXPECTS(
-                feeTx.getFieldU32(sfLedgerSequence) == env.closed()->seq(),
-                std::to_string(feeTx.getFieldU32(sfLedgerSequence)) + " " +
-                    std::to_string(env.current()->seq()));
+                feeTx.getFieldU32(sfLedgerSequence) == ledger->seq() + 1, line);
 
-            BEAST_EXPECT(feeTx.isFieldPresent(sfBaseFeeDrops));
-            BEAST_EXPECT(feeTx.isFieldPresent(sfReserveBaseDrops));
-            BEAST_EXPECT(feeTx.isFieldPresent(sfReserveIncrementDrops));
+            BEAST_EXPECTS(feeTx.isFieldPresent(sfBaseFeeDrops), line);
+            BEAST_EXPECTS(feeTx.isFieldPresent(sfReserveBaseDrops), line);
+            BEAST_EXPECTS(feeTx.isFieldPresent(sfReserveIncrementDrops), line);
 
             // The legacy fields should NOT be present
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfBaseFee));
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveBase));
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveIncrement));
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfReferenceFeeUnits));
+            BEAST_EXPECTS(!feeTx.isFieldPresent(sfBaseFee), line);
+            BEAST_EXPECTS(!feeTx.isFieldPresent(sfReserveBase), line);
+            BEAST_EXPECTS(!feeTx.isFieldPresent(sfReserveIncrement), line);
+            BEAST_EXPECTS(!feeTx.isFieldPresent(sfReferenceFeeUnits), line);
 
             // Check the values
-            BEAST_EXPECT(
+            BEAST_EXPECTS(
                 feeTx.getFieldAmount(sfBaseFeeDrops) ==
-                XRPAmount{setup.reference_fee});
-            BEAST_EXPECT(
+                    XRPAmount{setup.reference_fee},
+                line);
+            BEAST_EXPECTS(
                 feeTx.getFieldAmount(sfReserveBaseDrops) ==
-                XRPAmount{setup.account_reserve});
-            BEAST_EXPECT(
+                    XRPAmount{setup.account_reserve},
+                line);
+            BEAST_EXPECTS(
                 feeTx.getFieldAmount(sfReserveIncrementDrops) ==
-                XRPAmount{setup.owner_reserve});
-            BEAST_EXPECT(
+                    XRPAmount{setup.owner_reserve},
+                line);
+            BEAST_EXPECTS(
                 feeTx.getFieldU32(sfExtensionComputeLimit) ==
-                setup.extension_compute_limit);
-            BEAST_EXPECT(
+                    setup.extension_compute_limit,
+                line);
+            BEAST_EXPECTS(
                 feeTx.getFieldU32(sfExtensionSizeLimit) ==
-                setup.extension_size_limit);
-            BEAST_EXPECT(feeTx.getFieldU32(sfGasPrice) == setup.gas_price);
+                    setup.extension_size_limit,
+                line);
+            BEAST_EXPECTS(
+                feeTx.getFieldU32(sfGasPrice) == setup.gas_price, line);
         };
 
         {
@@ -1091,9 +1109,9 @@ class FeeVote_test : public beast::unit_test::suite
             setup.extension_compute_limit = 100;
             setup.extension_size_limit = 200;
             setup.gas_price = 300;
-            auto const feeTx = createFeeTxFromVoting(setup);
+            auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
 
-            checkFeeTx(setup, feeTx);
+            checkFeeTx(setup, feeTx, ledger);
         }
 
         {
@@ -1104,9 +1122,9 @@ class FeeVote_test : public beast::unit_test::suite
             setup.extension_compute_limit = 0;
             setup.extension_size_limit = 0;
             setup.gas_price = 300;
-            auto const feeTx = createFeeTxFromVoting(setup);
+            auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
 
-            checkFeeTx(setup, feeTx);
+            checkFeeTx(setup, feeTx, ledger);
         }
     }
 
