@@ -999,14 +999,19 @@ struct EscrowSmart_test : public beast::unit_test::suite
                            ExpectedStatus expectedStatus,
                            std::source_location const& loc =
                                std::source_location::current()) {
-            Env env = sizeLimit
-                ? Env(*this,
-                      envconfig([&sizeLimit](std::unique_ptr<Config> cfg) {
-                          cfg->FEES.extension_size_limit = *sizeLimit;
-                          return cfg;
-                      }),
-                      features)
-                : Env(*this, features);
+            auto makeEnv = [&]() -> Env {
+                if (sizeLimit)
+                    return Env(
+                        *this,
+                        envconfig([&sizeLimit](std::unique_ptr<Config> cfg) {
+                            cfg->FEES.extension_size_limit = *sizeLimit;
+                            return cfg;
+                        }),
+                        features);
+                else
+                    return Env(*this, features);
+            };
+            Env env = makeEnv();
 
             auto const alice = Account("alice");
             env.fund(XRP(1'000'000), alice);
