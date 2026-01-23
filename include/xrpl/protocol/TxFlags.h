@@ -212,7 +212,7 @@
     X_CONST_TYPE_DECL(tfMPTokenIssuanceDestroyMask, ~tfUniversal)              \
     END_TX_FLAGS_XMACRO                                                        \
                                                                                \
-    /* The below four flags are categorised under NFTokenMint transaction      \
+    /* The below four flags are categorized under NFTokenMint transaction      \
      * flags */                                                                \
     START_TX_FLAGS_XMACRO(NFTokenMint)                                         \
     /* Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between  \
@@ -320,9 +320,9 @@
             tfInnerBatchTxn)                                                   \
     END_TX_FLAGS_XMACRO                                                        \
     /* LoanSet and LoanPay flags: */                                           \
-    /* LoanSet: True, indicates the loan supports overpayments */              \
+    /* LoanSet: True, indicates the loan supports over-payments */             \
     /* LoanPay: True, indicates any excess in this payment can be used */      \
-    /* as an overpayment. False, no overpayments will be taken. */             \
+    /* as an overpayment. False, no over-payments will be taken. */            \
     START_TX_FLAGS_XMACRO(LoanSet)                                             \
     X_CONST_TYPE_DECL(tfLoanOverpayment, 0x00010000)                           \
     X_CONST_TYPE_DECL(tfLoanSetMask, ~(tfUniversal | tfLoanOverpayment))       \
@@ -334,7 +334,7 @@
     /* interest and fees, or it will fail. False: Not a full payment. */       \
     X_CONST_TYPE_DECL(tfLoanFullPayment, 0x00020000)                           \
     /* tfLoanLatePayment: True, indicates that the payment is late, */         \
-    /* and includes late iterest and fees. If the loan is not late, */         \
+    /* and includes late interest and fees. If the loan is not late, */        \
     /* it will fail. False: not a late payment. If the current payment */      \
     /* is overdue, the transaction will fail. */                              \
     X_CONST_TYPE_DECL(tfLoanLatePayment, 0x00040000)                           \
@@ -362,7 +362,7 @@ namespace xrpl {
 #define END_TX_SECTION_NOOP
 #define DEFINE_FLAGS(flagName, flagValue) \
     constexpr std::uint32_t flagName = flagValue;
-// Note: Certain flags have the `const` type specifier in their declaraction,
+// Note: Certain flags have the `const` type specifier in their declaration,
 // which is handled by the below macro.
 #define DEFINE_FLAGS_CONST_TYPE(flagName, flagValue) \
     constexpr std::uint32_t const flagName = flagValue;
