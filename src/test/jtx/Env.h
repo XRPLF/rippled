@@ -32,16 +32,45 @@
 #include <xrpl/protocol/STTx.h>
 
 #include <functional>
+#include <source_location>
 #include <string>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace xrpl {
 namespace test {
 namespace jtx {
+
+class Env;  // Forward declaration
+
+/** Wrapper that captures source_location when implicitly constructed.
+    This solves the problem of combining std::source_location with variadic
+    templates. The source_location default argument is evaluated at the
+    call site when the wrapper is constructed via implicit conversion.
+
+    This is a non-template struct that uses std::variant to hold either
+    Json::Value or JTx, allowing implicit conversion without template
+    argument deduction issues.
+*/
+struct WithSourceLoc
+{
+    std::variant<Json::Value, JTx> value;
+    std::source_location loc;
+
+    // Non-explicit constructors allow implicit conversion.
+    // The default argument for loc is evaluated at the call site.
+    WithSourceLoc(Json::Value v, std::source_location l = std::source_location::current()) : value(std::move(v)), loc(l)
+    {
+    }
+
+    WithSourceLoc(JTx v, std::source_location l = std::source_location::current()) : value(std::move(v)), loc(l)
+    {
+    }
+};
 
 /** Designate accounts as no-ripple in Env::fund */
 template <class... Args>
@@ -523,35 +552,43 @@ public:
         This calls postconditions.
     */
     virtual void
-    submit(JTx const& jt);
+    submit(JTx const& jt, std::source_location const& loc = std::source_location::current());
 
     /** Use the submit RPC command with a provided JTx object.
         This calls postconditions.
     */
     void
-    sign_and_submit(JTx const& jt, Json::Value params = Json::nullValue);
+    sign_and_submit(
+        JTx const& jt,
+        Json::Value params = Json::nullValue,
+        std::source_location const& loc = std::source_location::current());
 
     /** Check expected postconditions
         of JTx submission.
     */
     void
-    postconditions(JTx const& jt, ParsedResult const& parsed, Json::Value const& jr = Json::Value());
+    postconditions(
+        JTx const& jt,
+        ParsedResult const& parsed,
+        Json::Value const& jr = Json::Value(),
+        std::source_location const& loc = std::source_location::current());
 
     /** Apply funclets and submit. */
     /** @{ */
-    template <class JsonValue, class... FN>
+    template <class... FN>
     Env&
-    apply(JsonValue&& jv, FN const&... fN)
+    apply(WithSourceLoc jv, FN const&... fN)
     {
-        submit(jt(std::forward<JsonValue>(jv), fN...));
+        std::visit([&](auto&& v) { submit(jt(std::move(v), fN...), jv.loc); }, std::move(jv.value));
         return *this;
     }
 
-    template <class JsonValue, class... FN>
+    template <class... FN>
     Env&
-    operator()(JsonValue&& jv, FN const&... fN)
+    operator()(WithSourceLoc jv, FN const&... fN)
     {
-        return apply(std::forward<JsonValue>(jv), fN...);
+        std::visit([&](auto&& v) { submit(jt(std::move(v), fN...), jv.loc); }, std::move(jv.value));
+        return *this;
     }
     /** @} */
 
