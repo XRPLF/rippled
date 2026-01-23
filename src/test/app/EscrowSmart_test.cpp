@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <source_location>
 
 namespace xrpl {
 namespace test {
@@ -1091,6 +1092,129 @@ struct EscrowSmart_test : public beast::unit_test::suite
     }
 
     void
+    testLargeWasmModules(FeatureBitset features)
+    {
+        testcase("Test large wasm modules");
+
+        using namespace jtx;
+        using namespace std::chrono;
+        using namespace wasm_constants;
+
+        enum class ExpectedStatus { Success, Malformed, Crash };
+
+        auto runTest = [&](std::vector<uint8_t> const& wasm,
+                           std::optional<uint32_t> sizeLimit,
+                           ExpectedStatus expectedStatus,
+                           std::source_location const& loc =
+                               std::source_location::current()) {
+            auto makeEnv = [&]() -> Env {
+                if (sizeLimit)
+                    return Env(
+                        *this,
+                        envconfig([&sizeLimit](std::unique_ptr<Config> cfg) {
+                            cfg->FEES.extension_size_limit = *sizeLimit;
+                            return cfg;
+                        }),
+                        features);
+                else
+                    return Env(*this, features);
+            };
+            Env env = makeEnv();
+
+            auto const alice = Account("alice");
+            env.fund(XRP(1'000'000), alice);
+            env.close();
+
+            auto const wasmHex = strHex(wasm);
+            try
+            {
+                env(escrow::create(alice, alice, XRP(1000)),
+                    escrow::finish_function(wasmHex),
+                    escrow::cancel_time(env.now() + 100s),
+                    fee(env.current()->fees().base * 10 +
+                        wasmHex.size() / 2 * 5),
+                    ter(expectedStatus == ExpectedStatus::Success
+                            ? TER{tesSUCCESS}
+                            : TER{temMALFORMED}));
+                if (expectedStatus == ExpectedStatus::Crash)
+                    fail("Expected crash", loc.file_name(), loc.line());
+                else
+                    pass();
+            }
+            catch (std::exception const& e)
+            {
+                if (expectedStatus == ExpectedStatus::Crash)
+                    pass();
+                else
+                    fail(e.what(), loc.file_name(), loc.line());
+            }
+        };
+
+        // Table-driven test cases
+        struct TestCase
+        {
+            enum class BlobType { Code, Data };
+            BlobType type;
+            uint32_t size;
+            std::optional<uint32_t> sizeLimit;
+            ExpectedStatus expected;
+        };
+
+        std::vector<TestCase> const testCases = {
+            // Code blob tests
+            {TestCase::BlobType::Code,
+             99'959,
+             std::nullopt,
+             ExpectedStatus::Success},  // just under 100kb
+            {TestCase::BlobType::Code,
+             99'961,
+             std::nullopt,
+             ExpectedStatus::Malformed},  // just over 100kb
+            {TestCase::BlobType::Code,
+             200'000,
+             10'000'000,
+             ExpectedStatus::Success},  // ~200kb
+            {TestCase::BlobType::Code,
+             490'000,
+             10'000'000,
+             ExpectedStatus::Success},  // just under 1MB JSON
+            {TestCase::BlobType::Code,
+             999'999,
+             10'000'000,
+             ExpectedStatus::Crash},  // just over 1MB JSON
+            // Data blob tests
+            {TestCase::BlobType::Data,
+             99'946,
+             std::nullopt,
+             ExpectedStatus::Success},  // just under 100kb
+            {TestCase::BlobType::Data,
+             99'948,
+             std::nullopt,
+             ExpectedStatus::Malformed},  // just over 100kb
+            {TestCase::BlobType::Data,
+             200'000,
+             10'000'000,
+             ExpectedStatus::Success},  // ~200kb
+            {TestCase::BlobType::Data,
+             490'000,
+             10'000'000,
+             ExpectedStatus::Success},  // just under 1MB JSON
+            {TestCase::BlobType::Data,
+             999'950,
+             10'000'000,
+             ExpectedStatus::Crash},  // just over 1MB JSON
+        };
+
+        for (auto const& tc : testCases)
+        {
+            auto const wasm = tc.type == TestCase::BlobType::Code
+                ? generateCodeBlob(tc.size)
+                : generateDataBlob(tc.size);
+            runTest(wasm, tc.sizeLimit, tc.expected);
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testCreateFinishFunctionPreflight(features);
@@ -1102,6 +1226,8 @@ struct EscrowSmart_test : public beast::unit_test::suite
         // TODO: Update module with new host functions
         testAllHostFunctions(features);
         testKeyletHostFunctions(features);
+
+        testLargeWasmModules(features);
     }
 
 public:
