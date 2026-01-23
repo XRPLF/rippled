@@ -883,7 +883,7 @@ public:
     struct DeltaInfo final
     {
         Number delta = numZero;
-        int scale = 0;
+        std::optional<int> scale;
     };
 
 private:

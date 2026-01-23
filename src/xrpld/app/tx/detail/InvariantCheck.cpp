@@ -2670,7 +2670,7 @@ ValidVault::visitEntry(
     // validation. It is used to validate that the change in account
     // balances matches the change in vault balances, stored to deltas_ at the
     // end of this function.
-    DeltaInfo balanceDelta{numZero, STAmount::cMinOffset - 1};
+    DeltaInfo balanceDelta{numZero, std::nullopt};
 
     std::int8_t sign = 0;
     if (before)
@@ -2753,8 +2753,8 @@ ValidVault::visitEntry(
                 balanceDelta.delta -= Number(amount);
                 // Trust Line balances are STAmounts, so we can use the exponent
                 // directly to get the scale.
-                balanceDelta.scale =
-                    std::max(balanceDelta.scale, amount.exponent());
+                if (amount.exponent() > balanceDelta.scale)
+                    balanceDelta.scale = amount.exponent();
                 sign = -1;
                 break;
             }
@@ -2770,6 +2770,10 @@ ValidVault::visitEntry(
     // against zero, to avoid missing such updates.
     if (sign != 0)
     {
+        XRPL_ASSERT_PARTS(
+            balanceDelta.scale,
+            "xrpl::ValidVault::visitEntry",
+            "scale initialized");
         balanceDelta.delta *= sign;
         deltas_[key] = balanceDelta;
     }
@@ -3727,14 +3731,15 @@ ValidVault::computeMinScale(
     if (numbers.size() == 0)
         return 0;
 
-    std::vector<std::int32_t> natScales;
-    std::transform(
+    auto const max = std::max_element(
         numbers.begin(),
         numbers.end(),
-        std::back_inserter(natScales),
-        [&](DeltaInfo const& n) { return n.scale; });
-
-    return *std::max_element(natScales.begin(), natScales.end());
+        [](auto const& a, auto const& b) -> bool { return a.scale < b.scale; });
+    XRPL_ASSERT_PARTS(
+        max->scale,
+        "xrpl::ValidVault::computeMinScale",
+        "scale set for destinationDelta");
+    return max->scale.value_or(STAmount::cMaxOffset);
 }
 
 }  // namespace xrpl
