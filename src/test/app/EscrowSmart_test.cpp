@@ -101,7 +101,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 escrow::cancel_time(env.now() + 100s),
                 escrow::comp_allowance(100),
                 fee(txnFees),
-                ter(temINVALID));
+                ter(temMALFORMED));
             env.close();
         }
 
@@ -132,7 +132,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
                 fee(txnFees),
-                ter(temMALFORMED));
+                ter(temINVALID));
             env.close();
         }
 
