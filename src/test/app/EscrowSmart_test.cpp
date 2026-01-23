@@ -96,7 +96,6 @@ struct EscrowSmart_test : public beast::unit_test::suite
 
             auto const escrowCreate = escrow::create(alice, carol, XRP(500));
 
-            // 11-byte string
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
