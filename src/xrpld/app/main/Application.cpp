@@ -1648,7 +1648,7 @@ ApplicationImp::checkSigs(bool check)
 bool
 ApplicationImp::isStopping() const
 {
-    return isTimeToStop.test(std::memory_order_consume);
+    return isTimeToStop.test(std::memory_order_relaxed);
 }
 
 int
