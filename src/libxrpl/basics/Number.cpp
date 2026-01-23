@@ -988,13 +988,13 @@ power(Number const& f, unsigned n)
 static Number
 ln(Number const& x, int iterations = 50)
 {
-    static Number const N0;
+    static Number const N0(0);
     static Number const N2(2, 0);
     static Number const N05(5, -1);
     static Number const LN2(693'147'180'559'945'309ll, -18);
 
     if (x <= 0)
-        throw std::runtime_error("Not positive value");
+        throw std::runtime_error("Not a positive value");
     else if (x == 1)
         return N0;
 
@@ -1028,11 +1028,17 @@ ln(Number const& x, int iterations = 50)
 Number
 log10(Number const& x, int iterations)
 {
-    static Number const ln10 = ln(Number(10));
+    static Number const N0(0);
+    static Number const LN10(2'302'585'092'994'046ll, -15);
+
+    if (x <= 0)
+        throw std::runtime_error("Not a positive value");
+    else if (x == 1)
+        return N0;
 
     if (x <= Number(10))
     {
-        auto const r = ln(x, iterations) / ln10;
+        auto const r = ln(x, iterations) / LN10;
         return r;
     }
 
@@ -1040,8 +1046,8 @@ log10(Number const& x, int iterations)
     // ln(x) = ln(normalX * 10^norm) = ln(normalX) + norm * ln(10)
     int diffExp = 15 + x.exponent();
     Number const normalX = x / Number(1, diffExp);
-    auto const lnX = ln(normalX, iterations) + diffExp * ln10;
-    auto const lgX = lnX / ln10;
+    auto const lnX = ln(normalX, iterations) + diffExp * LN10;
+    auto const lgX = lnX / LN10;
     return lgX;
 }
 
