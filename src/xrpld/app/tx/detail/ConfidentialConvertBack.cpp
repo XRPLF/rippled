@@ -62,14 +62,13 @@ verifyProofs(
         (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
 
     // Prepare Auditor Info
-    std::optional<EncryptedAmountInfo> auditor;
+    std::optional<ConfidentialRecipient> auditor;
     bool const hasAuditor = issuance->isFieldPresent(sfAuditorElGamalPublicKey);
     if (hasAuditor)
     {
-        auditor.emplace(
-            EncryptedAmountInfo{
-                (*issuance)[sfAuditorElGamalPublicKey],
-                tx[sfAuditorEncryptedAmount]});
+        auditor.emplace(ConfidentialRecipient{
+            (*issuance)[sfAuditorElGamalPublicKey],
+            tx[sfAuditorEncryptedAmount]});
     }
 
     if (auto const ter = verifyRevealedAmount(

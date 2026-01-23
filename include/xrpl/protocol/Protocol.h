@@ -318,6 +318,9 @@ std::size_t constexpr ecBlindingFactorLength = 32;
 /** Length of Schnorr ZKProof for public key registration */
 std::size_t constexpr ecSchnorrProofLength = 65;
 
+/** Length of ElGamal ciphertext equality proof */
+std::size_t constexpr ecCiphertextEqualityProofLength = 261;
+
 /** Length of ElGamal Pedersen linkage proof */
 std::size_t constexpr ecPedersenProofLength = 195;
 

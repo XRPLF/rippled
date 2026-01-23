@@ -11,14 +11,27 @@ addCommonZKPFields(
     std::uint16_t txType,
     AccountID const& account,
     std::uint32_t sequence,
-    uint192 const& issuanceID,
-    std::uint64_t amount)
+    uint192 const& issuanceID)
 {
     s.add16(txType);
     s.addBitString(account);
     s.add32(sequence);
     s.addBitString(issuanceID);
-    s.add64(amount);
+}
+
+uint256
+getSendContextHash(
+    AccountID const& account,
+    std::uint32_t sequence,
+    uint192 const& issuanceID,
+    AccountID const& destination)
+{
+    Serializer s;
+    addCommonZKPFields(s, ttCONFIDENTIAL_SEND, account, sequence, issuanceID);
+
+    s.addBitString(destination);
+
+    return s.getSHA512Half();
 }
 
 uint256
@@ -31,8 +44,9 @@ getClawbackContextHash(
 {
     Serializer s;
     addCommonZKPFields(
-        s, ttCONFIDENTIAL_CLAWBACK, account, sequence, issuanceID, amount);
+        s, ttCONFIDENTIAL_CLAWBACK, account, sequence, issuanceID);
 
+    s.add64(amount);
     s.addBitString(holder);
 
     return s.getSHA512Half();
@@ -47,7 +61,9 @@ getConvertContextHash(
 {
     Serializer s;
     addCommonZKPFields(
-        s, ttCONFIDENTIAL_CONVERT, account, sequence, issuanceID, amount);
+        s, ttCONFIDENTIAL_CONVERT, account, sequence, issuanceID);
+
+    s.add64(amount);
 
     return s.getSHA512Half();
 }
@@ -62,8 +78,9 @@ getConvertBackContextHash(
 {
     Serializer s;
     addCommonZKPFields(
-        s, ttCONFIDENTIAL_CONVERT_BACK, account, sequence, issuanceID, amount);
+        s, ttCONFIDENTIAL_CONVERT_BACK, account, sequence, issuanceID);
 
+    s.add64(amount);
     s.addInteger(version);
 
     return s.getSHA512Half();
@@ -314,9 +331,9 @@ TER
 verifyRevealedAmount(
     std::uint64_t const amount,
     Slice const& blindingFactor,
-    EncryptedAmountInfo const& holder,
-    EncryptedAmountInfo const& issuer,
-    std::optional<EncryptedAmountInfo> const& auditor)
+    ConfidentialRecipient const& holder,
+    ConfidentialRecipient const& issuer,
+    std::optional<ConfidentialRecipient> const& auditor)
 {
     if (auto const res = verifyElGamalEncryption(
             amount, blindingFactor, holder.publicKey, holder.encryptedAmount);
@@ -344,6 +361,63 @@ verifyRevealedAmount(
             return res;
         }
     }
+
+    return tesSUCCESS;
+}
+
+std::size_t
+getMultiCiphertextEqualityProofSize(std::size_t nRecipients)
+{
+    // Points (33 bytes): T_m (1) + T_rG (nRecipients) + T_rP (nRecipients) = 1
+    // + 2nRecipients Scalars (32 bytes): s_m (1) + s_r (nRecipients) = 1 +
+    // nRecipients
+    return ((1 + (2 * nRecipients)) * 33) + ((1 + nRecipients) * 32);
+}
+
+TER
+verifyMultiCiphertextEqualityProof(
+    Slice const& proof,
+    std::vector<ConfidentialRecipient> const& recipients,
+    std::size_t const nRecipients,
+    uint256 const& contextHash)
+{
+    if (recipients.size() != nRecipients)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    if (proof.size() != getMultiCiphertextEqualityProofSize(nRecipients))
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    std::vector<secp256k1_pubkey> r(nRecipients);
+    std::vector<secp256k1_pubkey> s(nRecipients);
+    std::vector<secp256k1_pubkey> pk(nRecipients);
+
+    for (size_t i = 0; i < nRecipients; ++i)
+    {
+        auto const& recipient = recipients[i];
+        if (recipient.encryptedAmount.size() != ecGamalEncryptedTotalLength)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        if (!makeEcPair(recipient.encryptedAmount, r[i], s[i]))
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        if (recipient.publicKey.size() != ecPubKeyLength)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        std::memcpy(pk[i].data, recipient.publicKey.data(), ecPubKeyLength);
+    }
+
+    int const result = secp256k1_mpt_verify_same_plaintext_multi(
+        secp256k1Context(),
+        proof.data(),
+        proof.size(),
+        nRecipients,
+        r.data(),
+        s.data(),
+        pk.data(),
+        contextHash.data());
+
+    if (result != 1)
+        return tecBAD_PROOF;
 
     return tesSUCCESS;
 }
@@ -1527,6 +1601,311 @@ secp256k1_mpt_pedersen_commit(
     if (!secp256k1_ec_pubkey_combine(ctx, commitment, points, 2))
     {
         return 0;
+    }
+
+    return 1;
+}
+
+// Multi-proof for same plaintexts
+/**
+ *  Builds the challenge hash: Domain || PublicInputs || Commitments || TxID
+ */
+void
+build_hash_input(
+    unsigned char* hash_out,  // Output: 32-byte hash
+    size_t n,
+    secp256k1_pubkey const* R,
+    secp256k1_pubkey const* S,
+    secp256k1_pubkey const* Pk,
+    secp256k1_pubkey const* T_m,
+    secp256k1_pubkey const* T_rG,
+    secp256k1_pubkey const* T_rP,
+    unsigned char const* tx_id)
+{
+    SHA256_CTX sha_ctx;
+    char const* domain = "MPT_POK_SAME_PLAINTEXT_PROOF";
+    unsigned char buf[33];
+    size_t len = 33;
+    size_t i;
+    secp256k1_context* ser_ctx =
+        secp256k1_context_create(SECP256K1_CONTEXT_NONE);
+
+    SHA256_Init(&sha_ctx);
+    SHA256_Update(&sha_ctx, domain, strlen(domain));
+
+    // Public Inputs (R, S, Pk for each ciphertext)
+    for (i = 0; i < n; ++i)
+    {
+        secp256k1_ec_pubkey_serialize(
+            ser_ctx, buf, &len, &R[i], SECP256K1_EC_COMPRESSED);
+        SHA256_Update(&sha_ctx, buf, 33);
+        secp256k1_ec_pubkey_serialize(
+            ser_ctx, buf, &len, &S[i], SECP256K1_EC_COMPRESSED);
+        SHA256_Update(&sha_ctx, buf, 33);
+        secp256k1_ec_pubkey_serialize(
+            ser_ctx, buf, &len, &Pk[i], SECP256K1_EC_COMPRESSED);
+        SHA256_Update(&sha_ctx, buf, 33);
+    }
+
+    // Commitments
+    secp256k1_ec_pubkey_serialize(
+        ser_ctx, buf, &len, T_m, SECP256K1_EC_COMPRESSED);
+    SHA256_Update(&sha_ctx, buf, 33);
+
+    for (i = 0; i < n; ++i)
+    {
+        secp256k1_ec_pubkey_serialize(
+            ser_ctx, buf, &len, &T_rG[i], SECP256K1_EC_COMPRESSED);
+        SHA256_Update(&sha_ctx, buf, 33);
+        secp256k1_ec_pubkey_serialize(
+            ser_ctx, buf, &len, &T_rP[i], SECP256K1_EC_COMPRESSED);
+        SHA256_Update(&sha_ctx, buf, 33);
+    }
+
+    SHA256_Update(&sha_ctx, tx_id, 32);
+    SHA256_Final(hash_out, &sha_ctx);
+    secp256k1_context_destroy(ser_ctx);
+}
+
+/* --- Public API --- */
+
+size_t
+secp256k1_mpt_prove_same_plaintext_multi_size(size_t n)
+{
+    // (1 point T_m + 2*N points T_r) * 33 + (1 scalar s_m + N scalars s_r) * 32
+    return ((1 + 2 * n) * 33) + ((1 + n) * 32);
+}
+
+int
+secp256k1_mpt_prove_same_plaintext_multi(
+    secp256k1_context const* ctx,
+    unsigned char* proof_out,
+    size_t* proof_len,
+    uint64_t amount_m,
+    size_t n,
+    secp256k1_pubkey const* R,
+    secp256k1_pubkey const* S,
+    secp256k1_pubkey const* Pk,
+    unsigned char const* r_array,
+    unsigned char const* tx_id)
+{
+    size_t required_len = secp256k1_mpt_prove_same_plaintext_multi_size(n);
+    if (*proof_len < required_len)
+    {
+        *proof_len = required_len;
+        return 0;
+    }
+    *proof_len = required_len;
+
+    unsigned char k_m[32];
+    unsigned char k_r[n][32];
+    secp256k1_pubkey T_m;
+    secp256k1_pubkey T_rG[n];
+    secp256k1_pubkey T_rP[n];
+    unsigned char e[32];
+    unsigned char s_m[32];
+    unsigned char s_r[n][32];
+
+    size_t i;
+    int ok = 1;
+
+    /* 1. Generate Randomness & Commitments */
+    if (!generate_random_scalar(ctx, k_m))
+        return 0;
+    if (!secp256k1_ec_pubkey_create(ctx, &T_m, k_m))
+        ok = 0;
+
+    for (i = 0; i < n; ++i)
+    {
+        if (!generate_random_scalar(ctx, k_r[i]))
+            ok = 0;
+        if (!secp256k1_ec_pubkey_create(ctx, &T_rG[i], k_r[i]))
+            ok = 0;
+
+        T_rP[i] = Pk[i];
+        if (!secp256k1_ec_pubkey_tweak_mul(ctx, &T_rP[i], k_r[i]))
+            ok = 0;
+    }
+
+    if (!ok)
+        return 0;
+
+    /* 2. Compute Challenge e */
+    build_hash_input(e, n, R, S, Pk, &T_m, T_rG, T_rP, tx_id);
+    // Ensure e is valid
+    if (!secp256k1_ec_seckey_verify(ctx, e))
+        return 0;
+
+    /* 3. Compute Responses */
+    /* s_m = k_m + e * m */
+    unsigned char m_scalar[32] = {0};
+    for (i = 0; i < 8; ++i)
+        m_scalar[31 - i] = (amount_m >> (i * 8)) & 0xFF;
+
+    memcpy(s_m, k_m, 32);
+    unsigned char term[32];
+    memcpy(term, m_scalar, 32);
+    if (!secp256k1_ec_seckey_tweak_mul(ctx, term, e))
+        return 0;
+    if (!secp256k1_ec_seckey_tweak_add(ctx, s_m, term))
+        return 0;
+
+    /* s_ri = k_ri + e * ri */
+    for (i = 0; i < n; ++i)
+    {
+        memcpy(s_r[i], k_r[i], 32);
+        memcpy(term, &r_array[i * 32], 32);  // Extract r_i from flat array
+        if (!secp256k1_ec_seckey_tweak_mul(ctx, term, e))
+            return 0;
+        if (!secp256k1_ec_seckey_tweak_add(ctx, s_r[i], term))
+            return 0;
+    }
+
+    /* 4. Serialize Proof */
+    size_t offset = 0;
+    size_t len = 33;
+
+    // Points
+    secp256k1_ec_pubkey_serialize(
+        ctx, proof_out + offset, &len, &T_m, SECP256K1_EC_COMPRESSED);
+    offset += 33;
+    for (i = 0; i < n; ++i)
+    {
+        secp256k1_ec_pubkey_serialize(
+            ctx, proof_out + offset, &len, &T_rG[i], SECP256K1_EC_COMPRESSED);
+        offset += 33;
+    }
+    for (i = 0; i < n; ++i)
+    {
+        secp256k1_ec_pubkey_serialize(
+            ctx, proof_out + offset, &len, &T_rP[i], SECP256K1_EC_COMPRESSED);
+        offset += 33;
+    }
+
+    // Scalars
+    memcpy(proof_out + offset, s_m, 32);
+    offset += 32;
+    for (i = 0; i < n; ++i)
+    {
+        memcpy(proof_out + offset, s_r[i], 32);
+        offset += 32;
+    }
+
+    return 1;
+}
+
+int
+secp256k1_mpt_verify_same_plaintext_multi(
+    secp256k1_context const* ctx,
+    unsigned char const* proof,
+    size_t proof_len,
+    size_t n,
+    secp256k1_pubkey const* R,
+    secp256k1_pubkey const* S,
+    secp256k1_pubkey const* Pk,
+    unsigned char const* tx_id)
+{
+    if (proof_len != secp256k1_mpt_prove_same_plaintext_multi_size(n))
+        return 0;
+
+    /* Deserialize */
+    size_t offset = 0;
+    secp256k1_pubkey T_m;
+    secp256k1_pubkey T_rG[n];
+    secp256k1_pubkey T_rP[n];
+    unsigned char s_m[32];
+    unsigned char s_r[n][32];
+    size_t i;
+
+    if (!secp256k1_ec_pubkey_parse(ctx, &T_m, proof + offset, 33))
+        return 0;
+    offset += 33;
+    for (i = 0; i < n; ++i)
+    {
+        if (!secp256k1_ec_pubkey_parse(ctx, &T_rG[i], proof + offset, 33))
+            return 0;
+        offset += 33;
+    }
+    for (i = 0; i < n; ++i)
+    {
+        if (!secp256k1_ec_pubkey_parse(ctx, &T_rP[i], proof + offset, 33))
+            return 0;
+        offset += 33;
+    }
+
+    memcpy(s_m, proof + offset, 32);
+    offset += 32;
+    for (i = 0; i < n; ++i)
+    {
+        memcpy(s_r[i], proof + offset, 32);
+        offset += 32;
+    }
+
+    /* Recompute Challenge */
+    unsigned char e[32];
+    build_hash_input(e, n, R, S, Pk, &T_m, T_rG, T_rP, tx_id);
+
+    /* Verify Equations */
+    secp256k1_pubkey lhs, rhs, term, SmG;
+    secp256k1_pubkey const* add_pt[3];
+    unsigned char b1[33], b2[33];
+    size_t len;
+
+    // Precompute s_m * G
+    if (!secp256k1_ec_pubkey_create(ctx, &SmG, s_m))
+        return 0;
+
+    for (i = 0; i < n; ++i)
+    {
+        /* Check 1: s_ri * G == T_ri_G + e * R_i */
+        if (!secp256k1_ec_pubkey_create(ctx, &lhs, s_r[i]))
+            return 0;
+
+        term = R[i];
+        if (!secp256k1_ec_pubkey_tweak_mul(ctx, &term, e))
+            return 0;
+        add_pt[0] = &T_rG[i];
+        add_pt[1] = &term;
+        if (!secp256k1_ec_pubkey_combine(ctx, &rhs, add_pt, 2))
+            return 0;
+
+        len = 33;
+        secp256k1_ec_pubkey_serialize(
+            ctx, b1, &len, &lhs, SECP256K1_EC_COMPRESSED);
+        len = 33;
+        secp256k1_ec_pubkey_serialize(
+            ctx, b2, &len, &rhs, SECP256K1_EC_COMPRESSED);
+        if (memcmp(b1, b2, 33) != 0)
+            return 0;
+
+        /* Check 2: s_m * G + s_ri * P_i == T_m + T_ri_P + e * S_i */
+        /* LHS = SmG + s_r[i] * Pk[i] */
+        term = Pk[i];
+        if (!secp256k1_ec_pubkey_tweak_mul(ctx, &term, s_r[i]))
+            return 0;
+        add_pt[0] = &SmG;
+        add_pt[1] = &term;
+        if (!secp256k1_ec_pubkey_combine(ctx, &lhs, add_pt, 2))
+            return 0;
+
+        /* RHS = T_m + T_rP[i] + e * S[i] */
+        term = S[i];
+        if (!secp256k1_ec_pubkey_tweak_mul(ctx, &term, e))
+            return 0;
+        add_pt[0] = &T_m;
+        add_pt[1] = &T_rP[i];
+        add_pt[2] = &term;
+        if (!secp256k1_ec_pubkey_combine(ctx, &rhs, add_pt, 3))
+            return 0;
+
+        len = 33;
+        secp256k1_ec_pubkey_serialize(
+            ctx, b1, &len, &lhs, SECP256K1_EC_COMPRESSED);
+        len = 33;
+        secp256k1_ec_pubkey_serialize(
+            ctx, b2, &len, &rhs, SECP256K1_EC_COMPRESSED);
+        if (memcmp(b1, b2, 33) != 0)
+            return 0;
     }
 
     return 1;

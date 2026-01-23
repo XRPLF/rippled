@@ -43,17 +43,20 @@ ConfidentialSend::preflight(PreflightContext const& ctx)
             ecGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
-    if (hasAuditor && !isValidCiphertext(ctx.tx[sfAuditorEncryptedAmount]))
-        return temBAD_CIPHERTEXT;
-
-    // if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
-    //     return temMALFORMED;
+    // Check the length of the ZKProof
+    auto const recipientCount = hasAuditor ? 4 : 3;
+    if (ctx.tx[sfZKProof].length() !=
+        getMultiCiphertextEqualityProofSize(recipientCount))
+        return temMALFORMED;
 
     // Check the encrypted amount formats, this is more expensive so put it at
     // the end
     if (!isValidCiphertext(ctx.tx[sfSenderEncryptedAmount]) ||
         !isValidCiphertext(ctx.tx[sfDestinationEncryptedAmount]) ||
         !isValidCiphertext(ctx.tx[sfIssuerEncryptedAmount]))
+        return temBAD_CIPHERTEXT;
+
+    if (hasAuditor && !isValidCiphertext(ctx.tx[sfAuditorEncryptedAmount]))
         return temBAD_CIPHERTEXT;
 
     return tesSUCCESS;
@@ -151,6 +154,46 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, mptIssue, destination);
         !isTesSuccess(ter))
         return ter;
+
+    auto const contextHash = getSendContextHash(
+        account, ctx.tx[sfSequence], mptIssuanceID, destination);
+
+    auto const expectedRecipients = requiresAuditor ? 4 : 3;
+
+    // Prepare encrypted amount info for proof verification
+    std::vector<ConfidentialRecipient> recipients;
+    recipients.reserve(expectedRecipients);
+
+    // Add sender encrypted amount info
+    recipients.push_back(
+        {(*sleSenderMPToken)[sfHolderElGamalPublicKey],
+         ctx.tx[sfSenderEncryptedAmount]});
+
+    // Add destination encrypted amount info
+    recipients.push_back(
+        {(*sleDestinationMPToken)[sfHolderElGamalPublicKey],
+         ctx.tx[sfDestinationEncryptedAmount]});
+
+    // Add issuer encrypted amount info
+    recipients.push_back(
+        {(*sleIssuance)[sfIssuerElGamalPublicKey],
+         ctx.tx[sfIssuerEncryptedAmount]});
+
+    // Add auditor encrypted amount info if present
+    if (requiresAuditor)
+    {
+        recipients.push_back(
+            {(*sleIssuance)[sfAuditorElGamalPublicKey],
+             ctx.tx[sfAuditorEncryptedAmount]});
+    }
+
+    // Verify the multi-ciphertext equality proof
+    if (auto const ter = verifyMultiCiphertextEqualityProof(
+            ctx.tx[sfZKProof], recipients, expectedRecipients, contextHash);
+        !isTesSuccess(ter))
+    {
+        return ter;
+    }
 
     return tesSUCCESS;
 }

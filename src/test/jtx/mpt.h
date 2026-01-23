@@ -19,10 +19,6 @@ class MPTTester;
 
 auto const MPTDEXFlags = tfMPTCanTrade | tfMPTCanTransfer;
 
-// Generates a syntactically valid placeholder ciphertext
-ripple::Buffer
-generatePlaceholderCiphertext();
-
 // Check flags settings on MPT create
 class mptflags
 {
@@ -434,10 +430,10 @@ public:
     void
     generateKeyPair(Account const& account);
 
-    Buffer
+    std::optional<Buffer>
     getPubKey(Account const& account) const;
 
-    Buffer
+    std::optional<Buffer>
     getPrivKey(Account const& account) const;
 
     Buffer
@@ -446,10 +442,10 @@ public:
         uint64_t const amt,
         Buffer const& blindingFactor) const;
 
-    uint64_t
+    std::optional<uint64_t>
     decryptAmount(Account const& account, Buffer const& amt) const;
 
-    uint64_t
+    std::optional<uint64_t>
     getDecryptedBalance(
         Account const& account,
         EncryptedBalanceType balanceType) const;
@@ -457,15 +453,23 @@ public:
     std::int64_t
     getIssuanceOutstandingBalance() const;
 
-    Buffer
+    std::optional<Buffer>
     getClawbackProof(
         Account const& holder,
         std::uint64_t amount,
         Buffer const& privateKey,
         uint256 const& txHash) const;
 
-    Buffer
-    getSchnorrProof(Account const& account, uint256 const& contextHash) const;
+    std::optional<Buffer>
+    getSchnorrProof(Account const& account, uint256 const& ctxHash) const;
+
+    std::optional<Buffer>
+    getConfidentialSendProof(
+        std::uint64_t const amount,
+        std::vector<ConfidentialRecipient> const& recipients,
+        Slice const& blindingFactor,
+        std::size_t const nRecipients,
+        uint256 const& contextHash) const;
 
     Buffer
     getConvertBackProof(

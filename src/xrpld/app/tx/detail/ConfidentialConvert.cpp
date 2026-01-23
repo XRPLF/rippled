@@ -139,11 +139,10 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         holderPubKey = (*sleMptoken)[sfHolderElGamalPublicKey];
     }
 
-    // Prepare Auditor Info
-    std::optional<EncryptedAmountInfo> auditor;
+    std::optional<ConfidentialRecipient> auditor;
     if (hasAuditor)
     {
-        auditor.emplace(EncryptedAmountInfo{
+        auditor.emplace(ConfidentialRecipient{
             (*sleIssuance)[sfAuditorElGamalPublicKey],
             ctx.tx[sfAuditorEncryptedAmount]});
     }
