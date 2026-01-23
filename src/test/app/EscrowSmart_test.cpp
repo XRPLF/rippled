@@ -133,7 +133,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
                 fee(txnFees),
-                ter(temINVALID));
+                ter(temMALFORMED));
             env.close();
         }
 
