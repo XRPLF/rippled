@@ -12,13 +12,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
 
-#if (defined(__clang_major__) && __clang_major__ < 15)
-#include <experimental/source_location>
-using source_location = std::experimental::source_location;
-#else
 #include <source_location>
-using std::source_location;
-#endif
 
 namespace xrpl {
 namespace test {
@@ -1057,8 +1051,8 @@ class FeeVote_test : public beast::unit_test::suite
         auto checkFeeTx = [&](FeeSetup const& setup,
                               STTx const& feeTx,
                               std::shared_ptr<Ledger> const& ledger,
-                              source_location const loc =
-                                  source_location::current()) {
+                              std::source_location const loc =
+                                  std::source_location::current()) {
             auto const line = " (" + std::to_string(loc.line()) + ")";
             BEAST_EXPECTS(feeTx.getTxnType() == ttFEE, line);
 
