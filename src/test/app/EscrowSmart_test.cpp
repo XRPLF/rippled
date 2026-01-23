@@ -989,155 +989,21 @@ struct EscrowSmart_test : public beast::unit_test::suite
 
         using namespace jtx;
         using namespace std::chrono;
-
-        // Helper: Variable-length integer encoding (LEB128)
-        auto pushLeb128 = [](std::vector<uint8_t>& buf, uint32_t val) {
-            do
-            {
-                uint8_t byte = val & 0x7F;
-                val >>= 7;
-                if (val != 0)
-                    byte |= 0x80;
-                buf.push_back(byte);
-            } while (val != 0);
-        };
-
-        // Generator for Large Code Section
-        auto generateCodeBlob = [pushLeb128](uint32_t num_instructions) {
-            std::vector<uint8_t> wasm = {
-                0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00};
-
-            // Type (index 0: ()->()) | Func (index 0 uses type 0)
-            wasm.insert(
-                wasm.end(),
-                {0x01, 0x04, 0x01, 0x60, 0x00, 0x00, 0x03, 0x02, 0x01, 0x00});
-            // Export: "finish" (func index 0)
-            wasm.insert(
-                wasm.end(),
-                {0x07,
-                 0x0a,
-                 0x01,
-                 0x06,
-                 'f',
-                 'i',
-                 'n',
-                 'i',
-                 's',
-                 'h',
-                 0x00,
-                 0x00});
-
-            std::vector<uint8_t> body;
-            pushLeb128(body, 0);  // No locals
-            for (uint32_t i = 0; i < num_instructions; ++i)
-                body.push_back(0x01);  // NOPs
-            body.push_back(0x0b);      // end
-
-            std::vector<uint8_t> section;
-            pushLeb128(section, 1);  // 1 function
-            pushLeb128(section, (uint32_t)body.size());
-            section.insert(section.end(), body.begin(), body.end());
-
-            wasm.push_back(0x0a);  // Code Section ID
-            pushLeb128(wasm, (uint32_t)section.size());
-            wasm.insert(wasm.end(), section.begin(), section.end());
-            return wasm;
-        };
-
-        // Generator for Large Data Section
-        auto generateDataBlob = [pushLeb128](uint32_t data_size) {
-            // Magic + Version
-            std::vector<uint8_t> wasm = {
-                0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00};
-
-            // 1. Type Section (ID 1): () -> ()
-            wasm.insert(wasm.end(), {0x01, 0x04, 0x01, 0x60, 0x00, 0x00});
-
-            // 2. Function Section (ID 3): One function using Type 0
-            wasm.insert(wasm.end(), {0x03, 0x02, 0x01, 0x00});
-
-            // 3. Memory Section (ID 5): Must be large enough for data_size
-            uint32_t pages = (data_size + 65535) / 65536;
-            std::vector<uint8_t> mem_p;
-            pushLeb128(mem_p, 1);      // 1 memory defined
-            mem_p.push_back(0x00);     // Flags (minimum only)
-            pushLeb128(mem_p, pages);  // Page count
-            wasm.push_back(0x05);
-            pushLeb128(wasm, (uint32_t)mem_p.size());
-            wasm.insert(wasm.end(), mem_p.begin(), mem_p.end());
-
-            // 4. Export Section (ID 7): Export func 0 as "finish"
-            wasm.insert(
-                wasm.end(),
-                {0x07,
-                 0x0a,
-                 0x01,
-                 0x06,
-                 'f',
-                 'i',
-                 'n',
-                 'i',
-                 's',
-                 'h',
-                 0x00,
-                 0x00});
-
-            // 5. Code Section (ID 10): Body for "finish" - MUST come before
-            // Data Section per WASM spec (sections must be in ascending ID
-            // order)
-            std::vector<uint8_t> code_body = {0x00, 0x0b};  // 0 locals, end
-            std::vector<uint8_t> code_p;
-            pushLeb128(code_p, 1);  // 1 function body
-            pushLeb128(code_p, (uint32_t)code_body.size());
-            code_p.insert(code_p.end(), code_body.begin(), code_body.end());
-            wasm.push_back(0x0a);
-            pushLeb128(wasm, (uint32_t)code_p.size());
-            wasm.insert(wasm.end(), code_p.begin(), code_p.end());
-
-            // 6. Data Section (ID 11): The actual bloat
-            std::vector<uint8_t> data_seg;
-            data_seg.push_back(0x00);  // Memory index 0
-            // Offset: i32.const 0, end
-            // Init expr for data segment offset: i32.const 0 (0x41 0x00), end
-            // (0x0b)
-            data_seg.insert(data_seg.end(), {0x41, 0x00, 0x0b});
-            pushLeb128(
-                data_seg, data_size);  // Content length (N bytes of data)
-
-            std::vector<uint8_t> data_p;
-            pushLeb128(data_p, 1);  // 1 data segment in this data section
-            data_p.insert(data_p.end(), data_seg.begin(), data_seg.end());
-
-            wasm.push_back(
-                0x0b);  // Data Section ID (standard WASM section 0x0b)
-            pushLeb128(
-                wasm, (uint32_t)(data_p.size() + data_size));  // Section size
-            wasm.insert(wasm.end(), data_p.begin(), data_p.end());
-            wasm.insert(
-                wasm.end(), data_size, 0xEE);  // Junk data payload bytes (0xEE)
-
-            return wasm;
-        };
+        using namespace wasm_constants;
 
         enum class ExpectedStatus { Success, Malformed, Crash };
 
         auto runTest = [&](std::vector<uint8_t> const& wasm,
-                           std::optional<uint32_t> sizeLimit = std::nullopt,
-                           ExpectedStatus expectedStatus =
-                               ExpectedStatus::Success) {
-            auto makeEnv = [&]() -> Env {
-                if (sizeLimit)
-                    return Env(
-                        *this,
-                        envconfig([&sizeLimit](std::unique_ptr<Config> cfg) {
-                            cfg->FEES.extension_size_limit = *sizeLimit;
-                            return cfg;
-                        }),
-                        features);
-                else
-                    return Env(*this, features);
-            };
-            Env env = makeEnv();
+                           std::optional<uint32_t> sizeLimit,
+                           ExpectedStatus expectedStatus) {
+            Env env = sizeLimit
+                ? Env(*this,
+                      envconfig([&sizeLimit](std::unique_ptr<Config> cfg) {
+                          cfg->FEES.extension_size_limit = *sizeLimit;
+                          return cfg;
+                      }),
+                      features)
+                : Env(*this, features);
 
             auto const alice = Account("alice");
             env.fund(XRP(1'000'000), alice);
@@ -1155,52 +1021,81 @@ struct EscrowSmart_test : public beast::unit_test::suite
                             ? TER{tesSUCCESS}
                             : TER{temMALFORMED}));
                 if (expectedStatus == ExpectedStatus::Crash)
-                {
                     fail("Expected crash", __FILE__, __LINE__);
-                }
                 else
-                {
                     pass();
-                }
             }
             catch (std::exception const& e)
             {
                 if (expectedStatus == ExpectedStatus::Crash)
-                {
                     pass();
-                }
                 else
-                {
                     fail(e.what());
-                }
             }
         };
 
-        runTest(generateCodeBlob(99'959));  // just under 100kb
-        runTest(
-            generateCodeBlob(99'961),  // just over 100kb, including header etc
-            std::nullopt,
-            ExpectedStatus::Malformed);
-        runTest(generateCodeBlob(200'000), 10'000'000);  // ~200kb
-        runTest(
-            generateCodeBlob(490'000), 10'000'000);  // just under 1MB of JSON
-        runTest(
-            generateCodeBlob(999'999),
-            10'000'000,
-            ExpectedStatus::Crash);  // just over 1MB of JSON
+        // Table-driven test cases
+        struct TestCase
+        {
+            enum class BlobType { Code, Data };
+            BlobType type;
+            uint32_t size;
+            std::optional<uint32_t> sizeLimit;
+            ExpectedStatus expected;
+        };
 
-        runTest(generateDataBlob(99946));  // just under 100kb
-        runTest(
-            generateDataBlob(99948),
-            std::nullopt,
-            ExpectedStatus::Malformed);  // just over 100kb, including header
-        runTest(generateDataBlob(200'000), 10'000'000);  // ~200kb
-        runTest(
-            generateDataBlob(490'000), 10'000'000);  // just under 1MB of JSON
-        runTest(
-            generateDataBlob(999950),
-            10'000'000,
-            ExpectedStatus::Crash);  // just over 1MB of JSON
+        std::vector<TestCase> const testCases = {
+            // Code blob tests
+            {TestCase::BlobType::Code,
+             99'959,
+             std::nullopt,
+             ExpectedStatus::Success},  // just under 100kb
+            {TestCase::BlobType::Code,
+             99'961,
+             std::nullopt,
+             ExpectedStatus::Malformed},  // just over 100kb
+            {TestCase::BlobType::Code,
+             200'000,
+             10'000'000,
+             ExpectedStatus::Success},  // ~200kb
+            {TestCase::BlobType::Code,
+             490'000,
+             10'000'000,
+             ExpectedStatus::Success},  // just under 1MB JSON
+            {TestCase::BlobType::Code,
+             999'999,
+             10'000'000,
+             ExpectedStatus::Crash},  // just over 1MB JSON
+            // Data blob tests
+            {TestCase::BlobType::Data,
+             99'946,
+             std::nullopt,
+             ExpectedStatus::Success},  // just under 100kb
+            {TestCase::BlobType::Data,
+             99'948,
+             std::nullopt,
+             ExpectedStatus::Malformed},  // just over 100kb
+            {TestCase::BlobType::Data,
+             200'000,
+             10'000'000,
+             ExpectedStatus::Success},  // ~200kb
+            {TestCase::BlobType::Data,
+             490'000,
+             10'000'000,
+             ExpectedStatus::Success},  // just under 1MB JSON
+            {TestCase::BlobType::Data,
+             999'950,
+             10'000'000,
+             ExpectedStatus::Crash},  // just over 1MB JSON
+        };
+
+        for (auto const& tc : testCases)
+        {
+            auto const wasm = tc.type == TestCase::BlobType::Code
+                ? generateCodeBlob(tc.size)
+                : generateDataBlob(tc.size);
+            runTest(wasm, tc.sizeLimit, tc.expected);
+        }
     }
 
     void

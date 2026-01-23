@@ -2,6 +2,116 @@
 
 #include <test/app/wasm_fixtures/fixtures.h>
 
+#include <iterator>
+
+namespace wasm_constants {
+
+namespace {
+
+// Helper: Variable-length integer encoding (LEB128)
+void
+pushLeb128(std::vector<uint8_t>& buf, uint32_t val)
+{
+    do
+    {
+        uint8_t byte = val & 0x7F;
+        val >>= 7;
+        if (val != 0)
+            byte |= 0x80;
+        buf.push_back(byte);
+    } while (val != 0);
+}
+
+// Helper: append bytes from an array to a vector
+template <typename T>
+void
+appendBytes(std::vector<uint8_t>& buf, T const& arr)
+{
+    buf.insert(buf.end(), std::begin(arr), std::end(arr));
+}
+
+// Helper: append a WASM section (ID + LEB128 size + content)
+// extraSize is added to the encoded size (for trailing fill bytes)
+void
+appendSection(
+    std::vector<uint8_t>& wasm,
+    uint8_t sectionId,
+    std::vector<uint8_t> const& content,
+    uint32_t extraSize = 0)
+{
+    wasm.push_back(sectionId);
+    pushLeb128(wasm, static_cast<uint32_t>(content.size() + extraSize));
+    appendBytes(wasm, content);
+}
+
+}  // namespace
+
+std::vector<uint8_t>
+generateCodeBlob(uint32_t num_instructions)
+{
+    std::vector<uint8_t> wasm;
+    appendBytes(wasm, WASM_HEADER);
+    appendBytes(wasm, TYPE_EMPTY_FUNC);
+    appendBytes(wasm, FUNC_TYPE0);
+    appendBytes(wasm, EXPORT_FINISH);
+
+    std::vector<uint8_t> body;
+    pushLeb128(body, 0);  // No locals
+    body.insert(body.end(), num_instructions, INSTR_NOP);
+    body.push_back(INSTR_END);
+
+    std::vector<uint8_t> section;
+    pushLeb128(section, 1);  // 1 function
+    pushLeb128(section, static_cast<uint32_t>(body.size()));
+    appendBytes(section, body);
+
+    appendSection(wasm, SECTION_CODE, section);
+    return wasm;
+}
+
+std::vector<uint8_t>
+generateDataBlob(uint32_t data_size)
+{
+    std::vector<uint8_t> wasm;
+    appendBytes(wasm, WASM_HEADER);
+    appendBytes(wasm, TYPE_EMPTY_FUNC);
+    appendBytes(wasm, FUNC_TYPE0);
+
+    // Memory Section: must be large enough for data_size
+    uint32_t pages = (data_size + 65535) / 65536;
+    std::vector<uint8_t> mem_p;
+    pushLeb128(mem_p, 1);      // 1 memory defined
+    mem_p.push_back(0x00);     // Flags (minimum only)
+    pushLeb128(mem_p, pages);  // Page count
+    appendSection(wasm, SECTION_MEMORY, mem_p);
+
+    appendBytes(wasm, EXPORT_FINISH);
+
+    // Code Section: MUST come before Data Section per WASM spec
+    std::vector<uint8_t> code_p;
+    pushLeb128(code_p, 1);  // 1 function body
+    pushLeb128(code_p, static_cast<uint32_t>(std::size(EMPTY_BODY)));
+    appendBytes(code_p, EMPTY_BODY);
+    appendSection(wasm, SECTION_CODE, code_p);
+
+    // Data Section: the actual bloat
+    std::vector<uint8_t> data_seg;
+    data_seg.push_back(0x00);  // Memory index 0
+    appendBytes(data_seg, DATA_OFFSET_ZERO);
+    pushLeb128(data_seg, data_size);
+
+    std::vector<uint8_t> data_p;
+    pushLeb128(data_p, 1);  // 1 data segment
+    appendBytes(data_p, data_seg);
+
+    appendSection(wasm, SECTION_DATA, data_p, data_size);
+    wasm.insert(wasm.end(), data_size, DATA_FILL_BYTE);
+
+    return wasm;
+}
+
+}  // namespace wasm_constants
+
 extern std::string const fibWasmHex =
     "0061736d0100000001090260000060017f017f0303020001071b02115f5f"
     "7761736d5f63616c6c5f63746f727300000366696200010a440202000b3f"
