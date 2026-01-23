@@ -273,8 +273,8 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env(*this);
         {
-            std::string const wasmHex = allHostFunctionsWasmHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::string const wasmStr =
+                boost::algorithm::unhex(allHostFunctionsWasmHex);
             std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
             auto& engine = WasmEngine::instance();
@@ -305,8 +305,8 @@ struct Wasm_test : public beast::unit_test::suite
         env.close();
 
         {
-            std::string const wasmHex = allHostFunctionsWasmHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::string const wasmStr =
+                boost::algorithm::unhex(allHostFunctionsWasmHex);
             std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
             auto& engine = WasmEngine::instance();
@@ -330,8 +330,8 @@ struct Wasm_test : public beast::unit_test::suite
 
         // not enough gas
         {
-            std::string const wasmHex = allHostFunctionsWasmHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::string const wasmStr =
+                boost::algorithm::unhex(allHostFunctionsWasmHex);
             std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
             auto& engine = WasmEngine::instance();
@@ -537,8 +537,8 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env(*this);
         {
-            std::string const wasmHex = floatTestsWasmHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::string const wasmStr =
+                boost::algorithm::unhex(floatTestsWasmHex);
             std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
@@ -548,8 +548,7 @@ struct Wasm_test : public beast::unit_test::suite
         }
 
         {
-            std::string const wasmHex = float0Hex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::string const wasmStr = boost::algorithm::unhex(float0Hex);
             std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
@@ -568,8 +567,7 @@ struct Wasm_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         // std::string const funcName("test");
-        auto const& wasmHex = hfPerfTest;
-        std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+        std::string const wasmStr = boost::algorithm::unhex(hfPerfTest);
         std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
         // std::string const credType = "abcde";
