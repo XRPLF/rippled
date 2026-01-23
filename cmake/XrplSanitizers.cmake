@@ -43,7 +43,10 @@
 include(CompilationEnv)
 
 # Read environment variable
-set(SANITIZERS $ENV{SANITIZERS})
+set(SANITIZERS "")
+if(DEFINED ENV{SANITIZERS})
+  set(SANITIZERS "$ENV{SANITIZERS}")
+endif()
 
 # Set SANITIZERS_ENABLED flag for use in other modules
 if(SANITIZERS MATCHES "address|thread|undefinedbehavior")

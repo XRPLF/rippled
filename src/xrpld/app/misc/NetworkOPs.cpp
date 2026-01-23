@@ -981,7 +981,7 @@ NetworkOPsImp::setHeartbeatTimer()
         heartbeatTimer_,
         mConsensus.parms().ledgerGRANULARITY,
         [this]() {
-            m_job_queue.addJob(jtNETOP_TIMER, "NetOPs.heartbeat", [this]() {
+            m_job_queue.addJob(jtNETOP_TIMER, "NetHeart", [this]() {
                 processHeartbeatTimer();
             });
         },
@@ -997,7 +997,7 @@ NetworkOPsImp::setClusterTimer()
         clusterTimer_,
         10s,
         [this]() {
-            m_job_queue.addJob(jtNETOP_CLUSTER, "NetOPs.cluster", [this]() {
+            m_job_queue.addJob(jtNETOP_CLUSTER, "NetCluster", [this]() {
                 processClusterTimer();
             });
         },
@@ -1225,7 +1225,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     auto tx = std::make_shared<Transaction>(trans, reason, app_);
 
-    m_job_queue.addJob(jtTRANSACTION, "submitTxn", [this, tx]() {
+    m_job_queue.addJob(jtTRANSACTION, "SubmitTxn", [this, tx]() {
         auto t = tx;
         processTransaction(t, false, false, FailHard::no);
     });
@@ -1323,7 +1323,7 @@ NetworkOPsImp::doTransactionAsync(
     if (mDispatchState == DispatchState::none)
     {
         if (m_job_queue.addJob(
-                jtBATCH, "transactionBatch", [this]() { transactionBatch(); }))
+                jtBATCH, "TxBatchAsync", [this]() { transactionBatch(); }))
         {
             mDispatchState = DispatchState::scheduled;
         }
@@ -1370,7 +1370,7 @@ NetworkOPsImp::doTransactionSyncBatch(
             if (mTransactions.size())
             {
                 // More transactions need to be applied, but by another job.
-                if (m_job_queue.addJob(jtBATCH, "transactionBatch", [this]() {
+                if (m_job_queue.addJob(jtBATCH, "TxBatchSync", [this]() {
                         transactionBatch();
                     }))
                 {
@@ -3208,19 +3208,16 @@ NetworkOPsImp::reportFeeChange()
     if (f != mLastFeeSummary)
     {
         m_job_queue.addJob(
-            jtCLIENT_FEE_CHANGE, "reportFeeChange->pubServer", [this]() {
-                pubServer();
-            });
+            jtCLIENT_FEE_CHANGE, "PubFee", [this]() { pubServer(); });
     }
 }
 
 void
 NetworkOPsImp::reportConsensusStateChange(ConsensusPhase phase)
 {
-    m_job_queue.addJob(
-        jtCLIENT_CONSENSUS,
-        "reportConsensusStateChange->pubConsensus",
-        [this, phase]() { pubConsensus(phase); });
+    m_job_queue.addJob(jtCLIENT_CONSENSUS, "PubCons", [this, phase]() {
+        pubConsensus(phase);
+    });
 }
 
 inline void
@@ -3728,7 +3725,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
     app_.getJobQueue().addJob(
         jtCLIENT_ACCT_HIST,
-        "AccountHistoryTxStream",
+        "HistTxStream",
         [this, dbType = databaseType, subInfo]() {
             auto const& accountId = subInfo.index_->accountId_;
             auto& lastLedgerSeq = subInfo.index_->historyLastLedgerSeq_;

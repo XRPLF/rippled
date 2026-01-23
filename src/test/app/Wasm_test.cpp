@@ -668,7 +668,7 @@ struct Wasm_test : public beast::unit_test::suite
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
         std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
 
-        auto const allowance = 185'974;
+        auto const allowance = 187'131;
         auto re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, allowance);
 
         checkResult(re, 1, allowance);
