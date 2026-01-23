@@ -6,13 +6,7 @@
 
 #include <xrpld/app/wasm/HostFuncWrapper.h>
 
-#if (defined(__clang_major__) && __clang_major__ < 15)
-#include <experimental/source_location>
-using source_location = std::experimental::source_location;
-#else
 #include <source_location>
-using std::source_location;
-#endif
 
 namespace xrpl {
 namespace test {
@@ -55,7 +49,7 @@ struct Wasm_test : public beast::unit_test::suite
         Expected<WasmResult<int32_t>, TER> re,
         int32_t expectedResult,
         int64_t expectedCost,
-        source_location const location = source_location::current())
+        std::source_location const location = std::source_location::current())
     {
         auto const lineStr = " (" + std::to_string(location.line()) + ")";
         if (BEAST_EXPECTS(re.has_value(), transToken(re.error()) + lineStr))
