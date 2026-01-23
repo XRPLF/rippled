@@ -16,17 +16,26 @@ namespace detail {
 class Number2 : public Number
 {
 protected:
-    static Bytes const FLOAT_NULL;
+    static Bytes const floatNull;
+    static unsigned constexpr encodedFloatSize = 8;
+    static int32_t constexpr encodedMantissaBits = 54;
+    static int32_t constexpr encodedExponentBits = 8;
+    static int constexpr minEncodedExponent = 1;
+    static_assert(wasmMinExponent < 0);
+    static int constexpr maxEncodedExponent =
+        wasmMaxExponent - wasmMinExponent + minEncodedExponent;  // 177
+    static uint64_t constexpr maxEncodedMantissa =
+        (1ull << (encodedMantissaBits + 1)) - 1;
 
     bool good_;
 
 public:
     Number2(Slice const& data) : Number(), good_(false)
     {
-        if (data.size() != 8)
+        if (data.size() != encodedFloatSize)
             return;
 
-        if (std::ranges::equal(FLOAT_NULL, data))
+        if (std::ranges::equal(floatNull, data))
         {
             good_ = true;
             return;
@@ -37,15 +46,22 @@ public:
             return;
 
         int64_t const neg = (v & STAmount::cPositive) ? 1 : -1;
-        int32_t const e = static_cast<uint8_t>((v >> (64 - 10)) & 0xFFull);
-        if (e < 1 || e > 177)
+        int32_t const e =
+            static_cast<uint8_t>((v >> encodedMantissaBits) & 0xFFull);
+        if (e < minEncodedExponent || e > maxEncodedExponent)
             return;
 
-        int64_t const m = neg * static_cast<int64_t>(v & ((1ull << 54) - 1));
+        int64_t const m =
+            neg * static_cast<int64_t>(v & ((1ull << encodedMantissaBits) - 1));
         if (!m)
             return;
 
-        Number x(makeNumber(m, e + wasm_float::minExponent - 1));
+        int32_t const decodedExponent = e + wasmMinExponent - 1;  // e - 97
+        Number x(makeNumber(m, decodedExponent));
+
+        if (m != x.mantissa() || decodedExponent != x.exponent())
+            return;  // not canonical
+
         *static_cast<Number*>(this) = x;
         good_ = true;
     }
@@ -103,7 +119,7 @@ public:
         uint64_t v = mantissa() >= 0 ? STAmount::cPositive : 0;
         v |= STAmount::cIssuedCurrency;
 
-        uint64_t const absM = mantissa() >= 0 ? mantissa() : -mantissa();
+        uint64_t const absM = std::abs(mantissa());
         if (!absM)
         {
             using etype =
@@ -114,21 +130,21 @@ public:
                     HostFunctionError::
                         FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
             }
-            return FLOAT_NULL;
+            return floatNull;
         }
-        else if (absM > wasm_float::maxMantissa)
+        else if (absM > maxEncodedMantissa)
         {
             return Unexpected(
                 HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
         }
-        else if (exponent() > wasm_float::maxExponent)
+        else if (exponent() > wasmMaxExponent)
             return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-        else if (exponent() < wasm_float::minExponent)
-            return FLOAT_NULL;
+        else if (exponent() < wasmMinExponent)
+            return floatNull;
 
-        int const e = exponent() - wasm_float::minExponent + 1;  //+97
+        int const e = exponent() - wasmMinExponent + 1;  //+97
         v |= absM;
-        v |= ((uint64_t)e) << 54;
+        v |= ((uint64_t)e) << encodedMantissaBits;
 
         Serializer msg;
         msg.add64(v);
@@ -147,7 +163,7 @@ public:
     }
 };
 
-Bytes const Number2::FLOAT_NULL =
+Bytes const Number2::floatNull =
     {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 struct FloatState
@@ -187,6 +203,7 @@ struct FloatState
 std::string
 floatToString(Slice const& data)
 {
+    detail::FloatState rm(0);
     detail::Number2 const num(data);
     if (!num)
     {
@@ -264,6 +281,7 @@ floatCompareImpl(Slice const& x, Slice const& y)
 {
     try
     {
+        detail::FloatState rm(0);
         detail::Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
@@ -416,7 +434,7 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
     {
-        if ((n < 0) || (n > wasm_float::maxExponent))
+        if ((n < 0) || (n > wasmMaxExponent))
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
         detail::FloatState rm(mode);

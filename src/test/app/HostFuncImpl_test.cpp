@@ -2411,6 +2411,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     {
         testcase("floatSet");
         using namespace test::jtx;
+        using namespace wasm_float;
 
         Env env{*this};
         OpenView ov{*env.current()};
@@ -2435,7 +2436,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::maxExponent + normalExp + 1, 0);
+                hfs.floatSet(1, wasmMaxExponent + normalExp + 1, 0);
             BEAST_EXPECT(!result) &&
                 BEAST_EXPECT(
                     result.error() ==
@@ -2444,7 +2445,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::maxExponent + normalExp + 1, 0);
+                hfs.floatSet(1, wasmMaxExponent + normalExp + 1, 0);
             BEAST_EXPECT(!result) &&
                 BEAST_EXPECT(
                     result.error() ==
@@ -2453,37 +2454,35 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::minExponent + normalExp - 1, 0);
+                hfs.floatSet(1, wasmMinExponent + normalExp - 1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
         }
 
         {
-            auto const result =
-                hfs.floatSet(1, wasm_float::maxExponent + normalExp, 0);
+            auto const result = hfs.floatSet(1, wasmMaxExponent + normalExp, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
         }
 
         {
             auto const result =
-                hfs.floatSet(-1, wasm_float::maxExponent + normalExp, 0);
+                hfs.floatSet(-1, wasmMaxExponent + normalExp, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinusMaxExp);
         }
 
         {
             auto const result =
-                hfs.floatSet(1, wasm_float::maxExponent + normalExp - 1, 0);
+                hfs.floatSet(1, wasmMaxExponent + normalExp - 1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatPreMaxExp);
         }
 
         {
             auto const result =
-                hfs.floatSet(STAmount::cMaxValue, wasm_float::maxExponent, 0);
+                hfs.floatSet(STAmount::cMaxValue, wasmMaxExponent, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
         }
 
         {
-            auto const result =
-                hfs.floatSet(1, wasm_float::minExponent + normalExp, 0);
+            auto const result = hfs.floatSet(1, wasmMinExponent + normalExp, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinExp);
         }
 
@@ -3139,6 +3138,32 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
+    testFloatNonCanonical()
+    {
+        testcase("float Xrp+Mpt");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        // non-canonical mantissa 10 000 000 000 000 000
+        Bytes x = float1;
+        *reinterpret_cast<uint64_t*>(x.data()) =
+            0x0000C16FF286A3D4ull;  // 0xD4 A3 86 F2 6F C1 00 00;
+        {
+            auto const result =
+                hfs.floatCompare(makeSlice(x), makeSlice(float1));
+            BEAST_EXPECT(
+                !result &&
+                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+    }
+
+    void
     testFloats()
     {
         testTraceFloat();
@@ -3154,6 +3179,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testFloatPower();
         testFloatLog();
         testFloatNonIOU();
+        testFloatNonCanonical();
     }
 
     void
