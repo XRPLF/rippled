@@ -25,12 +25,12 @@ associateAsset(SLE& sle, Asset const& asset)
             auto const style = sle.getStyle(ta.getFName());
             XRPL_ASSERT_PARTS(
                 style != soeINVALID,
-                "ripple::associateAsset",
+                "xrpl::associateAsset",
                 "valid template element style");
 
             XRPL_ASSERT_PARTS(
                 style != soeDEFAULT || !ta.isDefault(),
-                "ripple::associateAsset",
+                "xrpl::associateAsset",
                 "non-default value");
             ta.associateAsset(asset);
 
