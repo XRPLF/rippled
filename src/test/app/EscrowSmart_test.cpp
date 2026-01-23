@@ -100,6 +100,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
+                escrow::comp_allowance(100),
                 fee(txnFees),
                 ter(temINVALID));
             env.close();
@@ -123,6 +124,13 @@ struct EscrowSmart_test : public beast::unit_test::suite
             // 2-byte string
             env(escrowCreate,
                 escrow::finish_function("AA"),
+                escrow::cancel_time(env.now() + 100s),
+                fee(txnFees),
+                ter(temINVALID));
+            env.close();
+
+            env(escrowCreate,
+                escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
                 fee(txnFees),
                 ter(temINVALID));
@@ -157,7 +165,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             auto const escrowCreate = escrow::create(alice, carol, XRP(500));
 
             // string of length maxWasmDataLength * 2 + 2
-            std::string const longData(maxWasmDataLength * 2 + 2, 'B');
+            std::string const longData((maxWasmDataLength + 1) * 2, 'B');
             env(escrowCreate,
                 escrow::data(longData),
                 escrow::finish_function(wasmHex),
