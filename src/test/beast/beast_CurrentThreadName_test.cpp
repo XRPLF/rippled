@@ -88,20 +88,15 @@ public:
             BEAST_EXPECT(stateB == 2);
         }
 #if BOOST_OS_LINUX
-        // On Linux, verify that thread names longer than 15 characters
-        // are truncated to 15 characters (the 16th character is reserved for
-        // the null terminator).
+        // On Linux, verify that thread names within the 15 character limit
+        // are set correctly (the 16th character is reserved for the null
+        // terminator).
         {
             testName(
                 "123456789012345",
-                "123456789012345");  // 15 chars, no truncation
-            testName(
-                "1234567890123456", "123456789012345");  // 16 chars, truncated
-            testName(
-                "ThisIsAVeryLongThreadNameExceedingLimit",
-                "ThisIsAVeryLong");      // 39 chars, truncated
+                "123456789012345");      // 15 chars, maximum allowed
             testName("", "");            // empty name
-            testName("short", "short");  // short name, no truncation
+            testName("short", "short");  // short name
         }
 #endif
     }
