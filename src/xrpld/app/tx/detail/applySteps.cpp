@@ -34,8 +34,38 @@ struct UnknownTxnType : std::exception
 // throw an "UnknownTxnType" exception on error
 template <class F>
 auto
-with_txn_type(TxType txnType, F&& f)
+with_txn_type(Rules const& rules, TxType txnType, F&& f)
 {
+    // These global updates really should have been for every Transaction
+    // step: preflight, preclaim, calculateBaseFee, and doApply. Unfortunately,
+    // they were only included in doApply (via Transactor::operator()). That may
+    // have been sufficient when the changes were only related to operations
+    // that mutated data, but some features will now change how they read data,
+    // so these need to be more global.
+    //
+    // To prevent unintentional side effects on existing checks, they will be
+    // set for every operation only once SingleAssetVault (or later
+    // LendingProtocol) are enabled.
+    //
+    // See also Transactor::operator().
+    //
+    std::optional<NumberSO> stNumberSO;
+    std::optional<CurrentTransactionRulesGuard> rulesGuard;
+    std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
+    if (rules.enabled(featureSingleAssetVault) ||
+        rules.enabled(featureLendingProtocol))
+    {
+        // raii classes for the current ledger rules.
+        // fixUniversalNumber predates the rulesGuard and should be replaced.
+        stNumberSO.emplace(rules.enabled(fixUniversalNumber));
+        rulesGuard.emplace(rules);
+    }
+    else
+    {
+        // Without those features enabled, always use the old number rules.
+        mantissaScaleGuard.emplace(MantissaRange::small);
+    }
+
     switch (txnType)
     {
 #pragma push_macro("TRANSACTION")
@@ -99,7 +129,7 @@ invoke_preflight(PreflightContext const& ctx)
 {
     try
     {
-        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
+        return with_txn_type(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
             auto const tec = Transactor::invokePreflight<T>(ctx);
             return std::make_pair(
                 tec,
@@ -126,50 +156,51 @@ invoke_preclaim(PreclaimContext const& ctx)
     {
         // use name hiding to accomplish compile-time polymorphism of static
         // class functions for Transactor and derived classes.
-        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() -> TER {
-            // preclaim functionality is divided into two sections:
-            // 1. Up to and including the signature check: returns NotTEC.
-            //    All transaction checks before and including checkSign
-            //    MUST return NotTEC, or something more restrictive.
-            //    Allowing tec results in these steps risks theft or
-            //    destruction of funds, as a fee will be charged before the
-            //    signature is checked.
-            // 2. After the signature check: returns TER.
+        return with_txn_type(
+            ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
+                // preclaim functionality is divided into two sections:
+                // 1. Up to and including the signature check: returns NotTEC.
+                //    All transaction checks before and including checkSign
+                //    MUST return NotTEC, or something more restrictive.
+                //    Allowing tec results in these steps risks theft or
+                //    destruction of funds, as a fee will be charged before the
+                //    signature is checked.
+                // 2. After the signature check: returns TER.
 
-            // If the transactor requires a valid account and the
-            // transaction doesn't list one, preflight will have already
-            // a flagged a failure.
-            auto const id = ctx.tx.getAccountID(sfAccount);
+                // If the transactor requires a valid account and the
+                // transaction doesn't list one, preflight will have already
+                // a flagged a failure.
+                auto const id = ctx.tx.getAccountID(sfAccount);
 
-            if (id != beast::zero)
-            {
-                if (NotTEC const preSigResult = [&]() -> NotTEC {
-                        if (NotTEC const result =
-                                T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
-                            return result;
+                if (id != beast::zero)
+                {
+                    if (NotTEC const preSigResult = [&]() -> NotTEC {
+                            if (NotTEC const result =
+                                    T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
+                                return result;
 
-                        if (NotTEC const result =
-                                T::checkPriorTxAndLastLedger(ctx))
-                            return result;
+                            if (NotTEC const result =
+                                    T::checkPriorTxAndLastLedger(ctx))
+                                return result;
 
-                        if (NotTEC const result =
-                                T::checkPermission(ctx.view, ctx.tx))
-                            return result;
+                            if (NotTEC const result =
+                                    T::checkPermission(ctx.view, ctx.tx))
+                                return result;
 
-                        if (NotTEC const result = T::checkSign(ctx))
-                            return result;
+                            if (NotTEC const result = T::checkSign(ctx))
+                                return result;
 
-                        return tesSUCCESS;
-                    }())
-                    return preSigResult;
+                            return tesSUCCESS;
+                        }())
+                        return preSigResult;
 
-                if (TER const result =
-                        T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx)))
-                    return result;
-            }
+                    if (TER const result = T::checkFee(
+                            ctx, calculateBaseFee(ctx.view, ctx.tx)))
+                        return result;
+                }
 
-            return T::preclaim(ctx);
-        });
+                return T::preclaim(ctx);
+            });
     }
     catch (UnknownTxnType const& e)
     {
@@ -204,7 +235,7 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     try
     {
-        return with_txn_type(tx.getTxnType(), [&]<typename T>() {
+        return with_txn_type(view.rules(), tx.getTxnType(), [&]<typename T>() {
             return T::calculateBaseFee(view, tx);
         });
     }
@@ -217,7 +248,7 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
     }
 }
 
-TxConsequences::TxConsequences(NotTEC pfresult)
+TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
     , fee_(beast::zero)
     , potentialSpend_(beast::zero)
@@ -225,7 +256,7 @@ TxConsequences::TxConsequences(NotTEC pfresult)
     , sequencesConsumed_(0)
 {
     XRPL_ASSERT(
-        !isTesSuccess(pfresult),
+        !isTesSuccess(pfResult),
         "xrpl::TxConsequences::TxConsequences : is not tesSUCCESS");
 }
 
@@ -263,10 +294,11 @@ invoke_apply(ApplyContext& ctx)
 {
     try
     {
-        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
-            T p(ctx);
-            return p();
-        });
+        return with_txn_type(
+            ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
+                T p(ctx);
+                return p();
+            });
     }
     catch (UnknownTxnType const& e)
     {
@@ -288,15 +320,15 @@ preflight(
     ApplyFlags flags,
     beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx, rules, flags, j);
+    PreflightContext const pfCtx(app, tx, rules, flags, j);
     try
     {
-        return {pfctx, invoke_preflight(pfctx)};
+        return {pfCtx, invoke_preflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 
@@ -309,15 +341,15 @@ preflight(
     ApplyFlags flags,
     beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx, parentBatchId, rules, flags, j);
+    PreflightContext const pfCtx(app, tx, parentBatchId, rules, flags, j);
     try
     {
-        return {pfctx, invoke_preflight(pfctx)};
+        return {pfCtx, invoke_preflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pfCtx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 

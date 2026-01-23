@@ -952,9 +952,9 @@ struct Flow_test : public beast::unit_test::suite
     }
 
     void
-    testReexecuteDirectStep(FeatureBitset features)
+    testReExecuteDirectStep(FeatureBitset features)
     {
-        testcase("ReexecuteDirectStep");
+        testcase("ReExecuteDirectStep");
 
         using namespace jtx;
         Env env(*this, features);
@@ -1291,7 +1291,7 @@ struct Flow_test : public beast::unit_test::suite
         testSelfFundedXRPEndpoint(false, features);
         testSelfFundedXRPEndpoint(true, features);
         testUnfundedOffer(features);
-        testReexecuteDirectStep(features);
+        testReExecuteDirectStep(features);
         testSelfPayLowQualityOffer(features);
         testTicketPay(features);
     }

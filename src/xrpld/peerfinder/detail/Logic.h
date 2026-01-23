@@ -628,7 +628,7 @@ public:
                 This is a temporary measure. Once we know our own IP
                 address, the correct solution is to put it into the Livecache
                 at hops 0, and go through the regular handout path. This way
-                we avoid handing our address out too frequenty, which this code
+                we avoid handing our address out too frequently, which this code
                 suffers from.
             */
             // Add an entry for ourselves if:
@@ -903,7 +903,7 @@ public:
             // Address must exist
             if (iter == connectedAddresses_.end())
                 LogicError(
-                    "PeerFinder::Logic::remove(): remote_endpont "
+                    "PeerFinder::Logic::remove(): remote_endpoint "
                     "address missing from connectedAddresses_");
 
             connectedAddresses_.erase(iter);
@@ -929,7 +929,7 @@ public:
             auto iter(fixed_.find(slot->remote_endpoint()));
             if (iter == fixed_.end())
                 LogicError(
-                    "PeerFinder::Logic::on_closed(): remote_endpont "
+                    "PeerFinder::Logic::on_closed(): remote_endpoint "
                     "missing from fixed_");
 
             iter->second.failure(m_clock.now());

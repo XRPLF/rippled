@@ -138,7 +138,7 @@ public:
 
     template <AssetType A>
     STAmount(A const& asset, Number const& number)
-        : STAmount(asset, number.mantissa(), number.exponent())
+        : STAmount(fromNumber(asset, number))
     {
     }
 
@@ -282,6 +282,10 @@ public:
     mpt() const;
 
 private:
+    template <AssetType A>
+    static STAmount
+    fromNumber(A const& asset, Number const& number);
+
     static std::unique_ptr<STAmount>
     construct(SerialIter&, SField const& name);
 
@@ -345,10 +349,19 @@ STAmount::STAmount(
     , mIsNegative(negative)
 {
     // mValue is uint64, but needs to fit in the range of int64
-    XRPL_ASSERT(
-        mValue <= std::numeric_limits<std::int64_t>::max(),
-        "xrpl::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
-        "maximum mantissa input");
+    if (Number::getMantissaScale() == MantissaRange::small)
+    {
+        XRPL_ASSERT(
+            mValue <= std::numeric_limits<std::int64_t>::max(),
+            "xrpl::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
+            "maximum mantissa input");
+    }
+    else
+    {
+        if (integral() && mValue > std::numeric_limits<std::int64_t>::max())
+            throw std::overflow_error(
+                "STAmount mantissa is too large " + std::to_string(mantissa));
+    }
     canonicalize();
 }
 
@@ -542,14 +555,23 @@ STAmount::operator=(XRPAmount const& amount)
     return *this;
 }
 
-inline STAmount&
-STAmount::operator=(Number const& number)
+template <AssetType A>
+inline STAmount
+STAmount::fromNumber(A const& a, Number const& number)
 {
-    mIsNegative = number.mantissa() < 0;
-    mValue = mIsNegative ? -number.mantissa() : number.mantissa();
-    mOffset = number.exponent();
-    canonicalize();
-    return *this;
+    bool const negative = number.mantissa() < 0;
+    Number const working{negative ? -number : number};
+    Asset asset{a};
+    if (asset.integral())
+    {
+        std::uint64_t const intValue = static_cast<std::int64_t>(working);
+        return STAmount{asset, intValue, 0, negative};
+    }
+
+    auto const [mantissa, exponent] =
+        working.normalizeToRange(cMinValue, cMaxValue);
+
+    return STAmount{asset, mantissa, exponent, negative};
 }
 
 inline void
@@ -699,17 +721,32 @@ getRate(STAmount const& offerOut, STAmount const& offerIn);
  * @param rounding Optional Number rounding mode
  *
  */
-STAmount
+[[nodiscard]] STAmount
 roundToScale(
     STAmount const& value,
     std::int32_t scale,
     Number::rounding_mode rounding = Number::getround());
 
+/** Round an arbitrary precision Number IN PLACE to the precision of a given
+ * Asset.
+ *
+ * This is used to ensure that calculations do not collect dust for IOUs, or
+ * fractional amounts for the integral types XRP and MPT.
+ *
+ * @param asset The relevant asset
+ * @param value The lvalue to be rounded
+ */
+template <AssetType A>
+void
+roundToAsset(A const& asset, Number& value)
+{
+    value = STAmount{asset, value};
+}
+
 /** Round an arbitrary precision Number to the precision of a given Asset.
  *
- * This is used to ensure that calculations do not collect dust beyond the
- * precision of the reference value for IOUs, or fractional amounts for the
- * integral types XRP and MPT.
+ * This is used to ensure that calculations do not collect dust beyond specified
+ * scale for IOUs, or fractional amounts for the integral types XRP and MPT.
  *
  * @param asset The relevant asset
  * @param value The value to be rounded
@@ -718,7 +755,7 @@ roundToScale(
  * @param rounding Optional Number rounding mode
  */
 template <AssetType A>
-Number
+[[nodiscard]] Number
 roundToAsset(
     A const& asset,
     Number const& value,

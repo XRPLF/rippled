@@ -21,7 +21,6 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -941,25 +940,6 @@ class Vault_test : public beast::unit_test::suite
         });
 
         testCase([&](Env& env,
-                     Account const& issuer,
-                     Account const& owner,
-                     Asset const& asset,
-                     Vault& vault) {
-            testcase("clawback from self");
-
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-
-            {
-                auto tx = vault.clawback(
-                    {.issuer = issuer,
-                     .id = keylet.key,
-                     .holder = issuer,
-                     .amount = asset(10)});
-                env(tx, ter{temMALFORMED});
-            }
-        });
-
-        testCase([&](Env& env,
                      Account const&,
                      Account const& owner,
                      Asset const& asset,
@@ -1197,11 +1177,13 @@ class Vault_test : public beast::unit_test::suite
 
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
+            // Preclaim only checks for native assets.
+            if (asset.native())
             {
                 auto tx = vault.clawback(
-                    {.issuer = owner,
+                    {.issuer = issuer,
                      .id = keylet.key,
-                     .holder = issuer,
+                     .holder = owner,
                      .amount = asset(50)});
                 env(tx, ter(temMALFORMED));
             }
@@ -1517,7 +1499,7 @@ class Vault_test : public beast::unit_test::suite
 
             auto const [asset1, asset2] =
                 std::pair<STAmount, STAmount>(XRP(10000), USD(10000));
-            auto tofund = [&](STAmount const& a) -> STAmount {
+            auto toFund = [&](STAmount const& a) -> STAmount {
                 if (a.native())
                 {
                     auto const defXRP = XRP(30000);
@@ -1530,8 +1512,8 @@ class Vault_test : public beast::unit_test::suite
                     return defIOU;
                 return a + STAmount{a.issue(), 1000};
             };
-            auto const toFund1 = tofund(asset1);
-            auto const toFund2 = tofund(asset2);
+            auto const toFund1 = toFund(asset1);
+            auto const toFund2 = toFund(asset2);
             BEAST_EXPECT(asset1 <= toFund1 && asset2 <= toFund2);
 
             if (!asset1.native() && !asset2.native())
@@ -1924,8 +1906,20 @@ class Vault_test : public beast::unit_test::suite
             env.close();
 
             {
-                auto tx = vault.clawback(
-                    {.issuer = owner, .id = keylet.key, .holder = depositor});
+                auto tx = vault.clawback({
+                    .issuer = depositor,
+                    .id = keylet.key,
+                    .holder = depositor,
+                });
+                env(tx, ter(tecNO_PERMISSION));
+            }
+
+            {
+                auto tx = vault.clawback({
+                    .issuer = owner,
+                    .id = keylet.key,
+                    .holder = depositor,
+                });
                 env(tx, ter(tecNO_PERMISSION));
             }
         });
@@ -2082,7 +2076,7 @@ class Vault_test : public beast::unit_test::suite
                 PrettyAsset const& asset,
                 Vault& vault,
                 MPTTester& mptt) {
-                testcase("MPT failed reserve to re-create MPToken");
+                testcase("MPT fail reserve to re-create MPToken");
 
                 auto [tx, keylet] =
                     vault.create({.owner = owner, .asset = asset});
@@ -2377,6 +2371,15 @@ class Vault_test : public beast::unit_test::suite
                 env(tx, ter(tecNO_AUTH));
             }
 
+            {
+                // Cannot clawback if issuer is the holder
+                tx = vault.clawback(
+                    {.issuer = issuer,
+                     .id = keylet.key,
+                     .holder = issuer,
+                     .amount = asset(800)});
+                env(tx, ter(tecNO_PERMISSION));
+            }
             // Clawback works
             tx = vault.clawback(
                 {.issuer = issuer,
@@ -5243,6 +5246,542 @@ class Vault_test : public beast::unit_test::suite
         });
     }
 
+    void
+    testVaultClawbackBurnShares()
+    {
+        using namespace test::jtx;
+        using namespace loanBroker;
+        using namespace loan;
+        Env env(*this, beast::severities::kWarning);
+
+        auto const vaultAssetBalance = [&](Keylet const& vaultKeylet) {
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault != nullptr);
+
+            return std::make_pair(
+                sleVault->at(sfAssetsAvailable), sleVault->at(sfAssetsTotal));
+        };
+
+        auto const vaultShareBalance = [&](Keylet const& vaultKeylet) {
+            auto const sleVault = env.le(vaultKeylet);
+            BEAST_EXPECT(sleVault != nullptr);
+
+            auto const sleIssuance =
+                env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            BEAST_EXPECT(sleIssuance != nullptr);
+
+            return sleIssuance->at(sfOutstandingAmount);
+        };
+
+        auto const setupVault =
+            [&](PrettyAsset const& asset,
+                Account const& owner,
+                Account const& depositor) -> std::pair<Vault, Keylet> {
+            Vault vault{env};
+
+            auto const& [tx, vaultKeylet] =
+                vault.create({.owner = owner, .asset = asset});
+            env(tx, ter(tesSUCCESS), THISLINE);
+            env.close();
+
+            auto const& vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(vaultSle != nullptr);
+
+            Asset share = vaultSle->at(sfShareMPTID);
+
+            env(vault.deposit(
+                    {.depositor = depositor,
+                     .id = vaultKeylet.key,
+                     .amount = asset(100)}),
+                ter(tesSUCCESS),
+                THISLINE);
+            env.close();
+
+            auto const& [availablePreDefault, totalPreDefault] =
+                vaultAssetBalance(vaultKeylet);
+            BEAST_EXPECT(availablePreDefault == totalPreDefault);
+            BEAST_EXPECT(availablePreDefault == asset(100).value());
+
+            // attempt to clawback shares while there are assets fails
+            env(vault.clawback(
+                    {.issuer = owner,
+                     .id = vaultKeylet.key,
+                     .holder = depositor,
+                     .amount = share(0).value()}),
+                ter(tecNO_PERMISSION),
+                THISLINE);
+            env.close();
+
+            auto const& sharesAvailable = vaultShareBalance(vaultKeylet);
+            auto const& brokerKeylet =
+                keylet::loanbroker(owner.id(), env.seq(owner));
+
+            env(set(owner, vaultKeylet.key), THISLINE);
+            env.close();
+
+            auto const& loanKeylet = keylet::loan(brokerKeylet.key, 1);
+
+            // Create a simple Loan for the full amount of Vault assets
+            env(set(depositor, brokerKeylet.key, asset(100).value()),
+                loan::interestRate(TenthBips32(0)),
+                gracePeriod(60),
+                paymentInterval(120),
+                paymentTotal(10),
+                sig(sfCounterpartySignature, owner),
+                fee(env.current()->fees().base * 2),
+                ter(tesSUCCESS),
+                THISLINE);
+            env.close();
+
+            // attempt to clawback shares while there assetsAvailable == 0 and
+            // assetsTotal > 0 fails
+            env(vault.clawback(
+                    {.issuer = owner,
+                     .id = vaultKeylet.key,
+                     .holder = depositor,
+                     .amount = share(0).value()}),
+                ter(tecNO_PERMISSION),
+                THISLINE);
+            env.close();
+
+            env.close(std::chrono::seconds{120 + 60});
+
+            env(manage(owner, loanKeylet.key, tfLoanDefault),
+                ter(tesSUCCESS),
+                THISLINE);
+
+            auto const& [availablePostDefault, totalPostDefault] =
+                vaultAssetBalance(vaultKeylet);
+
+            BEAST_EXPECT(availablePostDefault == totalPostDefault);
+            BEAST_EXPECT(availablePostDefault == asset(0).value());
+            BEAST_EXPECT(vaultShareBalance(vaultKeylet) == sharesAvailable);
+
+            return std::make_pair(vault, vaultKeylet);
+        };
+
+        auto const testCase = [&](PrettyAsset const& asset,
+                                  std::string const& prefix,
+                                  Account const& owner,
+                                  Account const& depositor) {
+            {
+                testcase(
+                    "VaultClawback (share) - " + prefix +
+                    " owner asset clawback fails");
+                auto [vault, vaultKeylet] = setupVault(asset, owner, depositor);
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = asset(100).value(),
+                    }),
+                    // when asset is XRP or owner is not issuer clawback fail
+                    // when owner is issuer precision loss occurs as vault is
+                    // empty
+                    asset.native() ? ter(temMALFORMED)
+                        : asset.raw().getIssuer() != owner.id()
+                        ? ter(tecNO_PERMISSION)
+                        : ter(tecPRECISION_LOSS),
+                    THISLINE);
+                env.close();
+            }
+
+            {
+                testcase(
+                    "VaultClawback (share) - " + prefix +
+                    " owner incomplete share clawback fails");
+                auto [vault, vaultKeylet] = setupVault(asset, owner, depositor);
+                auto const& vaultSle = env.le(vaultKeylet);
+                BEAST_EXPECT(vaultSle != nullptr);
+                if (!vaultSle)
+                    return;
+                Asset share = vaultSle->at(sfShareMPTID);
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = share(1).value(),
+                    }),
+                    ter(tecLIMIT_EXCEEDED),
+                    THISLINE);
+                env.close();
+            }
+
+            {
+                testcase(
+                    "VaultClawback (share) - " + prefix +
+                    " owner implicit complete share clawback");
+                auto [vault, vaultKeylet] = setupVault(asset, owner, depositor);
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                    }),
+                    // when owner is issuer implicit clawback fails
+                    asset.native() || asset.raw().getIssuer() != owner.id()
+                        ? ter(tesSUCCESS)
+                        : ter(tecWRONG_ASSET),
+                    THISLINE);
+                env.close();
+            }
+
+            {
+                testcase(
+                    "VaultClawback (share) - " + prefix +
+                    " owner explicit complete share clawback succeeds");
+                auto [vault, vaultKeylet] = setupVault(asset, owner, depositor);
+                auto const& vaultSle = env.le(vaultKeylet);
+                BEAST_EXPECT(vaultSle != nullptr);
+                if (!vaultSle)
+                    return;
+                Asset share = vaultSle->at(sfShareMPTID);
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = share(vaultShareBalance(vaultKeylet)).value(),
+                    }),
+                    ter(tesSUCCESS),
+                    THISLINE);
+                env.close();
+            }
+            {
+                testcase(
+                    "VaultClawback (share) - " + prefix +
+                    " owner can clawback own shares");
+                auto [vault, vaultKeylet] = setupVault(asset, owner, owner);
+                auto const& vaultSle = env.le(vaultKeylet);
+                BEAST_EXPECT(vaultSle != nullptr);
+                if (!vaultSle)
+                    return;
+                Asset share = vaultSle->at(sfShareMPTID);
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = owner,
+                        .amount = share(vaultShareBalance(vaultKeylet)).value(),
+                    }),
+                    ter(tesSUCCESS),
+                    THISLINE);
+                env.close();
+            }
+
+            {
+                testcase(
+                    "VaultClawback (share) - " + prefix +
+                    " empty vault share clawback fails");
+                auto [vault, vaultKeylet] = setupVault(asset, owner, owner);
+                auto const& vaultSle = env.le(vaultKeylet);
+                if (BEAST_EXPECT(vaultSle != nullptr))
+                    return;
+                Asset share = vaultSle->at(sfShareMPTID);
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = owner,
+                        .amount = share(vaultShareBalance(vaultKeylet)).value(),
+                    }),
+                    ter(tesSUCCESS),
+                    THISLINE);
+
+                // Now the vault is empty, clawback again fails
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = owner,
+                    }),
+                    ter(tecNO_PERMISSION),
+                    THISLINE);
+                env.close();
+            }
+        };
+
+        Account owner{"alice"};
+        Account depositor{"bob"};
+        Account issuer{"issuer"};
+
+        env.fund(XRP(10000), issuer, owner, depositor);
+        env.close();
+
+        // Test XRP
+        PrettyAsset xrp = xrpIssue();
+        testCase(xrp, "XRP", owner, depositor);
+        testCase(xrp, "XRP (depositor is owner)", owner, owner);
+
+        // Test IOU
+        PrettyAsset IOU = issuer["IOU"];
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        env.trust(IOU(1000), owner);
+        env.trust(IOU(1000), depositor);
+        env(pay(issuer, owner, IOU(100)));
+        env(pay(issuer, depositor, IOU(100)));
+        env.close();
+        testCase(IOU, "IOU", owner, depositor);
+        testCase(IOU, "IOU (owner is issuer)", issuer, depositor);
+
+        // Test MPT
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create(
+            {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+        PrettyAsset MPT = mptt.issuanceID();
+        mptt.authorize({.account = owner});
+        mptt.authorize({.account = depositor});
+        env(pay(issuer, owner, MPT(1000)));
+        env(pay(issuer, depositor, MPT(1000)));
+        env.close();
+        testCase(MPT, "MPT", owner, depositor);
+        testCase(MPT, "MPT (owner is issuer)", issuer, depositor);
+    }
+
+    void
+    testVaultClawbackAssets()
+    {
+        using namespace test::jtx;
+        using namespace loanBroker;
+        using namespace loan;
+        Env env(*this);
+
+        auto const setupVault =
+            [&](PrettyAsset const& asset,
+                Account const& owner,
+                Account const& depositor,
+                Account const& issuer) -> std::pair<Vault, Keylet> {
+            Vault vault{env};
+
+            auto const& [tx, vaultKeylet] =
+                vault.create({.owner = owner, .asset = asset});
+            env(tx, ter(tesSUCCESS), THISLINE);
+            env.close();
+
+            auto const& vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(vaultSle != nullptr);
+            env(vault.deposit(
+                    {.depositor = depositor,
+                     .id = vaultKeylet.key,
+                     .amount = asset(100)}),
+                ter(tesSUCCESS),
+                THISLINE);
+            env.close();
+
+            return std::make_pair(vault, vaultKeylet);
+        };
+
+        auto const testCase = [&](PrettyAsset const& asset,
+                                  std::string const& prefix,
+                                  Account const& owner,
+                                  Account const& depositor,
+                                  Account const& issuer) {
+            if (asset.native())
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " issuer XRP clawback fails");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
+                // If the asset is XRP, clawback with amount fails as malfored
+                // when asset is specified.
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = issuer,
+                        .amount = asset(1).value(),
+                    }),
+                    ter(temMALFORMED),
+                    THISLINE);
+                // When asset is implicit, clawback fails as no permission.
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = issuer,
+                    }),
+                    ter(tecNO_PERMISSION),
+                    THISLINE);
+                return;
+            }
+
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " clawback for different asset fails");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
+
+                Account issuer2{"issuer2"};
+                PrettyAsset asset2 = issuer2["FOO"];
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = asset2(1).value(),
+                    }),
+                    ter(tecWRONG_ASSET),
+                    THISLINE);
+            }
+
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " ambiguous owner/issuer asset clawback fails");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, issuer, depositor, issuer);
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = issuer,
+                    }),
+                    ter(tecWRONG_ASSET),
+                    THISLINE);
+            }
+
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " non-issuer asset clawback fails");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
+
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                    }),
+                    ter(tecNO_PERMISSION),
+                    THISLINE);
+
+                env(vault.clawback({
+                        .issuer = owner,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = asset(1).value(),
+                    }),
+                    ter(tecNO_PERMISSION),
+                    THISLINE);
+            }
+
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " issuer clawback from self fails");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, issuer, issuer);
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = issuer,
+                    }),
+                    ter(tecNO_PERMISSION),
+                    THISLINE);
+            }
+
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " issuer share clawback fails");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
+                auto const& vaultSle = env.le(vaultKeylet);
+                BEAST_EXPECT(vaultSle != nullptr);
+                if (!vaultSle)
+                    return;
+                Asset share = vaultSle->at(sfShareMPTID);
+
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = share(1).value(),
+                    }),
+                    ter(tecNO_PERMISSION),
+                    THISLINE);
+            }
+
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " partial issuer asset clawback succeeds");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
+
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = asset(1).value(),
+                    }),
+                    ter(tesSUCCESS),
+                    THISLINE);
+            }
+
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " full issuer asset clawback succeeds");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
+
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                        .amount = asset(100).value(),
+                    }),
+                    ter(tesSUCCESS),
+                    THISLINE);
+            }
+
+            {
+                testcase(
+                    "VaultClawback (asset) - " + prefix +
+                    " implicit full issuer asset clawback succeeds");
+                auto [vault, vaultKeylet] =
+                    setupVault(asset, owner, depositor, issuer);
+
+                env(vault.clawback({
+                        .issuer = issuer,
+                        .id = vaultKeylet.key,
+                        .holder = depositor,
+                    }),
+                    ter(tesSUCCESS),
+                    THISLINE);
+            }
+        };
+
+        Account owner{"alice"};
+        Account depositor{"bob"};
+        Account issuer{"issuer"};
+
+        env.fund(XRP(10000), issuer, owner, depositor);
+        env.close();
+
+        // Test XRP
+        PrettyAsset xrp = xrpIssue();
+        testCase(xrp, "XRP", owner, depositor, issuer);
+
+        // Test IOU
+        PrettyAsset IOU = issuer["IOU"];
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+        env.trust(IOU(1000), owner);
+        env.trust(IOU(1000), depositor);
+        env(pay(issuer, owner, IOU(1000)));
+        env(pay(issuer, depositor, IOU(1000)));
+        env.close();
+        testCase(IOU, "IOU", owner, depositor, issuer);
+
+        // Test MPT
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create(
+            {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+        PrettyAsset MPT = mptt.issuanceID();
+        mptt.authorize({.account = owner});
+        mptt.authorize({.account = depositor});
+        env(pay(issuer, depositor, MPT(1000)));
+        env.close();
+        testCase(MPT, "MPT", owner, depositor, issuer);
+    }
+
 public:
     void
     run() override
@@ -5261,6 +5800,8 @@ public:
         testScaleIOU();
         testRPC();
         testDelegate();
+        testVaultClawbackBurnShares();
+        testVaultClawbackAssets();
     }
 };
 

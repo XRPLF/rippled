@@ -3,7 +3,6 @@
 
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/paths/AMMContext.h>
-#include <xrpld/app/paths/Credit.h>
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/app/paths/detail/FlatSets.h>
@@ -11,6 +10,7 @@
 #include <xrpld/app/paths/detail/Steps.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/Credit.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -435,8 +435,8 @@ public:
         cur_.clear();
         if (!next_.empty())
         {
-            std::vector<std::pair<Quality, Strand const*>> strandQuals;
-            strandQuals.reserve(next_.size());
+            std::vector<std::pair<Quality, Strand const*>> strandQualities;
+            strandQualities.reserve(next_.size());
             if (next_.size() > 1)  // no need to sort one strand
             {
                 for (Strand const* strand : next_)
@@ -458,21 +458,21 @@ public:
                             // an unusual corner case.
                             continue;
                         }
-                        strandQuals.push_back({*qual, strand});
+                        strandQualities.push_back({*qual, strand});
                     }
                 }
                 // must stable sort for deterministic order across different c++
                 // standard library implementations
                 std::stable_sort(
-                    strandQuals.begin(),
-                    strandQuals.end(),
+                    strandQualities.begin(),
+                    strandQualities.end(),
                     [](auto const& lhs, auto const& rhs) {
                         // higher qualities first
                         return std::get<Quality>(lhs) > std::get<Quality>(rhs);
                     });
                 next_.clear();
-                next_.reserve(strandQuals.size());
-                for (auto const& sq : strandQuals)
+                next_.reserve(strandQualities.size());
+                for (auto const& sq : strandQualities)
                 {
                     next_.push_back(std::get<Strand const*>(sq));
                 }

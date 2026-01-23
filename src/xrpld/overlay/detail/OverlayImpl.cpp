@@ -514,7 +514,7 @@ OverlayImpl::start()
                 m_peerFinder->addFallbackStrings(base + name, ips);
         });
 
-    // Add the ips_fixed from the rippled.cfg file
+    // Add the ips_fixed from the xrpld.cfg file
     if (!app_.config().standalone() && !app_.config().IPS_FIXED.empty())
     {
         m_resolver.resolve(
@@ -620,7 +620,7 @@ OverlayImpl::onManifests(
     std::shared_ptr<PeerImp> const& from)
 {
     auto const n = m->list_size();
-    auto const& journal = from->pjournal();
+    auto const& journal = from->pJournal();
 
     protocol::TMManifests relay;
 

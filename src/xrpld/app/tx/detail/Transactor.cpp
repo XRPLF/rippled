@@ -204,8 +204,14 @@ Transactor::preflight2(PreflightContext const& ctx)
         // regardless of success or failure
         return *ret;
 
+    // It should be impossible for the InnerBatchTxn flag to be set without
+    // featureBatch being enabled
+    XRPL_ASSERT_PARTS(
+        !ctx.tx.isFlag(tfInnerBatchTxn) || ctx.rules.enabled(featureBatch),
+        "xrpl::Transactor::preflight2",
+        "InnerBatch flag only set if feature enabled");
     // Skip signature check on batch inner transactions
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch))
         return tesSUCCESS;
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
@@ -1130,10 +1136,14 @@ Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
+    // These global updates really should have been for every Transaction
+    // step: preflight, preclaim, and doApply. And even calculateBaseFee. See
+    // with_txn_type().
+    //
     // raii classes for the current ledger rules.
     // fixUniversalNumber predate the rulesGuard and should be replaced.
     NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
-    CurrentTransactionRulesGuard currentTransctionRulesGuard(view().rules());
+    CurrentTransactionRulesGuard currentTransactionRulesGuard(view().rules());
 
 #ifdef DEBUG
     {
@@ -1146,7 +1156,7 @@ Transactor::operator()()
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
-            JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
+            JLOG(j_.fatal()) << ctx_.tx.getJson(JsonOptions::none);
             JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
             UNREACHABLE(
                 "xrpl::Transactor::operator() : transaction serdes mismatch");

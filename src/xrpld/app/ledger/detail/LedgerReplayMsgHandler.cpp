@@ -53,7 +53,7 @@ LedgerReplayMsgHandler::processProofPathRequest(
         {
             case protocol::lmACCOUNT_STATE:
                 return ledger->stateMap().getProofPath(key);
-            case protocol::lmTRANASCTION:
+            case protocol::lmTRANSACTION:
                 return ledger->txMap().getProofPath(key);
             default:
                 // should not be here

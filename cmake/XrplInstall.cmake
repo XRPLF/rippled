@@ -4,6 +4,12 @@
 
 include(create_symbolic_link)
 
+# If no suffix is defined for executables (e.g. Windows uses .exe but Linux
+# and macOS use none), then explicitly set it to the empty string.
+if(NOT DEFINED suffix)
+  set(suffix "")
+endif()
+
 install (
   TARGETS
     common
@@ -62,7 +68,7 @@ if (is_root_project AND TARGET xrpld)
         message (\"-- Skipping : \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/\${DEST}/\${NEWNAME}\")
       endif ()
     endmacro()
-    copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/rippled-example.cfg\" etc rippled.cfg)
+    copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/xrpld-example.cfg\" etc xrpld.cfg)
     copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/validators-example.txt\" etc validators.txt)
   ")
   install(CODE "

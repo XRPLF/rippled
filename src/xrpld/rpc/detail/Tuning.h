@@ -11,7 +11,7 @@ namespace Tuning {
 /** Represents RPC limit parameter values that have a min, default and max. */
 struct LimitRange
 {
-    unsigned int rmin, rdefault, rmax;
+    unsigned int rmin, rDefault, rmax;
 };
 
 /** Limits for the account_lines command. */
