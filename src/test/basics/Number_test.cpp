@@ -1713,7 +1713,7 @@ public:
     }
 
     void
-    test_lg()
+    test_log10()
     {
         auto const scale = Number::getMantissaScale();
         testcase << "test_lg " << to_string(scale);
@@ -1722,7 +1722,7 @@ public:
         auto test = [this](auto const& c) {
             for (auto const& [x, z] : c)
             {
-                auto const result = lg(x);
+                auto const result = log10(x);
                 std::stringstream ss;
                 ss << "lg(" << x << ") = " << result << ". Expected: " << z;
                 // std::cout << ss.str() << std::endl;
@@ -1773,7 +1773,7 @@ public:
             bool caught = false;
             try
             {
-                lg(Number{-2});
+                log10(Number{-2});
             }
             catch (std::runtime_error const&)
             {
@@ -1784,7 +1784,7 @@ public:
 
             try
             {
-                lg(Number());
+                log10(Number());
             }
             catch (std::runtime_error const&)
             {
@@ -1822,7 +1822,7 @@ public:
             test_truncate();
             testRounding();
             testInt64();
-            test_lg();
+            test_log10();
         }
     }
 };

@@ -1026,7 +1026,7 @@ ln(Number const& x, int iterations = 50)
 }
 
 Number
-lg(Number const& x, int iterations)
+log10(Number const& x, int iterations)
 {
     static Number const ln10 = ln(Number(10));
 
