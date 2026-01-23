@@ -11,11 +11,13 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
@@ -310,13 +312,34 @@ STAmount&
 STAmount::operator=(IOUAmount const& iou)
 {
     XRPL_ASSERT(
-        native() == false, "xrpl::STAmount::operator=(IOUAmount) : is not XRP");
+        integral() == false,
+        "xrpl::STAmount::operator=(IOUAmount) : is not integral");
     mOffset = iou.exponent();
     mIsNegative = iou < beast::zero;
     if (mIsNegative)
         mValue = static_cast<std::uint64_t>(-iou.mantissa());
     else
         mValue = static_cast<std::uint64_t>(iou.mantissa());
+    return *this;
+}
+
+STAmount&
+STAmount::operator=(Number const& number)
+{
+    if (!getCurrentTransactionRules() ||
+        isFeatureEnabled(featureSingleAssetVault) ||
+        isFeatureEnabled(featureLendingProtocol))
+    {
+        *this = fromNumber(mAsset, number);
+    }
+    else
+    {
+        auto const originalMantissa = number.mantissa();
+        mIsNegative = originalMantissa < 0;
+        mValue = mIsNegative ? -originalMantissa : originalMantissa;
+        mOffset = number.exponent();
+    }
+    canonicalize();
     return *this;
 }
 
@@ -662,7 +685,7 @@ STAmount::getFullText() const
 std::string
 STAmount::getText() const
 {
-    // keep full internal accuracy, but make more human friendly if posible
+    // keep full internal accuracy, but make more human friendly if possible
     if (*this == beast::zero)
         return "0";
 
@@ -849,11 +872,11 @@ STAmount::canonicalize()
 
         if (getSTNumberSwitchover())
         {
-            Number num(
-                mIsNegative ? -mValue : mValue, mOffset, Number::unchecked{});
+            Number num(mIsNegative, mValue, mOffset, Number::unchecked{});
             auto set = [&](auto const& val) {
-                mIsNegative = val.value() < 0;
-                mValue = mIsNegative ? -val.value() : val.value();
+                auto const value = val.value();
+                mIsNegative = value < 0;
+                mValue = mIsNegative ? -value : value;
             };
             if (native())
                 set(XRPAmount{num});
@@ -1323,7 +1346,7 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
     if (getSTNumberSwitchover())
     {
         auto const r = Number{v1} * Number{v2};
-        return STAmount{asset, r.mantissa(), r.exponent()};
+        return STAmount{asset, r};
     }
 
     std::uint64_t value1 = v1.mantissa();
@@ -1469,6 +1492,10 @@ roundToScale(
 {
     // Nothing to do for integral types.
     if (value.integral())
+        return value;
+
+    // Nothing to do for zero.
+    if (value == beast::zero)
         return value;
 
     // If the value's exponent is greater than or equal to the scale, then

@@ -61,7 +61,7 @@ private:
     // List of all active admin entries
     EntryIntrusiveList admin_;
 
-    // List of all inactve entries
+    // List of all inactive entries
     EntryIntrusiveList inactive_;
 
     // All imported gossip data

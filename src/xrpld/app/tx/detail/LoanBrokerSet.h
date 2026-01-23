@@ -20,6 +20,9 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
+    static std::vector<OptionaledField<STNumber>> const&
+    getValueFields();
+
     static TER
     preclaim(PreclaimContext const& ctx);
 

@@ -279,7 +279,7 @@ public:
 protected:
     std::uintptr_t const id_;
     // session is owned by the DatabaseCon parent that holds the checkpointer.
-    // It is possible (tho rare) for the DatabaseCon class to be destoryed
+    // It is possible (though rare) for the DatabaseCon class to be destroyed
     // before the checkpointer.
     std::weak_ptr<soci::session> session_;
     std::mutex mutex_;

@@ -2,6 +2,13 @@
    xrpld compile options/settings via an interface library
 #]===================================================================]
 
+include(CompilationEnv)
+
+# Set defaults for optional variables to avoid uninitialized variable warnings
+if(NOT DEFINED voidstar)
+  set(voidstar OFF)
+endif()
+
 add_library (opts INTERFACE)
 add_library (Xrpl::opts ALIAS opts)
 target_compile_definitions (opts
@@ -42,22 +49,6 @@ if(jemalloc)
   target_link_libraries(opts INTERFACE jemalloc::jemalloc)
 endif ()
 
-if (san)
-  target_compile_options (opts
-    INTERFACE
-      # sanitizers recommend minimum of -O1 for reasonable performance
-      $<$<CONFIG:Debug>:-O1>
-      ${SAN_FLAG}
-      -fno-omit-frame-pointer)
-  target_compile_definitions (opts
-    INTERFACE
-      $<$<STREQUAL:${san},address>:SANITIZER=ASAN>
-      $<$<STREQUAL:${san},thread>:SANITIZER=TSAN>
-      $<$<STREQUAL:${san},memory>:SANITIZER=MSAN>
-      $<$<STREQUAL:${san},undefined>:SANITIZER=UBSAN>)
-  target_link_libraries (opts INTERFACE ${SAN_FLAG} ${SAN_LIB})
-endif ()
-
 #[===================================================================[
    xrpld transitive library deps via an interface library
 #]===================================================================]
@@ -66,7 +57,7 @@ add_library (xrpl_syslibs INTERFACE)
 add_library (Xrpl::syslibs ALIAS xrpl_syslibs)
 target_link_libraries (xrpl_syslibs
   INTERFACE
-    $<$<BOOL:${MSVC}>:
+    $<$<BOOL:${is_msvc}>:
       legacy_stdio_definitions.lib
       Shlwapi
       kernel32
@@ -83,10 +74,10 @@ target_link_libraries (xrpl_syslibs
       odbccp32
       crypt32
     >
-    $<$<NOT:$<BOOL:${MSVC}>>:dl>
-    $<$<NOT:$<OR:$<BOOL:${MSVC}>,$<BOOL:${APPLE}>>>:rt>)
+    $<$<NOT:$<BOOL:${is_msvc}>>:dl>
+    $<$<NOT:$<OR:$<BOOL:${is_msvc}>,$<BOOL:${is_macos}>>>:rt>)
 
-if (NOT MSVC)
+if (NOT is_msvc)
   set (THREADS_PREFER_PTHREAD_FLAG ON)
   find_package (Threads)
   target_link_libraries (xrpl_syslibs INTERFACE Threads::Threads)

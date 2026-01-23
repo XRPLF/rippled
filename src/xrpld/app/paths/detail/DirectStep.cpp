@@ -1,8 +1,8 @@
-#include <xrpld/app/paths/Credit.h>
 #include <xrpld/app/paths/detail/StepChecks.h>
 #include <xrpld/app/paths/detail/Steps.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/Credit.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -268,7 +268,7 @@ public:
         // During offer crossing we rely on the fact that prevStepRedeems
         // will *always* issue.  That's because:
         //  o If there's a prevStep_, it will always be a BookStep.
-        //  o BookStep::debtDirection() aways returns `issues` when offer
+        //  o BookStep::debtDirection() always returns `issues` when offer
         //  crossing.
         // An assert based on this return value will tell us if that
         // behavior changes.

@@ -221,7 +221,7 @@ public:
     }
 
     /**
-     * @brief setQueued Set this flag once was put into heldtxns queue
+     * @brief setQueued Set this flag once was put into held-txns queue
      */
     void
     setQueued()

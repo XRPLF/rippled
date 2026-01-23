@@ -72,7 +72,7 @@ public:
             JLOG(j_.info()) << "RPCCall::fromNetwork start";
 
             mSending = m_jobQueue.addJob(
-                jtCLIENT_SUBSCRIBE, "RPCSub::sendThread", [this]() {
+                jtCLIENT_SUBSCRIBE, "RPCSubSendThr", [this]() {
                     sendThread();
                 });
         }
@@ -171,7 +171,7 @@ private:
 
     int mSeq;  // Next id to allocate.
 
-    bool mSending;  // Sending threead is active.
+    bool mSending;  // Sending thread is active.
 
     std::deque<std::pair<int, Json::Value>> mDeque;
 
