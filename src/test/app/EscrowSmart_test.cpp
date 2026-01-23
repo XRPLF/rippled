@@ -12,14 +12,7 @@
 
 #include <algorithm>
 #include <iterator>
-
-#if (defined(__clang_major__) && __clang_major__ < 15)
-#include <experimental/source_location>
-using source_location = std::experimental::source_location;
-#else
 #include <source_location>
-using std::source_location;
-#endif
 
 namespace xrpl {
 namespace test {
@@ -1004,8 +997,8 @@ struct EscrowSmart_test : public beast::unit_test::suite
         auto runTest = [&](std::vector<uint8_t> const& wasm,
                            std::optional<uint32_t> sizeLimit,
                            ExpectedStatus expectedStatus,
-                           source_location const& loc =
-                               source_location::current()) {
+                           std::source_location const& loc =
+                               std::source_location::current()) {
             Env env = sizeLimit
                 ? Env(*this,
                       envconfig([&sizeLimit](std::unique_ptr<Config> cfg) {
