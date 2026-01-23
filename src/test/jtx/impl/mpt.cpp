@@ -938,11 +938,17 @@ MPTTester::getConvertBackProof(
         !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
         return Buffer{};
 
-    Buffer const pedersenProof = generatePedersenLinkageProof(
-        holder, contextHash, getPubKey(holder), pcParams);
+    auto const holderPubKey = getPubKey(holder);
+    if (holderPubKey)
+    {
+        Buffer const pedersenProof = generatePedersenLinkageProof(
+            holder, contextHash, *holderPubKey, pcParams);
 
-    // todo: incoporate range proof
-    return pedersenProof;
+        // todo: incoporate range proof
+        return pedersenProof;
+    }
+
+    return Buffer{};
 }
 
 std::optional<Buffer>
@@ -1096,7 +1102,7 @@ MPTTester::convert(MPTConvert const& arg)
         auto const contextHash = getConvertContextHash(
             arg.account->id(), env_.seq(*arg.account), *id_, *arg.amt);
 
-        auto const proof = getSchnorrProof(*arg.account, ctxHash);
+        auto const proof = getSchnorrProof(*arg.account, contextHash);
         if (proof)
             jv[sfZKProof.jsonName] = strHex(*proof);
         else
@@ -1486,7 +1492,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
             Throw<std::runtime_error>("Failed to get clawback private key");
 
         auto const proof =
-            getClawbackProof(*arg.holder, *arg.amt, *privKey, ctxHash);
+            getClawbackProof(*arg.holder, *arg.amt, *privKey, contextHash);
 
         if (proof)
             jv[sfZKProof] = strHex(*proof);
@@ -1767,8 +1773,15 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 
     jv[sfBlindingFactor] = strHex(blindingFactor);
 
-    uint64_t prevSpendingBalance =
+    auto const prevInboxBalance =
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+    auto const prevSpendingBalance =
         getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+    auto const prevIssuerBalance =
+        getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+
+    if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
+        Throw<std::runtime_error>("Failed to get Pre-convertBack balance");
 
     Buffer pedersenCommitment;
     Buffer pcBlindingFactor = generateBlindingFactor();
@@ -1776,7 +1789,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         pedersenCommitment = *arg.pedersenCommitment;
     else
         pedersenCommitment =
-            getPedersenCommitment(prevSpendingBalance, pcBlindingFactor);
+            getPedersenCommitment(*prevSpendingBalance, pcBlindingFactor);
 
     jv[sfPedersenCommitment] = strHex(pedersenCommitment);
 
@@ -1810,7 +1823,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
                 blindingFactor,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = prevSpendingBalance,
+                    .amt = *prevSpendingBalance,
                     .encryptedAmt = *prevEncryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
@@ -1820,16 +1833,6 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 
     auto const holderAmt = getBalance(*arg.account);
     auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
-
-    auto const prevInboxBalance =
-        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
-    auto const prevSpendingBalance =
-        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
-    auto const prevIssuerBalance =
-        getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
-
-    if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
-        Throw<std::runtime_error>("Failed to get Pre-convertBack balance");
 
     std::optional<uint64_t> prevAuditorBalance;
     if (arg.auditorEncryptedAmt || auditor_)
@@ -1933,6 +1936,10 @@ MPTTester::generatePedersenLinkageProof(
 
     Buffer proof(ecPedersenProofLength);
 
+    auto const privKey = getPrivKey(account);
+    if (!privKey || privKey->size() != ecPrivKeyLength)
+        Throw<std::runtime_error>("Failed to get Pedersen proof private key");
+
     if (secp256k1_elgamal_pedersen_link_prove(
             ctx,
             proof.data(),
@@ -1941,7 +1948,7 @@ MPTTester::generatePedersenLinkageProof(
             &c1,
             &pcm,
             params.amt,
-            getPrivKey(account).data(),
+            privKey->data(),
             params.blindingFactor.data(),
             contextHash.data()) != 1)
         Throw<std::runtime_error>("Pedersen proof generation failed");

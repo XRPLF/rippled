@@ -3030,15 +3030,18 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         uint64_t const amt = 10;
         Buffer const blindingFactor = generateBlindingFactor();
         Buffer const pcBlindingFactor = generateBlindingFactor();
-        uint64_t const spendingBalance = mptAlice.getDecryptedBalance(
+
+        auto const spendingBalance = mptAlice.getDecryptedBalance(
             bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(spendingBalance.has_value());
         auto const encryptedSpendingBalance = mptAlice.getEncryptedBalance(
             bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-
-        BEAST_EXPECT(encryptedSpendingBalance);
+        BEAST_EXPECT(
+            encryptedSpendingBalance.has_value() &&
+            !encryptedSpendingBalance->empty());
 
         Buffer const pedersenCommitment =
-            mptAlice.getPedersenCommitment(spendingBalance, pcBlindingFactor);
+            mptAlice.getPedersenCommitment(*spendingBalance, pcBlindingFactor);
         Buffer const issuerCiphertext =
             mptAlice.encryptAmount(alice, amt, blindingFactor);
         Buffer const bobCiphertext =
@@ -3062,7 +3065,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {
                     .pedersenCommitment =
                         badPedersenCommitment,  // bad pedersen commitment
-                    .amt = spendingBalance,
+                    .amt = *spendingBalance,
                     .encryptedAmt = *encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
@@ -3098,7 +3101,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 blindingFactor,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = spendingBalance,
+                    .amt = *spendingBalance,
                     .encryptedAmt = *encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
@@ -3133,7 +3136,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 blindingFactor,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = spendingBalance,
+                    .amt = *spendingBalance,
                     .encryptedAmt = *encryptedSpendingBalance,
                     .blindingFactor =
                         generateBlindingFactor(),  // bad blinding factor
@@ -3167,7 +3170,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 blindingFactor,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = spendingBalance,
+                    .amt = *spendingBalance,
                     .encryptedAmt = *encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
