@@ -454,7 +454,7 @@ floatLogImpl(Slice const& x, int32_t mode)
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::Number2 res(lg(xx));
+        detail::Number2 res(log10(xx));
 
         return res.toBytes();
     }

@@ -753,7 +753,7 @@ power(Number const& f, unsigned n);
 
 // logarithm with base 10
 Number
-lg(Number const& value);
+log10(Number const& value, int iterations = 50);
 
 // Returns f^(1/d)
 // Uses Newton–Raphson iterations until the result stops changing
