@@ -198,11 +198,11 @@ public:
         std::string usdTxBlob = "";
         auto wsc = makeWSClient(env.app().config());
         {
-            Json::Value requestUsd;
-            requestUsd[jss::secret] = toBase58(generateSeed("bob"));
-            requestUsd[jss::tx_json] =
+            Json::Value requestUSD;
+            requestUSD[jss::secret] = toBase58(generateSeed("bob"));
+            requestUSD[jss::tx_json] =
                 pay("bob", "alice", bob["USD"](fund / 2));
-            Json::Value replyUSD = wsc->invoke("sign", requestUsd);
+            Json::Value replyUSD = wsc->invoke("sign", requestUSD);
 
             usdTxBlob =
                 toBinary(replyUSD[jss::result][jss::tx_blob].asString());
