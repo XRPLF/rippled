@@ -20,10 +20,9 @@ protected:
     static unsigned constexpr encodedFloatSize = 8;
     static int32_t constexpr encodedMantissaBits = 54;
     static int32_t constexpr encodedExponentBits = 8;
-    static int constexpr minEncodedExponent = 1;
+
     static_assert(wasmMinExponent < 0);
-    static int constexpr maxEncodedExponent =
-        wasmMaxExponent - wasmMinExponent + minEncodedExponent;  // 177
+
     static uint64_t constexpr maxEncodedMantissa =
         (1ull << (encodedMantissaBits + 1)) - 1;
 
@@ -45,52 +44,53 @@ public:
         if (!(v & STAmount::cIssuedCurrency))
             return;
 
-        int64_t const neg = (v & STAmount::cPositive) ? 1 : -1;
         int32_t const e =
-            static_cast<uint8_t>((v >> encodedMantissaBits) & 0xFFull);
-        if (e < minEncodedExponent || e > maxEncodedExponent)
+            static_cast<int32_t>((v >> encodedMantissaBits) & 0xFFull);
+        int32_t const decodedExponent = e + wasmMinExponent - 1;  // e - 97
+        if (decodedExponent < wasmMinExponent ||
+            decodedExponent > wasmMaxExponent)
             return;
 
+        int64_t const neg = (v & STAmount::cPositive) ? 1 : -1;
         int64_t const m =
             neg * static_cast<int64_t>(v & ((1ull << encodedMantissaBits) - 1));
         if (!m)
             return;
 
-        int32_t const decodedExponent = e + wasmMinExponent - 1;  // e - 97
         Number x(makeNumber(m, decodedExponent));
-
         if (m != x.mantissa() || decodedExponent != x.exponent())
             return;  // not canonical
-
         *static_cast<Number*>(this) = x;
+
         good_ = true;
     }
 
-    Number2() : Number(), good_(true)
+    template <class T>
+    Number2(T mantissa = 0, int32_t exponent = 0) : Number(), good_(false)
     {
-    }
+        if (!mantissa)
+        {
+            good_ = true;
+            return;
+        }
 
-    Number2(int64_t x) : Number(makeNumber(x, 0)), good_(true)
-    {
-    }
+        auto const n = makeNumber(mantissa, exponent);
+        auto const e = n.exponent();
+        if (e < wasmMinExponent)
+        {
+            good_ = true;  // value is zero(as in Numbers behavior)
+            return;
+        }
 
-    Number2(uint64_t x) : Number(0), good_(false)
-    {
-        using mtype = std::invoke_result_t<decltype(&Number::mantissa), Number>;
-        if (x <= std::numeric_limits<mtype>::max())
-            *this = makeNumber(x, 0);
-        else
-            *this = makeNumber(x / 10, 1);
+        if (e > wasmMaxExponent)
+            return;
+
+        *static_cast<Number*>(this) = n;
         good_ = true;
-    }
-
-    Number2(int64_t mantissa, int32_t exponent)
-        : Number(makeNumber(mantissa, exponent)), good_(true)
-    {
     }
 
     Number2(Number const& n)
-        : Number(makeNumber(n.mantissa(), n.exponent())), good_(true)
+        : Number2(n.mantissa(), n.exponent())  // ensure Number canonized
     {
     }
 
@@ -116,20 +116,18 @@ public:
     Expected<Bytes, HostFunctionError>
     toBytes() const
     {
-        uint64_t v = mantissa() >= 0 ? STAmount::cPositive : 0;
+        if (!good_)
+            return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+
+        auto const m = mantissa();
+        auto const e = exponent();
+
+        uint64_t v = m >= 0 ? STAmount::cPositive : 0;
         v |= STAmount::cIssuedCurrency;
 
-        uint64_t const absM = std::abs(mantissa());
+        uint64_t const absM = std::abs(m);
         if (!absM)
         {
-            using etype =
-                std::invoke_result_t<decltype(&Number::exponent), Number>;
-            if (exponent() != std::numeric_limits<etype>::lowest())
-            {
-                return Unexpected(
-                    HostFunctionError::
-                        FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
-            }
             return floatNull;
         }
         else if (absM > maxEncodedMantissa)
@@ -137,14 +135,14 @@ public:
             return Unexpected(
                 HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
         }
-        else if (exponent() > wasmMaxExponent)
-            return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-        else if (exponent() < wasmMinExponent)
-            return floatNull;
-
-        int const e = exponent() - wasmMinExponent + 1;  //+97
         v |= absM;
-        v |= ((uint64_t)e) << encodedMantissaBits;
+
+        if (e > wasmMaxExponent)
+            return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        else if (e < wasmMinExponent)
+            return floatNull;
+        uint64_t const normExp = e - wasmMinExponent + 1;  //+97
+        v |= normExp << encodedMantissaBits;
 
         Serializer msg;
         msg.add64(v);
@@ -268,6 +266,8 @@ floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode)
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         detail::Number2 num(mantissa, exponent);
+        if (!num)
+            return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
         return num.toBytes();
     }
     catch (...)

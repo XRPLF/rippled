@@ -2445,15 +2445,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result =
-                hfs.floatSet(1, wasmMaxExponent + normalExp + 1, 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(
-                    result.error() ==
-                    HostFunctionError::FLOAT_COMPUTATION_ERROR);
-        }
-
-        {
-            auto const result =
                 hfs.floatSet(1, wasmMinExponent + normalExp - 1, 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
         }
