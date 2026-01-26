@@ -212,7 +212,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
             ctx.app.config().FEES.extension_compute_limit == 0)
         {
             JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
-            return temDEACTIVATED;
+            return temTEMP_DISABLED;
         }
 
         auto const code = ctx.tx.getFieldVL(sfFinishFunction);
@@ -702,7 +702,7 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         if (ctx.app.config().FEES.extension_compute_limit == 0)
         {
             JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
-            return temDEACTIVATED;
+            return temTEMP_DISABLED;
         }
         if (*allowance == 0)
         {
