@@ -126,14 +126,14 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 escrow::finish_function("AA"),
                 escrow::cancel_time(env.now() + 100s),
                 fee(txnFees),
-                ter(temINVALID));
+                ter(temDEACTIVATED));
             env.close();
 
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
                 fee(txnFees),
-                ter(temINVALID));
+                ter(temDEACTIVATED));
             env.close();
         }
 
@@ -377,9 +377,8 @@ struct EscrowSmart_test : public beast::unit_test::suite
 
             // This adds the Escrow ledger object by hand, bypassing normal
             // transaction processing This is necessary because the config
-            // cannot be updated in the middle of a test, and we cannot create a
-            // Smart Escrow while ALLOW_WASM is disabled (which is what we're
-            // testing)
+            // cannot be updated in the middle of a test, and we cannot easily
+            // create a Smart Escrow while the compute limit is set to 0
             env.app().openLedger().modify([&](OpenView& view,
                                               beast::Journal j) {
                 auto sle = std::make_shared<SLE>(keylet);
@@ -407,7 +406,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             env(escrow::finish(alice, alice, seq),
                 escrow::comp_allowance(1000),
                 fee(env.current()->fees().base + 1000),
-                ter(temINVALID));
+                ter(temDEACTIVATED));
         }
 
         Env env(*this, features);
