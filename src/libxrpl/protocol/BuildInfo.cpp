@@ -3,6 +3,8 @@
 #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
 
+#include <boost/preprocessor/stringize.hpp>
+
 #include <algorithm>
 #include <cstdint>
 #include <string>
@@ -20,7 +22,7 @@ namespace BuildInfo {
 char const* const versionString = "3.2.0-b0"
 // clang-format on
 
-#if defined(DEBUG) || defined(SANITIZER)
+#if defined(DEBUG) || defined(SANITIZERS)
     "+"
 #ifdef GIT_COMMIT_HASH
     GIT_COMMIT_HASH
@@ -28,13 +30,13 @@ char const* const versionString = "3.2.0-b0"
 #endif
 #ifdef DEBUG
     "DEBUG"
-#ifdef SANITIZER
+#ifdef SANITIZERS
     "."
 #endif
 #endif
 
-#ifdef SANITIZER
-    BOOST_PP_STRINGIZE(SANITIZER)  // cspell: disable-line
+#ifdef SANITIZERS
+    BOOST_PP_STRINGIZE(SANITIZERS)  // cspell: disable-line
 #endif
 #endif
 
