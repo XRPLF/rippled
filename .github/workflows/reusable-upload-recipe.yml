@@ -49,10 +49,6 @@ jobs:
         id: version
         uses: ./.github/actions/generate-version
 
-      - name: Determine recipe reference
-        id: ref
-        run: echo "ref=xrpl/${{ steps.version.outputs.version }}" >> "${GITHUB_OUTPUT}"
-
       - name: Set up Conan
         uses: ./.github/actions/setup-conan
         with:
@@ -62,17 +58,16 @@ jobs:
       - name: Log into Conan remote
         env:
           REMOTE_NAME: ${{ inputs.remote_name }}
-          REMOTE_USERNAME: ${{ inputs.remote_username }}
-          REMOTE_PASSWORD: ${{ inputs.remote_password }}
+          REMOTE_USERNAME: ${{ secrets.remote_username }}
+          REMOTE_PASSWORD: ${{ secrets.remote_password }}
         run: conan remote login "${REMOTE_NAME}" "${REMOTE_USERNAME}" --password "${REMOTE_PASSWORD}"
 
       - name: Upload Conan recipe
         env:
-          RECIPE_REF: ${{ steps.ref.outputs.ref }}
           REMOTE_NAME: ${{ inputs.remote_name }}
         run: |
-          conan export .
-          conan upload --confirm --check --remote="${REMOTE_NAME}" ${RECIPE_REF}
+          conan export . --version=${{ steps.version.outputs.version }}
+          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/${{ steps.version.outputs.version }}
 
     outputs:
-      ref: ${{ steps.ref.outputs.ref }}
+      ref: xrpl/${{ steps.version.outputs.version }}
