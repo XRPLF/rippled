@@ -3076,7 +3076,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
-    testFloatNonIOU()
+    testFloatSpecialCases()
     {
         testcase("float Xrp+Mpt");
         using namespace test::jtx;
@@ -3135,31 +3135,19 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 !result &&
                 result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
-    }
 
-    void
-    testFloatNonCanonical()
-    {
-        testcase("float Xrp+Mpt");
-        using namespace test::jtx;
+        testcase("float non-canonical");
 
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        // non-canonical mantissa 10 000 000 000 000 000
-        Bytes x = float1;
-        *reinterpret_cast<uint64_t*>(x.data()) =
-            0x0000C16FF286A3D4ull;  // 0xD4 A3 86 F2 6F C1 00 00;
-        {
-            auto const result =
-                hfs.floatCompare(makeSlice(x), makeSlice(float1));
-            BEAST_EXPECT(
-                !result &&
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {  // non-canonical mantissa 10 000 000 000 000 000
+            Bytes x = float1;
+            *reinterpret_cast<uint64_t*>(x.data()) = 0x0000C16FF286A3D4ull;
+            {
+                auto const result =
+                    hfs.floatCompare(makeSlice(x), makeSlice(float1));
+                BEAST_EXPECT(
+                    !result &&
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            }
         }
     }
 
@@ -3178,8 +3166,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testFloatRoot();
         testFloatPower();
         testFloatLog();
-        testFloatNonIOU();
-        testFloatNonCanonical();
+        testFloatSpecialCases();
     }
 
     void
