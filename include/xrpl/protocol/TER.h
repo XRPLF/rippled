@@ -124,6 +124,7 @@ enum TEMcodes : TERUnderlyingType {
     temINVALID_INNER_BATCH,
 
     temBAD_WASM,
+    temDEACTIVATED,
 };
 
 //------------------------------------------------------------------------------
