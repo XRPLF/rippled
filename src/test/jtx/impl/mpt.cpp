@@ -1277,7 +1277,8 @@ MPTTester::send(MPTConfidentialSend const& arg)
             arg.dest->id(),
             version);
 
-        auto const nRecipients = auditorAmt ? 4 : 3;
+        auto const nRecipients =
+            getConfidentialRecipientCount(auditorAmt.has_value());
         std::vector<ConfidentialRecipient> recipients;
 
         auto const senderPubKey = getPubKey(*arg.account);

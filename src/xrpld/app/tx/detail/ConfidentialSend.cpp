@@ -162,7 +162,8 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
         destination,
         (*sleSenderMPToken)[~sfConfidentialBalanceVersion].value_or(0));
 
-    auto const expectedRecipients = requiresAuditor ? 4 : 3;
+    auto const expectedRecipients =
+        getConfidentialRecipientCount(requiresAuditor);
 
     // Prepare encrypted amount info for proof verification
     std::vector<ConfidentialRecipient> recipients;
