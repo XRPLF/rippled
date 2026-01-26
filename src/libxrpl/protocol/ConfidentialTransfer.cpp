@@ -24,12 +24,14 @@ getSendContextHash(
     AccountID const& account,
     std::uint32_t sequence,
     uint192 const& issuanceID,
-    AccountID const& destination)
+    AccountID const& destination,
+    std::uint32_t version)
 {
     Serializer s;
     addCommonZKPFields(s, ttCONFIDENTIAL_SEND, account, sequence, issuanceID);
 
     s.addBitString(destination);
+    s.addInteger(version);
 
     return s.getSHA512Half();
 }

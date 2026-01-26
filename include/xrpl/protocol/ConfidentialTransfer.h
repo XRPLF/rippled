@@ -23,6 +23,16 @@ struct ConfidentialRecipient
     Slice const encryptedAmount;
 };
 
+inline void
+incrementConfidentialVersion(STObject& mptoken)
+{
+    // Retrieve current version and increment.
+    // Unsigned integer overflow is defined behavior in C++ (wraps to 0),
+    // which is acceptable here.
+    mptoken[sfConfidentialBalanceVersion] =
+        mptoken[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
+}
+
 void
 addCommonZKPFields(
     Serializer& s,
@@ -36,7 +46,8 @@ getSendContextHash(
     AccountID const& account,
     std::uint32_t sequence,
     uint192 const& issuanceID,
-    AccountID const& destination);
+    AccountID const& destination,
+    std::uint32_t version);
 
 uint256
 getClawbackContextHash(
@@ -123,6 +134,12 @@ verifyRevealedAmount(
     ConfidentialRecipient const& holder,
     ConfidentialRecipient const& issuer,
     std::optional<ConfidentialRecipient> const& auditor);
+
+constexpr std::size_t
+getConfidentialRecipientCount(bool hasAuditor)
+{
+    return hasAuditor ? 4 : 3;
+}
 
 std::size_t
 getMultiCiphertextEqualityProofSize(std::size_t nRecipients);

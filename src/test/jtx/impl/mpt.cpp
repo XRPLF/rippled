@@ -1269,8 +1269,13 @@ MPTTester::send(MPTConfidentialSend const& arg)
         jv[sfZKProof] = *arg.proof;
     else
     {
+        auto const version = getMPTokenVersion(*arg.account);
         auto const ctxHash = getSendContextHash(
-            arg.account->id(), env_.seq(*arg.account), *id_, arg.dest->id());
+            arg.account->id(),
+            env_.seq(*arg.account),
+            *id_,
+            arg.dest->id(),
+            version);
 
         auto const nRecipients = auditorAmt ? 4 : 3;
         std::vector<ConfidentialRecipient> recipients;

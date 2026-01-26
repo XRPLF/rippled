@@ -44,7 +44,7 @@ ConfidentialSend::preflight(PreflightContext const& ctx)
         return temBAD_CIPHERTEXT;
 
     // Check the length of the ZKProof
-    auto const recipientCount = hasAuditor ? 4 : 3;
+    auto const recipientCount = getConfidentialRecipientCount(hasAuditor);
     if (ctx.tx[sfZKProof].length() !=
         getMultiCiphertextEqualityProofSize(recipientCount))
         return temMALFORMED;
@@ -156,7 +156,11 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
         return ter;
 
     auto const contextHash = getSendContextHash(
-        account, ctx.tx[sfSequence], mptIssuanceID, destination);
+        account,
+        ctx.tx[sfSequence],
+        mptIssuanceID,
+        destination,
+        (*sleSenderMPToken)[~sfConfidentialBalanceVersion].value_or(0));
 
     auto const expectedRecipients = requiresAuditor ? 4 : 3;
 
@@ -269,10 +273,6 @@ ConfidentialSend::doApply()
         (*sleSender)[sfAuditorEncryptedBalance] = newAuditorEnc;
     }
 
-    // Increment version
-    (*sleSender)[sfConfidentialBalanceVersion] =
-        (*sleSender)[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
-
     // Add to destination's inbox balance
     {
         Slice const curInbox = (*sleDestination)[sfConfidentialBalanceInbox];
@@ -312,6 +312,10 @@ ConfidentialSend::doApply()
 
         (*sleDestination)[sfAuditorEncryptedBalance] = newAuditorEnc;
     }
+
+    // increment version
+    incrementConfidentialVersion(*sleSender);
+    incrementConfidentialVersion(*sleDestination);
 
     view().update(sleSender);
     view().update(sleDestination);

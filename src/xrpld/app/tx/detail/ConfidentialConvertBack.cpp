@@ -199,10 +199,6 @@ ConfidentialConvertBack::doApply()
     (*sleIssuance)[sfConfidentialOutstandingAmount] =
         (*sleIssuance)[sfConfidentialOutstandingAmount] - amtToConvertBack;
 
-    // it's fine if it reaches max uint32, it just resets to 0
-    (*sleMptoken)[sfConfidentialBalanceVersion] =
-        (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
-
     std::optional<Slice> const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];
 
     // homomorphically subtract holder's encrypted balance
@@ -243,6 +239,9 @@ ConfidentialConvertBack::doApply()
 
         (*sleMptoken)[sfAuditorEncryptedBalance] = res;
     }
+
+    // increment version
+    incrementConfidentialVersion(*sleMptoken);
 
     view().update(sleIssuance);
     view().update(sleMptoken);
