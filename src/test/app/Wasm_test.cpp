@@ -6,6 +6,14 @@
 
 #include <xrpld/app/wasm/HostFuncWrapper.h>
 
+#if (defined(__clang_major__) && __clang_major__ < 15)
+#include <experimental/source_location>
+using source_location = std::experimental::source_location;
+#else
+#include <source_location>
+using std::source_location;
+#endif
+
 namespace xrpl {
 namespace test {
 
@@ -42,6 +50,24 @@ runFinishFunction(std::string const& code)
 
 struct Wasm_test : public beast::unit_test::suite
 {
+    void
+    checkResult(
+        Expected<WasmResult<int32_t>, TER> re,
+        int32_t expectedResult,
+        int64_t expectedCost,
+        source_location const location = source_location::current())
+    {
+        auto const lineStr = " (" + std::to_string(location.line()) + ")";
+        if (BEAST_EXPECTS(re.has_value(), transToken(re.error()) + lineStr))
+        {
+            BEAST_EXPECTS(
+                re->result == expectedResult,
+                std::to_string(re->result) + lineStr);
+            BEAST_EXPECTS(
+                re->cost == expectedCost, std::to_string(re->cost) + lineStr);
+        }
+    }
+
     void
     testGetDataHelperFunctions()
     {
@@ -92,11 +118,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         // if (res) printf("invokeAdd get the result: %d\n", res.value());
 
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 6'912, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 59, std::to_string(re->cost));
-        }
+        checkResult(re, 6'912, 59);
     }
 
     void
@@ -180,11 +202,7 @@ struct Wasm_test : public beast::unit_test::suite
             1'000'000,
             env.journal);
 
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 0, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 151, std::to_string(re->cost));
-        }
+        checkResult(re, 0, 151);
 
         env.close();
         env.close();
@@ -193,11 +211,7 @@ struct Wasm_test : public beast::unit_test::suite
         re = engine.run(
             {}, ESCROW_FUNCTION_NAME, {}, imports, hfs, 1'000'000, env.journal);
 
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 5, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 190, std::to_string(re->cost));
-        }
+        checkResult(re, 5, 190);
     }
 
     void
@@ -211,11 +225,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         auto const re = engine.run(wasm, "fib", wasmParams(10));
 
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 55, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 1'137, std::to_string(re->cost));
-        }
+        checkResult(re, 55, 1'137);
     }
 
     void
@@ -230,11 +240,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto const re =
             engine.run(wasm, "sha512_process", wasmParams(sha512PureWasmHex));
 
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 34'432, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 151'155, std::to_string(re->cost));
-        }
+        checkResult(re, 34'432, 151'155);
     }
 
     void
@@ -255,11 +261,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         auto const re = engine.run(wasm, "b58enco", wasmParams(outb, s));
 
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 700, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 2'886'069, std::to_string(re->cost));
-        }
+        checkResult(re, 700, 2'886'069);
     }
 
     void
@@ -291,11 +293,7 @@ struct Wasm_test : public beast::unit_test::suite
                 1'000'000,
                 env.journal);
 
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 25'503, std::to_string(re->cost));
-            }
+            checkResult(re, 1, 25'503);
 
             env.close();
         }
@@ -325,11 +323,7 @@ struct Wasm_test : public beast::unit_test::suite
                 1'000'000,
                 env.journal);
 
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 64'763, std::to_string(re->cost));
-            }
+            checkResult(re, 1, 64'763);
 
             env.close();
         }
@@ -374,22 +368,14 @@ struct Wasm_test : public beast::unit_test::suite
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
             auto re =
                 runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 64'763, std::to_string(re->cost));
-            }
+            checkResult(re, 1, 64'763);
         }
 
         {
             // max<int64_t>() gas
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
             auto re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, -1);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 64'763, std::to_string(re->cost));
-            }
+            checkResult(re, 1, 64'763);
         }
 
         {  // fail because trying to access nonexistent field
@@ -408,11 +394,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::shared_ptr<HostFunctions> hfs(new BadTestHostFunctions(env));
             auto re =
                 runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == -201, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 28'148, std::to_string(re->cost));
-            }
+            checkResult(re, -201, 28'148);
         }
 
         {  // fail because trying to allocate more than MAX_PAGES memory
@@ -431,11 +413,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::shared_ptr<HostFunctions> hfs(new BadTestHostFunctions(env));
             auto re =
                 runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == -201, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 28'148, std::to_string(re->cost));
-            }
+            checkResult(re, -201, 28'148);
         }
 
         {  // fail because recursion too deep
@@ -565,11 +543,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
             auto re = runEscrowWasm(wasm, hfs, funcName, {}, 200'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 110'699, std::to_string(re->cost));
-            }
+            checkResult(re, 1, 110'699);
             env.close();
         }
 
@@ -580,11 +554,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
             auto re = runEscrowWasm(wasm, hfs, funcName, {}, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 4'259, std::to_string(re->cost));
-            }
+            checkResult(re, 1, 4'259);
             env.close();
         }
     }
@@ -698,14 +668,10 @@ struct Wasm_test : public beast::unit_test::suite
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
         std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
 
-        auto const allowance = 185'974;
+        auto const allowance = 187'131;
         auto re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, allowance);
 
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECT(re->result);
-            BEAST_EXPECTS(re->cost == allowance, std::to_string(re->cost));
-        }
+        checkResult(re, 1, allowance);
     }
 
     void
@@ -988,6 +954,65 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testReturnType()
+    {
+        using namespace test::jtx;
+        Env env(*this);
+        std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
+
+        // return int64.
+        {  // (module
+            //   (memory (export "memory") 1)
+            //   (func (export "finish") (result i64)
+            //     i64.const 0x100000000))
+            auto const wasmHex =
+                "0061736d010000000105016000017e030201000503010001"
+                "071302066d656d6f727902000666696e69736800000a0a01"
+                "08004280808080100b";
+            auto const wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+            Bytes const wasm(wasmStr.begin(), wasmStr.end());
+            auto const re =
+                runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            BEAST_EXPECT(!re);
+        }
+
+        // return void. wasmi return execution error
+        {  //(module
+           //  (type (;0;) (func))
+           //  (func (;0;) (type 0)
+           //   return)
+           //  (memory (;0;) 1)
+           //  (export "memory" (memory 0))
+           //  (export "finish" (func 0)))
+            auto const wasmHex =
+                "0061736d01000000010401600000030201000503010001071302066d656d6f"
+                "727902000666696e69736800000a050103000f0b";
+            auto const wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+            Bytes const wasm(wasmStr.begin(), wasmStr.end());
+            auto const re =
+                runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            BEAST_EXPECT(!re);
+        }
+
+        // return i32, i32. wasmi doesn't create module
+        {  //(module
+           //  (memory (export "memory") 1)
+           //  (func (export "finish") (result i32 i32)
+           //   i32.const 0x10000000
+           //   i32.const 0x100000FF))
+            auto const wasmHex =
+                "0061736d010000000106016000027f7f030201000503010001071302066d65"
+                "6d6f727902000666696e69736800000a10010e0041808080800141ff818080"
+                "010b";
+            auto const wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+            Bytes const wasm(wasmStr.begin(), wasmStr.end());
+            auto const re =
+                runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            BEAST_EXPECT(!re);
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -1018,6 +1043,7 @@ struct Wasm_test : public beast::unit_test::suite
         testStartFunctionLoop();
         testBadAlloc();
         testBadAlign();
+        testReturnType();
 
         // perfTest();
     }

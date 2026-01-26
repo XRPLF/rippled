@@ -2028,7 +2028,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const result = hfs.trace(msg, slice, false);
             if (BEAST_EXPECT(result.has_value()))
             {
-                BEAST_EXPECT(result.value() == msg.size() + data.size());
+                BEAST_EXPECT(result.value() == 0);
                 auto const messages = sink.messages().str();
                 BEAST_EXPECT(messages.find(msg) != std::string::npos);
             }
@@ -2037,7 +2037,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             if (BEAST_EXPECT(resultHex.has_value()))
             {
                 BEAST_EXPECT(resultHex.has_value());
-                BEAST_EXPECT(resultHex.value() == msg.size() + data.size() * 2);
+                BEAST_EXPECT(resultHex.value() == 0);
                 auto const messages = sink.messages().str();
                 std::string hex;
                 hex.reserve(data.size() * 2);
@@ -2064,7 +2064,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             std::string data = "abc";
             auto const slice = Slice(data.data(), data.size());
             auto const result = hfs.trace(msg, slice, false);
-            BEAST_EXPECT(result && *result == msg.size() + data.size());
+            BEAST_EXPECT(result && *result == 0);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -2092,7 +2092,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const result = hfs.traceNum(msg, num);
             if (BEAST_EXPECT(result.has_value()))
             {
-                BEAST_EXPECT(result.value() == msg.size() + sizeof(num));
+                BEAST_EXPECT(result.value() == 0);
                 auto const messages = sink.messages().str();
                 BEAST_EXPECT(messages.find(msg) != std::string::npos);
                 BEAST_EXPECT(
@@ -2115,7 +2115,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             std::string msg = "trace number";
             int64_t num = 123456789;
             auto const result = hfs.traceNum(msg, num);
-            BEAST_EXPECT(result && *result == msg.size() + sizeof(int64_t));
+            BEAST_EXPECT(result && *result == 0);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -2142,8 +2142,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const result = hfs.traceAccount(msg, env.master.id());
             if (BEAST_EXPECT(result.has_value()))
             {
-                BEAST_EXPECT(
-                    result.value() == msg.size() + env.master.id().size());
+                BEAST_EXPECT(result.value() == 0);
                 auto const messages = sink.messages().str();
                 BEAST_EXPECT(messages.find(msg) != std::string::npos);
                 BEAST_EXPECT(
@@ -2164,8 +2163,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
             std::string msg = "trace account";
             auto const result = hfs.traceAccount(msg, env.master.id());
-            BEAST_EXPECT(
-                result && *result == msg.size() + env.master.id().size());
+            BEAST_EXPECT(result && *result == 0);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -2194,7 +2192,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 auto const result = hfs.traceAmount(msg, amount);
                 if (BEAST_EXPECT(result.has_value()))
                 {
-                    BEAST_EXPECT(*result == msg.size());
+                    BEAST_EXPECT(*result == 0);
                     auto const messages = sink.messages().str();
                     BEAST_EXPECT(messages.find(msg) != std::string::npos);
                     BEAST_EXPECT(
@@ -2211,7 +2209,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {
                 auto const result = hfs.traceAmount(msg, iouAmount);
                 if (BEAST_EXPECT(result.has_value()))
-                    BEAST_EXPECT(*result == msg.size());
+                    BEAST_EXPECT(*result == 0);
             }
 
             // MPT amount
@@ -2221,7 +2219,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 STAmount mptAmount(mptAsset, 123456);
                 auto const result = hfs.traceAmount(msg, mptAmount);
                 if (BEAST_EXPECT(result.has_value()))
-                    BEAST_EXPECT(*result == msg.size());
+                    BEAST_EXPECT(*result == 0);
             }
         }
 
@@ -2240,7 +2238,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             std::string msg = "trace amount";
             STAmount amount = XRP(12345);
             auto const result = hfs.traceAmount(msg, amount);
-            BEAST_EXPECT(result && *result == msg.size());
+            BEAST_EXPECT(result && *result == 0);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -2290,16 +2288,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             {
                 auto const result = hfs.traceFloat(msg, makeSlice(invalid));
-                BEAST_EXPECT(
-                    result &&
-                    *result == msg.size() + makeSlice(invalid).size());
+                BEAST_EXPECT(result && *result == 0);
             }
 
             {
                 auto const result = hfs.traceFloat(msg, makeSlice(floatMaxExp));
-                BEAST_EXPECT(
-                    result &&
-                    *result == msg.size() + makeSlice(floatMaxExp).size());
+                BEAST_EXPECT(result && *result == 0);
             }
         }
 
@@ -2318,8 +2312,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             std::string msg = "trace float";
 
             auto const result = hfs.traceFloat(msg, makeSlice(invalid));
-            BEAST_EXPECT(
-                result && *result == msg.size() + makeSlice(invalid).size());
+            BEAST_EXPECT(result && *result == 0);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }

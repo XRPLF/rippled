@@ -248,7 +248,7 @@ pub extern "C" fn finish() -> i32 {
                 account.0.len(),
             )
         },
-        (message.len() + 20) as i32,
+        0,
         "trace_account",
     );
     let amount = &[0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5F]; // 95 drops of XRP
@@ -261,7 +261,7 @@ pub extern "C" fn finish() -> i32 {
                 amount.len(),
             )
         },
-        message.len() as i32,
+        0,
         "trace_amount",
     );
     let amount = &[0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]; // 0 drops of XRP
@@ -274,7 +274,7 @@ pub extern "C" fn finish() -> i32 {
                 amount.len(),
             )
         },
-        message.len() as i32,
+        0,
         "trace_amount_zero",
     );
 
@@ -1513,7 +1513,7 @@ pub extern "C" fn finish() -> i32 {
                 account.0.len(),
             )
         },
-        34,
+        0,
         "trace_account_check_desync",
     );
 
