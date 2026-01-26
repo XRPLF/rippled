@@ -8,7 +8,9 @@ if(POLICY CMP0077)
 endif()
 
 # Fix "unrecognized escape" issues when passing CMAKE_MODULE_PATH on Windows.
-file(TO_CMAKE_PATH "${CMAKE_MODULE_PATH}" CMAKE_MODULE_PATH)
+if(DEFINED CMAKE_MODULE_PATH)
+  file(TO_CMAKE_PATH "${CMAKE_MODULE_PATH}" CMAKE_MODULE_PATH)
+endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(xrpl)
@@ -16,14 +18,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+include(CompilationEnv)
+
+if(is_gcc)
     # GCC-specific fixes
     add_compile_options(-Wno-unknown-pragmas -Wno-subobject-linkage)
     # -Wno-subobject-linkage can be removed when we upgrade GCC version to at least 13.3
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+elseif(is_clang)
     # Clang-specific fixes
     add_compile_options(-Wno-unknown-warning-option) # Ignore unknown warning options
-elseif(MSVC)
+elseif(is_msvc)
     # MSVC-specific fixes
     add_compile_options(/wd4068) # Ignore unknown pragmas
 endif()
@@ -77,6 +81,7 @@ if (packages_only)
   return ()
 endif ()
 include(XrplCompiler)
+include(XrplSanitizers)
 include(XrplInterface)
 
 option(only_docs "Include only the docs target?" FALSE)
@@ -88,34 +93,18 @@ endif()
 ###
 
 include(deps/Boost)
-find_package(OpenSSL 1.1.1 REQUIRED)
-set_target_properties(OpenSSL::SSL PROPERTIES
-  INTERFACE_COMPILE_DEFINITIONS OPENSSL_NO_SSL2
-)
 
 add_subdirectory(external/antithesis-sdk)
-find_package(gRPC REQUIRED)
-find_package(lz4 REQUIRED)
-# Target names with :: are not allowed in a generator expression.
-# We need to pull the include directories and imported location properties
-# from separate targets.
-find_package(LibArchive REQUIRED)
-find_package(SOCI REQUIRED)
-find_package(SQLite3 REQUIRED)
-
-option(rocksdb "Enable RocksDB" ON)
-if(rocksdb)
-  find_package(RocksDB REQUIRED)
-  set_target_properties(RocksDB::rocksdb PROPERTIES
-    INTERFACE_COMPILE_DEFINITIONS XRPL_ROCKSDB_AVAILABLE=1
-  )
-  target_link_libraries(xrpl_libs INTERFACE RocksDB::rocksdb)
-endif()
-
 find_package(date REQUIRED)
 find_package(ed25519 REQUIRED)
+find_package(gRPC REQUIRED)
+find_package(LibArchive REQUIRED)
+find_package(lz4 REQUIRED)
 find_package(nudb REQUIRED)
+find_package(OpenSSL REQUIRED)
 find_package(secp256k1 REQUIRED)
+find_package(SOCI REQUIRED)
+find_package(SQLite3 REQUIRED)
 find_package(xxHash REQUIRED)
 
 target_link_libraries(xrpl_libs INTERFACE
@@ -127,6 +116,15 @@ target_link_libraries(xrpl_libs INTERFACE
   soci::soci
   SQLite::SQLite3
 )
+
+option(rocksdb "Enable RocksDB" ON)
+if(rocksdb)
+    find_package(RocksDB REQUIRED)
+    set_target_properties(RocksDB::rocksdb PROPERTIES
+            INTERFACE_COMPILE_DEFINITIONS XRPL_ROCKSDB_AVAILABLE=1
+    )
+    target_link_libraries(xrpl_libs INTERFACE RocksDB::rocksdb)
+endif()
 
 # Work around changes to Conan recipe for now.
 if(TARGET nudb::core)

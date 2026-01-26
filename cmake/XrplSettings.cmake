@@ -2,16 +2,13 @@
    declare options and variables
 #]===================================================================]
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  set (is_linux TRUE)
-else()
-  set(is_linux FALSE)
-endif()
+include(CompilationEnv)
 
-if("$ENV{CI}" STREQUAL "true" OR "$ENV{CONTINUOUS_INTEGRATION}" STREQUAL "true")
-  set(is_ci TRUE)
-else()
-  set(is_ci FALSE)
+set(is_ci FALSE)
+if(DEFINED ENV{CI})
+  if("$ENV{CI}" STREQUAL "true")
+    set(is_ci TRUE)
+  endif()
 endif()
 
 get_directory_property(has_parent PARENT_DIRECTORY)
@@ -62,12 +59,27 @@ else()
   set(wextra OFF CACHE BOOL "gcc/clang only" FORCE)
 endif()
 
-if(is_linux)
+if(is_linux AND NOT SANITIZER)
   option(BUILD_SHARED_LIBS "build shared xrpl libraries" OFF)
   option(static "link protobuf, openssl, libc++, and boost statically" ON)
   option(perf "Enables flags that assist with perf recording" OFF)
   option(use_gold "enables detection of gold (binutils) linker" ON)
   option(use_mold "enables detection of mold (binutils) linker" ON)
+  # Set a default value for the log flag based on the build type.
+  # This provides a sensible default (on for debug, off for release)
+  # while still allowing the user to override it for any build.
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(TRUNCATED_LOGS_DEFAULT ON)
+  else()
+    set(TRUNCATED_LOGS_DEFAULT OFF)
+  endif()
+  option(TRUNCATED_THREAD_NAME_LOGS
+    "Show warnings about truncated thread names on Linux."
+    ${TRUNCATED_LOGS_DEFAULT}
+  )
+  if(TRUNCATED_THREAD_NAME_LOGS)
+    add_compile_definitions(TRUNCATED_THREAD_NAME_LOGS)
+  endif()
 else()
   # we are not ready to allow shared-libs on windows because it would require
   # export declarations. On macos it's more feasible, but static openssl
@@ -91,33 +103,6 @@ option(local_protobuf
   "Force a local build of protobuf instead of looking for an installed version." OFF)
 option(local_grpc
   "Force a local build of gRPC instead of looking for an installed version." OFF)
-
-# this one is a string and therefore can't be an option
-set(san "" CACHE STRING "On gcc & clang, add sanitizer instrumentation")
-set_property(CACHE san PROPERTY STRINGS ";undefined;memory;address;thread")
-if(san)
-  string(TOLOWER ${san} san)
-  set(SAN_FLAG "-fsanitize=${san}")
-  set(SAN_LIB "")
-  if(is_gcc)
-    if(san STREQUAL "address")
-      set(SAN_LIB "asan")
-    elseif(san STREQUAL "thread")
-      set(SAN_LIB "tsan")
-    elseif(san STREQUAL "memory")
-      set(SAN_LIB "msan")
-    elseif(san STREQUAL "undefined")
-      set(SAN_LIB "ubsan")
-    endif()
-  endif()
-  set(_saved_CRL ${CMAKE_REQUIRED_LIBRARIES})
-  set(CMAKE_REQUIRED_LIBRARIES "${SAN_FLAG};${SAN_LIB}")
-  check_cxx_compiler_flag(${SAN_FLAG} COMPILER_SUPPORTS_SAN)
-  set(CMAKE_REQUIRED_LIBRARIES ${_saved_CRL})
-  if(NOT COMPILER_SUPPORTS_SAN)
-    message(FATAL_ERROR "${san} sanitizer does not seem to be supported by your compiler")
-  endif()
-endif()
 
 # the remaining options are obscure and rarely used
 option(beast_no_unit_test_inline

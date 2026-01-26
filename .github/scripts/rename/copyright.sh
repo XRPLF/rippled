@@ -50,11 +50,11 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
       # Handle the cases where the copyright notice is enclosed in /* ... */
       # and usually surrounded by //---- and //======.
       ${SED_COMMAND} -z -i -E 's@^//-------+\n+@@' "${FILE}"
-      ${SED_COMMAND} -z -i -E 's@^.*Copyright.+(Ripple|Bougalis|Falco|Hinnant|Null|Ritchford|XRPLF).+PERFORMANCE OF THIS SOFTWARE\.\n\*/\n+@@' "${FILE}"
+      ${SED_COMMAND} -z -i -E 's@^.*Copyright.+(Ripple|Bougalis|Falco|Hinnant|Null|Ritchford|XRPLF).+PERFORMANCE OF THIS SOFTWARE\.\n\*/\n+@@' "${FILE}" # cspell: ignore Bougalis Falco Hinnant Ritchford
       ${SED_COMMAND} -z -i -E 's@^//=======+\n+@@' "${FILE}"
 
       # Handle the cases where the copyright notice is commented out with //.
-      ${SED_COMMAND} -z -i -E 's@^//\n// Copyright.+Falco \(vinnie dot falco at gmail dot com\)\n//\n+@@' "${FILE}"
+      ${SED_COMMAND} -z -i -E 's@^//\n// Copyright.+Falco \(vinnie dot falco at gmail dot com\)\n//\n+@@' "${FILE}" # cspell: ignore Vinnie Falco
   done
 done
 
@@ -83,16 +83,16 @@ if ! grep -q 'Dev Null' src/xrpld/rpc/handlers/ValidatorInfo.cpp; then
   echo -e "// Copyright (c) 2019 Dev Null Productions\n\n$(cat src/xrpld/rpc/handlers/ValidatorInfo.cpp)" > src/xrpld/rpc/handlers/ValidatorInfo.cpp
 fi
 if ! grep -q 'Bougalis' include/xrpl/basics/SlabAllocator.h; then
-  echo -e "// Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>\n\n$(cat include/xrpl/basics/SlabAllocator.h)" > include/xrpl/basics/SlabAllocator.h
+  echo -e "// Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>\n\n$(cat include/xrpl/basics/SlabAllocator.h)" > include/xrpl/basics/SlabAllocator.h # cspell: ignore Nikolaos Bougalis nikb
 fi
 if ! grep -q 'Bougalis' include/xrpl/basics/spinlock.h; then
-  echo -e "// Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>\n\n$(cat include/xrpl/basics/spinlock.h)" > include/xrpl/basics/spinlock.h
+  echo -e "// Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>\n\n$(cat include/xrpl/basics/spinlock.h)" > include/xrpl/basics/spinlock.h # cspell: ignore Nikolaos Bougalis nikb
 fi
 if ! grep -q 'Bougalis' include/xrpl/basics/tagged_integer.h; then
-  echo -e "// Copyright (c) 2014, Nikolaos D. Bougalis <nikb@bougalis.net>\n\n$(cat include/xrpl/basics/tagged_integer.h)" > include/xrpl/basics/tagged_integer.h
+  echo -e "// Copyright (c) 2014, Nikolaos D. Bougalis <nikb@bougalis.net>\n\n$(cat include/xrpl/basics/tagged_integer.h)" > include/xrpl/basics/tagged_integer.h # cspell: ignore Nikolaos Bougalis nikb
 fi
 if ! grep -q 'Ritchford' include/xrpl/beast/utility/Zero.h; then
-  echo -e "// Copyright (c) 2014, Tom Ritchford <tom@swirly.com>\n\n$(cat include/xrpl/beast/utility/Zero.h)" > include/xrpl/beast/utility/Zero.h
+  echo -e "// Copyright (c) 2014, Tom Ritchford <tom@swirly.com>\n\n$(cat include/xrpl/beast/utility/Zero.h)" > include/xrpl/beast/utility/Zero.h # cspell: ignore Ritchford
 fi
 
 # Restore newlines and tabs in string literals in the affected file.

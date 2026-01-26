@@ -84,7 +84,7 @@ It generates many files of [results](results):
   to the destination module, de-duped, and with frequency counts.
 - `includes/`: A directory where each file represents a module and
   contains a list of modules and counts that the module _includes_.
-- `includedby/`: Similar to `includes/`, but the other way around. Each
+- `included_by/`: Similar to `includes/`, but the other way around. Each
   file represents a module and contains a list of modules and counts
   that _include_ the module.
 - [`loops.txt`](results/loops.txt): A list of direct loops detected

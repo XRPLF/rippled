@@ -1,6 +1,5 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
-
-#include <boost/predef.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <string>
 #include <string_view>
@@ -73,12 +72,37 @@ setCurrentThreadNameImpl(std::string_view name)
 #if BOOST_OS_LINUX
 #include <pthread.h>
 
+#include <iostream>
+
 namespace beast::detail {
 
 inline void
 setCurrentThreadNameImpl(std::string_view name)
 {
-    pthread_setname_np(pthread_self(), name.data());
+    // truncate and set the thread name.
+    char boundedName[maxThreadNameLength + 1];
+    std::snprintf(
+        boundedName,
+        sizeof(boundedName),
+        "%.*s",
+        static_cast<int>(maxThreadNameLength),
+        name.data());
+
+    pthread_setname_np(pthread_self(), boundedName);
+
+#ifdef TRUNCATED_THREAD_NAME_LOGS
+    if (name.size() > maxThreadNameLength)
+    {
+        std::cerr << "WARNING: Thread name \"" << name << "\" (length "
+                  << name.size() << ") exceeds maximum of "
+                  << maxThreadNameLength << " characters on Linux.\n";
+
+        XRPL_ASSERT(
+            false,
+            "beast::detail::setCurrentThreadNameImpl : Thread name exceeds "
+            "maximum length for Linux");
+    }
+#endif
 }
 
 }  // namespace beast::detail

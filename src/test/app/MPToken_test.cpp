@@ -1594,7 +1594,7 @@ class MPToken_test : public beast::unit_test::suite
             jv[jss::secret] = alice.name();
             jv[jss::tx_json] = pay(alice, bob, mpt);
             jv[jss::tx_json][jss::Amount][jss::value] =
-                to_string(maxMPTokenAmount + 1);
+                std::to_string(maxMPTokenAmount + 1);
             auto const jrr = env.rpc("json", "submit", to_string(jv));
             BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
         }
@@ -2474,7 +2474,7 @@ class MPToken_test : public beast::unit_test::suite
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             Json::Value jv = claw(alice, mpt(1), bob);
-            jv[jss::Amount][jss::value] = to_string(maxMPTokenAmount + 1);
+            jv[jss::Amount][jss::value] = std::to_string(maxMPTokenAmount + 1);
             Json::Value jv1;
             jv1[jss::secret] = alice.name();
             jv1[jss::tx_json] = jv;
@@ -2651,7 +2651,7 @@ class MPToken_test : public beast::unit_test::suite
         STAmount const amt3{asset3, 10'000};
 
         {
-            testcase("Test STAmount MPT arithmetics");
+            testcase("Test STAmount MPT arithmetic");
             using namespace std::string_literals;
             STAmount res = multiply(amt1, amt2, asset3);
             BEAST_EXPECT(res == amt3);
@@ -2688,7 +2688,7 @@ class MPToken_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Test MPTAmount arithmetics");
+            testcase("Test MPTAmount arithmetic");
             MPTAmount mptAmt1{100};
             MPTAmount const mptAmt2{100};
             BEAST_EXPECT((mptAmt1 += mptAmt2) == MPTAmount{200});

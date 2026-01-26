@@ -6,6 +6,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -128,6 +129,8 @@ VaultSet::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
+    auto const vaultAsset = vault->at(sfAsset);
+
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
@@ -171,6 +174,8 @@ VaultSet::doApply()
     // in Issuance object. Otherwise it's really difficult for Vault invariants
     // to verify the operation.
     view().update(vault);
+
+    associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
 }
