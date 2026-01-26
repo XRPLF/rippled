@@ -107,21 +107,20 @@ FeeVoteImpl::doValidation(
     // Values should always be in a valid range (because the voting process
     // will ignore out-of-range values) but if we detect such a case, we do
     // not send a value.
+    auto vote = [&v, this](
+                    auto const current,
+                    auto target,
+                    char const* name,
+                    auto const& sfield) {
+        if (current != target)
+        {
+            JLOG(journal_.info()) << "Voting for " << name << " of " << target;
+
+            v[sfield] = target;
+        }
+    };
     if (rules.enabled(featureXRPFees))
     {
-        auto vote = [&v, this](
-                        auto const current,
-                        XRPAmount target,
-                        char const* name,
-                        auto const& sfield) {
-            if (current != target)
-            {
-                JLOG(journal_.info())
-                    << "Voting for " << name << " of " << target;
-
-                v[sfield] = target;
-            }
-        };
         vote(lastFees.base, target_.reference_fee, "base fee", sfBaseFeeDrops);
         vote(
             lastFees.reserve,
@@ -142,12 +141,12 @@ FeeVoteImpl::doValidation(
         auto to64 = [](XRPAmount target) {
             return target.dropsAs<std::uint64_t>();
         };
-        auto vote = [&v, this](
-                        auto const current,
-                        XRPAmount target,
-                        auto const& convertCallback,
-                        char const* name,
-                        auto const& sfield) {
+        auto voteAndConvert = [&v, this](
+                                  auto const current,
+                                  XRPAmount target,
+                                  auto const& convertCallback,
+                                  char const* name,
+                                  auto const& sfield) {
             if (current != target)
             {
                 JLOG(journal_.info())
@@ -158,14 +157,15 @@ FeeVoteImpl::doValidation(
             }
         };
 
-        vote(lastFees.base, target_.reference_fee, to64, "base fee", sfBaseFee);
-        vote(
+        voteAndConvert(
+            lastFees.base, target_.reference_fee, to64, "base fee", sfBaseFee);
+        voteAndConvert(
             lastFees.reserve,
             target_.account_reserve,
             to32,
             "base reserve",
             sfReserveBase);
-        vote(
+        voteAndConvert(
             lastFees.increment,
             target_.owner_reserve,
             to32,
@@ -174,19 +174,6 @@ FeeVoteImpl::doValidation(
     }
     if (rules.enabled(featureSmartEscrow))
     {
-        auto vote = [&v, this](
-                        auto const current,
-                        std::uint32_t target,
-                        char const* name,
-                        auto const& sfield) {
-            if (current != target)
-            {
-                JLOG(journal_.info())
-                    << "Voting for " << name << " of " << target;
-
-                v[sfield] = target;
-            }
-        };
         vote(
             lastFees.extensionComputeLimit,
             target_.extension_compute_limit,

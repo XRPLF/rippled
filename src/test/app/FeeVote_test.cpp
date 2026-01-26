@@ -12,6 +12,8 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
 
+#include <source_location>
+
 namespace xrpl {
 namespace test {
 
@@ -968,14 +970,6 @@ class FeeVote_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        FeeSetup setup;
-        setup.reference_fee = 42;
-        setup.account_reserve = 1234567;
-        setup.owner_reserve = 7654321;
-        setup.extension_compute_limit = 100;
-        setup.extension_size_limit = 200;
-        setup.gas_price = 300;
-
         Env env(
             *this, testable_amendments() | featureXRPFees | featureSmartEscrow);
 
@@ -988,99 +982,144 @@ class FeeVote_test : public beast::unit_test::suite
         BEAST_EXPECT(env.current()->fees().extensionSizeLimit == 0);
         BEAST_EXPECT(env.current()->fees().gasPrice == 0);
 
-        auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
-        auto ledger = std::make_shared<Ledger>(
-            create_genesis,
-            env.app().config(),
-            std::vector<uint256>{},
-            env.app().getNodeFamily());
+        auto const createFeeTxFromVoting = [&](FeeSetup const& setup)
+            -> std::pair<STTx, std::shared_ptr<Ledger>> {
+            auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
+            auto ledger = std::make_shared<Ledger>(
+                create_genesis,
+                env.app().config(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
 
-        // doVoting requires a flag ledger (every 256th ledger)
-        // We need to create a ledger at sequence 256 to make it a flag
-        // ledger
-        for (int i = 0; i < 256 - 1; ++i)
+            // doVoting requires a flag ledger (every 256th ledger)
+            // We need to create a ledger at sequence 256 to make it a flag
+            // ledger
+            for (int i = 0; i < 256 - 1; ++i)
+            {
+                ledger = std::make_shared<Ledger>(
+                    *ledger, env.app().timeKeeper().closeTime());
+            }
+            BEAST_EXPECT(ledger->isFlagLedger());
+
+            // Create some mock validations with fee votes
+            std::vector<std::shared_ptr<STValidation>> validations;
+
+            for (int i = 0; i < 5; i++)
+            {
+                auto sec = randomSecretKey();
+                auto pub = derivePublicKey(KeyType::secp256k1, sec);
+
+                auto val = std::make_shared<STValidation>(
+                    env.app().timeKeeper().now(),
+                    pub,
+                    sec,
+                    calcNodeID(pub),
+                    [&](STValidation& v) {
+                        v.setFieldU32(sfLedgerSequence, ledger->seq());
+                        // Vote for different fees than current
+                        v.setFieldAmount(
+                            sfBaseFeeDrops, XRPAmount{setup.reference_fee});
+                        v.setFieldAmount(
+                            sfReserveBaseDrops,
+                            XRPAmount{setup.account_reserve});
+                        v.setFieldAmount(
+                            sfReserveIncrementDrops,
+                            XRPAmount{setup.owner_reserve});
+                        v.setFieldU32(
+                            sfExtensionComputeLimit,
+                            setup.extension_compute_limit);
+                        v.setFieldU32(
+                            sfExtensionSizeLimit, setup.extension_size_limit);
+                        v.setFieldU32(sfGasPrice, setup.gas_price);
+                    });
+                if (i % 2)
+                    val->setTrusted();
+                validations.push_back(val);
+            }
+
+            auto txSet = std::make_shared<SHAMap>(
+                SHAMapType::TRANSACTION, env.app().getNodeFamily());
+
+            // This should not throw since we have a flag ledger
+            feeVote->doVoting(ledger, validations, txSet);
+
+            auto const txs = getTxs(txSet);
+            BEAST_EXPECT(txs.size() == 1);
+            return {txs[0], ledger};
+        };
+
+        auto checkFeeTx = [&](FeeSetup const& setup,
+                              STTx const& feeTx,
+                              std::shared_ptr<Ledger> const& ledger,
+                              std::source_location const loc =
+                                  std::source_location::current()) {
+            auto const line = " (" + std::to_string(loc.line()) + ")";
+            BEAST_EXPECTS(feeTx.getTxnType() == ttFEE, line);
+
+            BEAST_EXPECTS(feeTx.getAccountID(sfAccount) == AccountID(), line);
+            BEAST_EXPECTS(
+                feeTx.getFieldU32(sfLedgerSequence) == ledger->seq() + 1, line);
+
+            BEAST_EXPECTS(feeTx.isFieldPresent(sfBaseFeeDrops), line);
+            BEAST_EXPECTS(feeTx.isFieldPresent(sfReserveBaseDrops), line);
+            BEAST_EXPECTS(feeTx.isFieldPresent(sfReserveIncrementDrops), line);
+
+            // The legacy fields should NOT be present
+            BEAST_EXPECTS(!feeTx.isFieldPresent(sfBaseFee), line);
+            BEAST_EXPECTS(!feeTx.isFieldPresent(sfReserveBase), line);
+            BEAST_EXPECTS(!feeTx.isFieldPresent(sfReserveIncrement), line);
+            BEAST_EXPECTS(!feeTx.isFieldPresent(sfReferenceFeeUnits), line);
+
+            // Check the values
+            BEAST_EXPECTS(
+                feeTx.getFieldAmount(sfBaseFeeDrops) ==
+                    XRPAmount{setup.reference_fee},
+                line);
+            BEAST_EXPECTS(
+                feeTx.getFieldAmount(sfReserveBaseDrops) ==
+                    XRPAmount{setup.account_reserve},
+                line);
+            BEAST_EXPECTS(
+                feeTx.getFieldAmount(sfReserveIncrementDrops) ==
+                    XRPAmount{setup.owner_reserve},
+                line);
+            BEAST_EXPECTS(
+                feeTx.getFieldU32(sfExtensionComputeLimit) ==
+                    setup.extension_compute_limit,
+                line);
+            BEAST_EXPECTS(
+                feeTx.getFieldU32(sfExtensionSizeLimit) ==
+                    setup.extension_size_limit,
+                line);
+            BEAST_EXPECTS(
+                feeTx.getFieldU32(sfGasPrice) == setup.gas_price, line);
+        };
+
         {
-            ledger = std::make_shared<Ledger>(
-                *ledger, env.app().timeKeeper().closeTime());
+            FeeSetup setup;
+            setup.reference_fee = 42;
+            setup.account_reserve = 1234567;
+            setup.owner_reserve = 7654321;
+            setup.extension_compute_limit = 100;
+            setup.extension_size_limit = 200;
+            setup.gas_price = 300;
+            auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
+
+            checkFeeTx(setup, feeTx, ledger);
         }
-        BEAST_EXPECT(ledger->isFlagLedger());
 
-        // Create some mock validations with fee votes
-        std::vector<std::shared_ptr<STValidation>> validations;
-
-        for (int i = 0; i < 5; i++)
         {
-            auto sec = randomSecretKey();
-            auto pub = derivePublicKey(KeyType::secp256k1, sec);
+            FeeSetup setup;
+            setup.reference_fee = 42;
+            setup.account_reserve = 1234567;
+            setup.owner_reserve = 7654321;
+            setup.extension_compute_limit = 0;
+            setup.extension_size_limit = 0;
+            setup.gas_price = 300;
+            auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
 
-            auto val = std::make_shared<STValidation>(
-                env.app().timeKeeper().now(),
-                pub,
-                sec,
-                calcNodeID(pub),
-                [&](STValidation& v) {
-                    v.setFieldU32(sfLedgerSequence, ledger->seq());
-                    // Vote for different fees than current
-                    v.setFieldAmount(
-                        sfBaseFeeDrops, XRPAmount{setup.reference_fee});
-                    v.setFieldAmount(
-                        sfReserveBaseDrops, XRPAmount{setup.account_reserve});
-                    v.setFieldAmount(
-                        sfReserveIncrementDrops,
-                        XRPAmount{setup.owner_reserve});
-                    v.setFieldU32(
-                        sfExtensionComputeLimit, setup.extension_compute_limit);
-                    v.setFieldU32(
-                        sfExtensionSizeLimit, setup.extension_size_limit);
-                    v.setFieldU32(sfGasPrice, setup.gas_price);
-                });
-            if (i % 2)
-                val->setTrusted();
-            validations.push_back(val);
+            checkFeeTx(setup, feeTx, ledger);
         }
-
-        auto txSet = std::make_shared<SHAMap>(
-            SHAMapType::TRANSACTION, env.app().getNodeFamily());
-
-        // This should not throw since we have a flag ledger
-        feeVote->doVoting(ledger, validations, txSet);
-
-        auto const txs = getTxs(txSet);
-        BEAST_EXPECT(txs.size() == 1);
-        auto const& feeTx = txs[0];
-
-        BEAST_EXPECT(feeTx.getTxnType() == ttFEE);
-
-        BEAST_EXPECT(feeTx.getAccountID(sfAccount) == AccountID());
-        BEAST_EXPECT(feeTx.getFieldU32(sfLedgerSequence) == ledger->seq() + 1);
-
-        BEAST_EXPECT(feeTx.isFieldPresent(sfBaseFeeDrops));
-        BEAST_EXPECT(feeTx.isFieldPresent(sfReserveBaseDrops));
-        BEAST_EXPECT(feeTx.isFieldPresent(sfReserveIncrementDrops));
-
-        // The legacy fields should NOT be present
-        BEAST_EXPECT(!feeTx.isFieldPresent(sfBaseFee));
-        BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveBase));
-        BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveIncrement));
-        BEAST_EXPECT(!feeTx.isFieldPresent(sfReferenceFeeUnits));
-
-        // Check the values
-        BEAST_EXPECT(
-            feeTx.getFieldAmount(sfBaseFeeDrops) ==
-            XRPAmount{setup.reference_fee});
-        BEAST_EXPECT(
-            feeTx.getFieldAmount(sfReserveBaseDrops) ==
-            XRPAmount{setup.account_reserve});
-        BEAST_EXPECT(
-            feeTx.getFieldAmount(sfReserveIncrementDrops) ==
-            XRPAmount{setup.owner_reserve});
-        BEAST_EXPECT(
-            feeTx.getFieldU32(sfExtensionComputeLimit) ==
-            setup.extension_compute_limit);
-        BEAST_EXPECT(
-            feeTx.getFieldU32(sfExtensionSizeLimit) ==
-            setup.extension_size_limit);
-        BEAST_EXPECT(feeTx.getFieldU32(sfGasPrice) == setup.gas_price);
     }
 
     void

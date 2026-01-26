@@ -4,10 +4,11 @@
 
 include(CompilationEnv)
 
-if("$ENV{CI}" STREQUAL "true" OR "$ENV{CONTINUOUS_INTEGRATION}" STREQUAL "true")
-  set(is_ci TRUE)
-else()
-  set(is_ci FALSE)
+set(is_ci FALSE)
+if(DEFINED ENV{CI})
+  if("$ENV{CI}" STREQUAL "true")
+    set(is_ci TRUE)
+  endif()
 endif()
 
 get_directory_property(has_parent PARENT_DIRECTORY)
