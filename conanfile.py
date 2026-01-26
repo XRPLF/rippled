@@ -131,7 +131,7 @@ class Xrpl(ConanFile):
         transitive_headers_opt = (
             {"transitive_headers": True} if conan_version.split(".")[0] == "2" else {}
         )
-        self.requires("boost/1.88.0", force=True, **transitive_headers_opt)
+        self.requires("boost/1.90.0", force=True, **transitive_headers_opt)
         self.requires("date/3.0.4", **transitive_headers_opt)
         self.requires("lz4/1.10.0", force=True)
         self.requires("protobuf/6.32.1", force=True)
