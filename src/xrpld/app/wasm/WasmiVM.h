@@ -335,7 +335,7 @@ private:
         FuncInfo const& f,
         std::vector<wasm_val_t>& in,
         uint8_t const* d,
-        std::size_t sz,
+        int32_t sz,
         Types&&... args);
 
     template <int NR, class... Types>

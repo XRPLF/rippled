@@ -759,7 +759,7 @@ WasmiEngine::call(
     FuncInfo const& f,
     std::vector<wasm_val_t>& in,
     uint8_t const* d,
-    std::size_t sz,
+    int32_t sz,
     Types&&... args)
 {
     auto mem = getMem();
@@ -990,7 +990,7 @@ WasmiEngine::allocate(int32_t sz)
         throw std::runtime_error(
             "can't allocate memory, " + std::to_string(sz) + " bytes");
 
-    auto res = call<1>(W_ALLOC, static_cast<int32_t>(sz));
+    auto res = call<1>(W_ALLOC, sz);
 
     if (res.f || !res.r.vec_.size || (res.r.vec_.data[0].kind != WASM_I32))
         throw std::runtime_error(

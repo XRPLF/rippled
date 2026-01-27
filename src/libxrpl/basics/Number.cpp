@@ -984,46 +984,71 @@ power(Number const& f, unsigned n)
     return r;
 }
 
-// Continued fraction approximation of ln(x)
+// Series expansion method approximation of ln(x)
 static Number
-ln(Number const& x, unsigned iterations = 50)
+ln(Number const& x, int iterations = 50)
 {
+    static Number const N0(0);
+    static Number const N2(2, 0);
+    static Number const N05(5, -1);
+    static Number const LN2(693'147'180'559'945'309ll, -18);
+
     if (x <= 0)
-        throw std::runtime_error("Not positive value");
+        throw std::runtime_error("Not a positive value");
+    else if (x == 1)
+        return N0;
 
-    Number const z = (x - 1) / (x + 1);
-    Number const zz = z * z;
-    Number denom = Number(1, -10);
+    int exponent = 0;
+    Number mantissa = x;
 
-    // Construct the fraction from the bottom up
-    for (int i = iterations; i > 0; --i)
+    while (mantissa >= N2)
     {
-        Number k(2 * i - 1);
-        denom = k - (i * i * zz / denom);
+        mantissa /= 2;
+        exponent += 1;
+    }
+    while (mantissa < N05)
+    {
+        mantissa *= 2;
+        exponent -= 1;
     }
 
-    auto const r = 2 * z / denom;
-    return r;
+    Number z = (mantissa - 1) / (mantissa + 1);
+    Number const zz = z * z;
+    Number sum;
+
+    for (int i = 1; i <= iterations; ++i)
+    {
+        sum = sum + z / (2 * i - 1);
+        z = z * zz;
+    }
+
+    return 2 * sum + exponent * LN2;
 }
 
 Number
-lg(Number const& x)
+log10(Number const& x, int iterations)
 {
-    static Number const ln10 = ln(Number(10));
+    static Number const N0(0);
+    static Number const LN10(2'302'585'092'994'046ll, -15);
+
+    if (x <= 0)
+        throw std::runtime_error("Not a positive value");
+    else if (x == 1)
+        return N0;
 
     if (x <= Number(10))
     {
-        auto const r = ln(x) / ln10;
+        auto const r = ln(x, iterations) / LN10;
         return r;
     }
 
-    // ln(x) = ln(normX * 10^norm) = ln(normX) + norm * ln(10)
+    // (1 <= normalX < 10)
+    // ln(x) = ln(normalX * 10^norm) = ln(normalX) + norm * ln(10)
     int diffExp = 15 + x.exponent();
-    Number const normalX = x / Number(1, diffExp);  // (1 <= normalX < 10)
-    auto const lnX = ln(normalX) + diffExp * ln10;
-
-    auto const r = lnX / ln10;
-    return r;
+    Number const normalX = x / Number(1, diffExp);
+    auto const lnX = ln(normalX, iterations) + diffExp * LN10;
+    auto const lgX = lnX / LN10;
+    return lgX;
 }
 
 // Returns f^(1/d)
