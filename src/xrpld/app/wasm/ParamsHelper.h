@@ -199,6 +199,11 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, Bytes const& p, Types&&... args)
 {
+    if (p.size() > std::numeric_limits<int32_t>::max())
+        throw std::runtime_error(
+            "can't allocate memory, size: " +
+            std::to_string(p.size()));  // LCOV_EXCL_LINE
+
     wasmParamsHlp(
         v,
         p.data(),
@@ -213,6 +218,10 @@ wasmParamsHlp(
     std::string_view const& p,
     Types&&... args)
 {
+    if (p.size() > std::numeric_limits<int32_t>::max())
+        throw std::runtime_error(
+            "can't allocate memory, size: " + std::to_string(p.size()));
+
     wasmParamsHlp(
         v,
         reinterpret_cast<std::uint8_t const*>(p.data()),
@@ -224,6 +233,11 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, std::string const& p, Types&&... args)
 {
+    if (p.size() > std::numeric_limits<int32_t>::max())
+        throw std::runtime_error(
+            "can't allocate memory, size: " +
+            std::to_string(p.size()));  // LCOV_EXCL_LINE
+
     wasmParamsHlp(
         v,
         reinterpret_cast<std::uint8_t const*>(p.c_str()),
@@ -245,6 +259,37 @@ wasmParams(Types&&... args)
     v.reserve(sizeof...(args));
     wasmParamsHlp(v, std::forward<Types>(args)...);
     return v;
+}
+
+template <typename T, size_t size = sizeof(T)>
+inline constexpr T
+adjustWasmEndianessHlp(T x)
+{
+    static_assert(std::is_integral<T>::value, "Only integral types");
+    if constexpr (size > 1)
+    {
+        using U = std::make_unsigned<T>::type;
+        U u = static_cast<U>(x);
+        U const low = (u & 0xFF) << ((size - 1) << 3);
+        u = adjustWasmEndianessHlp<U, size - 1>(u >> 8);
+        return static_cast<T>(low | u);
+    }
+
+    return x;
+}
+
+template <typename T, size_t size = sizeof(T)>
+inline constexpr T
+adjustWasmEndianess(T x)
+{
+    // LCOV_EXCL_START
+    static_assert(std::is_integral<T>::value, "Only integral types");
+    if constexpr (std::endian::native == std::endian::big)
+    {
+        return adjustWasmEndianessHlp(x);
+    }
+    return x;
+    // LCOV_EXCL_STOP
 }
 
 }  // namespace xrpl

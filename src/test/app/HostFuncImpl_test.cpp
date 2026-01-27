@@ -3073,7 +3073,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             auto const x = hfs.floatSet(-2, 1, 0);  // 0.01
             auto const y =
-                hfs.floatSet(-15, -1999999993734431, 0);  // almost -2
+                hfs.floatSet(-15, -2'000'000'000'000'000ll, 0);  // -2
             if (BEAST_EXPECT(x && y))
             {
                 auto const result = hfs.floatLog(makeSlice(*x), 0);

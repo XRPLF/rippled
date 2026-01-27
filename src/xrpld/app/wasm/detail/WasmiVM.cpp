@@ -759,7 +759,7 @@ WasmiEngine::call(
     FuncInfo const& f,
     std::vector<wasm_val_t>& in,
     uint8_t const* d,
-    std::size_t sz,
+    int32_t sz,
     Types&&... args)
 {
     auto mem = getMem();
@@ -874,8 +874,11 @@ WasmiEngine::runHlp(
         throw std::runtime_error(
             "<" + std::string(funcName) +
             "> return nothing");  // LCOV_EXCL_LINE
+    else if (res.r.vec_.data[0].kind != WASM_I32)
+        throw std::runtime_error(
+            "<" + std::string(funcName) + "> return type mismatch, ret: " +
+            std::to_string(static_cast<int>(res.r.vec_.data[0].kind)));
 
-    assert(res.r.vec_.data[0].kind == WASM_I32);
     if (gas == -1)
         gas = std::numeric_limits<decltype(gas)>::max();
     WasmResult<int32_t> const ret{
@@ -987,7 +990,7 @@ WasmiEngine::allocate(int32_t sz)
         throw std::runtime_error(
             "can't allocate memory, " + std::to_string(sz) + " bytes");
 
-    auto res = call<1>(W_ALLOC, static_cast<int32_t>(sz));
+    auto res = call<1>(W_ALLOC, sz);
 
     if (res.f || !res.r.vec_.size || (res.r.vec_.data[0].kind != WASM_I32))
         throw std::runtime_error(
