@@ -640,8 +640,6 @@ class LoanBroker_test : public beast::unit_test::suite
             using namespace loanBroker;
             using namespace ripple::Lending;
 
-            TenthBips32 const tenthBipsZero{0};
-
             auto badKeylet = keylet::vault(alice.id(), env.seq(alice));
             // Try some failure cases
             // not the vault owner
