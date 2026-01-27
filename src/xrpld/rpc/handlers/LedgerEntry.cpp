@@ -795,7 +795,10 @@ parseVault(
 }
 
 static Expected<uint256, Json::Value>
-parseSponsorship(Json::Value const& params, Json::StaticString const fieldName)
+parseSponsorship(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
     {
