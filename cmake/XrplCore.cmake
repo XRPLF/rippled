@@ -32,14 +32,14 @@ target_protobuf_sources(xrpl.libpb xrpl/proto
 
 target_compile_options(xrpl.libpb
   PUBLIC
-    $<$<BOOL:${MSVC}>:-wd4996>
-    $<$<BOOL:${XCODE}>:
+    $<$<BOOL:${is_msvc}>:-wd4996>
+    $<$<BOOL:${is_xcode}>:
       --system-header-prefix="google/protobuf"
       -Wno-deprecated-dynamic-exception-spec
     >
   PRIVATE
-    $<$<BOOL:${MSVC}>:-wd4065>
-    $<$<NOT:$<BOOL:${MSVC}>>:-Wno-deprecated-declarations>
+    $<$<BOOL:${is_msvc}>:-wd4065>
+    $<$<NOT:$<BOOL:${is_msvc}>>:-Wno-deprecated-declarations>
 )
 
 target_link_libraries(xrpl.libpb
