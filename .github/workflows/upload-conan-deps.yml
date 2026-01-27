@@ -84,10 +84,12 @@ jobs:
           subtract: ${{ env.NPROC_SUBTRACT }}
 
       - name: Setup Conan
+        env:
+          SANITIZERS: ${{ matrix.sanitizers }}
         uses: ./.github/actions/setup-conan
         with:
-          conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
-          conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
+          remote_name: ${{ env.CONAN_REMOTE_NAME }}
+          remote_url: ${{ env.CONAN_REMOTE_URL }}
 
       - name: Build dependencies
         uses: ./.github/actions/build-deps
@@ -98,6 +100,7 @@ jobs:
           # Set the verbosity to "quiet" for Windows to avoid an excessive
           # amount of logs. For other OSes, the "verbose" logs are more useful.
           log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
+          sanitizers: ${{ matrix.sanitizers }}
 
       - name: Log into Conan remote
         if: ${{ github.repository_owner == 'XRPLF' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
