@@ -30,7 +30,7 @@ class WasmHostFunctionsImpl : public HostFunctions
         return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
     }
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     normalizeCacheIndex(int32_t cacheIdx)
     {
         --cacheIdx;
@@ -84,25 +84,25 @@ public:
         return data_;
     }
 
-    Expected<std::int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn() override;
 
-    Expected<std::int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getParentLedgerTime() override;
 
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getBaseFee() override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     isAmendmentEnabled(uint256 const& amendmentId) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     isAmendmentEnabled(std::string_view const& amendmentName) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx) override;
 
     Expected<Bytes, HostFunctionError>
@@ -123,28 +123,28 @@ public:
     Expected<Bytes, HostFunctionError>
     getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     getTxArrayLen(SField const& fname) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     getCurrentLedgerObjArrayLen(SField const& fname) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     getTxNestedArrayLen(Slice const& locator) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     getCurrentLedgerObjNestedArrayLen(Slice const& locator) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     updateData(Slice const& data) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     checkSignature(
         Slice const& message,
         Slice const& signature,
@@ -231,29 +231,29 @@ public:
     Expected<std::uint32_t, HostFunctionError>
     getNFTTaxon(uint256 const& nftId) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     getNFTFlags(uint256 const& nftId) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     getNFTTransferFee(uint256 const& nftId) override;
 
     Expected<std::uint32_t, HostFunctionError>
     getNFTSerial(uint256 const& nftId) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     trace(std::string_view const& msg, Slice const& data, bool asHex) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     traceNum(std::string_view const& msg, int64_t data) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     traceAccount(std::string_view const& msg, AccountID const& account)
         override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     traceFloat(std::string_view const& msg, Slice const& data) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     traceAmount(std::string_view const& msg, STAmount const& amount) override;
 
     Expected<Bytes, HostFunctionError>
@@ -265,7 +265,7 @@ public:
     Expected<Bytes, HostFunctionError>
     floatSet(int64_t mantissa, int32_t exponent, int32_t mode) override;
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::int32_t, HostFunctionError>
     floatCompare(Slice const& x, Slice const& y) override;
 
     Expected<Bytes, HostFunctionError>

@@ -44,8 +44,8 @@ setData(
 }
 
 template <class IW>
-Expected<int32_t, HostFunctionError>
-getDataInt32(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
+Expected<std::int32_t, HostFunctionError>
+getDataInt32(IW const* _runtime, wasm_val_vec_t const* params, std::int32_t& i)
 {
     auto const result = params->data[i].of.i32;
     i++;
@@ -53,8 +53,19 @@ getDataInt32(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 }
 
 template <class IW>
+Expected<std::uint32_t, HostFunctionError>
+getDataUInt32(IW const* _runtime, wasm_val_vec_t const* params, std::int32_t& i)
+{
+    auto const result = params->data[i].of.i64;
+    i++;
+    if (result < 0 || result > std::numeric_limits<std::uint32_t>::max())
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+    return static_cast<std::uint32_t>(result);
+}
+
+template <class IW>
 Expected<int64_t, HostFunctionError>
-getDataInt64(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataInt64(IW const* _runtime, wasm_val_vec_t const* params, std::int32_t& i)
 {
     auto const result = params->data[i].of.i64;
     i++;
@@ -291,15 +302,7 @@ returnResult(
     }
     else if constexpr (std::is_same_v<t, std::uint32_t>)
     {
-        auto const resultValue = adjustWasmEndianess(res.value());
-        return hfResult(
-            results,
-            setData(
-                runtime,
-                params->data[index].of.i32,
-                params->data[index + 1].of.i32,
-                reinterpret_cast<uint8_t const*>(&resultValue),
-                static_cast<int32_t>(sizeof(resultValue))));
+        return hfResult(results, static_cast<std::int64_t>(res.value()));
     }
     else
     {
@@ -938,10 +941,10 @@ checkKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1087,10 +1090,10 @@ escrowKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1153,10 +1156,10 @@ mptIssuanceKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1223,10 +1226,10 @@ nftOfferKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1255,10 +1258,10 @@ offerKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1287,10 +1290,10 @@ oracleKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const documentId = getDataInt32(runtime, params, index);
+    auto const documentId = getDataUInt32(runtime, params, index);
     if (!documentId)
     {
-        return hfResult(results, documentId.error());  // LCOV_EXCL_LINE
+        return hfResult(results, documentId.error());
     }
     return returnResult(
         runtime, params, results, hf->oracleKeylet(*acc, *documentId), index);
@@ -1320,10 +1323,10 @@ paychanKeylet_wrap(
         return hfResult(results, dest.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1352,10 +1355,10 @@ permissionedDomainKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1406,10 +1409,10 @@ ticketKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1438,10 +1441,10 @@ vaultKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
