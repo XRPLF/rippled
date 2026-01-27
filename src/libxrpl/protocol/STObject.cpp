@@ -599,6 +599,12 @@ STObject::delField(int index)
     v_.erase(v_.begin() + index);
 }
 
+SOEStyle
+STObject::getStyle(SField const& field) const
+{
+    return mType ? mType->style(field) : soeINVALID;
+}
+
 unsigned char
 STObject::getFieldU8(SField const& field) const
 {
