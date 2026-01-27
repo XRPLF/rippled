@@ -31,7 +31,6 @@ private:
     boost::asio::ip::tcp::acceptor acceptor_;
     boost::asio::ip::tcp::endpoint endpoint_;
     std::atomic<bool> running_{true};
-    std::binary_semaphore asyncSem_;
     unsigned short port_;
 
     // Custom headers to return
@@ -42,8 +41,7 @@ private:
     beast::Journal j_;
 
 public:
-    TestHTTPServer()
-        : acceptor_(ioc_), port_(0), j_(TestSink::instance()), asyncSem_(0)
+    TestHTTPServer() : acceptor_(ioc_), port_(0), j_(TestSink::instance())
     {
         // Bind to any available port
         endpoint_ = {boost::asio::ip::tcp::v4(), 0};
@@ -119,16 +117,13 @@ private:
                 if (!running_)
                     co_return;
 
-                // Handle this connection concurrently
-                boost::asio::co_spawn(
-                    ioc_,
-                    handleConnection(std::move(socket)),
-                    boost::asio::detached);
+                // Handle this connection
+                co_await handleConnection(std::move(socket));
             }
             catch (std::exception const& e)
             {
-                // Accept failed, stop accepting
-                JLOG(j_.debug()) << "Accept error: " << e.what();
+                // Accept or handle failed, stop accepting
+                JLOG(j_.debug()) << "Error: " << e.what();
                 co_return;
             }
         }
