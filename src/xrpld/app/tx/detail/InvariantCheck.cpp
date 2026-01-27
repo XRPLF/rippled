@@ -2731,9 +2731,10 @@ ValidVault::visitEntry(
                 // At this moment we have no way of telling if this object holds
                 // vault shares or something else. Save it for finalize.
                 afterMPTs_.push_back(Shares::make(*after));
-                balanceDelta -= Number(
+                balanceDelta -= Number(  //
                     static_cast<std::int64_t>(
-                        after->getFieldU64(sfOutstandingAmount)));
+                        after->getFieldU64(sfOutstandingAmount)  //
+                        ));
                 sign = 1;
                 break;
             case ltMPTOKEN:
