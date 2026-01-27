@@ -14,11 +14,6 @@
 #error "undefined macro: HOST_FUNCTION_NO_RETURN"
 #endif
 
-// Zero-argument variant defaults (for functions with no input parameters)
-#if !defined(HOST_FUNCTION_HASH_RETURN0)
-#define HOST_FUNCTION_HASH_RETURN0(NAME) HOST_FUNCTION_HASH_RETURN(NAME)
-#endif
-
 // defaults to make these macros easier to work with
 
 #if !defined(INT32_PARAM)
@@ -84,7 +79,7 @@
 // Ledger Header Functions
 HOST_FUNCTION_INT_RETURN(getLedgerSqn)
 HOST_FUNCTION_INT_RETURN(getParentLedgerTime)
-HOST_FUNCTION_HASH_RETURN0(getParentLedgerHash)
+HOST_FUNCTION_HASH_RETURN(getParentLedgerHash)
 HOST_FUNCTION_INT_RETURN(getBaseFee)
 HOST_FUNCTION_NO_RETURN(isAmendmentEnabled, SLICE_PARAM)
 HOST_FUNCTION_NO_RETURN(cacheLedgerObj, UINT256_PARAM, INT32_PARAM)
@@ -178,4 +173,3 @@ HOST_FUNCTION_NO_RETURN(updateData, SLICE_PARAM)
 #undef SLICE_PARAM
 #undef STAMOUNT_PARAM
 #undef BOOL_PARAM
-#undef HOST_FUNCTION_HASH_RETURN0

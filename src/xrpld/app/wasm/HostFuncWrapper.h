@@ -26,9 +26,6 @@ namespace xrpl {
 #pragma push_macro("HOST_FUNCTION_NO_RETURN")
 #pragma push_macro("HOST_FUNCTION_INT_RETURN")
 #pragma push_macro("HOST_FUNCTION_UINT_RETURN")
-#pragma push_macro("HOST_FUNCTION_BYTES_RETURN0")
-#pragma push_macro("HOST_FUNCTION_HASH_RETURN0")
-#pragma push_macro("HOST_FUNCTION_UINT_RETURN0")
 
 #define INT32_PARAM int32_t
 #define INT64_PARAM int64_t
@@ -51,12 +48,13 @@ namespace xrpl {
     wasm_trap_t* NAME##_wrap( \
         void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 
-// Macros with arguments (require at least one parameter type)
-#define HOST_FUNCTION_BYTES_RETURN(NAME, ...)                     \
-    using NAME##_proto = int32_t(__VA_ARGS__, uint8_t*, int32_t); \
+#define HOST_FUNCTION_BYTES_RETURN(NAME, ...)                  \
+    using NAME##_proto =                                       \
+        int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
     DECLARE_WRAP(NAME);
-#define HOST_FUNCTION_HASH_RETURN(NAME, ...)                      \
-    using NAME##_proto = int32_t(__VA_ARGS__, uint8_t*, int32_t); \
+#define HOST_FUNCTION_HASH_RETURN(NAME, ...)                   \
+    using NAME##_proto =                                       \
+        int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
     DECLARE_WRAP(NAME);
 #define HOST_FUNCTION_NO_RETURN(NAME, ...)     \
     using NAME##_proto = int32_t(__VA_ARGS__); \
@@ -64,32 +62,15 @@ namespace xrpl {
 #define HOST_FUNCTION_INT_RETURN(NAME, ...)    \
     using NAME##_proto = int32_t(__VA_ARGS__); \
     DECLARE_WRAP(NAME);
-#define HOST_FUNCTION_UINT_RETURN(NAME, ...)                      \
-    using NAME##_proto = int32_t(__VA_ARGS__, uint8_t*, int32_t); \
-    DECLARE_WRAP(NAME);
-
-// TODO: simplify this after upgrading to Boost 1.89.0
-// Using __VA_OPT__ would be better here
-// Windows needs the /Zc:preprocessor flag for __VA_OPT__ support
-// Which is only supported in Boost 1.89.0
-// Zero-argument variants for functions with no input parameters
-#define HOST_FUNCTION_BYTES_RETURN0(NAME)            \
-    using NAME##_proto = int32_t(uint8_t*, int32_t); \
-    DECLARE_WRAP(NAME);
-#define HOST_FUNCTION_HASH_RETURN0(NAME)             \
-    using NAME##_proto = int32_t(uint8_t*, int32_t); \
-    DECLARE_WRAP(NAME);
-#define HOST_FUNCTION_UINT_RETURN0(NAME)             \
-    using NAME##_proto = int32_t(uint8_t*, int32_t); \
+#define HOST_FUNCTION_UINT_RETURN(NAME, ...)                   \
+    using NAME##_proto =                                       \
+        int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
     DECLARE_WRAP(NAME);
 
 #include <xrpld/app/wasm/host_functions.macro>
 
 #undef DECLARE_WRAP
 
-#pragma pop_macro("HOST_FUNCTION_UINT_RETURN0")
-#pragma pop_macro("HOST_FUNCTION_HASH_RETURN0")
-#pragma pop_macro("HOST_FUNCTION_BYTES_RETURN0")
 #pragma pop_macro("HOST_FUNCTION_UINT_RETURN")
 #pragma pop_macro("HOST_FUNCTION_INT_RETURN")
 #pragma pop_macro("HOST_FUNCTION_NO_RETURN")
