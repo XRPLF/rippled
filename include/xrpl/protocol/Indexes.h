@@ -393,6 +393,10 @@ std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
 MPTID
 makeMptID(std::uint32_t sequence, AccountID const& account);
 
+// Map of LedgerNameSpace names to their character values, used by
+// server_definitions RPC
+extern std::unordered_map<std::string, std::uint16_t> ledgerNameSpace;
+
 }  // namespace xrpl
 
 #endif

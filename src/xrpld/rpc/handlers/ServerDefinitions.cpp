@@ -11,9 +11,9 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/algorithm/string.hpp>
+#include <xrpl/protocol/Indexes.h>
 
-#include <libxrpl/protocol/Indexes.cpp>
+#include <boost/algorithm/string.hpp>
 
 #include <unordered_map>
 
