@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-int32_t
+int64_t
 get_ledger_sqn();
 // int32_t trace(uint8_t const*, int32_t, uint8_t const*, int32_t, int32_t);
 // int32_t trace_num(uint8_t const*, int32_t, int64_t);

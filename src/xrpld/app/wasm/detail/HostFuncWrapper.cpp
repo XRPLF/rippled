@@ -242,7 +242,6 @@ getDataString(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
     return std::string_view(
         reinterpret_cast<char const*>(slice->data()), slice->size());
 }
-
 std::nullptr_t
 hfResult(wasm_val_vec_t* results, int32_t value)
 {
@@ -259,6 +258,22 @@ hfResult(wasm_val_vec_t* results, HostFunctionError value)
     return nullptr;
 }
 
+std::nullptr_t
+hfResult64(wasm_val_vec_t* results, int64_t value)
+{
+    results->data[0] = WASM_I64_VAL(value);
+    // results->size = 1;
+    return nullptr;
+}
+
+std::nullptr_t
+hfResult64(wasm_val_vec_t* results, HostFunctionError value)
+{
+    results->data[0] = WASM_I64_VAL(HfErrorToInt(value));
+    // results->size = 1;
+    return nullptr;
+}
+
 template <typename T>
 std::nullptr_t
 returnResult(
@@ -268,14 +283,11 @@ returnResult(
     Expected<T, HostFunctionError> const& res,
     int32_t index)
 {
-    if (!res)
-    {
-        return hfResult(results, res.error());
-    }
-
     using t = std::decay_t<decltype(*res)>;
     if constexpr (std::is_same_v<t, Bytes>)
     {
+        if (!res)
+            return hfResult(results, res.error());
         return hfResult(
             results,
             setData(
@@ -287,6 +299,8 @@ returnResult(
     }
     else if constexpr (std::is_same_v<t, Hash>)
     {
+        if (!res)
+            return hfResult(results, res.error());
         return hfResult(
             results,
             setData(
@@ -298,11 +312,16 @@ returnResult(
     }
     else if constexpr (std::is_same_v<t, int32_t>)
     {
+        if (!res)
+            return hfResult(results, res.error());
         return hfResult(results, res.value());
     }
     else if constexpr (std::is_same_v<t, std::uint32_t>)
     {
-        return hfResult(results, static_cast<std::int64_t>(res.value()));
+        // uint32_t is returned as int64_t to WASM
+        if (!res)
+            return hfResult64(results, res.error());
+        return hfResult64(results, static_cast<std::int64_t>(res.value()));
     }
     else
     {
@@ -1517,7 +1536,7 @@ getNFTTaxon_wrap(
     auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
     {
-        return hfResult(results, nftId.error());
+        return hfResult64(results, nftId.error());
     }
 
     return returnResult(
@@ -1583,7 +1602,7 @@ getNFTSerial_wrap(
     auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
     {
-        return hfResult(results, nftId.error());
+        return hfResult64(results, nftId.error());
     }
 
     return returnResult(

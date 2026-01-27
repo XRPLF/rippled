@@ -37,6 +37,24 @@ fn check_result(result: i32, expected: i32, test_name: &'static str) {
     }
 }
 
+fn check_result64(result: i64, expected: i32, test_name: &'static str) {
+    match result {
+        code if code == expected.into() => {
+            let _ = trace_number(test_name, code);
+        }
+        code if code >= 0 => {
+            let _ = trace(test_name);
+            let _ = trace_number("TEST FAILED", code);
+            panic!("Unexpected success code: {}", code);
+        }
+        code => {
+            let _ = trace(test_name);
+            let _ = trace_number("TEST FAILED", code);
+            panic!("Error code: {}", code);
+        }
+    }
+}
+
 fn with_buffer<const N: usize, F, R>(mut f: F) -> R
 where
     F: FnMut(*mut u8, usize) -> R,
@@ -55,8 +73,8 @@ pub extern "C" fn finish() -> i32 {
     // that's in a separate test file (all_keylets).
     // The float tests are also in a separate file (float_tests).
     // ########################################
-    check_result(unsafe { host::get_ledger_sqn() }, 12345, "get_ledger_sqn");
-    check_result(
+    check_result64(unsafe { host::get_ledger_sqn() }, 12345, "get_ledger_sqn");
+    check_result64(
         unsafe { host::get_parent_ledger_time() },
         67890,
         "get_parent_ledger_time",
@@ -68,7 +86,7 @@ pub extern "C" fn finish() -> i32 {
             "get_parent_ledger_hash",
         );
     });
-    check_result(unsafe { host::get_base_fee() }, 10, "get_base_fee");
+    check_result64(unsafe { host::get_base_fee() }, 10, "get_base_fee");
     let amendment_name: &[u8] = b"test_amendment";
     let amendment_id: [u8; 32] = [1; 32];
     check_result(
@@ -214,13 +232,11 @@ pub extern "C" fn finish() -> i32 {
             "get_nft_issuer",
         )
     });
-    with_buffer::<4, _, _>(|ptr, len| {
-        check_result(
-            unsafe { host::get_nft_taxon(nft_id.as_ptr(), nft_id.len(), ptr, len) },
-            4,
-            "get_nft_taxon",
-        )
-    });
+    check_result64(
+        unsafe { host::get_nft_taxon(nft_id.as_ptr(), nft_id.len()) },
+        4,
+        "get_nft_taxon",
+    );
     check_result(
         unsafe { host::get_nft_flags(nft_id.as_ptr(), nft_id.len()) },
         8,
@@ -231,13 +247,11 @@ pub extern "C" fn finish() -> i32 {
         10,
         "get_nft_transfer_fee",
     );
-    with_buffer::<4, _, _>(|ptr, len| {
-        check_result(
-            unsafe { host::get_nft_serial(nft_id.as_ptr(), nft_id.len(), ptr, len) },
-            4,
-            "get_nft_serial",
-        )
-    });
+    check_result64(
+        unsafe { host::get_nft_serial(nft_id.as_ptr(), nft_id.len()) },
+        4,
+        "get_nft_serial",
+    );
     let message = "testing trace";
     check_result(
         unsafe {
@@ -1041,13 +1055,11 @@ pub extern "C" fn finish() -> i32 {
             "get_nft_issuer_wrong_size_uint256",
         )
     });
-    with_buffer::<2, _, _>(|ptr, len| {
-        check_result(
-            unsafe { host::get_nft_taxon(locator.as_ptr(), locator.len(), ptr, len) },
-            error_codes::INVALID_PARAMS,
-            "get_nft_taxon_wrong_size_uint256",
-        )
-    });
+    check_result64(
+        unsafe { host::get_nft_taxon(locator.as_ptr(), locator.len()) },
+        error_codes::INVALID_PARAMS,
+        "get_nft_taxon_wrong_size_uint256",
+    );
     check_result(
         unsafe { host::get_nft_flags(locator.as_ptr(), locator.len()) },
         error_codes::INVALID_PARAMS,
@@ -1058,13 +1070,11 @@ pub extern "C" fn finish() -> i32 {
         error_codes::INVALID_PARAMS,
         "get_nft_transfer_fee_wrong_size_uint256",
     );
-    with_buffer::<4, _, _>(|ptr, len| {
-        check_result(
-            unsafe { host::get_nft_serial(locator.as_ptr(), locator.len(), ptr, len) },
-            error_codes::INVALID_PARAMS,
-            "get_nft_serial_wrong_size_uint256",
-        )
-    });
+    check_result64(
+        unsafe { host::get_nft_serial(locator.as_ptr(), locator.len()) },
+        error_codes::INVALID_PARAMS,
+        "get_nft_serial_wrong_size_uint256",
+    );
 
     // invalid AccountID
 
