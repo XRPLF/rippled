@@ -261,4 +261,35 @@ wasmParams(Types&&... args)
     return v;
 }
 
+template <typename T, size_t size = sizeof(T)>
+inline constexpr T
+adjustWasmEndianessHlp(T x)
+{
+    static_assert(std::is_integral<T>::value, "Only integral types");
+    if constexpr (size > 1)
+    {
+        using U = std::make_unsigned<T>::type;
+        U u = static_cast<U>(x);
+        U const low = (u & 0xFF) << ((size - 1) << 3);
+        u = adjustWasmEndianessHlp<U, size - 1>(u >> 8);
+        return static_cast<T>(low | u);
+    }
+
+    return x;
+}
+
+template <typename T, size_t size = sizeof(T)>
+inline constexpr T
+adjustWasmEndianess(T x)
+{
+    // LCOV_EXCL_START
+    static_assert(std::is_integral<T>::value, "Only integral types");
+    if constexpr (std::endian::native == std::endian::big)
+    {
+        return adjustWasmEndianessHlp(x);
+    }
+    return x;
+    // LCOV_EXCL_STOP
+}
+
 }  // namespace xrpl

@@ -77,6 +77,7 @@ getDataUInt64(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
         memcpy(&x, r->data(), sizeof(uint64_t));
     else
         x = *reinterpret_cast<uint64_t const*>(r->data());
+    x = adjustWasmEndianess(x);
 
     return x;
 }
@@ -290,7 +291,7 @@ returnResult(
     }
     else if constexpr (std::is_same_v<t, std::uint32_t>)
     {
-        auto const resultValue = res.value();
+        auto const resultValue = adjustWasmEndianess(res.value());
         return hfResult(
             results,
             setData(

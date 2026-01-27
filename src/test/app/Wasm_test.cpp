@@ -1004,6 +1004,60 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testSwapBytes()
+    {
+        testcase("Wasm swap bytes");
+
+        uint64_t const SWAP_DATAU64 = 0x123456789abcdeffull;
+        uint64_t const REVERSE_SWAP_DATAU64 = 0xffdebc9a78563412ull;
+        int64_t const SWAP_DATAI64 = 0x123456789abcdeffll;
+        int64_t const REVERSE_SWAP_DATAI64 = 0xffdebc9a78563412ll;
+
+        uint32_t const SWAP_DATAU32 = 0x12789aff;
+        uint32_t const REVERSE_SWAP_DATAU32 = 0xff9a7812;
+        int32_t const SWAP_DATAI32 = 0x12789aff;
+        int32_t const REVERSE_SWAP_DATAI32 = 0xff9a7812;
+
+        uint16_t const SWAP_DATAU16 = 0x12ff;
+        uint16_t const REVERSE_SWAP_DATAU16 = 0xff12;
+        int16_t const SWAP_DATAI16 = 0x12ff;
+        int16_t const REVERSE_SWAP_DATAI16 = 0xff12;
+
+        uint64_t b1 = SWAP_DATAU64;
+        int64_t b2 = SWAP_DATAI64;
+        b1 = adjustWasmEndianessHlp(b1);
+        b2 = adjustWasmEndianessHlp(b2);
+        BEAST_EXPECT(b1 == REVERSE_SWAP_DATAU64);
+        BEAST_EXPECT(b2 == REVERSE_SWAP_DATAI64);
+        b1 = adjustWasmEndianessHlp(b1);
+        b2 = adjustWasmEndianessHlp(b2);
+        BEAST_EXPECT(b1 == SWAP_DATAU64);
+        BEAST_EXPECT(b2 == SWAP_DATAI64);
+
+        uint32_t b3 = SWAP_DATAU32;
+        int32_t b4 = SWAP_DATAI32;
+        b3 = adjustWasmEndianessHlp(b3);
+        b4 = adjustWasmEndianessHlp(b4);
+        BEAST_EXPECT(b3 == REVERSE_SWAP_DATAU32);
+        BEAST_EXPECT(b4 == REVERSE_SWAP_DATAI32);
+        b3 = adjustWasmEndianessHlp(b3);
+        b4 = adjustWasmEndianessHlp(b4);
+        BEAST_EXPECT(b3 == SWAP_DATAU32);
+        BEAST_EXPECT(b4 == SWAP_DATAI32);
+
+        uint16_t b5 = SWAP_DATAU16;
+        int16_t b6 = SWAP_DATAI16;
+        b5 = adjustWasmEndianessHlp(b5);
+        b6 = adjustWasmEndianessHlp(b6);
+        BEAST_EXPECT(b5 == REVERSE_SWAP_DATAU16);
+        BEAST_EXPECT(b6 == REVERSE_SWAP_DATAI16);
+        b5 = adjustWasmEndianessHlp(b5);
+        b6 = adjustWasmEndianessHlp(b6);
+        BEAST_EXPECT(b5 == SWAP_DATAU16);
+        BEAST_EXPECT(b6 == SWAP_DATAI16);
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -1035,6 +1089,7 @@ struct Wasm_test : public beast::unit_test::suite
         testBadAlloc();
         testBadAlign();
         testReturnType();
+        testSwapBytes();
 
         // perfTest();
     }
