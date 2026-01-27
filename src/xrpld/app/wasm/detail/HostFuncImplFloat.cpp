@@ -201,7 +201,8 @@ struct FloatState
 std::string
 floatToString(Slice const& data)
 {
-    detail::FloatState rm(0);
+    // set default mode as we don't expect it will be used here
+    detail::FloatState rm(Number::rounding_mode::to_nearest);
     detail::Number2 const num(data);
     if (!num)
     {
@@ -281,7 +282,8 @@ floatCompareImpl(Slice const& x, Slice const& y)
 {
     try
     {
-        detail::FloatState rm(0);
+        // set default mode as we don't expect it will be used here
+        detail::FloatState rm(Number::rounding_mode::to_nearest);
         detail::Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
