@@ -6,13 +6,7 @@
 
 #include <xrpld/app/wasm/HostFuncWrapper.h>
 
-#if (defined(__clang_major__) && __clang_major__ < 15)
-#include <experimental/source_location>
-using source_location = std::experimental::source_location;
-#else
 #include <source_location>
-using std::source_location;
-#endif
 
 namespace xrpl {
 namespace test {
@@ -31,12 +25,18 @@ Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     return nullptr;
 }
 
+std::vector<uint8_t> const
+hexToBytes(std::string const& hex)
+{
+    auto const ws = boost::algorithm::unhex(hex);
+    return Bytes(ws.begin(), ws.end());
+}
+
 std::optional<int32_t>
 runFinishFunction(std::string const& code)
 {
     auto& engine = WasmEngine::instance();
-    auto const ws = boost::algorithm::unhex(code);
-    Bytes const wasm(ws.begin(), ws.end());
+    auto const wasm = hexToBytes(code);
     auto const re = engine.run(wasm, "finish");
     if (re.has_value())
     {
@@ -55,7 +55,7 @@ struct Wasm_test : public beast::unit_test::suite
         Expected<WasmResult<int32_t>, TER> re,
         int32_t expectedResult,
         int64_t expectedCost,
-        source_location const location = source_location::current())
+        std::source_location const location = std::source_location::current())
     {
         auto const lineStr = " (" + std::to_string(location.line()) + ")";
         if (BEAST_EXPECTS(re.has_value(), transToken(re.error()) + lineStr))
@@ -132,9 +132,7 @@ struct Wasm_test : public beast::unit_test::suite
         std::shared_ptr<HostFunctions> hfs(new HostFunctions(env.journal));
 
         {
-            auto wasmHex = "00000000";
-            auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
-            std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+            auto wasm = hexToBytes("00000000");
             std::string funcName("mock_escrow");
 
             auto re = runEscrowWasm(wasm, hfs, funcName, {}, 15);
@@ -142,9 +140,7 @@ struct Wasm_test : public beast::unit_test::suite
         }
 
         {
-            auto wasmHex = "00112233445566778899AA";
-            auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
-            std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+            auto wasm = hexToBytes("00112233445566778899AA");
             std::string funcName("mock_escrow");
 
             auto const re = preflightEscrowWasm(wasm, hfs, funcName);
@@ -156,7 +152,7 @@ struct Wasm_test : public beast::unit_test::suite
             // pub fn bad() -> bool {
             //     unsafe { host_lib::getLedgerSqn() >= 5 }
             // }
-            auto const badWasmHex =
+            auto const badWasm = hexToBytes(
                 "0061736d010000000105016000017f02190108686f73745f6c69620c6765"
                 "744c656467657253716e00000302010005030100100611027f00418080c0"
                 "000b7f00418080c0000b072b04066d656d6f727902000362616400010a5f"
@@ -166,12 +162,10 @@ struct Wasm_test : public beast::unit_test::suite
                 "2e31202834656231363132353020323032352d30332d31352900490f7461"
                 "726765745f6665617475726573042b0f6d757461626c652d676c6f62616c"
                 "732b087369676e2d6578742b0f7265666572656e63652d74797065732b0a"
-                "6d756c746976616c7565";
-            auto wasmStr = boost::algorithm::unhex(std::string(badWasmHex));
-            std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+                "6d756c746976616c7565");
 
             auto const re =
-                preflightEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME);
+                preflightEscrowWasm(badWasm, hfs, ESCROW_FUNCTION_NAME);
             BEAST_EXPECT(!isTesSuccess(re));
         }
     }
@@ -181,8 +175,7 @@ struct Wasm_test : public beast::unit_test::suite
     {
         testcase("Wasm get ledger sequence");
 
-        auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
-        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        auto ledgerSqnWasm = hexToBytes(ledgerSqnWasmHex);
 
         using namespace test::jtx;
 
@@ -194,7 +187,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto& engine = WasmEngine::instance();
 
         auto re = engine.run(
-            wasm,
+            ledgerSqnWasm,
             ESCROW_FUNCTION_NAME,
             {},
             imports,
@@ -219,11 +212,10 @@ struct Wasm_test : public beast::unit_test::suite
     {
         testcase("Wasm fibo");
 
-        auto const ws = boost::algorithm::unhex(fibWasmHex);
-        Bytes const wasm(ws.begin(), ws.end());
+        auto const fibWasm = hexToBytes(fibWasmHex);
         auto& engine = WasmEngine::instance();
 
-        auto const re = engine.run(wasm, "fib", wasmParams(10));
+        auto const re = engine.run(fibWasm, "fib", wasmParams(10));
 
         checkResult(re, 55, 1'137);
     }
@@ -233,12 +225,11 @@ struct Wasm_test : public beast::unit_test::suite
     {
         testcase("Wasm sha");
 
-        auto const ws = boost::algorithm::unhex(sha512PureWasmHex);
-        Bytes const wasm(ws.begin(), ws.end());
+        auto const sha512Wasm = hexToBytes(sha512PureWasmHex);
         auto& engine = WasmEngine::instance();
 
-        auto const re =
-            engine.run(wasm, "sha512_process", wasmParams(sha512PureWasmHex));
+        auto const re = engine.run(
+            sha512Wasm, "sha512_process", wasmParams(sha512PureWasmHex));
 
         checkResult(re, 34'432, 151'155);
     }
@@ -247,8 +238,7 @@ struct Wasm_test : public beast::unit_test::suite
     testWasmB58()
     {
         testcase("Wasm base58");
-        auto const ws = boost::algorithm::unhex(b58WasmHex);
-        Bytes const wasm(ws.begin(), ws.end());
+        auto const b58Wasm = hexToBytes(b58WasmHex);
         auto& engine = WasmEngine::instance();
 
         Bytes outb;
@@ -259,7 +249,7 @@ struct Wasm_test : public beast::unit_test::suite
             static_cast<std::uint32_t>(b58WasmHex.size()));
         auto const s = std::string_view(b58WasmHex.c_str(), minsz);
 
-        auto const re = engine.run(wasm, "b58enco", wasmParams(outb, s));
+        auto const re = engine.run(b58Wasm, "b58enco", wasmParams(outb, s));
 
         checkResult(re, 700, 2'886'069);
     }
@@ -273,9 +263,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env(*this);
         {
-            std::string const wasmHex = allHostFunctionsWasmHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+            auto const allHostFuncWasm = hexToBytes(allHostFunctionsWasmHex);
 
             auto& engine = WasmEngine::instance();
 
@@ -285,7 +273,7 @@ struct Wasm_test : public beast::unit_test::suite
                 i.second.gas = 0;
 
             auto re = engine.run(
-                wasm,
+                allHostFuncWasm,
                 ESCROW_FUNCTION_NAME,
                 {},
                 imp,
@@ -305,9 +293,7 @@ struct Wasm_test : public beast::unit_test::suite
         env.close();
 
         {
-            std::string const wasmHex = allHostFunctionsWasmHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+            auto const allHostFuncWasm = hexToBytes(allHostFunctionsWasmHex);
 
             auto& engine = WasmEngine::instance();
 
@@ -315,7 +301,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto const imp = createWasmImport(*hfs);
 
             auto re = engine.run(
-                wasm,
+                allHostFuncWasm,
                 ESCROW_FUNCTION_NAME,
                 {},
                 imp,
@@ -330,9 +316,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         // not enough gas
         {
-            std::string const wasmHex = allHostFunctionsWasmHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+            auto const allHostFuncWasm = hexToBytes(allHostFunctionsWasmHex);
 
             auto& engine = WasmEngine::instance();
 
@@ -340,7 +324,13 @@ struct Wasm_test : public beast::unit_test::suite
             auto const imp = createWasmImport(*hfs);
 
             auto re = engine.run(
-                wasm, ESCROW_FUNCTION_NAME, {}, imp, hfs, 200, env.journal);
+                allHostFuncWasm,
+                ESCROW_FUNCTION_NAME,
+                {},
+                imp,
+                hfs,
+                200,
+                env.journal);
 
             if (BEAST_EXPECT(!re))
             {
@@ -358,23 +348,22 @@ struct Wasm_test : public beast::unit_test::suite
     {
         testcase("escrow wasm devnet test");
 
-        std::string const wasmStr =
-            boost::algorithm::unhex(allHostFunctionsWasmHex);
-        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+        auto const allHFWasm = hexToBytes(allHostFunctionsWasmHex);
 
         using namespace test::jtx;
         Env env{*this};
         {
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
-            auto re =
-                runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            auto re = runEscrowWasm(
+                allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
             checkResult(re, 1, 64'763);
         }
 
         {
             // max<int64_t>() gas
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
-            auto re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, -1);
+            auto re =
+                runEscrowWasm(allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, -1);
             checkResult(re, 1, 64'763);
         }
 
@@ -392,8 +381,8 @@ struct Wasm_test : public beast::unit_test::suite
             };
 
             std::shared_ptr<HostFunctions> hfs(new BadTestHostFunctions(env));
-            auto re =
-                runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            auto re = runEscrowWasm(
+                allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
             checkResult(re, -201, 28'148);
         }
 
@@ -411,20 +400,19 @@ struct Wasm_test : public beast::unit_test::suite
             };
 
             std::shared_ptr<HostFunctions> hfs(new BadTestHostFunctions(env));
-            auto re =
-                runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
+            auto re = runEscrowWasm(
+                allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
             checkResult(re, -201, 28'148);
         }
 
         {  // fail because recursion too deep
 
-            auto const wasmStr = boost::algorithm::unhex(deepRecursionHex);
-            std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+            auto const deepWasm = hexToBytes(deepRecursionHex);
 
             std::shared_ptr<TestHostFunctionsSink> hfs(
                 new TestHostFunctionsSink(env));
             std::string funcName("finish");
-            auto re = runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000'000);
+            auto re = runEscrowWasm(deepWasm, hfs, funcName, {}, 1'000'000'000);
             BEAST_EXPECT(!re && re.error());
             // std::cout << "bad case (deep recursion) result " << re.error()
             //             << std::endl;
@@ -449,13 +437,13 @@ struct Wasm_test : public beast::unit_test::suite
         }
 
         {  // infinite loop
-            auto const wasmStr = boost::algorithm::unhex(infiniteLoopWasmHex);
-            Bytes wasm(wasmStr.begin(), wasmStr.end());
+            auto const infiniteLoopWasm = hexToBytes(infiniteLoopWasmHex);
             std::string const funcName("loop");
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
 
             // infinite loop should be caught and fail
-            auto const re = runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000);
+            auto const re =
+                runEscrowWasm(infiniteLoopWasm, hfs, funcName, {}, 1'000'000);
             if (BEAST_EXPECT(!re.has_value()))
             {
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
@@ -464,8 +452,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         {
             // expected import not provided
-            auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
-            Bytes wasm(wasmStr.begin(), wasmStr.end());
+            auto const lgrSqnWasm = hexToBytes(ledgerSqnWasmHex);
             std::shared_ptr<HostFunctions> hfs(new TestLedgerDataProvider(env));
             std::shared_ptr<ImportVec> imports(std::make_shared<ImportVec>());
             WASM_IMPORT_FUNC2(
@@ -474,7 +461,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto& engine = WasmEngine::instance();
 
             auto re = engine.run(
-                wasm,
+                lgrSqnWasm,
                 ESCROW_FUNCTION_NAME,
                 {},
                 imports,
@@ -487,8 +474,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         {
             // bad import format
-            auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
-            Bytes wasm(wasmStr.begin(), wasmStr.end());
+            auto const lgrSqnWasm = hexToBytes(ledgerSqnWasmHex);
             std::shared_ptr<HostFunctions> hfs(new TestLedgerDataProvider(env));
             std::shared_ptr<ImportVec> imports(std::make_shared<ImportVec>());
             WASM_IMPORT_FUNC2(
@@ -498,7 +484,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto& engine = WasmEngine::instance();
 
             auto re = engine.run(
-                wasm,
+                lgrSqnWasm,
                 ESCROW_FUNCTION_NAME,
                 {},
                 imports,
@@ -511,8 +497,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         {
             // bad function name
-            auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
-            Bytes wasm(wasmStr.begin(), wasmStr.end());
+            auto const lgrSqnWasm = hexToBytes(ledgerSqnWasmHex);
             std::shared_ptr<HostFunctions> hfs(new TestLedgerDataProvider(env));
             std::shared_ptr<ImportVec> imports(std::make_shared<ImportVec>());
             WASM_IMPORT_FUNC2(
@@ -520,7 +505,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             auto& engine = WasmEngine::instance();
             auto re = engine.run(
-                wasm, "func1", {}, imports, hfs, 1'000'000, env.journal);
+                lgrSqnWasm, "func1", {}, imports, hfs, 1'000'000, env.journal);
 
             BEAST_EXPECT(!re);
         }
@@ -537,23 +522,19 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env(*this);
         {
-            std::string const wasmHex = floatTestsWasmHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+            auto const floatTestWasm = hexToBytes(floatTestsWasmHex);
 
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
-            auto re = runEscrowWasm(wasm, hfs, funcName, {}, 200'000);
+            auto re = runEscrowWasm(floatTestWasm, hfs, funcName, {}, 200'000);
             checkResult(re, 1, 110'699);
             env.close();
         }
 
         {
-            std::string const wasmHex = float0Hex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+            auto const float0Wasm = hexToBytes(float0Hex);
 
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
-            auto re = runEscrowWasm(wasm, hfs, funcName, {}, 100'000);
+            auto re = runEscrowWasm(float0Wasm, hfs, funcName, {}, 100'000);
             checkResult(re, 1, 4'259);
             env.close();
         }
@@ -568,9 +549,7 @@ struct Wasm_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         // std::string const funcName("test");
-        auto const& wasmHex = hfPerfTest;
-        std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-        std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+        auto const perfWasm = hexToBytes(hfPerfTest);
 
         // std::string const credType = "abcde";
         // std::string const credType2 = "fghijk";
@@ -638,7 +617,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::shared_ptr<HostFunctions> hfs(
                 new PerfHostFunctions(env, k, env.tx()));
 
-            auto re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME);
+            auto re = runEscrowWasm(perfWasm, hfs, ESCROW_FUNCTION_NAME);
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECT(re->result);
@@ -664,12 +643,12 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env{*this};
 
-        auto const wasmStr = boost::algorithm::unhex(codecovTestsWasmHex);
-        Bytes const wasm(wasmStr.begin(), wasmStr.end());
+        auto const codecovWasm = hexToBytes(codecovTestsWasmHex);
         std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
 
         auto const allowance = 187'131;
-        auto re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, allowance);
+        auto re = runEscrowWasm(
+            codecovWasm, hfs, ESCROW_FUNCTION_NAME, {}, allowance);
 
         checkResult(re, 1, allowance);
     }
@@ -682,14 +661,14 @@ struct Wasm_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto const wasmStr = boost::algorithm::unhex(disabledFloatHex);
-        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        auto disabledFloatWasm = hexToBytes(disabledFloatHex);
         std::string const funcName("finish");
         std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
 
         {
             // f32 set constant, opcode disabled exception
-            auto const re = runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000);
+            auto const re =
+                runEscrowWasm(disabledFloatWasm, hfs, funcName, {}, 1'000'000);
             if (BEAST_EXPECT(!re.has_value()))
             {
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
@@ -698,8 +677,9 @@ struct Wasm_test : public beast::unit_test::suite
 
         {
             // f32 add, can't create module exception
-            wasm[0x117] = 0x92;
-            auto const re = runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000);
+            disabledFloatWasm[0x117] = 0x92;
+            auto const re =
+                runEscrowWasm(disabledFloatWasm, hfs, funcName, {}, 1'000'000);
             if (BEAST_EXPECT(!re.has_value()))
             {
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
@@ -827,19 +807,18 @@ struct Wasm_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this);
 
-        auto wasmStr = boost::algorithm::unhex(startLoopHex);
-        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        auto const startLoopWasm = hexToBytes(startLoopHex);
         std::shared_ptr<HostFunctions> hfs(new TestLedgerDataProvider(env));
         std::shared_ptr<ImportVec> imports(std::make_shared<ImportVec>());
 
         auto& engine = WasmEngine::instance();
-        auto checkRes =
-            engine.check(wasm, "finish", {}, imports, hfs, env.journal);
+        auto checkRes = engine.check(
+            startLoopWasm, "finish", {}, imports, hfs, env.journal);
         BEAST_EXPECTS(
             checkRes == tesSUCCESS, std::to_string(TERtoInt(checkRes)));
 
         auto re = engine.run(
-            wasm,
+            startLoopWasm,
             ESCROW_FUNCTION_NAME,
             {},
             imports,
@@ -857,8 +836,7 @@ struct Wasm_test : public beast::unit_test::suite
         testcase("Wasm Bad Alloc");
 
         // bad_alloc.c
-        auto wasmStr = boost::algorithm::unhex(badAllocHex);
-        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        auto const badAllocWasm = hexToBytes(badAllocHex);
 
         using namespace test::jtx;
 
@@ -874,7 +852,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto& engine = WasmEngine::instance();
 
             auto re = engine.run(
-                wasm, "test", params, {}, hfs, 1'000'000, env.journal);
+                badAllocWasm, "test", params, {}, hfs, 1'000'000, env.journal);
             if (BEAST_EXPECT(re))
             {
                 BEAST_EXPECTS(re->result == 7, std::to_string(re->result));
@@ -887,7 +865,7 @@ struct Wasm_test : public beast::unit_test::suite
                 {.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 0}}}};
             auto& engine = WasmEngine::instance();
             auto re = engine.run(
-                wasm, "test", params, {}, hfs, 1'000'000, env.journal);
+                badAllocWasm, "test", params, {}, hfs, 1'000'000, env.journal);
             BEAST_EXPECT(!re) &&
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
         }
@@ -897,7 +875,7 @@ struct Wasm_test : public beast::unit_test::suite
                 {.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 1}}}};
             auto& engine = WasmEngine::instance();
             auto re = engine.run(
-                wasm, "test", params, {}, hfs, 1'000'000, env.journal);
+                badAllocWasm, "test", params, {}, hfs, 1'000'000, env.journal);
             BEAST_EXPECT(!re) &&
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
         }
@@ -907,7 +885,7 @@ struct Wasm_test : public beast::unit_test::suite
                 {.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 2}}}};
             auto& engine = WasmEngine::instance();
             auto re = engine.run(
-                wasm, "test", params, {}, hfs, 1'000'000, env.journal);
+                badAllocWasm, "test", params, {}, hfs, 1'000'000, env.journal);
             BEAST_EXPECT(!re) &&
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
         }
@@ -917,7 +895,7 @@ struct Wasm_test : public beast::unit_test::suite
                 {.type = WT_U8V, .of = {.u8v = {.d = buf1, .sz = 3}}}};
             auto& engine = WasmEngine::instance();
             auto re = engine.run(
-                wasm, "test", params, {}, hfs, 1'000'000, env.journal);
+                badAllocWasm, "test", params, {}, hfs, 1'000'000, env.journal);
 
             BEAST_EXPECT(!re) &&
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
@@ -932,8 +910,7 @@ struct Wasm_test : public beast::unit_test::suite
         testcase("Wasm Bad Align");
 
         // bad_align.c
-        auto wasmStr = boost::algorithm::unhex(badAlignHex);
-        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        auto const badAlignWasm = hexToBytes(badAlignHex);
 
         using namespace test::jtx;
 
@@ -946,7 +923,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto& engine = WasmEngine::instance();
 
             auto re = engine.run(
-                wasm, "test", {}, imports, hfs, 1'000'000, env.journal);
+                badAlignWasm, "test", {}, imports, hfs, 1'000'000, env.journal);
             BEAST_EXPECT(re && re->result == 0xbab88d46);
         }
 
@@ -969,8 +946,7 @@ struct Wasm_test : public beast::unit_test::suite
                 "0061736d010000000105016000017e030201000503010001"
                 "071302066d656d6f727902000666696e69736800000a0a01"
                 "08004280808080100b";
-            auto const wasmStr = boost::algorithm::unhex(std::string(wasmHex));
-            Bytes const wasm(wasmStr.begin(), wasmStr.end());
+            auto const wasm = hexToBytes(wasmHex);
             auto const re =
                 runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
             BEAST_EXPECT(!re);
@@ -987,8 +963,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto const wasmHex =
                 "0061736d01000000010401600000030201000503010001071302066d656d6f"
                 "727902000666696e69736800000a050103000f0b";
-            auto const wasmStr = boost::algorithm::unhex(std::string(wasmHex));
-            Bytes const wasm(wasmStr.begin(), wasmStr.end());
+            auto const wasm = hexToBytes(wasmHex);
             auto const re =
                 runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
             BEAST_EXPECT(!re);
@@ -1004,8 +979,7 @@ struct Wasm_test : public beast::unit_test::suite
                 "0061736d010000000106016000027f7f030201000503010001071302066d65"
                 "6d6f727902000666696e69736800000a10010e0041808080800141ff818080"
                 "010b";
-            auto const wasmStr = boost::algorithm::unhex(std::string(wasmHex));
-            Bytes const wasm(wasmStr.begin(), wasmStr.end());
+            auto const wasm = hexToBytes(wasmHex);
             auto const re =
                 runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
             BEAST_EXPECT(!re);
