@@ -199,6 +199,11 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, Bytes const& p, Types&&... args)
 {
+    if (p.size() > std::numeric_limits<int32_t>::max())
+        throw std::runtime_error(
+            "can't allocate memory, size: " +
+            std::to_string(p.size()));  // LCOV_EXCL_LINE
+
     wasmParamsHlp(
         v,
         p.data(),
@@ -213,6 +218,10 @@ wasmParamsHlp(
     std::string_view const& p,
     Types&&... args)
 {
+    if (p.size() > std::numeric_limits<int32_t>::max())
+        throw std::runtime_error(
+            "can't allocate memory, size: " + std::to_string(p.size()));
+
     wasmParamsHlp(
         v,
         reinterpret_cast<std::uint8_t const*>(p.data()),
@@ -224,6 +233,11 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, std::string const& p, Types&&... args)
 {
+    if (p.size() > std::numeric_limits<int32_t>::max())
+        throw std::runtime_error(
+            "can't allocate memory, size: " +
+            std::to_string(p.size()));  // LCOV_EXCL_LINE
+
     wasmParamsHlp(
         v,
         reinterpret_cast<std::uint8_t const*>(p.c_str()),

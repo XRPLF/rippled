@@ -901,6 +901,23 @@ struct Wasm_test : public beast::unit_test::suite
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
         }
 
+        {
+            std::string what;
+            try
+            {
+                char const test[] = "test";
+                std::size_t sz = std::numeric_limits<int32_t>::max() + 1ull;
+                auto p = wasmParams(std::string_view(test, sz));
+            }
+            catch (std::exception const& e)
+            {
+                what = e.what();
+            }
+            BEAST_EXPECT(
+                what.find("can't allocate memory, size: 2147483648") !=
+                std::string::npos);
+        }
+
         env.close();
     }
 
