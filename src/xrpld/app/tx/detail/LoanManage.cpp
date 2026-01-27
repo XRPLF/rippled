@@ -151,8 +151,6 @@ LoanManage::defaultLoan(
 
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
-    TenthBips32 const coverRateLiquidation{
-        brokerSle->at(sfCoverRateLiquidation)};
     auto const defaultCovered = [&]() {
         // Always round the minimum required up.
         NumberRoundModeGuard mg(Number::upward);
@@ -166,9 +164,7 @@ LoanManage::defaultLoan(
              * Changes), specifically "if the `tfLoanDefault` flag is set" /
              * "Apply the First-Loss Capital to the Default Amount"
              */
-            std::min(
-                tenthBipsOfValue(minimumCover, coverRateLiquidation),
-                totalDefaultAmount),
+            std::min(minimumCover, totalDefaultAmount),
             loanScale);
         auto const coverAvailable = *brokerSle->at(sfCoverAvailable);
 

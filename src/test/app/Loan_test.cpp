@@ -83,7 +83,6 @@ protected:
         TenthBips32 coverRateMin = percentageToTenthBips(10);
         int coverDeposit = 1000;
         TenthBips16 managementFeeRate{100};
-        TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
         std::string data{};
         std::uint32_t flags = 0;
 
@@ -490,8 +489,7 @@ protected:
             data(params.data),
             managementFeeRate(params.managementFeeRate),
             debtMaximum(debtMaximumValue),
-            coverRateMinimum(coverRateMinValue),
-            coverRateLiquidation(TenthBips32(params.coverRateLiquidation)));
+            coverRateMinimum(coverRateMinValue));
 
         if (coverDepositValue != beast::zero)
             env(coverDeposit(lender, keylet.key, coverDepositValue));
@@ -2121,10 +2119,8 @@ protected:
                     broker.asset,
                     std::min(
                         tenthBipsOfValue(
-                            tenthBipsOfValue(
-                                brokerSle->at(sfDebtTotal),
-                                broker.params.coverRateMin),
-                            broker.params.coverRateLiquidation),
+                            brokerSle->at(sfDebtTotal),
+                            broker.params.coverRateMin),
                         state.totalValue - state.managementFeeOutstanding),
                     state.loanScale);
                 return std::make_pair(defaultAmount, brokerSle->at(sfOwner));
@@ -6399,8 +6395,7 @@ protected:
         BrokerParameters brokerParams{
             .vaultDeposit = 10000,
             .debtMax = Number{0},
-            .coverRateMin = TenthBips32{1000},
-            .coverRateLiquidation = TenthBips32{2500}};
+            .coverRateMin = TenthBips32{1000}};
 
         auto broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
@@ -6532,9 +6527,7 @@ protected:
         BrokerParameters const brokerParams{
             .vaultDeposit = 100000,
             .debtMax = 0,
-            .coverRateMin = TenthBips32{0},
-            // .managementFeeRate = TenthBips16{5919},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateMin = TenthBips32{0}};
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
@@ -6563,8 +6556,10 @@ protected:
         auto state = getCurrentState(env, broker, loanKeylet);
         if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
-            env.close(tp{d{
-                loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+            env.close(
+                tp{
+                    d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) +
+                      1}});
         }
 
         topUpBorrower(
@@ -6609,8 +6604,7 @@ protected:
             .vaultDeposit = 200'000,
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
-            .managementFeeRate = TenthBips16{500},
-            .coverRateLiquidation = TenthBips32{0}};
+            .managementFeeRate = TenthBips16{500}};
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
@@ -6830,8 +6824,7 @@ protected:
             .vaultDeposit = 10,
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
-            .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .managementFeeRate = TenthBips16{0}};
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
@@ -7008,8 +7001,7 @@ protected:
             .vaultDeposit = 100'000,
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
-            .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .managementFeeRate = TenthBips16{0}};
         LoanParameters const loanParams{
             .account = lender,
             .counter = issuer,
@@ -7058,8 +7050,7 @@ protected:
             .vaultDeposit = 100'000,
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
-            .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .managementFeeRate = TenthBips16{0}};
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
@@ -7557,8 +7548,7 @@ protected:
                 .debtMax = 0,
                 .coverRateMin = TenthBips32(20000),  // 20%
                 .coverDeposit = 21'000,
-                .managementFeeRate = TenthBips16(100),  // 0.1%
-                .coverRateLiquidation = TenthBips32(100000),
+                .managementFeeRate = TenthBips16(100),
             });
         auto const brokerKeylet = brokerInfo.brokerKeylet();
 
@@ -7816,8 +7806,7 @@ class LoanArbitrary_test : public LoanBatch_test
             .vaultDeposit = 10000,
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
-            .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .managementFeeRate = TenthBips16{0}};
         LoanParameters const loanParams{
             .account = Account("lender"),
             .counter = Account("borrower"),

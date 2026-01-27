@@ -667,39 +667,13 @@ class LoanBroker_test : public beast::unit_test::suite
             env(set(evan, vault.vaultID),
                 managementFeeRate(maxManagementFeeRate + TenthBips16(10)),
                 ter(temINVALID));
-            // sfCoverRateMinimum and sfCoverRateLiquidation are linked
             // Cover: good value, bad account
             env(set(evan, vault.vaultID),
                 coverRateMinimum(maxCoverRate),
-                coverRateLiquidation(maxCoverRate),
                 ter(tecNO_PERMISSION));
             // CoverMinimum: too big
             env(set(evan, vault.vaultID),
                 coverRateMinimum(maxCoverRate + 1),
-                coverRateLiquidation(maxCoverRate + 1),
-                ter(temINVALID));
-            // CoverLiquidation: too big
-            env(set(evan, vault.vaultID),
-                coverRateMinimum(maxCoverRate / 2),
-                coverRateLiquidation(maxCoverRate + 1),
-                ter(temINVALID));
-            // Cover: zero min, non-zero liquidation - implicit and
-            // explicit zero values.
-            env(set(evan, vault.vaultID),
-                coverRateLiquidation(maxCoverRate),
-                ter(temINVALID));
-            env(set(evan, vault.vaultID),
-                coverRateMinimum(tenthBipsZero),
-                coverRateLiquidation(maxCoverRate),
-                ter(temINVALID));
-            // Cover: non-zero min, zero liquidation - implicit and
-            // explicit zero values.
-            env(set(evan, vault.vaultID),
-                coverRateMinimum(maxCoverRate),
-                ter(temINVALID));
-            env(set(evan, vault.vaultID),
-                coverRateMinimum(maxCoverRate),
-                coverRateLiquidation(tenthBipsZero),
                 ter(temINVALID));
             // sfDebtMaximum: good value, bad account
             env(set(evan, vault.vaultID),
@@ -730,13 +704,10 @@ class LoanBroker_test : public beast::unit_test::suite
                     // Extra checks
                     BEAST_EXPECT(!broker->isFieldPresent(sfManagementFeeRate));
                     BEAST_EXPECT(!broker->isFieldPresent(sfCoverRateMinimum));
-                    BEAST_EXPECT(
-                        !broker->isFieldPresent(sfCoverRateLiquidation));
                     BEAST_EXPECT(!broker->isFieldPresent(sfData));
                     BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
                     BEAST_EXPECT(broker->at(sfDebtMaximum) == 0);
                     BEAST_EXPECT(broker->at(sfCoverRateMinimum) == 0);
-                    BEAST_EXPECT(broker->at(sfCoverRateLiquidation) == 0);
 
                     BEAST_EXPECT(
                         env.ownerCount(alice) == aliceOriginalCount + 4);
@@ -774,12 +745,6 @@ class LoanBroker_test : public beast::unit_test::suite
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         coverRateMinimum(maxManagementFeeRate),
-                        ter(temINVALID),
-                        THISLINE);
-                    // CoverRateLiquidation
-                    env(set(alice, vault.vaultID),
-                        loanBrokerID(broker->key()),
-                        coverRateLiquidation(maxManagementFeeRate),
                         ter(temINVALID),
                         THISLINE);
 
@@ -846,14 +811,12 @@ class LoanBroker_test : public beast::unit_test::suite
                         data(testData),
                         managementFeeRate(TenthBips16(123)),
                         debtMaximum(Number(9)),
-                        coverRateMinimum(TenthBips32(100)),
-                        coverRateLiquidation(TenthBips32(200)));
+                        coverRateMinimum(TenthBips32(100)));
                 },
                 [&](SLE::const_ref broker) {
                     // Extra checks
                     BEAST_EXPECT(broker->at(sfManagementFeeRate) == 123);
                     BEAST_EXPECT(broker->at(sfCoverRateMinimum) == 100);
-                    BEAST_EXPECT(broker->at(sfCoverRateLiquidation) == 200);
                     BEAST_EXPECT(broker->at(sfDebtMaximum) == Number(9));
                     BEAST_EXPECT(checkVL(broker->at(sfData), testData));
                 },

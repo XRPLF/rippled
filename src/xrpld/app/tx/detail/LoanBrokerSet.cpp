@@ -25,8 +25,6 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
         return temINVALID;
     if (!validNumericRange(tx[~sfCoverRateMinimum], maxCoverRate))
         return temINVALID;
-    if (!validNumericRange(tx[~sfCoverRateLiquidation], maxCoverRate))
-        return temINVALID;
     if (!validNumericRange(
             tx[~sfDebtMaximum], Number(maxMPTokenAmount), Number(0)))
         return temINVALID;
@@ -36,8 +34,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
         // Fixed fields can not be specified if we're modifying an existing
         // LoanBroker Object
         if (tx.isFieldPresent(sfManagementFeeRate) ||
-            tx.isFieldPresent(sfCoverRateMinimum) ||
-            tx.isFieldPresent(sfCoverRateLiquidation))
+            tx.isFieldPresent(sfCoverRateMinimum))
             return temINVALID;
 
         if (tx[sfLoanBrokerID] == beast::zero)
@@ -48,17 +45,6 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     {
         if (*vaultID == beast::zero)
             return temINVALID;
-    }
-
-    {
-        auto const minimumZero = tx[~sfCoverRateMinimum].value_or(0) == 0;
-        auto const liquidationZero =
-            tx[~sfCoverRateLiquidation].value_or(0) == 0;
-        // Both must be zero or non-zero.
-        if (minimumZero != liquidationZero)
-        {
-            return temINVALID;
-        }
     }
 
     return tesSUCCESS;
@@ -260,8 +246,6 @@ LoanBrokerSet::doApply()
             broker->at(sfDebtMaximum) = *debtMax;
         if (auto const coverMin = tx[~sfCoverRateMinimum])
             broker->at(sfCoverRateMinimum) = *coverMin;
-        if (auto const coverLiq = tx[~sfCoverRateLiquidation])
-            broker->at(sfCoverRateLiquidation) = *coverLiq;
 
         view.insert(broker);
 

@@ -779,9 +779,6 @@ auto const debtMaximum = simpleField<SF_NUMBER>(sfDebtMaximum);
 auto const coverRateMinimum =
     valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateMinimum);
 
-auto const coverRateLiquidation =
-    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
-
 auto const destination = JTxFieldWrapper<accountIDField>(sfDestination);
 
 }  // namespace loanBroker
