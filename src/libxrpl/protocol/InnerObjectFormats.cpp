@@ -162,13 +162,6 @@ InnerObjectFormats::InnerObjectFormats()
             {sfSigners, soeOPTIONAL},
         });
 
-    add(sfSponsor.jsonName.c_str(),
-        sfSponsor.getCode(),
-        {
-            {sfAccount, soeREQUIRED},
-            {sfFlags, soeREQUIRED},
-        });
-
     add(sfSponsorSignature.jsonName.c_str(),
         sfSponsorSignature.getCode(),
         {

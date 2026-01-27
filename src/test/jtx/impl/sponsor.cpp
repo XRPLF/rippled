@@ -96,8 +96,8 @@ sponseeAcc::operator()(Env& env, JTx& jt) const
 void
 as::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfSponsor.jsonName][sfAccount.jsonName] = sponsor_.human();
-    jt.jv[sfSponsor.jsonName][sfFlags.jsonName] = flags;
+    jt.jv[sfSponsor.jsonName] = sponsor_.human();
+    jt.jv[sfFlags.jsonName] = jt.jv[sfFlags.jsonName].asUInt() | flags;
 }
 
 Json::Value

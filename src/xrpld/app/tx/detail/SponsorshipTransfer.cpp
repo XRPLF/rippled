@@ -332,9 +332,8 @@ SponsorshipTransfer::doApply()
 
         if (tx.isFieldPresent(sfSponsor))
         {
-            auto const sponsorObj = tx.getFieldObject(sfSponsor);
             auto const oldSponsor = objSle->getAccountID(sponsorField);
-            auto const newSponsor = sponsorObj[sfAccount];
+            auto const newSponsor = tx.getAccountID(sfSponsor);
             // decrement old sponsoring count if exists
             if (auto const oldSponsorSle =
                     view().peek(keylet::account(oldSponsor)))
@@ -398,9 +397,8 @@ SponsorshipTransfer::doApply()
         if (tx.isFieldPresent(sfSponsor))
         {
             // transfer account sponsor
-            auto const sponsorObj = tx.getFieldObject(sfSponsor);
             // increment new sponsoring count
-            auto const newSponsor = sponsorObj[sfAccount];
+            auto const newSponsor = tx.getAccountID(sfSponsor);
             auto const newSponsorSle = view().peek(keylet::account(newSponsor));
             setSponsorFieldU32(newSponsorSle, sfSponsoringAccountCount, 1);
 

@@ -7,6 +7,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
 
+#include "test/jtx/envconfig.h"
 #include "test/jtx/sponsor.h"
 
 namespace xrpl {
@@ -62,12 +63,19 @@ public:
         Account const sponsor("sponsor");
         env.fund(XRP(10000), alice, sponsor);
 
+        // check Sponsor field
         env(noop(alice),
             fee(XRP(1)),
             sponsor::as(sponsor),
             sig(sfSponsorSignature, sponsor),
             ter(temDISABLED));
 
+        // check Sponsor flags
+        for (auto flag :
+             {tfSponsorFee, tfSponsorReserve, tfSponsorFee | tfSponsorReserve})
+            env(noop(alice), fee(XRP(1)), txflags(flag), ter(temINVALID_FLAG));
+
+        // check Sponsor transactions
         env(sponsor::transfer(alice), ter(temDISABLED));
         env(sponsor::set(sponsor, 0), ter(temDISABLED));
     }
@@ -226,7 +234,7 @@ public:
 
         // Signature doesn't exist
         auto tx = noop(alice);
-        tx[sfSponsor.jsonName][sfAccount.jsonName] = sponsor.human();
+        tx[sfSponsor.jsonName] = sponsor.human();
         tx[sfSponsorSignature.jsonName][sfSigningPubKey.jsonName] =
             strHex(sponsor.pk().slice());
 
@@ -350,9 +358,6 @@ public:
 
         // Invalid Flags
         env(noop(alice), sponsor::as(sponsor, 4), ter(temINVALID_FLAG));
-        env(noop(alice),
-            sponsor::as(sponsor, tfSponsorMask),
-            ter(temINVALID_FLAG));
     }
 
     void

@@ -334,7 +334,8 @@ TYPED_SFIELD(sfCounterparty,             ACCOUNT,   26)
 TYPED_SFIELD(sfSponsorAccount,           ACCOUNT,   27)
 TYPED_SFIELD(sfHighSponsorAccount,       ACCOUNT,   28)
 TYPED_SFIELD(sfLowSponsorAccount,        ACCOUNT,   29)
-TYPED_SFIELD(sfSponsee,                  ACCOUNT,   30)
+TYPED_SFIELD(sfSponsor,                  ACCOUNT,   30)
+TYPED_SFIELD(sfSponsee,                  ACCOUNT,   31)
 
 // vector of 256-bit
 TYPED_SFIELD(sfIndexes,                  VECTOR256,  1, SField::sMD_Never)
@@ -399,8 +400,7 @@ UNTYPED_SFIELD(sfRawTransaction,         OBJECT,    34)
 UNTYPED_SFIELD(sfBatchSigner,            OBJECT,    35)
 UNTYPED_SFIELD(sfBook,                   OBJECT,    36)
 UNTYPED_SFIELD(sfCounterpartySignature,  OBJECT,    37, SField::sMD_Default, SField::notSigning)
-UNTYPED_SFIELD(sfSponsor,                OBJECT,    38)
-UNTYPED_SFIELD(sfSponsorSignature,       OBJECT,    39, SField::sMD_Default, SField::notSigning)
+UNTYPED_SFIELD(sfSponsorSignature,       OBJECT,    38, SField::sMD_Default, SField::notSigning)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array

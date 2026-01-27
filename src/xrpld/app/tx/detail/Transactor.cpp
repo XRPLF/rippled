@@ -73,6 +73,14 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
         return temINVALID_FLAG;
     }
 
+    if (!ctx.rules.enabled(featureSponsor) &&
+        ctx.tx.getFlags() & ~tfSponsorMask)
+    {
+        JLOG(ctx.j.debug()) << "preflight0: Sponsor flags set without Sponsor "
+                               "amendment enabled";
+        return temINVALID_FLAG;
+    }
+
     return tesSUCCESS;
 }
 
@@ -206,20 +214,11 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         "Inner batch transaction must have a parent batch ID.");
 
     // Sponsor checks
-    if (hasSponsor)
+    if (hasSponsor && ctx.tx.getAccountID(sfSponsor) == id)
     {
-        auto const sponsor = ctx.tx.getFieldObject(sfSponsor);
-        if (sponsor[sfAccount] == ctx.tx[sfAccount])
-        {
-            JLOG(ctx.j.debug()) << "preflight1: Sponsor account cannot be the "
-                                   "same as the transaction originator";
-            return temMALFORMED;
-        }
-        if (sponsor.getFlags() & tfSponsorMask)
-        {
-            JLOG(ctx.j.debug()) << "preflight1: Invalid sponsor flags";
-            return temINVALID_FLAG;
-        }
+        JLOG(ctx.j.debug()) << "preflight1: Sponsor account cannot be the "
+                               "same as the transaction originator";
+        return temMALFORMED;
     }
 
     return tesSUCCESS;
@@ -321,21 +320,18 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     if (hasSponsorSignature)
         return tesSUCCESS;
 
-    auto const txSponsor = tx.getFieldObject(sfSponsor);
-
-    auto const sponsorAcc = txSponsor.getAccountID(sfAccount);
-    auto const sponseeAcc = tx.getAccountID(sfAccount);
-    auto const sponsorSle = view.read(keylet::sponsor(sponsorAcc, sponseeAcc));
+    auto const sponsorSle = view.read(keylet::sponsor(
+        tx.getAccountID(sfSponsor), tx.getAccountID(sfAccount)));
 
     // sponsorship object missing for pre-funded tx
     if (!sponsorSle)
         return terNO_SPONSORSHIP;
 
-    if (txSponsor.isFlag(tfSponsorFee) &&
+    if (tx.isFlag(tfSponsorFee) &&
         sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
         return terNO_SPONSORSHIP;
 
-    if (txSponsor.isFlag(tfSponsorReserve) &&
+    if (tx.isFlag(tfSponsorReserve) &&
         sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
         return terNO_SPONSORSHIP;
 
@@ -807,8 +803,7 @@ Transactor::checkSign(
         if (!sigObject.isFieldPresent(sfSponsor))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const sponsorObj = sigObject.getFieldObject(sfSponsor);
-        auto const sponsorAcc = sponsorObj.getAccountID(sfAccount);
+        auto const sponsorAcc = sigObject.getAccountID(sfSponsor);
         auto const sponsorSignature =
             sigObject.getFieldObject(sfSponsorSignature);
         if (auto const ret = checkSign(
@@ -1247,13 +1242,12 @@ Transactor::reset(XRPAmount fee)
 FeePayer
 Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 {
-    if (tx.isFieldPresent(sfSponsor) &&
-        tx.getFieldObject(sfSponsor).isFlag(tfSponsorFee))
+    auto const id = tx.getAccountID(sfAccount);
+    if (tx.isFieldPresent(sfSponsor) && tx.isFlag(tfSponsorFee))
     {
-        auto const sponsor = tx.getFieldObject(sfSponsor);
+        auto const sponsor = tx.getAccountID(sfSponsor);
         auto const hasSignature = tx.isFieldPresent(sfSponsorSignature);
-        auto const sponsorKeylet = keylet::sponsor(
-            sponsor.getAccountID(sfAccount), tx.getAccountID(sfAccount));
+        auto const sponsorKeylet = keylet::sponsor(sponsor, id);
 
         if (hasSignature)
         {
@@ -1263,8 +1257,7 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
                     sponsorKeylet, sfFeeAmount, FeePayerType::SponsorPreFunded};
 
             // co-signed
-            auto const sponsorAccountKeylet =
-                keylet::account(sponsor.getAccountID(sfAccount));
+            auto const sponsorAccountKeylet = keylet::account(sponsor);
             return FeePayer{
                 sponsorAccountKeylet, sfBalance, FeePayerType::SponsorCoSigned};
         }
@@ -1281,7 +1274,7 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
         return FeePayer{delegatorKeylet, sfBalance, FeePayerType::Delegate};
     }
 
-    auto const accountKeylet = keylet::account(tx.getAccountID(sfAccount));
+    auto const accountKeylet = keylet::account(id);
     return FeePayer{accountKeylet, sfBalance, FeePayerType::Account};
 }
 
