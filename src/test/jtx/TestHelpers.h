@@ -15,15 +15,8 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/jss.h>
 
-#include <vector>
-
-#if (defined(__clang_major__) && __clang_major__ < 15)
-#include <experimental/source_location>
-using source_location = std::experimental::source_location;
-#else
 #include <source_location>
-using std::source_location;
-#endif
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -640,7 +633,7 @@ checkMetrics(
     std::size_t expectedPerLedger,
     std::uint64_t expectedMinFeeLevel = baseFeeLevel.fee(),
     std::uint64_t expectedMedFeeLevel = minEscalationFeeLevel.fee(),
-    source_location const location = source_location::current())
+    std::source_location const location = std::source_location::current())
 {
     int line = location.line();
     char const* file = location.file_name();
