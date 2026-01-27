@@ -41,7 +41,7 @@ enum class HostFunctionError : int32_t {
 inline int32_t
 HfErrorToInt(HostFunctionError e)
 {
-    return static_cast<int32_t>(e);
+    return static_cast<std::int32_t>(e);
 }
 
 namespace wasm_float {
@@ -58,7 +58,7 @@ floatFromUintImpl(uint64_t x, int32_t mode);
 Expected<Bytes, HostFunctionError>
 floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode);
 
-Expected<int32_t, HostFunctionError>
+Expected<std::int32_t, HostFunctionError>
 floatCompareImpl(Slice const& x, Slice const& y);
 
 Expected<Bytes, HostFunctionError>
@@ -124,13 +124,13 @@ struct HostFunctions
         return j_;
     }
 
-    virtual Expected<std::int32_t, HostFunctionError>
+    virtual Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn()
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<std::int32_t, HostFunctionError>
+    virtual Expected<std::uint32_t, HostFunctionError>
     getParentLedgerTime()
     {
         return Unexpected(HostFunctionError::INTERNAL);
@@ -142,25 +142,25 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::uint32_t, HostFunctionError>
     getBaseFee()
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     isAmendmentEnabled(uint256 const& amendmentId)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     isAmendmentEnabled(std::string_view const& amendmentName)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
     {
         return Unexpected(HostFunctionError::INTERNAL);
@@ -179,7 +179,7 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    getLedgerObjField(int32_t cacheIdx, SField const& fname)
+    getLedgerObjField(std::int32_t cacheIdx, SField const& fname)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
@@ -197,54 +197,54 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator)
+    getLedgerObjNestedField(std::int32_t cacheIdx, Slice const& locator)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     getTxArrayLen(SField const& fname)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     getCurrentLedgerObjArrayLen(SField const& fname)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
-    getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname)
+    virtual Expected<std::int32_t, HostFunctionError>
+    getLedgerObjArrayLen(std::int32_t cacheIdx, SField const& fname)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     getTxNestedArrayLen(Slice const& locator)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     getCurrentLedgerObjNestedArrayLen(Slice const& locator)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator)
+    virtual Expected<std::int32_t, HostFunctionError>
+    getLedgerObjNestedArrayLen(std::int32_t cacheIdx, Slice const& locator)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     updateData(Slice const& data)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     checkSignature(
         Slice const& message,
         Slice const& signature,
@@ -400,13 +400,13 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     getNFTFlags(uint256 const& nftId)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     getNFTTransferFee(uint256 const& nftId)
     {
         return Unexpected(HostFunctionError::INTERNAL);
@@ -418,31 +418,31 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     trace(std::string_view const& msg, Slice const& data, bool asHex)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     traceNum(std::string_view const& msg, int64_t data)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     traceAccount(std::string_view const& msg, AccountID const& account)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     traceFloat(std::string_view const& msg, Slice const& data)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     traceAmount(std::string_view const& msg, STAmount const& amount)
     {
         return Unexpected(HostFunctionError::INTERNAL);
@@ -466,7 +466,7 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::int32_t, HostFunctionError>
     floatCompare(Slice const& x, Slice const& y)
     {
         return Unexpected(HostFunctionError::INTERNAL);
