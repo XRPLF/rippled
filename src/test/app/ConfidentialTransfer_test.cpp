@@ -48,16 +48,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         return trivialCiphertext;
     }
 
-    // a valid hardcoded ciphertext for testing
-    constexpr static unsigned char
-        validCiphertext[ecGamalEncryptedTotalLength] = {
-            0x02, 0x79, 0xBE, 0x66, 0x7E, 0xF9, 0xDC, 0xBB, 0xAC, 0x55, 0xA0,
-            0x62, 0x95, 0xCE, 0x87, 0x0B, 0x07, 0x02, 0x9B, 0xFC, 0xDB, 0x2D,
-            0xCE, 0x28, 0xD9, 0x59, 0xF2, 0x81, 0x5B, 0x16, 0xF8, 0x17, 0x98,
-            0x02, 0x79, 0xBE, 0x66, 0x7E, 0xF9, 0xDC, 0xBB, 0xAC, 0x55, 0xA0,
-            0x62, 0x95, 0xCE, 0x87, 0x0B, 0x07, 0x02, 0x9B, 0xFC, 0xDB, 0x2D,
-            0xCE, 0x28, 0xD9, 0x59, 0xF2, 0x81, 0x5B, 0x16, 0xF8, 0x17, 0x98};
-
     void
     testConvert(FeatureBitset features)
     {
@@ -259,8 +249,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = bob,
                  .amt = 10,
                  .holderPubKey = mptAlice.getPubKey(bob),
-                 .auditorEncryptedAmt =
-                     Buffer{badCiphertext, ecGamalEncryptedTotalLength},
+                 .auditorEncryptedAmt = getBadCiphertext(),
                  .err = temBAD_CIPHERTEXT});
 
             // Amount exceeds maximum allowed MPT amount
@@ -797,8 +786,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = bob,
                  .amt = 10,
                  .holderPubKey = mptAlice.getPubKey(bob),
-                 .auditorEncryptedAmt =
-                     Buffer{validCiphertext, ecGamalEncryptedTotalLength},
+                 .auditorEncryptedAmt = getTrivialCiphertext(),
                  .err = tecNO_PERMISSION});
         }
 
@@ -1961,8 +1949,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convertBack(
                 {.account = bob,
                  .amt = 30,
-                 .auditorEncryptedAmt =
-                     Buffer{badCiphertext, ecGamalEncryptedTotalLength},
+                 .auditorEncryptedAmt = getBadCiphertext(),
                  .err = temBAD_CIPHERTEXT});
         }
     }
@@ -2197,8 +2184,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = bob,
                  .amt = 10,
                  // Provide valid ciphertext to pass preflight
-                 .auditorEncryptedAmt =
-                     Buffer(validCiphertext, ecGamalEncryptedTotalLength),
+                 .auditorEncryptedAmt = getTrivialCiphertext(),
                  .err = tecNO_PERMISSION});
         }
 
