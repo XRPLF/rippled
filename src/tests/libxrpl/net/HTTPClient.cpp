@@ -2,7 +2,10 @@
 #include <xrpl/net/HTTPClient.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
@@ -13,6 +16,7 @@
 #include <atomic>
 #include <map>
 #include <memory>
+#include <semaphore>
 #include <thread>
 
 using namespace xrpl;
@@ -27,6 +31,7 @@ private:
     boost::asio::ip::tcp::acceptor acceptor_;
     boost::asio::ip::tcp::endpoint endpoint_;
     std::atomic<bool> running_{true};
+    std::binary_semaphore asyncSem_;
     unsigned short port_;
 
     // Custom headers to return
@@ -37,7 +42,8 @@ private:
     beast::Journal j_;
 
 public:
-    TestHTTPServer() : acceptor_(ioc_), port_(0), j_(TestSink::instance())
+    TestHTTPServer()
+        : acceptor_(ioc_), port_(0), j_(TestSink::instance()), asyncSem_(0)
     {
         // Bind to any available port
         endpoint_ = {boost::asio::ip::tcp::v4(), 0};
@@ -49,8 +55,13 @@ public:
         // Get the actual port that was assigned
         port_ = acceptor_.local_endpoint().port();
 
-        accept();
+        // Start the accept coroutine
+        boost::asio::co_spawn(ioc_, accept(), boost::asio::detached);
     }
+
+    TestHTTPServer(TestHTTPServer&&) = delete;
+    TestHTTPServer&
+    operator=(TestHTTPServer&&) = delete;
 
     ~TestHTTPServer()
     {
@@ -95,85 +106,78 @@ private:
         acceptor_.close();
     }
 
-    void
+    boost::asio::awaitable<void>
     accept()
     {
-        if (!running_)
-            return;
+        while (running_)
+        {
+            try
+            {
+                auto socket =
+                    co_await acceptor_.async_accept(boost::asio::use_awaitable);
 
-        acceptor_.async_accept(
-            ioc_,
-            endpoint_,
-            [&](boost::system::error_code const& error,
-                boost::asio::ip::tcp::socket peer) {
                 if (!running_)
-                    return;
+                    co_return;
 
-                if (!error)
-                {
-                    handleConnection(std::move(peer));
-                }
-            });
+                // Handle this connection concurrently
+                boost::asio::co_spawn(
+                    ioc_,
+                    handleConnection(std::move(socket)),
+                    boost::asio::detached);
+            }
+            catch (std::exception const& e)
+            {
+                // Accept failed, stop accepting
+                JLOG(j_.debug()) << "Accept error: " << e.what();
+                co_return;
+            }
+        }
     }
 
-    void
+    boost::asio::awaitable<void>
     handleConnection(boost::asio::ip::tcp::socket socket)
     {
-        // Use async operations to avoid blocking the io_context thread
-        // Use shared_ptr to keep objects alive during async operations
-        auto sock =
-            std::make_shared<boost::asio::ip::tcp::socket>(std::move(socket));
-        auto buffer = std::make_shared<boost::beast::flat_buffer>();
-        auto req = std::make_shared<
-            boost::beast::http::request<boost::beast::http::string_body>>();
+        try
+        {
+            boost::beast::flat_buffer buffer;
+            boost::beast::http::request<boost::beast::http::string_body> req;
 
-        // Read the HTTP request asynchronously
-        boost::beast::http::async_read(
-            *sock,
-            *buffer,
-            *req,
-            [this, sock, buffer, req](
-                boost::beast::error_code ec, std::size_t) {
-                if (ec)
-                {
-                    // Error reading, just close the connection
-                    JLOG(j_.debug()) << "Error reading: " << ec.message()
-                                     << ", code: " << ec.value();
-                    return;
-                }
+            // Read the HTTP request asynchronously
+            co_await boost::beast::http::async_read(
+                socket, buffer, req, boost::asio::use_awaitable);
 
-                // Create response
-                auto res = std::make_shared<boost::beast::http::response<
-                    boost::beast::http::string_body>>();
-                res->version(req->version());
-                res->result(statusCode_);
-                res->set(boost::beast::http::field::server, "TestServer");
+            // Create response
+            boost::beast::http::response<boost::beast::http::string_body> res;
+            res.version(req.version());
+            res.result(statusCode_);
+            res.set(boost::beast::http::field::server, "TestServer");
 
-                // Set body and prepare payload first
-                res->body() = responseBody_;
-                res->prepare_payload();
+            // Set body and prepare payload first
+            res.body() = responseBody_;
+            res.prepare_payload();
 
-                // Override Content-Length with custom headers after
-                // prepare_payload. This allows us to test case-insensitive
-                // header parsing.
-                for (auto const& [name, value] : customHeaders_)
-                {
-                    res->set(name, value);
-                }
+            // Override Content-Length with custom headers after
+            // prepare_payload. This allows us to test case-insensitive
+            // header parsing.
+            for (auto const& [name, value] : customHeaders_)
+            {
+                res.set(name, value);
+            }
 
-                // Send response asynchronously
-                boost::beast::http::async_write(
-                    *sock,
-                    *res,
-                    [sock, res](boost::beast::error_code ec, std::size_t) {
-                        // Shutdown socket gracefully
-                        boost::system::error_code shutdownEc;
-                        sock->shutdown(
-                            boost::asio::ip::tcp::socket::shutdown_send,
-                            shutdownEc);
-                        // Socket will close when shared_ptr is destroyed
-                    });
-            });
+            // Send response asynchronously
+            co_await boost::beast::http::async_write(
+                socket, res, boost::asio::use_awaitable);
+
+            // Shutdown socket gracefully
+            boost::system::error_code shutdownEc;
+            socket.shutdown(
+                boost::asio::ip::tcp::socket::shutdown_send, shutdownEc);
+        }
+        catch (std::exception const& e)
+        {
+            // Error reading or writing, just close the connection
+            JLOG(j_.debug()) << "Connection error: " << e.what();
+        }
     }
 };
 

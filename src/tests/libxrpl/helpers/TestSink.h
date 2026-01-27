@@ -10,8 +10,8 @@ public:
     static TestSink&
     instance()
     {
-        static TestSink _;
-        return _;
+        static TestSink sink{};
+        return sink;
     }
 
     TestSink(beast::severities::Severity threshold = beast::severities::kDebug);
