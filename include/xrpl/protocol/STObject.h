@@ -397,6 +397,9 @@ public:
     void
     delField(int index);
 
+    SOEStyle
+    getStyle(SField const& field) const;
+
     bool
     hasMatchingEntry(STBase const&);
 
