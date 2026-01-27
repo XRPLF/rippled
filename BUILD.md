@@ -148,8 +148,8 @@ function extract_version {
 }
 
 # Define which recipes to export.
-recipes=('ed25519' 'grpc' 'openssl' 'secp256k1' 'snappy' 'soci')
-folders=('all'     'all'  '3.x.x'   'all'       'all'    'all')
+recipes=('ed25519' 'grpc' 'nudb' 'openssl' 'secp256k1' 'snappy' 'soci')
+folders=('all'     'all'  'all'  '3.x.x'   'all'       'all'    'all')
 
 # Selectively check out the recipes from our CCI fork.
 cd external
