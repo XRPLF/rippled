@@ -1,3 +1,4 @@
+#include <xrpld/app/tx/detail/SetOracle.h>
 #include <xrpld/app/tx/detail/SponsorshipTransfer.h>
 
 #include <xrpl/ledger/ReadView.h>
@@ -120,7 +121,8 @@ getLedgerEntryOwnerCount(T const& sle)
     switch (sle->getType())
     {
         case ltORACLE: {
-            return sle->getFieldArray(sfPriceDataSeries).size() > 5 ? 2 : 1;
+            return SetOracle::calculateOracleReserve(
+                sle->getFieldArray(sfPriceDataSeries).size());
         }
         default:
             return 1;

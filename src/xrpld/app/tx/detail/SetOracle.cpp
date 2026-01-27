@@ -40,7 +40,7 @@ SetOracle::preflight(PreflightContext const& ctx)
 }
 
 uint32_t
-calculateOracleReserve(std::size_t count)
+SetOracle::calculateOracleReserve(std::size_t count)
 {
     return count > 5 ? 2 : 1;
 }
