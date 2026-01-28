@@ -31,15 +31,14 @@ private:
     boost::asio::io_context ioc_;
     boost::asio::ip::tcp::acceptor acceptor_;
     boost::asio::ip::tcp::endpoint endpoint_;
-    std::atomic<bool> running_{true};
+    bool running_{true};
+    bool finished_{false};
     unsigned short port_;
 
     // Custom headers to return
     std::map<std::string, std::string> customHeaders_;
     std::string responseBody_;
     unsigned int statusCode_{200};
-
-    std::future<void> acceptFuture_;
 
     beast::Journal j_;
 
@@ -57,8 +56,7 @@ public:
         port_ = acceptor_.local_endpoint().port();
 
         // Start the accept coroutine
-        acceptFuture_ =
-            boost::asio::co_spawn(ioc_, accept(), boost::asio::use_future);
+        boost::asio::co_spawn(ioc_, accept(), boost::asio::detached);
     }
 
     TestHTTPServer(TestHTTPServer&&) = delete;
@@ -68,7 +66,7 @@ public:
     ~TestHTTPServer()
     {
         XRPL_ASSERT(
-            stopped(),
+            finished(),
             "xrpl::TestHTTPServer::~TestHTTPServer : accept future ready");
     }
 
@@ -110,10 +108,9 @@ public:
     }
 
     bool
-    stopped() const
+    finished() const
     {
-        using namespace std::chrono_literals;
-        return acceptFuture_.wait_for(0ms) == std::future_status::ready;
+        return finished_;
     }
 
 private:
@@ -128,7 +125,7 @@ private:
                     co_await acceptor_.async_accept(boost::asio::use_awaitable);
 
                 if (!running_)
-                    co_return;
+                    break;
 
                 // Handle this connection
                 co_await handleConnection(std::move(socket));
@@ -137,9 +134,11 @@ private:
             {
                 // Accept or handle failed, stop accepting
                 JLOG(j_.debug()) << "Error: " << e.what();
-                co_return;
+                break;
             }
         }
+
+        finished_ = true;
     }
 
     boost::asio::awaitable<void>
@@ -194,8 +193,8 @@ bool
 runHTTPTest(
     TestHTTPServer& server,
     std::string const& path,
-    std::atomic<bool>& completed,
-    std::atomic<int>& resultStatus,
+    bool& completed,
+    int& resultStatus,
     std::string& resultData,
     boost::system::error_code& resultError)
 {
@@ -230,7 +229,7 @@ runHTTPTest(
     {
         if (std::chrono::steady_clock::now() - start >=
                 std::chrono::seconds(10) ||
-            server.stopped())
+            server.finished())
         {
             break;
         }
@@ -264,8 +263,8 @@ TEST(HTTPClient, case_insensitive_content_length)
         server.setResponseBody(testBody);
         server.setHeader(headerName, std::to_string(testBody.size()));
 
-        std::atomic<bool> completed{false};
-        std::atomic<int> resultStatus{0};
+        bool completed{false};
+        int resultStatus{0};
         std::string resultData;
         boost::system::error_code resultError;
 
@@ -287,8 +286,8 @@ TEST(HTTPClient, basic_http_request)
     server.setResponseBody(testBody);
     server.setHeader("Content-Type", "text/plain");
 
-    std::atomic<bool> completed{false};
-    std::atomic<int> resultStatus{0};
+    bool completed{false};
+    int resultStatus{0};
     std::string resultData;
     boost::system::error_code resultError;
 
@@ -307,8 +306,8 @@ TEST(HTTPClient, empty_response)
     server.setResponseBody("");  // Empty body
     server.setHeader("Content-Length", "0");
 
-    std::atomic<bool> completed{false};
-    std::atomic<int> resultStatus{0};
+    bool completed{false};
+    int resultStatus{0};
     std::string resultData;
     boost::system::error_code resultError;
 
@@ -331,8 +330,8 @@ TEST(HTTPClient, different_status_codes)
         server.setStatusCode(status);
         server.setResponseBody("Status " + std::to_string(status));
 
-        std::atomic<bool> completed{false};
-        std::atomic<int> resultStatus{0};
+        bool completed{false};
+        int resultStatus{0};
         std::string resultData;
         boost::system::error_code resultError;
 
