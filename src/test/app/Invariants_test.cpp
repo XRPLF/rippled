@@ -39,8 +39,7 @@ class Invariants_test : public beast::unit_test::suite
     static FeatureBitset
     defaultAmendments()
     {
-        return xrpl::test::jtx::testable_amendments() | featureInvariantsV1_1 |
-            featureSingleAssetVault;
+        return xrpl::test::jtx::testable_amendments() | featureInvariantsV1_1 | featureSingleAssetVault;
     }
 
     /** Run a specific test case to put the ledger into a state that will be
@@ -71,14 +70,7 @@ class Invariants_test : public beast::unit_test::suite
         TxAccount setTxAccount = TxAccount::None)
     {
         return doInvariantCheck(
-            test::jtx::Env(*this, defaultAmendments()),
-            expect_logs,
-            precheck,
-            fee,
-            tx,
-            ters,
-            preclose,
-            setTxAccount);
+            test::jtx::Env(*this, defaultAmendments()), expect_logs, precheck, fee, tx, ters, preclose, setTxAccount);
     }
 
     void
@@ -88,8 +80,7 @@ class Invariants_test : public beast::unit_test::suite
         Precheck const& precheck,
         XRPAmount fee = XRPAmount{},
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
-        std::initializer_list<TER> ters =
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+        std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
         Preclose const& preclose = {},
         TxAccount setTxAccount = TxAccount::None)
     {
@@ -103,11 +94,9 @@ class Invariants_test : public beast::unit_test::suite
         env.close();
 
         if (setTxAccount != TxAccount::None)
-            tx.setAccountID(
-                sfAccount, setTxAccount == TxAccount::A1 ? A1.id() : A2.id());
+            tx.setAccountID(sfAccount, setTxAccount == TxAccount::A1 ? A1.id() : A2.id());
 
-        return doInvariantCheck(
-            std::move(env), A1, A2, expect_logs, precheck, fee, tx, ters);
+        return doInvariantCheck(std::move(env), A1, A2, expect_logs, precheck, fee, tx, ters);
     }
 
     void
@@ -119,9 +108,7 @@ class Invariants_test : public beast::unit_test::suite
         Precheck const& precheck,
         XRPAmount fee = XRPAmount{},
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
-        std::initializer_list<TER> ters = {
-            tecINVARIANT_FAILED,
-            tefINVARIANT_FAILED})
+        std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED})
     {
         using namespace test::jtx;
 
@@ -140,8 +127,7 @@ class Invariants_test : public beast::unit_test::suite
         for (TER const& terExpect : ters)
         {
             terActual = ac.checkInvariants(terActual, fee);
-            BEAST_EXPECTS(
-                terExpect == terActual, std::to_string(TERtoInt(terActual)));
+            BEAST_EXPECTS(terExpect == terActual, std::to_string(TERtoInt(terActual)));
             auto const messages = sink.messages().str();
 
             if (terActual != tesSUCCESS)
@@ -1195,8 +1181,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto cred = STObject::makeInnerObject(sfCredential);
                 cred.setAccountID(sfIssuer, A2);
                 auto credType = "cred_type" + std::to_string(n);
-                cred.setFieldVL(
-                    sfCredentialType, Slice(credType.c_str(), credType.size()));
+                cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
                 credentials.push_back(std::move(cred));
             }
             sle->setFieldArray(sfAcceptedCredentials, credentials);
@@ -1212,13 +1197,10 @@ class Invariants_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         bool const fixPDEnabled = features[fixPermissionedDomainInvariant];
-        std::initializer_list<TER> badTers = {
-            tecINVARIANT_FAILED, tecINVARIANT_FAILED};
-        std::initializer_list<TER> failTers = {
-            tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+        std::initializer_list<TER> badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
+        std::initializer_list<TER> failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
 
-        testcase << "PermissionedDomain" +
-                std::string(fixPDEnabled ? " fix" : "");
+        testcase << "PermissionedDomain" + std::string(fixPDEnabled ? " fix" : "");
 
         doInvariantCheck(
             Env(*this, features),
@@ -1402,16 +1384,12 @@ class Invariants_test : public beast::unit_test::suite
 
         std::initializer_list<TER> goodTers = {tesSUCCESS, tesSUCCESS};
 
-        std::vector<std::string> badMoreThan1{
-            {"transaction affected more than 1 permissioned domain entry."}};
+        std::vector<std::string> badMoreThan1{{"transaction affected more than 1 permissioned domain entry."}};
         std::vector<std::string> emptyV;
-        std::vector<std::string> badNoDomains{
-            {"no domain objects affected by"}};
-        std::vector<std::string> badNotDeleted{
-            {"domain object modified, but not deleted by "}};
+        std::vector<std::string> badNoDomains{{"no domain objects affected by"}};
+        std::vector<std::string> badNotDeleted{{"domain object modified, but not deleted by "}};
         std::vector<std::string> badDeleted{{"domain object deleted by"}};
-        std::vector<std::string> badTx{
-            {"domain object(s) affected by an unauthorized transaction."}};
+        std::vector<std::string> badTx{{"domain object(s) affected by an unauthorized transaction."}};
 
         {
             testcase << "PermissionedDomain set 2 domains ";
@@ -1438,10 +1416,8 @@ class Invariants_test : public beast::unit_test::suite
             env1.fund(XRP(1000), A1, A2);
             env1.close();
 
-            [[maybe_unused]] auto [seq1, pd1] =
-                createPermissionedDomainEnv(env1, A1, A2);
-            [[maybe_unused]] auto [seq2, pd2] =
-                createPermissionedDomainEnv(env1, A1, A2);
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, A1, A2);
+            [[maybe_unused]] auto [seq2, pd2] = createPermissionedDomainEnv(env1, A1, A2);
             env1.close();
 
             doInvariantCheck(
@@ -1466,9 +1442,7 @@ class Invariants_test : public beast::unit_test::suite
             doInvariantCheck(
                 Env(*this, features),
                 fixPDEnabled ? badNoDomains : emptyV,
-                [](Account const&, Account const&, ApplyContext&) {
-                    return true;
-                },
+                [](Account const&, Account const&, ApplyContext&) { return true; },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
                 fixPDEnabled ? badTers : goodTers);
@@ -1484,10 +1458,8 @@ class Invariants_test : public beast::unit_test::suite
             env1.fund(XRP(1000), A1, A2);
             env1.close();
 
-            [[maybe_unused]] auto [seq1, pd1] =
-                createPermissionedDomainEnv(env1, A1, A2);
-            [[maybe_unused]] auto [seq2, pd2] =
-                createPermissionedDomainEnv(env1, A1, A2);
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, A1, A2);
+            [[maybe_unused]] auto [seq2, pd2] = createPermissionedDomainEnv(env1, A1, A2);
             env1.close();
 
             doInvariantCheck(
@@ -1495,9 +1467,7 @@ class Invariants_test : public beast::unit_test::suite
                 A1,
                 A2,
                 fixPDEnabled ? badNoDomains : emptyV,
-                [](Account const&, Account const&, ApplyContext&) {
-                    return true;
-                },
+                [](Account const&, Account const&, ApplyContext&) { return true; },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
                 fixPDEnabled ? badTers : goodTers);
@@ -1513,8 +1483,7 @@ class Invariants_test : public beast::unit_test::suite
             env1.fund(XRP(1000), A1, A2);
             env1.close();
 
-            [[maybe_unused]] auto [seq1, pd1] =
-                createPermissionedDomainEnv(env1, A1, A2);
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, A1, A2);
             env1.close();
 
             doInvariantCheck(
@@ -1770,8 +1739,7 @@ class Invariants_test : public beast::unit_test::suite
             env1.fund(XRP(1000), A1, A2);
             env1.close();
 
-            [[maybe_unused]] auto [seq1, pd1] =
-                createPermissionedDomainEnv(env1, A1, A2);
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, A1, A2);
             env1.close();
 
             doInvariantCheck(
@@ -1809,8 +1777,7 @@ class Invariants_test : public beast::unit_test::suite
             env1.fund(XRP(1000), A1, A2);
             env1.close();
 
-            [[maybe_unused]] auto [seq1, pd1] =
-                createPermissionedDomainEnv(env1, A1, A2);
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, A1, A2);
             env1.close();
 
             doInvariantCheck(
@@ -1842,10 +1809,8 @@ class Invariants_test : public beast::unit_test::suite
             env1.fund(XRP(1000), A1, A2);
             env1.close();
 
-            [[maybe_unused]] auto [seq1, pd1] =
-                createPermissionedDomainEnv(env1, A1, A2);
-            [[maybe_unused]] auto [seq2, pd2] =
-                createPermissionedDomainEnv(env1, A1, A2);
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, A1, A2);
+            [[maybe_unused]] auto [seq2, pd2] = createPermissionedDomainEnv(env1, A1, A2);
             env1.close();
 
             doInvariantCheck(
@@ -1882,8 +1847,7 @@ class Invariants_test : public beast::unit_test::suite
             env1.fund(XRP(1000), A1, A2);
             env1.close();
 
-            [[maybe_unused]] auto [seq1, pd1] =
-                createPermissionedDomainEnv(env1, A1, A2);
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, A1, A2);
             env1.close();
 
             doInvariantCheck(
@@ -3760,14 +3724,10 @@ public:
         testNoZeroEscrow();
         testValidNewAccountRoot();
         testNFTokenPageInvariants();
-        testPermissionedDomainInvariants(
-            defaultAmendments() | fixPermissionedDomainInvariant);
-        testPermissionedDomainInvariants(
-            defaultAmendments() - fixPermissionedDomainInvariant);
-        testPermissionedDEX(
-            defaultAmendments() | fixPermissionedDomainInvariant);
-        testPermissionedDEX(
-            defaultAmendments() - fixPermissionedDomainInvariant);
+        testPermissionedDomainInvariants(defaultAmendments() | fixPermissionedDomainInvariant);
+        testPermissionedDomainInvariants(defaultAmendments() - fixPermissionedDomainInvariant);
+        testPermissionedDEX(defaultAmendments() | fixPermissionedDomainInvariant);
+        testPermissionedDEX(defaultAmendments() - fixPermissionedDomainInvariant);
         testNoModifiedUnmodifiableFields();
         testValidPseudoAccounts();
         testValidLoanBroker();

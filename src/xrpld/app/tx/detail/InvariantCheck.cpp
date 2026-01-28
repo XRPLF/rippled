@@ -1516,7 +1516,7 @@ ValidPermissionedDomain::visitEntry(
     if (after && after->getType() != ltPERMISSIONED_DOMAIN)
         return;
 
-    auto check = [isDel](SleStatus& sleStatus, std::shared_ptr<SLE const> const& sle) {
+    auto check = [isDel](std::vector<SleStatus>& sleStatus, std::shared_ptr<SLE const> const& sle) {
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 
@@ -1602,9 +1602,8 @@ ValidPermissionedDomain::finalize(
             case ttPERMISSIONED_DOMAIN_SET: {
                 if (sleStatus_.empty())
                 {
-                    JLOG(j.fatal())
-                        << "Invariant failed: no domain objects affected by "
-                           "PermissionedDomainSet";
+                    JLOG(j.fatal()) << "Invariant failed: no domain objects affected by "
+                                       "PermissionedDomainSet";
                     return false;
                 }
 
@@ -1620,9 +1619,8 @@ ValidPermissionedDomain::finalize(
             case ttPERMISSIONED_DOMAIN_DELETE: {
                 if (sleStatus_.empty())
                 {
-                    JLOG(j.fatal())
-                        << "Invariant failed: no domain objects affected by "
-                           "PermissionedDomainDelete";
+                    JLOG(j.fatal()) << "Invariant failed: no domain objects affected by "
+                                       "PermissionedDomainDelete";
                     return false;
                 }
 
@@ -1650,8 +1648,7 @@ ValidPermissionedDomain::finalize(
     }
     else
     {
-        if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET ||
-            result != tesSUCCESS || sleStatus_.empty())
+        if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET || result != tesSUCCESS || sleStatus_.empty())
             return true;
         return check(sleStatus_[0], j);
     }

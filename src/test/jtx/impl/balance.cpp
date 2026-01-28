@@ -5,9 +5,8 @@ namespace test {
 namespace jtx {
 
 #define TEST_EXPECT(cond) env.test.expect(cond, __FILE__, __LINE__)
-#define TEST_EXPECTS(cond, reason)    \
-    ((cond) ? (env.test.pass(), true) \
-            : (env.test.fail((reason), __FILE__, __LINE__), false))
+#define TEST_EXPECTS(cond, reason) \
+    ((cond) ? (env.test.pass(), true) : (env.test.fail((reason), __FILE__, __LINE__), false))
 
 void
 doBalance(Env& env, AccountID const& account, bool none, STAmount const& value, Issue const& issue)
@@ -23,8 +22,7 @@ doBalance(Env& env, AccountID const& account, bool none, STAmount const& value, 
         {
             TEST_EXPECTS(
                 sle->getFieldAmount(sfBalance) == value,
-                sle->getFieldAmount(sfBalance).getText() + " / " +
-                    value.getText());
+                sle->getFieldAmount(sfBalance).getText() + " / " + value.getText());
         }
     }
     else
