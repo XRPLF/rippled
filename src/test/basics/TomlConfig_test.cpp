@@ -77,8 +77,7 @@ public:
 
         // simple array
         {
-            auto result =
-                parseTomlString("items = [\"one\", \"two\", \"three\"]", j_);
+            auto result = parseTomlString("items = [\"one\", \"two\", \"three\"]", j_);
             BEAST_EXPECT(result.has_value());
             auto* arr = (*result)["items"].as_array();
             BEAST_EXPECT(arr != nullptr);
@@ -140,8 +139,7 @@ public:
         testcase("parseTomlString 2");
         // multiline string
         {
-            auto result =
-                parseTomlString("text = \"\"\"\nline1\nline2\n\"\"\"", j_);
+            auto result = parseTomlString("text = \"\"\"\nline1\nline2\n\"\"\"", j_);
             BEAST_EXPECT(result.has_value());
             auto text = (*result)["text"].as_string()->get();
             BEAST_EXPECT(text.find("line1") != std::string::npos);
@@ -193,13 +191,7 @@ public:
 
         // valid file
         {
-            FileDirGuard file(
-                *this,
-                "toml_test",
-                "config.toml",
-                "key = \"value\"",
-                true,
-                true);
+            FileDirGuard file(*this, "toml_test", "config.toml", "key = \"value\"", true, true);
             auto result = parseTomlFile(file.file(), j_);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT((*result)["key"].as_string()->get() == "value");
@@ -225,8 +217,7 @@ ports = ["port_rpc", "port_peer"]
 type = "NuDB"
 path = "/var/db"
 )toml";
-            FileDirGuard file(
-                *this, "toml_test", "complex.toml", content, true, true);
+            FileDirGuard file(*this, "toml_test", "complex.toml", content, true, true);
             auto result = parseTomlFile(file.file(), j_);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT((*result)["server"].is_table());
@@ -242,8 +233,7 @@ path = "/var/db"
 
         // invalid toml file
         {
-            FileDirGuard file(
-                *this, "toml_test", "invalid.toml", "key = [bad", true, true);
+            FileDirGuard file(*this, "toml_test", "invalid.toml", "key = [bad", true, true);
             auto result = parseTomlFile(file.file(), j_);
             BEAST_EXPECT(!result.has_value());
         }
@@ -264,8 +254,7 @@ path = "/var/db"
 
         // table section
         {
-            auto tbl =
-                toml::parse("[node_db]\ntype = \"NuDB\"\npath = \"/db\"");
+            auto tbl = toml::parse("[node_db]\ntype = \"NuDB\"\npath = \"/db\"");
             auto ini = tomlToIniFileSections(tbl, j_);
             BEAST_EXPECT(ini.find("node_db") != ini.end());
             auto const& lines = ini["node_db"];
@@ -379,8 +368,7 @@ admin = "127.0.0.1"
 
             BEAST_EXPECT(ini.find("port_admin") != ini.end());
             auto const& lines = ini["port_admin"];
-            bool hasIp = false, hasPort = false, hasProtocol = false,
-                 hasAdmin = false;
+            bool hasIp = false, hasPort = false, hasProtocol = false, hasAdmin = false;
             for (auto const& line : lines)
             {
                 if (line == "ip=127.0.0.1")
@@ -413,9 +401,7 @@ admin = "127.0.0.1"
 
             BEAST_EXPECT(ini.find("rpc_startup") != ini.end());
             BEAST_EXPECT(ini["rpc_startup"].size() == 1);
-            BEAST_EXPECT(
-                ini["rpc_startup"][0] ==
-                "{ \"command\": \"log_level\", \"severity\": \"warning\" }");
+            BEAST_EXPECT(ini["rpc_startup"][0] == "{ \"command\": \"log_level\", \"severity\": \"warning\" }");
         }
 
         // ips host port using array of tables
@@ -469,8 +455,7 @@ validator_list_keys = [
 
         // sntp servers
         {
-            auto tbl = toml::parse(
-                "sntp_servers = [\"time.google.com\", \"time.apple.com\"]");
+            auto tbl = toml::parse("sntp_servers = [\"time.google.com\", \"time.apple.com\"]");
             auto ini = tomlToIniFileSections(tbl, j_);
 
             BEAST_EXPECT(ini.find("sntp_servers") != ini.end());
@@ -484,8 +469,7 @@ validator_list_keys = [
         testcase("tomlToIni edge cases");
         // special chars in value
         {
-            auto tbl =
-                toml::parse("url = \"http://example.com:8080/path?q=1\"");
+            auto tbl = toml::parse("url = \"http://example.com:8080/path?q=1\"");
             auto ini = tomlToIniFileSections(tbl, j_);
             BEAST_EXPECT(ini.find("url") != ini.end());
             BEAST_EXPECT(ini["url"][0] == "http://example.com:8080/path?q=1");
@@ -588,8 +572,7 @@ advisory_delete = 0
 
         // toml ini equivalence
         {
-            auto tbl =
-                toml::parse("node_size = \"medium\"\nledger_history = 256");
+            auto tbl = toml::parse("node_size = \"medium\"\nledger_history = 256");
             auto ini = tomlToIniFileSections(tbl, j_);
 
             BEAST_EXPECT(ini["node_size"][0] == "medium");

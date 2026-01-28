@@ -16,8 +16,7 @@ parseTomlFile(boost::filesystem::path const& path, beast::Journal j)
 
     if (ec)
     {
-        JLOG(j.error()) << "Failed to read TOML file '" << path.string()
-                        << "': " << ec.message();
+        JLOG(j.error()) << "Failed to read TOML file '" << path.string() << "': " << ec.message();
         return std::nullopt;
     }
 
@@ -33,9 +32,8 @@ parseTomlString(std::string const& input, beast::Journal j)
     }
     catch (toml::parse_error const& e)
     {
-        JLOG(j.error()) << "TOML parse error at line " << e.source().begin.line
-                        << ", column " << e.source().begin.column << ": "
-                        << e.description();
+        JLOG(j.error()) << "TOML parse error at line " << e.source().begin.line << ", column "
+                        << e.source().begin.column << ": " << e.description();
         return std::nullopt;
     }
 }
@@ -44,10 +42,7 @@ namespace {
 
 // Helper to process a TOML table into key=value lines
 void
-processTable(
-    toml::table const& tbl,
-    std::vector<std::string>& lines,
-    beast::Journal j)
+processTable(toml::table const& tbl, std::vector<std::string>& lines, beast::Journal j)
 {
     for (auto const& [key, value] : tbl)
     {
@@ -92,10 +87,7 @@ processTable(
 
 // Helper to process a TOML array into multiple lines
 void
-processArray(
-    toml::array const& arr,
-    std::vector<std::string>& lines,
-    beast::Journal j)
+processArray(toml::array const& arr, std::vector<std::string>& lines, beast::Journal j)
 {
     for (auto const& item : arr)
     {
@@ -204,8 +196,7 @@ tomlToIniFileSections(toml::table const& tbl, beast::Journal j)
                     {
                         if (key != "ports" && val.is_value())
                         {
-                            auto& serverLines =
-                                result[std::string(sectionName)];
+                            auto& serverLines = result[std::string(sectionName)];
                             std::ostringstream oss;
                             oss << key << "=";
                             if (auto* str = val.as_string())
@@ -233,9 +224,7 @@ bool
 isTomlFile(boost::filesystem::path const& path)
 {
     auto ext = path.extension().string();
-    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) {
-        return std::tolower(c);
-    });
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
     return ext == ".toml";
 }
 
