@@ -1080,7 +1080,8 @@ MPTTester::convert(MPTConvert const& arg)
         holderCiphertext,
         issuerCiphertext,
         auditorCiphertext,
-        blindingFactor);
+        blindingFactor,
+        *arg.fillAuditorEncryptedAmt);
 
     jv[sfBlindingFactor.jsonName] = strHex(blindingFactor);
     if (arg.proof)
@@ -1246,10 +1247,9 @@ MPTTester::send(MPTConfidentialSend const& arg)
 
     std::optional<Buffer> auditorAmt;
     if (arg.auditorEncryptedAmt)
-        jv[sfAuditorEncryptedAmount] = strHex(*arg.auditorEncryptedAmt);
+        auditorAmt = arg.auditorEncryptedAmt;
     else if (auditor_.has_value())
-        jv[sfAuditorEncryptedAmount] =
-            strHex(encryptAmount(*auditor_, *arg.amt, blindingFactor));
+        auditorAmt = encryptAmount(*auditor_, *arg.amt, blindingFactor);
 
     jv[sfSenderEncryptedAmount] = strHex(senderAmt);
     jv[sfDestinationEncryptedAmount] = strHex(destAmt);

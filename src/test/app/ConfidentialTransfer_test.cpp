@@ -410,9 +410,30 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.generateKeyPair(alice);
             mptAlice.generateKeyPair(bob);
 
+            // Pub key is invalid
             mptAlice.set(
                 {.account = alice,
                  .issuerPubKey = Buffer{},
+                 .err = temMALFORMED});
+
+            // Auditor key is invalid length
+            mptAlice.set(
+                {.account = alice,
+                 .issuerPubKey = mptAlice.getPubKey(alice),
+                 .auditorPubKey = Buffer(10),
+                 .err = temMALFORMED});
+
+            // Cannot set auditor key without issuer key
+            mptAlice.set(
+                {.account = alice,
+                 .auditorPubKey = mptAlice.getPubKey(alice),
+                 .err = temMALFORMED});
+
+            // Cannot set Holder and Keys in the same transaction
+            mptAlice.set(
+                {.account = alice,
+                 .holder = bob,
+                 .issuerPubKey = mptAlice.getPubKey(alice),
                  .err = temMALFORMED});
         }
 
@@ -437,42 +458,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = alice,
                  .issuerPubKey = mptAlice.getPubKey(alice),
                  .err = tecNO_PERMISSION});
-        }
-
-        // auditor key is invalid length
-        {
-            Env env{*this, features};
-            Account const alice("alice");
-            MPTTester mptAlice(env, alice);
-
-            mptAlice.create(
-                {.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanPrivacy});
-
-            mptAlice.generateKeyPair(alice);
-
-            mptAlice.set(
-                {.account = alice,
-                 .issuerPubKey = mptAlice.getPubKey(alice),
-                 .auditorPubKey = Buffer(10),  // Invalid length
-                 .err = temMALFORMED});
-        }
-
-        // cannot set auditor key without issuer key
-        {
-            Env env{*this, features};
-            Account const alice("alice");
-            MPTTester mptAlice(env, alice);
-
-            mptAlice.create(
-                {.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanPrivacy});
-
-            mptAlice.generateKeyPair(alice);
-
-            // Providing only auditor key should fail
-            mptAlice.set(
-                {.account = alice,
-                 .auditorPubKey = mptAlice.getPubKey(alice),
-                 .err = temMALFORMED});
         }
     }
 
@@ -734,7 +719,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Account const alice("alice");
             Account const bob("bob");
             Account const auditor("auditor");
-            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            MPTTester mptAlice(
+                env, alice, {.holders = {bob}, .auditor = auditor});
 
             mptAlice.create(
                 {.ownerCount = 1,
@@ -756,6 +742,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = bob,
                  .amt = 10,
+                 .fillAuditorEncryptedAmt = false,
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .err = tecNO_PERMISSION});
         }

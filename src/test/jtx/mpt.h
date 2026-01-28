@@ -172,7 +172,7 @@ struct MPTConvert
     std::optional<MPTID> id = std::nullopt;
     std::optional<std::uint64_t> amt = std::nullopt;
     std::optional<std::string> proof = std::nullopt;
-
+    std::optional<bool> fillAuditorEncryptedAmt = true;
     // indicates whether to autofill schnorr proof.
     // default : auto generate proof if holderPubKey is present.
     // true: force proof generation.
