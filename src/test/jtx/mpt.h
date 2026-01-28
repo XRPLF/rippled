@@ -215,6 +215,8 @@ struct MPTConfidentialSend
     std::optional<std::vector<std::string>> credentials = std::nullopt;
     // not an txn param, only used for autofilling
     std::optional<Buffer> blindingFactor = std::nullopt;
+    std::optional<Buffer> amountCommitment = std::nullopt;
+    std::optional<Buffer> balanceCommitment = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -465,11 +467,14 @@ public:
 
     std::optional<Buffer>
     getConfidentialSendProof(
+        Account const& sender,
         std::uint64_t const amount,
         std::vector<ConfidentialRecipient> const& recipients,
         Slice const& blindingFactor,
         std::size_t const nRecipients,
-        uint256 const& contextHash) const;
+        uint256 const& contextHash,
+        PedersenProofParams const& amountParams,
+        PedersenProofParams const& balanceParams) const;
 
     Buffer
     getConvertBackProof(
@@ -486,7 +491,14 @@ public:
     getMPTokenVersion(Account const account) const;
 
     Buffer
-    generatePedersenLinkageProof(
+    getAmountLinkageProof(
+        Buffer const& pubKey,
+        Buffer const& blindingFactor,
+        uint256 const& contextHash,
+        PedersenProofParams const& params) const;
+
+    Buffer
+    getBalanceLinkageProof(
         Account const& account,
         uint256 const& contextHash,
         Buffer const& pubKey,

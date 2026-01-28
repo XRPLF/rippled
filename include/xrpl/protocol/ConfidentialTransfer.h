@@ -163,8 +163,49 @@ verifyClawbackEqualityProof(
 Buffer
 generateBlindingFactor();
 
+/**
+ * @brief Verifies the cryptographic link between an ElGamal Ciphertext and a
+ * Pedersen Commitment for a transaction Amount.
+ *
+ * It proves that the ElGamal ciphertext `encAmt` encrypts the same value `m`
+ * as the Pedersen Commitment `pcmSlice`, using the randomness `r`.
+ * Proves Enc(m) <-> Pcm(m)
+ *
+ * @param proof       The Zero Knowledge Proof bytes.
+ * @param encAmt      The ElGamal ciphertext of the amount (C1, C2).
+ * @param pubKeySlice The sender's public key.
+ * @param pcmSlice    The Pedersen Commitment to the amount.
+ * @param contextHash The unique context hash for this transaction.
+ * @return tesSUCCESS if the proof is valid, or an error code otherwise.
+ */
 TER
-verifyPedersenLinkage(
+verifyAmountPcmLinkage(
+    Slice const& proof,
+    Slice const& encAmt,
+    Slice const& pubKeySlice,
+    Slice const& pcmSlice,
+    uint256 const& contextHash);
+
+/**
+ * @brief Verifies the cryptographic link between an ElGamal Ciphertext and a
+ * Pedersen Commitment for an account Balance.
+ *
+ * It proves that the ElGamal ciphertext `encAmt` encrypts the same value `b`
+ * as the Pedersen Commitment `pcmSlice`, using the secret key `s`.
+ * Proves Enc(b) <-> Pcm(b)
+ *
+ * Note: Swaps arguments (Pk <-> C1) to accommodate the different algebraic
+ * structure.
+ *
+ * @param proof       The Zero Knowledge Proof bytes.
+ * @param encAmt      The ElGamal ciphertext of the balance (C1, C2).
+ * @param pubKeySlice The sender's public key.
+ * @param pcmSlice    The Pedersen Commitment to the balance.
+ * @param contextHash The unique context hash for this transaction.
+ * @return tesSUCCESS if the proof is valid, or an error code otherwise.
+ */
+TER
+verifyBalancePcmLinkage(
     Slice const& proof,
     Slice const& encAmt,
     Slice const& pubKeySlice,

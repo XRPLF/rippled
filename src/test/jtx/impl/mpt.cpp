@@ -819,16 +819,23 @@ MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
 
 std::optional<Buffer>
 MPTTester::getConfidentialSendProof(
+    Account const& sender,
     std::uint64_t const amount,
     std::vector<ConfidentialRecipient> const& recipients,
     Slice const& blindingFactor,
     std::size_t const nRecipients,
-    uint256 const& contextHash) const
+    uint256 const& contextHash,
+    PedersenProofParams const& amountParams,
+    PedersenProofParams const& balanceParams) const
 {
     if (recipients.size() != nRecipients)
         return std::nullopt;
 
     if (blindingFactor.size() != ecBlindingFactorLength)
+        return std::nullopt;
+
+    auto const senderPubKey = getPubKey(sender);
+    if (!senderPubKey)
         return std::nullopt;
 
     auto const ctx = secp256k1Context();
@@ -874,14 +881,15 @@ MPTTester::getConfidentialSendProof(
             blindingFactor.data() + ecBlindingFactorLength);
     }
 
-    size_t proofLen =
+    size_t sizeEquality =
         secp256k1_mpt_prove_same_plaintext_multi_size(nRecipients);
-    Buffer proof(proofLen);
+    Buffer equalityProof(sizeEquality);
 
+    // Get the multi-ciphertext equality proof
     if (secp256k1_mpt_prove_same_plaintext_multi(
             ctx,
-            proof.data(),
-            &proofLen,
+            equalityProof.data(),
+            &sizeEquality,
             amount,
             nRecipients,
             r.data(),
@@ -892,6 +900,31 @@ MPTTester::getConfidentialSendProof(
     {
         return std::nullopt;
     }
+
+    auto const amountLinkageProof = getAmountLinkageProof(
+        *senderPubKey,
+        Buffer(blindingFactor.data(), ecBlindingFactorLength),
+        contextHash,
+        amountParams);
+
+    auto const balanceLinkageProof = getBalanceLinkageProof(
+        sender, contextHash, *senderPubKey, balanceParams);
+
+    auto const sizeAmountLinkage = amountLinkageProof.size();
+    auto const sizeBalanceLinkage = balanceLinkageProof.size();
+
+    size_t const proofSize =
+        sizeEquality + sizeAmountLinkage + sizeBalanceLinkage;
+    Buffer proof(proofSize);
+
+    auto ptr = proof.data();
+    std::memcpy(ptr, equalityProof.data(), sizeEquality);
+    ptr += sizeEquality;
+
+    std::memcpy(ptr, amountLinkageProof.data(), sizeAmountLinkage);
+    ptr += sizeAmountLinkage;
+
+    std::memcpy(ptr, balanceLinkageProof.data(), sizeBalanceLinkage);
 
     return proof;
 }
@@ -941,7 +974,7 @@ MPTTester::getConvertBackProof(
     auto const holderPubKey = getPubKey(holder);
     if (holderPubKey)
     {
-        Buffer const pedersenProof = generatePedersenLinkageProof(
+        Buffer const pedersenProof = getBalanceLinkageProof(
             holder, contextHash, *holderPubKey, pcParams);
 
         // todo: incoporate range proof
@@ -1264,7 +1297,72 @@ MPTTester::send(MPTConfidentialSend const& arg)
     if (auditorAmt)
         jv[sfAuditorEncryptedAmount] = strHex(*auditorAmt);
 
-    // fill in the proof if not provided
+    if (arg.credentials)
+    {
+        auto& arr(jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        for (auto const& hash : *arg.credentials)
+            arr.append(hash);
+    }
+
+    // Sender's previous confidential state
+    auto const prevSenderInbox =
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+    auto const prevSenderSpending =
+        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+    auto const prevSenderIssuer =
+        getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+    if (!prevSenderInbox || !prevSenderSpending || !prevSenderIssuer)
+        Throw<std::runtime_error>("Failed to get Pre-send balance");
+
+    std::optional<uint64_t> prevSenderAuditor;
+    if (arg.auditorEncryptedAmt || auditor_)
+    {
+        prevSenderAuditor =
+            getDecryptedBalance(*arg.account, AUDITOR_ENCRYPTED_BALANCE);
+        if (!prevSenderAuditor)
+            Throw<std::runtime_error>("Failed to get Pre-send balance");
+    }
+
+    // Destination's previous confidential state
+    auto const prevDestInbox =
+        getDecryptedBalance(*arg.dest, HOLDER_ENCRYPTED_INBOX);
+    auto const prevDestSpending =
+        getDecryptedBalance(*arg.dest, HOLDER_ENCRYPTED_SPENDING);
+    auto const prevDestIssuer =
+        getDecryptedBalance(*arg.dest, ISSUER_ENCRYPTED_BALANCE);
+    if (!prevDestInbox || !prevDestSpending || !prevDestIssuer)
+        Throw<std::runtime_error>("Failed to get Pre-send balance");
+
+    std::optional<uint64_t> prevDestAuditor;
+    if (arg.auditorEncryptedAmt || auditor_)
+    {
+        prevDestAuditor =
+            getDecryptedBalance(*arg.dest, AUDITOR_ENCRYPTED_BALANCE);
+        if (!prevDestAuditor)
+            Throw<std::runtime_error>("Failed to get Pre-send balance");
+    }
+
+    // Fill in the commitment if not provided
+    Buffer amountCommitment, balanceCommitment;
+    auto const amountBlindingFactor = generateBlindingFactor();
+    if (arg.amountCommitment)
+        amountCommitment = *arg.amountCommitment;
+    else
+        amountCommitment =
+            getPedersenCommitment(*arg.amt, amountBlindingFactor);
+
+    jv[sfAmountCommitment] = strHex(amountCommitment);
+
+    auto const balanceBlindingFactor = generateBlindingFactor();
+    if (arg.balanceCommitment)
+        balanceCommitment = *arg.balanceCommitment;
+    else
+        balanceCommitment =
+            getPedersenCommitment(*prevSenderSpending, balanceBlindingFactor);
+
+    jv[sfBalanceCommitment] = strHex(balanceCommitment);
+
+    // Fill in the proof if not provided
     if (arg.proof)
         jv[sfZKProof] = *arg.proof;
     else
@@ -1306,8 +1404,33 @@ MPTTester::send(MPTConfidentialSend const& arg)
                 recipients.push_back({Slice(*auditorPubKey), *auditorAmt});
         }
 
-        auto const proof = getConfidentialSendProof(
-            *arg.amt, recipients, blindingFactor, nRecipients, ctxHash);
+        auto const prevEncryptedSenderSpending =
+            getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+        std::optional<Buffer> proof;
+
+        // Skip proof generation if encrypted balance is missing (e.g.,
+        // feature disabled), or when the sender and destination are the
+        // same (malformed case causing pcm to be zero). This prevents a
+        // crash and allows certain error cases to be tested.
+        if (arg.account != arg.dest && prevEncryptedSenderSpending)
+        {
+            proof = getConfidentialSendProof(
+                *arg.account,
+                *arg.amt,
+                recipients,
+                blindingFactor,
+                nRecipients,
+                ctxHash,
+                {.pedersenCommitment = amountCommitment,
+                 .amt = *arg.amt,
+                 .encryptedAmt = senderAmt,
+                 .blindingFactor = amountBlindingFactor},
+                {.pedersenCommitment = balanceCommitment,
+                 .amt = *prevSenderSpending,
+                 .encryptedAmt = *prevEncryptedSenderSpending,
+                 .blindingFactor = balanceBlindingFactor});
+        }
 
         if (proof)
             jv[sfZKProof.jsonName] = strHex(*proof);
@@ -1320,54 +1443,10 @@ MPTTester::send(MPTConfidentialSend const& arg)
         }
     }
 
-    if (arg.credentials)
-    {
-        auto& arr(jv[sfCredentialIDs.jsonName] = Json::arrayValue);
-        for (auto const& hash : *arg.credentials)
-            arr.append(hash);
-    }
-
     auto const senderPubAmt = getBalance(*arg.account);
     auto const destPubAmt = getBalance(*arg.dest);
     auto const prevCOA = getIssuanceConfidentialBalance();
     auto const prevOA = getIssuanceOutstandingBalance();
-
-    // Sender's previous confidential state
-    auto const prevSenderInbox =
-        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
-    auto const prevSenderSpending =
-        getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
-    auto const prevSenderIssuer =
-        getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
-    if (!prevSenderInbox || !prevSenderSpending || !prevSenderIssuer)
-        Throw<std::runtime_error>("Failed to get Pre-send balance");
-
-    std::optional<uint64_t> prevSenderAuditor;
-    if (arg.auditorEncryptedAmt || auditor_)
-    {
-        prevSenderAuditor =
-            getDecryptedBalance(*arg.account, AUDITOR_ENCRYPTED_BALANCE);
-        if (!prevSenderAuditor)
-            Throw<std::runtime_error>("Failed to get Pre-send balance");
-    }
-    // Destination's previous confidential state
-    auto const prevDestInbox =
-        getDecryptedBalance(*arg.dest, HOLDER_ENCRYPTED_INBOX);
-    auto const prevDestSpending =
-        getDecryptedBalance(*arg.dest, HOLDER_ENCRYPTED_SPENDING);
-    auto const prevDestIssuer =
-        getDecryptedBalance(*arg.dest, ISSUER_ENCRYPTED_BALANCE);
-    if (!prevDestInbox || !prevDestSpending || !prevDestIssuer)
-        Throw<std::runtime_error>("Failed to get Pre-send balance");
-
-    std::optional<uint64_t> prevDestAuditor;
-    if (arg.auditorEncryptedAmt || auditor_)
-    {
-        prevDestAuditor =
-            getDecryptedBalance(*arg.dest, AUDITOR_ENCRYPTED_BALANCE);
-        if (!prevDestAuditor)
-            Throw<std::runtime_error>("Failed to get Pre-send balance");
-    }
 
     if (submit(arg, jv) == tesSUCCESS)
     {
@@ -1797,7 +1876,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         pedersenCommitment =
             getPedersenCommitment(*prevSpendingBalance, pcBlindingFactor);
 
-    jv[sfPedersenCommitment] = strHex(pedersenCommitment);
+    jv[sfBalanceCommitment] = strHex(pedersenCommitment);
 
     if (arg.proof)
         jv[sfZKProof.jsonName] = strHex(*arg.proof);
@@ -1908,7 +1987,60 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 }
 
 Buffer
-MPTTester::generatePedersenLinkageProof(
+MPTTester::getAmountLinkageProof(
+    Buffer const& pubKey,
+    Buffer const& blindingFactor,
+    uint256 const& contextHash,
+    PedersenProofParams const& params) const
+{
+    if (params.blindingFactor.size() != ecBlindingFactorLength ||
+        params.pedersenCommitment.size() != ecPedersenCommitmentLength ||
+        pubKey.size() != ecPubKeyLength ||
+        params.encryptedAmt.size() != ecGamalEncryptedTotalLength ||
+        blindingFactor.size() != ecBlindingFactorLength)
+        return Buffer(ecPedersenProofLength);
+
+    secp256k1_pubkey c1, c2;
+    auto const ctx = secp256k1Context();
+    if (!secp256k1_ec_pubkey_parse(
+            ctx, &c1, params.encryptedAmt.data(), ecGamalEncryptedLength) ||
+        !secp256k1_ec_pubkey_parse(
+            ctx,
+            &c2,
+            params.encryptedAmt.data() + ecGamalEncryptedLength,
+            ecGamalEncryptedLength))
+    {
+        return Buffer();
+    }
+
+    secp256k1_pubkey pk;
+    std::memcpy(pk.data, pubKey.data(), ecPubKeyLength);
+
+    secp256k1_pubkey pcm;
+    std::memcpy(
+        pcm.data, params.pedersenCommitment.data(), ecPedersenCommitmentLength);
+
+    Buffer proof(ecPedersenProofLength);
+    if (secp256k1_elgamal_pedersen_link_prove(
+            ctx,
+            proof.data(),
+            &c1,
+            &c2,
+            &pk,
+            &pcm,
+            params.amt,
+            blindingFactor.data(),
+            params.blindingFactor.data(),
+            contextHash.data()) != 1)
+    {
+        Throw<std::runtime_error>("Amount Linkage Proof generation failed");
+    }
+
+    return proof;
+}
+
+Buffer
+MPTTester::getBalanceLinkageProof(
     Account const& account,
     uint256 const& contextHash,
     Buffer const& pubKey,

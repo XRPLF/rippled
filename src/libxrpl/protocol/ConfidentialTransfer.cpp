@@ -479,7 +479,48 @@ checkEncryptedAmountFormat(STObject const& object)
 }
 
 TER
-verifyPedersenLinkage(
+verifyAmountPcmLinkage(
+    Slice const& proof,
+    Slice const& encAmt,
+    Slice const& pubKeySlice,
+    Slice const& pcmSlice,
+    uint256 const& contextHash)
+{
+    if (proof.length() != ecPedersenProofLength)
+        return tecINTERNAL;
+
+    secp256k1_pubkey c1, c2;
+    if (!makeEcPair(encAmt, c1, c2))
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    secp256k1_pubkey pubKey;
+    if (pubKeySlice.size() != ecPubKeyLength)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    secp256k1_pubkey pcm;
+    if (pcmSlice.size() != ecPedersenCommitmentLength)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
+    std::memcpy(pcm.data, pcmSlice.data(), ecPedersenCommitmentLength);
+
+    if (secp256k1_elgamal_pedersen_link_verify(
+            secp256k1Context(),
+            proof.data(),
+            &c1,
+            &c2,
+            &pubKey,
+            &pcm,
+            contextHash.data()) != 1)
+    {
+        return tecBAD_PROOF;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+verifyBalancePcmLinkage(
     Slice const& proof,
     Slice const& encAmt,
     Slice const& pubKeySlice,
@@ -493,12 +534,17 @@ verifyPedersenLinkage(
     secp256k1_pubkey c2;
 
     if (!makeEcPair(encAmt, c1, c2))
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pubKey;
-    std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
+    if (pubKeySlice.size() != ecPubKeyLength)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     secp256k1_pubkey pcm;
+    if (pcmSlice.size() != ecPedersenCommitmentLength)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
     std::memcpy(pcm.data, pcmSlice.data(), ecPubKeyLength);
 
     if (secp256k1_elgamal_pedersen_link_verify(
@@ -509,7 +555,9 @@ verifyPedersenLinkage(
             &c1,
             &pcm,
             contextHash.data()) != 1)
+    {
         return tecBAD_PROOF;
+    }
 
     return tesSUCCESS;
 }

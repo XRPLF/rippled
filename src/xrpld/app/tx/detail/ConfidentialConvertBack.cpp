@@ -28,7 +28,7 @@ ConfidentialConvertBack::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfBlindingFactor].size() != ecBlindingFactorLength)
         return temMALFORMED;
 
-    if (ctx.tx[sfPedersenCommitment].size() != ecPedersenCommitmentLength)
+    if (ctx.tx[sfBalanceCommitment].size() != ecPedersenCommitmentLength)
         return temMALFORMED;
 
     // check encrypted amount format after the above basic checks
@@ -90,11 +90,11 @@ verifyProofs(
     // verify el gamal pedersen linkage
     {
         Buffer const pedersen{ptr, ecPedersenProofLength};
-        if (auto const ter = verifyPedersenLinkage(
+        if (auto const ter = verifyBalancePcmLinkage(
                 pedersen,
                 (*mptoken)[sfConfidentialBalanceSpending],
                 holderPubKey,
-                tx[sfPedersenCommitment],
+                tx[sfBalanceCommitment],
                 contextHash);
             !isTesSuccess(ter))
         {
