@@ -99,10 +99,7 @@ struct TxMetrics
        @param notEnabled number of peers with tx reduce-relay featured disabled
      */
     void
-    addMetrics(
-        std::uint32_t selected,
-        std::uint32_t suppressed,
-        std::uint32_t notEnabled);
+    addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uint32_t notEnabled);
     /** Add number of missing transactions that a node requested
        @param missing number of missing transactions
      */

@@ -10,23 +10,15 @@ namespace xrpl {
 
 // These are the same flags defined as HashRouterFlags::PRIVATE1-4 in
 // HashRouter.h
-constexpr HashRouterFlags SF_SIGBAD =
-    HashRouterFlags::PRIVATE1;  // Signature is bad
-constexpr HashRouterFlags SF_SIGGOOD =
-    HashRouterFlags::PRIVATE2;  // Signature is good
-constexpr HashRouterFlags SF_LOCALBAD =
-    HashRouterFlags::PRIVATE3;  // Local checks failed
-constexpr HashRouterFlags SF_LOCALGOOD =
-    HashRouterFlags::PRIVATE4;  // Local checks passed
+constexpr HashRouterFlags SF_SIGBAD = HashRouterFlags::PRIVATE1;     // Signature is bad
+constexpr HashRouterFlags SF_SIGGOOD = HashRouterFlags::PRIVATE2;    // Signature is good
+constexpr HashRouterFlags SF_LOCALBAD = HashRouterFlags::PRIVATE3;   // Local checks failed
+constexpr HashRouterFlags SF_LOCALGOOD = HashRouterFlags::PRIVATE4;  // Local checks passed
 
 //------------------------------------------------------------------------------
 
 std::pair<Validity, std::string>
-checkValidity(
-    HashRouter& router,
-    STTx const& tx,
-    Rules const& rules,
-    Config const& config)
+checkValidity(HashRouter& router, STTx const& tx, Rules const& rules, Config const& config)
 {
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
@@ -35,11 +27,8 @@ checkValidity(
     if (tx.isFlag(tfInnerBatchTxn) && rules.enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
-        if (tx.isFieldPresent(sfTxnSignature) ||
-            !tx.getSigningPubKey().empty() || tx.isFieldPresent(sfSigners))
-            return {
-                Validity::SigBad,
-                "Malformed: Invalid inner batch transaction."};
+        if (tx.isFieldPresent(sfTxnSignature) || !tx.getSigningPubKey().empty() || tx.isFieldPresent(sfSigners))
+            return {Validity::SigBad, "Malformed: Invalid inner batch transaction."};
 
         // This block should probably have never been included in the
         // original `Batch` implementation. An inner transaction never
@@ -125,16 +114,9 @@ apply(Application& app, OpenView& view, PreflightChecks&& preflightChecks)
 }
 
 ApplyResult
-apply(
-    Application& app,
-    OpenView& view,
-    STTx const& tx,
-    ApplyFlags flags,
-    beast::Journal j)
+apply(Application& app, OpenView& view, STTx const& tx, ApplyFlags flags, beast::Journal j)
 {
-    return apply(app, view, [&]() mutable {
-        return preflight(app, view.rules(), tx, flags, j);
-    });
+    return apply(app, view, [&]() mutable { return preflight(app, view.rules(), tx, flags, j); });
 }
 
 ApplyResult
@@ -146,43 +128,26 @@ apply(
     ApplyFlags flags,
     beast::Journal j)
 {
-    return apply(app, view, [&]() mutable {
-        return preflight(app, view.rules(), parentBatchId, tx, flags, j);
-    });
+    return apply(app, view, [&]() mutable { return preflight(app, view.rules(), parentBatchId, tx, flags, j); });
 }
 
 std::optional<std::vector<ApplyResult>>
-applyBatchTransactions(
-    Application& app,
-    OpenView& batchView,
-    STTx const& batchTxn,
-    ApplyFlags flags,
-    beast::Journal j)
+applyBatchTransactions(Application& app, OpenView& batchView, STTx const& batchTxn, ApplyFlags flags, beast::Journal j)
 {
     XRPL_ASSERT(
-        batchTxn.getTxnType() == ttBATCH &&
-            batchTxn.getFieldArray(sfRawTransactions).size() != 0,
+        batchTxn.getTxnType() == ttBATCH && batchTxn.getFieldArray(sfRawTransactions).size() != 0,
         "Batch transaction missing sfRawTransactions");
 
     auto const parentBatchId = batchTxn.getTransactionID();
     auto const mode = batchTxn.getFlags();
 
-    auto applyOneTransaction = [&app, &j, &parentBatchId, &batchView, &flags](
-                                   STTx&& tx) {
+    auto applyOneTransaction = [&app, &j, &parentBatchId, &batchView, &flags](STTx&& tx) {
         OpenView perTxBatchView(batch_view, batchView);
 
-        auto const ret = apply(
-            app,
-            perTxBatchView,
-            parentBatchId,
-            tx,
-            (flags & tapDRY_RUN) | tapBATCH,
-            j);
+        auto const ret = apply(app, perTxBatchView, parentBatchId, tx, (flags & tapDRY_RUN) | tapBATCH, j);
         if (flags & tapDRY_RUN)
         {
-            XRPL_ASSERT(
-                ret.applied == false,
-                "Inner transaction should not be applied in dry run");
+            XRPL_ASSERT(ret.applied == false, "Inner transaction should not be applied in dry run");
         }
         else
         {
@@ -191,15 +156,12 @@ applyBatchTransactions(
                 "Inner transaction should not be applied");
         }
 
-        JLOG(j.debug()) << "BatchTrace[" << parentBatchId
-                        << "]: " << tx.getTransactionID() << " "
-                        << (ret.applied ? "applied" : "failure") << ": "
-                        << transToken(ret.ter);
+        JLOG(j.debug()) << "BatchTrace[" << parentBatchId << "]: " << tx.getTransactionID() << " "
+                        << (ret.applied ? "applied" : "failure") << ": " << transToken(ret.ter);
 
         // If the transaction should be applied push its changes to the
         // whole-batch view.
-        if ((ret.applied || flags & tapDRY_RUN) &&
-            (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+        if ((ret.applied || flags & tapDRY_RUN) && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
             perTxBatchView.apply(batchView);
 
         return ret;
@@ -212,15 +174,12 @@ applyBatchTransactions(
         auto const result = applyOneTransaction(STTx{std::move(rb)});
         if (flags & tapDRY_RUN)
         {
-            XRPL_ASSERT(
-                result.applied == false,
-                "Inner transaction should not be applied in dry run");
+            XRPL_ASSERT(result.applied == false, "Inner transaction should not be applied in dry run");
         }
         else
         {
             XRPL_ASSERT(
-                result.applied ==
-                    (isTesSuccess(result.ter) || isTecClaim(result.ter)),
+                result.applied == (isTesSuccess(result.ter) || isTecClaim(result.ter)),
                 "Outer Batch failure, inner transaction should not be applied");
         }
 
@@ -260,8 +219,7 @@ applyTransaction(
     if (retryAssured)
         flags = flags | tapRETRY;
 
-    JLOG(j.debug()) << "TXN " << txn.getTransactionID()
-                    << (retryAssured ? "/retry" : "/final");
+    JLOG(j.debug()) << "TXN " << txn.getTransactionID() << (retryAssured ? "/retry" : "/final");
 
     try
     {
@@ -269,8 +227,7 @@ applyTransaction(
 
         if (result.applied)
         {
-            JLOG(j.debug())
-                << "Transaction applied: " << transToken(result.ter);
+            JLOG(j.debug()) << "Transaction applied: " << transToken(result.ter);
 
             // The batch transaction was just applied; now we need to apply
             // its inner transactions as necessary.
@@ -285,12 +242,10 @@ applyTransaction(
             return ApplyTransactionResult::Success;
         }
 
-        if (isTefFailure(result.ter) || isTemMalformed(result.ter) ||
-            isTelLocal(result.ter))
+        if (isTefFailure(result.ter) || isTemMalformed(result.ter) || isTelLocal(result.ter))
         {
             // failure
-            JLOG(j.debug())
-                << "Transaction failure: " << transHuman(result.ter);
+            JLOG(j.debug()) << "Transaction failure: " << transHuman(result.ter);
             return ApplyTransactionResult::Fail;
         }
 

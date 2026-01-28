@@ -176,8 +176,7 @@ public:
     // Blocker since we cannot accurately calculate the consequences
     static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
 
-    explicit XChainAddAccountCreateAttestation(ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit XChainAddAccountCreateAttestation(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 

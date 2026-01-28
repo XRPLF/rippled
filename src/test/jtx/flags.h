@@ -112,8 +112,7 @@ private:
 
 public:
     template <class... Args>
-    flags(Account const& account, Args... args)
-        : flags_helper(args...), account_(account)
+    flags(Account const& account, Args... args) : flags_helper(args...), account_(account)
     {
     }
 
@@ -129,8 +128,7 @@ private:
 
 public:
     template <class... Args>
-    nflags(Account const& account, Args... args)
-        : flags_helper(args...), account_(account)
+    nflags(Account const& account, Args... args) : flags_helper(args...), account_(account)
     {
     }
 

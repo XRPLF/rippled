@@ -19,8 +19,7 @@ public:
         TxID txid;
         Sequence seq;
 
-        TxIDSeq(TxID const& txid_, Sequence const& seq_)
-            : txid(txid_), seq(seq_)
+        TxIDSeq(TxID const& txid_, Sequence const& seq_) : txid(txid_), seq(seq_)
         {
         }
     };

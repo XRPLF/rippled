@@ -12,11 +12,7 @@ namespace jtx {
 
 /** Create an offer. */
 Json::Value
-offer(
-    Account const& account,
-    STAmount const& takerPays,
-    STAmount const& takerGets,
-    std::uint32_t flags = 0);
+offer(Account const& account, STAmount const& takerPays, STAmount const& takerGets, std::uint32_t flags = 0);
 
 /** Cancel an offer. */
 Json::Value

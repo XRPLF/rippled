@@ -21,8 +21,7 @@ doValidatorInfo(RPC::JsonContext& context)
     Json::Value ret;
 
     // assume validationPK is ephemeral key, get master key
-    auto const mk =
-        context.app.validatorManifests().getMasterKey(*validationPK);
+    auto const mk = context.app.validatorManifests().getMasterKey(*validationPK);
     ret[jss::master_key] = toBase58(TokenType::NodePublic, mk);
 
     // validationPK is master key, this implies that there is no ephemeral

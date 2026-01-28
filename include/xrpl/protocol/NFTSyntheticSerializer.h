@@ -17,10 +17,7 @@ namespace RPC {
    @{
  */
 void
-insertNFTSyntheticInJson(
-    Json::Value&,
-    std::shared_ptr<STTx const> const&,
-    TxMeta const&);
+insertNFTSyntheticInJson(Json::Value&, std::shared_ptr<STTx const> const&, TxMeta const&);
 /** @} */
 
 }  // namespace RPC

@@ -41,8 +41,7 @@ public:
     operator=(Slice const&) noexcept = default;
 
     /** Create a slice pointing to existing memory. */
-    Slice(void const* data, std::size_t size) noexcept
-        : data_(reinterpret_cast<std::uint8_t const*>(data)), size_(size)
+    Slice(void const* data, std::size_t size) noexcept : data_(reinterpret_cast<std::uint8_t const*>(data)), size_(size)
     {
     }
 
@@ -85,9 +84,7 @@ public:
     std::uint8_t
     operator[](std::size_t i) const noexcept
     {
-        XRPL_ASSERT(
-            i < size_,
-            "xrpl::Slice::operator[](std::size_t) const : valid input");
+        XRPL_ASSERT(i < size_, "xrpl::Slice::operator[](std::size_t) const : valid input");
         return data_[i];
     }
 
@@ -162,9 +159,7 @@ public:
         @throws std::out_of_range if pos > size()
      */
     Slice
-    substr(
-        std::size_t pos,
-        std::size_t count = std::numeric_limits<std::size_t>::max()) const
+    substr(std::size_t pos, std::size_t count = std::numeric_limits<std::size_t>::max()) const
     {
         if (pos > size())
             throw std::out_of_range("Requested sub-slice is out of bounds");
@@ -203,11 +198,7 @@ operator!=(Slice const& lhs, Slice const& rhs) noexcept
 inline bool
 operator<(Slice const& lhs, Slice const& rhs) noexcept
 {
-    return std::lexicographical_compare(
-        lhs.data(),
-        lhs.data() + lhs.size(),
-        rhs.data(),
-        rhs.data() + rhs.size());
+    return std::lexicographical_compare(lhs.data(), lhs.data() + lhs.size(), rhs.data(), rhs.data() + rhs.size());
 }
 
 template <class Stream>
@@ -219,18 +210,14 @@ operator<<(Stream& s, Slice const& v)
 }
 
 template <class T, std::size_t N>
-std::enable_if_t<
-    std::is_same<T, char>::value || std::is_same<T, unsigned char>::value,
-    Slice>
+std::enable_if_t<std::is_same<T, char>::value || std::is_same<T, unsigned char>::value, Slice>
 makeSlice(std::array<T, N> const& a)
 {
     return Slice(a.data(), a.size());
 }
 
 template <class T, class Alloc>
-std::enable_if_t<
-    std::is_same<T, char>::value || std::is_same<T, unsigned char>::value,
-    Slice>
+std::enable_if_t<std::is_same<T, char>::value || std::is_same<T, unsigned char>::value, Slice>
 makeSlice(std::vector<T, Alloc> const& v)
 {
     return Slice(v.data(), v.size());

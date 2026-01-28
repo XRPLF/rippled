@@ -42,11 +42,7 @@ enum class Validity {
     @see Validity
 */
 std::pair<Validity, std::string>
-checkValidity(
-    HashRouter& router,
-    STTx const& tx,
-    Rules const& rules,
-    Config const& config);
+checkValidity(HashRouter& router, STTx const& tx, Rules const& rules, Config const& config);
 
 /** Sets the validity of a given transaction in the cache.
 
@@ -102,12 +98,7 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity);
             whether or not the transaction was applied.
 */
 ApplyResult
-apply(
-    Application& app,
-    OpenView& view,
-    STTx const& tx,
-    ApplyFlags flags,
-    beast::Journal journal);
+apply(Application& app, OpenView& view, STTx const& tx, ApplyFlags flags, beast::Journal journal);
 
 /** Enum class for return value from `applyTransaction`
 
@@ -123,12 +114,7 @@ enum class ApplyTransactionResult {
 };
 
 std::optional<std::vector<ApplyResult>>
-applyBatchTransactions(
-    Application& app,
-    OpenView& batchView,
-    STTx const& batchTxn,
-    ApplyFlags flags,
-    beast::Journal j);
+applyBatchTransactions(Application& app, OpenView& batchView, STTx const& batchTxn, ApplyFlags flags, beast::Journal j);
 
 /** Transaction application helper
 

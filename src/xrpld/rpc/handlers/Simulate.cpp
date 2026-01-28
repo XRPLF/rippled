@@ -42,20 +42,17 @@ getAutofillSequence(
     auto const srcAddressID = parseBase58<AccountID>(accountStr.asString());
     if (!srcAddressID.has_value())
     {
-        return Unexpected(RPC::make_error(
-            rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account")));
+        return Unexpected(RPC::make_error(rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account")));
     }
-    std::shared_ptr<SLE const> const sle =
-        lpLedger->read(keylet::account(*srcAddressID));
+    std::shared_ptr<SLE const> const sle = lpLedger->read(keylet::account(*srcAddressID));
     if (hasTicketSeq)
     {
         return 0;
     }
     if (!sle)
     {
-        JLOG(context.app.journal("Simulate").debug())
-            << "Failed to find source account "
-            << "in current ledger: " << toBase58(*srcAddressID);
+        JLOG(context.app.journal("Simulate").debug()) << "Failed to find source account "
+                                                      << "in current ledger: " << toBase58(*srcAddressID);
 
         return Unexpected(rpcError(rpcSRC_ACT_NOT_FOUND));
     }
@@ -79,14 +76,11 @@ autofillSignature(Json::Value& sigObject)
         if (!sigObject[jss::Signers].isArray())
             return RPC::invalid_field_error("tx.Signers");
         // check multisigned signers
-        for (unsigned index = 0; index < sigObject[jss::Signers].size();
-             index++)
+        for (unsigned index = 0; index < sigObject[jss::Signers].size(); index++)
         {
             auto& signer = sigObject[jss::Signers][index];
-            if (!signer.isObject() || !signer.isMember(jss::Signer) ||
-                !signer[jss::Signer].isObject())
-                return RPC::invalid_field_error(
-                    "tx.Signers[" + std::to_string(index) + "]");
+            if (!signer.isObject() || !signer.isMember(jss::Signer) || !signer[jss::Signer].isObject())
+                return RPC::invalid_field_error("tx.Signers[" + std::to_string(index) + "]");
 
             if (!signer[jss::Signer].isMember(jss::SigningPubKey))
             {
@@ -159,8 +153,7 @@ autofillTx(
 
     if (!tx_json.isMember(jss::Sequence))
     {
-        auto const seq =
-            getAutofillSequence(tx_json, context, lpLedger, isCurrentLedger);
+        auto const seq = getAutofillSequence(tx_json, context, lpLedger, isCurrentLedger);
         if (!seq)
             return seq.error();
         tx_json[sfSequence.jsonName] = *seq;
@@ -206,19 +199,15 @@ getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
         }
         if (isCurrentLedger)
         {
-            return RPC::make_param_error(
-                "Cannot use `ctid` without `ledger_index` or `ledger_hash`.");
+            return RPC::make_param_error("Cannot use `ctid` without `ledger_index` or `ledger_hash`.");
         }
-        auto decodedCTID =
-            RPC::decodeCTID(context.params[jss::ctid].asString());
+        auto decodedCTID = RPC::decodeCTID(context.params[jss::ctid].asString());
         if (!decodedCTID)
         {
             return RPC::invalid_field_error(jss::ctid);
         }
         auto const [ledgerSq, txId, _] = *decodedCTID;
-        if (auto const optHash =
-                context.app.getLedgerMaster().txnIdFromIndex(ledgerSq, txId);
-            optHash)
+        if (auto const optHash = context.app.getLedgerMaster().txnIdFromIndex(ledgerSq, txId); optHash)
         {
             hash = *optHash;
         }
@@ -227,11 +216,9 @@ getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
             return RPC::make_error(rpcTXN_NOT_FOUND);
         }
     }
-    using TxPair =
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+    using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
     auto ec{rpcSUCCESS};
-    std::variant<TxPair, TxSearched> v =
-        context.app.getMasterTransaction().fetch(hash, ec);
+    std::variant<TxPair, TxSearched> v = context.app.getMasterTransaction().fetch(hash, ec);
     if (std::get_if<TxSearched>(&v))
     {
         return RPC::make_error(rpcTXN_NOT_FOUND);
@@ -240,12 +227,7 @@ getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
     auto [txn, _meta] = std::get<TxPair>(v);
     Json::Value tx_json = txn->getJson(JsonOptions::none);
     for (auto const field :
-         {jss::SigningPubKey,
-          jss::TxnSignature,
-          jss::ctid,
-          jss::hash,
-          jss::inLedger,
-          jss::ledger_index})
+         {jss::SigningPubKey, jss::TxnSignature, jss::ctid, jss::hash, jss::inLedger, jss::ledger_index})
     {
         if (tx_json.isMember(field))
             tx_json.removeMember(field);
@@ -261,10 +243,7 @@ getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
 }
 
 static Json::Value
-getTxJsonFromParams(
-    RPC::JsonContext& context,
-    Json::Value txInput,
-    bool const isCurrentLedger)
+getTxJsonFromParams(RPC::JsonContext& context, Json::Value txInput, bool const isCurrentLedger)
 {
     Json::Value tx_json;
 
@@ -283,8 +262,7 @@ getTxJsonFromParams(
         try
         {
             SerialIter sitTrans(makeSlice(*unHexed));
-            tx_json = STObject(std::ref(sitTrans), sfGeneric)
-                          .getJson(JsonOptions::none);
+            tx_json = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
         }
         catch (std::runtime_error const&)
         {
@@ -360,27 +338,23 @@ processResult(
 
     if (token == "tesSUCCESS")
     {
-        jvResult[jss::engine_result_message] =
-            "The simulated transaction would have been applied.";
+        jvResult[jss::engine_result_message] = "The simulated transaction would have been applied.";
     }
 
     if (result.metadata)
     {
         if (isBinaryOutput)
         {
-            auto const metaBlob =
-                result.metadata->getAsObject().getSerializer().getData();
+            auto const metaBlob = result.metadata->getAsObject().getSerializer().getData();
             jvResult[jss::meta_blob] = strHex(makeSlice(metaBlob));
         }
         else
         {
             jvResult[jss::meta] = result.metadata->getJson(JsonOptions::none);
             auto const shared = std::make_shared<STTx const>(transaction);
-            RPC::insertDeliveredAmount(
-                jvResult[jss::meta], view, shared, *result.metadata);
+            RPC::insertDeliveredAmount(jvResult[jss::meta], view, shared, *result.metadata);
             RPC::insertNFTSyntheticInJson(jvResult, shared, *result.metadata);
-            RPC::insertMPTokenIssuanceID(
-                jvResult[jss::meta], shared, *result.metadata);
+            RPC::insertMPTokenIssuanceID(jvResult[jss::meta], shared, *result.metadata);
         }
     }
 
@@ -421,8 +395,7 @@ simulateTxn(
          * cannot use `simulate` to bypass signature checks and submit
          * transactions/modify the current ledger directly.
          ***************************************/
-        auto const result =
-            apply(context.app, perTxView, txn, tapDRY_RUN, context.j);
+        auto const result = apply(context.app, perTxView, txn, tapDRY_RUN, context.j);
         if (isTesSuccess(result.ter) || isTecClaim(result.ter))
             perTxView.apply(view);
         jvTransactions.append(processResult(result, txn, isBinaryOutput, view));
@@ -431,8 +404,8 @@ simulateTxn(
         {
             OpenView wholeBatchView(batch_view, view);
 
-            if (auto const batchResults = applyBatchTransactions(
-                    context.app, wholeBatchView, txn, tapDRY_RUN, context.j);
+            if (auto const batchResults =
+                    applyBatchTransactions(context.app, wholeBatchView, txn, tapDRY_RUN, context.j);
                 batchResults)
             {
                 for (int i = 0; i < batchResults->size(); ++i)
@@ -440,11 +413,9 @@ simulateTxn(
                     auto const& innerResult = (*batchResults)[i];
                     auto rawTxn = txn.getFieldArray(sfRawTransactions)[i];
                     STTx const txn(
-                        static_cast<TxType>(
-                            rawTxn.getFieldU16(sfTransactionType)),
+                        static_cast<TxType>(rawTxn.getFieldU16(sfTransactionType)),
                         [&rawTxn](STObject& obj) { obj = STObject(rawTxn); });
-                    jvTransactions.append(processResult(
-                        innerResult, txn, isBinaryOutput, wholeBatchView));
+                    jvTransactions.append(processResult(innerResult, txn, isBinaryOutput, wholeBatchView));
                 }
                 wholeBatchView.apply(view);
             }
@@ -487,8 +458,7 @@ processTransaction(
     bool const isCurrentLedger)
 {
     // get JSON equivalent of transaction
-    Json::Value tx_json =
-        getTxJsonFromParams(context, txInput, isCurrentLedger);
+    Json::Value tx_json = getTxJsonFromParams(context, txInput, isCurrentLedger);
     if (tx_json.isMember(jss::error))
         return Unexpected(tx_json);
 
@@ -530,14 +500,12 @@ doSimulate(RPC::JsonContext& context)
     context.loadType = Resource::feeMediumBurdenRPC;
 
     // check validity of `binary` param
-    if (context.params.isMember(jss::binary) &&
-        !context.params[jss::binary].isBool())
+    if (context.params.isMember(jss::binary) && !context.params[jss::binary].isBool())
     {
         return RPC::invalid_field_error(jss::binary);
     }
 
-    for (auto const field :
-         {jss::secret, jss::seed, jss::seed_hex, jss::passphrase})
+    for (auto const field : {jss::secret, jss::seed, jss::seed_hex, jss::passphrase})
     {
         if (context.params.isMember(field))
         {
@@ -546,10 +514,8 @@ doSimulate(RPC::JsonContext& context)
     }
 
     auto const numParams =
-        (context.params.isMember(jss::transactions) +
-         context.params.isMember(jss::tx_json) +
-         context.params.isMember(jss::tx_blob) +
-         context.params.isMember(jss::tx_hash) +
+        (context.params.isMember(jss::transactions) + context.params.isMember(jss::tx_json) +
+         context.params.isMember(jss::tx_blob) + context.params.isMember(jss::tx_hash) +
          context.params.isMember(jss::ctid));
     if (numParams == 0)
     {
@@ -582,8 +548,7 @@ doSimulate(RPC::JsonContext& context)
         }
         if (txs.size() == 0)
         {
-            return RPC::expected_field_error(
-                jss::transactions, "nonempty array");
+            return RPC::expected_field_error(jss::transactions, "nonempty array");
         }
         if (txs.size() > MAX_SIMULATE_TXS)
         {
@@ -595,14 +560,11 @@ doSimulate(RPC::JsonContext& context)
         {
             if (!txInput.isObject())
             {
-                return RPC::expected_field_error(
-                    jss::transactions, "array of objects");
+                return RPC::expected_field_error(jss::transactions, "array of objects");
             }
             {
-                auto const numParams = txInput.isMember(jss::tx_json) +
-                    txInput.isMember(jss::tx_blob) +
-                    txInput.isMember(jss::tx_hash) +
-                    txInput.isMember(jss::ctid);
+                auto const numParams = txInput.isMember(jss::tx_json) + txInput.isMember(jss::tx_blob) +
+                    txInput.isMember(jss::tx_hash) + txInput.isMember(jss::ctid);
                 if (numParams == 0)
                 {
                     return RPC::make_param_error(
@@ -617,8 +579,7 @@ doSimulate(RPC::JsonContext& context)
                 }
             }
 
-            auto transaction =
-                processTransaction(context, txInput, lpLedger, isCurrentLedger);
+            auto transaction = processTransaction(context, txInput, lpLedger, isCurrentLedger);
             if (!transaction)
                 return transaction.error();
             transactions.push_back(transaction.value());
@@ -627,8 +588,7 @@ doSimulate(RPC::JsonContext& context)
     else
     {
         // single transaction
-        auto transaction = processTransaction(
-            context, context.params, lpLedger, isCurrentLedger);
+        auto transaction = processTransaction(context, context.params, lpLedger, isCurrentLedger);
         if (!transaction)
             return transaction.error();
         transactions.push_back(transaction.value());

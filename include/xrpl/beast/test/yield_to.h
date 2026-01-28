@@ -31,9 +31,7 @@ protected:
     boost::asio::io_context ios_;
 
 private:
-    boost::optional<boost::asio::executor_work_guard<
-        boost::asio::io_context::executor_type>>
-        work_;
+    boost::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     std::vector<std::thread> threads_;
     std::mutex m_;
     std::condition_variable cv_;
@@ -43,8 +41,7 @@ public:
     /// The type of yield context passed to functions.
     using yield_context = boost::asio::yield_context;
 
-    explicit enable_yield_to(std::size_t concurrency = 1)
-        : work_(boost::asio::make_work_guard(ios_))
+    explicit enable_yield_to(std::size_t concurrency = 1) : work_(boost::asio::make_work_guard(ios_))
     {
         threads_.reserve(concurrency);
         while (concurrency--)

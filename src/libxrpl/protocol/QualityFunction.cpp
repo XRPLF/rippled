@@ -9,10 +9,7 @@
 
 namespace xrpl {
 
-QualityFunction::QualityFunction(
-    Quality const& quality,
-    QualityFunction::CLOBLikeTag)
-    : m_(0), b_(0), quality_(quality)
+QualityFunction::QualityFunction(Quality const& quality, QualityFunction::CLOBLikeTag) : m_(0), b_(0), quality_(quality)
 {
     if (quality.rate() <= beast::zero)
         Throw<std::runtime_error>("QualityFunction quality rate is 0.");

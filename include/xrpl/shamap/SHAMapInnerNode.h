@@ -12,8 +12,7 @@
 
 namespace xrpl {
 
-class SHAMapInnerNode final : public SHAMapTreeNode,
-                              public CountedObject<SHAMapInnerNode>
+class SHAMapInnerNode final : public SHAMapTreeNode, public CountedObject<SHAMapInnerNode>
 {
 public:
     /** Each inner node has 16 children (the 'radix tree' part of the map) */
@@ -78,9 +77,7 @@ private:
     iterNonEmptyChildIndexes(F&& f) const;
 
 public:
-    explicit SHAMapInnerNode(
-        std::uint32_t cowid,
-        std::uint8_t numAllocatedChildren = 2);
+    explicit SHAMapInnerNode(std::uint32_t cowid, std::uint8_t numAllocatedChildren = 2);
 
     SHAMapInnerNode(SHAMapInnerNode const&) = delete;
     SHAMapInnerNode&

@@ -33,24 +33,14 @@ public:
     */
     template <class Suite>
     void
-    insert(
-        char const* name,
-        char const* module,
-        char const* library,
-        bool manual,
-        int priority);
+    insert(char const* name, char const* module, char const* library, bool manual, int priority);
 };
 
 //------------------------------------------------------------------------------
 
 template <class Suite>
 void
-suite_list::insert(
-    char const* name,
-    char const* module,
-    char const* library,
-    bool manual,
-    int priority)
+suite_list::insert(char const* name, char const* module, char const* library, bool manual, int priority)
 {
 #ifndef NDEBUG
     {
@@ -65,8 +55,7 @@ suite_list::insert(
         BOOST_ASSERT(result.second);  // Duplicate type
     }
 #endif
-    cont().emplace(
-        make_suite_info<Suite>(name, module, library, manual, priority));
+    cont().emplace(make_suite_info<Suite>(name, module, library, manual, priority));
 }
 
 }  // namespace unit_test

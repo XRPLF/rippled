@@ -12,11 +12,7 @@ struct Serializer_test : public beast::unit_test::suite
     {
         {
             std::initializer_list<std::int32_t> const values = {
-                std::numeric_limits<std::int32_t>::min(),
-                -1,
-                0,
-                1,
-                std::numeric_limits<std::int32_t>::max()};
+                std::numeric_limits<std::int32_t>::min(), -1, 0, 1, std::numeric_limits<std::int32_t>::max()};
             for (std::int32_t value : values)
             {
                 Serializer s;
@@ -28,11 +24,7 @@ struct Serializer_test : public beast::unit_test::suite
         }
         {
             std::initializer_list<std::int64_t> const values = {
-                std::numeric_limits<std::int64_t>::min(),
-                -1,
-                0,
-                1,
-                std::numeric_limits<std::int64_t>::max()};
+                std::numeric_limits<std::int64_t>::min(), -1, 0, 1, std::numeric_limits<std::int64_t>::max()};
             for (std::int64_t value : values)
             {
                 Serializer s;

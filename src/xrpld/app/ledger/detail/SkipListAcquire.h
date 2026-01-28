@@ -19,10 +19,9 @@ class LedgerReplayClient;
  * Manage the retrieval of a skip list in a ledger from the network.
  * Before asking peers, always check if the local node has the ledger.
  */
-class SkipListAcquire final
-    : public TimeoutCounter,
-      public std::enable_shared_from_this<SkipListAcquire>,
-      public CountedObject<SkipListAcquire>
+class SkipListAcquire final : public TimeoutCounter,
+                              public std::enable_shared_from_this<SkipListAcquire>,
+                              public CountedObject<SkipListAcquire>
 {
 public:
     /**
@@ -30,17 +29,14 @@ public:
      * @param successful  if the skipList data was acquired successfully
      * @param hash  hash of the ledger that has the skipList
      */
-    using OnSkipListDataCB =
-        std::function<void(bool successful, uint256 const& hash)>;
+    using OnSkipListDataCB = std::function<void(bool successful, uint256 const& hash)>;
 
     struct SkipListData
     {
         std::uint32_t const ledgerSeq;
         std::vector<xrpl::uint256> const skipList;
 
-        SkipListData(
-            std::uint32_t const ledgerSeq,
-            std::vector<xrpl::uint256> const& skipList)
+        SkipListData(std::uint32_t const ledgerSeq, std::vector<xrpl::uint256> const& skipList)
             : ledgerSeq(ledgerSeq), skipList(skipList)
         {
         }
@@ -75,9 +71,7 @@ public:
      * @note ledgerSeq and item must have been verified against the ledger hash
      */
     void
-    processData(
-        std::uint32_t ledgerSeq,
-        boost::intrusive_ptr<SHAMapItem const> const& item);
+    processData(std::uint32_t ledgerSeq, boost::intrusive_ptr<SHAMapItem const> const& item);
 
     /**
      * Add a callback that will be called when the skipList is ready or failed.
@@ -111,9 +105,7 @@ private:
      * @param sl  lock. this function must be called with the lock
      */
     void
-    retrieveSkipList(
-        std::shared_ptr<Ledger const> const& ledger,
-        ScopedLockType& sl);
+    retrieveSkipList(std::shared_ptr<Ledger const> const& ledger, ScopedLockType& sl);
 
     /**
      * Process the skip list
@@ -122,10 +114,7 @@ private:
      * @param sl  lock. this function must be called with the lock
      */
     void
-    onSkipListAcquired(
-        std::vector<uint256> const& skipList,
-        std::uint32_t ledgerSeq,
-        ScopedLockType& sl);
+    onSkipListAcquired(std::vector<uint256> const& skipList, std::uint32_t ledgerSeq, ScopedLockType& sl);
 
     /**
      * Call the OnSkipListDataCB callbacks

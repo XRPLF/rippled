@@ -51,39 +51,25 @@ ammLPHolds(
     beast::Journal const j);
 
 STAmount
-ammLPHolds(
-    ReadView const& view,
-    SLE const& ammSle,
-    AccountID const& lpAccount,
-    beast::Journal const j);
+ammLPHolds(ReadView const& view, SLE const& ammSle, AccountID const& lpAccount, beast::Journal const j);
 
 /** Get AMM trading fee for the given account. The fee is discounted
  * if the account is the auction slot owner or one of the slot's authorized
  * accounts.
  */
 std::uint16_t
-getTradingFee(
-    ReadView const& view,
-    SLE const& ammSle,
-    AccountID const& account);
+getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account);
 
 /** Returns total amount held by AMM for the given token.
  */
 STAmount
-ammAccountHolds(
-    ReadView const& view,
-    AccountID const& ammAccountID,
-    Issue const& issue);
+ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Issue const& issue);
 
 /** Delete trustlines to AMM. If all trustlines are deleted then
  * AMM object and account are deleted. Otherwise tecIMPCOMPLETE is returned.
  */
 TER
-deleteAMMAccount(
-    Sandbox& view,
-    Issue const& asset,
-    Issue const& asset2,
-    beast::Journal j);
+deleteAMMAccount(Sandbox& view, Issue const& asset, Issue const& asset2, beast::Journal j);
 
 /** Initialize Auction and Voting slots and set the trading/discounted fee.
  */
@@ -100,10 +86,7 @@ initializeFeeAuctionVote(
  * for instance Liquidity Provider has more than one LPToken trustline.
  */
 Expected<bool, TER>
-isOnlyLiquidityProvider(
-    ReadView const& view,
-    Issue const& ammIssue,
-    AccountID const& lpAccount);
+isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount);
 
 /** Due to rounding, the LPTokenBalance of the last LP might
  * not match the LP's trustline balance. If it's within the tolerance,
