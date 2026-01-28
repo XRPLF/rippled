@@ -1043,11 +1043,10 @@ applyCreateAccountAttestations(
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            auto const reserve =
-                psb.fees().accountReserve((*sleDoor)[sfOwnerCount] + 1);
-
-            if (balance < reserve)
-                return Unexpected(tecINSUFFICIENT_RESERVE);
+            if (auto const ret =
+                    checkInsufficientReserve(psb, sleDoor, balance, 1);
+                !isTesSuccess(ret))
+                return Unexpected(ret);  // tecINSUFFICIENT_RESERVE
         }
 
         std::vector<Attestations::AttestationCreateAccount> atts;
@@ -1461,14 +1460,13 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
         // Check reserve
         auto const sleAcc = ctx.view.read(keylet::account(account));
         if (!sleAcc)
-            return terNO_ACCOUNT;
+            return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve =
-            ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+        if (auto const ret =
+                checkInsufficientReserve(ctx.view, sleAcc, balance, 1);
+            !isTesSuccess(ret))
+            return ret;
     }
 
     return tesSUCCESS;
@@ -1996,14 +1994,13 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
         // Check reserve
         auto const sleAcc = ctx.view.read(keylet::account(account));
         if (!sleAcc)
-            return terNO_ACCOUNT;
+            return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve =
-            ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+        if (auto const ret =
+                checkInsufficientReserve(ctx.view, sleAcc, balance, 1);
+            !isTesSuccess(ret))
+            return ret;
     }
 
     return tesSUCCESS;

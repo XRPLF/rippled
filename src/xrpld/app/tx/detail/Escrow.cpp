@@ -431,16 +431,17 @@ EscrowCreate::doApply()
     // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
 
-    auto const reserve =
-        ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
-
-    if (mSourceBalance < reserve)
-        return tecINSUFFICIENT_RESERVE;
+    if (auto const ret =
+            checkInsufficientReserve(ctx_.view(), sle, mSourceBalance, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     // Check reserve and funds availability
     if (isXRP(amount))
     {
-        if (mSourceBalance < reserve + STAmount(amount).xrp())
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(), sle, mSourceBalance - STAmount(amount).xrp(), 1);
+            !isTesSuccess(ret))
             return tecUNFUNDED;
     }
 
@@ -770,8 +771,9 @@ escrowUnlockApplyHelper<Issue>(
     if (!view.exists(trustLineKey) && createAsset && !receiverIssuer)
     {
         // Can the account cover the trust line's reserve?
-        if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
-            xrpBalance < view.fees().accountReserve(ownerCount + 1))
+        if (auto const ret =
+                checkInsufficientReserve(view, sleDest, xrpBalance, 1);
+            !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
                                      "Insufficent reserve to create line.";
@@ -896,11 +898,10 @@ escrowUnlockApplyHelper<MPTIssue>(
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) &&
         createAsset && !receiverIssuer)
     {
-        if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
-            xrpBalance < view.fees().accountReserve(ownerCount + 1))
-        {
-            return tecINSUFFICIENT_RESERVE;
-        }
+        if (auto const ret =
+                checkInsufficientReserve(view, sleDest, xrpBalance, 1);
+            !isTesSuccess(ret))
+            return ret;
 
         if (auto const ter =
                 MPTokenAuthorize::createMPToken(view, mptID, receiver, 0);

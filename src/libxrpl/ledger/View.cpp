@@ -1078,6 +1078,28 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     return std::nullopt;
 }
 
+uint32_t
+ownerCount(std::shared_ptr<SLE const> const& accountSle)
+{
+    return accountSle->getFieldU32(sfOwnerCount);
+}
+
+TER
+checkInsufficientReserve(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& accSle,
+    STAmount const& accBalance,
+    std::int32_t ownerCountDelta)
+{
+    STAmount const reserve{
+        view.fees().accountReserve(ownerCount(accSle) + ownerCountDelta)};
+
+    if (accBalance < reserve)
+        return tecINSUFFICIENT_RESERVE;
+
+    return tesSUCCESS;
+}
+
 //------------------------------------------------------------------------------
 //
 // Modifiers
@@ -1468,8 +1490,9 @@ addEmptyHolding(
         return tecDUPLICATE;
 
     // Can the account cover the trust line reserve ?
-    std::uint32_t const ownerCount = sleDst->at(sfOwnerCount);
-    if (priorBalance < view.fees().accountReserve(ownerCount + 1))
+    if (auto const ret =
+            checkInsufficientReserve(view, sleDst, priorBalance, 1);
+        !isTesSuccess(ret))
         return tecNO_LINE_INSUF_RESERVE;
 
     return trustCreate(
@@ -1563,13 +1586,13 @@ authorizeMPToken(
         // an account owns, in the case of MPTokens we only
         // *enforce* a reserve if the user owns more than two
         // items. This is similar to the reserve requirements of trust lines.
-        std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
-        XRPAmount const reserveCreate(
-            (uOwnerCount < 2) ? XRPAmount(beast::zero)
-                              : view.fees().accountReserve(uOwnerCount + 1));
-
-        if (priorBalance < reserveCreate)
-            return tecINSUFFICIENT_RESERVE;
+        if (ownerCount(sleAcct) >= 2)
+        {
+            if (auto const ret =
+                    checkInsufficientReserve(view, sleAcct, priorBalance, 1);
+                !isTesSuccess(ret))
+                return ret;
+        }
 
         // Defensive check before we attempt to create MPToken for the issuer
         auto const mpt = view.read(keylet::mptIssuance(mptIssuanceID));

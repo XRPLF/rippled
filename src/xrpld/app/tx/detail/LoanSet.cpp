@@ -498,15 +498,16 @@ LoanSet::doApply()
         }
     }
 
-    adjustOwnerCount(view, borrowerSle, 1, j_);
     {
-        auto const ownerCount = borrowerSle->at(sfOwnerCount);
         auto const balance = account_ == borrower
             ? mPriorBalance
             : borrowerSle->at(sfBalance).value().xrp();
-        if (balance < view.fees().accountReserve(ownerCount))
-            return tecINSUFFICIENT_RESERVE;
+        if (auto const ret =
+                checkInsufficientReserve(view, borrowerSle, balance, 1);
+            !isTesSuccess(ret))
+            return ret;
     }
+    adjustOwnerCount(view, borrowerSle, 1, j_);
 
     // Account for the origination fee using two payments
     //
