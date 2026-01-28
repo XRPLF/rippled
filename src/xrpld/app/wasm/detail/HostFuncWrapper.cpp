@@ -63,6 +63,27 @@ getDataInt64(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 
 template <class IW>
 Expected<uint64_t, HostFunctionError>
+getDataUInt32(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
+{
+    auto const r = getDataSlice(runtime, params, i);
+    if (!r)
+        return Unexpected(r.error());
+    if (r->size() != sizeof(uint32_t))
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+    uint32_t x;
+    uintptr_t p = reinterpret_cast<uintptr_t>(r->data());
+    if (p & (alignof(uint32_t) - 1))  // unaligned
+        memcpy(&x, r->data(), sizeof(uint32_t));
+    else
+        x = *reinterpret_cast<uint32_t const*>(r->data());
+    x = adjustWasmEndianess(x);
+
+    return x;
+}
+
+template <class IW>
+Expected<uint64_t, HostFunctionError>
 getDataUInt64(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const r = getDataSlice(runtime, params, i);
@@ -938,10 +959,10 @@ checkKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1087,10 +1108,10 @@ escrowKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1153,10 +1174,10 @@ mptIssuanceKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1223,10 +1244,10 @@ nftOfferKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1255,10 +1276,10 @@ offerKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1287,10 +1308,10 @@ oracleKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const documentId = getDataInt32(runtime, params, index);
+    auto const documentId = getDataUInt32(runtime, params, index);
     if (!documentId)
     {
-        return hfResult(results, documentId.error());  // LCOV_EXCL_LINE
+        return hfResult(results, documentId.error());
     }
     return returnResult(
         runtime, params, results, hf->oracleKeylet(*acc, *documentId), index);
@@ -1320,10 +1341,10 @@ paychanKeylet_wrap(
         return hfResult(results, dest.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1352,10 +1373,10 @@ permissionedDomainKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1406,10 +1427,10 @@ ticketKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(
@@ -1438,10 +1459,10 @@ vaultKeylet_wrap(
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(

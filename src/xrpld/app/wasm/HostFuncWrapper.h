@@ -4,14 +4,14 @@
 
 namespace xrpl {
 
-using getLedgerSqn_proto = int32_t();
+using getLedgerSqn_proto = int32_t(uint8_t*, int32_t);
 wasm_trap_t*
 getLedgerSqn_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using getParentLedgerTime_proto = int32_t();
+using getParentLedgerTime_proto = int32_t(uint8_t*, int32_t);
 wasm_trap_t*
 getParentLedgerTime_wrap(
     void* env,
@@ -25,7 +25,7 @@ getParentLedgerHash_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using getBaseFee_proto = int32_t();
+using getBaseFee_proto = int32_t(uint8_t*, int32_t);
 wasm_trap_t*
 getBaseFee_wrap(
     void* env,
@@ -183,8 +183,13 @@ ammKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using checkKeylet_proto =
-    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+using checkKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
 wasm_trap_t*
 checkKeylet_wrap(
     void* env,
@@ -239,8 +244,13 @@ didKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using escrowKeylet_proto =
-    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+using escrowKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
 wasm_trap_t*
 escrowKeylet_wrap(
     void* env,
@@ -262,8 +272,13 @@ lineKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using mptIssuanceKeylet_proto =
-    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+using mptIssuanceKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
 wasm_trap_t*
 mptIssuanceKeylet_wrap(
     void* env,
@@ -283,24 +298,39 @@ mptokenKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using nftOfferKeylet_proto =
-    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+using nftOfferKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
 wasm_trap_t*
 nftOfferKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using offerKeylet_proto =
-    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+using offerKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
 wasm_trap_t*
 offerKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using oracleKeylet_proto =
-    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+using oracleKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
 wasm_trap_t*
 oracleKeylet_wrap(
     void* env,
@@ -321,8 +351,13 @@ paychanKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using permissionedDomainKeylet_proto =
-    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+using permissionedDomainKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
 wasm_trap_t*
 permissionedDomainKeylet_wrap(
     void* env,
@@ -336,16 +371,26 @@ signersKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using ticketKeylet_proto =
-    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+using ticketKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
 wasm_trap_t*
 ticketKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using vaultKeylet_proto =
-    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+using vaultKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
 wasm_trap_t*
 vaultKeylet_wrap(
     void* env,

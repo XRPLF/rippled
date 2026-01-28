@@ -124,13 +124,13 @@ struct HostFunctions
         return j_;
     }
 
-    virtual Expected<std::int32_t, HostFunctionError>
+    virtual Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn()
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<std::int32_t, HostFunctionError>
+    virtual Expected<std::uint32_t, HostFunctionError>
     getParentLedgerTime()
     {
         return Unexpected(HostFunctionError::INTERNAL);
@@ -142,7 +142,7 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<uint32_t, HostFunctionError>
     getBaseFee()
     {
         return Unexpected(HostFunctionError::INTERNAL);
