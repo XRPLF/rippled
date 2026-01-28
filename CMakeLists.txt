@@ -106,7 +106,7 @@ find_package(secp256k1 REQUIRED)
 find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(xxHash REQUIRED)
-find_package(yaml-cpp REQUIRED)
+find_package(tomlplusplus REQUIRED)
 
 target_link_libraries(xrpl_libs INTERFACE
   ed25519::ed25519
@@ -116,7 +116,7 @@ target_link_libraries(xrpl_libs INTERFACE
   secp256k1::secp256k1
   soci::soci
   SQLite::SQLite3
-  yaml-cpp::yaml-cpp
+  tomlplusplus::tomlplusplus
 )
 
 option(rocksdb "Enable RocksDB" ON)

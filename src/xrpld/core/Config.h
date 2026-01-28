@@ -310,13 +310,13 @@ public:
     loadFromString(std::string const& fileContents);
 
     /**
-     *  Load the config from the contents of a YAML-format string.
+     *  Load the config from the contents of a TOML-format string.
      *
-     *  @param fileContents String representing the config contents in YAML
+     *  @param fileContents String representing the config contents in TOML
      * format.
      */
     void
-    loadFromYamlString(std::string const& fileContents);
+    loadFromTomlString(std::string const& fileContents);
 
     bool
     quiet() const

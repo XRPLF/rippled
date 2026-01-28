@@ -4,7 +4,7 @@
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/basics/YamlConfig.h>
+#include <xrpl/basics/TomlConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_reader.h>
@@ -17,7 +17,7 @@
 #include <boost/predef.h>
 #include <boost/regex.hpp>
 
-#include <yaml-cpp/yaml.h>
+#include <toml++/toml.hpp>
 
 #include <algorithm>
 #include <cstdlib>
@@ -457,8 +457,8 @@ Config::load()
     }
 
     // Detect format based on file extension
-    if (isYamlFile(CONFIG_FILE))
-        loadFromYamlString(fileContents);
+    if (isTomlFile(CONFIG_FILE))
+        loadFromTomlString(fileContents);
     else
         loadFromString(fileContents);
     checkZeroPorts(*this);
@@ -472,16 +472,16 @@ Config::loadFromString(std::string const& fileContents)
 }
 
 void
-Config::loadFromYamlString(std::string const& fileContents)
+Config::loadFromTomlString(std::string const& fileContents)
 {
-    auto const yamlNode = parseYamlString(fileContents, j_);
-    if (!yamlNode)
+    auto const tomlTable = parseTomlString(fileContents, j_);
+    if (!tomlTable)
     {
         Throw<std::runtime_error>(
-            "Failed to parse YAML configuration. "
+            "Failed to parse TOML configuration. "
             "Check the log for detailed error information.");
     }
-    IniFileSections secConfig = yamlToIniFileSections(*yamlNode, j_);
+    IniFileSections secConfig = tomlToIniFileSections(*tomlTable, j_);
     loadFromIniFileSections(secConfig);
 }
 
@@ -964,18 +964,18 @@ Config::loadFromIniFileSections(IniFileSections& secConfig)
                     std::to_string(ec.value()) + ": " + ec.message());
             }
 
-            // Parse as YAML or INI depending on file extension
+            // Parse as TOML or INI depending on file extension
             IniFileSections valFile;
-            if (isYamlFile(validatorsFile))
+            if (isTomlFile(validatorsFile))
             {
-                auto const yamlNode = parseYamlString(data, j_);
-                if (!yamlNode)
+                auto const tomlTable = parseTomlString(data, j_);
+                if (!tomlTable)
                 {
                     Throw<std::runtime_error>(
-                        "Failed to parse YAML validators file: " +
+                        "Failed to parse TOML validators file: " +
                         validatorsFile.string());
                 }
-                valFile = yamlToIniFileSections(*yamlNode, j_);
+                valFile = tomlToIniFileSections(*tomlTable, j_);
             }
             else
             {

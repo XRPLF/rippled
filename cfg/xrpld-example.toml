@@ -1,0 +1,124 @@
+# xrpld TOML Configuration Example
+#
+# This file demonstrates the TOML configuration format for xrpld.
+# TOML provides a more structured and readable alternative to the INI format.
+#
+# For detailed documentation of each option, see xrpld-example.cfg
+
+# =============================================================================
+# Root-level configuration options (must come before any [section] headers)
+# =============================================================================
+
+# Peer Protocol Configuration
+ips = [
+    "r.ripple.com 51235",
+    "sahyadri.isrdc.in 51235",
+    "hubs.xrpkuwait.com 51235",
+    "hub.xrpl-commons.org 51235",
+]
+
+# Network ID (main=0, testnet=1, devnet=2)
+network_id = "main"
+
+# SQLite Database Path
+database_path = "db"
+
+# Ledger History
+ledger_history = 256
+
+# Logging
+debug_logfile = "debug.log"
+
+# Node Size (tiny, small, medium, large, huge)
+node_size = "medium"
+
+# Validators File
+validators_file = "validators.toml"
+
+# SSL Configuration
+ssl_verify = 1
+
+# Amendment Majority Time
+amendment_majority_time = "2 weeks"
+
+# Beta RPC API
+beta_rpc_api = 0
+
+# Compression
+compression = false
+
+# Peer Settings
+peer_private = 0
+peers_max = 21
+
+# Path Finding
+path_search = 2
+path_search_fast = 2
+path_search_max = 3
+path_search_old = 2
+
+# RPC Startup Commands
+# rpc_startup = [
+#     '{ "command": "log_level", "severity": "warning" }',
+# ]
+
+# Features to enable (for testing/development)
+# features = [
+#     "MultiSign",
+#     "Tickets",
+# ]
+
+# =============================================================================
+# Section configurations
+# =============================================================================
+
+# Server Configuration
+# The 'server' section defines listening ports
+# Each port name listed under 'ports' will have its own configuration section
+[server.ports.port_rpc_admin_local]
+ip = "127.0.0.1"
+port = 5005
+protocol = "http"
+admin = "127.0.0.1"
+
+[server.ports.port_peer]
+ip = "0.0.0.0"
+port = 51235
+protocol = "peer"
+
+[server.ports.port_ws_admin_local]
+ip = "127.0.0.1"
+port = 6006
+protocol = "ws"
+admin = "127.0.0.1"
+
+# Node Database Configuration
+[node_db]
+type = "NuDB"
+path = "db/nudb"
+online_delete = 512
+advisory_delete = 0
+
+# Voting Configuration
+[voting]
+reference_fee = 10
+account_reserve = 10000000
+owner_reserve = 2000000
+
+# Overlay Configuration
+[overlay]
+ip_limit = 5
+max_unknown_time = 600
+max_diverged_time = 300
+
+# Transaction Queue Configuration (EXPERIMENTAL)
+# [transaction_queue]
+# ledgers_in_queue = 20
+# minimum_queue_size = 2000
+# retry_sequence_percent = 25
+# minimum_escalation_multiplier = 500
+# minimum_txn_in_ledger = 5
+# target_txn_in_ledger = 50
+# maximum_txn_per_account = 10
+# minimum_last_ledger_buffer = 2
+# zero_basefee_transaction_feelevel = 256000

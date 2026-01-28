@@ -35,7 +35,7 @@ class Xrpl(ConanFile):
         "openssl/3.5.4",
         "secp256k1/0.7.0",
         "soci/4.0.3",
-        "yaml-cpp/0.8.0",
+        "tomlplusplus/3.4.0",
         "zlib/1.3.1",
     ]
 
@@ -110,7 +110,6 @@ class Xrpl(ConanFile):
         "soci/*:with_sqlite3": True,
         "soci/*:with_boost": True,
         "xxhash/*:shared": False,
-        "yaml-cpp/*:shared": False,
     }
 
     def set_version(self):
@@ -219,7 +218,7 @@ class Xrpl(ConanFile):
             "secp256k1::secp256k1",
             "sqlite3::sqlite",
             "xxhash::xxhash",
-            "yaml-cpp::yaml-cpp",
+            "tomlplusplus::tomlplusplus",
             "zlib::zlib",
         ]
         if self.options.rocksdb:
