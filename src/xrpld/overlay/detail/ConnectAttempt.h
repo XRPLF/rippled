@@ -38,16 +38,13 @@ namespace xrpl {
  *       as part of the peer discovery and connection management system.
  *
  */
-class ConnectAttempt : public OverlayImpl::Child,
-                       public std::enable_shared_from_this<ConnectAttempt>
+class ConnectAttempt : public OverlayImpl::Child, public std::enable_shared_from_this<ConnectAttempt>
 {
 private:
     using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using request_type =
-        boost::beast::http::request<boost::beast::http::empty_body>;
-    using response_type =
-        boost::beast::http::response<boost::beast::http::dynamic_body>;
+    using request_type = boost::beast::http::request<boost::beast::http::empty_body>;
+    using response_type = boost::beast::http::response<boost::beast::http::dynamic_body>;
     using socket_type = boost::asio::ip::tcp::socket;
     using middle_type = boost::beast::tcp_stream;
     using stream_type = boost::beast::ssl_stream<middle_type>;
@@ -264,8 +261,7 @@ private:
         is >> bep;
         if (is.fail())
         {
-            ec = boost::system::errc::make_error_code(
-                boost::system::errc::invalid_argument);
+            ec = boost::system::errc::make_error_code(boost::system::errc::invalid_argument);
             return boost::asio::ip::tcp::endpoint{};
         }
 

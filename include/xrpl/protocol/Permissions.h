@@ -40,8 +40,7 @@ private:
 
     std::unordered_map<std::uint16_t, Delegation> delegableTx_;
 
-    std::unordered_map<std::string, GranularPermissionType>
-        granularPermissionMap_;
+    std::unordered_map<std::string, GranularPermissionType> granularPermissionMap_;
 
     std::unordered_map<GranularPermissionType, std::string> granularNameMap_;
 

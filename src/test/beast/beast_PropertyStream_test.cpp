@@ -9,10 +9,7 @@ public:
     using Source = PropertyStream::Source;
 
     void
-    test_peel_name(
-        std::string s,
-        std::string const& expected,
-        std::string const& expected_remainder)
+    test_peel_name(std::string s, std::string const& expected, std::string const& expected_remainder)
     {
         try
         {
@@ -28,10 +25,7 @@ public:
     }
 
     void
-    test_peel_leading_slash(
-        std::string s,
-        std::string const& expected,
-        bool should_be_found)
+    test_peel_leading_slash(std::string s, std::string const& expected, bool should_be_found)
     {
         try
         {
@@ -47,10 +41,7 @@ public:
     }
 
     void
-    test_peel_trailing_slashstar(
-        std::string s,
-        std::string const& expected_remainder,
-        bool should_be_found)
+    test_peel_trailing_slashstar(std::string s, std::string const& expected_remainder, bool should_be_found)
     {
         try
         {
@@ -111,11 +102,7 @@ public:
     }
 
     void
-    test_find(
-        Source& root,
-        std::string path,
-        Source* expected,
-        bool expected_star)
+    test_find(Source& root, std::string path, Source* expected, bool expected_star)
     {
         try
         {

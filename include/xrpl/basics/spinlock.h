@@ -100,12 +100,9 @@ public:
         @note For performance reasons, you should strive to have `lock` be
               on a cacheline by itself.
      */
-    packed_spinlock(std::atomic<T>& lock, int index)
-        : bits_(lock), mask_(static_cast<T>(1) << index)
+    packed_spinlock(std::atomic<T>& lock, int index) : bits_(lock), mask_(static_cast<T>(1) << index)
     {
-        XRPL_ASSERT(
-            index >= 0 && (mask_ != 0),
-            "xrpl::packed_spinlock::packed_spinlock : valid index and mask");
+        XRPL_ASSERT(index >= 0 && (mask_ != 0), "xrpl::packed_spinlock::packed_spinlock : valid index and mask");
     }
 
     [[nodiscard]] bool
@@ -178,10 +175,7 @@ public:
         T expected = 0;
 
         return lock_.compare_exchange_weak(
-            expected,
-            std::numeric_limits<T>::max(),
-            std::memory_order_acquire,
-            std::memory_order_relaxed);
+            expected, std::numeric_limits<T>::max(), std::memory_order_acquire, std::memory_order_relaxed);
     }
 
     void

@@ -35,8 +35,7 @@ class JSONRPCClient : public AbstractClient
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
-                *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
-                                        : address{address_v4::loopback()};
+                *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()} : address{address_v4::loopback()};
 
             if (!pp.port)
                 Throw<std::runtime_error>("Use fixConfigPorts with auto ports");

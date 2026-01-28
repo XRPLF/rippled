@@ -78,12 +78,9 @@ public:
     init(ScopedLockType& collectionLock, bool broadcast);
 
     bool
-    gotData(
-        std::weak_ptr<Peer>,
-        std::shared_ptr<protocol::TMLedgerData> const&);
+    gotData(std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData> const&);
 
-    using neededHash_t =
-        std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
+    using neededHash_t = std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
 
     /** Return a Json::objectValue. */
     Json::Value
@@ -108,9 +105,7 @@ private:
     enum class TriggerReason { added, reply, timeout };
 
     void
-    filterNodes(
-        std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
-        TriggerReason reason);
+    filterNodes(std::vector<std::pair<SHAMapNodeID, uint256>>& nodes, TriggerReason reason);
 
     void
     trigger(std::shared_ptr<Peer> const&, TriggerReason);
@@ -175,9 +170,7 @@ private:
 
     // Data we have received from peers
     std::mutex mReceivedDataLock;
-    std::vector<
-        std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
-        mReceivedData;
+    std::vector<std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>> mReceivedData;
     bool mReceiveDispatched;
     std::unique_ptr<PeerSet> mPeerSet;
 };

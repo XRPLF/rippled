@@ -24,14 +24,10 @@ protected:
     using response_type = std::string;
 
 public:
-    using callback_type =
-        std::function<void(error_code const&, response_type const&)>;
+    using callback_type = std::function<void(error_code const&, response_type const&)>;
 
 public:
-    WorkFile(
-        std::string const& path,
-        boost::asio::io_context& ios,
-        callback_type cb);
+    WorkFile(std::string const& path, boost::asio::io_context& ios, callback_type cb);
     ~WorkFile();
 
     void
@@ -49,14 +45,8 @@ private:
 
 //------------------------------------------------------------------------------
 
-WorkFile::WorkFile(
-    std::string const& path,
-    boost::asio::io_context& ios,
-    callback_type cb)
-    : path_(path)
-    , cb_(std::move(cb))
-    , ios_(ios)
-    , strand_(boost::asio::make_strand(ios))
+WorkFile::WorkFile(std::string const& path, boost::asio::io_context& ios, callback_type cb)
+    : path_(path), cb_(std::move(cb)), ios_(ios), strand_(boost::asio::make_strand(ios))
 {
 }
 
@@ -71,9 +61,7 @@ WorkFile::run()
 {
     if (!strand_.running_in_this_thread())
         return boost::asio::post(
-            ios_,
-            boost::asio::bind_executor(
-                strand_, std::bind(&WorkFile::run, shared_from_this())));
+            ios_, boost::asio::bind_executor(strand_, std::bind(&WorkFile::run, shared_from_this())));
 
     error_code ec;
     auto const fileContents = getFileContents(ec, path_, megabytes(1));

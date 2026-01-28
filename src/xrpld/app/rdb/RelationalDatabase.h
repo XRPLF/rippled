@@ -63,8 +63,7 @@ public:
         bool bAdmin;
     };
 
-    using AccountTx =
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+    using AccountTx = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
     using AccountTxs = std::vector<AccountTx>;
     using txnMetaLedgerType = std::tuple<Blob, Blob, std::uint32_t>;
     using MetaTxsList = std::vector<txnMetaLedgerType>;
@@ -72,8 +71,7 @@ public:
     using LedgerSequence = uint32_t;
     using LedgerHash = uint256;
     using LedgerShortcut = RPC::LedgerShortcut;
-    using LedgerSpecifier =
-        std::variant<LedgerRange, LedgerShortcut, LedgerSequence, LedgerHash>;
+    using LedgerSpecifier = std::variant<LedgerRange, LedgerShortcut, LedgerSequence, LedgerHash>;
 
     struct AccountTxArgs
     {
@@ -210,19 +208,16 @@ template <class T, class C>
 T
 rangeCheckedCast(C c)
 {
-    if ((c > std::numeric_limits<T>::max()) ||
-        (!std::numeric_limits<T>::is_signed && c < 0) ||
-        (std::numeric_limits<T>::is_signed &&
-         std::numeric_limits<C>::is_signed &&
+    if ((c > std::numeric_limits<T>::max()) || (!std::numeric_limits<T>::is_signed && c < 0) ||
+        (std::numeric_limits<T>::is_signed && std::numeric_limits<C>::is_signed &&
          c < std::numeric_limits<T>::lowest()))
     {
         // This should never happen
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::rangeCheckedCast : domain error");
-        JLOG(debugLog().error())
-            << "rangeCheckedCast domain error:"
-            << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
-            << " max: " << std::numeric_limits<T>::max();
+        JLOG(debugLog().error()) << "rangeCheckedCast domain error:"
+                                 << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
+                                 << " max: " << std::numeric_limits<T>::max();
         // LCOV_EXCL_STOP
     }
 

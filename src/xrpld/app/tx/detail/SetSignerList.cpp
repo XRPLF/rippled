@@ -20,15 +20,8 @@ namespace xrpl {
 // setting the sfSignerListID to zero in all cases.
 static std::uint32_t const DEFAULT_SIGNER_LIST_ID = 0;
 
-std::tuple<
-    NotTEC,
-    std::uint32_t,
-    std::vector<SignerEntries::SignerEntry>,
-    SetSignerList::Operation>
-SetSignerList::determineOperation(
-    STTx const& tx,
-    ApplyFlags flags,
-    beast::Journal j)
+std::tuple<NotTEC, std::uint32_t, std::vector<SignerEntries::SignerEntry>, SetSignerList::Operation>
+SetSignerList::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j)
 {
     // Check the quorum.  A non-zero quorum means we're creating or replacing
     // the list.  A zero quorum means we're destroying the list.
@@ -76,8 +69,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
     if (std::get<3>(result) == unknown)
     {
         // Neither a set nor a destroy.  Malformed.
-        JLOG(ctx.j.trace())
-            << "Malformed transaction: Invalid signer set list format.";
+        JLOG(ctx.j.trace()) << "Malformed transaction: Invalid signer set list format.";
         return temMALFORMED;
     }
 
@@ -85,12 +77,8 @@ SetSignerList::preflight(PreflightContext const& ctx)
     {
         // Validate our settings.
         auto const account = ctx.tx.getAccountID(sfAccount);
-        NotTEC const ter = validateQuorumAndSignerEntries(
-            std::get<1>(result),
-            std::get<2>(result),
-            account,
-            ctx.j,
-            ctx.rules);
+        NotTEC const ter =
+            validateQuorumAndSignerEntries(std::get<1>(result), std::get<2>(result), account, ctx.j, ctx.rules);
         if (ter != tesSUCCESS)
         {
             return ter;
@@ -126,12 +114,8 @@ SetSignerList::preCompute()
 {
     // Get the quorum and operation info.
     auto result = determineOperation(ctx_.tx, view().flags(), j_);
-    XRPL_ASSERT(
-        std::get<0>(result) == tesSUCCESS,
-        "xrpl::SetSignerList::preCompute : result is tesSUCCESS");
-    XRPL_ASSERT(
-        std::get<3>(result) != unknown,
-        "xrpl::SetSignerList::preCompute : result is known operation");
+    XRPL_ASSERT(std::get<0>(result) == tesSUCCESS, "xrpl::SetSignerList::preCompute : result is tesSUCCESS");
+    XRPL_ASSERT(std::get<3>(result) != unknown, "xrpl::SetSignerList::preCompute : result is known operation");
 
     quorum_ = std::get<1>(result);
     signers_ = std::get<2>(result);
@@ -160,12 +144,8 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // The static_cast should always be safe since entryCount should always
     // be in the range from 1 to 32.
     // We've got a lot of room to grow.
-    XRPL_ASSERT(
-        entryCount >= STTx::minMultiSigners,
-        "xrpl::signerCountBasedOwnerCountDelta : minimum signers");
-    XRPL_ASSERT(
-        entryCount <= STTx::maxMultiSigners,
-        "xrpl::signerCountBasedOwnerCountDelta : maximum signers");
+    XRPL_ASSERT(entryCount >= STTx::minMultiSigners, "xrpl::signerCountBasedOwnerCountDelta : minimum signers");
+    XRPL_ASSERT(entryCount <= STTx::maxMultiSigners, "xrpl::signerCountBasedOwnerCountDelta : maximum signers");
     return 2 + static_cast<int>(entryCount);
 }
 
@@ -193,9 +173,7 @@ removeSignersFromLedger(
     if ((signers->getFlags() & lsfOneOwnerCount) == 0)
     {
         STArray const& actualList = signers->getFieldArray(sfSignerEntries);
-        removeFromOwnerCount =
-            signerCountBasedOwnerCountDelta(actualList.size(), view.rules()) *
-            -1;
+        removeFromOwnerCount = signerCountBasedOwnerCountDelta(actualList.size(), view.rules()) * -1;
     }
 
     // Remove the node from the account directory.
@@ -209,11 +187,7 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
-    adjustOwnerCount(
-        view,
-        view.peek(accountKeylet),
-        removeFromOwnerCount,
-        app.journal("View"));
+    adjustOwnerCount(view, view.peek(accountKeylet), removeFromOwnerCount, app.journal("View"));
 
     view.erase(signers);
 
@@ -221,18 +195,13 @@ removeSignersFromLedger(
 }
 
 TER
-SetSignerList::removeFromLedger(
-    Application& app,
-    ApplyView& view,
-    AccountID const& account,
-    beast::Journal j)
+SetSignerList::removeFromLedger(Application& app, ApplyView& view, AccountID const& account, beast::Journal j)
 {
     auto const accountKeylet = keylet::account(account);
     auto const ownerDirKeylet = keylet::ownerDir(account);
     auto const signerListKeylet = keylet::signers(account);
 
-    return removeSignersFromLedger(
-        app, view, accountKeylet, ownerDirKeylet, signerListKeylet, j);
+    return removeSignersFromLedger(app, view, accountKeylet, ownerDirKeylet, signerListKeylet, j);
 }
 
 NotTEC
@@ -246,8 +215,7 @@ SetSignerList::validateQuorumAndSignerEntries(
     // Reject if there are too many or too few entries in the list.
     {
         std::size_t const signerCount = signers.size();
-        if (signerCount < STTx::minMultiSigners ||
-            signerCount > STTx::maxMultiSigners)
+        if (signerCount < STTx::minMultiSigners || signerCount > STTx::maxMultiSigners)
         {
             JLOG(j.trace()) << "Too many or too few signers in signer list.";
             return temMALFORMED;
@@ -305,13 +273,7 @@ SetSignerList::replaceSignerList()
     // This may be either a create or a replace.  Preemptively remove any
     // old signer list.  May reduce the reserve, so this is done before
     // checking the reserve.
-    if (TER const ter = removeSignersFromLedger(
-            ctx_.app,
-            view(),
-            accountKeylet,
-            ownerDirKeylet,
-            signerListKeylet,
-            j_))
+    if (TER const ter = removeSignersFromLedger(ctx_.app, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_))
         return ter;
 
     auto const sle = view().peek(accountKeylet);
@@ -324,8 +286,7 @@ SetSignerList::replaceSignerList()
     constexpr int addedOwnerCount = 1;
     std::uint32_t flags{lsfOneOwnerCount};
 
-    XRPAmount const newReserve{
-        view().fees().accountReserve(oldOwnerCount + addedOwnerCount)};
+    XRPAmount const newReserve{view().fees().accountReserve(oldOwnerCount + addedOwnerCount)};
 
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
@@ -340,11 +301,10 @@ SetSignerList::replaceSignerList()
 
     auto viewJ = ctx_.app.journal("View");
     // Add the signer list to the account's directory.
-    auto const page = ctx_.view().dirInsert(
-        ownerDirKeylet, signerListKeylet, describeOwnerDir(account_));
+    auto const page = ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(account_));
 
-    JLOG(j_.trace()) << "Create signer list for account " << toBase58(account_)
-                     << ": " << (page ? "success" : "failure");
+    JLOG(j_.trace()) << "Create signer list for account " << toBase58(account_) << ": "
+                     << (page ? "success" : "failure");
 
     if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
@@ -367,20 +327,16 @@ SetSignerList::destroySignerList()
     if (!ledgerEntry)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if ((ledgerEntry->isFlag(lsfDisableMaster)) &&
-        (!ledgerEntry->isFieldPresent(sfRegularKey)))
+    if ((ledgerEntry->isFlag(lsfDisableMaster)) && (!ledgerEntry->isFieldPresent(sfRegularKey)))
         return tecNO_ALTERNATIVE_KEY;
 
     auto const ownerDirKeylet = keylet::ownerDir(account_);
     auto const signerListKeylet = keylet::signers(account_);
-    return removeSignersFromLedger(
-        ctx_.app, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_);
+    return removeSignersFromLedger(ctx_.app, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_);
 }
 
 void
-SetSignerList::writeSignersToSLE(
-    SLE::pointer const& ledgerEntry,
-    std::uint32_t flags) const
+SetSignerList::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const
 {
     // Assign the quorum, default SignerListID, and flags.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))

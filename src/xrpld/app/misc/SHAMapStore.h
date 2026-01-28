@@ -84,10 +84,7 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<SHAMapStore>
-make_SHAMapStore(
-    Application& app,
-    NodeStore::Scheduler& scheduler,
-    beast::Journal journal);
+make_SHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
 }  // namespace xrpl
 
 #endif

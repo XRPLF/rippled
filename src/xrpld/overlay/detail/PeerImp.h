@@ -93,9 +93,7 @@ class SHAMap;
  * timer management, and shutdown procedures to ensure no resource leaks
  * or hanging connections in high-throughput networking scenarios.
  */
-class PeerImp : public Peer,
-                public std::enable_shared_from_this<PeerImp>,
-                public OverlayImpl::Child
+class PeerImp : public Peer, public std::enable_shared_from_this<PeerImp>, public OverlayImpl::Child
 {
 public:
     /** Whether the peer's view of the ledger converges or diverges from ours */
@@ -109,8 +107,7 @@ private:
     using stream_type = boost::beast::ssl_stream<middle_type>;
     using address_type = boost::asio::ip::address;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using waitable_timer =
-        boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
+    using waitable_timer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
     using Compressed = compression::Compressed;
 
     Application& app_;
@@ -200,9 +197,7 @@ private:
         void
         update(Resource::Charge f, std::string const& add)
         {
-            XRPL_ASSERT(
-                f >= fee,
-                "xrpl::PeerImp::ChargeWithContext::update : fee increases");
+            XRPL_ASSERT(f >= fee, "xrpl::PeerImp::ChargeWithContext::update : fee increases");
             fee = f;
             if (!context.empty())
             {
@@ -377,9 +372,8 @@ public:
     /** Send a set of PeerFinder endpoints as a protocol message. */
     template <
         class FwdIt,
-        class = typename std::enable_if_t<std::is_same<
-            typename std::iterator_traits<FwdIt>::value_type,
-            PeerFinder::Endpoint>::value>>
+        class = typename std::enable_if_t<
+            std::is_same<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>::value>>
     void
     sendEndpoints(FwdIt first, FwdIt last);
 
@@ -453,8 +447,7 @@ public:
     }
 
     void
-    setPublisherListSequence(PublicKey const& pubKey, std::size_t const seq)
-        override
+    setPublisherListSequence(PublicKey const& pubKey, std::size_t const seq) override
     {
         std::lock_guard<std::mutex> sl(recentLock_);
 
@@ -674,10 +667,7 @@ private:
        transaction is part of a batch, and should not be charged an extra fee.
      */
     void
-    handleTransaction(
-        std::shared_ptr<protocol::TMTransaction> const& m,
-        bool eraseTxQueue,
-        bool batch);
+    handleTransaction(std::shared_ptr<protocol::TMTransaction> const& m, bool eraseTxQueue, bool batch);
 
     /** Handle protocol message with hashes of transactions that have not
        been relayed by an upstream node down to its peers - request
@@ -685,8 +675,7 @@ private:
        @param m protocol message with transactions' hashes
      */
     void
-    handleHaveTransactions(
-        std::shared_ptr<protocol::TMHaveTransactions> const& m);
+    handleHaveTransactions(std::shared_ptr<protocol::TMHaveTransactions> const& m);
 
     std::string const&
     fingerprint() const override
@@ -719,9 +708,7 @@ public:
         bool isCompressed);
 
     void
-    onMessageEnd(
-        std::uint16_t type,
-        std::shared_ptr<::google::protobuf::Message> const& m);
+    onMessageEnd(std::uint16_t type, std::shared_ptr<::google::protobuf::Message> const& m);
 
     void
     onMessage(std::shared_ptr<protocol::TMManifests> const& m);
@@ -771,9 +758,7 @@ private:
     // lockedRecentLock is passed as a reminder to callers that recentLock_
     // must be locked.
     void
-    addLedger(
-        uint256 const& hash,
-        std::lock_guard<std::mutex> const& lockedRecentLock);
+    addLedger(uint256 const& hash, std::lock_guard<std::mutex> const& lockedRecentLock);
 
     void
     doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);
@@ -793,17 +778,10 @@ private:
     doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);
 
     void
-    checkTransaction(
-        HashRouterFlags flags,
-        bool checkSignature,
-        std::shared_ptr<STTx const> const& stx,
-        bool batch);
+    checkTransaction(HashRouterFlags flags, bool checkSignature, std::shared_ptr<STTx const> const& stx, bool batch);
 
     void
-    checkPropose(
-        bool isTrusted,
-        std::shared_ptr<protocol::TMProposeSet> const& packet,
-        RCLCxPeerPos peerPos);
+    checkPropose(bool isTrusted, std::shared_ptr<protocol::TMProposeSet> const& packet, RCLCxPeerPos peerPos);
 
     void
     checkValidation(
@@ -855,8 +833,7 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , fingerprint_(
-          getFingerprint(slot->remote_endpoint(), publicKey, to_string(id_)))
+    , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey, to_string(id_)))
     , prefix_(makePrefix(fingerprint_))
     , sink_(app_.journal("Peer"), prefix_)
     , p_sink_(app_.journal("Protocol"), prefix_)
@@ -883,34 +860,19 @@ PeerImp::PeerImp(
     , response_(std::move(response))
     , headers_(response_)
     , compressionEnabled_(
-          peerFeatureEnabled(
-              headers_,
-              FEATURE_COMPR,
-              "lz4",
-              app_.config().COMPRESSION)
-              ? Compressed::On
-              : Compressed::Off)
-    , txReduceRelayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_TXRR,
-          app_.config().TX_REDUCE_RELAY_ENABLE))
-    , ledgerReplayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_LEDGER_REPLAY,
-          app_.config().LEDGER_REPLAY))
+          peerFeatureEnabled(headers_, FEATURE_COMPR, "lz4", app_.config().COMPRESSION) ? Compressed::On
+                                                                                        : Compressed::Off)
+    , txReduceRelayEnabled_(peerFeatureEnabled(headers_, FEATURE_TXRR, app_.config().TX_REDUCE_RELAY_ENABLE))
+    , ledgerReplayEnabled_(peerFeatureEnabled(headers_, FEATURE_LEDGER_REPLAY, app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
-    read_buffer_.commit(boost::asio::buffer_copy(
-        read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
-    JLOG(journal_.info())
-        << "compression enabled " << (compressionEnabled_ == Compressed::On)
-        << " vp reduce-relay base squelch enabled "
-        << peerFeatureEnabled(
-               headers_,
-               FEATURE_VPRR,
-               app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-        << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-        << remote_address_ << " " << id_;
+    read_buffer_.commit(boost::asio::buffer_copy(read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
+    JLOG(journal_.info()) << "compression enabled " << (compressionEnabled_ == Compressed::On)
+                          << " vp reduce-relay base squelch enabled "
+                          << peerFeatureEnabled(
+                                 headers_, FEATURE_VPRR, app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
+                          << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on " << remote_address_ << " "
+                          << id_;
 }
 
 template <class FwdIt, class>

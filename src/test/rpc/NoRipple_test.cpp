@@ -33,16 +33,11 @@ public:
         for (auto SetOrClear : {true, false})
         {
             // Create a trust line with no-ripple flag setting
-            env(trust(
-                gw,
-                USD(100),
-                alice,
-                SetOrClear ? tfSetNoRipple : tfClearNoRipple));
+            env(trust(gw, USD(100), alice, SetOrClear ? tfSetNoRipple : tfClearNoRipple));
             env.close();
 
             // Check no-ripple flag on sender 'gateway'
-            Json::Value lines{
-                env.rpc("json", "account_lines", to_string(account_gw))};
+            Json::Value lines{env.rpc("json", "account_lines", to_string(account_gw))};
             auto const& gline0 = lines[jss::result][jss::lines][0u];
             BEAST_EXPECT(gline0[jss::no_ripple].asBool() == SetOrClear);
 
@@ -96,8 +91,7 @@ public:
             return dest_amt;
         }();
 
-        auto const resp =
-            env.rpc("json", "ripple_path_find", to_string(params));
+        auto const resp = env.rpc("json", "ripple_path_find", to_string(params));
         BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 1);
 
         auto getAccountLines = [&env](Account const& acct) {
@@ -167,8 +161,7 @@ public:
             return dest_amt;
         }();
 
-        Json::Value const resp{
-            env.rpc("json", "ripple_path_find", to_string(params))};
+        Json::Value const resp{env.rpc("json", "ripple_path_find", to_string(params))};
         BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 0);
 
         env(pay(alice, carol, bob["USD"](50)), ter(tecPATH_DRY));
@@ -239,13 +232,11 @@ public:
                 params[jss::role] = "gateway";
                 params[jss::transactions] = "asdf";
 
-                auto lines =
-                    env.rpc("json", "noripple_check", to_string(params));
+                auto lines = env.rpc("json", "noripple_check", to_string(params));
                 if (apiVersion < 2u)
                     BEAST_EXPECT(lines[jss::result][jss::status] == "success");
                 else
-                    BEAST_EXPECT(
-                        lines[jss::result][jss::error] == "invalidParams");
+                    BEAST_EXPECT(lines[jss::result][jss::error] == "invalidParams");
             }
         }
     }
@@ -256,9 +247,7 @@ public:
         testSetAndClear();
 
         auto withFeatsTests = [this](FeatureBitset features) {
-            forAllApiVersions([&, this](unsigned testVersion) {
-                testDefaultRipple(features, testVersion);
-            });
+            forAllApiVersions([&, this](unsigned testVersion) { testDefaultRipple(features, testVersion); });
             testNegativeBalance(features);
             testPairwise(features);
         };

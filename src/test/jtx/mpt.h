@@ -25,10 +25,7 @@ private:
     std::optional<Account> holder_;
 
 public:
-    mptflags(
-        MPTTester& tester,
-        std::uint32_t flags,
-        std::optional<Account> const& holder = std::nullopt)
+    mptflags(MPTTester& tester, std::uint32_t flags, std::optional<Account> const& holder = std::nullopt)
         : tester_(tester), flags_(flags), holder_(holder)
     {
     }
@@ -86,8 +83,7 @@ struct MPTCreate
     std::optional<std::vector<Account>> authorize = std::nullopt;
     // pay if seated. if authorize is not seated then authorize.
     // if empty vector then pay to either authorize or all holders.
-    std::optional<std::pair<std::vector<Account>, std::uint64_t>> pay =
-        std::nullopt;
+    std::optional<std::pair<std::vector<Account>, std::uint64_t>> pay = std::nullopt;
     std::optional<std::uint32_t> flags = {0};
     std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
@@ -209,16 +205,13 @@ public:
     checkDomainID(std::optional<uint256> expected) const;
 
     [[nodiscard]] bool
-    checkMPTokenAmount(Account const& holder, std::int64_t expectedAmount)
-        const;
+    checkMPTokenAmount(Account const& holder, std::int64_t expectedAmount) const;
 
     [[nodiscard]] bool
     checkMPTokenOutstandingAmount(std::int64_t expectedAmount) const;
 
     [[nodiscard]] bool
-    checkFlags(
-        uint32_t const expectedFlags,
-        std::optional<Account> const& holder = std::nullopt) const;
+    checkFlags(uint32_t const expectedFlags, std::optional<Account> const& holder = std::nullopt) const;
 
     [[nodiscard]] bool
     checkMetadata(std::string const& metadata) const;
@@ -248,11 +241,7 @@ public:
         std::optional<std::vector<std::string>> credentials = std::nullopt);
 
     void
-    claw(
-        Account const& issuer,
-        Account const& holder,
-        std::int64_t amount,
-        std::optional<TER> err = std::nullopt);
+    claw(Account const& issuer, Account const& holder, std::int64_t amount, std::optional<TER> err = std::nullopt);
 
     PrettyAmount
     mpt(std::int64_t amount) const;
@@ -279,18 +268,14 @@ public:
 private:
     using SLEP = SLE::const_pointer;
     bool
-    forObject(
-        std::function<bool(SLEP const& sle)> const& cb,
-        std::optional<Account> const& holder = std::nullopt) const;
+    forObject(std::function<bool(SLEP const& sle)> const& cb, std::optional<Account> const& holder = std::nullopt)
+        const;
 
     template <typename A>
     TER
     submit(A const& arg, Json::Value const& jv)
     {
-        env_(
-            jv,
-            txflags(arg.flags.value_or(0)),
-            ter(arg.err.value_or(tesSUCCESS)));
+        env_(jv, txflags(arg.flags.value_or(0)), ter(arg.err.value_or(tesSUCCESS)));
         auto const err = env_.ter();
         if (close_)
             env_.close();

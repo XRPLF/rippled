@@ -55,9 +55,7 @@ public:
         char const* context) override
     {
         auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
-            XRPL_ASSERT(
-                hash.isNonZero(),
-                "xrpl::InboundLedgersImp::acquire::doAcquire : nonzero hash");
+            XRPL_ASSERT(hash.isNonZero(), "xrpl::InboundLedgersImp::acquire::doAcquire : nonzero hash");
 
             bool const needNetworkLedger = app_.getOPs().isNeedNetworkLedger();
             bool const shouldAcquire = [&]() {
@@ -180,12 +178,7 @@ public:
                 else
                 {
                     inbound = std::make_shared<InboundLedger>(
-                        app_,
-                        hash,
-                        seq,
-                        reason,
-                        std::ref(m_clock),
-                        mPeerSetBuilder->build());
+                        app_, hash, seq, reason, std::ref(m_clock), mPeerSetBuilder->build());
                     mLedgers.emplace(hash, inbound);
                     inbound->init(sl, shouldBroadcast);
                     ++mCounter;
@@ -221,10 +214,7 @@ public:
     }
 
     void
-    acquireAsync(
-        uint256 const& hash,
-        std::uint32_t seq,
-        InboundLedger::Reason reason) override
+    acquireAsync(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
         if (CanProcess const check{acquiresMutex_, pendingAcquires_, hash})
         {
@@ -250,8 +240,7 @@ public:
     std::shared_ptr<InboundLedger>
     find(uint256 const& hash) override
     {
-        XRPL_ASSERT(
-            hash.isNonZero(), "xrpl::InboundLedgersImp::find : nonzero input");
+        XRPL_ASSERT(hash.isNonZero(), "xrpl::InboundLedgersImp::find : nonzero input");
 
         std::shared_ptr<InboundLedger> ret;
 
@@ -283,38 +272,28 @@ public:
     /** We received a TMLedgerData from a peer.
      */
     bool
-    gotLedgerData(
-        LedgerHash const& hash,
-        std::shared_ptr<Peer> peer,
-        std::shared_ptr<protocol::TMLedgerData> packet) override
+    gotLedgerData(LedgerHash const& hash, std::shared_ptr<Peer> peer, std::shared_ptr<protocol::TMLedgerData> packet)
+        override
     {
         if (auto ledger = find(hash))
         {
-            JLOG(j_.trace()) << "Got data (" << packet->nodes().size()
-                             << ") for acquiring ledger: " << hash;
+            JLOG(j_.trace()) << "Got data (" << packet->nodes().size() << ") for acquiring ledger: " << hash;
 
             // Stash the data for later processing and see if we need to
             // dispatch
             if (ledger->gotData(std::weak_ptr<Peer>(peer), packet))
-                app_.getJobQueue().addJob(
-                    jtLEDGER_DATA, "ProcessLData", [ledger]() {
-                        ledger->runData();
-                    });
+                app_.getJobQueue().addJob(jtLEDGER_DATA, "ProcessLData", [ledger]() { ledger->runData(); });
 
             return true;
         }
 
-        JLOG(j_.trace()) << "Got data for ledger " << hash
-                         << " which we're no longer acquiring";
+        JLOG(j_.trace()) << "Got data for ledger " << hash << " which we're no longer acquiring";
 
         // If it's state node data, stash it because it still might be
         // useful.
         if (packet->type() == protocol::liAS_NODE)
         {
-            app_.getJobQueue().addJob(
-                jtLEDGER_DATA, "GotStaleData", [this, packet]() {
-                    gotStaleData(packet);
-                });
+            app_.getJobQueue().addJob(jtLEDGER_DATA, "GotStaleData", [this, packet]() { gotStaleData(packet); });
         }
 
         return false;
@@ -356,8 +335,7 @@ public:
                 if (!node.has_nodeid() || !node.has_nodedata())
                     return;
 
-                auto newNode =
-                    SHAMapTreeNode::makeFromWire(makeSlice(node.nodedata()));
+                auto newNode = SHAMapTreeNode::makeFromWire(makeSlice(node.nodedata()));
 
                 if (!newNode)
                     return;
@@ -366,8 +344,7 @@ public:
                 newNode->serializeWithPrefix(s);
 
                 app_.getLedgerMaster().addFetchPack(
-                    newNode->getHash().as_uint256(),
-                    std::make_shared<Blob>(s.begin(), s.end()));
+                    newNode->getHash().as_uint256(), std::make_shared<Blob>(s.begin(), s.end()));
             }
         }
         catch (std::exception const&)
@@ -413,9 +390,7 @@ public:
             acqs.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
-                XRPL_ASSERT(
-                    it.second,
-                    "xrpl::InboundLedgersImp::getInfo : non-null ledger");
+                XRPL_ASSERT(it.second, "xrpl::InboundLedgersImp::getInfo : non-null ledger");
                 acqs.push_back(it);
             }
             for (auto const& it : mRecentFailures)
@@ -505,13 +480,9 @@ public:
             beast::expire(mRecentFailures, kReacquireInterval);
         }
 
-        JLOG(j_.debug())
-            << "Swept " << stuffToSweep.size() << " out of " << total
-            << " inbound ledgers. Duration: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   m_clock.now() - start)
-                   .count()
-            << "ms";
+        JLOG(j_.debug()) << "Swept " << stuffToSweep.size() << " out of " << total << " inbound ledgers. Duration: "
+                         << std::chrono::duration_cast<std::chrono::milliseconds>(m_clock.now() - start).count()
+                         << "ms";
     }
 
     void
@@ -558,8 +529,7 @@ make_InboundLedgers(
     InboundLedgers::clock_type& clock,
     beast::insight::Collector::ptr const& collector)
 {
-    return std::make_unique<InboundLedgersImp>(
-        app, clock, collector, make_PeerSetBuilder(app));
+    return std::make_unique<InboundLedgersImp>(app, clock, collector, make_PeerSetBuilder(app));
 }
 
 }  // namespace xrpl

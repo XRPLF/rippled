@@ -19,10 +19,7 @@
 
 namespace xrpl {
 
-Logs::Sink::Sink(
-    std::string const& partition,
-    beast::severities::Severity thresh,
-    Logs& logs)
+Logs::Sink::Sink(std::string const& partition, beast::severities::Severity thresh, Logs& logs)
     : beast::Journal::Sink(thresh, false), logs_(logs), partition_(partition)
 {
 }
@@ -37,9 +34,7 @@ Logs::Sink::write(beast::severities::Severity level, std::string const& text)
 }
 
 void
-Logs::Sink::writeAlways(
-    beast::severities::Severity level,
-    std::string const& text)
+Logs::Sink::writeAlways(beast::severities::Severity level, std::string const& text)
 {
     logs_.write(level, partition_, text, console());
 }
@@ -64,8 +59,7 @@ Logs::File::open(boost::filesystem::path const& path)
     bool wasOpened = false;
 
     // VFALCO TODO Make this work with Unicode file paths
-    std::unique_ptr<std::ofstream> stream(
-        new std::ofstream(path.c_str(), std::fstream::app));
+    std::unique_ptr<std::ofstream> stream(new std::ofstream(path.c_str(), std::fstream::app));
 
     if (stream->good())
     {
@@ -112,8 +106,7 @@ Logs::File::writeln(char const* text)
 
 //------------------------------------------------------------------------------
 
-Logs::Logs(beast::severities::Severity thresh)
-    : thresh_(thresh)  // default severity
+Logs::Logs(beast::severities::Severity thresh) : thresh_(thresh)  // default severity
 {
 }
 
@@ -170,11 +163,7 @@ Logs::partition_severities() const
 }
 
 void
-Logs::write(
-    beast::severities::Severity level,
-    std::string const& partition,
-    std::string const& text,
-    bool console)
+Logs::write(beast::severities::Severity level, std::string const& partition, std::string const& text, bool console)
 {
     std::string s;
     format(s, text, level, partition);
@@ -297,8 +286,7 @@ Logs::fromString(std::string const& s)
     if (boost::iequals(s, "info") || boost::iequals(s, "information"))
         return lsINFO;
 
-    if (boost::iequals(s, "warn") || boost::iequals(s, "warning") ||
-        boost::iequals(s, "warnings"))
+    if (boost::iequals(s, "warn") || boost::iequals(s, "warning") || boost::iequals(s, "warnings"))
         return lsWARNING;
 
     if (boost::iequals(s, "error") || boost::iequals(s, "errors"))

@@ -56,9 +56,7 @@ private:
 
         if (m_value != value_type())
         {
-            std::size_t elapsed =
-                std::chrono::duration_cast<std::chrono::seconds>(now - m_when)
-                    .count();
+            std::size_t elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - m_when).count();
 
             // A span larger than four times the window decays the
             // value to an insignificant amount so just reset it.
