@@ -195,7 +195,7 @@ struct Wasm_test : public beast::unit_test::suite
             1'000'000,
             env.journal);
 
-        checkResult(re, 0, 151);
+        checkResult(re, 0, 439);
 
         env.close();
         env.close();
@@ -204,7 +204,7 @@ struct Wasm_test : public beast::unit_test::suite
         re = engine.run(
             {}, ESCROW_FUNCTION_NAME, {}, imports, hfs, 1'000'000, env.journal);
 
-        checkResult(re, 5, 190);
+        checkResult(re, 5, 486);
     }
 
     void
@@ -281,7 +281,7 @@ struct Wasm_test : public beast::unit_test::suite
                 1'000'000,
                 env.journal);
 
-            checkResult(re, 1, 25'503);
+            checkResult(re, 1, 27'080);
 
             env.close();
         }
@@ -309,7 +309,7 @@ struct Wasm_test : public beast::unit_test::suite
                 1'000'000,
                 env.journal);
 
-            checkResult(re, 1, 64'763);
+            checkResult(re, 1, 66'340);
 
             env.close();
         }
@@ -356,7 +356,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
             auto re = runEscrowWasm(
                 allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
-            checkResult(re, 1, 64'763);
+            checkResult(re, 1, 66'340);
         }
 
         {
@@ -364,7 +364,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
             auto re =
                 runEscrowWasm(allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, -1);
-            checkResult(re, 1, 64'763);
+            checkResult(re, 1, 66'340);
         }
 
         {  // fail because trying to access nonexistent field
@@ -383,7 +383,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::shared_ptr<HostFunctions> hfs(new BadTestHostFunctions(env));
             auto re = runEscrowWasm(
                 allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
-            checkResult(re, -201, 28'148);
+            checkResult(re, -201, 28'965);
         }
 
         {  // fail because trying to allocate more than MAX_PAGES memory
@@ -402,7 +402,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::shared_ptr<HostFunctions> hfs(new BadTestHostFunctions(env));
             auto re = runEscrowWasm(
                 allHFWasm, hfs, ESCROW_FUNCTION_NAME, {}, 100'000);
-            checkResult(re, -201, 28'148);
+            checkResult(re, -201, 28'965);
         }
 
         {  // fail because recursion too deep
@@ -646,7 +646,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto const codecovWasm = hexToBytes(codecovTestsWasmHex);
         std::shared_ptr<HostFunctions> hfs(new TestHostFunctions(env, 0));
 
-        auto const allowance = 187'131;
+        auto const allowance = 187'784;
         auto re = runEscrowWasm(
             codecovWasm, hfs, ESCROW_FUNCTION_NAME, {}, allowance);
 
