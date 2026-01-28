@@ -49,8 +49,7 @@ private:
         {
             std::memcpy(writeBuffer_.data(), data, len);
             writeBuffer_ = writeBuffer_.subspan(len);
-            readBuffer_ = std::span{
-                std::begin(buffer_), buffer_.size() - writeBuffer_.size()};
+            readBuffer_ = std::span{std::begin(buffer_), buffer_.size() - writeBuffer_.size()};
         }
     }
 
@@ -98,8 +97,7 @@ private:
         {
             if (seed_.has_value())
             {
-                return XXH3_64bits_withSeed(
-                    readBuffer_.data(), readBuffer_.size(), *seed_);
+                return XXH3_64bits_withSeed(readBuffer_.data(), readBuffer_.size(), *seed_);
             }
             else
             {
@@ -128,17 +126,13 @@ public:
         }
     }
 
-    template <
-        class Seed,
-        std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
+    template <class Seed, std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     explicit xxhasher(Seed seed) : seed_(seed)
     {
         resetBuffers();
     }
 
-    template <
-        class Seed,
-        std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
+    template <class Seed, std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     xxhasher(Seed seed, Seed) : seed_(seed)
     {
         resetBuffers();

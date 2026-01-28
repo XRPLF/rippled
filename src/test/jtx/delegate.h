@@ -10,15 +10,10 @@ namespace jtx {
 namespace delegate {
 
 Json::Value
-set(jtx::Account const& account,
-    jtx::Account const& authorize,
-    std::vector<std::string> const& permissions);
+set(jtx::Account const& account, jtx::Account const& authorize, std::vector<std::string> const& permissions);
 
 Json::Value
-entry(
-    jtx::Env& env,
-    jtx::Account const& account,
-    jtx::Account const& authorize);
+entry(jtx::Env& env, jtx::Account const& account, jtx::Account const& authorize);
 
 struct as
 {

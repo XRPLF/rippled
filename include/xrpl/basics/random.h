@@ -20,8 +20,7 @@ static_assert(
     "The Ripple default PRNG engine must return an unsigned integral type.");
 
 static_assert(
-    std::numeric_limits<beast::xor_shift_engine::result_type>::max() >=
-        std::numeric_limits<std::uint64_t>::max(),
+    std::numeric_limits<beast::xor_shift_engine::result_type>::max() >= std::numeric_limits<std::uint64_t>::max(),
     "The Ripple default PRNG engine return must be at least 64 bits wide.");
 #endif
 
@@ -90,9 +89,7 @@ default_prng()
 */
 /** @{ */
 template <class Engine, class Integral>
-std::enable_if_t<
-    std::is_integral<Integral>::value && detail::is_engine<Engine>::value,
-    Integral>
+std::enable_if_t<std::is_integral<Integral>::value && detail::is_engine<Engine>::value, Integral>
 rand_int(Engine& engine, Integral min, Integral max)
 {
     XRPL_ASSERT(max > min, "xrpl::rand_int : max over min inputs");
@@ -111,9 +108,7 @@ rand_int(Integral min, Integral max)
 }
 
 template <class Engine, class Integral>
-std::enable_if_t<
-    std::is_integral<Integral>::value && detail::is_engine<Engine>::value,
-    Integral>
+std::enable_if_t<std::is_integral<Integral>::value && detail::is_engine<Engine>::value, Integral>
 rand_int(Engine& engine, Integral max)
 {
     return rand_int(engine, Integral(0), max);
@@ -127,9 +122,7 @@ rand_int(Integral max)
 }
 
 template <class Integral, class Engine>
-std::enable_if_t<
-    std::is_integral<Integral>::value && detail::is_engine<Engine>::value,
-    Integral>
+std::enable_if_t<std::is_integral<Integral>::value && detail::is_engine<Engine>::value, Integral>
 rand_int(Engine& engine)
 {
     return rand_int(engine, std::numeric_limits<Integral>::max());
@@ -147,23 +140,17 @@ rand_int()
 /** @{ */
 template <class Byte, class Engine>
 std::enable_if_t<
-    (std::is_same<Byte, unsigned char>::value ||
-     std::is_same<Byte, std::uint8_t>::value) &&
+    (std::is_same<Byte, unsigned char>::value || std::is_same<Byte, std::uint8_t>::value) &&
         detail::is_engine<Engine>::value,
     Byte>
 rand_byte(Engine& engine)
 {
-    return static_cast<Byte>(rand_int<Engine, std::uint32_t>(
-        engine,
-        std::numeric_limits<Byte>::min(),
-        std::numeric_limits<Byte>::max()));
+    return static_cast<Byte>(
+        rand_int<Engine, std::uint32_t>(engine, std::numeric_limits<Byte>::min(), std::numeric_limits<Byte>::max()));
 }
 
 template <class Byte = std::uint8_t>
-std::enable_if_t<
-    (std::is_same<Byte, unsigned char>::value ||
-     std::is_same<Byte, std::uint8_t>::value),
-    Byte>
+std::enable_if_t<(std::is_same<Byte, unsigned char>::value || std::is_same<Byte, std::uint8_t>::value), Byte>
 rand_byte()
 {
     return rand_byte<Byte>(default_prng());

@@ -63,8 +63,7 @@ class RCLConsensus
         // thread safety.
         std::atomic<bool> validating_{false};
         std::atomic<std::size_t> prevProposers_{0};
-        std::atomic<std::chrono::milliseconds> prevRoundTime_{
-            std::chrono::milliseconds{0}};
+        std::atomic<std::chrono::milliseconds> prevRoundTime_{std::chrono::milliseconds{0}};
         std::atomic<ConsensusMode> mode_{ConsensusMode::observing};
 
         RCLCensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
@@ -119,9 +118,7 @@ class RCLConsensus
             @return Whether we enter the round proposing
         */
         bool
-        preStartRound(
-            RCLCxLedger const& prevLedger,
-            hash_set<NodeID> const& nowTrusted);
+        preStartRound(RCLCxLedger const& prevLedger, hash_set<NodeID> const& nowTrusted);
 
         bool
         haveValidated() const;
@@ -133,8 +130,7 @@ class RCLConsensus
         getQuorumKeys() const;
 
         std::size_t
-        laggards(Ledger_t::Seq const seq, hash_set<NodeKey_t>& trustedKeys)
-            const;
+        laggards(Ledger_t::Seq const seq, hash_set<NodeKey_t>& trustedKeys) const;
 
         /** Whether I am a validator.
          *
@@ -262,10 +258,7 @@ class RCLConsensus
                   the ledger matching ledgerID from the network
          */
         uint256
-        getPrevLedger(
-            uint256 ledgerID,
-            RCLCxLedger const& ledger,
-            ConsensusMode mode);
+        getPrevLedger(uint256 ledgerID, RCLCxLedger const& ledger, ConsensusMode mode);
 
         /** Notified of change in consensus mode
 
@@ -283,10 +276,7 @@ class RCLConsensus
            @return Tentative consensus result
         */
         Result
-        onClose(
-            RCLCxLedger const& ledger,
-            NetClock::time_point const& closeTime,
-            ConsensusMode mode);
+        onClose(RCLCxLedger const& ledger, NetClock::time_point const& closeTime, ConsensusMode mode);
 
         /** Process the accepted ledger.
 
@@ -332,10 +322,7 @@ class RCLConsensus
             @param haveCorrectLCL Whether we believe we have the correct LCL.
         */
         void
-        notify(
-            protocol::NodeEvent ne,
-            RCLCxLedger const& ledger,
-            bool haveCorrectLCL);
+        notify(protocol::NodeEvent ne, RCLCxLedger const& ledger, bool haveCorrectLCL);
 
         /** Accept a new ledger based on the given transactions.
 
@@ -392,10 +379,7 @@ class RCLConsensus
                              but are still around and trying to catch up.
         */
         void
-        validate(
-            RCLCxLedger const& ledger,
-            RCLTxSet const& txns,
-            bool proposing);
+        validate(RCLCxLedger const& ledger, RCLTxSet const& txns, bool proposing);
     };
 
 public:
@@ -474,9 +458,7 @@ public:
 
     //! @see Consensus::timerEntry
     void
-    timerEntry(
-        NetClock::time_point const& now,
-        std::unique_ptr<std::stringstream> const& clog = {});
+    timerEntry(NetClock::time_point const& now, std::unique_ptr<std::stringstream> const& clog = {});
 
     //! @see Consensus::gotTxSet
     void
@@ -492,15 +474,11 @@ public:
 
     //! @see Consensus::simulate
     void
-    simulate(
-        NetClock::time_point const& now,
-        std::optional<std::chrono::milliseconds> consensusDelay);
+    simulate(NetClock::time_point const& now, std::optional<std::chrono::milliseconds> consensusDelay);
 
     //! @see Consensus::proposal
     bool
-    peerProposal(
-        NetClock::time_point const& now,
-        RCLCxPeerPos const& newProposal);
+    peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& newProposal);
 
     ConsensusParms const&
     parms() const
@@ -536,10 +514,7 @@ class RclConsensusLogger
     std::chrono::steady_clock::time_point start_;
 
 public:
-    explicit RclConsensusLogger(
-        char const* label,
-        bool validating,
-        beast::Journal j);
+    explicit RclConsensusLogger(char const* label, bool validating, beast::Journal j);
     ~RclConsensusLogger();
 
     std::unique_ptr<std::stringstream> const&

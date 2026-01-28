@@ -40,8 +40,7 @@ public:
             Throw<std::runtime_error>("fee: not XRP");
     }
 
-    explicit fee(std::uint64_t amount, bool negative = false)
-        : fee{STAmount{amount, negative}}
+    explicit fee(std::uint64_t amount, bool negative = false) : fee{STAmount{amount, negative}}
     {
     }
 

@@ -22,9 +22,7 @@ namespace RPC {
    @{
  */
 bool
-canHaveMPTokenIssuanceID(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta);
+canHaveMPTokenIssuanceID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta);
 
 std::optional<uint192>
 getIDFromCreatedIssuance(TxMeta const& transactionMeta);

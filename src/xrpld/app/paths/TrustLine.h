@@ -36,9 +36,7 @@ class TrustLineBase
 protected:
     // This class should not be instantiated directly. Use one of the derived
     // classes.
-    TrustLineBase(
-        std::shared_ptr<SLE const> const& sle,
-        AccountID const& viewAccount);
+    TrustLineBase(std::shared_ptr<SLE const> const& sle, AccountID const& viewAccount);
 
     ~TrustLineBase() = default;
     TrustLineBase(TrustLineBase const&) = default;
@@ -96,15 +94,13 @@ public:
     LineDirection
     getDirection() const
     {
-        return getNoRipple() ? LineDirection::incoming
-                             : LineDirection::outgoing;
+        return getNoRipple() ? LineDirection::incoming : LineDirection::outgoing;
     }
 
     LineDirection
     getDirectionPeer() const
     {
-        return getNoRipplePeer() ? LineDirection::incoming
-                                 : LineDirection::outgoing;
+        return getNoRipplePeer() ? LineDirection::incoming : LineDirection::outgoing;
     }
 
     /** Have we set the freeze flag on our peer */
@@ -170,8 +166,7 @@ protected:
 };
 
 // This wrapper is used for the path finder
-class PathFindTrustLine final : public TrustLineBase,
-                                public CountedObject<PathFindTrustLine>
+class PathFindTrustLine final : public TrustLineBase, public CountedObject<PathFindTrustLine>
 {
     using TrustLineBase::TrustLineBase;
 
@@ -182,25 +177,19 @@ public:
     makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle);
 
     static std::vector<PathFindTrustLine>
-    getItems(
-        AccountID const& accountID,
-        ReadView const& view,
-        LineDirection direction);
+    getItems(AccountID const& accountID, ReadView const& view, LineDirection direction);
 };
 
 // This wrapper is used for the `AccountLines` command and includes the quality
 // in and quality out values.
-class RPCTrustLine final : public TrustLineBase,
-                           public CountedObject<RPCTrustLine>
+class RPCTrustLine final : public TrustLineBase, public CountedObject<RPCTrustLine>
 {
     using TrustLineBase::TrustLineBase;
 
 public:
     RPCTrustLine() = delete;
 
-    RPCTrustLine(
-        std::shared_ptr<SLE const> const& sle,
-        AccountID const& viewAccount);
+    RPCTrustLine(std::shared_ptr<SLE const> const& sle, AccountID const& viewAccount);
 
     Rate const&
     getQualityIn() const

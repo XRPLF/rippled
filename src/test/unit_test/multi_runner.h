@@ -135,8 +135,7 @@ class multi_runner_base
     static constexpr char const* shared_mem_name_ = "RippledUnitTestSharedMem";
     // name of the message queue a multi_runner_child will use to communicate
     // with multi_runner_parent
-    static constexpr char const* message_queue_name_ =
-        "RippledUnitTestMessageQueue";
+    static constexpr char const* message_queue_name_ = "RippledUnitTestMessageQueue";
 
     // `inner_` will be created in shared memory
     inner* inner_;
@@ -233,8 +232,7 @@ public:
 
 /** A class to run a subset of unit tests
  */
-class multi_runner_child : public beast::unit_test::runner,
-                           private detail::multi_runner_base</*IsParent*/ false>
+class multi_runner_child : public beast::unit_test::runner, private detail::multi_runner_base</*IsParent*/ false>
 {
 private:
     std::size_t job_index_;

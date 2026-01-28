@@ -18,8 +18,7 @@ doPathFind(RPC::JsonContext& context)
 
     auto lpLedger = context.ledgerMaster.getClosedLedger();
 
-    if (!context.params.isMember(jss::subcommand) ||
-        !context.params[jss::subcommand].isString())
+    if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString())
     {
         return rpcError(rpcINVALID_PARAMS);
     }
@@ -35,8 +34,7 @@ doPathFind(RPC::JsonContext& context)
     {
         context.loadType = Resource::feeHeavyBurdenRPC;
         context.infoSub->clearRequest();
-        return context.app.getPathRequests().makePathRequest(
-            context.infoSub, lpLedger, context.params);
+        return context.app.getPathRequests().makePathRequest(context.infoSub, lpLedger, context.params);
     }
 
     if (sSubCommand == "close")

@@ -50,9 +50,7 @@ std::string
 Endpoint::to_string() const
 {
     std::string s;
-    s.reserve(
-        (address().is_v6() ? INET6_ADDRSTRLEN - 1 : 15) +
-        (port() == 0 ? 0 : 6 + (address().is_v6() ? 2 : 0)));
+    s.reserve((address().is_v6() ? INET6_ADDRSTRLEN - 1 : 15) + (port() == 0 ? 0 : 6 + (address().is_v6() ? 2 : 0)));
 
     if (port() != 0 && address().is_v6())
         s += '[';
@@ -110,14 +108,12 @@ operator>>(std::istream& is, Endpoint& endpoint)
         if (isspace(static_cast<unsigned char>(i)) || (readTo && i == readTo))
             break;
 
-        if ((i == '.') || (i >= '0' && i <= ':') || (i >= 'a' && i <= 'f') ||
-            (i >= 'A' && i <= 'F'))
+        if ((i == '.') || (i >= '0' && i <= ':') || (i >= 'a' && i <= 'f') || (i >= 'A' && i <= 'F'))
         {
             addrStr += i;
 
             // don't exceed a reasonable length...
-            if (addrStr.size() == INET6_ADDRSTRLEN ||
-                (readTo && readTo == ':' && addrStr.size() > 15))
+            if (addrStr.size() == INET6_ADDRSTRLEN || (readTo && readTo == ':' && addrStr.size() > 15))
             {
                 is.setstate(std::ios_base::failbit);
                 return is;

@@ -197,9 +197,7 @@ struct AttestationCreateAccount : AttestationBase
     sameEvent(AttestationCreateAccount const& rhs) const;
 
     friend bool
-    operator==(
-        AttestationCreateAccount const& lhs,
-        AttestationCreateAccount const& rhs);
+    operator==(AttestationCreateAccount const& lhs, AttestationCreateAccount const& rhs);
 
     [[nodiscard]] static std::vector<std::uint8_t>
     message(
@@ -223,9 +221,7 @@ private:
 struct CmpByCreateCount
 {
     bool
-    operator()(
-        AttestationCreateAccount const& lhs,
-        AttestationCreateAccount const& rhs) const
+    operator()(AttestationCreateAccount const& lhs, AttestationCreateAccount const& rhs) const
     {
         return lhs.createCount < rhs.createCount;
     }
@@ -261,10 +257,7 @@ struct XChainClaimAttestation
         bool wasLockingChainSend;
         std::optional<AccountID> dst;
         MatchFields(TSignedAttestation const& att);
-        MatchFields(
-            STAmount const& a,
-            bool b,
-            std::optional<AccountID> const& d)
+        MatchFields(STAmount const& a, bool b, std::optional<AccountID> const& d)
             : amount{a}, wasLockingChainSend{b}, dst{d}
         {
         }
@@ -299,9 +292,7 @@ struct XChainClaimAttestation
     toSTObject() const;
 
     friend bool
-    operator==(
-        XChainClaimAttestation const& lhs,
-        XChainClaimAttestation const& rhs);
+    operator==(XChainClaimAttestation const& lhs, XChainClaimAttestation const& rhs);
 };
 
 struct XChainCreateAccountAttestation
@@ -349,9 +340,7 @@ struct XChainCreateAccountAttestation
     match(MatchFields const& rhs) const;
 
     friend bool
-    operator==(
-        XChainCreateAccountAttestation const& lhs,
-        XChainCreateAccountAttestation const& rhs);
+    operator==(XChainCreateAccountAttestation const& lhs, XChainCreateAccountAttestation const& rhs);
 };
 
 // Attestations from witness servers for a particular claim ID and bridge.
@@ -420,9 +409,7 @@ public:
 
 template <class TAttestation>
 [[nodiscard]] inline bool
-operator==(
-    XChainAttestationsBase<TAttestation> const& lhs,
-    XChainAttestationsBase<TAttestation> const& rhs)
+operator==(XChainAttestationsBase<TAttestation> const& lhs, XChainAttestationsBase<TAttestation> const& rhs)
 {
     return lhs.attestations() == rhs.attestations();
 }
@@ -464,15 +451,13 @@ XChainAttestationsBase<TAttestation>::empty() const
     return attestations_.empty();
 }
 
-class XChainClaimAttestations final
-    : public XChainAttestationsBase<XChainClaimAttestation>
+class XChainClaimAttestations final : public XChainAttestationsBase<XChainClaimAttestation>
 {
     using TBase = XChainAttestationsBase<XChainClaimAttestation>;
     using TBase::TBase;
 };
 
-class XChainCreateAccountAttestations final
-    : public XChainAttestationsBase<XChainCreateAccountAttestation>
+class XChainCreateAccountAttestations final : public XChainAttestationsBase<XChainCreateAccountAttestation>
 {
     using TBase = XChainAttestationsBase<XChainCreateAccountAttestation>;
     using TBase::TBase;

@@ -39,22 +39,17 @@ private:
         std::string partition_;
 
     public:
-        Sink(
-            std::string const& partition,
-            beast::severities::Severity thresh,
-            Logs& logs);
+        Sink(std::string const& partition, beast::severities::Severity thresh, Logs& logs);
 
         Sink(Sink const&) = delete;
         Sink&
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string const& text)
-            override;
+        write(beast::severities::Severity level, std::string const& text) override;
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text)
-            override;
+        writeAlways(beast::severities::Severity level, std::string const& text) override;
     };
 
     /** Manages a system file containing logged output.
@@ -140,11 +135,7 @@ private:
     };
 
     std::mutex mutable mutex_;
-    std::map<
-        std::string,
-        std::unique_ptr<beast::Journal::Sink>,
-        boost::beast::iless>
-        sinks_;
+    std::map<std::string, std::unique_ptr<beast::Journal::Sink>, boost::beast::iless> sinks_;
     beast::severities::Severity thresh_;
     File file_;
     bool silent_ = false;
@@ -180,11 +171,7 @@ public:
     partition_severities() const;
 
     void
-    write(
-        beast::severities::Severity level,
-        std::string const& partition,
-        std::string const& text,
-        bool console);
+    write(beast::severities::Severity level, std::string const& partition, std::string const& text, bool console);
 
     std::string
     rotate();
@@ -201,9 +188,7 @@ public:
     }
 
     virtual std::unique_ptr<beast::Journal::Sink>
-    makeSink(
-        std::string const& partition,
-        beast::severities::Severity startingLevel);
+    makeSink(std::string const& partition, beast::severities::Severity startingLevel);
 
 public:
     static LogSeverity

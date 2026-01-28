@@ -16,9 +16,7 @@ namespace xrpl {
     @param cmdline The command line parameters passed into the application.
  */
 std::pair<PublicKey, SecretKey>
-getNodeIdentity(
-    Application& app,
-    boost::program_options::variables_map const& cmdline);
+getNodeIdentity(Application& app, boost::program_options::variables_map const& cmdline);
 
 }  // namespace xrpl
 
