@@ -6,6 +6,7 @@
 #include <boost/asio/detached.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/use_awaitable.hpp>
+#include <boost/asio/use_future.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
@@ -38,6 +39,8 @@ private:
     std::string responseBody_;
     unsigned int statusCode_{200};
 
+    std::future<void> acceptFuture_;
+
     beast::Journal j_;
 
 public:
@@ -54,7 +57,8 @@ public:
         port_ = acceptor_.local_endpoint().port();
 
         // Start the accept coroutine
-        boost::asio::co_spawn(ioc_, accept(), boost::asio::detached);
+        acceptFuture_ =
+            boost::asio::co_spawn(ioc_, accept(), boost::asio::use_future);
     }
 
     TestHTTPServer(TestHTTPServer&&) = delete;
@@ -63,7 +67,9 @@ public:
 
     ~TestHTTPServer()
     {
-        stop();
+        XRPL_ASSERT(
+            stopped(),
+            "xrpl::TestHTTPServer::~TestHTTPServer : accept future ready");
     }
 
     boost::asio::io_context&
@@ -96,7 +102,6 @@ public:
         statusCode_ = code;
     }
 
-private:
     void
     stop()
     {
@@ -104,6 +109,14 @@ private:
         acceptor_.close();
     }
 
+    bool
+    stopped() const
+    {
+        using namespace std::chrono_literals;
+        return acceptFuture_.wait_for(0ms) == std::future_status::ready;
+    }
+
+private:
     boost::asio::awaitable<void>
     accept()
     {
@@ -213,12 +226,18 @@ runHTTPTest(
 
     // Run the IO context until completion
     auto start = std::chrono::steady_clock::now();
-    while (!completed &&
-           std::chrono::steady_clock::now() - start < std::chrono::seconds(10))
+    while (server.ioc().run_one() != 0)
     {
-        if (server.ioc().run_one() == 0)
+        if (std::chrono::steady_clock::now() - start >=
+                std::chrono::seconds(10) ||
+            server.stopped())
         {
             break;
+        }
+
+        if (completed)
+        {
+            server.stop();
         }
     }
 
