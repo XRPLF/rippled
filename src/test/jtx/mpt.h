@@ -535,8 +535,7 @@ private:
         Buffer& holderCiphertext,
         Buffer& issuerCiphertext,
         std::optional<Buffer>& auditorCiphertext,
-        Buffer& blindingFactor,
-        bool fillAuditorEncryptedAmt = true) const;
+        Buffer& blindingFactor) const;
 };
 
 }  // namespace jtx

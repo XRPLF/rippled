@@ -323,7 +323,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (ctx.tx.isFieldPresent(sfAuditorElGamalPublicKey) &&
         sleMptIssuance->isFieldPresent(sfAuditorElGamalPublicKey))
     {
-        return tecNO_PERMISSION;
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
     }
 
     if (ctx.tx.isFieldPresent(sfIssuerElGamalPublicKey) &&

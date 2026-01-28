@@ -482,8 +482,17 @@ MPTTester::set(MPTSet const& arg)
                 return forObject([&](SLEP const& sle) -> bool {
                     if (sle)
                     {
+                        if (!auditor_.has_value())
+                            Throw<std::runtime_error>(
+                                "MPTTester::set: auditor is not set");
+
+                        auto const auditorPubKey = getPubKey(*auditor_);
+                        if (!auditorPubKey)
+                            Throw<std::runtime_error>(
+                                "MPTTester::set: auditor's pubkey is not set");
+
                         return strHex((*sle)[sfAuditorElGamalPublicKey]) ==
-                            strHex(*arg.auditorPubKey);
+                            strHex(*auditorPubKey);
                     }
                     return false;
                 });
@@ -1011,8 +1020,7 @@ MPTTester::fillConversionCiphertexts(
     Buffer& holderCiphertext,
     Buffer& issuerCiphertext,
     std::optional<Buffer>& auditorCiphertext,
-    Buffer& blindingFactor,
-    bool fillAuditorEncryptedAmt) const
+    Buffer& blindingFactor) const
 {
     blindingFactor =
         arg.blindingFactor ? *arg.blindingFactor : generateBlindingFactor();
@@ -1037,7 +1045,7 @@ MPTTester::fillConversionCiphertexts(
     // Handle Auditor
     if (arg.auditorEncryptedAmt)
         auditorCiphertext = *arg.auditorEncryptedAmt;
-    else if (auditor_.has_value() && fillAuditorEncryptedAmt)
+    else if (auditor_.has_value() && *arg.fillAuditorEncryptedAmt)
         auditorCiphertext = encryptAmount(*auditor_, *arg.amt, blindingFactor);
 
     // Update auditor JSON only if ciphertext exists
@@ -1080,8 +1088,7 @@ MPTTester::convert(MPTConvert const& arg)
         holderCiphertext,
         issuerCiphertext,
         auditorCiphertext,
-        blindingFactor,
-        *arg.fillAuditorEncryptedAmt);
+        blindingFactor);
 
     jv[sfBlindingFactor.jsonName] = strHex(blindingFactor);
     if (arg.proof)
@@ -1768,8 +1775,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         holderCiphertext,
         issuerCiphertext,
         auditorCiphertext,
-        blindingFactor,
-        *arg.fillAuditorEncryptedAmt);
+        blindingFactor);
 
     jv[sfBlindingFactor] = strHex(blindingFactor);
 
