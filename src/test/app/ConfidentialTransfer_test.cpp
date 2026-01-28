@@ -459,6 +459,36 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .issuerPubKey = mptAlice.getPubKey(alice),
                  .err = tecNO_PERMISSION});
         }
+
+        // issuer sets public key and then sets auditor public key
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const auditor("auditor");
+            MPTTester mptAlice(
+                env, alice, {.holders = {bob}, .auditor = auditor});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(auditor);
+
+            mptAlice.set(
+                {.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.set(
+                {.account = alice,
+                 .issuerPubKey = mptAlice.getPubKey(alice),
+                 .auditorPubKey = mptAlice.getPubKey(auditor),
+                 .err = tecNO_PERMISSION});
+        }
     }
 
     void
