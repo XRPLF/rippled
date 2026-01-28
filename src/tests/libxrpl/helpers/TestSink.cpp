@@ -15,8 +15,7 @@
 
 namespace xrpl {
 
-TestSink::TestSink(beast::severities::Severity threshold)
-    : Sink(threshold, false)
+TestSink::TestSink(beast::severities::Severity threshold) : Sink(threshold, false)
 {
 }
 
@@ -29,9 +28,7 @@ TestSink::write(beast::severities::Severity level, std::string const& text)
 }
 
 void
-TestSink::writeAlways(
-    beast::severities::Severity level,
-    std::string const& text)
+TestSink::writeAlways(beast::severities::Severity level, std::string const& text)
 {
     auto supportsColor = [] {
         // 1. Check for "NO_COLOR" environment variable (Standard convention)

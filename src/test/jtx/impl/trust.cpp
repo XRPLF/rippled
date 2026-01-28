@@ -27,11 +27,7 @@ trust(Account const& account, STAmount const& amount, std::uint32_t flags)
 // authorises peer (third function parameter) to hold a certain currency
 // (amount, the second function parameter)
 Json::Value
-trust(
-    Account const& account,
-    STAmount const& amount,
-    Account const& peer,
-    std::uint32_t flags)
+trust(Account const& account, STAmount const& amount, Account const& peer, std::uint32_t flags)
 {
     if (isXRP(amount))
         Throw<std::runtime_error>("trust() requires IOU");
@@ -47,10 +43,7 @@ trust(
 }
 
 Json::Value
-claw(
-    Account const& account,
-    STAmount const& amount,
-    std::optional<Account> const& mptHolder)
+claw(Account const& account, STAmount const& amount, std::optional<Account> const& mptHolder)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();

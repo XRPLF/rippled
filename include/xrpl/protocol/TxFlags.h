@@ -191,8 +191,7 @@ XMACRO(NULL_NAME, TO_VALUE, NULL_OUTPUT)
 // constexpr std::uint32_t tfAccountSetMask = ~(tfUniversal | tfRequireDestTag |
 //     tfOptionalDestTag | tfRequireAuth | tfOptionalAuth | tfDisallowXRP |
 //     tfAllowXRP);
-#define TO_MASK(name, values) \
-    constexpr std::uint32_t tf##name##Mask = ~(tfUniversal values);
+#define TO_MASK(name, values) constexpr std::uint32_t tf##name##Mask = ~(tfUniversal values);
 #define VALUE_TO_MASK(name, value) | name
 XMACRO(TO_MASK, VALUE_TO_MASK, VALUE_TO_MASK)
 
@@ -205,9 +204,7 @@ using FlagMap = std::map<std::string, FlagValue>;
 #define TO_MAP(name, values) FlagMap const name##Flags = {values};
 XMACRO(TO_MAP, VALUE_TO_MAP, VALUE_TO_MAP)
 
-FlagMap const UniversalFlags = {
-    {"tfFullyCanonicalSig", tfFullyCanonicalSig},
-    {"tfInnerBatchTxn", tfInnerBatchTxn}};
+FlagMap const UniversalFlags = {{"tfFullyCanonicalSig", tfFullyCanonicalSig}, {"tfInnerBatchTxn", tfInnerBatchTxn}};
 
 // Create a list of all transaction flag maps.
 // This is used to generate the server_definitions RPC output.
@@ -241,8 +238,7 @@ std::vector<std::pair<std::string, FlagMap>> const allTxFlags = {
 
 // Additional transaction masks and combos
 constexpr std::uint32_t tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
-constexpr std::uint32_t tfTrustSetPermissionMask =
-    ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
+constexpr std::uint32_t tfTrustSetPermissionMask = ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
 
 // clang-format off
 // MPTokenIssuanceCreate MutableFlags:
@@ -292,23 +288,19 @@ constexpr std::uint32_t const tmfMPTokenIssuanceSetMutableMask = ~(tmfMPTSetCanL
 // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
 // tfTrustLine flag as a way to prevent the attack.  But until the
 // amendment passes we still need to keep the old behavior available.
-constexpr std::uint32_t tfTrustLine =
-    0x00000004;  // needed for backwards compatibility
+constexpr std::uint32_t tfTrustLine = 0x00000004;  // needed for backwards compatibility
 constexpr std::uint32_t const tfNFTokenMintMaskWithoutMutable =
     ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
 
-constexpr std::uint32_t const tfNFTokenMintOldMask =
-    ~(~tfNFTokenMintMaskWithoutMutable | tfTrustLine);
+constexpr std::uint32_t const tfNFTokenMintOldMask = ~(~tfNFTokenMintMaskWithoutMutable | tfTrustLine);
 
 // if featureDynamicNFT enabled then new flag allowing mutable URI available.
-constexpr std::uint32_t const tfNFTokenMintOldMaskWithMutable =
-    ~(~tfNFTokenMintOldMask | tfMutable);
+constexpr std::uint32_t const tfNFTokenMintOldMaskWithMutable = ~(~tfNFTokenMintOldMask | tfMutable);
 
-constexpr std::uint32_t tfWithdrawSubTx = tfLPToken | tfSingleAsset |
-    tfTwoAsset | tfOneAssetLPToken | tfLimitLPToken | tfWithdrawAll |
-    tfOneAssetWithdrawAll;
-constexpr std::uint32_t tfDepositSubTx = tfLPToken | tfSingleAsset |
-    tfTwoAsset | tfOneAssetLPToken | tfLimitLPToken | tfTwoAssetIfEmpty;
+constexpr std::uint32_t tfWithdrawSubTx =
+    tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken | tfLimitLPToken | tfWithdrawAll | tfOneAssetWithdrawAll;
+constexpr std::uint32_t tfDepositSubTx =
+    tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken | tfLimitLPToken | tfTwoAssetIfEmpty;
 
 // AccountSet SetFlag/ClearFlag values
 #define ACCOUNTSET_FLAGS(ASF_FLAG)                \
@@ -330,13 +322,11 @@ constexpr std::uint32_t tfDepositSubTx = tfLPToken | tfSingleAsset |
     ASF_FLAG(asfAllowTrustLineClawback, 16)       \
     ASF_FLAG(asfAllowTrustLineLocking, 17)
 
-#define ACCOUNTSET_FLAG_TO_VALUE(name, value) \
-    constexpr std::uint32_t name = value;
+#define ACCOUNTSET_FLAG_TO_VALUE(name, value) constexpr std::uint32_t name = value;
 #define ACCOUNTSET_FLAG_TO_MAP(name, value) {#name, value},
 
 ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_VALUE)
-static std::map<std::string, int> const asfFlagMap = {
-    ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_MAP)};
+static std::map<std::string, int> const asfFlagMap = {ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_MAP)};
 
 }  // namespace xrpl
 

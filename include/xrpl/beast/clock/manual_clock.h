@@ -29,8 +29,7 @@ private:
     time_point now_;
 
 public:
-    explicit manual_clock(time_point const& now = time_point(duration(0)))
-        : now_(now)
+    explicit manual_clock(time_point const& now = time_point(duration(0))) : now_(now)
     {
     }
 
@@ -44,9 +43,7 @@ public:
     void
     set(time_point const& when)
     {
-        XRPL_ASSERT(
-            !Clock::is_steady || when >= now_,
-            "beast::manual_clock::set(time_point) : forward input");
+        XRPL_ASSERT(!Clock::is_steady || when >= now_, "beast::manual_clock::set(time_point) : forward input");
         now_ = when;
     }
 
@@ -64,8 +61,7 @@ public:
     advance(std::chrono::duration<Rep, Period> const& elapsed)
     {
         XRPL_ASSERT(
-            !Clock::is_steady || (now_ + elapsed) >= now_,
-            "beast::manual_clock::advance(duration) : forward input");
+            !Clock::is_steady || (now_ + elapsed) >= now_, "beast::manual_clock::advance(duration) : forward input");
         now_ += elapsed;
     }
 

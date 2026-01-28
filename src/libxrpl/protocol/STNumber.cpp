@@ -20,8 +20,7 @@
 
 namespace xrpl {
 
-STNumber::STNumber(SField const& field, Number const& value)
-    : STTakesAsset(field), value_(value)
+STNumber::STNumber(SField const& field, Number const& value) : STTakesAsset(field), value_(value)
 {
 }
 
@@ -51,10 +50,7 @@ STNumber::associateAsset(Asset const& a)
 {
     STTakesAsset::associateAsset(a);
 
-    XRPL_ASSERT_PARTS(
-        getFName().shouldMeta(SField::sMD_NeedsAsset),
-        "STNumber::associateAsset",
-        "field needs asset");
+    XRPL_ASSERT_PARTS(getFName().shouldMeta(SField::sMD_NeedsAsset), "STNumber::associateAsset", "field needs asset");
 
     roundToAsset(a, value_);
 }
@@ -63,9 +59,7 @@ void
 STNumber::add(Serializer& s) const
 {
     XRPL_ASSERT(getFName().isBinary(), "xrpl::STNumber::add : field is binary");
-    XRPL_ASSERT(
-        getFName().fieldType == getSType(),
-        "xrpl::STNumber::add : field type match");
+    XRPL_ASSERT(getFName().fieldType == getSType(), "xrpl::STNumber::add : field type match");
 
     auto value = value_;
     auto const mantissa = value.mantissa();
@@ -80,10 +74,7 @@ STNumber::add(Serializer& s) const
             // The number should be rounded to the asset's precision, but round
             // it here if it has an asset assigned.
             roundToAsset(*asset_, value);
-            XRPL_ASSERT_PARTS(
-                value_ == value,
-                "xrpl::STNumber::add",
-                "value is already rounded");
+            XRPL_ASSERT_PARTS(value_ == value, "xrpl::STNumber::add", "value is already rounded");
         }
         else
         {
@@ -103,8 +94,7 @@ STNumber::add(Serializer& s) const
     }
 
     XRPL_ASSERT_PARTS(
-        mantissa <= std::numeric_limits<std::int64_t>::max() &&
-            mantissa >= std::numeric_limits<std::int64_t>::min(),
+        mantissa <= std::numeric_limits<std::int64_t>::max() && mantissa >= std::numeric_limits<std::int64_t>::min(),
         "xrpl::STNumber::add",
         "mantissa in valid range");
     s.add64(mantissa);
@@ -138,9 +128,7 @@ STNumber::move(std::size_t n, void* buf)
 bool
 STNumber::isEquivalent(STBase const& t) const
 {
-    XRPL_ASSERT(
-        t.getSType() == this->getSType(),
-        "xrpl::STNumber::isEquivalent : field type match");
+    XRPL_ASSERT(t.getSType() == this->getSType(), "xrpl::STNumber::isEquivalent : field type match");
     STNumber const& v = dynamic_cast<STNumber const&>(t);
     return value_ == v;
 }
@@ -238,29 +226,19 @@ numberFromJson(SField const& field, Json::Value const& value)
     {
         parts = partsFromString(value.asString());
 
-        XRPL_ASSERT_PARTS(
-            !getCurrentTransactionRules(),
-            "xrpld::numberFromJson",
-            "Not in a Transactor context");
+        XRPL_ASSERT_PARTS(!getCurrentTransactionRules(), "xrpld::numberFromJson", "Not in a Transactor context");
 
         // Number mantissas are much bigger than the allowable parsed values, so
         // it can't be out of range.
         static_assert(
-            std::numeric_limits<std::uint64_t>::max() >=
-            std::numeric_limits<decltype(parts.mantissa)>::max());
+            std::numeric_limits<std::uint64_t>::max() >= std::numeric_limits<decltype(parts.mantissa)>::max());
     }
     else
     {
         Throw<std::runtime_error>("not a number");
     }
 
-    return STNumber{
-        field,
-        Number{
-            parts.negative,
-            parts.mantissa,
-            parts.exponent,
-            Number::normalized{}}};
+    return STNumber{field, Number{parts.negative, parts.mantissa, parts.exponent, Number::normalized{}}};
 }
 
 }  // namespace xrpl

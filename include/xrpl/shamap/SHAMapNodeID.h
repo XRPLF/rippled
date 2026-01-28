@@ -106,8 +106,7 @@ to_string(SHAMapNodeID const& node)
     if (node.isRoot())
         return "NodeID(root)";
 
-    return "NodeID(" + std::to_string(node.getDepth()) + "," +
-        to_string(node.getNodeID()) + ")";
+    return "NodeID(" + std::to_string(node.getDepth()) + "," + to_string(node.getNodeID()) + ")";
 }
 
 inline std::ostream&

@@ -37,8 +37,7 @@ struct send_if_pred
     std::shared_ptr<Message> const& msg;
     Predicate const& predicate;
 
-    send_if_pred(std::shared_ptr<Message> const& m, Predicate const& p)
-        : msg(m), predicate(p)
+    send_if_pred(std::shared_ptr<Message> const& m, Predicate const& p) : msg(m), predicate(p)
     {
     }
 
@@ -69,8 +68,7 @@ struct send_if_not_pred
     std::shared_ptr<Message> const& msg;
     Predicate const& predicate;
 
-    send_if_not_pred(std::shared_ptr<Message> const& m, Predicate const& p)
-        : msg(m), predicate(p)
+    send_if_not_pred(std::shared_ptr<Message> const& m, Predicate const& p) : msg(m), predicate(p)
     {
     }
 

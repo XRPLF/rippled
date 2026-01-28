@@ -15,14 +15,11 @@
 
 namespace xrpl {
 
-RCLValidatedLedger::RCLValidatedLedger(MakeGenesis)
-    : ledgerID_{0}, ledgerSeq_{0}, j_{beast::Journal::getNullSink()}
+RCLValidatedLedger::RCLValidatedLedger(MakeGenesis) : ledgerID_{0}, ledgerSeq_{0}, j_{beast::Journal::getNullSink()}
 {
 }
 
-RCLValidatedLedger::RCLValidatedLedger(
-    std::shared_ptr<Ledger const> const& ledger,
-    beast::Journal j)
+RCLValidatedLedger::RCLValidatedLedger(std::shared_ptr<Ledger const> const& ledger, beast::Journal j)
     : ledgerID_{ledger->header().hash}, ledgerSeq_{ledger->seq()}, j_{j}
 {
     auto const hashIndex = ledger->read(keylet::skip());
@@ -35,8 +32,7 @@ RCLValidatedLedger::RCLValidatedLedger(
         ancestors_ = hashIndex->getFieldV256(sfHashes).value();
     }
     else
-        JLOG(j_.warn()) << "Ledger " << ledgerSeq_ << ":" << ledgerID_
-                        << " missing recent ancestor hashes";
+        JLOG(j_.warn()) << "Ledger " << ledgerSeq_ << ":" << ledgerID_ << " missing recent ancestor hashes";
 }
 
 auto
@@ -67,10 +63,8 @@ RCLValidatedLedger::operator[](Seq const& s) const -> ID
         return ancestors_[ancestors_.size() - diff];
     }
 
-    JLOG(j_.warn()) << "Unable to determine hash of ancestor seq=" << s
-                    << " from ledger hash=" << ledgerID_
-                    << " seq=" << ledgerSeq_ << " (available: " << minSeq()
-                    << "-" << seq() << ")";
+    JLOG(j_.warn()) << "Unable to determine hash of ancestor seq=" << s << " from ledger hash=" << ledgerID_
+                    << " seq=" << ledgerSeq_ << " (available: " << minSeq() << "-" << seq() << ")";
     // Default ID that is less than all others
     return ID{0};
 }
@@ -94,8 +88,7 @@ mismatch(RCLValidatedLedger const& a, RCLValidatedLedger const& b)
     return (curr < lower) ? Seq{1} : (curr + Seq{1});
 }
 
-RCLValidationsAdaptor::RCLValidationsAdaptor(Application& app, beast::Journal j)
-    : app_(app), j_(j)
+RCLValidationsAdaptor::RCLValidationsAdaptor(Application& app, beast::Journal j) : app_(app), j_(j)
 {
 }
 
@@ -110,32 +103,23 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 {
     using namespace std::chrono_literals;
     auto ledger = perf::measureDurationAndLog(
-        [&]() { return app_.getLedgerMaster().getLedgerByHash(hash); },
-        "getLedgerByHash",
-        10ms,
-        j_);
+        [&]() { return app_.getLedgerMaster().getLedgerByHash(hash); }, "getLedgerByHash", 10ms, j_);
 
     if (!ledger)
     {
-        JLOG(j_.warn())
-            << "Need validated ledger for preferred ledger analysis " << hash;
+        JLOG(j_.warn()) << "Need validated ledger for preferred ledger analysis " << hash;
 
         Application* pApp = &app_;
 
         app_.getJobQueue().addJob(jtADVANCE, "GetConsL2", [pApp, hash, this]() {
             JLOG(j_.debug()) << "JOB advanceLedger getConsensusLedger2 started";
-            pApp->getInboundLedgers().acquireAsync(
-                hash, 0, InboundLedger::Reason::CONSENSUS);
+            pApp->getInboundLedgers().acquireAsync(hash, 0, InboundLedger::Reason::CONSENSUS);
         });
         return std::nullopt;
     }
 
-    XRPL_ASSERT(
-        !ledger->open() && ledger->isImmutable(),
-        "xrpl::RCLValidationsAdaptor::acquire : valid ledger state");
-    XRPL_ASSERT(
-        ledger->header().hash == hash,
-        "xrpl::RCLValidationsAdaptor::acquire : ledger hash match");
+    XRPL_ASSERT(!ledger->open() && ledger->isImmutable(), "xrpl::RCLValidationsAdaptor::acquire : valid ledger state");
+    XRPL_ASSERT(ledger->header().hash == hash, "xrpl::RCLValidationsAdaptor::acquire : ledger hash match");
 
     return RCLValidatedLedger(std::move(ledger), j_);
 }
@@ -165,8 +149,7 @@ handleNewValidation(
     auto& validations = app.getValidations();
 
     // masterKey is seated only if validator is trusted or listed
-    auto const outcome =
-        validations.add(calcNodeID(masterKey.value_or(signingKey)), val);
+    auto const outcome = validations.add(calcNodeID(masterKey.value_or(signingKey)), val);
 
     if (outcome == ValStatus::current)
     {
@@ -174,12 +157,10 @@ handleNewValidation(
         {
             if (bypassAccept == BypassAccept::yes)
             {
-                XRPL_ASSERT(
-                    j, "xrpl::handleNewValidation : journal is available");
+                XRPL_ASSERT(j, "xrpl::handleNewValidation : journal is available");
                 if (j.has_value())
                 {
-                    JLOG(j->trace()) << "Bypassing checkAccept for validation "
-                                     << val->getLedgerHash();
+                    JLOG(j->trace()) << "Bypassing checkAccept for validation " << val->getLedgerHash();
                 }
             }
             else
@@ -198,9 +179,8 @@ handleNewValidation(
     // counterintuitively, we *especially* want to forward such validations,
     // so that our peers will also observe them and take independent notice of
     // such validators, informing their operators.
-    if (auto const ls = val->isTrusted()
-            ? validations.adaptor().journal().error()
-            : validations.adaptor().journal().info();
+    if (auto const ls =
+            val->isTrusted() ? validations.adaptor().journal().error() : validations.adaptor().journal().info();
         ls.active())
     {
         auto const id = [&masterKey, &signingKey]() {
@@ -213,16 +193,12 @@ handleNewValidation(
         }();
 
         if (outcome == ValStatus::conflicting)
-            ls << "Byzantine Behavior Detector: "
-               << (val->isTrusted() ? "trusted " : "untrusted ") << id
-               << ": Conflicting validation for " << seq << "!\n["
-               << val->getSerializer().slice() << "]";
+            ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ") << id
+               << ": Conflicting validation for " << seq << "!\n[" << val->getSerializer().slice() << "]";
 
         if (outcome == ValStatus::multiple)
-            ls << "Byzantine Behavior Detector: "
-               << (val->isTrusted() ? "trusted " : "untrusted ") << id
-               << ": Multiple validations for " << seq << "/" << hash << "!\n["
-               << val->getSerializer().slice() << "]";
+            ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ") << id
+               << ": Multiple validations for " << seq << "/" << hash << "!\n[" << val->getSerializer().slice() << "]";
     }
 }
 

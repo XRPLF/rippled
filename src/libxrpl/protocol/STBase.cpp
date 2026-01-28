@@ -101,9 +101,7 @@ STBase::add(Serializer& s) const
 bool
 STBase::isEquivalent(STBase const& t) const
 {
-    XRPL_ASSERT(
-        getSType() == STI_NOTPRESENT,
-        "xrpl::STBase::isEquivalent : type not present");
+    XRPL_ASSERT(getSType() == STI_NOTPRESENT, "xrpl::STBase::isEquivalent : type not present");
     return t.getSType() == STI_NOTPRESENT;
 }
 
@@ -129,8 +127,7 @@ STBase::getFName() const
 void
 STBase::addFieldID(Serializer& s) const
 {
-    XRPL_ASSERT(
-        fName->isBinary(), "xrpl::STBase::addFieldID : field is binary");
+    XRPL_ASSERT(fName->isBinary(), "xrpl::STBase::addFieldID : field is binary");
     s.addFieldID(fName->fieldType, fName->fieldValue);
 }
 
