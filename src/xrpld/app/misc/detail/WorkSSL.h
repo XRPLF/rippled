@@ -17,8 +17,7 @@ namespace xrpl {
 namespace detail {
 
 // Work over SSL
-class WorkSSL : public WorkBase<WorkSSL>,
-                public std::enable_shared_from_this<WorkSSL>
+class WorkSSL : public WorkBase<WorkSSL>, public std::enable_shared_from_this<WorkSSL>
 {
     friend class WorkBase<WorkSSL>;
 

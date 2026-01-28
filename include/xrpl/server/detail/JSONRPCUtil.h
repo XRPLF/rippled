@@ -8,11 +8,7 @@
 namespace xrpl {
 
 void
-HTTPReply(
-    int nStatus,
-    std::string const& strMsg,
-    Json::Output const&,
-    beast::Journal j);
+HTTPReply(int nStatus, std::string const& strMsg, Json::Output const&, beast::Journal j);
 
 }  // namespace xrpl
 

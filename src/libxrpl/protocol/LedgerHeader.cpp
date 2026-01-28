@@ -34,8 +34,7 @@ deserializeHeader(Slice data, bool hasHash)
     header.parentHash = sit.get256();
     header.txHash = sit.get256();
     header.accountHash = sit.get256();
-    header.parentCloseTime =
-        NetClock::time_point{NetClock::duration{sit.get32()}};
+    header.parentCloseTime = NetClock::time_point{NetClock::duration{sit.get32()}};
     header.closeTime = NetClock::time_point{NetClock::duration{sit.get32()}};
     header.closeTimeResolution = NetClock::duration{sit.get8()};
     header.closeFlags = sit.get8();

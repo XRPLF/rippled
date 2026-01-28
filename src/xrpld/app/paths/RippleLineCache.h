@@ -17,9 +17,7 @@ namespace xrpl {
 class RippleLineCache final : public CountedObject<RippleLineCache>
 {
 public:
-    explicit RippleLineCache(
-        std::shared_ptr<ReadView const> const& l,
-        beast::Journal j);
+    explicit RippleLineCache(std::shared_ptr<ReadView const> const& l, beast::Journal j);
     ~RippleLineCache();
 
     std::shared_ptr<ReadView const> const&
@@ -57,10 +55,7 @@ private:
         LineDirection direction_;
         std::size_t hash_value_;
 
-        AccountKey(
-            AccountID const& account,
-            LineDirection direction,
-            std::size_t hash)
+        AccountKey(AccountID const& account, LineDirection direction, std::size_t hash)
             : account_(account), direction_(direction), hash_value_(hash)
         {
         }
@@ -73,8 +68,7 @@ private:
         bool
         operator==(AccountKey const& lhs) const
         {
-            return hash_value_ == lhs.hash_value_ && account_ == lhs.account_ &&
-                direction_ == lhs.direction_;
+            return hash_value_ == lhs.hash_value_ && account_ == lhs.account_ && direction_ == lhs.direction_;
         }
 
         std::size_t
@@ -100,11 +94,7 @@ private:
     // most accounts are not going to have any entries (estimated over 90%), so
     // vectors will not need to be created for them. This should lead to far
     // less memory usage overall.
-    hash_map<
-        AccountKey,
-        std::shared_ptr<std::vector<PathFindTrustLine>>,
-        AccountKey::Hash>
-        lines_;
+    hash_map<AccountKey, std::shared_ptr<std::vector<PathFindTrustLine>>, AccountKey::Hash> lines_;
     std::size_t totalLineCount_ = 0;
 };
 

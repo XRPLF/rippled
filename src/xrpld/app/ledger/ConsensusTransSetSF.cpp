@@ -32,8 +32,7 @@ ConsensusTransSetSF::gotNode(
     if ((type == SHAMapNodeType::tnTRANSACTION_NM) && (nodeData.size() > 16))
     {
         // this is a transaction, and we didn't have it
-        JLOG(j_.debug())
-            << "Node on our acquiring TX set is TXN we may not have";
+        JLOG(j_.debug()) << "Node on our acquiring TX set is TXN we may not have";
 
         try
         {
@@ -46,15 +45,12 @@ ConsensusTransSetSF::gotNode(
                 "xrpl::ConsensusTransSetSF::gotNode : transaction hash "
                 "match");
             auto const pap = &app_;
-            app_.getJobQueue().addJob(jtTRANSACTION, "TxsToTxn", [pap, stx]() {
-                pap->getOPs().submitTransaction(stx);
-            });
+            app_.getJobQueue().addJob(
+                jtTRANSACTION, "TxsToTxn", [pap, stx]() { pap->getOPs().submitTransaction(stx); });
         }
         catch (std::exception const& ex)
         {
-            JLOG(j_.warn())
-                << "Fetched invalid transaction in proposed set. Exception: "
-                << ex.what();
+            JLOG(j_.warn()) << "Fetched invalid transaction in proposed set. Exception: " << ex.what();
         }
     }
 }
@@ -66,8 +62,7 @@ ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
     if (m_nodeCache.retrieve(nodeHash, nodeData))
         return nodeData;
 
-    auto txn =
-        app_.getMasterTransaction().fetch_from_cache(nodeHash.as_uint256());
+    auto txn = app_.getMasterTransaction().fetch_from_cache(nodeHash.as_uint256());
 
     if (txn)
     {

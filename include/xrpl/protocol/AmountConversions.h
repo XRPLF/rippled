@@ -34,8 +34,7 @@ toSTAmount(XRPAmount const& xrp)
 inline STAmount
 toSTAmount(XRPAmount const& xrp, Issue const& iss)
 {
-    XRPL_ASSERT(
-        isXRP(iss.account) && isXRP(iss.currency), "xrpl::toSTAmount : is XRP");
+    XRPL_ASSERT(isXRP(iss.account) && isXRP(iss.currency), "xrpl::toSTAmount : is XRP");
     return toSTAmount(xrp);
 }
 
@@ -55,11 +54,9 @@ inline IOUAmount
 toAmount<IOUAmount>(STAmount const& amt)
 {
     XRPL_ASSERT(
-        amt.mantissa() < std::numeric_limits<std::int64_t>::max(),
-        "xrpl::toAmount<IOUAmount> : maximum mantissa");
+        amt.mantissa() < std::numeric_limits<std::int64_t>::max(), "xrpl::toAmount<IOUAmount> : maximum mantissa");
     bool const isNeg = amt.negative();
-    std::int64_t const sMant =
-        isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
+    std::int64_t const sMant = isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
 
     XRPL_ASSERT(!isXRP(amt), "xrpl::toAmount<IOUAmount> : is not XRP");
     return IOUAmount(sMant, amt.exponent());
@@ -70,11 +67,9 @@ inline XRPAmount
 toAmount<XRPAmount>(STAmount const& amt)
 {
     XRPL_ASSERT(
-        amt.mantissa() < std::numeric_limits<std::int64_t>::max(),
-        "xrpl::toAmount<XRPAmount> : maximum mantissa");
+        amt.mantissa() < std::numeric_limits<std::int64_t>::max(), "xrpl::toAmount<XRPAmount> : maximum mantissa");
     bool const isNeg = amt.negative();
-    std::int64_t const sMant =
-        isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
+    std::int64_t const sMant = isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
 
     XRPL_ASSERT(isXRP(amt), "xrpl::toAmount<XRPAmount> : is XRP");
     return XRPAmount(sMant);
@@ -104,10 +99,7 @@ toAmount<XRPAmount>(XRPAmount const& amt)
 
 template <typename T>
 T
-toAmount(
-    Issue const& issue,
-    Number const& n,
-    Number::rounding_mode mode = Number::getround())
+toAmount(Issue const& issue, Number const& n, Number::rounding_mode mode = Number::getround())
 {
     saveNumberRoundMode rm(Number::getround());
     if (isXRP(issue))
@@ -141,8 +133,7 @@ toMaxAmount(Issue const& issue)
     else if constexpr (std::is_same_v<STAmount, T>)
     {
         if (isXRP(issue))
-            return STAmount(
-                issue, static_cast<std::int64_t>(STAmount::cMaxNativeN));
+            return STAmount(issue, static_cast<std::int64_t>(STAmount::cMaxNativeN));
         return STAmount(issue, STAmount::cMaxValue, STAmount::cMaxOffset);
     }
     else
@@ -153,10 +144,7 @@ toMaxAmount(Issue const& issue)
 }
 
 inline STAmount
-toSTAmount(
-    Issue const& issue,
-    Number const& n,
-    Number::rounding_mode mode = Number::getround())
+toSTAmount(Issue const& issue, Number const& n, Number::rounding_mode mode = Number::getround())
 {
     return toAmount<STAmount>(issue, n, mode);
 }

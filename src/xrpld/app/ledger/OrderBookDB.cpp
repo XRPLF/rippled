@@ -11,8 +11,7 @@
 
 namespace xrpl {
 
-OrderBookDB::OrderBookDB(Application& app)
-    : app_(app), seq_(0), j_(app.journal("OrderBookDB"))
+OrderBookDB::OrderBookDB(Application& app) : app_(app), seq_(0), j_(app.journal("OrderBookDB"))
 {
 }
 
@@ -39,18 +38,14 @@ OrderBookDB::setup(std::shared_ptr<ReadView const> const& ledger)
     if (seq_.exchange(ledger->seq()) != seq)
         return;
 
-    JLOG(j_.debug()) << "Full order book update: " << seq << " to "
-                     << ledger->seq();
+    JLOG(j_.debug()) << "Full order book update: " << seq << " to " << ledger->seq();
 
     if (app_.config().PATH_SEARCH_MAX != 0)
     {
         if (app_.config().standalone())
             update(ledger);
         else
-            app_.getJobQueue().addJob(
-                jtUPDATE_PF, "OrderBookUpd", [this, ledger]() {
-                    update(ledger);
-                });
+            app_.getJobQueue().addJob(jtUPDATE_PF, "OrderBookUpd", [this, ledger]() { update(ledger); });
     }
 }
 
@@ -63,8 +58,7 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
     // A newer full update job is pending
     if (auto const seq = seq_.load(); seq > ledger->seq())
     {
-        JLOG(j_.debug()) << "Eliding update for " << ledger->seq()
-                         << " because of pending update to later " << seq;
+        JLOG(j_.debug()) << "Eliding update for " << ledger->seq() << " because of pending update to later " << seq;
         return;
     }
 
@@ -87,14 +81,12 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
         {
             if (app_.isStopping())
             {
-                JLOG(j_.info())
-                    << "Update halted because the process is stopping";
+                JLOG(j_.info()) << "Update halted because the process is stopping";
                 seq_.store(0);
                 return;
             }
 
-            if (sle->getType() == ltDIR_NODE &&
-                sle->isFieldPresent(sfExchangeRate) &&
+            if (sle->getType() == ltDIR_NODE && sle->isFieldPresent(sfExchangeRate) &&
                 sle->getFieldH256(sfRootIndex) == sle->key())
             {
                 Book book;
@@ -136,14 +128,12 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
     }
     catch (SHAMapMissingNode const& mn)
     {
-        JLOG(j_.info()) << "Missing node in " << ledger->seq()
-                        << " during update: " << mn.what();
+        JLOG(j_.info()) << "Missing node in " << ledger->seq() << " during update: " << mn.what();
         seq_.store(0);
         return;
     }
 
-    JLOG(j_.debug()) << "Update completed (" << ledger->seq() << "): " << cnt
-                     << " books found";
+    JLOG(j_.debug()) << "Update completed (" << ledger->seq() << "): " << cnt << " books found";
 
     {
         std::lock_guard sl(mLock);
@@ -176,9 +166,7 @@ OrderBookDB::addOrderBook(Book const& book)
 
 // return list of all orderbooks that want this issuerID and currencyID
 std::vector<Book>
-OrderBookDB::getBooksByTakerPays(
-    Issue const& issue,
-    std::optional<uint256> const& domain)
+OrderBookDB::getBooksByTakerPays(Issue const& issue, std::optional<uint256> const& domain)
 {
     std::vector<Book> ret;
 
@@ -206,9 +194,7 @@ OrderBookDB::getBooksByTakerPays(
 }
 
 int
-OrderBookDB::getBookSize(
-    Issue const& issue,
-    std::optional<uint256> const& domain)
+OrderBookDB::getBookSize(Issue const& issue, std::optional<uint256> const& domain)
 {
     std::lock_guard sl(mLock);
 
@@ -219,8 +205,7 @@ OrderBookDB::getBookSize(
     }
     else
     {
-        if (auto it = domainBooks_.find({issue, *domain});
-            it != domainBooks_.end())
+        if (auto it = domainBooks_.find({issue, *domain}); it != domainBooks_.end())
             return static_cast<int>(it->second.size());
     }
 
@@ -293,10 +278,8 @@ OrderBookDB::processTxn(
             if (node.getFieldU16(sfLedgerEntryType) == ltOFFER)
             {
                 auto process = [&, this](SField const& field) {
-                    if (auto data = dynamic_cast<STObject const*>(
-                            node.peekAtPField(field));
-                        data && data->isFieldPresent(sfTakerPays) &&
-                        data->isFieldPresent(sfTakerGets))
+                    if (auto data = dynamic_cast<STObject const*>(node.peekAtPField(field));
+                        data && data->isFieldPresent(sfTakerPays) && data->isFieldPresent(sfTakerGets))
                     {
                         auto listeners = getBookListeners(
                             {data->getFieldAmount(sfTakerGets).issue(),
@@ -319,8 +302,7 @@ OrderBookDB::processTxn(
         }
         catch (std::exception const& ex)
         {
-            JLOG(j_.info())
-                << "processTxn: field not found (" << ex.what() << ")";
+            JLOG(j_.info()) << "processTxn: field not found (" << ex.what() << ")";
         }
     }
 }

@@ -10,12 +10,7 @@ namespace jtx {
             : (env.test.fail((reason), __FILE__, __LINE__), false))
 
 void
-doBalance(
-    Env& env,
-    AccountID const& account,
-    bool none,
-    STAmount const& value,
-    Issue const& issue)
+doBalance(Env& env, AccountID const& account, bool none, STAmount const& value, Issue const& issue)
 {
     if (isXRP(issue))
     {
@@ -51,12 +46,7 @@ doBalance(
 }
 
 void
-doBalance(
-    Env& env,
-    AccountID const& account,
-    bool none,
-    STAmount const& value,
-    MPTIssue const& mptIssue)
+doBalance(Env& env, AccountID const& account, bool none, STAmount const& value, MPTIssue const& mptIssue)
 {
     auto const sle = env.le(keylet::mptoken(mptIssue.getMptID(), account));
     if (none)
@@ -74,10 +64,7 @@ void
 balance::operator()(Env& env) const
 {
     return std::visit(
-        [&](auto const& issue) {
-            doBalance(env, account_.id(), none_, value_, issue);
-        },
-        value_.asset().value());
+        [&](auto const& issue) { doBalance(env, account_.id(), none_, value_, issue); }, value_.asset().value());
 }
 
 }  // namespace jtx

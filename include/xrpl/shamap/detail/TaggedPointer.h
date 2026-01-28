@@ -40,9 +40,7 @@ namespace xrpl {
 class TaggedPointer
 {
 private:
-    static_assert(
-        alignof(SHAMapHash) >= 4,
-        "Bad alignment: Tag pointer requires low two bits to be zero.");
+    static_assert(alignof(SHAMapHash) >= 4, "Bad alignment: Tag pointer requires low two bits to be zero.");
     /** Upper bits are the pointer, lowest two bits are the tag
         A moved-from object will have a tp_ of zero.
     */
@@ -92,10 +90,7 @@ public:
         @param toAllocate allocate space for at least this number of children
         (must be <= branchFactor)
     */
-    explicit TaggedPointer(
-        TaggedPointer&& other,
-        std::uint16_t isBranch,
-        std::uint8_t toAllocate);
+    explicit TaggedPointer(TaggedPointer&& other, std::uint16_t isBranch, std::uint8_t toAllocate);
 
     /** Given `other` with the specified children in `srcBranches`, create a
         new TaggedPointer with the allocated number of children and the
@@ -152,9 +147,8 @@ public:
     /** Get the number of elements in each array and a pointer to the start
         of each array.
     */
-    [[nodiscard]] std::
-        tuple<std::uint8_t, SHAMapHash*, intr_ptr::SharedPtr<SHAMapTreeNode>*>
-        getHashesAndChildren() const;
+    [[nodiscard]] std::tuple<std::uint8_t, SHAMapHash*, intr_ptr::SharedPtr<SHAMapTreeNode>*>
+    getHashesAndChildren() const;
 
     /** Get the `hashes` array */
     [[nodiscard]] SHAMapHash*

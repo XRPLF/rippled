@@ -24,8 +24,7 @@ getEndpoint(std::string const& peer)
             peerClean = peer.substr(first + 1);
         }
 
-        std::optional<beast::IP::Endpoint> endpoint =
-            beast::IP::Endpoint::from_string_checked(peerClean);
+        std::optional<beast::IP::Endpoint> endpoint = beast::IP::Endpoint::from_string_checked(peerClean);
         if (endpoint)
             return beast::IP::to_asio_endpoint(endpoint.value());
     }
@@ -70,15 +69,7 @@ std::shared_ptr<Processor>
 GRPCServerImpl::CallData<Request, Response>::clone()
 {
     return std::make_shared<CallData<Request, Response>>(
-        service_,
-        cq_,
-        app_,
-        bindListener_,
-        handler_,
-        forward_,
-        requiredCondition_,
-        loadType_,
-        secureGatewayIPs_);
+        service_, cq_, app_, bindListener_, handler_, forward_, requiredCondition_, loadType_, secureGatewayIPs_);
 }
 
 template <class Request, class Response>
@@ -88,8 +79,7 @@ GRPCServerImpl::CallData<Request, Response>::process()
     // sanity check
     BOOST_ASSERT(!finished_);
 
-    std::shared_ptr<CallData<Request, Response>> thisShared =
-        this->shared_from_this();
+    std::shared_ptr<CallData<Request, Response>> thisShared = this->shared_from_this();
 
     // Need to set finished to true before processing the response,
     // because as soon as the response is posted to the completion
@@ -100,26 +90,22 @@ GRPCServerImpl::CallData<Request, Response>::process()
     // ensures that finished is always true when this CallData object
     // is returned as a tag in handleRpcs(), after sending the response
     finished_ = true;
-    auto coro = app_.getJobQueue().postCoro(
-        JobType::jtRPC,
-        "gRPC-Client",
-        [thisShared](std::shared_ptr<JobQueue::Coro> coro) {
+    auto coro =
+        app_.getJobQueue().postCoro(JobType::jtRPC, "gRPC-Client", [thisShared](std::shared_ptr<JobQueue::Coro> coro) {
             thisShared->process(coro);
         });
 
     // If coro is null, then the JobQueue has already been shutdown
     if (!coro)
     {
-        grpc::Status status{
-            grpc::StatusCode::INTERNAL, "Job Queue is already stopped"};
+        grpc::Status status{grpc::StatusCode::INTERNAL, "Job Queue is already stopped"};
         responder_.FinishWithError(status, this);
     }
 }
 
 template <class Request, class Response>
 void
-GRPCServerImpl::CallData<Request, Response>::process(
-    std::shared_ptr<JobQueue::Coro> coro)
+GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::Coro> coro)
 {
     try
     {
@@ -127,9 +113,7 @@ GRPCServerImpl::CallData<Request, Response>::process(
         bool isUnlimited = clientIsUnlimited();
         if (!isUnlimited && usage.disconnect(app_.journal("gRPCServer")))
         {
-            grpc::Status status{
-                grpc::StatusCode::RESOURCE_EXHAUSTED,
-                "usage balance exceeds threshold"};
+            grpc::Status status{grpc::StatusCode::RESOURCE_EXHAUSTED, "usage balance exceeds threshold"};
             responder_.FinishWithError(status, this);
         }
         else
@@ -151,8 +135,7 @@ GRPCServerImpl::CallData<Request, Response>::process(
                     toLog << user.value();
                 toLog << " isUnlimited = " << isUnlimited;
 
-                JLOG(app_.journal("GRPCServer::Calldata").debug())
-                    << toLog.str();
+                JLOG(app_.journal("GRPCServer::Calldata").debug()) << toLog.str();
             }
 
             RPC::GRPCContext<Request> context{
@@ -169,15 +152,12 @@ GRPCServerImpl::CallData<Request, Response>::process(
                 request_};
 
             // Make sure we can currently handle the rpc
-            error_code_i conditionMetRes =
-                RPC::conditionMet(requiredCondition_, context);
+            error_code_i conditionMetRes = RPC::conditionMet(requiredCondition_, context);
 
             if (conditionMetRes != rpcSUCCESS)
             {
                 RPC::ErrorInfo errorInfo = RPC::get_error_info(conditionMetRes);
-                grpc::Status status{
-                    grpc::StatusCode::FAILED_PRECONDITION,
-                    errorInfo.message.c_str()};
+                grpc::Status status{grpc::StatusCode::FAILED_PRECONDITION, errorInfo.message.c_str()};
                 responder_.FinishWithError(status, this);
             }
             else
@@ -225,8 +205,7 @@ GRPCServerImpl::CallData<Request, Response>::getUser()
 {
     if (auto descriptor = Request::GetDescriptor()->FindFieldByName("user"))
     {
-        std::string user =
-            Request::GetReflection()->GetString(request_, descriptor);
+        std::string user = Request::GetReflection()->GetString(request_, descriptor);
         if (!user.empty())
         {
             return user;
@@ -272,14 +251,11 @@ GRPCServerImpl::CallData<Request, Response>::clientIsUnlimited()
 
 template <class Request, class Response>
 void
-GRPCServerImpl::CallData<Request, Response>::setIsUnlimited(
-    Response& response,
-    bool isUnlimited)
+GRPCServerImpl::CallData<Request, Response>::setIsUnlimited(Response& response, bool isUnlimited)
 {
     if (isUnlimited)
     {
-        if (auto descriptor =
-                Response::GetDescriptor()->FindFieldByName("is_unlimited"))
+        if (auto descriptor = Response::GetDescriptor()->FindFieldByName("is_unlimited"))
         {
             Response::GetReflection()->SetBool(&response, descriptor, true);
         }
@@ -292,13 +268,11 @@ GRPCServerImpl::CallData<Request, Response>::getUsage()
 {
     auto endpoint = getClientEndpoint();
     if (endpoint)
-        return app_.getResourceManager().newInboundEndpoint(
-            beast::IP::from_asio(endpoint.value()));
+        return app_.getResourceManager().newInboundEndpoint(beast::IP::from_asio(endpoint.value()));
     Throw<std::runtime_error>("Failed to get client endpoint");
 }
 
-GRPCServerImpl::GRPCServerImpl(Application& app)
-    : app_(app), journal_(app_.journal("gRPC Server"))
+GRPCServerImpl::GRPCServerImpl(Application& app) : app_(app), journal_(app_.journal("gRPC Server"))
 {
     // if present, get endpoint from config
     if (app_.config().exists(SECTION_PORT_GRPC))
@@ -314,8 +288,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
             return;
         try
         {
-            boost::asio::ip::tcp::endpoint endpoint(
-                boost::asio::ip::make_address(*optIp), std::stoi(*optPort));
+            boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address(*optIp), std::stoi(*optPort));
 
             std::stringstream ss;
             ss << endpoint;
@@ -341,11 +314,9 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
 
                     if (addr.is_unspecified())
                     {
-                        JLOG(journal_.error())
-                            << "Can't pass unspecified IP in "
-                            << "secure_gateway section of port_grpc";
-                        Throw<std::runtime_error>(
-                            "Unspecified IP in secure_gateway section");
+                        JLOG(journal_.error()) << "Can't pass unspecified IP in "
+                                               << "secure_gateway section of port_grpc";
+                        Throw<std::runtime_error>("Unspecified IP in secure_gateway section");
                     }
 
                     secureGatewayIPs_.emplace_back(addr);
@@ -353,10 +324,8 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
             }
             catch (std::exception const&)
             {
-                JLOG(journal_.error())
-                    << "Error parsing secure gateway IPs for grpc server";
-                Throw<std::runtime_error>(
-                    "Error parsing secure_gateway section");
+                JLOG(journal_.error()) << "Error parsing secure gateway IPs for grpc server";
+                Throw<std::runtime_error>("Error parsing secure_gateway section");
             }
         }
     }
@@ -394,11 +363,7 @@ GRPCServerImpl::handleRpcs()
 
     auto erase = [&requests](Processor* ptr) {
         auto it = std::find_if(
-            requests.begin(),
-            requests.end(),
-            [ptr](std::shared_ptr<Processor>& sPtr) {
-                return sPtr.get() == ptr;
-            });
+            requests.begin(), requests.end(), [ptr](std::shared_ptr<Processor>& sPtr) { return sPtr.get() == ptr; });
         BOOST_ASSERT(it != requests.end());
         it->swap(requests.back());
         requests.pop_back();
@@ -460,21 +425,16 @@ GRPCServerImpl::setupListeners()
 {
     std::vector<std::shared_ptr<Processor>> requests;
 
-    auto addToRequests = [&requests](auto callData) {
-        requests.push_back(std::move(callData));
-    };
+    auto addToRequests = [&requests](auto callData) { requests.push_back(std::move(callData)); };
 
     {
-        using cd = CallData<
-            org::xrpl::rpc::v1::GetLedgerRequest,
-            org::xrpl::rpc::v1::GetLedgerResponse>;
+        using cd = CallData<org::xrpl::rpc::v1::GetLedgerRequest, org::xrpl::rpc::v1::GetLedgerResponse>;
 
         addToRequests(std::make_shared<cd>(
             service_,
             *cq_,
             app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
-                RequestGetLedger,
+            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedger,
             doLedgerGrpc,
             &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedger,
             RPC::NO_CONDITION,
@@ -482,16 +442,13 @@ GRPCServerImpl::setupListeners()
             secureGatewayIPs_));
     }
     {
-        using cd = CallData<
-            org::xrpl::rpc::v1::GetLedgerDataRequest,
-            org::xrpl::rpc::v1::GetLedgerDataResponse>;
+        using cd = CallData<org::xrpl::rpc::v1::GetLedgerDataRequest, org::xrpl::rpc::v1::GetLedgerDataResponse>;
 
         addToRequests(std::make_shared<cd>(
             service_,
             *cq_,
             app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
-                RequestGetLedgerData,
+            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerData,
             doLedgerDataGrpc,
             &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerData,
             RPC::NO_CONDITION,
@@ -499,16 +456,13 @@ GRPCServerImpl::setupListeners()
             secureGatewayIPs_));
     }
     {
-        using cd = CallData<
-            org::xrpl::rpc::v1::GetLedgerDiffRequest,
-            org::xrpl::rpc::v1::GetLedgerDiffResponse>;
+        using cd = CallData<org::xrpl::rpc::v1::GetLedgerDiffRequest, org::xrpl::rpc::v1::GetLedgerDiffResponse>;
 
         addToRequests(std::make_shared<cd>(
             service_,
             *cq_,
             app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
-                RequestGetLedgerDiff,
+            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerDiff,
             doLedgerDiffGrpc,
             &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerDiff,
             RPC::NO_CONDITION,
@@ -516,16 +470,13 @@ GRPCServerImpl::setupListeners()
             secureGatewayIPs_));
     }
     {
-        using cd = CallData<
-            org::xrpl::rpc::v1::GetLedgerEntryRequest,
-            org::xrpl::rpc::v1::GetLedgerEntryResponse>;
+        using cd = CallData<org::xrpl::rpc::v1::GetLedgerEntryRequest, org::xrpl::rpc::v1::GetLedgerEntryResponse>;
 
         addToRequests(std::make_shared<cd>(
             service_,
             *cq_,
             app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
-                RequestGetLedgerEntry,
+            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetLedgerEntry,
             doLedgerEntryGrpc,
             &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerEntry,
             RPC::NO_CONDITION,
@@ -549,8 +500,7 @@ GRPCServerImpl::start()
     // Listen on the given address without any authentication mechanism.
     // Actually binded port will be returned into "port" variable.
     int port = 0;
-    builder.AddListeningPort(
-        serverAddress_, grpc::InsecureServerCredentials(), &port);
+    builder.AddListeningPort(serverAddress_, grpc::InsecureServerCredentials(), &port);
     // Register "service_" as the instance through which we'll communicate with
     // clients. In this case it corresponds to an *asynchronous* service.
     builder.RegisterService(&service_);
@@ -567,10 +517,8 @@ GRPCServerImpl::start()
 boost::asio::ip::tcp::endpoint
 GRPCServerImpl::getEndpoint() const
 {
-    std::string const addr =
-        serverAddress_.substr(0, serverAddress_.find_last_of(':'));
-    return boost::asio::ip::tcp::endpoint(
-        boost::asio::ip::make_address(addr), serverPort_);
+    std::string const addr = serverAddress_.substr(0, serverAddress_.find_last_of(':'));
+    return boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(addr), serverPort_);
 }
 
 bool

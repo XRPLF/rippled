@@ -39,11 +39,7 @@ public:
 
     /** Create a backend. */
     virtual std::unique_ptr<Backend>
-    make_Backend(
-        Section const& parameters,
-        std::size_t burstSize,
-        Scheduler& scheduler,
-        beast::Journal journal) = 0;
+    make_Backend(Section const& parameters, std::size_t burstSize, Scheduler& scheduler, beast::Journal journal) = 0;
 
     /** Construct a NodeStore database.
 

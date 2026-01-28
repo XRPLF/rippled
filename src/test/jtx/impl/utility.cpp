@@ -63,10 +63,7 @@ fill_seq(Json::Value& jv, ReadView const& view)
 }
 
 Json::Value
-cmdToJSONRPC(
-    std::vector<std::string> const& args,
-    beast::Journal j,
-    unsigned int apiVersion)
+cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion)
 {
     Json::Value jv = Json::Value(Json::objectValue);
     auto const paramsObj = rpcCmdToJson(args, jv, apiVersion, j);
@@ -75,9 +72,7 @@ cmdToJSONRPC(
     jv.clear();
 
     // Allow parser to rewrite method.
-    jv[jss::method] = paramsObj.isMember(jss::method)
-        ? paramsObj[jss::method].asString()
-        : args[0];
+    jv[jss::method] = paramsObj.isMember(jss::method) ? paramsObj[jss::method].asString() : args[0];
 
     // If paramsObj is not empty, put it in a [params] array.
     if (paramsObj.begin() != paramsObj.end())

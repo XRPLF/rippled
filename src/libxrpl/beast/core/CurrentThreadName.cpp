@@ -42,8 +42,7 @@ setCurrentThreadNameImpl(std::string_view name)
 #pragma warning(disable : 6320 6322)
     __try
     {
-        RaiseException(
-            0x406d1388, 0, sizeof(ni) / sizeof(ULONG_PTR), (ULONG_PTR*)&ni);
+        RaiseException(0x406d1388, 0, sizeof(ni) / sizeof(ULONG_PTR), (ULONG_PTR*)&ni);
     }
     __except (EXCEPTION_CONTINUE_EXECUTION)
     {
@@ -81,20 +80,14 @@ setCurrentThreadNameImpl(std::string_view name)
 {
     // truncate and set the thread name.
     char boundedName[maxThreadNameLength + 1];
-    std::snprintf(
-        boundedName,
-        sizeof(boundedName),
-        "%.*s",
-        static_cast<int>(maxThreadNameLength),
-        name.data());
+    std::snprintf(boundedName, sizeof(boundedName), "%.*s", static_cast<int>(maxThreadNameLength), name.data());
 
     pthread_setname_np(pthread_self(), boundedName);
 
 #ifdef TRUNCATED_THREAD_NAME_LOGS
     if (name.size() > maxThreadNameLength)
     {
-        std::cerr << "WARNING: Thread name \"" << name << "\" (length "
-                  << name.size() << ") exceeds maximum of "
+        std::cerr << "WARNING: Thread name \"" << name << "\" (length " << name.size() << ") exceeds maximum of "
                   << maxThreadNameLength << " characters on Linux.\n";
 
         XRPL_ASSERT(

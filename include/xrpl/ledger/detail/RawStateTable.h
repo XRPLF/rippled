@@ -24,15 +24,11 @@ public:
     static constexpr size_t initialBufferSize = kilobytes(256);
 
     RawStateTable()
-        : monotonic_resource_{std::make_unique<
-              boost::container::pmr::monotonic_buffer_resource>(
-              initialBufferSize)}
+        : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
         , items_{monotonic_resource_.get()} {};
 
     RawStateTable(RawStateTable const& rhs)
-        : monotonic_resource_{std::make_unique<
-              boost::container::pmr::monotonic_buffer_resource>(
-              initialBufferSize)}
+        : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
         , items_{rhs.items_, monotonic_resource_.get()}
         , dropsDestroyed_{rhs.dropsDestroyed_} {};
 
@@ -50,10 +46,7 @@ public:
     exists(ReadView const& base, Keylet const& k) const;
 
     std::optional<key_type>
-    succ(
-        ReadView const& base,
-        key_type const& key,
-        std::optional<key_type> const& last) const;
+    succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const;
 
     void
     erase(std::shared_ptr<SLE> const& sle);
@@ -94,8 +87,7 @@ private:
         std::shared_ptr<SLE> sle;
 
         // Constructor needed for emplacement in std::map
-        sleAction(Action action_, std::shared_ptr<SLE> const& sle_)
-            : action(action_), sle(sle_)
+        sleAction(Action action_, std::shared_ptr<SLE> const& sle_) : action(action_), sle(sle_)
         {
         }
     };
@@ -106,12 +98,10 @@ private:
         key_type,
         sleAction,
         std::less<key_type>,
-        boost::container::pmr::polymorphic_allocator<
-            std::pair<key_type const, sleAction>>>;
+        boost::container::pmr::polymorphic_allocator<std::pair<key_type const, sleAction>>>;
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
-    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource>
-        monotonic_resource_;
+    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonic_resource_;
     items_t items_;
 
     XRPAmount dropsDestroyed_{0};

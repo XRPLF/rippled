@@ -40,13 +40,11 @@ public:
     {
     }
 
-    explicit sig(SField const* subField, Account const& account)
-        : subField_(subField), account_(account)
+    explicit sig(SField const* subField, Account const& account) : subField_(subField), account_(account)
     {
     }
 
-    explicit sig(SField const& subField, Account const& account)
-        : sig(&subField, account)
+    explicit sig(SField const& subField, Account const& account) : sig(&subField, account)
     {
     }
 
