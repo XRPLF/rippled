@@ -43,11 +43,7 @@ private:
 
 public:
     // This constructor is private, use createObject instead.
-    NodeObject(
-        NodeObjectType type,
-        Blob&& data,
-        uint256 const& hash,
-        PrivateAccess);
+    NodeObject(NodeObjectType type, Blob&& data, uint256 const& hash, PrivateAccess);
 
     /** Create an object from fields.
 

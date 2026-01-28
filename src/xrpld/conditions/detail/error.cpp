@@ -85,8 +85,7 @@ public:
     }
 
     bool
-    equivalent(int ev, std::error_condition const& condition)
-        const noexcept override
+    equivalent(int ev, std::error_condition const& condition) const noexcept override
     {
         return &condition.category() == this && condition.value() == ev;
     }
@@ -111,8 +110,7 @@ std::error_code
 make_error_code(error ev)
 {
     return std::error_code{
-        safe_cast<std::underlying_type<error>::type>(ev),
-        detail::get_cryptoconditions_error_category()};
+        safe_cast<std::underlying_type<error>::type>(ev), detail::get_cryptoconditions_error_category()};
 }
 
 }  // namespace cryptoconditions

@@ -53,9 +53,7 @@ makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current)
 }
 
 Rules
-makeRulesGivenLedger(
-    DigestAwareReadView const& ledger,
-    std::unordered_set<uint256, beast::uhash<>> const& presets)
+makeRulesGivenLedger(DigestAwareReadView const& ledger, std::unordered_set<uint256, beast::uhash<>> const& presets)
 {
     Keylet const k = keylet::amendments();
     std::optional digest = ledger.digest(k.key);

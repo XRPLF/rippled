@@ -27,9 +27,7 @@ public:
     addSamples(int count, std::chrono::milliseconds latency);
 
     void
-    setTargetLatency(
-        std::chrono::milliseconds avg,
-        std::chrono::milliseconds pk);
+    setTargetLatency(std::chrono::milliseconds avg, std::chrono::milliseconds pk);
 
     bool
     isOverTarget(std::chrono::milliseconds avg, std::chrono::milliseconds peak);

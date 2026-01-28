@@ -40,18 +40,14 @@ public:
     /** @{ */
     Account(std::string name, KeyType type = KeyType::secp256k1);
 
-    Account(char const* name, KeyType type = KeyType::secp256k1)
-        : Account(std::string(name), type)
+    Account(char const* name, KeyType type = KeyType::secp256k1) : Account(std::string(name), type)
     {
     }
 
     // This constructor needs to be public so `std::pair` can use it when
     // emplacing into the cache. However, it is logically `private`. This is
     // enforced with the `privateTag` parameter.
-    Account(
-        std::string name,
-        std::pair<PublicKey, SecretKey> const& keys,
-        Account::privateCtorTag);
+    Account(std::string name, std::pair<PublicKey, SecretKey> const& keys, Account::privateCtorTag);
 
     /** @} */
 
@@ -116,9 +112,7 @@ public:
     operator[](std::string const& s) const;
 
 private:
-    static std::
-        unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>>
-            cache_;
+    static std::unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>> cache_;
 
     // Return the account from the cache & add it to the cache if needed
     static Account

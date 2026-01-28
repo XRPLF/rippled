@@ -148,8 +148,7 @@ public:
             BEAST_EXPECTS(result == expected, ss.str());
         };
 
-        for (auto const mantissaSize :
-             {MantissaRange::small, MantissaRange::large})
+        for (auto const mantissaSize : {MantissaRange::small, MantissaRange::large})
         {
             NumberMantissaScaleGuard mg(mantissaSize);
 
@@ -203,19 +202,16 @@ public:
             BEAST_EXPECT(tiny == mulRatio(tiny, maxUInt - 1, maxUInt, true));
             // rounding down should be zero
             BEAST_EXPECT(beast::zero == mulRatio(tiny, 1, maxUInt, false));
-            BEAST_EXPECT(
-                beast::zero == mulRatio(tiny, maxUInt - 1, maxUInt, false));
+            BEAST_EXPECT(beast::zero == mulRatio(tiny, maxUInt - 1, maxUInt, false));
 
             // tiny negative numbers
             IOUAmount tinyNeg(-minMantissa, minExponent);
             // Round up should give zero
             BEAST_EXPECT(beast::zero == mulRatio(tinyNeg, 1, maxUInt, true));
-            BEAST_EXPECT(
-                beast::zero == mulRatio(tinyNeg, maxUInt - 1, maxUInt, true));
+            BEAST_EXPECT(beast::zero == mulRatio(tinyNeg, maxUInt - 1, maxUInt, true));
             // rounding down should be tiny
             BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, 1, maxUInt, false));
-            BEAST_EXPECT(
-                tinyNeg == mulRatio(tinyNeg, maxUInt - 1, maxUInt, false));
+            BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, maxUInt - 1, maxUInt, false));
         }
 
         {  // rounding
@@ -235,8 +231,7 @@ public:
             {
                 IOUAmount negOne(-1, 0);
                 auto const rup = mulRatio(negOne, maxUInt - 1, maxUInt, true);
-                auto const rdown =
-                    mulRatio(negOne, maxUInt - 1, maxUInt, false);
+                auto const rdown = mulRatio(negOne, maxUInt - 1, maxUInt, false);
                 BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
             }
         }

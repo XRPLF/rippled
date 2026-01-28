@@ -110,8 +110,7 @@ public:
         std::set<UNL> unique;
         for (Peer const peer : graph_.outVertices())
         {
-            unique.emplace(
-                std::begin(trustedPeers(peer)), std::end(trustedPeers(peer)));
+            unique.emplace(std::begin(trustedPeers(peer)), std::end(trustedPeers(peer)));
         }
 
         std::vector<UNL> uniqueUNLs(unique.begin(), unique.end());
@@ -124,18 +123,14 @@ public:
             {
                 auto const& unlA = uniqueUNLs[i];
                 auto const& unlB = uniqueUNLs[j];
-                double rhs =
-                    2.0 * (1. - quorum) * std::max(unlA.size(), unlB.size());
+                double rhs = 2.0 * (1. - quorum) * std::max(unlA.size(), unlB.size());
 
                 int intersectionSize =
-                    std::count_if(unlA.begin(), unlA.end(), [&](Peer p) {
-                        return unlB.find(p) != unlB.end();
-                    });
+                    std::count_if(unlA.begin(), unlA.end(), [&](Peer p) { return unlB.find(p) != unlB.end(); });
 
                 if (intersectionSize < rhs)
                 {
-                    res.emplace_back(
-                        ForkInfo{unlA, unlB, intersectionSize, rhs});
+                    res.emplace_back(ForkInfo{unlA, unlB, intersectionSize, rhs});
                 }
             }
         }

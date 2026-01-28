@@ -126,11 +126,7 @@ operator==(PublicKey const& lhs, PublicKey const& rhs)
 inline bool
 operator<(PublicKey const& lhs, PublicKey const& rhs)
 {
-    return std::lexicographical_compare(
-        lhs.data(),
-        lhs.data() + lhs.size(),
-        rhs.data(),
-        rhs.data() + rhs.size());
+    return std::lexicographical_compare(lhs.data(), lhs.data() + lhs.size(), rhs.data(), rhs.data() + rhs.size());
 }
 
 template <class Hasher>
@@ -275,8 +271,7 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
     {
         return PublicKey{makeSlice(*pubKeyBlob)};
     }
-    for (auto const tokenType :
-         {TokenType::NodePublic, TokenType::AccountPublic})
+    for (auto const tokenType : {TokenType::NodePublic, TokenType::AccountPublic})
     {
         if (auto const pk = parseBase58<PublicKey>(tokenType, b58))
             return *pk;

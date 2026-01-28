@@ -20,8 +20,7 @@ public:
     write(beast::severities::Severity level, std::string const& text) override;
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text)
-        override;
+    writeAlways(beast::severities::Severity level, std::string const& text) override;
 };
 }  // namespace xrpl
 #endif  // XRPL_DEBUGSINK_H

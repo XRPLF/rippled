@@ -148,9 +148,7 @@ public:
 
     RCLValidatedLedger(MakeGenesis);
 
-    RCLValidatedLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        beast::Journal j);
+    RCLValidatedLedger(std::shared_ptr<Ledger const> const& ledger, beast::Journal j);
 
     /// The sequence (index) of the ledger
     Seq

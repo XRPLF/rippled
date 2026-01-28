@@ -73,9 +73,7 @@ public:
         iterator(iterator&& other) noexcept;
 
         // Used by the implementation
-        explicit iterator(
-            ReadView const* view,
-            std::unique_ptr<iter_base> impl);
+        explicit iterator(ReadView const* view, std::unique_ptr<iter_base> impl);
 
         iterator&
         operator=(iterator const& other);

@@ -25,10 +25,7 @@ public:
         clock_type& clock);
 
     // outbound
-    SlotImp(
-        beast::IP::Endpoint const& remote_endpoint,
-        bool fixed,
-        clock_type& clock);
+    SlotImp(beast::IP::Endpoint const& remote_endpoint, bool fixed, clock_type& clock);
 
     bool
     inbound() const override

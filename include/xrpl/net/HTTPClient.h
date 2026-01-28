@@ -38,10 +38,8 @@ public:
         std::string const& strPath,
         std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
-        std::function<bool(
-            boost::system::error_code const& ecResult,
-            int iStatus,
-            std::string const& strData)> complete,
+        std::function<bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
+            complete,
         beast::Journal& j);
 
     static void
@@ -52,10 +50,8 @@ public:
         std::string const& strPath,
         std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
-        std::function<bool(
-            boost::system::error_code const& ecResult,
-            int iStatus,
-            std::string const& strData)> complete,
+        std::function<bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
+            complete,
         beast::Journal& j);
 
     static void
@@ -64,14 +60,11 @@ public:
         boost::asio::io_context& io_context,
         std::string strSite,
         unsigned short const port,
-        std::function<
-            void(boost::asio::streambuf& sb, std::string const& strHost)> build,
+        std::function<void(boost::asio::streambuf& sb, std::string const& strHost)> build,
         std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
-        std::function<bool(
-            boost::system::error_code const& ecResult,
-            int iStatus,
-            std::string const& strData)> complete,
+        std::function<bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
+            complete,
         beast::Journal& j);
 };
 

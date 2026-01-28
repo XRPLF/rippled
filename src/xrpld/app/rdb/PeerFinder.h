@@ -14,10 +14,7 @@ namespace xrpl {
  * @param j Journal.
  */
 void
-initPeerFinderDB(
-    soci::session& session,
-    BasicConfig const& config,
-    beast::Journal j);
+initPeerFinderDB(soci::session& session, BasicConfig const& config, beast::Journal j);
 
 /**
  * @brief updatePeerFinderDB Updates the peer finder database to a new version.
@@ -26,10 +23,7 @@ initPeerFinderDB(
  * @param j Journal.
  */
 void
-updatePeerFinderDB(
-    soci::session& session,
-    int currentSchemaVersion,
-    beast::Journal j);
+updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Journal j);
 
 /**
  * @brief readPeerFinderDB Reads all entries from the peer finder database and
@@ -38,9 +32,7 @@ updatePeerFinderDB(
  * @param func Callback to invoke for each entry.
  */
 void
-readPeerFinderDB(
-    soci::session& session,
-    std::function<void(std::string const&, int)> const& func);
+readPeerFinderDB(soci::session& session, std::function<void(std::string const&, int)> const& func);
 
 /**
  * @brief savePeerFinderDB Saves a new entry to the peer finder database.
@@ -48,9 +40,7 @@ readPeerFinderDB(
  * @param v Entry to save which contains information about a new peer.
  */
 void
-savePeerFinderDB(
-    soci::session& session,
-    std::vector<PeerFinder::Store::Entry> const& v);
+savePeerFinderDB(soci::session& session, std::vector<PeerFinder::Store::Entry> const& v);
 
 }  // namespace xrpl
 

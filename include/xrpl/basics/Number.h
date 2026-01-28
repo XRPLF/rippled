@@ -74,10 +74,7 @@ struct MantissaRange
     enum mantissa_scale { small, large };
 
     explicit constexpr MantissaRange(mantissa_scale scale_)
-        : min(getMin(scale_))
-        , max(min * 10 - 1)
-        , log(logTen(min).value_or(-1))
-        , scale(scale_)
+        : min(getMin(scale_)), max(min * 10 - 1), log(logTen(min).value_or(-1)), scale(scale_)
     {
     }
 
@@ -107,8 +104,7 @@ private:
 
 // Like std::integral, but only 64-bit integral types.
 template <class T>
-concept Integral64 =
-    std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::uint64_t>;
+concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::uint64_t>;
 
 /** Number is a floating point type that can represent a wide range of values.
  *
@@ -245,22 +241,11 @@ public:
 
     Number(rep mantissa);
     explicit Number(rep mantissa, int exponent);
-    explicit constexpr Number(
-        bool negative,
-        internalrep mantissa,
-        int exponent,
-        unchecked) noexcept;
+    explicit constexpr Number(bool negative, internalrep mantissa, int exponent, unchecked) noexcept;
     // Assume unsigned values are... unsigned. i.e. positive
-    explicit constexpr Number(
-        internalrep mantissa,
-        int exponent,
-        unchecked) noexcept;
+    explicit constexpr Number(internalrep mantissa, int exponent, unchecked) noexcept;
     // Only unit tests are expected to use this ctor
-    explicit Number(
-        bool negative,
-        internalrep mantissa,
-        int exponent,
-        normalized);
+    explicit Number(bool negative, internalrep mantissa, int exponent, normalized);
     // Assume unsigned values are... unsigned. i.e. positive
     explicit Number(internalrep mantissa, int exponent, normalized);
 
@@ -310,8 +295,7 @@ public:
     friend constexpr bool
     operator==(Number const& x, Number const& y) noexcept
     {
-        return x.negative_ == y.negative_ && x.mantissa_ == y.mantissa_ &&
-            x.exponent_ == y.exponent_;
+        return x.negative_ == y.negative_ && x.mantissa_ == y.mantissa_ && x.exponent_ == y.exponent_;
     }
 
     friend constexpr bool
@@ -519,37 +503,25 @@ private:
     class Guard;
 };
 
-inline constexpr Number::Number(
-    bool negative,
-    internalrep mantissa,
-    int exponent,
-    unchecked) noexcept
+inline constexpr Number::Number(bool negative, internalrep mantissa, int exponent, unchecked) noexcept
     : negative_(negative), mantissa_{mantissa}, exponent_{exponent}
 {
 }
 
-inline constexpr Number::Number(
-    internalrep mantissa,
-    int exponent,
-    unchecked) noexcept
+inline constexpr Number::Number(internalrep mantissa, int exponent, unchecked) noexcept
     : Number(false, mantissa, exponent, unchecked{})
 {
 }
 
 constexpr static Number numZero{};
 
-inline Number::Number(
-    bool negative,
-    internalrep mantissa,
-    int exponent,
-    normalized)
+inline Number::Number(bool negative, internalrep mantissa, int exponent, normalized)
     : Number(negative, mantissa, exponent, unchecked{})
 {
     normalize();
 }
 
-inline Number::Number(internalrep mantissa, int exponent, normalized)
-    : Number(false, mantissa, exponent, normalized{})
+inline Number::Number(internalrep mantissa, int exponent, normalized) : Number(false, mantissa, exponent, normalized{})
 {
 }
 
@@ -696,15 +668,13 @@ Number::min() noexcept
 inline Number
 Number::max() noexcept
 {
-    return Number{
-        false, std::min(range_.get().max, maxRep), maxExponent, unchecked{}};
+    return Number{false, std::min(range_.get().max, maxRep), maxExponent, unchecked{}};
 }
 
 inline Number
 Number::lowest() noexcept
 {
-    return Number{
-        true, std::min(range_.get().max, maxRep), maxExponent, unchecked{}};
+    return Number{true, std::min(range_.get().max, maxRep), maxExponent, unchecked{}};
 }
 
 inline bool
@@ -713,8 +683,7 @@ Number::isnormal() const noexcept
     MantissaRange const& range = range_;
     auto const abs_m = mantissa_;
     return *this == Number{} ||
-        (range.min <= abs_m && abs_m <= range.max &&
-         (abs_m <= maxRep || abs_m % 10 == 0) && minExponent <= exponent_ &&
+        (range.min <= abs_m && abs_m <= range.max && (abs_m <= maxRep || abs_m % 10 == 0) && minExponent <= exponent_ &&
          exponent_ <= maxExponent);
 }
 
@@ -727,10 +696,7 @@ Number::normalizeToRange(T minMantissa, T maxMantissa) const
     int exponent = exponent_;
 
     if constexpr (std::is_unsigned_v<T>)
-        XRPL_ASSERT_PARTS(
-            !negative,
-            "xrpl::Number::normalizeToRange",
-            "Number is non-negative for unsigned range.");
+        XRPL_ASSERT_PARTS(!negative, "xrpl::Number::normalizeToRange", "Number is non-negative for unsigned range.");
     Number::normalize(negative, mantissa, exponent, minMantissa, maxMantissa);
 
     auto const sign = negative ? -1 : 1;
@@ -799,8 +765,7 @@ public:
     {
         Number::setround(mode_);
     }
-    explicit saveNumberRoundMode(Number::rounding_mode mode) noexcept
-        : mode_{mode}
+    explicit saveNumberRoundMode(Number::rounding_mode mode) noexcept : mode_{mode}
     {
     }
     saveNumberRoundMode(saveNumberRoundMode const&) = delete;
@@ -817,8 +782,7 @@ class NumberRoundModeGuard
     saveNumberRoundMode saved_;
 
 public:
-    explicit NumberRoundModeGuard(Number::rounding_mode mode) noexcept
-        : saved_{Number::setround(mode)}
+    explicit NumberRoundModeGuard(Number::rounding_mode mode) noexcept : saved_{Number::setround(mode)}
     {
     }
 
@@ -838,9 +802,7 @@ class NumberMantissaScaleGuard
     MantissaRange::mantissa_scale const saved_;
 
 public:
-    explicit NumberMantissaScaleGuard(
-        MantissaRange::mantissa_scale scale) noexcept
-        : saved_{Number::getMantissaScale()}
+    explicit NumberMantissaScaleGuard(MantissaRange::mantissa_scale scale) noexcept : saved_{Number::getMantissaScale()}
     {
         Number::setMantissaScale(scale);
     }

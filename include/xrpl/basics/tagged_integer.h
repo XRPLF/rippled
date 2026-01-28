@@ -31,9 +31,7 @@ class tagged_integer
               tagged_integer<Int, Tag>,
               boost::bitwise<
                   tagged_integer<Int, Tag>,
-                  boost::unit_steppable<
-                      tagged_integer<Int, Tag>,
-                      boost::shiftable<tagged_integer<Int, Tag>>>>>>
+                  boost::unit_steppable<tagged_integer<Int, Tag>, boost::shiftable<tagged_integer<Int, Tag>>>>>>
 {
 private:
     Int m_value;
@@ -46,14 +44,10 @@ public:
 
     template <
         class OtherInt,
-        class = typename std::enable_if<
-            std::is_integral<OtherInt>::value &&
-            sizeof(OtherInt) <= sizeof(Int)>::type>
+        class = typename std::enable_if<std::is_integral<OtherInt>::value && sizeof(OtherInt) <= sizeof(Int)>::type>
     explicit constexpr tagged_integer(OtherInt value) noexcept : m_value(value)
     {
-        static_assert(
-            sizeof(tagged_integer) == sizeof(Int),
-            "tagged_integer is adding padding");
+        static_assert(sizeof(tagged_integer) == sizeof(Int), "tagged_integer is adding padding");
     }
 
     bool

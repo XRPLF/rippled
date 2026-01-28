@@ -19,8 +19,7 @@ public:
      * @note check has_error() and error() of the response for error
      */
     protocol::TMProofPathResponse
-    processProofPathRequest(
-        std::shared_ptr<protocol::TMProofPathRequest> const& msg);
+    processProofPathRequest(std::shared_ptr<protocol::TMProofPathRequest> const& msg);
 
     /**
      * Process TMProofPathResponse
@@ -28,16 +27,14 @@ public:
      *         true otherwise
      */
     bool
-    processProofPathResponse(
-        std::shared_ptr<protocol::TMProofPathResponse> const& msg);
+    processProofPathResponse(std::shared_ptr<protocol::TMProofPathResponse> const& msg);
 
     /**
      * Process TMReplayDeltaRequest and return TMReplayDeltaResponse
      * @note check has_error() and error() of the response for error
      */
     protocol::TMReplayDeltaResponse
-    processReplayDeltaRequest(
-        std::shared_ptr<protocol::TMReplayDeltaRequest> const& msg);
+    processReplayDeltaRequest(std::shared_ptr<protocol::TMReplayDeltaRequest> const& msg);
 
     /**
      * Process TMReplayDeltaResponse
@@ -45,8 +42,7 @@ public:
      *         true otherwise
      */
     bool
-    processReplayDeltaResponse(
-        std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg);
+    processReplayDeltaResponse(std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg);
 
 private:
     Application& app_;

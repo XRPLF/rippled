@@ -81,9 +81,8 @@ valueToString(double value)
     // Print into the buffer. We need not request the alternative representation
     // that always has a decimal point because JSON doesn't distinguish the
     // concepts of reals and integers.
-#if defined(_MSC_VER) && \
-    defined(__STDC_SECURE_LIB__)  // Use secure version with visual studio 2005
-                                  // to avoid warning.
+#if defined(_MSC_VER) && defined(__STDC_SECURE_LIB__)  // Use secure version with visual studio 2005
+                                                       // to avoid warning.
     sprintf_s(buffer, sizeof(buffer), "%.16g", value);
 #else
     snprintf(buffer, sizeof(buffer), "%.16g", value);
@@ -101,8 +100,7 @@ std::string
 valueToQuotedString(char const* value)
 {
     // Not sure how to handle unicode...
-    if (strpbrk(value, "\"\\\b\f\n\r\t") == nullptr &&
-        !containsControlCharacter(value))
+    if (strpbrk(value, "\"\\\b\f\n\r\t") == nullptr && !containsControlCharacter(value))
         return std::string("\"") + value + "\"";
 
     // We have to walk value and escape any special characters.
@@ -156,8 +154,7 @@ valueToQuotedString(char const* value)
                 if (isControlCharacter(*c))
                 {
                     std::ostringstream oss;
-                    oss << "\\u" << std::hex << std::uppercase
-                        << std::setfill('0') << std::setw(4)
+                    oss << "\\u" << std::hex << std::uppercase << std::setfill('0') << std::setw(4)
                         << static_cast<int>(*c);
                     result += oss.str();
                 }
@@ -234,9 +231,7 @@ FastWriter::writeValue(Value const& value)
             Value::Members members(value.getMemberNames());
             document_ += "{";
 
-            for (Value::Members::iterator it = members.begin();
-                 it != members.end();
-                 ++it)
+            for (Value::Members::iterator it = members.begin(); it != members.end(); ++it)
             {
                 std::string const& name = *it;
 
@@ -379,9 +374,7 @@ StyledWriter::writeArrayValue(Value const& value)
         }
         else  // output on a single line
         {
-            XRPL_ASSERT(
-                childValues_.size() == size,
-                "Json::StyledWriter::writeArrayValue : child size match");
+            XRPL_ASSERT(childValues_.size() == size, "Json::StyledWriter::writeArrayValue : child size match");
             document_ += "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -407,9 +400,7 @@ StyledWriter::isMultilineArray(Value const& value)
     for (int index = 0; index < size && !isMultiLine; ++index)
     {
         Value const& childValue = value[index];
-        isMultiLine = isMultiLine ||
-            ((childValue.isArray() || childValue.isObject()) &&
-             childValue.size() > 0);
+        isMultiLine = isMultiLine || ((childValue.isArray() || childValue.isObject()) && childValue.size() > 0);
     }
 
     if (!isMultiLine)  // check if line length > max line length
@@ -473,9 +464,7 @@ StyledWriter::indent()
 void
 StyledWriter::unindent()
 {
-    XRPL_ASSERT(
-        int(indentString_.size()) >= indentSize_,
-        "Json::StyledWriter::unindent : maximum indent size");
+    XRPL_ASSERT(int(indentString_.size()) >= indentSize_, "Json::StyledWriter::unindent : maximum indent size");
     indentString_.resize(indentString_.size() - indentSize_);
 }
 
@@ -605,9 +594,7 @@ StyledStreamWriter::writeArrayValue(Value const& value)
         }
         else  // output on a single line
         {
-            XRPL_ASSERT(
-                childValues_.size() == size,
-                "Json::StyledStreamWriter::writeArrayValue : child size match");
+            XRPL_ASSERT(childValues_.size() == size, "Json::StyledStreamWriter::writeArrayValue : child size match");
             *document_ << "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -633,9 +620,7 @@ StyledStreamWriter::isMultilineArray(Value const& value)
     for (int index = 0; index < size && !isMultiLine; ++index)
     {
         Value const& childValue = value[index];
-        isMultiLine = isMultiLine ||
-            ((childValue.isArray() || childValue.isObject()) &&
-             childValue.size() > 0);
+        isMultiLine = isMultiLine || ((childValue.isArray() || childValue.isObject()) && childValue.size() > 0);
     }
 
     if (!isMultiLine)  // check if line length > max line length
@@ -701,8 +686,7 @@ void
 StyledStreamWriter::unindent()
 {
     XRPL_ASSERT(
-        indentString_.size() >= indentation_.size(),
-        "Json::StyledStreamWriter::unindent : maximum indent size");
+        indentString_.size() >= indentation_.size(), "Json::StyledStreamWriter::unindent : maximum indent size");
     indentString_.resize(indentString_.size() - indentation_.size());
 }
 

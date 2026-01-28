@@ -56,8 +56,7 @@ struct KeyEqual final
 class PeerReservationTable final
 {
 public:
-    explicit PeerReservationTable(
-        beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+    explicit PeerReservationTable(beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
         : journal_(journal)
     {
     }

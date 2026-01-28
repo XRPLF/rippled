@@ -49,14 +49,12 @@ doPeerReservationsAdd(RPC::JsonContext& context)
 
     // channel_verify takes a key in both base58 and hex.
     // @nikb prefers that we take only base58.
-    std::optional<PublicKey> optPk = parseBase58<PublicKey>(
-        TokenType::NodePublic, params[jss::public_key].asString());
+    std::optional<PublicKey> optPk = parseBase58<PublicKey>(TokenType::NodePublic, params[jss::public_key].asString());
     if (!optPk)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;
 
-    auto const previous = context.app.peerReservations().insert_or_assign(
-        PeerReservation{nodeId, desc});
+    auto const previous = context.app.peerReservations().insert_or_assign(PeerReservation{nodeId, desc});
 
     Json::Value result{Json::objectValue};
     if (previous)
@@ -77,8 +75,7 @@ doPeerReservationsDel(RPC::JsonContext& context)
     if (!params[jss::public_key].isString())
         return RPC::expected_field_error(jss::public_key, "a string");
 
-    std::optional<PublicKey> optPk = parseBase58<PublicKey>(
-        TokenType::NodePublic, params[jss::public_key].asString());
+    std::optional<PublicKey> optPk = parseBase58<PublicKey>(TokenType::NodePublic, params[jss::public_key].asString());
     if (!optPk)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;

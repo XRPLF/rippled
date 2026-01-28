@@ -68,8 +68,7 @@ class Handler_test : public beast::unit_test::suite
         double const mean_squared = (sum * sum) / (j * j);
         return std::make_tuple(
             clock::duration{static_cast<long>(sum / j)},
-            clock::duration{
-                static_cast<long>(std::sqrt((sum_squared / j) - mean_squared))},
+            clock::duration{static_cast<long>(std::sqrt((sum_squared / j) - mean_squared))},
             j);
     }
 
@@ -81,8 +80,7 @@ class Handler_test : public beast::unit_test::suite
         std::random_device dev;
         std::ranlux48 prng(dev());
 
-        std::vector<char const*> names =
-            test::jtx::make_vector(xrpl::RPC::getHandlerNames());
+        std::vector<char const*> names = test::jtx::make_vector(xrpl::RPC::getHandlerNames());
 
         std::uniform_int_distribution<std::size_t> distr{0, names.size() - 1};
 
@@ -95,8 +93,7 @@ class Handler_test : public beast::unit_test::suite
             },
             [&]() -> std::size_t { return distr(prng); });
 
-        std::cout << "mean=" << mean << " stdev=" << stdev << " N=" << n
-                  << '\n';
+        std::cout << "mean=" << mean << " stdev=" << stdev << " N=" << n << '\n';
 
         BEAST_EXPECT(dummy != 0);
     }

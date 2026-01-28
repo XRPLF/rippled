@@ -156,22 +156,16 @@ private:
     }
 
 public:
-    explicit Generator(Seed const& seed)
-        : root_(deriveDeterministicRootKey(seed))
+    explicit Generator(Seed const& seed) : root_(deriveDeterministicRootKey(seed))
     {
         secp256k1_pubkey pubkey;
-        if (secp256k1_ec_pubkey_create(
-                secp256k1Context(), &pubkey, root_.data()) != 1)
+        if (secp256k1_ec_pubkey_create(secp256k1Context(), &pubkey, root_.data()) != 1)
             LogicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
 
         auto len = generator_.size();
 
         if (secp256k1_ec_pubkey_serialize(
-                secp256k1Context(),
-                generator_.data(),
-                &len,
-                &pubkey,
-                SECP256K1_EC_COMPRESSED) != 1)
+                secp256k1Context(), generator_.data(), &len, &pubkey, SECP256K1_EC_COMPRESSED) != 1)
             LogicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
     }
 
@@ -189,8 +183,7 @@ public:
         auto gsk = [this, tweak = calculateTweak(ordinal)]() {
             auto rpk = root_;
 
-            if (secp256k1_ec_seckey_tweak_add(
-                    secp256k1Context(), rpk.data(), tweak.data()) == 1)
+            if (secp256k1_ec_seckey_tweak_add(secp256k1Context(), rpk.data(), tweak.data()) == 1)
             {
                 SecretKey sk{Slice{rpk.data(), rpk.size()}};
                 secure_erase(rpk.data(), rpk.size());
@@ -225,8 +218,7 @@ signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
 
     unsigned char sig[72];
     size_t len = sizeof(sig);
-    if (secp256k1_ecdsa_signature_serialize_der(
-            secp256k1Context(), sig, &len, &sig_imp) != 1)
+    if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sig_imp) != 1)
         LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
 
     return Buffer{sig, len};
@@ -242,8 +234,7 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
     {
         case KeyType::ed25519: {
             Buffer b(64);
-            ed25519_sign(
-                m.data(), m.size(), sk.data(), pk.data() + 1, b.data());
+            ed25519_sign(m.data(), m.size(), sk.data(), pk.data() + 1, b.data());
             return b;
         }
         case KeyType::secp256k1: {
@@ -263,10 +254,8 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 
             unsigned char sig[72];
             size_t len = sizeof(sig);
-            if (secp256k1_ecdsa_signature_serialize_der(
-                    secp256k1Context(), sig, &len, &sig_imp) != 1)
-                LogicError(
-                    "sign: secp256k1_ecdsa_signature_serialize_der failed");
+            if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sig_imp) != 1)
+                LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
 
             return Buffer{sig, len};
         }
@@ -315,22 +304,14 @@ derivePublicKey(KeyType type, SecretKey const& sk)
         case KeyType::secp256k1: {
             secp256k1_pubkey pubkey_imp;
             if (secp256k1_ec_pubkey_create(
-                    secp256k1Context(),
-                    &pubkey_imp,
-                    reinterpret_cast<unsigned char const*>(sk.data())) != 1)
-                LogicError(
-                    "derivePublicKey: secp256k1_ec_pubkey_create failed");
+                    secp256k1Context(), &pubkey_imp, reinterpret_cast<unsigned char const*>(sk.data())) != 1)
+                LogicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
 
             unsigned char pubkey[33];
             std::size_t len = sizeof(pubkey);
-            if (secp256k1_ec_pubkey_serialize(
-                    secp256k1Context(),
-                    pubkey,
-                    &len,
-                    &pubkey_imp,
-                    SECP256K1_EC_COMPRESSED) != 1)
-                LogicError(
-                    "derivePublicKey: secp256k1_ec_pubkey_serialize failed");
+            if (secp256k1_ec_pubkey_serialize(secp256k1Context(), pubkey, &len, &pubkey_imp, SECP256K1_EC_COMPRESSED) !=
+                1)
+                LogicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
 
             return PublicKey{Slice{pubkey, len}};
         }
