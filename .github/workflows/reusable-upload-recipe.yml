@@ -62,12 +62,36 @@ jobs:
           REMOTE_PASSWORD: ${{ secrets.remote_password }}
         run: conan remote login "${REMOTE_NAME}" "${REMOTE_USERNAME}" --password "${REMOTE_PASSWORD}"
 
-      - name: Upload Conan recipe
+      - name: Upload Conan recipe (version)
         env:
           REMOTE_NAME: ${{ inputs.remote_name }}
         run: |
           conan export . --version=${{ steps.version.outputs.version }}
           conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/${{ steps.version.outputs.version }}
+
+      - name: Upload Conan recipe (develop)
+        if: ${{ github.ref == 'refs/heads/develop' }}
+        env:
+          REMOTE_NAME: ${{ inputs.remote_name }}
+        run: |
+          conan export . --version=develop
+          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/develop
+
+      - name: Upload Conan recipe (rc)
+        if: ${{ startsWith(github.ref, 'refs/heads/release') }}
+        env:
+          REMOTE_NAME: ${{ inputs.remote_name }}
+        run: |
+          conan export . --version=rc
+          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/rc
+
+      - name: Upload Conan recipe (release)
+        if: ${{ github.event_name == 'tag' }}
+        env:
+          REMOTE_NAME: ${{ inputs.remote_name }}
+        run: |
+          conan export . --version=release
+          conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/release
 
     outputs:
       ref: xrpl/${{ steps.version.outputs.version }}
