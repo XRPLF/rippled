@@ -30,7 +30,6 @@ target_link_libraries(xrpl_boost
     Boost::process
     Boost::program_options
     Boost::regex
-    Boost::system
     Boost::thread)
 if(Boost_COMPILER)
   target_link_libraries(xrpl_boost INTERFACE Boost::disable_autolinking)
