@@ -23,8 +23,7 @@ protected:
 
     static_assert(wasmMinExponent < 0);
 
-    static uint64_t constexpr maxEncodedMantissa =
-        (1ull << (encodedMantissaBits + 1)) - 1;
+    static uint64_t constexpr maxEncodedMantissa = (1ull << (encodedMantissaBits + 1)) - 1;
 
     bool good_;
 
@@ -44,16 +43,13 @@ public:
         if (!(v & STAmount::cIssuedCurrency))
             return;
 
-        int32_t const e =
-            static_cast<int32_t>((v >> encodedMantissaBits) & 0xFFull);
+        int32_t const e = static_cast<int32_t>((v >> encodedMantissaBits) & 0xFFull);
         int32_t const decodedExponent = e + wasmMinExponent - 1;  // e - 97
-        if (decodedExponent < wasmMinExponent ||
-            decodedExponent > wasmMaxExponent)
+        if (decodedExponent < wasmMinExponent || decodedExponent > wasmMaxExponent)
             return;
 
         int64_t const neg = (v & STAmount::cPositive) ? 1 : -1;
-        int64_t const m =
-            neg * static_cast<int64_t>(v & ((1ull << encodedMantissaBits) - 1));
+        int64_t const m = neg * static_cast<int64_t>(v & ((1ull << encodedMantissaBits) - 1));
         if (!m)
             return;
 
@@ -89,8 +85,7 @@ public:
         good_ = true;
     }
 
-    Number2(Number const& n)
-        : Number2(n.mantissa(), n.exponent())  // ensure Number canonized
+    Number2(Number const& n) : Number2(n.mantissa(), n.exponent())  // ensure Number canonized
     {
     }
 
@@ -132,8 +127,7 @@ public:
         }
         else if (absM > maxEncodedMantissa)
         {
-            return Unexpected(
-                HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
+            return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
         }
         v |= absM;
 
@@ -149,8 +143,7 @@ public:
         auto const data = msg.getData();
 
 #ifdef DEBUG_OUTPUT
-        std::cout << "m: " << std::setw(20) << mantissa()
-                  << ", e: " << std::setw(12) << exponent() << ", hex: ";
+        std::cout << "m: " << std::setw(20) << mantissa() << ", e: " << std::setw(12) << exponent() << ", hex: ";
         std::cout << std::hex << std::uppercase << std::setfill('0');
         for (auto const& c : data)
             std::cout << std::setw(2) << (unsigned)c << " ";
@@ -161,8 +154,7 @@ public:
     }
 };
 
-Bytes const Number2::floatNull =
-    {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+Bytes const Number2::floatNull = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 struct FloatState
 {
@@ -170,13 +162,9 @@ struct FloatState
     MantissaRange::mantissa_scale oldScale_;
     bool good_;
 
-    FloatState(int32_t mode)
-        : oldMode_(Number::getround())
-        , oldScale_(Number::getMantissaScale())
-        , good_(false)
+    FloatState(int32_t mode) : oldMode_(Number::getround()), oldScale_(Number::getMantissaScale()), good_(false)
     {
-        if (mode < Number::rounding_mode::to_nearest ||
-            mode > Number::rounding_mode::upward)
+        if (mode < Number::rounding_mode::to_nearest || mode > Number::rounding_mode::upward)
             return;
 
         Number::setround(static_cast<Number::rounding_mode>(mode));
@@ -208,8 +196,7 @@ floatToString(Slice const& data)
     {
         std::string hex;
         hex.reserve(data.size() * 2);
-        boost::algorithm::hex(
-            data.begin(), data.end(), std::back_inserter(hex));
+        boost::algorithm::hex(data.begin(), data.end(), std::back_inserter(hex));
         return "Invalid data: " + hex;
     }
 
@@ -505,10 +492,7 @@ WasmHostFunctionsImpl::floatFromUint(uint64_t x, int32_t mode)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatSet(
-    int64_t mantissa,
-    int32_t exponent,
-    int32_t mode)
+WasmHostFunctionsImpl::floatSet(int64_t mantissa, int32_t exponent, int32_t mode)
 {
     return wasm_float::floatSetImpl(mantissa, exponent, mode);
 }
@@ -526,19 +510,13 @@ WasmHostFunctionsImpl::floatAdd(Slice const& x, Slice const& y, int32_t mode)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatSubtract(
-    Slice const& x,
-    Slice const& y,
-    int32_t mode)
+WasmHostFunctionsImpl::floatSubtract(Slice const& x, Slice const& y, int32_t mode)
 {
     return wasm_float::floatSubtractImpl(x, y, mode);
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatMultiply(
-    Slice const& x,
-    Slice const& y,
-    int32_t mode)
+WasmHostFunctionsImpl::floatMultiply(Slice const& x, Slice const& y, int32_t mode)
 {
     return wasm_float::floatMultiplyImpl(x, y, mode);
 }

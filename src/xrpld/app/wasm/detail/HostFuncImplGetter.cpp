@@ -126,8 +126,7 @@ getAnyFieldData(FieldValue const& variantObj)
 static inline bool
 noField(STBase const* field)
 {
-    return !field || (STI_NOTPRESENT == field->getSType()) ||
-        (STI_UNKNOWN == field->getSType());
+    return !field || (STI_NOTPRESENT == field->getSType()) || (STI_UNKNOWN == field->getSType());
 }
 
 static Expected<FieldValue, HostFunctionError>
@@ -272,8 +271,7 @@ WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
     if (!normalizedIdx.has_value())
         return Unexpected(normalizedIdx.error());
-    return detail::getAnyFieldData(
-        cache[normalizedIdx.value()]->peekAtPField(fname));
+    return detail::getAnyFieldData(cache[normalizedIdx.value()]->peekAtPField(fname));
 }
 
 // Subsection: nested getters
@@ -303,9 +301,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerObjNestedField(
-    int32_t cacheIdx,
-    Slice const& locator)
+WasmHostFunctionsImpl::getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator)
 {
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
     if (!normalizedIdx.has_value())
@@ -351,9 +347,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerObjArrayLen(
-    int32_t cacheIdx,
-    SField const& fname)
+WasmHostFunctionsImpl::getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname)
 {
     if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
         return Unexpected(HostFunctionError::NO_ARRAY);
@@ -397,9 +391,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
-    int32_t cacheIdx,
-    Slice const& locator)
+WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator)
 {
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
     if (!normalizedIdx.has_value())
