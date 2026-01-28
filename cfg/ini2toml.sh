@@ -4,12 +4,18 @@
 #
 # Usage: ./ini2toml.sh input.cfg [output.toml]
 #        If output.toml is not specified, outputs to stdout
+#
+# Conversion rules:
+#   - Root-level key=value pairs are preserved as-is
+#   - Sections with only standalone items become top-level key=value or arrays
+#   - Sections listed under [server] become [server.ports.<name>]
+#   - All other sections with key=value pairs become [section] tables
 
 set -e
 
 if [[ $# -lt 1 ]]; then
     echo "Usage: $0 input.cfg [output.toml]" >&2
-    echo "       Converts xrpld INI config to TOML format, preserving comments." >&2
+    echo "       Converts xrpld INI config to TOML format." >&2
     exit 1
 fi
 
@@ -21,24 +27,28 @@ if [[ ! -f "$INPUT_FILE" ]]; then
     exit 1
 fi
 
-# Create temp files for storing parsed data
+# Create temp files for storing parsed data (Bash 3.2 compatible - no associative arrays)
 TMPDIR="${TMPDIR:-/tmp}"
 ROOT_KEYS_FILE=$(mktemp "${TMPDIR}/ini2toml_root_keys.XXXXXX")
 ROOT_ITEMS_FILE=$(mktemp "${TMPDIR}/ini2toml_root_items.XXXXXX")
 SECTIONS_FILE=$(mktemp "${TMPDIR}/ini2toml_sections.XXXXXX")
 SECTION_ORDER_FILE=$(mktemp "${TMPDIR}/ini2toml_section_order.XXXXXX")
+SERVER_PORTS_FILE=""
 
 cleanup() {
-    rm -f "$ROOT_KEYS_FILE" "$ROOT_ITEMS_FILE" "$SECTIONS_FILE" "$SECTION_ORDER_FILE"
+    rm -f "$ROOT_KEYS_FILE" "$ROOT_ITEMS_FILE" "$SECTIONS_FILE" "$SECTION_ORDER_FILE" "$SERVER_PORTS_FILE"
 }
 trap cleanup EXIT
 
-current_section=""
+# Trim leading and trailing whitespace
+trim() {
+    echo "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+}
 
-# Function to determine if a value needs quoting in TOML
+# Format a value for TOML output (quote strings, preserve numbers/booleans)
 format_value() {
-    local value="$1"
-    value="$(echo "$value" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    local value
+    value="$(trim "$1")"
 
     if [[ "$value" =~ ^-?[0-9]+$ ]]; then
         echo "$value"
@@ -53,18 +63,20 @@ format_value() {
     fi
 }
 
-# First pass: parse the file
+current_section=""
+
+# First pass: parse the INI file
 while IFS= read -r line || [[ -n "$line" ]]; do
+    # Trim trailing whitespace
     line="${line%"${line##*[![:space:]]}"}"
 
-    # Skip empty lines and comments for parsing
+    # Skip empty lines and comments
     [[ -z "$line" ]] && continue
     [[ "$line" =~ ^[[:space:]]*# ]] && continue
 
-    # Section header
+    # Section header: [section_name]
     if [[ "$line" =~ ^\[([^\]]+)\]$ ]]; then
         current_section="${BASH_REMATCH[1]}"
-        # Add to section order if not already present
         if ! grep -qxF "$current_section" "$SECTION_ORDER_FILE" 2>/dev/null; then
             echo "$current_section" >> "$SECTION_ORDER_FILE"
         fi
@@ -73,7 +85,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
 
     # Key=value pair
     if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
-        key="$(echo "${BASH_REMATCH[1]}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+        key="$(trim "${BASH_REMATCH[1]}")"
         value="${BASH_REMATCH[2]}"
         if [[ -z "$current_section" ]]; then
             echo "${key}=${value}" >> "$ROOT_KEYS_FILE"
@@ -83,8 +95,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         continue
     fi
 
-    # Standalone value
-    value="$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    # Standalone value (e.g., port names under [server], validator keys)
+    value="$(trim "$line")"
     if [[ -n "$value" ]]; then
         if [[ -z "$current_section" ]]; then
             echo "$value" >> "$ROOT_ITEMS_FILE"
@@ -125,10 +137,9 @@ done < "$INPUT_FILE"
     fi
 
     # Collect server port names (items listed under [server] section)
+    # These sections will be output as [server.ports.<name>]
     SERVER_PORTS_FILE=$(mktemp "${TMPDIR}/ini2toml_server_ports.XXXXXX")
-    if grep -q "^server|ITEM|" "$SECTIONS_FILE" 2>/dev/null; then
-        grep "^server|ITEM|" "$SECTIONS_FILE" | cut -d'|' -f3 > "$SERVER_PORTS_FILE"
-    fi
+    grep "^server|ITEM|" "$SECTIONS_FILE" 2>/dev/null | cut -d'|' -f3 > "$SERVER_PORTS_FILE" || true
 
     # FIRST PASS: Output sections that become top-level key-value pairs
     # (sections with only standalone items, not [server], and not server ports)
@@ -207,8 +218,6 @@ done < "$INPUT_FILE"
             fi
         done < "$SECTION_ORDER_FILE"
     fi
-
-    rm -f "$SERVER_PORTS_FILE"
 
 } > "$OUTPUT_FILE"
 
