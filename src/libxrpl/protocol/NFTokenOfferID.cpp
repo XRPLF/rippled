@@ -16,16 +16,13 @@
 namespace xrpl {
 
 bool
-canHaveNFTokenOfferID(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta)
+canHaveNFTokenOfferID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta)
 {
     if (!serializedTx)
         return false;
 
     TxType const tt = serializedTx->getTxnType();
-    if (!(tt == ttNFTOKEN_MINT && serializedTx->isFieldPresent(sfAmount)) &&
-        tt != ttNFTOKEN_CREATE_OFFER)
+    if (!(tt == ttNFTOKEN_MINT && serializedTx->isFieldPresent(sfAmount)) && tt != ttNFTOKEN_CREATE_OFFER)
         return false;
 
     // if the transaction failed nothing could have been delivered.
@@ -40,8 +37,7 @@ getOfferIDFromCreatedOffer(TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
     {
-        if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER ||
-            node.getFName() != sfCreatedNode)
+        if (node.getFieldU16(sfLedgerEntryType) != ltNFTOKEN_OFFER || node.getFName() != sfCreatedNode)
             continue;
 
         return node.getFieldH256(sfLedgerIndex);

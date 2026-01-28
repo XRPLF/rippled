@@ -13,14 +13,11 @@ passwordUnrequiredOrSentCorrect(Port const& port, Json::Value const& params)
     XRPL_ASSERT(
         !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()),
         "xrpl::passwordUnrequiredOrSentCorrect : non-empty admin nets");
-    bool const passwordRequired =
-        (!port.admin_user.empty() || !port.admin_password.empty());
+    bool const passwordRequired = (!port.admin_user.empty() || !port.admin_password.empty());
 
     return !passwordRequired ||
-        ((params["admin_password"].isString() &&
-          params["admin_password"].asString() == port.admin_password) &&
-         (params["admin_user"].isString() &&
-          params["admin_user"].asString() == port.admin_user));
+        ((params["admin_password"].isString() && params["admin_password"].asString() == port.admin_password) &&
+         (params["admin_user"].isString() && params["admin_user"].asString() == port.admin_user));
 }
 
 bool
@@ -63,13 +60,9 @@ ipAllowed(
 }
 
 bool
-isAdmin(
-    Port const& port,
-    Json::Value const& params,
-    beast::IP::Address const& remoteIp)
+isAdmin(Port const& port, Json::Value const& params, beast::IP::Address const& remoteIp)
 {
-    return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) &&
-        passwordUnrequiredOrSentCorrect(port, params);
+    return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) && passwordUnrequiredOrSentCorrect(port, params);
 }
 
 Role
@@ -86,10 +79,7 @@ requestRole(
     if (required == Role::ADMIN)
         return Role::FORBID;
 
-    if (ipAllowed(
-            remoteIp.address(),
-            port.secure_gateway_nets_v4,
-            port.secure_gateway_nets_v6))
+    if (ipAllowed(remoteIp.address(), port.secure_gateway_nets_v4, port.secure_gateway_nets_v6))
     {
         if (user.size())
             return Role::IDENTIFIED;
@@ -130,8 +120,7 @@ requestInboundEndpoint(
     if (isUnlimited(role))
         return manager.newUnlimitedEndpoint(remoteAddress);
 
-    return manager.newInboundEndpoint(
-        remoteAddress, role == Role::PROXY, forwardedFor);
+    return manager.newInboundEndpoint(remoteAddress, role == Role::PROXY, forwardedFor);
 }
 
 static std::string_view
@@ -156,8 +145,7 @@ extractIpAddrFromField(std::string_view field)
         if (!ret.empty())
         {
             // Only do the work if there's at least one trailing space.
-            if (unsigned char const c = ret.back();
-                c == ' ' || c == '\r' || c == '\n')
+            if (unsigned char const c = ret.back(); c == ' ' || c == '\r' || c == '\n')
             {
                 std::size_t const lastNonSpace = ret.find_last_not_of(" \r\n");
                 if (lastNonSpace == std::string_view::npos)
@@ -199,10 +187,9 @@ extractIpAddrFromField(std::string_view field)
 
         // We may have an IPv6 address in square brackets.  Scan up to the
         // closing square bracket.
-        auto const closeBracket =
-            std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) {
-                return std::isxdigit(c) || c == ':' || c == '.' || c == ' ';
-            });
+        auto const closeBracket = std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) {
+            return std::isxdigit(c) || c == ':' || c == '.' || c == ' ';
+        });
 
         // If the string does not close with a ']', then it's not valid IPv6
         // or IPv6 (dual).
@@ -221,9 +208,7 @@ extractIpAddrFromField(std::string_view field)
     {
         // Skip any leading hex digits.
         auto const colon =
-            std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) {
-                return std::isxdigit(c) || c == ' ';
-            });
+            std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) { return std::isxdigit(c) || c == ' '; });
 
         // If the string starts with optional hex digits followed by a colon
         // it's an IVv6 address.  We're done.
@@ -243,21 +228,14 @@ std::string_view
 forwardedFor(http_request_type const& request)
 {
     // Look for the Forwarded field in the request.
-    if (auto it = request.find(boost::beast::http::field::forwarded);
-        it != request.end())
+    if (auto it = request.find(boost::beast::http::field::forwarded); it != request.end())
     {
-        auto ascii_tolower = [](char c) -> char {
-            return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c;
-        };
+        auto ascii_tolower = [](char c) -> char { return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c; };
 
         // Look for the first (case insensitive) "for="
         static std::string const forStr{"for="};
         char const* found = std::search(
-            it->value().begin(),
-            it->value().end(),
-            forStr.begin(),
-            forStr.end(),
-            [&ascii_tolower](char c1, char c2) {
+            it->value().begin(), it->value().end(), forStr.begin(), forStr.end(), [&ascii_tolower](char c1, char c2) {
                 return ascii_tolower(c1) == ascii_tolower(c2);
             });
 
@@ -268,8 +246,7 @@ forwardedFor(http_request_type const& request)
 
         // We found a "for=".  Scan for the end of the IP address.
         std::size_t const pos = [&found, &it]() {
-            std::size_t pos = std::string_view(found, it->value().end() - found)
-                                  .find_first_of(",;");
+            std::size_t pos = std::string_view(found, it->value().end() - found).find_first_of(",;");
             if (pos != std::string_view::npos)
                 return pos;
 

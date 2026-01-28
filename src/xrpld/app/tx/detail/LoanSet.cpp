@@ -27,8 +27,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     auto const& tx = ctx.tx;
 
     // Special case for Batch inner transactions
-    if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch) &&
-        !tx.isFieldPresent(sfCounterparty))
+    if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch) && !tx.isFieldPresent(sfCounterparty))
     {
         auto const parentBatchId = ctx.parentBatchId.value_or(uint256{0});
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -44,23 +43,19 @@ LoanSet::preflight(PreflightContext const& ctx)
     }();
     if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig)
     {
-        JLOG(ctx.j.warn())
-            << "LoanSet transaction must have a CounterpartySignature.";
+        JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
         return temBAD_SIGNER;
     }
 
     if (counterPartySig)
     {
-        if (auto const ret =
-                xrpl::detail::preflightCheckSigningKey(*counterPartySig, ctx.j))
+        if (auto const ret = xrpl::detail::preflightCheckSigningKey(*counterPartySig, ctx.j))
             return ret;
     }
 
-    if (auto const data = tx[~sfData]; data && !data->empty() &&
-        !validDataLength(tx[~sfData], maxDataPayloadLength))
+    if (auto const data = tx[~sfData]; data && !data->empty() && !validDataLength(tx[~sfData], maxDataPayloadLength))
         return temINVALID;
-    for (auto const& field :
-         {&sfLoanServiceFee, &sfLatePaymentFee, &sfClosePaymentFee})
+    for (auto const& field : {&sfLoanServiceFee, &sfLatePaymentFee, &sfClosePaymentFee})
     {
         if (!validNumericMinimum(tx[~*field]))
             return temINVALID;
@@ -78,12 +73,10 @@ LoanSet::preflight(PreflightContext const& ctx)
         return temINVALID;
     if (!validNumericRange(tx[~sfCloseInterestRate], maxCloseInterestRate))
         return temINVALID;
-    if (!validNumericRange(
-            tx[~sfOverpaymentInterestRate], maxOverpaymentInterestRate))
+    if (!validNumericRange(tx[~sfOverpaymentInterestRate], maxOverpaymentInterestRate))
         return temINVALID;
 
-    if (auto const paymentTotal = tx[~sfPaymentTotal];
-        paymentTotal && *paymentTotal <= 0)
+    if (auto const paymentTotal = tx[~sfPaymentTotal]; paymentTotal && *paymentTotal <= 0)
         return temINVALID;
 
     if (auto const paymentInterval = tx[~sfPaymentInterval];
@@ -92,21 +85,17 @@ LoanSet::preflight(PreflightContext const& ctx)
     // Grace period is between min default value and payment interval
     else if (auto const gracePeriod = tx[~sfGracePeriod];  //
              !validNumericRange(
-                 gracePeriod,
-                 paymentInterval.value_or(LoanSet::defaultPaymentInterval),
-                 defaultGracePeriod))
+                 gracePeriod, paymentInterval.value_or(LoanSet::defaultPaymentInterval), defaultGracePeriod))
         return temINVALID;
 
     // Copied from preflight2
     if (counterPartySig)
     {
-        if (auto const ret = xrpl::detail::preflightCheckSimulateKeys(
-                ctx.flags, *counterPartySig, ctx.j))
+        if (auto const ret = xrpl::detail::preflightCheckSimulateKeys(ctx.flags, *counterPartySig, ctx.j))
             return *ret;
     }
 
-    if (auto const brokerID = ctx.tx[~sfLoanBrokerID];
-        brokerID && *brokerID == beast::zero)
+    if (auto const brokerID = ctx.tx[~sfLoanBrokerID]; brokerID && *brokerID == beast::zero)
         return temINVALID;
 
     return tesSUCCESS;
@@ -125,8 +114,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
         if (auto const c = ctx.tx.at(~sfCounterparty))
             return c;
 
-        if (auto const broker =
-                ctx.view.read(keylet::loanbroker(ctx.tx[sfLoanBrokerID])))
+        if (auto const broker = ctx.view.read(keylet::loanbroker(ctx.tx[sfLoanBrokerID])))
             return broker->at(sfOwner);
         return std::nullopt;
     }();
@@ -137,13 +125,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfCounterpartySignature))
         return tesSUCCESS;
     auto const counterSig = ctx.tx.getFieldObject(sfCounterpartySignature);
-    return Transactor::checkSign(
-        ctx.view,
-        ctx.flags,
-        ctx.parentBatchId,
-        *counterSigner,
-        counterSig,
-        ctx.j);
+    return Transactor::checkSign(ctx.view, ctx.flags, ctx.parentBatchId, *counterSigner, counterSig, ctx.j);
 }
 
 XRPAmount
@@ -165,9 +147,8 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     std::size_t const signerCount = [&counterSig]() {
         // Compute defensively. Assure that "tx" cannot be accessed and cause
         // confusion or miscalculations.
-        return counterSig.isFieldPresent(sfSigners)
-            ? counterSig.getFieldArray(sfSigners).size()
-            : (counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0);
+        return counterSig.isFieldPresent(sfSigners) ? counterSig.getFieldArray(sfSigners).size()
+                                                    : (counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0);
     }();
 
     return normalCost + (signerCount * baseFee);
@@ -177,11 +158,7 @@ std::vector<OptionaledField<STNumber>> const&
 LoanSet::getValueFields()
 {
     static std::vector<OptionaledField<STNumber>> const valueFields{
-        ~sfPrincipalRequested,
-        ~sfLoanOriginationFee,
-        ~sfLoanServiceFee,
-        ~sfLatePaymentFee,
-        ~sfClosePaymentFee
+        ~sfPrincipalRequested, ~sfLoanOriginationFee, ~sfLoanServiceFee, ~sfLatePaymentFee, ~sfClosePaymentFee
         // Overpayment fee is really a rate. Don't check it here.
     };
 
@@ -212,12 +189,9 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 
         auto const timeAvailable = maxTime - getStartDate(ctx.view);
 
-        auto const interval =
-            ctx.tx.at(~sfPaymentInterval).value_or(defaultPaymentInterval);
-        auto const total =
-            ctx.tx.at(~sfPaymentTotal).value_or(defaultPaymentTotal);
-        auto const grace =
-            ctx.tx.at(~sfGracePeriod).value_or(defaultGracePeriod);
+        auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(defaultPaymentInterval);
+        auto const total = ctx.tx.at(~sfPaymentTotal).value_or(defaultPaymentTotal);
+        auto const grace = ctx.tx.at(~sfGracePeriod).value_or(defaultGracePeriod);
 
         // The grace period can't be larger than the interval. Check it first,
         // mostly so that unit tests can test that specific case.
@@ -229,8 +203,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 
         if (interval > timeAvailable)
         {
-            JLOG(ctx.j.warn())
-                << "Payment interval exceeds protocol time limit.";
+            JLOG(ctx.j.warn()) << "Payment interval exceeds protocol time limit.";
             return tecKILLED;
         }
 
@@ -272,8 +245,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const brokerPseudo = brokerSle->at(sfAccount);
 
     auto const borrower = counterparty == brokerOwner ? account : counterparty;
-    if (auto const borrowerSle = ctx.view.read(keylet::account(borrower));
-        !borrowerSle)
+    if (auto const borrowerSle = ctx.view.read(keylet::account(borrower)); !borrowerSle)
     {
         // It may not be possible to hit this case, because it'll fail the
         // signature check with terNO_ACCOUNT.
@@ -286,11 +258,9 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    if (vault->at(sfAssetsMaximum) != 0 &&
-        vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
+    if (vault->at(sfAssetsMaximum) != 0 && vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
-        JLOG(ctx.j.warn())
-            << "Vault at maximum assets limit. Can't add another loan.";
+        JLOG(ctx.j.warn()) << "Vault at maximum assets limit. Can't add another loan.";
         return tecLIMIT_EXCEEDED;
     }
 
@@ -304,11 +274,9 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     // integral (non-IOU) types
     for (auto const& field : getValueFields())
     {
-        if (auto const value = tx[field];
-            value && STAmount{asset, *value} != *value)
+        if (auto const value = tx[field]; value && STAmount{asset, *value} != *value)
         {
-            JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
-                               << ") can not be represented as a(n) "
+            JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value << ") can not be represented as a(n) "
                                << to_string(asset) << ".";
             return tecPRECISION_LOSS;
         }
@@ -396,15 +364,13 @@ LoanSet::doApply()
     auto const vaultScale = getAssetsTotalScale(vaultSle);
     if (vaultAvailableProxy < principalRequested)
     {
-        JLOG(j_.warn())
-            << "Insufficient assets available in the Vault to fund the loan.";
+        JLOG(j_.warn()) << "Insufficient assets available in the Vault to fund the loan.";
         return tecINSUFFICIENT_FUNDS;
     }
 
     TenthBips32 const interestRate{tx[~sfInterestRate].value_or(0)};
 
-    auto const paymentInterval =
-        tx[~sfPaymentInterval].value_or(defaultPaymentInterval);
+    auto const paymentInterval = tx[~sfPaymentInterval].value_or(defaultPaymentInterval);
     auto const paymentTotal = tx[~sfPaymentTotal].value_or(defaultPaymentTotal);
 
     auto const properties = computeLoanProperties(
@@ -417,15 +383,11 @@ LoanSet::doApply()
         vaultScale);
 
     LoanState const state = constructLoanState(
-        properties.loanState.valueOutstanding,
-        principalRequested,
-        properties.loanState.managementFeeDue);
+        properties.loanState.valueOutstanding, principalRequested, properties.loanState.managementFeeDue);
 
     auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
     XRPL_ASSERT_PARTS(
-        vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
-        "xrpl::LoanSet::doApply",
-        "Vault is below maximum limit");
+        vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy, "xrpl::LoanSet::doApply", "Vault is below maximum limit");
     if (vaultMaximum != 0 && state.interestDue > vaultMaximum - vaultTotalProxy)
     {
         JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
@@ -435,37 +397,27 @@ LoanSet::doApply()
     // relevant for IOU assets.
     for (auto const& field : getValueFields())
     {
-        if (auto const value = tx[field];
-            value && !isRounded(vaultAsset, *value, properties.loanScale))
+        if (auto const value = tx[field]; value && !isRounded(vaultAsset, *value, properties.loanScale))
         {
-            JLOG(j_.warn()) << field.f->getName() << " (" << *value
-                            << ") has too much precision. Total loan value is "
-                            << properties.loanState.valueOutstanding
-                            << " with a scale of " << properties.loanScale;
+            JLOG(j_.warn()) << field.f->getName() << " (" << *value << ") has too much precision. Total loan value is "
+                            << properties.loanState.valueOutstanding << " with a scale of " << properties.loanScale;
             return tecPRECISION_LOSS;
         }
     }
 
-    if (auto const ret = checkLoanGuards(
-            vaultAsset,
-            principalRequested,
-            interestRate != beast::zero,
-            paymentTotal,
-            properties,
-            j_))
+    if (auto const ret =
+            checkLoanGuards(vaultAsset, principalRequested, interestRate != beast::zero, paymentTotal, properties, j_))
         return ret;
 
     // Check that the other computed values are valid
-    if (properties.loanState.managementFeeDue < 0 ||
-        properties.loanState.valueOutstanding <= 0 ||
+    if (properties.loanState.managementFeeDue < 0 || properties.loanState.valueOutstanding <= 0 ||
         properties.periodicPayment <= 0)
     {
         // LCOV_EXCL_START
-        JLOG(j_.warn())
-            << "Computed loan properties are invalid. Does not compute."
-            << " Management fee: " << properties.loanState.managementFeeDue
-            << ". Total Value: " << properties.loanState.valueOutstanding
-            << ". PeriodicPayment: " << properties.periodicPayment;
+        JLOG(j_.warn()) << "Computed loan properties are invalid. Does not compute."
+                        << " Management fee: " << properties.loanState.managementFeeDue
+                        << ". Total Value: " << properties.loanState.valueOutstanding
+                        << ". PeriodicPayment: " << properties.periodicPayment;
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -476,11 +428,9 @@ LoanSet::doApply()
 
     auto const newDebtDelta = principalRequested + state.interestDue;
     auto const newDebtTotal = brokerSle->at(sfDebtTotal) + newDebtDelta;
-    if (auto const debtMaximum = brokerSle->at(sfDebtMaximum);
-        debtMaximum != 0 && debtMaximum < newDebtTotal)
+    if (auto const debtMaximum = brokerSle->at(sfDebtMaximum); debtMaximum != 0 && debtMaximum < newDebtTotal)
     {
-        JLOG(j_.warn())
-            << "Loan would exceed the maximum debt limit of the LoanBroker.";
+        JLOG(j_.warn()) << "Loan would exceed the maximum debt limit of the LoanBroker.";
         return tecLIMIT_EXCEEDED;
     }
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
@@ -489,11 +439,9 @@ LoanSet::doApply()
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
         NumberRoundModeGuard mg(Number::upward);
-        if (brokerSle->at(sfCoverAvailable) <
-            tenthBipsOfValue(newDebtTotal, coverRateMinimum))
+        if (brokerSle->at(sfCoverAvailable) < tenthBipsOfValue(newDebtTotal, coverRateMinimum))
         {
-            JLOG(j_.warn())
-                << "Insufficient first-loss capital to cover the loan.";
+            JLOG(j_.warn()) << "Insufficient first-loss capital to cover the loan.";
             return tecINSUFFICIENT_FUNDS;
         }
     }
@@ -501,9 +449,7 @@ LoanSet::doApply()
     adjustOwnerCount(view, borrowerSle, 1, j_);
     {
         auto const ownerCount = borrowerSle->at(sfOwnerCount);
-        auto const balance = account_ == borrower
-            ? mPriorBalance
-            : borrowerSle->at(sfBalance).value().xrp();
+        auto const balance = account_ == borrower ? mPriorBalance : borrowerSle->at(sfBalance).value().xrp();
         if (balance < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;
     }
@@ -515,22 +461,14 @@ LoanSet::doApply()
     // Create a holding for the borrower if one does not already exist.
 
     XRPL_ASSERT_PARTS(
-        borrower == account_ || borrower == counterparty,
-        "xrpl::LoanSet::doApply",
-        "borrower signed transaction");
-    if (auto const ter = addEmptyHolding(
-            view,
-            borrower,
-            borrowerSle->at(sfBalance).value().xrp(),
-            vaultAsset,
-            j_);
+        borrower == account_ || borrower == counterparty, "xrpl::LoanSet::doApply", "borrower signed transaction");
+    if (auto const ter = addEmptyHolding(view, borrower, borrowerSle->at(sfBalance).value().xrp(), vaultAsset, j_);
         ter && ter != tecDUPLICATE)
         // ignore tecDUPLICATE. That means the holding already exists, and
         // is fine here
         return ter;
 
-    if (auto const ter =
-            requireAuth(view, vaultAsset, borrower, AuthType::StrongAuth))
+    if (auto const ter = requireAuth(view, vaultAsset, borrower, AuthType::StrongAuth))
         return ter;
 
     // 2. Transfer originationFee, if any, from vault pseudo-account to
@@ -544,20 +482,15 @@ LoanSet::doApply()
             "xrpl::LoanSet::doApply",
             "broker owner signed transaction");
 
-        if (auto const ter = addEmptyHolding(
-                view,
-                brokerOwner,
-                brokerOwnerSle->at(sfBalance).value().xrp(),
-                vaultAsset,
-                j_);
+        if (auto const ter =
+                addEmptyHolding(view, brokerOwner, brokerOwnerSle->at(sfBalance).value().xrp(), vaultAsset, j_);
             ter && ter != tecDUPLICATE)
             // ignore tecDUPLICATE. That means the holding already exists,
             // and is fine here
             return ter;
     }
 
-    if (auto const ter =
-            requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
+    if (auto const ter = requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
         return ter;
 
     if (auto const ter = accountSendMulti(
@@ -574,16 +507,14 @@ LoanSet::doApply()
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
 
     // Create the loan
-    auto loan =
-        std::make_shared<SLE>(keylet::loan(brokerID, *loanSequenceProxy));
+    auto loan = std::make_shared<SLE>(keylet::loan(brokerID, *loanSequenceProxy));
 
     // Prevent copy/paste errors
-    auto setLoanField =
-        [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
-            // at() is smart enough to unseat a default field set to the default
-            // value
-            loan->at(field) = tx[field].value_or(defValue);
-        };
+    auto setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
+        // at() is smart enough to unseat a default field set to the default
+        // value
+        loan->at(field) = tx[field].value_or(defValue);
+    };
 
     // Set required and fixed tx fields
     loan->at(sfLoanScale) = properties.loanScale;
@@ -609,8 +540,7 @@ LoanSet::doApply()
     loan->at(sfPrincipalOutstanding) = principalRequested;
     loan->at(sfPeriodicPayment) = properties.periodicPayment;
     loan->at(sfTotalValueOutstanding) = properties.loanState.valueOutstanding;
-    loan->at(sfManagementFeeOutstanding) =
-        properties.loanState.managementFeeDue;
+    loan->at(sfManagementFeeOutstanding) = properties.loanState.managementFeeDue;
     loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
@@ -626,8 +556,7 @@ LoanSet::doApply()
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    adjustImpreciseNumber(
-        brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
+    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
     // The broker's owner count is solely for the number of outstanding loans,
     // and is distinct from the broker's pseudo-account's owner count
     adjustOwnerCount(view, brokerSle, 1, j_);

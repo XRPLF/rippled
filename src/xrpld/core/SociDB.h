@@ -75,10 +75,7 @@ open(soci::session& s, BasicConfig const& config, std::string const& dbName);
  *
  */
 void
-open(
-    soci::session& s,
-    std::string const& beName,
-    std::string const& connectionString);
+open(soci::session& s, std::string const& beName, std::string const& connectionString);
 
 std::uint32_t
 getKBUsedAll(soci::session& s);
@@ -115,11 +112,7 @@ public:
     and so must outlive them both.
  */
 std::shared_ptr<Checkpointer>
-makeCheckpointer(
-    std::uintptr_t id,
-    std::weak_ptr<soci::session>,
-    JobQueue&,
-    Logs&);
+makeCheckpointer(std::uintptr_t id, std::weak_ptr<soci::session>, JobQueue&, Logs&);
 
 }  // namespace xrpl
 

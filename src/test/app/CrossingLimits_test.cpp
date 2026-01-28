@@ -283,8 +283,7 @@ public:
             // best quality
             n_offers(env, 2000, alice, EUR(2), XRP(1));
             n_offers(env, 100, alice, XRP(1), USD(4));
-            n_offers(
-                env, 801, carol, XRP(1), USD(3));  // only one offer is funded
+            n_offers(env, 801, carol, XRP(1), USD(3));  // only one offer is funded
             n_offers(env, 1000, alice, XRP(1), USD(3));
 
             n_offers(env, 1, alice, EUR(500), USD(500));
@@ -341,8 +340,7 @@ public:
 
             env.require(balance(alice, USD(2503)));
             env.require(balance(alice, EUR(1100)));
-            auto const numAOffers =
-                2000 + 100 + 1000 + 1 - (2 * 100 + 2 * 199 + 1 + 1);
+            auto const numAOffers = 2000 + 100 + 1000 + 1 - (2 * 100 + 2 * 199 + 1 + 1);
             env.require(offers(alice, numAOffers));
             env.require(owners(alice, numAOffers + 2));
 
@@ -363,8 +361,7 @@ public:
             n_offers(env, 1, alice, EUR(1), USD(10));
             n_offers(env, 2000, alice, EUR(2), XRP(1));
             n_offers(env, 100, alice, XRP(1), USD(4));
-            n_offers(
-                env, 801, carol, XRP(1), USD(3));  // only one offer is funded
+            n_offers(env, 801, carol, XRP(1), USD(3));  // only one offer is funded
             n_offers(env, 1000, alice, XRP(1), USD(3));
 
             n_offers(env, 1, alice, EUR(499), USD(499));
@@ -414,8 +411,7 @@ public:
 
             env.require(balance(alice, USD(2494)));
             env.require(balance(alice, EUR(1100)));
-            auto const numAOffers =
-                1 + 2000 + 100 + 1000 + 1 - (1 + 2 * 100 + 2 * 199 + 1 + 1);
+            auto const numAOffers = 1 + 2000 + 100 + 1000 + 1 - (1 + 2 * 100 + 2 * 199 + 1 + 1);
             env.require(offers(alice, numAOffers));
             env.require(owners(alice, numAOffers + 2));
 

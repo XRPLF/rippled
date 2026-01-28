@@ -23,15 +23,9 @@ associateAsset(SLE& sle, Asset const& asset)
             // SField
             auto& ta = entry.downcast<STTakesAsset>();
             auto const style = sle.getStyle(ta.getFName());
-            XRPL_ASSERT_PARTS(
-                style != soeINVALID,
-                "xrpl::associateAsset",
-                "valid template element style");
+            XRPL_ASSERT_PARTS(style != soeINVALID, "xrpl::associateAsset", "valid template element style");
 
-            XRPL_ASSERT_PARTS(
-                style != soeDEFAULT || !ta.isDefault(),
-                "xrpl::associateAsset",
-                "non-default value");
+            XRPL_ASSERT_PARTS(style != soeDEFAULT || !ta.isDefault(), "xrpl::associateAsset", "non-default value");
             ta.associateAsset(asset);
 
             // associateAsset in derived classes may change the underlying

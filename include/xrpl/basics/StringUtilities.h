@@ -109,8 +109,7 @@ struct parsedURL
     bool
     operator==(parsedURL const& other) const
     {
-        return scheme == other.scheme && domain == other.domain &&
-            port == other.port && path == other.path;
+        return scheme == other.scheme && domain == other.domain && port == other.port && path == other.path;
     }
 };
 

@@ -8,8 +8,7 @@ namespace xrpl {
 namespace detail {
 
 // Work over TCP/IP
-class WorkPlain : public WorkBase<WorkPlain>,
-                  public std::enable_shared_from_this<WorkPlain>
+class WorkPlain : public WorkBase<WorkPlain>, public std::enable_shared_from_this<WorkPlain>
 {
     friend class WorkBase<WorkPlain>;
 

@@ -35,9 +35,7 @@ template <std::size_t N>
 void
 setCurrentThreadName(char const (&newThreadName)[N])
 {
-    static_assert(
-        N <= maxThreadNameLength + 1,
-        "Thread name cannot exceed 15 characters");
+    static_assert(N <= maxThreadNameLength + 1, "Thread name cannot exceed 15 characters");
 
     setCurrentThreadName(std::string_view(newThreadName, N - 1));
 }

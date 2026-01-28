@@ -109,10 +109,7 @@ lookupLedger(std::shared_ptr<ReadView const>&, JsonContext const&);
  * @return Status indicating success or failure of the operation.
  */
 Status
-lookupLedger(
-    std::shared_ptr<ReadView const>&,
-    JsonContext const&,
-    Json::Value& result);
+lookupLedger(std::shared_ptr<ReadView const>&, JsonContext const&, Json::Value& result);
 
 /**
  * @brief Retrieves a ledger from a gRPC request context.
@@ -146,10 +143,7 @@ ledgerFromRequest(T& ledger, GRPCContext<R> const& context);
  */
 template <class T>
 Status
-ledgerFromSpecifier(
-    T& ledger,
-    org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
-    Context const& context);
+ledgerFromSpecifier(T& ledger, org::xrpl::rpc::v1::LedgerSpecifier const& specifier, Context const& context);
 
 /**
  * @brief Retrieves or acquires a ledger based on the parameters provided in the

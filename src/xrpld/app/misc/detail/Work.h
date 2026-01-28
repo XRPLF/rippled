@@ -8,8 +8,7 @@ namespace xrpl {
 
 namespace detail {
 
-using response_type =
-    boost::beast::http::response<boost::beast::http::string_body>;
+using response_type = boost::beast::http::response<boost::beast::http::string_body>;
 
 class Work
 {

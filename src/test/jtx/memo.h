@@ -20,10 +20,7 @@ private:
     std::string type_;
 
 public:
-    memo(
-        std::string const& data,
-        std::string const& format,
-        std::string const& type)
+    memo(std::string const& data, std::string const& format, std::string const& type)
         : data_(data), format_(format), type_(type)
     {
     }
