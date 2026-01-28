@@ -2177,36 +2177,35 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // we set the auditor key, but convertBack omits auditorEncryptedAmt
         {
-            Env env2{*this, features};
+            Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
             Account const auditor("auditor");
-            MPTTester mpt2(env2, alice, {.holders = {bob}, .auditor = auditor});
+            MPTTester mpt(env, alice, {.holders = {bob}, .auditor = auditor});
 
-            mpt2.create(
+            mpt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
-            mpt2.authorize({.account = bob});
-            mpt2.pay(alice, bob, 100);
+            mpt.authorize({.account = bob});
+            mpt.pay(alice, bob, 100);
 
-            mpt2.generateKeyPair(alice);
-            mpt2.generateKeyPair(bob);
-            mpt2.generateKeyPair(auditor);
-
-            mpt2.set(
+            mpt.generateKeyPair(alice);
+            mpt.generateKeyPair(bob);
+            mpt.generateKeyPair(auditor);
+            mpt.set(
                 {.account = alice,
-                 .issuerPubKey = mpt2.getPubKey(alice),
-                 .auditorPubKey = mpt2.getPubKey(auditor)});
+                 .issuerPubKey = mpt.getPubKey(alice),
+                 .auditorPubKey = mpt.getPubKey(auditor)});
 
             // Convert funds so Bob has a balance
-            mpt2.convert({
+            mpt.convert({
                 .account = bob,
                 .amt = 50,
-                .holderPubKey = mpt2.getPubKey(bob),
+                .holderPubKey = mpt.getPubKey(bob),
             });
-            mpt2.mergeInbox({.account = bob});
+            mpt.mergeInbox({.account = bob});
 
             // ConvertBack WITHOUT auditorEncryptedAmt
-            mpt2.convertBack({
+            mpt.convertBack({
                 .account = bob,
                 .amt = 10,
                 // we omit .auditorEncryptedAmt.
