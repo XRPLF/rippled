@@ -13,6 +13,7 @@ include_guard(GLOBAL)
 set(is_clang FALSE)
 set(is_gcc FALSE)
 set(is_msvc FALSE)
+set(is_xcode FALSE)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang") # Clang or AppleClang
   set(is_clang TRUE)
@@ -22,6 +23,11 @@ elseif(MSVC)
   set(is_msvc TRUE)
 else()
   message(FATAL_ERROR "Unsupported C++ compiler: ${CMAKE_CXX_COMPILER_ID}")
+endif()
+
+# Xcode generator detection
+if(CMAKE_GENERATOR STREQUAL "Xcode")
+  set(is_xcode TRUE)
 endif()
 
 

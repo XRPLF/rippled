@@ -4,6 +4,12 @@
 
 include(create_symbolic_link)
 
+# If no suffix is defined for executables (e.g. Windows uses .exe but Linux
+# and macOS use none), then explicitly set it to the empty string.
+if(NOT DEFINED suffix)
+  set(suffix "")
+endif()
+
 install (
   TARGETS
     common
