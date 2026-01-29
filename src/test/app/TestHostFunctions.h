@@ -299,6 +299,15 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
+    checkKeylet(AccountID const& account, std::uint32_t seq) override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::check(account, seq);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
     credentialKeylet(AccountID const& subject, AccountID const& issuer, Slice const& credentialType) override
     {
         if (!subject || !issuer || credentialType.empty() || credentialType.size() > maxCredentialTypeLength)
