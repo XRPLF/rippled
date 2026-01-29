@@ -29,26 +29,20 @@ public:
     Status() = default;
 
     // The enable_if allows only integers (not enums).  Prevents enum narrowing.
-    template <
-        typename T,
-        typename = std::enable_if_t<std::is_integral<T>::value>>
-    Status(T code, Strings d = {})
-        : type_(Type::none), code_(code), messages_(std::move(d))
+    template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
+    Status(T code, Strings d = {}) : type_(Type::none), code_(code), messages_(std::move(d))
     {
     }
 
-    Status(TER ter, Strings d = {})
-        : type_(Type::TER), code_(TERtoInt(ter)), messages_(std::move(d))
+    Status(TER ter, Strings d = {}) : type_(Type::TER), code_(TERtoInt(ter)), messages_(std::move(d))
     {
     }
 
-    Status(error_code_i e, Strings d = {})
-        : type_(Type::error_code_i), code_(e), messages_(std::move(d))
+    Status(error_code_i e, Strings d = {}) : type_(Type::error_code_i), code_(e), messages_(std::move(d))
     {
     }
 
-    Status(error_code_i e, std::string const& s)
-        : type_(Type::error_code_i), code_(e), messages_({s})
+    Status(error_code_i e, std::string const& s) : type_(Type::error_code_i), code_(e), messages_({s})
     {
     }
 
@@ -76,8 +70,7 @@ public:
     TER
     toTER() const
     {
-        XRPL_ASSERT(
-            type_ == Type::TER, "xrpl::RPC::Status::toTER : type is TER");
+        XRPL_ASSERT(type_ == Type::TER, "xrpl::RPC::Status::toTER : type is TER");
         return TER::fromInt(code_);
     }
 
@@ -86,9 +79,7 @@ public:
     error_code_i
     toErrorCode() const
     {
-        XRPL_ASSERT(
-            type_ == Type::error_code_i,
-            "xrpl::RPC::Status::toTER : type is error code");
+        XRPL_ASSERT(type_ == Type::error_code_i, "xrpl::RPC::Status::toTER : type is error code");
         return error_code_i(code_);
     }
 

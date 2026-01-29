@@ -316,10 +316,7 @@ public:
     operator<<(std::ostream& o, Compact const& cJv)
     {
         detail::write_value(
-            [&o](void const* data, std::size_t n) {
-                o.write(static_cast<char const*>(data), n);
-            },
-            cJv.jv_);
+            [&o](void const* data, std::size_t n) { o.write(static_cast<char const*>(data), n); }, cJv.jv_);
         return o;
     }
 };

@@ -32,8 +32,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 SetRegularKey::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfRegularKey) &&
-        (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
+    if (ctx.tx.isFieldPresent(sfRegularKey) && (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
     {
         return temBAD_REGKEY;
     }
@@ -58,8 +57,7 @@ SetRegularKey::doApply()
     else
     {
         // Account has disabled master key and no multi-signer signer list.
-        if (sle->isFlag(lsfDisableMaster) &&
-            !view().peek(keylet::signers(account_)))
+        if (sle->isFlag(lsfDisableMaster) && !view().peek(keylet::signers(account_)))
             return tecNO_ALTERNATIVE_KEY;
 
         sle->makeFieldAbsent(sfRegularKey);

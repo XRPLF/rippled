@@ -84,14 +84,7 @@ public:
             Json::Value bigSigners = signers(
                 alice,
                 1,
-                {{bogie, 1},
-                 {demon, 1},
-                 {ghost, 1},
-                 {haunt, 1},
-                 {jinni, 1},
-                 {phase, 1},
-                 {shade, 1},
-                 {spook, 1}});
+                {{bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1}, {shade, 1}, {spook, 1}});
             env(bigSigners, ter(tecINSUFFICIENT_RESERVE));
             env.close();
             env.require(owners(alice, 1));
@@ -136,14 +129,7 @@ public:
         env(signers(
                 alice,
                 1,
-                {{bogie, 1},
-                 {demon, 1},
-                 {ghost, 1},
-                 {haunt, 1},
-                 {jinni, 1},
-                 {phase, 1},
-                 {demon, 1},
-                 {spook, 1}}),
+                {{bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1}, {demon, 1}, {spook, 1}}),
             ter(temBAD_SIGNER));
 
         // Set a quorum of zero.  Should fail.
@@ -153,14 +139,7 @@ public:
         env(signers(
                 alice,
                 9,
-                {{bogie, 1},
-                 {demon, 1},
-                 {ghost, 1},
-                 {haunt, 1},
-                 {jinni, 1},
-                 {phase, 1},
-                 {shade, 1},
-                 {spook, 1}}),
+                {{bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1}, {shade, 1}, {spook, 1}}),
             ter(temBAD_QUORUM));
 
         // clang-format off
@@ -225,17 +204,13 @@ public:
         env(noop(alice),
             msig(demon, demon),
             fee(3 * baseFee),
-            rpc("invalidTransaction",
-                "fails local checks: Duplicate Signers not allowed."));
+            rpc("invalidTransaction", "fails local checks: Duplicate Signers not allowed."));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // A non-signer should fail.
         aliceSeq = env.seq(alice);
-        env(noop(alice),
-            msig(bogie, spook),
-            fee(3 * baseFee),
-            ter(tefBAD_SIGNATURE));
+        env(noop(alice), msig(bogie, spook), fee(3 * baseFee), ter(tefBAD_SIGNATURE));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
@@ -268,14 +243,7 @@ public:
         env(signers(
             alice,
             1,
-            {{bogie, 1},
-             {demon, 1},
-             {ghost, 1},
-             {haunt, 1},
-             {jinni, 1},
-             {phase, 1},
-             {shade, 1},
-             {spook, 1}}));
+            {{bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1}, {shade, 1}, {spook, 1}}));
         env.close();
         env.require(owners(alice, 1));
 
@@ -289,19 +257,14 @@ public:
 
         // This should fail because the fee is too small.
         aliceSeq = env.seq(alice);
-        env(noop(alice),
-            msig(bogie),
-            fee((2 * baseFee) - 1),
-            ter(telINSUF_FEE_P));
+        env(noop(alice), msig(bogie), fee((2 * baseFee) - 1), ter(telINSUF_FEE_P));
         env.close();
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // This should work.
         aliceSeq = env.seq(alice);
-        env(noop(alice),
-            msig(bogie, demon, ghost, haunt, jinni, phase, shade, spook),
-            fee(9 * baseFee));
+        env(noop(alice), msig(bogie, demon, ghost, haunt, jinni, phase, shade, spook), fee(9 * baseFee));
         env.close();
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
@@ -337,10 +300,7 @@ public:
         msig phantoms{bogie, demon};
         std::reverse(phantoms.signers.begin(), phantoms.signers.end());
         std::uint32_t const aliceSeq = env.seq(alice);
-        env(noop(alice),
-            phantoms,
-            rpc("invalidTransaction",
-                "fails local checks: Unsorted Signers array."));
+        env(noop(alice), phantoms, rpc("invalidTransaction", "fails local checks: Unsorted Signers array."));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
     }
@@ -438,10 +398,7 @@ public:
 
         // cheri should not be able to multisign using her master key.
         aliceSeq = env.seq(alice);
-        env(noop(alice),
-            msig(cheri),
-            fee(2 * baseFee),
-            ter(tefMASTER_DISABLED));
+        env(noop(alice), msig(cheri), fee(2 * baseFee), ter(tefMASTER_DISABLED));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
@@ -458,9 +415,7 @@ public:
 
         // Both becky and cheri should be able to sign using regular keys.
         aliceSeq = env.seq(alice);
-        env(noop(alice),
-            fee(3 * baseFee),
-            msig(Reg{becky, beck}, Reg{cheri, cher}));
+        env(noop(alice), fee(3 * baseFee), msig(Reg{becky, beck}, Reg{cheri, cher}));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
     }
@@ -527,8 +482,7 @@ public:
             aliceSeq = env.seq(alice);
             Json::Value jv_one = setup_tx();
             cheri_sign(jv_one);
-            auto jrr =
-                env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
             // for the second sign_for, use the returned tx_json with
@@ -541,10 +495,7 @@ public:
 
             Json::Value jv_submit;
             jv_submit[jss::tx_json] = jrr[jss::tx_json];
-            jrr = env.rpc(
-                "json",
-                "submit_multisigned",
-                to_string(jv_submit))[jss::result];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
@@ -554,16 +505,12 @@ public:
             // failure case -- SigningPubKey not empty
             aliceSeq = env.seq(alice);
             Json::Value jv_one = setup_tx();
-            jv_one[jss::tx_json][jss::SigningPubKey] =
-                strHex(alice.pk().slice());
+            jv_one[jss::tx_json][jss::SigningPubKey] = strHex(alice.pk().slice());
             cheri_sign(jv_one);
-            auto jrr =
-                env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(
-                jrr[jss::error_message] ==
-                "When multi-signing 'tx_json.SigningPubKey' must be empty.");
+            BEAST_EXPECT(jrr[jss::error_message] == "When multi-signing 'tx_json.SigningPubKey' must be empty.");
         }
 
         {
@@ -572,8 +519,7 @@ public:
             Json::Value jv_one = setup_tx();
             jv_one[jss::tx_json][jss::Fee] = -1;
             cheri_sign(jv_one);
-            auto jrr =
-                env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
             // for the second sign_for, use the returned tx_json with
@@ -586,26 +532,19 @@ public:
 
             Json::Value jv_submit;
             jv_submit[jss::tx_json] = jrr[jss::tx_json];
-            jrr = env.rpc(
-                "json",
-                "submit_multisigned",
-                to_string(jv_submit))[jss::result];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(
-                jrr[jss::error_message] ==
-                "Invalid Fee field.  Fees must be greater than zero.");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid Fee field.  Fees must be greater than zero.");
         }
 
         {
             // failure case - bad fee v2
             aliceSeq = env.seq(alice);
             Json::Value jv_one = setup_tx();
-            jv_one[jss::tx_json][jss::Fee] =
-                alice["USD"](10).value().getFullText();
+            jv_one[jss::tx_json][jss::Fee] = alice["USD"](10).value().getFullText();
             cheri_sign(jv_one);
-            auto jrr =
-                env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
             // for the second sign_for, use the returned tx_json with
@@ -618,10 +557,7 @@ public:
 
             Json::Value jv_submit;
             jv_submit[jss::tx_json] = jrr[jss::tx_json];
-            jrr = env.rpc(
-                "json",
-                "submit_multisigned",
-                to_string(jv_submit))[jss::result];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "internal");
             BEAST_EXPECT(jrr[jss::error_message] == "Internal error.");
@@ -646,8 +582,7 @@ public:
             aliceSeq = env.seq(alice);
             Json::Value jv_one = setup_tx();
             cheri_sign(jv_one);
-            auto jrr =
-                env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
             // for the second sign_for, use the returned tx_json with
@@ -662,10 +597,7 @@ public:
 
             Json::Value jv_submit;
             jv_submit[jss::tx_json] = jrr[jss::tx_json];
-            jrr = env.rpc(
-                "json",
-                "submit_multisigned",
-                to_string(jv_submit))[jss::result];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
@@ -690,16 +622,12 @@ public:
         {
             aliceSeq = env.seq(alice);
             Json::Value jv = setup_tx();
-            jv[jss::tx_json][sfSigners.fieldName] =
-                Json::Value{Json::arrayValue};
+            jv[jss::tx_json][sfSigners.fieldName] = Json::Value{Json::arrayValue};
             becky_sign(jv);
-            auto jrr = env.rpc(
-                "json", "submit_multisigned", to_string(jv))[jss::result];
+            auto jrr = env.rpc("json", "submit_multisigned", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(
-                jrr[jss::error_message] ==
-                "tx_json.Signers array may not be empty.");
+            BEAST_EXPECT(jrr[jss::error_message] == "tx_json.Signers array may not be empty.");
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
         }
@@ -737,8 +665,7 @@ public:
         env.close();
 
         // Attach signers to alice.
-        env(signers(alice, 1, {{becky, 1}, {cheri, 1}, {daria, 1}, {jinni, 1}}),
-            sig(alie));
+        env(signers(alice, 1, {{becky, 1}, {cheri, 1}, {daria, 1}, {jinni, 1}}), sig(alie));
         env.close();
         env.require(owners(alice, 1));
 
@@ -771,36 +698,23 @@ public:
 
         //  Should also work if all signers sign.
         aliceSeq = env.seq(alice);
-        env(noop(alice),
-            fee(5 * baseFee),
-            msig(becky, Reg{cheri, cher}, Reg{daria, dari}, jinni));
+        env(noop(alice), fee(5 * baseFee), msig(becky, Reg{cheri, cher}, Reg{daria, dari}, jinni));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Require all signers to sign.
-        env(signers(
-                alice,
-                0x3FFFC,
-                {{becky, 0xFFFF},
-                 {cheri, 0xFFFF},
-                 {daria, 0xFFFF},
-                 {jinni, 0xFFFF}}),
-            sig(alie));
+        env(signers(alice, 0x3FFFC, {{becky, 0xFFFF}, {cheri, 0xFFFF}, {daria, 0xFFFF}, {jinni, 0xFFFF}}), sig(alie));
         env.close();
         env.require(owners(alice, 1));
 
         aliceSeq = env.seq(alice);
-        env(noop(alice),
-            fee(9 * baseFee),
-            msig(becky, Reg{cheri, cher}, Reg{daria, dari}, jinni));
+        env(noop(alice), fee(9 * baseFee), msig(becky, Reg{cheri, cher}, Reg{daria, dari}, jinni));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Try cheri with both key types.
         aliceSeq = env.seq(alice);
-        env(noop(alice),
-            fee(5 * baseFee),
-            msig(becky, cheri, Reg{daria, dari}, jinni));
+        env(noop(alice), fee(5 * baseFee), msig(becky, cheri, Reg{daria, dari}, jinni));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -823,24 +737,13 @@ public:
         aliceSeq = env.seq(alice);
         env(noop(alice),
             fee(9 * baseFee),
-            msig(
-                becky,
-                Reg{cheri, cher},
-                Reg{daria, dari},
-                haunt,
-                jinni,
-                phase,
-                shade,
-                spook));
+            msig(becky, Reg{cheri, cher}, Reg{daria, dari}, haunt, jinni, phase, shade, spook));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // One signer short should fail.
         aliceSeq = env.seq(alice);
-        env(noop(alice),
-            msig(becky, cheri, haunt, jinni, phase, shade, spook),
-            fee(8 * baseFee),
-            ter(tefBAD_QUORUM));
+        env(noop(alice), msig(becky, cheri, haunt, jinni, phase, shade, spook), fee(8 * baseFee), ter(tefBAD_QUORUM));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
@@ -880,9 +783,7 @@ public:
 
         // Master key tests.
         // M0: A lone master key cannot be disabled.
-        env(fset(alice, asfDisableMaster),
-            sig(alice),
-            ter(tecNO_ALTERNATIVE_KEY));
+        env(fset(alice, asfDisableMaster), sig(alice), ter(tecNO_ALTERNATIVE_KEY));
 
         // Add a regular key.
         Account const alie{"alie", KeyType::ed25519};
@@ -902,10 +803,7 @@ public:
 
         // L0: A lone signer list cannot be removed.
         auto const baseFee = env.current()->fees().base;
-        env(signers(alice, jtx::none),
-            msig(bogie),
-            fee(2 * baseFee),
-            ter(tecNO_ALTERNATIVE_KEY));
+        env(signers(alice, jtx::none), msig(bogie), fee(2 * baseFee), ter(tecNO_ALTERNATIVE_KEY));
 
         // Enable the master key.
         env(fclear(alice, asfDisableMaster), msig(bogie), fee(2 * baseFee));
@@ -999,9 +897,7 @@ public:
         // Multisign a ttPAYMENT.
         auto const baseFee = env.current()->fees().base;
         std::uint32_t aliceSeq = env.seq(alice);
-        env(pay(alice, env.master, XRP(1)),
-            msig(becky, bogie),
-            fee(3 * baseFee));
+        env(pay(alice, env.master, XRP(1)), msig(becky, bogie), fee(3 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -1019,10 +915,7 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Multisign a ttTRUST_SET
-        env(trust("alice", USD(100)),
-            msig(becky, bogie),
-            fee(3 * baseFee),
-            require(lines("alice", 1)));
+        env(trust("alice", USD(100)), msig(becky, bogie), fee(3 * baseFee), require(lines("alice", 1)));
         env.close();
         env.require(owners(alice, 2));
 
@@ -1033,28 +926,21 @@ public:
         env.require(balance(gw, alice["USD"](-50)));
 
         std::uint32_t const offerSeq = env.seq(alice);
-        env(offer(alice, XRP(50), USD(50)),
-            msig(becky, bogie),
-            fee(3 * baseFee));
+        env(offer(alice, XRP(50), USD(50)), msig(becky, bogie), fee(3 * baseFee));
         env.close();
         env.require(owners(alice, 3));
 
         // Now multisign a ttOFFER_CANCEL canceling the offer we just created.
         {
             aliceSeq = env.seq(alice);
-            env(offer_cancel(alice, offerSeq),
-                seq(aliceSeq),
-                msig(becky, bogie),
-                fee(3 * baseFee));
+            env(offer_cancel(alice, offerSeq), seq(aliceSeq), msig(becky, bogie), fee(3 * baseFee));
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
             env.require(owners(alice, 2));
         }
 
         // Multisign a ttSIGNER_LIST_SET.
-        env(signers(alice, 3, {{becky, 1}, {bogie, 1}, {demon, 1}}),
-            msig(becky, bogie),
-            fee(3 * baseFee));
+        env(signers(alice, 3, {{becky, 1}, {bogie, 1}, {demon, 1}}), msig(becky, bogie), fee(3 * baseFee));
         env.close();
         env.require(owners(alice, 2));
     }
@@ -1088,9 +974,7 @@ public:
             STTx local = *(tx.stx);
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(
-                info[jss::result][jss::error_exception] ==
-                "fails local checks: Empty SigningPubKey.");
+            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Empty SigningPubKey.");
         }
         {
             // Single-sign, but invalidate the signature.
@@ -1102,9 +986,7 @@ public:
             local.setFieldVL(sfTxnSignature, badSig);
             // Signature should fail.
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(
-                info[jss::result][jss::error_exception] ==
-                "fails local checks: Invalid signature.");
+            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Invalid signature.");
         }
         {
             // Single-sign, but invalidate the sequence number.
@@ -1115,9 +997,7 @@ public:
             local.setFieldU32(sfSequence, seq + 1);
             // Signature should fail.
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(
-                info[jss::result][jss::error_exception] ==
-                "fails local checks: Invalid signature.");
+            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Invalid signature.");
         }
         {
             // Multisign, but leave a nonempty sfSigningPubKey.
@@ -1126,8 +1006,7 @@ public:
             local[sfSigningPubKey] = alice.pk();  // Insert sfSigningPubKey
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
-                info[jss::result][jss::error_exception] ==
-                "fails local checks: Cannot both single- and multi-sign.");
+                info[jss::result][jss::error_exception] == "fails local checks: Cannot both single- and multi-sign.");
         }
         {
             // Both multi- and single-sign with an empty SigningPubKey.
@@ -1137,8 +1016,7 @@ public:
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
-                info[jss::result][jss::error_exception] ==
-                "fails local checks: Cannot both single- and multi-sign.");
+                info[jss::result][jss::error_exception] == "fails local checks: Cannot both single- and multi-sign.");
         }
         {
             // Multisign but invalidate one of the signatures.
@@ -1152,8 +1030,8 @@ public:
             // Signature should fail.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
-                info[jss::result][jss::error_exception].asString().find(
-                    "Invalid signature on account r") != std::string::npos);
+                info[jss::result][jss::error_exception].asString().find("Invalid signature on account r") !=
+                std::string::npos);
         }
         {
             // Multisign with an empty signers array should fail.
@@ -1161,9 +1039,7 @@ public:
             STTx local = *(tx.stx);
             local.peekFieldArray(sfSigners).clear();  // Empty Signers array.
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(
-                info[jss::result][jss::error_exception] ==
-                "fails local checks: Invalid Signers array size.");
+            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Invalid Signers array size.");
         }
         {
             JTx tx = env.jt(
@@ -1206,18 +1082,14 @@ public:
                     bogie));
             STTx local = *(tx.stx);
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(
-                info[jss::result][jss::error_exception] ==
-                "fails local checks: Invalid Signers array size.");
+            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Invalid Signers array size.");
         }
         {
             // The account owner may not multisign for themselves.
             JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(alice));
             STTx local = *(tx.stx);
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(
-                info[jss::result][jss::error_exception] ==
-                "fails local checks: Invalid multisigner.");
+            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Invalid multisigner.");
         }
         {
             // No duplicate multisignatures allowed.
@@ -1225,8 +1097,7 @@ public:
             STTx local = *(tx.stx);
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
-                info[jss::result][jss::error_exception] ==
-                "fails local checks: Duplicate Signers not allowed.");
+                info[jss::result][jss::error_exception] == "fails local checks: Duplicate Signers not allowed.");
         }
         {
             // Multisignatures must be submitted in sorted order.
@@ -1237,9 +1108,7 @@ public:
             std::reverse(signers.begin(), signers.end());
             // Signature should fail.
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(
-                info[jss::result][jss::error_exception] ==
-                "fails local checks: Unsorted Signers array.");
+            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Unsorted Signers array.");
         }
     }
 
@@ -1256,10 +1125,7 @@ public:
         env.close();
 
         auto const baseFee = env.current()->fees().base;
-        env(noop(alice),
-            msig(becky, demon),
-            fee(3 * baseFee),
-            ter(tefNOT_MULTI_SIGNING));
+        env(noop(alice), msig(becky, demon), fee(3 * baseFee), ter(tefNOT_MULTI_SIGNING));
     }
 
     void
@@ -1299,27 +1165,18 @@ public:
 
         // Since becky's master key is disabled she can no longer
         // multisign for alice.
-        env(noop(alice),
-            msig(becky),
-            fee(2 * baseFee),
-            ter(tefMASTER_DISABLED));
+        env(noop(alice), msig(becky), fee(2 * baseFee), ter(tefMASTER_DISABLED));
         env.close();
 
         // Becky cannot 2-level multisign for alice.  2-level multisigning
         // is not supported.
-        env(noop(alice),
-            msig(Reg{becky, bogie}),
-            fee(2 * baseFee),
-            ter(tefBAD_SIGNATURE));
+        env(noop(alice), msig(Reg{becky, bogie}), fee(2 * baseFee), ter(tefBAD_SIGNATURE));
         env.close();
 
         // Verify that becky cannot sign with a regular key that she has
         // not yet enabled.
         Account const beck{"beck", KeyType::ed25519};
-        env(noop(alice),
-            msig(Reg{becky, beck}),
-            fee(2 * baseFee),
-            ter(tefBAD_SIGNATURE));
+        env(noop(alice), msig(Reg{becky, beck}), fee(2 * baseFee), ter(tefBAD_SIGNATURE));
         env.close();
 
         // Once becky gives herself the regular key, she can sign for alice
@@ -1332,10 +1189,7 @@ public:
 
         // The presence of becky's regular key does not influence whether she
         // can 2-level multisign; it still won't work.
-        env(noop(alice),
-            msig(Reg{becky, demon}),
-            fee(2 * baseFee),
-            ter(tefBAD_SIGNATURE));
+        env(noop(alice), msig(Reg{becky, demon}), fee(2 * baseFee), ter(tefBAD_SIGNATURE));
         env.close();
     }
 
@@ -1381,35 +1235,26 @@ public:
         BEAST_EXPECT(jvSig2[jss::result][jss::status].asString() == "success");
 
         // Save the hash with one signature for use later.
-        std::string const hash1 =
-            jvSig2[jss::result][jss::tx_json][jss::hash].asString();
+        std::string const hash1 = jvSig2[jss::result][jss::tx_json][jss::hash].asString();
 
         // Add the next signature and sign again.
         jvSig2[jss::result][jss::account] = ghost.human();
         jvSig2[jss::result][jss::secret] = ghost.name();
-        Json::Value jvSubmit =
-            env.rpc("json", "sign_for", to_string(jvSig2[jss::result]));
-        BEAST_EXPECT(
-            jvSubmit[jss::result][jss::status].asString() == "success");
+        Json::Value jvSubmit = env.rpc("json", "sign_for", to_string(jvSig2[jss::result]));
+        BEAST_EXPECT(jvSubmit[jss::result][jss::status].asString() == "success");
 
         // Save the hash with two signatures for use later.
-        std::string const hash2 =
-            jvSubmit[jss::result][jss::tx_json][jss::hash].asString();
+        std::string const hash2 = jvSubmit[jss::result][jss::tx_json][jss::hash].asString();
         BEAST_EXPECT(hash1 != hash2);
 
         // Submit the result of the two signatures.
-        Json::Value jvResult = env.rpc(
-            "json", "submit_multisigned", to_string(jvSubmit[jss::result]));
-        BEAST_EXPECT(
-            jvResult[jss::result][jss::status].asString() == "success");
-        BEAST_EXPECT(
-            jvResult[jss::result][jss::engine_result].asString() ==
-            "tesSUCCESS");
+        Json::Value jvResult = env.rpc("json", "submit_multisigned", to_string(jvSubmit[jss::result]));
+        BEAST_EXPECT(jvResult[jss::result][jss::status].asString() == "success");
+        BEAST_EXPECT(jvResult[jss::result][jss::engine_result].asString() == "tesSUCCESS");
 
         // The hash from the submit should be the same as the hash from the
         // second signing.
-        BEAST_EXPECT(
-            hash2 == jvResult[jss::result][jss::tx_json][jss::hash].asString());
+        BEAST_EXPECT(hash2 == jvResult[jss::result][jss::tx_json][jss::hash].asString());
         env.close();
 
         // The transaction we just submitted should now be available and
@@ -1417,9 +1262,7 @@ public:
         Json::Value jvTx = env.rpc("tx", hash2);
         BEAST_EXPECT(jvTx[jss::result][jss::status].asString() == "success");
         BEAST_EXPECT(jvTx[jss::result][jss::validated].asString() == "true");
-        BEAST_EXPECT(
-            jvTx[jss::result][jss::meta][sfTransactionResult.jsonName]
-                .asString() == "tesSUCCESS");
+        BEAST_EXPECT(jvTx[jss::result][jss::meta][sfTransactionResult.jsonName].asString() == "tesSUCCESS");
     }
 
     void
@@ -1440,18 +1283,14 @@ public:
         std::uint32_t const aliceSeq = env.seq(alice);
 
         // Attach phantom signers to alice using a ticket.
-        env(signers(alice, 1, {{bogie, 1}, {demon, 1}}),
-            ticket::use(aliceTicketSeq++));
+        env(signers(alice, 1, {{bogie, 1}, {demon, 1}}), ticket::use(aliceTicketSeq++));
         env.close();
         env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // This should work.
         auto const baseFee = env.current()->fees().base;
-        env(noop(alice),
-            msig(bogie, demon),
-            fee(3 * baseFee),
-            ticket::use(aliceTicketSeq++));
+        env(noop(alice), msig(bogie, demon), fee(3 * baseFee), ticket::use(aliceTicketSeq++));
         env.close();
         env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
@@ -1473,13 +1312,11 @@ public:
         Account const alice{"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
         env.close();
-        uint8_t tag1[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-                          0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-                          0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-                          0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+        uint8_t tag1[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03,
+                          0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+                          0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
-        uint8_t tag2[] =
-            "hello world some ascii 32b long";  // including 1 byte for NUL
+        uint8_t tag2[] = "hello world some ascii 32b long";  // including 1 byte for NUL
 
         uint256 bogie_tag = xrpl::base_uint<256>::fromVoid(tag1);
         uint256 demon_tag = xrpl::base_uint<256>::fromVoid(tag2);
@@ -1512,17 +1349,13 @@ public:
         env(noop(alice),
             msig(demon, demon),
             fee(3 * baseFee),
-            rpc("invalidTransaction",
-                "fails local checks: Duplicate Signers not allowed."));
+            rpc("invalidTransaction", "fails local checks: Duplicate Signers not allowed."));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // A non-signer should fail.
         aliceSeq = env.seq(alice);
-        env(noop(alice),
-            msig(bogie, spook),
-            fee(3 * baseFee),
-            ter(tefBAD_SIGNATURE));
+        env(noop(alice), msig(bogie, spook), fee(3 * baseFee), ter(tefBAD_SIGNATURE));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
@@ -1552,14 +1385,10 @@ public:
         env.close();
 
         bool const enabled = features[fixInvalidTxFlags];
-        testcase(
-            std::string("SignerListSet flag, fix ") +
-            (enabled ? "enabled" : "disabled"));
+        testcase(std::string("SignerListSet flag, fix ") + (enabled ? "enabled" : "disabled"));
 
         ter const expected(enabled ? TER(temINVALID_FLAG) : TER(tesSUCCESS));
-        env(signers(alice, 2, {{bogie, 1}, {ghost, 1}}),
-            expected,
-            txflags(tfPassive));
+        env(signers(alice, 2, {{bogie, 1}, {ghost, 1}}), expected, txflags(tfPassive));
         env.close();
     }
 

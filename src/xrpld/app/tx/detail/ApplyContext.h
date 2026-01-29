@@ -35,18 +35,9 @@ public:
         XRPAmount baseFee,
         ApplyFlags flags,
         beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
-        : ApplyContext(
-              app,
-              base,
-              std::nullopt,
-              tx,
-              preclaimResult,
-              baseFee,
-              flags,
-              journal)
+        : ApplyContext(app, base, std::nullopt, tx, preclaimResult, baseFee, flags, journal)
     {
-        XRPL_ASSERT(
-            (flags & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags & tapBATCH) == 0, "Batch apply flag should not be set");
     }
 
     Application& app;
@@ -127,10 +118,7 @@ private:
 
     template <std::size_t... Is>
     TER
-    checkInvariantsHelper(
-        TER const result,
-        XRPAmount const fee,
-        std::index_sequence<Is...>);
+    checkInvariantsHelper(TER const result, XRPAmount const fee, std::index_sequence<Is...>);
 
     OpenView& base_;
     ApplyFlags flags_;

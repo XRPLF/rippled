@@ -93,8 +93,7 @@ STVar::STVar(defaultObject_t, SField const& name) : STVar(name.fieldType, name)
 {
 }
 
-STVar::STVar(nonPresentObject_t, SField const& name)
-    : STVar(STI_NOTPRESENT, name)
+STVar::STVar(nonPresentObject_t, SField const& name) : STVar(STI_NOTPRESENT, name)
 {
 }
 
@@ -130,22 +129,17 @@ void
 STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
 {
     auto constructWithDepth = [&]<typename T>() {
-        if constexpr (std::is_same_v<
-                          std::tuple<std::remove_cvref_t<Args>...>,
-                          std::tuple<SField>>)
+        if constexpr (std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SField>>)
         {
             construct<T>(std::forward<Args>(args)...);
         }
-        else if constexpr (std::is_same_v<
-                               std::tuple<std::remove_cvref_t<Args>...>,
-                               std::tuple<SerialIter, SField>>)
+        else if constexpr (std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SerialIter, SField>>)
         {
             construct<T>(std::forward<Args>(args)..., depth);
         }
         else
         {
-            constexpr bool alwaysFalse =
-                !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
+            constexpr bool alwaysFalse = !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
             static_assert(alwaysFalse, "Invalid STVar constructor arguments");
         }
     };
@@ -154,8 +148,7 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
     {
         case STI_NOTPRESENT: {
             // Last argument is always SField
-            SField const& field =
-                std::get<sizeof...(args) - 1>(std::forward_as_tuple(args...));
+            SField const& field = std::get<sizeof...(args) - 1>(std::forward_as_tuple(args...));
             construct<STBase>(field);
             return;
         }

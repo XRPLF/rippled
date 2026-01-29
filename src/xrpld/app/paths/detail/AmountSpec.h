@@ -106,8 +106,7 @@ template <>
 inline IOUAmount&
 get<IOUAmount>(EitherAmount& amt)
 {
-    XRPL_ASSERT(
-        !amt.native, "xrpl::get<IOUAmount>(EitherAmount&) : is not XRP");
+    XRPL_ASSERT(!amt.native, "xrpl::get<IOUAmount>(EitherAmount&) : is not XRP");
     return amt.iou;
 }
 
@@ -131,8 +130,7 @@ template <>
 inline IOUAmount const&
 get<IOUAmount>(EitherAmount const& amt)
 {
-    XRPL_ASSERT(
-        !amt.native, "xrpl::get<IOUAmount>(EitherAmount const&) : is not XRP");
+    XRPL_ASSERT(!amt.native, "xrpl::get<IOUAmount>(EitherAmount const&) : is not XRP");
     return amt.iou;
 }
 
@@ -140,8 +138,7 @@ template <>
 inline XRPAmount const&
 get<XRPAmount>(EitherAmount const& amt)
 {
-    XRPL_ASSERT(
-        amt.native, "xrpl::get<XRPAmount>(EitherAmount const&) : is XRP");
+    XRPL_ASSERT(amt.native, "xrpl::get<XRPAmount>(EitherAmount const&) : is XRP");
     return amt.xrp;
 }
 
@@ -152,8 +149,7 @@ toAmountSpec(STAmount const& amt)
         amt.mantissa() < std::numeric_limits<std::int64_t>::max(),
         "xrpl::toAmountSpec(STAmount const&) : maximum mantissa");
     bool const isNeg = amt.negative();
-    std::int64_t const sMant =
-        isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
+    std::int64_t const sMant = isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
     AmountSpec result;
 
     result.native = isXRP(amt);

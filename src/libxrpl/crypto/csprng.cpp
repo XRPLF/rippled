@@ -46,10 +46,7 @@ csprng_engine::mix_entropy(void* buffer, std::size_t count)
 
     // We add data to the pool, but we conservatively assume that
     // it contributes no actual entropy.
-    RAND_add(
-        entropy.data(),
-        entropy.size() * sizeof(std::random_device::result_type),
-        0);
+    RAND_add(entropy.data(), entropy.size() * sizeof(std::random_device::result_type), 0);
 
     if (buffer != nullptr && count != 0)
         RAND_add(buffer, count, 0);
@@ -65,8 +62,7 @@ csprng_engine::operator()(void* ptr, std::size_t count)
     std::lock_guard lock(mutex_);
 #endif
 
-    auto const result =
-        RAND_bytes(reinterpret_cast<unsigned char*>(ptr), count);
+    auto const result = RAND_bytes(reinterpret_cast<unsigned char*>(ptr), count);
 
     if (result != 1)
         Throw<std::runtime_error>("CSPRNG: Insufficient entropy");

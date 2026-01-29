@@ -32,8 +32,7 @@ private:
     std::uint16_t ammIters_{0};
 
 public:
-    AMMContext(AccountID const& account, bool multiPath)
-        : account_(account), multiPath_(multiPath)
+    AMMContext(AccountID const& account, bool multiPath) : account_(account), multiPath_(multiPath)
     {
     }
     ~AMMContext() = default;

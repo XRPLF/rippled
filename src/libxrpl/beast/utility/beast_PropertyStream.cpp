@@ -43,13 +43,11 @@ PropertyStream::Item::operator*() const
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Proxy::Proxy(Map const& map, std::string const& key)
-    : m_map(&map), m_key(key)
+PropertyStream::Proxy::Proxy(Map const& map, std::string const& key) : m_map(&map), m_key(key)
 {
 }
 
-PropertyStream::Proxy::Proxy(Proxy const& other)
-    : m_map(other.m_map), m_key(other.m_key)
+PropertyStream::Proxy::Proxy(Proxy const& other) : m_map(other.m_map), m_key(other.m_key)
 {
 }
 
@@ -81,14 +79,12 @@ PropertyStream::Map::Map(Set& parent) : m_stream(parent.stream())
     m_stream.map_begin();
 }
 
-PropertyStream::Map::Map(std::string const& key, Map& map)
-    : m_stream(map.stream())
+PropertyStream::Map::Map(std::string const& key, Map& map) : m_stream(map.stream())
 {
     m_stream.map_begin(key);
 }
 
-PropertyStream::Map::Map(std::string const& key, PropertyStream& stream)
-    : m_stream(stream)
+PropertyStream::Map::Map(std::string const& key, PropertyStream& stream) : m_stream(stream)
 {
     m_stream.map_begin(key);
 }
@@ -122,14 +118,12 @@ PropertyStream::Map::operator[](std::string const& key)
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Set::Set(std::string const& key, Map& map)
-    : m_stream(map.stream())
+PropertyStream::Set::Set(std::string const& key, Map& map) : m_stream(map.stream())
 {
     m_stream.array_begin(key);
 }
 
-PropertyStream::Set::Set(std::string const& key, PropertyStream& stream)
-    : m_stream(stream)
+PropertyStream::Set::Set(std::string const& key, PropertyStream& stream) : m_stream(stream)
 {
     m_stream.array_begin(key);
 }
@@ -157,8 +151,7 @@ PropertyStream::Set::stream() const
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Source::Source(std::string const& name)
-    : m_name(name), item_(this), parent_(nullptr)
+PropertyStream::Source::Source(std::string const& name) : m_name(name), item_(this), parent_(nullptr)
 {
 }
 
@@ -183,9 +176,7 @@ PropertyStream::Source::add(Source& source)
     std::lock_guard lk1(lock_, std::adopt_lock);
     std::lock_guard lk2(source.lock_, std::adopt_lock);
 
-    XRPL_ASSERT(
-        source.parent_ == nullptr,
-        "beast::PropertyStream::Source::add : null source parent");
+    XRPL_ASSERT(source.parent_ == nullptr, "beast::PropertyStream::Source::add : null source parent");
     children_.push_back(source.item_);
     source.parent_ = this;
 }
@@ -197,9 +188,7 @@ PropertyStream::Source::remove(Source& child)
     std::lock_guard lk1(lock_, std::adopt_lock);
     std::lock_guard lk2(child.lock_, std::adopt_lock);
 
-    XRPL_ASSERT(
-        child.parent_ == this,
-        "beast::PropertyStream::Source::remove : child parent match");
+    XRPL_ASSERT(child.parent_ == this, "beast::PropertyStream::Source::remove : child parent match");
     children_.erase(children_.iterator_to(child.item_));
     child.parent_ = nullptr;
 }

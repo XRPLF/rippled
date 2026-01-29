@@ -56,10 +56,7 @@ protected:
     {
     }
 
-    explicit SHAMapTreeNode(
-        std::uint32_t cowid,
-        SHAMapHash const& hash) noexcept
-        : hash_(hash), cowid_(cowid)
+    explicit SHAMapTreeNode(std::uint32_t cowid, SHAMapHash const& hash) noexcept : hash_(hash), cowid_(cowid)
     {
     }
     /** @} */

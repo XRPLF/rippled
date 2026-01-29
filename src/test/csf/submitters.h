@@ -80,13 +80,7 @@ class Submitter
     }
 
 public:
-    Submitter(
-        Distribution dist,
-        SimTime start,
-        SimTime end,
-        Selector& selector,
-        Scheduler& s,
-        Generator& g)
+    Submitter(Distribution dist, SimTime start, SimTime end, Selector& selector, Scheduler& s, Generator& g)
         : dist_{dist}, stop_{end}, selector_{selector}, scheduler_{s}, g_{g}
     {
         scheduler_.at(start, [&]() { submit(); });
@@ -95,16 +89,9 @@ public:
 
 template <class Distribution, class Generator, class Selector>
 Submitter<Distribution, Generator, Selector>
-makeSubmitter(
-    Distribution dist,
-    SimTime start,
-    SimTime end,
-    Selector& sel,
-    Scheduler& s,
-    Generator& g)
+makeSubmitter(Distribution dist, SimTime start, SimTime end, Selector& sel, Scheduler& s, Generator& g)
 {
-    return Submitter<Distribution, Generator, Selector>(
-        dist, start, end, sel, s, g);
+    return Submitter<Distribution, Generator, Selector>(dist, start, end, sel, s, g);
 }
 
 }  // namespace csf

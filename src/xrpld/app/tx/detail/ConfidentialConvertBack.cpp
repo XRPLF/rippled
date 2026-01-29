@@ -40,10 +40,7 @@ ConfidentialConvertBack::preflight(PreflightContext const& ctx)
 }
 
 TER
-verifyProofs(
-    STTx const& tx,
-    std::shared_ptr<SLE const> const& issuance,
-    std::shared_ptr<SLE const> const& mptoken)
+verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::shared_ptr<SLE const> const& mptoken)
 {
     if (!mptoken->isFieldPresent(sfHolderElGamalPublicKey))
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -55,28 +52,21 @@ verifyProofs(
     auto const holderPubKey = (*mptoken)[sfHolderElGamalPublicKey];
 
     auto const contextHash = getConvertBackContextHash(
-        account,
-        tx[sfSequence],
-        mptIssuanceID,
-        amount,
-        (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
+        account, tx[sfSequence], mptIssuanceID, amount, (*mptoken)[~sfConfidentialBalanceVersion].value_or(0));
 
     // Prepare Auditor Info
     std::optional<ConfidentialRecipient> auditor;
     bool const hasAuditor = issuance->isFieldPresent(sfAuditorElGamalPublicKey);
     if (hasAuditor)
     {
-        auditor.emplace(ConfidentialRecipient{
-            (*issuance)[sfAuditorElGamalPublicKey],
-            tx[sfAuditorEncryptedAmount]});
+        auditor.emplace(ConfidentialRecipient{(*issuance)[sfAuditorElGamalPublicKey], tx[sfAuditorEncryptedAmount]});
     }
 
     if (auto const ter = verifyRevealedAmount(
             amount,
             blindingFactor,
             {holderPubKey, tx[sfHolderEncryptedAmount]},
-            {(*issuance)[sfIssuerElGamalPublicKey],
-             tx[sfIssuerEncryptedAmount]},
+            {(*issuance)[sfIssuerElGamalPublicKey], tx[sfIssuerEncryptedAmount]},
             auditor);
         !isTesSuccess(ter))
     {
@@ -124,8 +114,7 @@ ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
-    bool const requiresAuditor =
-        sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
+    bool const requiresAuditor = sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
 
     // tx must include auditor ciphertext if the issuance has enabled
     // auditing
@@ -142,8 +131,7 @@ ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
     if (sleIssuance->getAccountID(sfIssuer) == account)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sleMptoken =
-        ctx.view.read(keylet::mptoken(mptIssuanceID, account));
+    auto const sleMptoken = ctx.view.read(keylet::mptoken(mptIssuanceID, account));
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
@@ -163,17 +151,14 @@ ConfidentialConvertBack::preclaim(PreclaimContext const& ctx)
 
     // Check lock
     MPTIssue const mptIssue(mptIssuanceID);
-    if (auto const ter = checkFrozen(ctx.view, account, mptIssue);
-        !isTesSuccess(ter))
+    if (auto const ter = checkFrozen(ctx.view, account, mptIssue); !isTesSuccess(ter))
         return ter;
 
     // Check auth
-    if (auto const ter = requireAuth(ctx.view, mptIssue, account);
-        !isTesSuccess(ter))
+    if (auto const ter = requireAuth(ctx.view, mptIssue, account); !isTesSuccess(ter))
         return ter;
 
-    if (TER const res = verifyProofs(ctx.tx, sleIssuance, sleMptoken);
-        !isTesSuccess(res))
+    if (TER const res = verifyProofs(ctx.tx, sleIssuance, sleMptoken); !isTesSuccess(res))
         return res;
 
     return tesSUCCESS;
@@ -205,9 +190,7 @@ ConfidentialConvertBack::doApply()
     {
         Buffer res(ecGamalEncryptedTotalLength);
         if (TER const ter = homomorphicSubtract(
-                (*sleMptoken)[sfConfidentialBalanceSpending],
-                ctx_.tx[sfHolderEncryptedAmount],
-                res);
+                (*sleMptoken)[sfConfidentialBalanceSpending], ctx_.tx[sfHolderEncryptedAmount], res);
             !isTesSuccess(ter))
             return tecINTERNAL;
 
@@ -217,10 +200,8 @@ ConfidentialConvertBack::doApply()
     // homomorphically subtract issuer's encrypted balance
     {
         Buffer res(ecGamalEncryptedTotalLength);
-        if (TER const ter = homomorphicSubtract(
-                (*sleMptoken)[sfIssuerEncryptedBalance],
-                ctx_.tx[sfIssuerEncryptedAmount],
-                res);
+        if (TER const ter =
+                homomorphicSubtract((*sleMptoken)[sfIssuerEncryptedBalance], ctx_.tx[sfIssuerEncryptedAmount], res);
             !isTesSuccess(ter))
             return tecINTERNAL;
 
@@ -230,10 +211,8 @@ ConfidentialConvertBack::doApply()
     if (auditorEc)
     {
         Buffer res(ecGamalEncryptedTotalLength);
-        if (TER const ter = homomorphicSubtract(
-                (*sleMptoken)[sfAuditorEncryptedBalance],
-                ctx_.tx[sfAuditorEncryptedAmount],
-                res);
+        if (TER const ter =
+                homomorphicSubtract((*sleMptoken)[sfAuditorEncryptedBalance], ctx_.tx[sfAuditorEncryptedAmount], res);
             !isTesSuccess(ter))
             return tecINTERNAL;
 

@@ -39,8 +39,7 @@ public:
         std::string const& name,
         clock_type& clock,
         beast::Journal j,
-        beast::insight::Collector::ptr const& collector =
-            beast::insight::NullCollector::New(),
+        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::New(),
         std::size_t target_size = defaultCacheTargetSize,
         std::chrono::seconds expiration = std::chrono::minutes{2})
         : m_cache(name, target_size, expiration, clock, j, collector), m_gen(1)

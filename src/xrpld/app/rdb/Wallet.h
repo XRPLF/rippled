@@ -25,10 +25,7 @@ makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j);
  * @return Unique pointer to the database descriptor.
  */
 std::unique_ptr<DatabaseCon>
-makeTestWalletDB(
-    DatabaseCon::Setup const& setup,
-    std::string const& dbname,
-    beast::Journal j);
+makeTestWalletDB(DatabaseCon::Setup const& setup, std::string const& dbname, beast::Journal j);
 
 /**
  * @brief getManifests Loads a manifest from the wallet database and stores it
@@ -40,11 +37,7 @@ makeTestWalletDB(
  * @param j Journal.
  */
 void
-getManifests(
-    soci::session& session,
-    std::string const& dbTable,
-    ManifestCache& mCache,
-    beast::Journal j);
+getManifests(soci::session& session, std::string const& dbTable, ManifestCache& mCache, beast::Journal j);
 
 /**
  * @brief saveManifests Saves all given manifests to the database.
@@ -104,10 +97,7 @@ getPeerReservationTable(soci::session& session, beast::Journal j);
  * @param description Description of the node.
  */
 void
-insertPeerReservation(
-    soci::session& session,
-    PublicKey const& nodeId,
-    std::string const& description);
+insertPeerReservation(soci::session& session, PublicKey const& nodeId, std::string const& description);
 
 /**
  * @brief deletePeerReservation Deletes an entry from the peer reservation
@@ -152,11 +142,7 @@ readAmendments(
  * @param vote Whether to vote in favor of this amendment.
  */
 void
-voteAmendment(
-    soci::session& session,
-    uint256 const& amendment,
-    std::string const& name,
-    AmendmentVote vote);
+voteAmendment(soci::session& session, uint256 const& amendment, std::string const& name, AmendmentVote vote);
 
 }  // namespace xrpl
 

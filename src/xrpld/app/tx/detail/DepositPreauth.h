@@ -28,10 +28,7 @@ public:
 
     // Interface used by DeleteAccount
     static TER
-    removeFromLedger(
-        ApplyView& view,
-        uint256 const& delIndex,
-        beast::Journal j);
+    removeFromLedger(ApplyView& view, uint256 const& delIndex, beast::Journal j);
 };
 
 }  // namespace xrpl

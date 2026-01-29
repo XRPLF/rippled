@@ -39,11 +39,7 @@ public:
         @param numPeers Anticipated number of peer votes
         @param j Journal for debugging
     */
-    DisputedTx(
-        Tx_t const& tx,
-        bool ourVote,
-        std::size_t numPeers,
-        beast::Journal j)
+    DisputedTx(Tx_t const& tx, bool ourVote, std::size_t numPeers, beast::Journal j)
         : yays_(0), nays_(0), ourVote_(ourVote), tx_(tx), j_(j)
     {
         votes_.reserve(numPeers);
@@ -81,8 +77,7 @@ public:
         // We're have not reached the final avalanche state, or been there long
         // enough, so there's room for change. Check the times in case the state
         // machine is altered to allow states to loop.
-        if (nextCutoff.consensusTime > currentCutoff.consensusTime ||
-            avalancheCounter_ < p.avMIN_ROUNDS)
+        if (nextCutoff.consensusTime > currentCutoff.consensusTime || avalancheCounter_ < p.avMIN_ROUNDS)
             return false;
 
         // We've haven't had this vote for minimum rounds yet. Things could
@@ -94,8 +89,7 @@ public:
         // things could still change. But if _either_ has not changed in that
         // long, we're unlikely to change our vote any time soon. (This prevents
         // a malicious peer from flip-flopping a vote to prevent consensus.)
-        if (peersUnchanged < p.avSTALLED_ROUNDS &&
-            (proposing && currentVoteCounter_ < p.avSTALLED_ROUNDS))
+        if (peersUnchanged < p.avSTALLED_ROUNDS && (proposing && currentVoteCounter_ < p.avSTALLED_ROUNDS))
             return false;
 
         // Does this transaction have more than 80% agreement
@@ -109,19 +103,16 @@ public:
         int const weight = support / total;
         // Returns true if the tx has more than minCONSENSUS_PCT (80) percent
         // agreement. Either voting for _or_ voting against the tx.
-        bool const stalled =
-            weight > p.minCONSENSUS_PCT || weight < (100 - p.minCONSENSUS_PCT);
+        bool const stalled = weight > p.minCONSENSUS_PCT || weight < (100 - p.minCONSENSUS_PCT);
 
         if (stalled)
         {
             // stalling is an error condition for even a single
             // transaction.
             std::stringstream s;
-            s << "Transaction " << ID() << " is stalled. We have been voting "
-              << (getOurVote() ? "YES" : "NO") << " for " << currentVoteCounter_
-              << " rounds. Peers have not changed their votes in "
-              << peersUnchanged << " rounds. The transaction has " << weight
-              << "% support. ";
+            s << "Transaction " << ID() << " is stalled. We have been voting " << (getOurVote() ? "YES" : "NO")
+              << " for " << currentVoteCounter_ << " rounds. Peers have not changed their votes in " << peersUnchanged
+              << " rounds. The transaction has " << weight << "% support. ";
             JLOG(j_.error()) << s.str();
             CLOG(clog) << s.str();
         }
@@ -257,10 +248,7 @@ DisputedTx<Tx_t, NodeID_t>::unVote(NodeID_t const& peer)
 
 template <class Tx_t, class NodeID_t>
 bool
-DisputedTx<Tx_t, NodeID_t>::updateVote(
-    int percentTime,
-    bool proposing,
-    ConsensusParms const& p)
+DisputedTx<Tx_t, NodeID_t>::updateVote(int percentTime, bool proposing, ConsensusParms const& p)
 {
     if (ourVote_ && (nays_ == 0))
         return false;
@@ -277,8 +265,8 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
     // to the next.
     // Proposing or not, we need to keep track of which state we've reached so
     // we can determine if the vote has stalled.
-    auto const [requiredPct, newState] = getNeededWeight(
-        p, avalancheState_, percentTime, ++avalancheCounter_, p.avMIN_ROUNDS);
+    auto const [requiredPct, newState] =
+        getNeededWeight(p, avalancheState_, percentTime, ++avalancheCounter_, p.avMIN_ROUNDS);
     if (newState)
     {
         avalancheState_ = *newState;
@@ -302,18 +290,15 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
     if (newPosition == ourVote_)
     {
         ++currentVoteCounter_;
-        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO") << ") on "
-                        << tx_.id() << " : weight " << weight << ", percent "
-                        << percentTime
-                        << ", round(s) with this vote: " << currentVoteCounter_;
+        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO") << ") on " << tx_.id() << " : weight " << weight
+                        << ", percent " << percentTime << ", round(s) with this vote: " << currentVoteCounter_;
         JLOG(j_.debug()) << Json::Compact{getJson()};
         return false;
     }
 
     currentVoteCounter_ = 0;
     ourVote_ = newPosition;
-    JLOG(j_.debug()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on "
-                     << tx_.id();
+    JLOG(j_.debug()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on " << tx_.id();
     JLOG(j_.debug()) << Json::Compact{getJson()};
     return true;
 }

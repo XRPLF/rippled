@@ -28,10 +28,7 @@ private:
     std::optional<Account> holder_;
 
 public:
-    mptflags(
-        MPTTester& tester,
-        std::uint32_t flags,
-        std::optional<Account> const& holder = std::nullopt)
+    mptflags(MPTTester& tester, std::uint32_t flags, std::optional<Account> const& holder = std::nullopt)
         : tester_(tester), flags_(flags), holder_(holder)
     {
     }
@@ -89,8 +86,7 @@ struct MPTCreate
     std::optional<std::vector<Account>> authorize = std::nullopt;
     // pay if seated. if authorize is not seated then authorize.
     // if empty vector then pay to either authorize or all holders.
-    std::optional<std::pair<std::vector<Account>, std::uint64_t>> pay =
-        std::nullopt;
+    std::optional<std::pair<std::vector<Account>, std::uint64_t>> pay = std::nullopt;
     std::optional<std::uint32_t> flags = {0};
     std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
@@ -336,15 +332,13 @@ public:
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
 
     void
-    confidentialClaw(
-        MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
+    confidentialClaw(MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
 
     [[nodiscard]] bool
-    checkMPTokenAmount(Account const& holder, std::int64_t expectedAmount)
-        const;
+    checkMPTokenAmount(Account const& holder, std::int64_t expectedAmount) const;
 
     [[nodiscard]] bool
     checkMPTokenOutstandingAmount(std::int64_t expectedAmount) const;
@@ -353,9 +347,7 @@ public:
     checkIssuanceConfidentialBalance(std::int64_t expectedAmount) const;
 
     [[nodiscard]] bool
-    checkFlags(
-        uint32_t const expectedFlags,
-        std::optional<Account> const& holder = std::nullopt) const;
+    checkFlags(uint32_t const expectedFlags, std::optional<Account> const& holder = std::nullopt) const;
 
     [[nodiscard]] bool
     checkMetadata(std::string const& metadata) const;
@@ -386,11 +378,7 @@ public:
         std::optional<std::vector<std::string>> credentials = std::nullopt);
 
     void
-    claw(
-        Account const& issuer,
-        Account const& holder,
-        std::int64_t amount,
-        std::optional<TER> err = std::nullopt);
+    claw(Account const& issuer, Account const& holder, std::int64_t amount, std::optional<TER> err = std::nullopt);
 
     PrettyAmount
     mpt(std::int64_t amount) const;
@@ -410,9 +398,7 @@ public:
     getIssuanceConfidentialBalance() const;
 
     std::optional<Buffer>
-    getEncryptedBalance(
-        Account const& account,
-        EncryptedBalanceType option = HOLDER_ENCRYPTED_INBOX) const;
+    getEncryptedBalance(Account const& account, EncryptedBalanceType option = HOLDER_ENCRYPTED_INBOX) const;
 
     MPT
     operator[](std::string const& name) const;
@@ -435,28 +421,20 @@ public:
     getPrivKey(Account const& account) const;
 
     Buffer
-    encryptAmount(
-        Account const& account,
-        uint64_t const amt,
-        Buffer const& blindingFactor) const;
+    encryptAmount(Account const& account, uint64_t const amt, Buffer const& blindingFactor) const;
 
     std::optional<uint64_t>
     decryptAmount(Account const& account, Buffer const& amt) const;
 
     std::optional<uint64_t>
-    getDecryptedBalance(
-        Account const& account,
-        EncryptedBalanceType balanceType) const;
+    getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const;
 
     std::int64_t
     getIssuanceOutstandingBalance() const;
 
     std::optional<Buffer>
-    getClawbackProof(
-        Account const& holder,
-        std::uint64_t amount,
-        Buffer const& privateKey,
-        uint256 const& txHash) const;
+    getClawbackProof(Account const& holder, std::uint64_t amount, Buffer const& privateKey, uint256 const& txHash)
+        const;
 
     std::optional<Buffer>
     getSchnorrProof(Account const& account, uint256 const& ctxHash) const;
@@ -501,25 +479,19 @@ public:
         PedersenProofParams const& params) const;
 
     Buffer
-    getPedersenCommitment(
-        std::uint64_t const amount,
-        Buffer const& pedersenBlindingFactor);
+    getPedersenCommitment(std::uint64_t const amount, Buffer const& pedersenBlindingFactor);
 
 private:
     using SLEP = SLE::const_pointer;
     bool
-    forObject(
-        std::function<bool(SLEP const& sle)> const& cb,
-        std::optional<Account> const& holder = std::nullopt) const;
+    forObject(std::function<bool(SLEP const& sle)> const& cb, std::optional<Account> const& holder = std::nullopt)
+        const;
 
     template <typename A>
     TER
     submit(A const& arg, Json::Value const& jv)
     {
-        env_(
-            jv,
-            txflags(arg.flags.value_or(0)),
-            ter(arg.err.value_or(tesSUCCESS)));
+        env_(jv, txflags(arg.flags.value_or(0)), ter(arg.err.value_or(tesSUCCESS)));
         auto const err = env_.ter();
         if (close_)
             env_.close();

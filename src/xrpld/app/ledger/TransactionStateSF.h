@@ -13,18 +13,13 @@ namespace xrpl {
 class TransactionStateSF : public SHAMapSyncFilter
 {
 public:
-    TransactionStateSF(NodeStore::Database& db, AbstractFetchPackContainer& fp)
-        : db_(db), fp_(fp)
+    TransactionStateSF(NodeStore::Database& db, AbstractFetchPackContainer& fp) : db_(db), fp_(fp)
     {
     }
 
     void
-    gotNode(
-        bool fromFilter,
-        SHAMapHash const& nodeHash,
-        std::uint32_t ledgerSeq,
-        Blob&& nodeData,
-        SHAMapNodeType type) const override;
+    gotNode(bool fromFilter, SHAMapHash const& nodeHash, std::uint32_t ledgerSeq, Blob&& nodeData, SHAMapNodeType type)
+        const override;
 
     std::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const override;

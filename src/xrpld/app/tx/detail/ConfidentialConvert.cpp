@@ -80,8 +80,7 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
-    bool const requiresAuditor =
-        sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
+    bool const requiresAuditor = sleIssuance->isFieldPresent(sfAuditorElGamalPublicKey);
 
     // tx must include auditor ciphertext if the issuance has enabled
     // auditing, and must not include it if auditing is not enabled
@@ -93,8 +92,7 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     auto const mptIssue = MPTIssue{issuanceID};
-    STAmount const mptAmount = STAmount(
-        MPTAmount{static_cast<MPTAmount::value_type>(amount)}, mptIssue);
+    STAmount const mptAmount = STAmount(MPTAmount{static_cast<MPTAmount::value_type>(amount)}, mptIssue);
     if (accountHolds(
             ctx.view,
             account,
@@ -106,10 +104,8 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
         return tecINSUFFICIENT_FUNDS;
     }
 
-    auto const hasHolderKeyOnLedger =
-        sleMptoken->isFieldPresent(sfHolderElGamalPublicKey);
-    auto const hasHolderKeyInTx =
-        ctx.tx.isFieldPresent(sfHolderElGamalPublicKey);
+    auto const hasHolderKeyOnLedger = sleMptoken->isFieldPresent(sfHolderElGamalPublicKey);
+    auto const hasHolderKeyInTx = ctx.tx.isFieldPresent(sfHolderElGamalPublicKey);
 
     // must have pk to convert
     if (!hasHolderKeyOnLedger && !hasHolderKeyInTx)
@@ -124,12 +120,10 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     {
         holderPubKey = ctx.tx[sfHolderElGamalPublicKey];
 
-        auto const contextHash = getConvertContextHash(
-            account, ctx.tx[sfSequence], issuanceID, amount);
+        auto const contextHash = getConvertContextHash(account, ctx.tx[sfSequence], issuanceID, amount);
 
         // when register new pk, verify through schnorr proof
-        if (!isTesSuccess(verifySchnorrProof(
-                holderPubKey, ctx.tx[sfZKProof], contextHash)))
+        if (!isTesSuccess(verifySchnorrProof(holderPubKey, ctx.tx[sfZKProof], contextHash)))
         {
             return tecBAD_PROOF;
         }
@@ -142,17 +136,15 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
     std::optional<ConfidentialRecipient> auditor;
     if (hasAuditor)
     {
-        auditor.emplace(ConfidentialRecipient{
-            (*sleIssuance)[sfAuditorElGamalPublicKey],
-            ctx.tx[sfAuditorEncryptedAmount]});
+        auditor.emplace(
+            ConfidentialRecipient{(*sleIssuance)[sfAuditorElGamalPublicKey], ctx.tx[sfAuditorEncryptedAmount]});
     }
 
     return verifyRevealedAmount(
         amount,
         ctx.tx[sfBlindingFactor],
         {holderPubKey, ctx.tx[sfHolderEncryptedAmount]},
-        {(*sleIssuance)[sfIssuerElGamalPublicKey],
-         ctx.tx[sfIssuerEncryptedAmount]},
+        {(*sleIssuance)[sfIssuerElGamalPublicKey], ctx.tx[sfIssuerEncryptedAmount]},
         auditor);
 }
 
@@ -173,13 +165,11 @@ ConfidentialConvert::doApply()
     auto const amt = (*sleMptoken)[~sfMPTAmount].value_or(0);
 
     if (ctx_.tx.isFieldPresent(sfHolderElGamalPublicKey))
-        (*sleMptoken)[sfHolderElGamalPublicKey] =
-            ctx_.tx[sfHolderElGamalPublicKey];
+        (*sleMptoken)[sfHolderElGamalPublicKey] = ctx_.tx[sfHolderElGamalPublicKey];
 
     (*sleMptoken)[sfMPTAmount] = amt - amtToConvert;
     (*sleIssuance)[sfConfidentialOutstandingAmount] =
-        (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) +
-        amtToConvert;
+        (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) + amtToConvert;
 
     Slice const holderEc = ctx_.tx[sfHolderEncryptedAmount];
     Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
@@ -195,8 +185,7 @@ ConfidentialConvert::doApply()
         // homomorphically add holder's encrypted balance
         {
             Buffer sum(ecGamalEncryptedTotalLength);
-            if (TER const ter = homomorphicAdd(
-                    holderEc, (*sleMptoken)[sfConfidentialBalanceInbox], sum);
+            if (TER const ter = homomorphicAdd(holderEc, (*sleMptoken)[sfConfidentialBalanceInbox], sum);
                 !isTesSuccess(ter))
                 return tecINTERNAL;
 
@@ -206,8 +195,7 @@ ConfidentialConvert::doApply()
         // homomorphically add issuer's encrypted balance
         {
             Buffer sum(ecGamalEncryptedTotalLength);
-            if (TER const ter = homomorphicAdd(
-                    issuerEc, (*sleMptoken)[sfIssuerEncryptedBalance], sum);
+            if (TER const ter = homomorphicAdd(issuerEc, (*sleMptoken)[sfIssuerEncryptedBalance], sum);
                 !isTesSuccess(ter))
                 return tecINTERNAL;
 
@@ -218,8 +206,7 @@ ConfidentialConvert::doApply()
         if (auditorEc)
         {
             Buffer sum(ecGamalEncryptedTotalLength);
-            if (TER const ter = homomorphicAdd(
-                    *auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance], sum);
+            if (TER const ter = homomorphicAdd(*auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance], sum);
                 !isTesSuccess(ter))
                 return tecINTERNAL;
 
@@ -239,8 +226,8 @@ ConfidentialConvert::doApply()
             (*sleMptoken)[sfAuditorEncryptedBalance] = *auditorEc;
 
         // encrypt sfConfidentialBalanceSpending with zero balance
-        auto const zeroBalance = encryptCanonicalZeroAmount(
-            (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
+        auto const zeroBalance =
+            encryptCanonicalZeroAmount((*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
 
         if (!zeroBalance)
             return tecINTERNAL;  // LCOV_EXCL_LINE

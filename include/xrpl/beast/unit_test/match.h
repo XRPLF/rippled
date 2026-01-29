@@ -53,8 +53,7 @@ public:
 //------------------------------------------------------------------------------
 
 template <class>
-selector::selector(mode_t mode, std::string const& pattern)
-    : mode_(mode), pat_(pattern)
+selector::selector(mode_t mode, std::string const& pattern) : mode_(mode), pat_(pattern)
 {
     if (mode_ == automatch && pattern.empty())
         mode_ = all;

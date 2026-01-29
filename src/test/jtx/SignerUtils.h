@@ -18,8 +18,7 @@ struct Reg
     {
     }
 
-    Reg(Account const& acct_, Account const& regularSig)
-        : acct(acct_), sig(regularSig)
+    Reg(Account const& acct_, Account const& regularSig) : acct(acct_), sig(regularSig)
     {
     }
 
@@ -27,8 +26,7 @@ struct Reg
     {
     }
 
-    Reg(char const* acct_, char const* regularSig)
-        : acct(acct_), sig(regularSig)
+    Reg(char const* acct_, char const* regularSig) : acct(acct_), sig(regularSig)
     {
     }
 
@@ -43,10 +41,7 @@ struct Reg
 inline void
 sortSigners(std::vector<Reg>& signers)
 {
-    std::sort(
-        signers.begin(), signers.end(), [](Reg const& lhs, Reg const& rhs) {
-            return lhs.acct < rhs.acct;
-        });
+    std::sort(signers.begin(), signers.end(), [](Reg const& lhs, Reg const& rhs) { return lhs.acct < rhs.acct; });
 }
 
 }  // namespace jtx

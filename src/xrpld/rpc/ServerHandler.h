@@ -146,25 +146,16 @@ public:
         boost::asio::ip::tcp::endpoint const& remote_address);
 
     Handoff
-    onHandoff(
-        Session& session,
-        http_request_type&& request,
-        boost::asio::ip::tcp::endpoint const& remote_address)
+    onHandoff(Session& session, http_request_type&& request, boost::asio::ip::tcp::endpoint const& remote_address)
     {
-        return onHandoff(
-            session,
-            {},
-            std::forward<http_request_type>(request),
-            remote_address);
+        return onHandoff(session, {}, std::forward<http_request_type>(request), remote_address);
     }
 
     void
     onRequest(Session& session);
 
     void
-    onWSMessage(
-        std::shared_ptr<WSSession> session,
-        std::vector<boost::asio::const_buffer> const& buffers);
+    onWSMessage(std::shared_ptr<WSSession> session, std::vector<boost::asio::const_buffer> const& buffers);
 
     void
     onClose(Session& session, boost::system::error_code const&);
@@ -180,9 +171,7 @@ private:
         Json::Value const& jv);
 
     void
-    processSession(
-        std::shared_ptr<Session> const&,
-        std::shared_ptr<JobQueue::Coro> coro);
+    processSession(std::shared_ptr<Session> const&, std::shared_ptr<JobQueue::Coro> coro);
 
     void
     processRequest(

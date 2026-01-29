@@ -19,8 +19,7 @@ class ValidatorKeys_test : public beast::unit_test::suite
     std::string const seed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
     // Used with [validation_token]
-    std::string const tokenSecretStr =
-        "paQmjZ37pKKPMrgadBLsuf9ab7Y7EUNzh27LQrZqoexpAs31nJi";
+    std::string const tokenSecretStr = "paQmjZ37pKKPMrgadBLsuf9ab7Y7EUNzh27LQrZqoexpAs31nJi";
 
     std::vector<std::string> const tokenBlob = {
         "    "
@@ -61,26 +60,18 @@ public:
     {
         // We're only using Env for its Journal.  That Journal gives better
         // coverage in unit tests.
-        test::jtx::Env env{
-            *this,
-            test::jtx::envconfig(),
-            nullptr,
-            beast::severities::kDisabled};
+        test::jtx::Env env{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
         beast::Journal journal{env.app().journal("ValidatorKeys_test")};
 
         // Keys/ID when using [validation_seed]
-        SecretKey const seedSecretKey =
-            generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
-        PublicKey const seedPublicKey =
-            derivePublicKey(KeyType::secp256k1, seedSecretKey);
+        SecretKey const seedSecretKey = generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
+        PublicKey const seedPublicKey = derivePublicKey(KeyType::secp256k1, seedSecretKey);
         NodeID const seedNodeID = calcNodeID(seedPublicKey);
 
         // Keys when using [validation_token]
-        auto const tokenSecretKey =
-            *parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr);
+        auto const tokenSecretKey = *parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr);
 
-        auto const tokenPublicKey =
-            derivePublicKey(KeyType::secp256k1, tokenSecretKey);
+        auto const tokenPublicKey = derivePublicKey(KeyType::secp256k1, tokenSecretKey);
 
         auto const m = deserializeManifest(base64_decode(tokenManifest));
         BEAST_EXPECT(m);

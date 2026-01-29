@@ -9,9 +9,7 @@ namespace jtx {
 namespace delegate {
 
 Json::Value
-set(jtx::Account const& account,
-    jtx::Account const& authorize,
-    std::vector<std::string> const& permissions)
+set(jtx::Account const& account, jtx::Account const& authorize, std::vector<std::string> const& permissions)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::DelegateSet;
