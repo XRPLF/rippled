@@ -18,16 +18,12 @@ private:
     std::string prefix_;
 
 public:
-    explicit WrappedSink(
-        beast::Journal::Sink& sink,
-        std::string const& prefix = "")
+    explicit WrappedSink(beast::Journal::Sink& sink, std::string const& prefix = "")
         : Sink(sink), sink_(sink), prefix_(prefix)
     {
     }
 
-    explicit WrappedSink(
-        beast::Journal const& journal,
-        std::string const& prefix = "")
+    explicit WrappedSink(beast::Journal const& journal, std::string const& prefix = "")
         : WrappedSink(journal.sink(), prefix)
     {
     }

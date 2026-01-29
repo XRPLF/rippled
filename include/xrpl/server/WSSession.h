@@ -78,8 +78,7 @@ public:
             done = true;
         }
         auto const pb = boost::beast::buffers_prefix(n_, sb_.data());
-        std::vector<boost::asio::const_buffer> vb(
-            std::distance(pb.begin(), pb.end()));
+        std::vector<boost::asio::const_buffer> vb(std::distance(pb.begin(), pb.end()));
         std::copy(pb.begin(), pb.end(), std::back_inserter(vb));
         return {done, vb};
     }

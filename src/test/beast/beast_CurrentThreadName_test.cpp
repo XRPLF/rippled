@@ -12,10 +12,7 @@ class CurrentThreadName_test : public beast::unit_test::suite
 {
 private:
     static void
-    exerciseName(
-        std::string myName,
-        std::atomic<bool>* stop,
-        std::atomic<int>* state)
+    exerciseName(std::string myName, std::atomic<bool>* stop, std::atomic<int>* state)
     {
         // Verify that upon creation a thread has no name.
         auto const initialThreadName = beast::getCurrentThreadName();
@@ -92,11 +89,10 @@ public:
         // are set correctly (the 16th character is reserved for the null
         // terminator).
         {
-            testName(
-                "123456789012345",
-                "123456789012345");      // 15 chars, maximum allowed
-            testName("", "");            // empty name
-            testName("short", "short");  // short name
+            testName("123456789012345",
+                     "123456789012345");  // 15 chars, maximum allowed
+            testName("", "");             // empty name
+            testName("short", "short");   // short name
         }
 #endif
     }

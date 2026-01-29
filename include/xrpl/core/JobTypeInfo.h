@@ -33,11 +33,7 @@ public:
         int limit,
         std::chrono::milliseconds avgLatency,
         std::chrono::milliseconds peakLatency)
-        : m_type(type)
-        , m_name(std::move(name))
-        , m_limit(limit)
-        , m_avgLatency(avgLatency)
-        , m_peakLatency(peakLatency)
+        : m_type(type), m_name(std::move(name)), m_limit(limit), m_avgLatency(avgLatency), m_peakLatency(peakLatency)
     {
     }
 

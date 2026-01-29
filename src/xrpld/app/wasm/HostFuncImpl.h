@@ -52,8 +52,7 @@ class WasmHostFunctionsImpl : public HostFunctions
             return;
         auto j = getJournal().trace();
 #endif
-        j << "WasmTrace[" << to_short_string(leKey.key) << "]: " << msg << " "
-          << dataFn();
+        j << "WasmTrace[" << to_short_string(leKey.key) << "]: " << msg << " " << dataFn();
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;
@@ -61,8 +60,7 @@ class WasmHostFunctionsImpl : public HostFunctions
     }
 
 public:
-    WasmHostFunctionsImpl(ApplyContext& ct, Keylet const& leKey)
-        : HostFunctions(ct.journal), ctx(ct), leKey(leKey)
+    WasmHostFunctionsImpl(ApplyContext& ct, Keylet const& leKey) : HostFunctions(ct.journal), ctx(ct), leKey(leKey)
     {
     }
 
@@ -90,20 +88,15 @@ public:
 #pragma push_macro("HOST_FUNCTION_INT_RETURN")
 #pragma push_macro("HOST_FUNCTION_UINT_RETURN")
 
-#define HOST_FUNCTION_BYTES_RETURN(NAME, ...) \
-    Expected<Bytes, HostFunctionError> NAME(__VA_ARGS__) override;
+#define HOST_FUNCTION_BYTES_RETURN(NAME, ...) Expected<Bytes, HostFunctionError> NAME(__VA_ARGS__) override;
 
-#define HOST_FUNCTION_HASH_RETURN(NAME, ...) \
-    Expected<Hash, HostFunctionError> NAME(__VA_ARGS__) override;
+#define HOST_FUNCTION_HASH_RETURN(NAME, ...) Expected<Hash, HostFunctionError> NAME(__VA_ARGS__) override;
 
-#define HOST_FUNCTION_NO_RETURN(NAME, ...) \
-    Expected<int32_t, HostFunctionError> NAME(__VA_ARGS__) override;
+#define HOST_FUNCTION_NO_RETURN(NAME, ...) Expected<int32_t, HostFunctionError> NAME(__VA_ARGS__) override;
 
-#define HOST_FUNCTION_INT_RETURN(NAME, ...) \
-    Expected<int32_t, HostFunctionError> NAME(__VA_ARGS__) override;
+#define HOST_FUNCTION_INT_RETURN(NAME, ...) Expected<int32_t, HostFunctionError> NAME(__VA_ARGS__) override;
 
-#define HOST_FUNCTION_UINT_RETURN(NAME, ...) \
-    Expected<std::uint32_t, HostFunctionError> NAME(__VA_ARGS__) override;
+#define HOST_FUNCTION_UINT_RETURN(NAME, ...) Expected<std::uint32_t, HostFunctionError> NAME(__VA_ARGS__) override;
 
 #include <xrpld/app/wasm/host_functions.macro>
 
@@ -117,10 +110,10 @@ public:
 namespace wasm_float {
 
 // The range for the mantissa and exponent when normalized
-static std::int64_t constexpr minMantissa = 1'000'000'000'000'000ll;
-static std::int64_t constexpr maxMantissa = (1ull << 54) - 1;
-static int constexpr minExponent = -96;
-static int constexpr maxExponent = 80;
+static std::int64_t constexpr wasmMinMantissa = 1'000'000'000'000'000ll;
+static std::int64_t constexpr wasmMaxMantissa = wasmMinMantissa * 10 - 1;
+static int constexpr wasmMinExponent = -96;
+static int constexpr wasmMaxExponent = 80;
 
 }  // namespace wasm_float
 

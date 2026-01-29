@@ -47,14 +47,10 @@ public:
 private:
     // Allow a friend function to construct Rules.
     friend Rules
-    makeRulesGivenLedger(
-        DigestAwareReadView const& ledger,
-        Rules const& current);
+    makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
 
     friend Rules
-    makeRulesGivenLedger(
-        DigestAwareReadView const& ledger,
-        std::unordered_set<uint256, beast::uhash<>> const& presets);
+    makeRulesGivenLedger(DigestAwareReadView const& ledger, std::unordered_set<uint256, beast::uhash<>> const& presets);
 
     Rules(
         std::unordered_set<uint256, beast::uhash<>> const& presets,
@@ -91,8 +87,7 @@ setCurrentTransactionRules(std::optional<Rules> r);
 class CurrentTransactionRulesGuard
 {
 public:
-    explicit CurrentTransactionRulesGuard(Rules r)
-        : saved_(getCurrentTransactionRules())
+    explicit CurrentTransactionRulesGuard(Rules r) : saved_(getCurrentTransactionRules())
     {
         setCurrentTransactionRules(std::move(r));
     }

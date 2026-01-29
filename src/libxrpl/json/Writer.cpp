@@ -134,10 +134,7 @@ public:
         auto t = stack_.top().type;
         if (t != type)
         {
-            check(
-                false,
-                "Not an " +
-                    ((type == array ? "array: " : "object: ") + message));
+            check(false, "Not an " + ((type == array ? "array: " : "object: ") + message));
         }
         if (stack_.top().isFirst)
             stack_.top().isFirst = false;

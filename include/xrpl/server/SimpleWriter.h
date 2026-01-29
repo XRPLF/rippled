@@ -19,8 +19,7 @@ class SimpleWriter : public Writer
 
 public:
     template <bool isRequest, class Body, class Fields>
-    explicit SimpleWriter(
-        boost::beast::http::message<isRequest, Body, Fields> const& msg)
+    explicit SimpleWriter(boost::beast::http::message<isRequest, Body, Fields> const& msg)
     {
         boost::beast::ostream(sb_) << msg;
     }

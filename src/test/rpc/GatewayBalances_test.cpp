@@ -77,8 +77,7 @@ public:
             if (wsc->version() == 2)
             {
                 expect(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                expect(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                expect(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 expect(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
 
@@ -98,9 +97,7 @@ public:
                 auto c2 = hwBalance[1u][jss::currency];
                 expect(c1 == "USD" || c2 == "USD");
                 expect(c1 == "JPY" || c2 == "JPY");
-                expect(
-                    hwBalance[0u][jss::value] == "5000" &&
-                    hwBalance[1u][jss::value] == "5000");
+                expect(hwBalance[0u][jss::value] == "5000" && hwBalance[1u][jss::value] == "5000");
             }
 
             {
@@ -165,8 +162,7 @@ public:
             expect(jv[jss::status] == "error");
 
             auto response = jv[jss::result];
-            auto const error =
-                apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
+            auto const error = apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
             BEAST_EXPECT(response[jss::error] == error);
         });
     }
@@ -185,8 +181,7 @@ public:
         auto USD = alice["USD"];
 
         // The largest valid STAmount of USD:
-        STAmount const maxUSD(
-            USD.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
+        STAmount const maxUSD(USD.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
 
         // Create a hotwallet
         Account const hw{"hw"};
