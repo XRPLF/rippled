@@ -8,7 +8,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 ConfidentialConvert::preflight(PreflightContext const& ctx)
@@ -246,4 +246,4 @@ ConfidentialConvert::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

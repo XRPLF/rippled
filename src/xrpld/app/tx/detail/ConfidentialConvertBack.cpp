@@ -10,7 +10,7 @@
 
 #include <cstddef>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 ConfidentialConvertBack::preflight(PreflightContext const& ctx)
@@ -227,4 +227,4 @@ ConfidentialConvertBack::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
