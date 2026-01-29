@@ -2280,6 +2280,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .fillAuditorEncryptedAmt = false,
                 .err = tecNO_PERMISSION,
             });
+
+            // ConvertBack where auditor ciphertext mathematically
+            // correct, but contains invalid data (mismatching amount).
+             mptAlice.convertBack(
+                {.account = bob,
+                 .amt = 10,
+                 .auditorEncryptedAmt = getTrivialCiphertext(),
+                 .err = tecBAD_PROOF});
         }
     }
 
