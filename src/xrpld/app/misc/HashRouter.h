@@ -179,13 +179,9 @@ private:
         }
 
         bool
-        shouldProcessForPeer(
-            PeerShortID peer,
-            Stopwatch::time_point now,
-            std::chrono::seconds interval)
+        shouldProcessForPeer(PeerShortID peer, Stopwatch::time_point now, std::chrono::seconds interval)
         {
-            if (peerProcessed_.contains(peer) &&
-                ((peerProcessed_[peer] + interval) > now))
+            if (peerProcessed_.contains(peer) && ((peerProcessed_[peer] + interval) > now))
                 return false;
             // Peer may already be in the list, but adding it again doesn't hurt
             addPeer(peer);
@@ -243,10 +239,7 @@ public:
        peer once. Unlike shouldProcess, it can be processed for other peers.
      */
     bool
-    shouldProcessForPeer(
-        uint256 const& key,
-        PeerShortID peer,
-        std::chrono::seconds interval);
+    shouldProcessForPeer(uint256 const& key, PeerShortID peer, std::chrono::seconds interval);
 
     /** Set the flags on a hash.
 

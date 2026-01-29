@@ -67,11 +67,7 @@ public:
     virtual ~MagicInboundLedgers() = default;
 
     virtual std::shared_ptr<Ledger const>
-    acquire(
-        uint256 const& hash,
-        std::uint32_t seq,
-        InboundLedger::Reason,
-        char const*) override
+    acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason, char const*) override
     {
         if (bhvr == InboundLedgersBehavior::DropAll)
             return {};

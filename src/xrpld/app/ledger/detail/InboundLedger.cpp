@@ -69,8 +69,7 @@ to_string(InboundLedger::Reason reason)
         case PREFERRED:
             return "PREFERRED";
         default:
-            UNREACHABLE(
-                "ripple::to_string(InboundLedger::Reason) : unknown value");
+            UNREACHABLE("ripple::to_string(InboundLedger::Reason) : unknown value");
             return "unknown";
     }
 }
@@ -172,8 +171,7 @@ InboundLedger::update(std::uint32_t seq, bool broadcast)
     {
         if (cancelTimer(sl))
         {
-            JLOG(journal_.debug())
-                << "update: cancelling timer to send peer requests";
+            JLOG(journal_.debug()) << "update: cancelling timer to send peer requests";
             deferred_ = false;
             skipNext_ = true;
             addPeers();

@@ -111,13 +111,10 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 
         Application* pApp = &app_;
 
-        app_.getJobQueue().addJob(
-            jtADVANCE, "GetConsL2", [pApp, hash, this]() {
-                JLOG(j_.debug())
-                    << "JOB advanceLedger getConsensusLedger2 started";
-                pApp->getInboundLedgers().acquireAsync(
-                    hash, 0, InboundLedger::Reason::PREFERRED);
-            });
+        app_.getJobQueue().addJob(jtADVANCE, "GetConsL2", [pApp, hash, this]() {
+            JLOG(j_.debug()) << "JOB advanceLedger getConsensusLedger2 started";
+            pApp->getInboundLedgers().acquireAsync(hash, 0, InboundLedger::Reason::PREFERRED);
+        });
         return std::nullopt;
     }
 

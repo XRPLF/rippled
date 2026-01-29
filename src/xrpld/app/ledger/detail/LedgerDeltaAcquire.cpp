@@ -85,11 +85,7 @@ LedgerDeltaAcquire::trigger(std::size_t limit, ScopedLockType& sl)
     }
 
     if (fallBack_)
-        inboundLedgers_.acquire(
-            hash_,
-            ledgerSeq_,
-            InboundLedger::Reason::GENERIC,
-            "LedgerDeltaAcquire::trigger");
+        inboundLedgers_.acquire(hash_, ledgerSeq_, InboundLedger::Reason::GENERIC, "LedgerDeltaAcquire::trigger");
 }
 
 void

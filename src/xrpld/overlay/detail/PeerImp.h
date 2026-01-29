@@ -250,10 +250,8 @@ private:
 
     // Track message requests and responses
     // TODO: Use an expiring cache or something
-    using MessageCookieMap =
-        std::map<uint256, std::set<std::optional<uint64_t>>>;
-    using PeerCookieMap =
-        std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>>;
+    using MessageCookieMap = std::map<uint256, std::set<std::optional<uint64_t>>>;
+    using PeerCookieMap = std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>>;
     std::mutex mutable cookieLock_;
     MessageCookieMap messageRequestCookies_;
 
@@ -796,24 +794,16 @@ private:
         PeerCookieMap const& destinations);
 
     void
-    sendToMultiple(
-        protocol::TMLedgerData& ledgerData,
-        PeerCookieMap const& destinations);
+    sendToMultiple(protocol::TMLedgerData& ledgerData, PeerCookieMap const& destinations);
 
     std::shared_ptr<Ledger const>
-    getLedger(
-        std::shared_ptr<protocol::TMGetLedger> const& m,
-        uint256 const& mHash);
+    getLedger(std::shared_ptr<protocol::TMGetLedger> const& m, uint256 const& mHash);
 
     std::shared_ptr<SHAMap const>
-    getTxSet(
-        std::shared_ptr<protocol::TMGetLedger> const& m,
-        uint256 const& mHash) const;
+    getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m, uint256 const& mHash) const;
 
     void
-    processLedgerRequest(
-        std::shared_ptr<protocol::TMGetLedger> const& m,
-        uint256 const& mHash);
+    processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m, uint256 const& mHash);
 };
 
 //------------------------------------------------------------------------------

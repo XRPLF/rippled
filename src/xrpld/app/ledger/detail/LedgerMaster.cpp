@@ -801,8 +801,7 @@ void
 LedgerMaster::failedSave(std::uint32_t seq, uint256 const& hash)
 {
     clearLedger(seq);
-    app_.getInboundLedgers().acquire(
-        hash, seq, InboundLedger::Reason::GENERIC, "failedSave");
+    app_.getInboundLedgers().acquire(hash, seq, InboundLedger::Reason::GENERIC, "failedSave");
 }
 
 // Check if the specified ledger can become the new last fully-validated
@@ -848,8 +847,7 @@ LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
 
         // FIXME: We may not want to fetch a ledger with just one
         // trusted validation
-        ledger = app_.getInboundLedgers().acquire(
-            hash, seq, InboundLedger::Reason::GENERIC, "checkAccept");
+        ledger = app_.getInboundLedgers().acquire(hash, seq, InboundLedger::Reason::GENERIC, "checkAccept");
     }
 
     if (ledger)
@@ -892,10 +890,8 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         return;
     }
 
-    JLOG(m_journal.info()) << "Advancing accepted ledger to "
-                           << ledger->header().seq << " ("
-                           << to_short_string(ledger->header().hash)
-                           << ") with >= " << minVal << " validations";
+    JLOG(m_journal.info()) << "Advancing accepted ledger to " << ledger->header().seq << " ("
+                           << to_short_string(ledger->header().hash) << ") with >= " << minVal << " validations";
 
     ledger->setValidated();
     ledger->setFull();
@@ -1208,10 +1204,7 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
                 // Can we try to acquire the ledger we need?
                 if (!ledger && (++acqCount < ledger_fetch_size_))
                     ledger = app_.getInboundLedgers().acquire(
-                        *hash,
-                        seq,
-                        InboundLedger::Reason::GENERIC,
-                        "findNewLedgersToPublish");
+                        *hash, seq, InboundLedger::Reason::GENERIC, "findNewLedgersToPublish");
             }
 
             // Did we acquire the next ledger we need to publish?
@@ -1585,8 +1578,7 @@ LedgerMaster::walkHashBySeq(
         // Try to acquire the complete ledger
         if (!ledger)
         {
-            if (auto const l = app_.getInboundLedgers().acquire(
-                    *refHash, refIndex, reason, "walkHashBySeq"))
+            if (auto const l = app_.getInboundLedgers().acquire(*refHash, refIndex, reason, "walkHashBySeq"))
             {
                 ledgerHash = hashOfSeq(*l, index, m_journal);
                 XRPL_ASSERT(
@@ -1710,10 +1702,8 @@ LedgerMaster::fetchForHistory(
         {
             if (!app_.getInboundLedgers().isFailure(*hash))
             {
-                ledger = app_.getInboundLedgers().acquire(
-                    *hash, missing, reason, "fetchForHistory");
-                if (!ledger && missing != fetch_seq_ &&
-                    missing > app_.getNodeStore().earliestLedgerSeq())
+                ledger = app_.getInboundLedgers().acquire(*hash, missing, reason, "fetchForHistory");
+                if (!ledger && missing != fetch_seq_ && missing > app_.getNodeStore().earliestLedgerSeq())
                 {
                     JLOG(m_journal.trace()) << "fetchForHistory want fetch pack " << missing;
                     fetch_seq_ = missing;
@@ -1767,8 +1757,7 @@ LedgerMaster::fetchForHistory(
                             h->isNonZero(),
                             "xrpl::LedgerMaster::fetchForHistory : "
                             "prefetched ledger");
-                        app_.getInboundLedgers().acquire(
-                            *h, seq, reason, "fetchForHistory no ledger");
+                        app_.getInboundLedgers().acquire(*h, seq, reason, "fetchForHistory no ledger");
                     }
                 }
             }

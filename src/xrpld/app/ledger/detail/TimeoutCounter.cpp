@@ -34,19 +34,16 @@ TimeoutCounter::setTimer(ScopedLockType& sl)
 {
     if (isDone())
         return;
-    JLOG(journal_.debug()) << "Setting timer for " << timerInterval_.count()
-                           << "ms";
+    JLOG(journal_.debug()) << "Setting timer for " << timerInterval_.count() << "ms";
     timer_.expires_after(timerInterval_);
-    timer_.async_wait([wptr =
-                           pmDowncast()](boost::system::error_code const& ec) {
+    timer_.async_wait([wptr = pmDowncast()](boost::system::error_code const& ec) {
         if (auto ptr = wptr.lock())
         {
             ScopedLockType sl(ptr->mtx_);
             if (ec == boost::asio::error::operation_aborted || ptr->skipNext_)
             {
                 JLOG(ptr->journal_.debug())
-                    << "Aborting setTimer: " << ec
-                    << ", skip: " << (ptr->skipNext_ ? "true" : "false");
+                    << "Aborting setTimer: " << ec << ", skip: " << (ptr->skipNext_ ? "true" : "false");
                 ptr->skipNext_ = false;
                 return;
             }
