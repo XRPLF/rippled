@@ -1107,7 +1107,7 @@ TRANSACTION(ttCONFIDENTIAL_CONVERT_BACK, 87, ConfidentialConvertBack,
     {sfAuditorEncryptedAmount, soeOPTIONAL},
     {sfBlindingFactor, soeREQUIRED},
     {sfZKProof, soeREQUIRED},
-    {sfPedersenCommitment, soeREQUIRED}
+    {sfBalanceCommitment, soeREQUIRED},
 }))
 
 #if TRANSACTION_INCLUDE
@@ -1123,9 +1123,11 @@ TRANSACTION(ttCONFIDENTIAL_SEND, 88, ConfidentialSend,
     {sfSenderEncryptedAmount, soeREQUIRED},
     {sfDestinationEncryptedAmount, soeREQUIRED},
     {sfIssuerEncryptedAmount, soeREQUIRED},
-    {sfZKProof, soeREQUIRED},
-    {sfCredentialIDs, soeOPTIONAL},
     {sfAuditorEncryptedAmount, soeOPTIONAL},
+    {sfZKProof, soeREQUIRED},
+    {sfAmountCommitment, soeREQUIRED},
+    {sfBalanceCommitment, soeREQUIRED},
+    {sfCredentialIDs, soeOPTIONAL},
 }))
 
 #if TRANSACTION_INCLUDE

@@ -48,6 +48,30 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         return trivialCiphertext;
     }
 
+    static std::string const&
+    getTrivialSendProofHex(size_t nRecipients)
+    {
+        static std::string const trivialProofHex = [nRecipients]() {
+            size_t const sizeEquality =
+                getMultiCiphertextEqualityProofSize(nRecipients);
+            size_t const totalSize = sizeEquality + (2 * ecPedersenProofLength);
+
+            Buffer buf(totalSize);
+            std::memset(buf.data(), 0, totalSize);
+
+            for (std::size_t i = 0; i < totalSize; i += ecGamalEncryptedLength)
+            {
+                buf.data()[i] = 0x02;
+                if (i + ecGamalEncryptedLength - 1 < totalSize)
+                    buf.data()[i + ecGamalEncryptedLength - 1] = 0x01;
+            }
+
+            return strHex(buf);
+        }();
+
+        return trivialProofHex;
+    }
+
     void
     testConvert(FeatureBitset features)
     {
@@ -1177,12 +1201,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = bob,
                  .dest = carol,
                  .amt = 10,
-                 .senderEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .destEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .issuerEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
+                 .senderEncryptedAmt = Buffer(ecGamalEncryptedTotalLength),
+                 .destEncryptedAmt = Buffer(ecGamalEncryptedTotalLength),
+                 .issuerEncryptedAmt = Buffer(ecGamalEncryptedTotalLength),
                  .err = temDISABLED});
         }
 
@@ -1224,26 +1245,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = alice,
                  .dest = carol,
                  .amt = 10,
-                 .senderEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .destEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .issuerEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
                  .err = temMALFORMED});
 
             // can not send to self
             mptAlice.send(
-                {.account = bob,
-                 .dest = bob,
-                 .amt = 10,
-                 .senderEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .destEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .issuerEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .err = temMALFORMED});
+                {.account = bob, .dest = bob, .amt = 10, .err = temMALFORMED});
 
             // sender encrypted amount wrong length
             mptAlice.send(
@@ -1251,58 +1257,51 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .dest = carol,
                  .amt = 10,
                  .senderEncryptedAmt = Buffer(10),
-                 .destEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .issuerEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
                  .err = temBAD_CIPHERTEXT});
             // dest encrypted amount wrong length
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
                  .amt = 10,
-                 .senderEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
                  .destEncryptedAmt = Buffer(10),
-                 .issuerEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
                  .err = temBAD_CIPHERTEXT});
             // issuer encrypted amount wrong length
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
                  .amt = 10,
-                 .senderEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .destEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
                  .issuerEncryptedAmt = Buffer(10),
                  .err = temBAD_CIPHERTEXT});
 
-            // auto const ciphertextHex = generatePlaceholderCiphertext();
             // sender encrypted amount malformed
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
                  .amt = 10,
-                 .senderEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
+                 .proof = getTrivialSendProofHex(3),
+                 .senderEncryptedAmt = Buffer(ecGamalEncryptedTotalLength),
+                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
+                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
                  .err = temBAD_CIPHERTEXT});
             // dest encrypted amount malformed
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
                  .amt = 10,
-                 .destEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
+                 .proof = getTrivialSendProofHex(3),
+                 .destEncryptedAmt = Buffer(ecGamalEncryptedTotalLength),
+                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
+                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
                  .err = temBAD_CIPHERTEXT});
             // issuer encrypted amount malformed
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
                  .amt = 10,
-                 .issuerEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
+                 .proof = getTrivialSendProofHex(3),
+                 .issuerEncryptedAmt = Buffer(ecGamalEncryptedTotalLength),
+                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
+                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
                  .err = temBAD_CIPHERTEXT});
 
             // invalid proof length
@@ -1310,13 +1309,29 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = bob,
                  .dest = carol,
                  .amt = 10,
-                 .senderEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .destEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
-                 .issuerEncryptedAmt =
-                     Buffer(ripple::ecGamalEncryptedTotalLength),
                  .proof = std::string(10, 'A'),
+                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
+                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .err = temMALFORMED});
+
+            // invalid amount Pedersen commitment length
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = getTrivialSendProofHex(3),
+                 .amountCommitment = Buffer(100),
+                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+                 .err = temMALFORMED});
+
+            // invalid balance Pedersen commitment length
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = getTrivialSendProofHex(3),
+                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
+                 .balanceCommitment = Buffer(100),
                  .err = temMALFORMED});
         }
     }
@@ -1403,10 +1418,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             jv[sfSenderEncryptedAmount] = strHex(getTrivialCiphertext());
             jv[sfDestinationEncryptedAmount] = strHex(getTrivialCiphertext());
             jv[sfIssuerEncryptedAmount] = strHex(getTrivialCiphertext());
-
-            auto const dummyProofSize =
-                secp256k1_mpt_prove_same_plaintext_multi_size(3);
-            jv[sfZKProof.jsonName] = strHex(Buffer(dummyProofSize));
+            jv[sfAmountCommitment] = strHex(Buffer(ecPedersenCommitmentLength));
+            jv[sfBalanceCommitment] =
+                strHex(Buffer(ecPedersenCommitmentLength));
+            jv[sfZKProof] = getTrivialSendProofHex(3);
 
             env(jv, ter(tecOBJECT_NOT_FOUND));
         }
@@ -1418,8 +1433,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = bob,
                  .dest = unknown,
                  .amt = 10,
+                 .senderEncryptedAmt = getTrivialCiphertext(),
                  .destEncryptedAmt = getTrivialCiphertext(),
                  .issuerEncryptedAmt = getTrivialCiphertext(),
+                 .proof = getTrivialSendProofHex(3),
+                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
+                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
                  .err = tecNO_TARGET});
         }
 
@@ -1429,11 +1448,23 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = bob,
                  .dest = dave,
                  .amt = 10,
+                 .senderEncryptedAmt = getTrivialCiphertext(),
+                 .destEncryptedAmt = getTrivialCiphertext(),
+                 .issuerEncryptedAmt = getTrivialCiphertext(),
+                 .proof = getTrivialSendProofHex(3),
+                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
+                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
                  .err = tecNO_PERMISSION});
             mptAlice.send(
                 {.account = dave,
                  .dest = carol,
                  .amt = 10,
+                 .senderEncryptedAmt = getTrivialCiphertext(),
+                 .destEncryptedAmt = getTrivialCiphertext(),
+                 .issuerEncryptedAmt = getTrivialCiphertext(),
+                 .proof = getTrivialSendProofHex(3),
+                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
+                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
                  .err = tecNO_PERMISSION});
         }
 
@@ -1443,7 +1474,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = bob,
                  .dest = eve,
                  .amt = 10,
+                 .senderEncryptedAmt = getTrivialCiphertext(),
                  .destEncryptedAmt = getTrivialCiphertext(),
+                 .issuerEncryptedAmt = getTrivialCiphertext(),
+                 .proof = getTrivialSendProofHex(3),
+                 .amountCommitment = Buffer(ecPedersenCommitmentLength),
+                 .balanceCommitment = Buffer(ecPedersenCommitmentLength),
                  .err = tecOBJECT_NOT_FOUND});
         }
 
@@ -1618,14 +1654,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = carol,
             });
 
-            auto const dummyProofSize =
-                secp256k1_mpt_prove_same_plaintext_multi_size(3);
-
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
                  .amt = 10,
-                 .proof = strHex(Buffer(dummyProofSize)),
+                 .proof = getTrivialSendProofHex(3),
                  .err = tecBAD_PROOF});
         }
     }

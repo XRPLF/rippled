@@ -45,8 +45,16 @@ ConfidentialSend::preflight(PreflightContext const& ctx)
 
     // Check the length of the ZKProof
     auto const recipientCount = getConfidentialRecipientCount(hasAuditor);
-    if (ctx.tx[sfZKProof].length() !=
-        getMultiCiphertextEqualityProofSize(recipientCount))
+    auto const sizeEquality =
+        getMultiCiphertextEqualityProofSize(recipientCount);
+    auto const sizePedersenLinkage = 2 * ecPedersenProofLength;
+
+    if (ctx.tx[sfZKProof].length() != sizeEquality + sizePedersenLinkage)
+        return temMALFORMED;
+
+    // Check the length of Pedersen commitments
+    if (ctx.tx[sfBalanceCommitment].size() != ecPedersenCommitmentLength ||
+        ctx.tx[sfAmountCommitment].size() != ecPedersenCommitmentLength)
         return temMALFORMED;
 
     // Check the encrypted amount formats, this is more expensive so put it at
@@ -58,6 +66,125 @@ ConfidentialSend::preflight(PreflightContext const& ctx)
 
     if (hasAuditor && !isValidCiphertext(ctx.tx[sfAuditorEncryptedAmount]))
         return temBAD_CIPHERTEXT;
+
+    return tesSUCCESS;
+}
+
+TER
+verifySendProofs(
+    PreclaimContext const& ctx,
+    std::shared_ptr<SLE const> const& sleSenderMPToken,
+    std::shared_ptr<SLE const> const& sleDestinationMPToken,
+    std::shared_ptr<SLE const> const& sleIssuance)
+{
+    // Sanity check
+    if (!sleSenderMPToken || !sleDestinationMPToken || !sleIssuance)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
+    auto const recipientCount = getConfidentialRecipientCount(hasAuditor);
+    auto const proof = ctx.tx[sfZKProof];
+    size_t remainingLength = proof.size();
+    size_t currentOffset = 0;
+
+    // Extract equality proof
+    auto const sizeEquality =
+        getMultiCiphertextEqualityProofSize(recipientCount);
+    if (remainingLength < sizeEquality)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const equalityProof = proof.substr(currentOffset, sizeEquality);
+    currentOffset += sizeEquality;
+    remainingLength -= sizeEquality;
+
+    // Extract Pedersen linkage proof for amount commitment
+    if (remainingLength < ecPedersenProofLength)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const amountLinkageProof =
+        proof.substr(currentOffset, ecPedersenProofLength);
+    currentOffset += ecPedersenProofLength;
+    remainingLength -= ecPedersenProofLength;
+
+    // Extract Pedersen linkage proof for balance commitment
+    if (remainingLength < ecPedersenProofLength)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const balanceLinkageProof =
+        proof.substr(currentOffset, ecPedersenProofLength);
+    currentOffset += ecPedersenProofLength;
+    remainingLength -= ecPedersenProofLength;
+
+    // todo: Extract range proof once the lib is ready
+    if (remainingLength != 0)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    // Prepare receipient list
+    std::vector<ConfidentialRecipient> recipients;
+    recipients.reserve(recipientCount);
+
+    recipients.push_back(
+        {(*sleSenderMPToken)[sfHolderElGamalPublicKey],
+         ctx.tx[sfSenderEncryptedAmount]});
+
+    recipients.push_back(
+        {(*sleDestinationMPToken)[sfHolderElGamalPublicKey],
+         ctx.tx[sfDestinationEncryptedAmount]});
+
+    recipients.push_back(
+        {(*sleIssuance)[sfIssuerElGamalPublicKey],
+         ctx.tx[sfIssuerEncryptedAmount]});
+
+    if (hasAuditor)
+    {
+        recipients.push_back(
+            {(*sleIssuance)[sfAuditorElGamalPublicKey],
+             ctx.tx[sfAuditorEncryptedAmount]});
+    }
+
+    // Prepare the context hash
+    auto const contextHash = getSendContextHash(
+        ctx.tx[sfAccount],
+        ctx.tx[sfSequence],
+        ctx.tx[sfMPTokenIssuanceID],
+        ctx.tx[sfDestination],
+        (*sleSenderMPToken)[~sfConfidentialBalanceVersion].value_or(0));
+
+    // Verify the multi-ciphertext equality proof
+    if (auto const ter = verifyMultiCiphertextEqualityProof(
+            equalityProof, recipients, recipientCount, contextHash);
+        !isTesSuccess(ter))
+    {
+        JLOG(ctx.j.trace()) << "ConfidentialSend: Equality proof failed.";
+        return ter;
+    }
+
+    // Verify amount linkage
+    if (auto const ter = verifyAmountPcmLinkage(
+            amountLinkageProof,
+            ctx.tx[sfSenderEncryptedAmount],
+            (*sleSenderMPToken)[sfHolderElGamalPublicKey],
+            ctx.tx[sfAmountCommitment],
+            contextHash);
+        !isTesSuccess(ter))
+    {
+        JLOG(ctx.j.trace()) << "ConfidentialSend: Amount linkage proof failed.";
+        return ter;
+    }
+
+    // Verify balance linkage
+    if (auto const ter = verifyBalancePcmLinkage(
+            balanceLinkageProof,
+            (*sleSenderMPToken)[sfConfidentialBalanceSpending],
+            (*sleSenderMPToken)[sfHolderElGamalPublicKey],
+            ctx.tx[sfBalanceCommitment],
+            contextHash);
+        !isTesSuccess(ter))
+    {
+        JLOG(ctx.j.trace())
+            << "ConfidentialSend: Balance linkage proof failed.";
+        return ter;
+    }
 
     return tesSUCCESS;
 }
@@ -155,52 +282,8 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(ter))
         return ter;
 
-    auto const contextHash = getSendContextHash(
-        account,
-        ctx.tx[sfSequence],
-        mptIssuanceID,
-        destination,
-        (*sleSenderMPToken)[~sfConfidentialBalanceVersion].value_or(0));
-
-    auto const expectedRecipients =
-        getConfidentialRecipientCount(requiresAuditor);
-
-    // Prepare encrypted amount info for proof verification
-    std::vector<ConfidentialRecipient> recipients;
-    recipients.reserve(expectedRecipients);
-
-    // Add sender encrypted amount info
-    recipients.push_back(
-        {(*sleSenderMPToken)[sfHolderElGamalPublicKey],
-         ctx.tx[sfSenderEncryptedAmount]});
-
-    // Add destination encrypted amount info
-    recipients.push_back(
-        {(*sleDestinationMPToken)[sfHolderElGamalPublicKey],
-         ctx.tx[sfDestinationEncryptedAmount]});
-
-    // Add issuer encrypted amount info
-    recipients.push_back(
-        {(*sleIssuance)[sfIssuerElGamalPublicKey],
-         ctx.tx[sfIssuerEncryptedAmount]});
-
-    // Add auditor encrypted amount info if present
-    if (requiresAuditor)
-    {
-        recipients.push_back(
-            {(*sleIssuance)[sfAuditorElGamalPublicKey],
-             ctx.tx[sfAuditorEncryptedAmount]});
-    }
-
-    // Verify the multi-ciphertext equality proof
-    if (auto const ter = verifyMultiCiphertextEqualityProof(
-            ctx.tx[sfZKProof], recipients, expectedRecipients, contextHash);
-        !isTesSuccess(ter))
-    {
-        return ter;
-    }
-
-    return tesSUCCESS;
+    return verifySendProofs(
+        ctx, sleSenderMPToken, sleDestinationMPToken, sleIssuance);
 }
 
 TER
@@ -209,13 +292,14 @@ ConfidentialSend::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const destination = ctx_.tx[sfDestination];
 
-    auto sleSender = view().peek(keylet::mptoken(mptIssuanceID, account_));
-    auto sleDestination =
+    auto sleSenderMPToken =
+        view().peek(keylet::mptoken(mptIssuanceID, account_));
+    auto sleDestinationMPToken =
         view().peek(keylet::mptoken(mptIssuanceID, destination));
 
     auto sleDestAcct = view().peek(keylet::account(destination));
 
-    if (!sleSender || !sleDestination || !sleDestAcct)
+    if (!sleSenderMPToken || !sleDestinationMPToken || !sleDestAcct)
         return tecINTERNAL;
 
     if (auto err = verifyDepositPreauth(
@@ -236,7 +320,8 @@ ConfidentialSend::doApply()
 
     // Subtract from sender's spending balance
     {
-        Slice const curSpending = (*sleSender)[sfConfidentialBalanceSpending];
+        Slice const curSpending =
+            (*sleSenderMPToken)[sfConfidentialBalanceSpending];
         Buffer newSpending(ecGamalEncryptedTotalLength);
 
         if (TER const ter =
@@ -244,12 +329,13 @@ ConfidentialSend::doApply()
             !isTesSuccess(ter))
             return tecINTERNAL;
 
-        (*sleSender)[sfConfidentialBalanceSpending] = newSpending;
+        (*sleSenderMPToken)[sfConfidentialBalanceSpending] = newSpending;
     }
 
     // Subtract from issuer's balance
     {
-        Slice const curIssuerEnc = (*sleSender)[sfIssuerEncryptedBalance];
+        Slice const curIssuerEnc =
+            (*sleSenderMPToken)[sfIssuerEncryptedBalance];
         Buffer newIssuerEnc(ecGamalEncryptedTotalLength);
 
         if (TER const ter =
@@ -257,13 +343,14 @@ ConfidentialSend::doApply()
             !isTesSuccess(ter))
             return tecINTERNAL;
 
-        (*sleSender)[sfIssuerEncryptedBalance] = newIssuerEnc;
+        (*sleSenderMPToken)[sfIssuerEncryptedBalance] = newIssuerEnc;
     }
 
     // Subtract from auditor's balance if present
     if (auditorEc)
     {
-        Slice const curAuditorEnc = (*sleSender)[sfAuditorEncryptedBalance];
+        Slice const curAuditorEnc =
+            (*sleSenderMPToken)[sfAuditorEncryptedBalance];
         Buffer newAuditorEnc(ecGamalEncryptedTotalLength);
 
         if (TER const ter =
@@ -271,24 +358,26 @@ ConfidentialSend::doApply()
             !isTesSuccess(ter))
             return tecINTERNAL;
 
-        (*sleSender)[sfAuditorEncryptedBalance] = newAuditorEnc;
+        (*sleSenderMPToken)[sfAuditorEncryptedBalance] = newAuditorEnc;
     }
 
     // Add to destination's inbox balance
     {
-        Slice const curInbox = (*sleDestination)[sfConfidentialBalanceInbox];
+        Slice const curInbox =
+            (*sleDestinationMPToken)[sfConfidentialBalanceInbox];
         Buffer newInbox(ecGamalEncryptedTotalLength);
 
         if (TER const ter = homomorphicAdd(curInbox, destEc, newInbox);
             !isTesSuccess(ter))
             return tecINTERNAL;
 
-        (*sleDestination)[sfConfidentialBalanceInbox] = newInbox;
+        (*sleDestinationMPToken)[sfConfidentialBalanceInbox] = newInbox;
     }
 
     // Add to issuer's balance
     {
-        Slice const curIssuerEnc = (*sleDestination)[sfIssuerEncryptedBalance];
+        Slice const curIssuerEnc =
+            (*sleDestinationMPToken)[sfIssuerEncryptedBalance];
         Buffer newIssuerEnc(ecGamalEncryptedTotalLength);
 
         if (TER const ter =
@@ -296,14 +385,14 @@ ConfidentialSend::doApply()
             !isTesSuccess(ter))
             return tecINTERNAL;
 
-        (*sleDestination)[sfIssuerEncryptedBalance] = newIssuerEnc;
+        (*sleDestinationMPToken)[sfIssuerEncryptedBalance] = newIssuerEnc;
     }
 
     // Add to auditor's balance if present
     if (auditorEc)
     {
         Slice const curAuditorEnc =
-            (*sleDestination)[sfAuditorEncryptedBalance];
+            (*sleDestinationMPToken)[sfAuditorEncryptedBalance];
         Buffer newAuditorEnc(ecGamalEncryptedTotalLength);
 
         if (TER const ter =
@@ -311,15 +400,15 @@ ConfidentialSend::doApply()
             !isTesSuccess(ter))
             return tecINTERNAL;
 
-        (*sleDestination)[sfAuditorEncryptedBalance] = newAuditorEnc;
+        (*sleDestinationMPToken)[sfAuditorEncryptedBalance] = newAuditorEnc;
     }
 
     // increment version
-    incrementConfidentialVersion(*sleSender);
-    incrementConfidentialVersion(*sleDestination);
+    incrementConfidentialVersion(*sleSenderMPToken);
+    incrementConfidentialVersion(*sleDestinationMPToken);
 
-    view().update(sleSender);
-    view().update(sleDestination);
+    view().update(sleSenderMPToken);
+    view().update(sleDestinationMPToken);
     return tesSUCCESS;
 }
 }  // namespace ripple
