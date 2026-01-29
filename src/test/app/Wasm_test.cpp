@@ -794,7 +794,7 @@ struct Wasm_test : public beast::unit_test::suite
         testcase("Wasm Bad Align");
 
         // bad_align.c
-        auto const badAlignWasm = hexToBytes(badAlignHex);
+        auto const badAlignWasm = hexToBytes(badAlignWasmHex);
 
         using namespace test::jtx;
 
@@ -807,7 +807,10 @@ struct Wasm_test : public beast::unit_test::suite
             auto& engine = WasmEngine::instance();
 
             auto re = engine.run(badAlignWasm, "test", {}, imports, hfs, 1'000'000, env.journal);
-            BEAST_EXPECT(re && re->result == 0xbab88d46);
+            if (BEAST_EXPECTS(re, transToken(re.error())))
+            {
+                BEAST_EXPECTS(re->result == 0x684f7941, std::to_string(re->result));
+            }
         }
 
         env.close();
