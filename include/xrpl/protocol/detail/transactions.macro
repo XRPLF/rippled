@@ -1065,7 +1065,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
 #include <xrpld/app/tx/detail/ConfidentialConvert.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_CONVERT, 85, ConfidentialConvert,
-    Delegation::delegatable,
+    Delegation::delegable,
     featureConfidentialTransfer,
     noPriv,
     ({
@@ -1084,7 +1084,7 @@ TRANSACTION(ttCONFIDENTIAL_CONVERT, 85, ConfidentialConvert,
 #include <xrpld/app/tx/detail/ConfidentialMergeInbox.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MERGE_INBOX, 86, ConfidentialMergeInbox,
-    Delegation::delegatable,
+    Delegation::delegable,
     featureConfidentialTransfer,
     noPriv,
     ({
@@ -1096,7 +1096,7 @@ TRANSACTION(ttCONFIDENTIAL_MERGE_INBOX, 86, ConfidentialMergeInbox,
 #include <xrpld/app/tx/detail/ConfidentialConvertBack.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_CONVERT_BACK, 87, ConfidentialConvertBack,
-    Delegation::delegatable,
+    Delegation::delegable,
     featureConfidentialTransfer,
     noPriv,
     ({
@@ -1114,7 +1114,7 @@ TRANSACTION(ttCONFIDENTIAL_CONVERT_BACK, 87, ConfidentialConvertBack,
 #include <xrpld/app/tx/detail/ConfidentialSend.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_SEND, 88, ConfidentialSend,
-    Delegation::delegatable,
+    Delegation::delegable,
     featureConfidentialTransfer,
     noPriv,
     ({
@@ -1134,7 +1134,7 @@ TRANSACTION(ttCONFIDENTIAL_SEND, 88, ConfidentialSend,
 #include <xrpld/app/tx/detail/ConfidentialClawback.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_CLAWBACK, 89, ConfidentialClawback,
-    Delegation::delegatable,
+    Delegation::delegable,
     featureConfidentialTransfer,
     noPriv,
     ({
