@@ -8,7 +8,7 @@
 
 #include <deque>
 
-namespace ripple {
+namespace xrpl {
 
 // Subscription object for JSON-RPC
 class RPCSubImp : public RPCSub
@@ -72,7 +72,7 @@ public:
             JLOG(j_.info()) << "RPCCall::fromNetwork start";
 
             mSending = m_jobQueue.addJob(
-                jtCLIENT_SUBSCRIBE, "RPCSub::sendThread", [this]() {
+                jtCLIENT_SUBSCRIBE, "RPCSubSendThr", [this]() {
                     sendThread();
                 });
         }
@@ -171,7 +171,7 @@ private:
 
     int mSeq;  // Next id to allocate.
 
-    bool mSending;  // Sending threead is active.
+    bool mSending;  // Sending thread is active.
 
     std::deque<std::pair<int, Json::Value>> mDeque;
 
@@ -205,4 +205,4 @@ make_RPCSub(
         logs);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

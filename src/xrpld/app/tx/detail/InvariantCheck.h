@@ -13,7 +13,7 @@
 #include <tuple>
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 class ReadView;
 
@@ -613,7 +613,7 @@ public:
 };
 
 /**
- * @brief Invariants: Pseudo-accounts have valid and consisent properties
+ * @brief Invariants: Pseudo-accounts have valid and consistent properties
  *
  * Pseudo-accounts have certain properties, and some of those properties are
  * unique to pseudo-accounts. Check that all pseudo-accounts are following the
@@ -861,6 +861,7 @@ class ValidVault
         uint256 key = beast::zero;
         Asset asset = {};
         AccountID pseudoId = {};
+        AccountID owner = {};
         uint192 shareMPTID = beast::zero;
         Number assetsTotal = 0;
         Number assetsAvailable = 0;
@@ -935,7 +936,7 @@ using InvariantChecks = std::tuple<
  * @return std::tuple of instances that implement the required invariant check
  * methods
  *
- * @see ripple::InvariantChecker_PROTOTYPE
+ * @see xrpl::InvariantChecker_PROTOTYPE
  */
 inline InvariantChecks
 getInvariantChecks()
@@ -943,6 +944,6 @@ getInvariantChecks()
     return InvariantChecks{};
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

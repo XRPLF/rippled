@@ -11,7 +11,7 @@
 
 #include <condition_variable>
 
-namespace ripple {
+namespace xrpl {
 
 namespace NodeStore {
 
@@ -230,7 +230,7 @@ protected:
     {
         XRPL_ASSERT(
             count <= sz,
-            "ripple::NodeStore::Database::storeStats : valid inputs");
+            "xrpl::NodeStore::Database::storeStats : valid inputs");
         storeCount_ += count;
         storeSz_ += sz;
     }
@@ -291,6 +291,6 @@ private:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

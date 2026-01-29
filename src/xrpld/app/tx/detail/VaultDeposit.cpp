@@ -9,10 +9,11 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
@@ -115,16 +116,14 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(ter))
         return ter;
 
-    // Asset issuer does not have any balance, they can just create funds by
-    // depositing in the vault.
-    if ((vaultAsset.native() || vaultAsset.getIssuer() != account) &&
-        accountHolds(
+    if (accountHolds(
             ctx.view,
             account,
             vaultAsset,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahZERO_IF_UNAUTHORIZED,
-            ctx.j) < assets)
+            ctx.j,
+            SpendableHandling::shFULL_BALANCE) < assets)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -136,6 +135,7 @@ VaultDeposit::doApply()
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+    auto const vaultAsset = vault->at(sfAsset);
 
     auto const amount = ctx_.tx[sfAmount];
     // Make sure the depositor can hold shares.
@@ -179,7 +179,7 @@ VaultDeposit::doApply()
             // This follows from the reverse of the outer enclosing if condition
             XRPL_ASSERT(
                 account_ == vault->at(sfOwner),
-                "ripple::VaultDeposit::doApply : account is owner");
+                "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
                     mPriorBalance,              // priorBalance
@@ -236,7 +236,7 @@ VaultDeposit::doApply()
 
     XRPL_ASSERT(
         sharesCreated.asset() != assetsDeposited.asset(),
-        "ripple::VaultDeposit::doApply : assets are not shares");
+        "xrpl::VaultDeposit::doApply : assets are not shares");
 
     vault->at(sfAssetsTotal) += assetsDeposited;
     vault->at(sfAssetsAvailable) += assetsDeposited;
@@ -284,7 +284,9 @@ VaultDeposit::doApply()
         !isTesSuccess(ter))
         return ter;
 
+    associateAsset(*vault, vaultAsset);
+
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

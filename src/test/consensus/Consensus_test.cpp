@@ -6,7 +6,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/to_string.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class Consensus_test : public beast::unit_test::suite
@@ -63,7 +63,7 @@ public:
         using namespace std::chrono_literals;
         testcase("check consensus");
 
-        // Use default parameterss
+        // Use default parameters
         ConsensusParms const p{};
 
         ///////////////
@@ -74,7 +74,7 @@ public:
             ConsensusState::No ==
             checkConsensus(10, 2, 2, 0, 3s, 2s, false, p, true, journal_));
 
-        // If not enough peers have propsed, ensure
+        // If not enough peers have proposed, ensure
         // more time for proposals
         BEAST_EXPECT(
             ConsensusState::No ==
@@ -119,7 +119,7 @@ public:
             ConsensusState::No ==
             checkConsensus(10, 2, 2, 0, 3s, 2s, true, p, true, journal_));
 
-        // If not enough peers have propsed, ensure
+        // If not enough peers have proposed, ensure
         // more time for proposals
         BEAST_EXPECT(
             ConsensusState::No ==
@@ -661,7 +661,7 @@ public:
         // Run to the ledger *prior* to decreasing the resolution
         sim.run(increaseLedgerTimeResolutionEvery - 2);
 
-        // In order to create the discrepency, we want a case where if
+        // In order to create the discrepancy, we want a case where if
         //   X = effCloseTime(closeTime, resolution, parentCloseTime)
         //   X != effCloseTime(X, resolution, parentCloseTime)
         //
@@ -906,7 +906,7 @@ public:
         //   for B.
         // - The network reconnects and the validations for generation 3 ledgers
         //   are observed (D and the 8 C's)
-        // - In the old approach, 2 votes for D outweights 1 vote for each C'
+        // - In the old approach, 2 votes for D outweighs 1 vote for each C'
         //   so the network would avalanche towards D and fully validate it
         //   EVEN though C was fully validated by one node
         // - In the new approach, 2 votes for D are not enough to outweight the
@@ -1029,7 +1029,7 @@ public:
         // The "ahead" validators run normal speed and run ahead validating the
         // upper chain of ledgers.
         //
-        // Due to the uncommited support definition of the preferred branch
+        // Due to the uncommitted support definition of the preferred branch
         // protocol, even if the "behind" validators are a majority, the "ahead"
         // validators cannot jump to the proper branch until the "behind"
         // validators catch up to the same sequence number. For this test to
@@ -1518,6 +1518,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Consensus, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(Consensus, consensus, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -14,7 +14,7 @@
 #include <initializer_list>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct RPCCallTestData
@@ -3921,7 +3921,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
       }
     ]
     })"},
-    {"log_level: partiton_name.",
+    {"log_level: partition_name.",
      __LINE__,
      {"log_level", "partition_name", "fatal"},
      RPCCallTestData::no_exception,
@@ -5990,7 +5990,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RPCCall, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(RPCCall, rpc, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

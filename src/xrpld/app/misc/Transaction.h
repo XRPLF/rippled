@@ -13,7 +13,7 @@
 #include <optional>
 #include <variant>
 
-namespace ripple {
+namespace xrpl {
 
 //
 // Transactions should be constructed in JSON with. Use STObject::parseJson to
@@ -221,7 +221,7 @@ public:
     }
 
     /**
-     * @brief setQueued Set this flag once was put into heldtxns queue
+     * @brief setQueued Set this flag once was put into held-txns queue
      */
     void
     setQueued()
@@ -413,6 +413,6 @@ private:
     beast::Journal j_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

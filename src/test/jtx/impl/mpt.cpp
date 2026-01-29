@@ -4,13 +4,13 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-#include "test/jtx/mpt.h"
+#include <test/jtx/mpt.h>
 #include <openssl/rand.h>
 
 #include <cstdint>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -687,7 +687,7 @@ MPTTester::mpt(std::int64_t amount) const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
-    return ripple::test::jtx::MPT(issuer_.name(), *id_)(amount);
+    return xrpl::test::jtx::MPT(issuer_.name(), *id_)(amount);
 }
 
 MPTTester::operator Asset() const
@@ -1040,7 +1040,7 @@ MPTTester::operator[](std::string const& name) const
 }
 
 PrettyAmount
-MPTTester::operator()(std::uint64_t amount) const
+MPTTester::operator()(std::int64_t amount) const
 {
     return MPT("", issuanceID())(amount);
 }
@@ -2096,4 +2096,4 @@ MPTTester::getBalanceLinkageProof(
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

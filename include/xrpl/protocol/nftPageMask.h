@@ -5,7 +5,7 @@
 
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 namespace nft {
 
 // NFT directory pages order their contents based only on the low 96 bits of
@@ -14,6 +14,6 @@ uint256 constexpr pageMask(std::string_view(
     "0000000000000000000000000000000000000000ffffffffffffffffffffffff"));
 
 }  // namespace nft
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

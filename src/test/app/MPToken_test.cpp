@@ -11,7 +11,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class MPToken_test : public beast::unit_test::suite
@@ -115,7 +115,7 @@ class MPToken_test : public beast::unit_test::suite
                  .metadata = "",
                  .err = temMALFORMED});
 
-            // MaximumAmout of 0 returns error
+            // MaximumAmount of 0 returns error
             mptAlice.create(
                 {.maxAmt = 0,
                  .assetScale = 1,
@@ -400,7 +400,7 @@ class MPToken_test : public beast::unit_test::suite
             // a mptoken yet
             mptAlice.authorize({.holder = bob, .err = tecOBJECT_NOT_FOUND});
 
-            // alice specifys a holder acct that doesn't exist
+            // alice specifies a holder acct that doesn't exist
             mptAlice.authorize({.holder = cindy, .err = tecNO_DST});
 
             // bob now holds a mptoken object
@@ -976,7 +976,7 @@ class MPToken_test : public beast::unit_test::suite
                 sendmax(XRP(100)),
                 ter(temMALFORMED));
             env(pay(alice, carol, MPT(100)),
-                delivermin(XRP(100)),
+                deliver_min(XRP(100)),
                 ter(temBAD_AMOUNT));
             // sendMax MPT is invalid with IOU or XRP
             auto const USD = alice["USD"];
@@ -987,10 +987,10 @@ class MPToken_test : public beast::unit_test::suite
                 sendmax(MPT(100)),
                 ter(temMALFORMED));
             env(pay(alice, carol, USD(100)),
-                delivermin(MPT(100)),
+                deliver_min(MPT(100)),
                 ter(temBAD_AMOUNT));
             env(pay(alice, carol, XRP(100)),
-                delivermin(MPT(100)),
+                deliver_min(MPT(100)),
                 ter(temBAD_AMOUNT));
             // sendmax and amount are different MPT issue
             test::jtx::MPT const MPT1(
@@ -1536,13 +1536,13 @@ class MPToken_test : public beast::unit_test::suite
             // deliver amount < deliverMin
             env(pay(bob, alice, MPT(100)),
                 sendmax(MPT(99)),
-                delivermin(MPT(100)),
+                deliver_min(MPT(100)),
                 txflags(tfPartialPayment),
                 ter(tecPATH_PARTIAL));
             // Payment succeeds if deliver amount >= deliverMin
             env(pay(bob, alice, MPT(100)),
                 sendmax(MPT(99)),
-                delivermin(MPT(99)),
+                deliver_min(MPT(99)),
                 txflags(tfPartialPayment));
         }
 
@@ -1595,7 +1595,7 @@ class MPToken_test : public beast::unit_test::suite
             jv[jss::secret] = alice.name();
             jv[jss::tx_json] = pay(alice, bob, mpt);
             jv[jss::tx_json][jss::Amount][jss::value] =
-                to_string(maxMPTokenAmount + 1);
+                std::to_string(maxMPTokenAmount + 1);
             auto const jrr = env.rpc("json", "submit", to_string(jv));
             BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
         }
@@ -1806,7 +1806,7 @@ class MPToken_test : public beast::unit_test::suite
             // alice authorizes bob to hold funds
             mptAlice.authorize({.account = alice, .holder = bob});
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
@@ -1885,7 +1885,7 @@ class MPToken_test : public beast::unit_test::suite
             // alice authorizes bob to hold funds
             mptAlice.authorize({.account = alice, .holder = bob});
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
@@ -2350,7 +2350,7 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
 
             auto const USD = alice["USD"];
-            auto const mpt = ripple::test::jtx::MPT(
+            auto const mpt = xrpl::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             env(claw(alice, bob["USD"](5), bob), ter(temMALFORMED));
@@ -2373,7 +2373,7 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
 
             auto const USD = alice["USD"];
-            auto const mpt = ripple::test::jtx::MPT(
+            auto const mpt = xrpl::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             // clawing back IOU from a MPT holder fails
@@ -2432,7 +2432,7 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            auto const fakeMpt = ripple::test::jtx::MPT(
+            auto const fakeMpt = xrpl::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             // issuer tries to clawback MPT where issuance doesn't exist
@@ -2471,11 +2471,11 @@ class MPToken_test : public beast::unit_test::suite
             env.fund(XRP(1000), alice, bob);
             env.close();
 
-            auto const mpt = ripple::test::jtx::MPT(
+            auto const mpt = xrpl::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
 
             Json::Value jv = claw(alice, mpt(1), bob);
-            jv[jss::Amount][jss::value] = to_string(maxMPTokenAmount + 1);
+            jv[jss::Amount][jss::value] = std::to_string(maxMPTokenAmount + 1);
             Json::Value jv1;
             jv1[jss::secret] = alice.name();
             jv1[jss::tx_json] = jv;
@@ -2652,7 +2652,7 @@ class MPToken_test : public beast::unit_test::suite
         STAmount const amt3{asset3, 10'000};
 
         {
-            testcase("Test STAmount MPT arithmetics");
+            testcase("Test STAmount MPT arithmetic");
             using namespace std::string_literals;
             STAmount res = multiply(amt1, amt2, asset3);
             BEAST_EXPECT(res == amt3);
@@ -2689,7 +2689,7 @@ class MPToken_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Test MPTAmount arithmetics");
+            testcase("Test MPTAmount arithmetic");
             MPTAmount mptAmt1{100};
             MPTAmount const mptAmt2{100};
             BEAST_EXPECT((mptAmt1 += mptAmt2) == MPTAmount{200});
@@ -3677,7 +3677,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(MPToken, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(MPToken, app, xrpl, 2);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

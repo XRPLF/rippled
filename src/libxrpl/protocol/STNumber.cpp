@@ -1,9 +1,13 @@
+#include <xrpl/protocol/STNumber.h>
+// Do not remove. Keep STNumber.h first
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <boost/lexical_cast.hpp>
@@ -14,14 +18,14 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STNumber::STNumber(SField const& field, Number const& value)
-    : STBase(field), value_(value)
+    : STTakesAsset(field), value_(value)
 {
 }
 
-STNumber::STNumber(SerialIter& sit, SField const& field) : STBase(field)
+STNumber::STNumber(SerialIter& sit, SField const& field) : STTakesAsset(field)
 {
     // We must call these methods in separate statements
     // to guarantee their order of execution.
@@ -43,15 +47,68 @@ STNumber::getText() const
 }
 
 void
+STNumber::associateAsset(Asset const& a)
+{
+    STTakesAsset::associateAsset(a);
+
+    XRPL_ASSERT_PARTS(
+        getFName().shouldMeta(SField::sMD_NeedsAsset),
+        "STNumber::associateAsset",
+        "field needs asset");
+
+    roundToAsset(a, value_);
+}
+
+void
 STNumber::add(Serializer& s) const
 {
-    XRPL_ASSERT(
-        getFName().isBinary(), "ripple::STNumber::add : field is binary");
+    XRPL_ASSERT(getFName().isBinary(), "xrpl::STNumber::add : field is binary");
     XRPL_ASSERT(
         getFName().fieldType == getSType(),
-        "ripple::STNumber::add : field type match");
-    s.add64(value_.mantissa());
-    s.add32(value_.exponent());
+        "xrpl::STNumber::add : field type match");
+
+    auto value = value_;
+    auto const mantissa = value.mantissa();
+    auto const exponent = value.exponent();
+
+    SField const& field = getFName();
+    if (field.shouldMeta(SField::sMD_NeedsAsset))
+    {
+        // asset is defined in the STTakesAsset base class
+        if (asset_)
+        {
+            // The number should be rounded to the asset's precision, but round
+            // it here if it has an asset assigned.
+            roundToAsset(*asset_, value);
+            XRPL_ASSERT_PARTS(
+                value_ == value,
+                "xrpl::STNumber::add",
+                "value is already rounded");
+        }
+        else
+        {
+#if !NDEBUG
+            // There are circumstances where an already-rounded Number is
+            // serialized without being touched by a transactor, and thus
+            // without an asset. We can't know if it's rounded, because it could
+            // represent _anything_, particularly when serializing user-provided
+            // Json. Regardless, the only time we should be serializing an
+            // STNumber is when the scale is large.
+            XRPL_ASSERT_PARTS(
+                Number::getMantissaScale() == MantissaRange::large,
+                "xrpl::STNumber::add",
+                "STNumber only used with large mantissa scale");
+#endif
+        }
+    }
+
+    XRPL_ASSERT_PARTS(
+        mantissa <= std::numeric_limits<std::int64_t>::max() &&
+            mantissa >= std::numeric_limits<std::int64_t>::min(),
+        "xrpl::STNumber::add",
+        "mantissa in valid range");
+    s.add64(mantissa);
+    s.add32(exponent);
 }
 
 Number const&
@@ -83,7 +140,7 @@ STNumber::isEquivalent(STBase const& t) const
 {
     XRPL_ASSERT(
         t.getSType() == this->getSType(),
-        "ripple::STNumber::isEquivalent : field type match");
+        "xrpl::STNumber::isEquivalent : field type match");
     STNumber const& v = dynamic_cast<STNumber const&>(t);
     return value_ == v;
 }
@@ -180,20 +237,30 @@ numberFromJson(SField const& field, Json::Value const& value)
     else if (value.isString())
     {
         parts = partsFromString(value.asString());
-        // Only strings can represent out-of-range values.
-        if (parts.mantissa > std::numeric_limits<std::int64_t>::max())
-            Throw<std::range_error>("too high");
+
+        XRPL_ASSERT_PARTS(
+            !getCurrentTransactionRules(),
+            "xrpld::numberFromJson",
+            "Not in a Transactor context");
+
+        // Number mantissas are much bigger than the allowable parsed values, so
+        // it can't be out of range.
+        static_assert(
+            std::numeric_limits<std::uint64_t>::max() >=
+            std::numeric_limits<decltype(parts.mantissa)>::max());
     }
     else
     {
         Throw<std::runtime_error>("not a number");
     }
 
-    std::int64_t mantissa = parts.mantissa;
-    if (parts.negative)
-        mantissa = -mantissa;
-
-    return STNumber{field, Number{mantissa, parts.exponent}};
+    return STNumber{
+        field,
+        Number{
+            parts.negative,
+            parts.mantissa,
+            parts.exponent,
+            Number::normalized{}}};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

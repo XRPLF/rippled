@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class LoanBrokerCoverWithdraw : public Transactor
 {
@@ -29,6 +29,6 @@ public:
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -12,7 +12,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 static void
 fillTransaction(
@@ -38,7 +38,7 @@ fillTransaction(
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional, number of problems
 //   role: gateway|user             // account role to assume
-//   transactions: true             // optional, reccommend transactions
+//   transactions: true             // optional, recommend transactions
 // }
 Json::Value
 doNoRippleCheck(RPC::JsonContext& context)
@@ -185,4 +185,4 @@ doNoRippleCheck(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -10,7 +10,7 @@
 #include <ostream>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 struct STNumber_test : public beast::unit_test::suite
 {
@@ -29,10 +29,8 @@ struct STNumber_test : public beast::unit_test::suite
     }
 
     void
-    run() override
+    doRun()
     {
-        static_assert(!std::is_convertible_v<STNumber*, Number*>);
-
         {
             STNumber const stnum{sfNumber};
             BEAST_EXPECT(stnum.getSType() == STI_NUMBER);
@@ -126,6 +124,41 @@ struct STNumber_test : public beast::unit_test::suite
                 numberFromJson(sfNumber, "-0.0e6") == STNumber(sfNumber, 0));
             BEAST_EXPECT(
                 numberFromJson(sfNumber, "-0.000e6") == STNumber(sfNumber, 0));
+
+            {
+                NumberRoundModeGuard mg(Number::towards_zero);
+                // maxint64 9,223,372,036,854,775,807
+                auto const maxInt =
+                    std::to_string(std::numeric_limits<std::int64_t>::max());
+                // minint64 -9,223,372,036,854,775,808
+                auto const minInt =
+                    std::to_string(std::numeric_limits<std::int64_t>::min());
+                if (Number::getMantissaScale() == MantissaRange::small)
+                {
+                    BEAST_EXPECT(
+                        numberFromJson(sfNumber, maxInt) ==
+                        STNumber(sfNumber, Number{9'223'372'036'854'775, 3}));
+                    BEAST_EXPECT(
+                        numberFromJson(sfNumber, minInt) ==
+                        STNumber(sfNumber, Number{-9'223'372'036'854'775, 3}));
+                }
+                else
+                {
+                    BEAST_EXPECT(
+                        numberFromJson(sfNumber, maxInt) ==
+                        STNumber(
+                            sfNumber, Number{9'223'372'036'854'775'807, 0}));
+                    BEAST_EXPECT(
+                        numberFromJson(sfNumber, minInt) ==
+                        STNumber(
+                            sfNumber,
+                            Number{
+                                true,
+                                9'223'372'036'854'775'808ULL,
+                                0,
+                                Number::normalized{}}));
+                }
+            }
 
             constexpr auto imin = std::numeric_limits<int>::min();
             BEAST_EXPECT(
@@ -279,15 +312,21 @@ struct STNumber_test : public beast::unit_test::suite
             }
         }
     }
+
+    void
+    run() override
+    {
+        static_assert(!std::is_convertible_v<STNumber*, Number*>);
+
+        for (auto const scale : {MantissaRange::small, MantissaRange::large})
+        {
+            NumberMantissaScaleGuard sg(scale);
+            testcase << to_string(Number::getMantissaScale());
+            doRun();
+        }
+    }
 };
 
-BEAST_DEFINE_TESTSUITE(STNumber, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STNumber, protocol, xrpl);
 
-void
-testCompile(std::ostream& out)
-{
-    STNumber number{sfNumber, 42};
-    out << number;
-}
-
-}  // namespace ripple
+}  // namespace xrpl

@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 std::unordered_map<
     TERUnderlyingType,
@@ -283,4 +283,4 @@ transCode(std::string const& token)
     return TER::fromInt(r->second);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -11,10 +11,10 @@
 #include <memory>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
-/** Tests remote listening sockets to make sure they are connectible. */
+/** Tests remote listening sockets to make sure they are connectable. */
 template <class Protocol = boost::asio::ip::tcp>
 class Checker
 {
@@ -210,6 +210,6 @@ Checker<Protocol>::remove(basic_async_op& op)
 }
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -10,7 +10,7 @@
 #include <shared_mutex>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /*
     Validator key manifests
@@ -303,7 +303,7 @@ public:
     std::optional<std::string>
     getDomain(PublicKey const& pk) const;
 
-    /** Returns mainfest corresponding to a given public key
+    /** Returns manifest corresponding to a given public key
 
         @return manifest corresponding to Master public key
           if present, otherwise std::nullopt
@@ -443,6 +443,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

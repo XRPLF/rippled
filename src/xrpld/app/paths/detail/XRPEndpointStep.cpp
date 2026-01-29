@@ -1,9 +1,9 @@
-#include <xrpld/app/paths/Credit.h>
 #include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/app/paths/detail/StepChecks.h>
 #include <xrpld/app/paths/detail/Steps.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/Credit.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -14,7 +14,7 @@
 
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 template <class TDerived>
 class XRPEndpointStep
@@ -106,7 +106,7 @@ protected:
     XRPAmount
     xrpLiquidImpl(ReadView& sb, std::int32_t reserveReduction) const
     {
-        return ripple::xrpLiquid(sb, acc_, reserveReduction, j_);
+        return xrpl::xrpLiquid(sb, acc_, reserveReduction, j_);
     }
 
     std::string
@@ -263,7 +263,7 @@ XRPEndpointStep<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& ofrsToRm,
     XRPAmount const& in)
 {
-    XRPL_ASSERT(cache_, "ripple::XRPEndpointStep::fwdImp : cache is set");
+    XRPL_ASSERT(cache_, "xrpl::XRPEndpointStep::fwdImp : cache is set");
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
 
     auto const result = isLast_ ? in : std::min(balance, in);
@@ -291,7 +291,7 @@ XRPEndpointStep<TDerived>::validFwd(
         return {false, EitherAmount(XRPAmount(beast::zero))};
     }
 
-    XRPL_ASSERT(in.native, "ripple::XRPEndpointStep::validFwd : input is XRP");
+    XRPL_ASSERT(in.native, "xrpl::XRPEndpointStep::validFwd : input is XRP");
 
     auto const& xrpIn = in.xrp;
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
@@ -396,4 +396,4 @@ make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc)
     return {tesSUCCESS, std::move(r)};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

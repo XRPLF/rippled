@@ -241,7 +241,7 @@ Reader::readToken(Token& token)
 
         case 'f':
             token.type_ = tokenFalse;
-            ok = match("alse", 4);
+            ok = match("alse", 4);  // cspell:disable-line
             break;
 
         case 'n':
@@ -912,7 +912,7 @@ Reader::getLocationLineAndColumn(Location location) const
 }
 
 std::string
-Reader::getFormatedErrorMessages() const
+Reader::getFormattedErrorMessages() const
 {
     std::string formattedMessage;
 
@@ -941,7 +941,7 @@ operator>>(std::istream& sin, Value& root)
 
     // XRPL_ASSERT(ok, "Json::operator>>() : parse succeeded");
     if (!ok)
-        ripple::Throw<std::runtime_error>(reader.getFormatedErrorMessages());
+        xrpl::Throw<std::runtime_error>(reader.getFormattedErrorMessages());
 
     return sin;
 }

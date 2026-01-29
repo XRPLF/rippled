@@ -15,21 +15,14 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/jss.h>
 
+#include <source_location>
 #include <vector>
 
-#if (defined(__clang_major__) && __clang_major__ < 15)
-#include <experimental/source_location>
-using source_location = std::experimental::source_location;
-#else
-#include <source_location>
-using std::source_location;
-#endif
-
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
-/** Generic helper class for helper clases that set a field on a JTx.
+/** Generic helper class for helper classes that set a field on a JTx.
 
  Not every helper will be able to use this because of conversions and other
  issues, but for classes where it's straightforward, this can simplify things.
@@ -640,7 +633,7 @@ checkMetrics(
     std::size_t expectedPerLedger,
     std::uint64_t expectedMinFeeLevel = baseFeeLevel.fee(),
     std::uint64_t expectedMedFeeLevel = minEscalationFeeLevel.fee(),
-    source_location const location = source_location::current())
+    std::source_location const location = std::source_location::current())
 {
     int line = location.line();
     char const* file = location.file_name();
@@ -828,6 +821,6 @@ pay(AccountID const& account,
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_TEST_JTX_TESTHELPERS_H_INCLUDED

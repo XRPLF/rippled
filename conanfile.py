@@ -39,7 +39,7 @@ class Xrpl(ConanFile):
     ]
 
     test_requires = [
-        "doctest/2.4.12",
+        "gtest/1.17.0",
     ]
 
     tool_requires = [
@@ -87,7 +87,13 @@ class Xrpl(ConanFile):
         "libarchive/*:with_xattr": False,
         "libarchive/*:with_zlib": False,
         "lz4/*:shared": False,
+        "openssl/*:no_dtls": True,
+        "openssl/*:no_ssl": True,
+        "openssl/*:no_ssl3": True,
+        "openssl/*:no_tls1": True,
+        "openssl/*:no_tls1_1": True,
         "openssl/*:shared": False,
+        "openssl/*:tls_security_level": 2,
         "protobuf/*:shared": False,
         "protobuf/*:with_zlib": True,
         "rocksdb/*:enable_sse": False,
@@ -125,7 +131,7 @@ class Xrpl(ConanFile):
         transitive_headers_opt = (
             {"transitive_headers": True} if conan_version.split(".")[0] == "2" else {}
         )
-        self.requires("boost/1.88.0", force=True, **transitive_headers_opt)
+        self.requires("boost/1.90.0", force=True, **transitive_headers_opt)
         self.requires("date/3.0.4", **transitive_headers_opt)
         self.requires("lz4/1.10.0", force=True)
         self.requires("protobuf/6.32.1", force=True)
@@ -182,12 +188,10 @@ class Xrpl(ConanFile):
         libxrpl.libs = [
             "xrpl",
             "xrpl.libpb",
-            "ed25519",
-            "secp256k1",
         ]
         # TODO: Fix the protobufs to include each other relative to
-        # `include/`, not `include/ripple/proto/`.
-        libxrpl.includedirs = ["include", "include/ripple/proto"]
+        # `include/`, not `include/xrpl/proto/`.
+        libxrpl.includedirs = ["include", "include/xrpl/proto"]
         libxrpl.requires = [
             "boost::headers",
             "boost::chrono",

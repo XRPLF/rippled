@@ -1,14 +1,24 @@
 include(XrplAddTest)
 
 # Test requirements.
-find_package(doctest REQUIRED)
+find_package(GTest REQUIRED)
 
 # Custom target for all tests defined in this file
 add_custom_target(xrpl.tests)
 
+# Test helpers
+add_library(xrpl.helpers.test STATIC)
+target_sources(xrpl.helpers.test PRIVATE
+  helpers/TestSink.cpp
+)
+target_include_directories(xrpl.helpers.test PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_link_libraries(xrpl.helpers.test PRIVATE xrpl.libxrpl)
+
 # Common library dependencies for the rest of the tests.
 add_library(xrpl.imports.test INTERFACE)
-target_link_libraries(xrpl.imports.test INTERFACE doctest::doctest xrpl.libxrpl)
+target_link_libraries(xrpl.imports.test INTERFACE gtest::gtest xrpl.libxrpl xrpl.helpers.test)
 
 # One test for each module.
 xrpl_add_test(basics)

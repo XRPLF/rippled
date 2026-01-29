@@ -9,7 +9,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * @brief Calculates the total base fee for a batch transaction.
@@ -78,7 +78,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             }
             // LCOV_EXCL_STOP
 
-            auto const fee = ripple::calculateBaseFee(view, stx);
+            auto const fee = xrpl::calculateBaseFee(view, stx);
             // LCOV_EXCL_START
             if (txnFees > maxAmount - fee)
             {
@@ -305,8 +305,18 @@ Batch::preflight(PreflightContext const& ctx)
             }
         }
 
+        // Check that the Fee is native asset (XRP) and zero
+        if (auto const fee = stx.getFieldAmount(sfFee);
+            !fee.native() || fee.xrp() != beast::zero)
+        {
+            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                << "inner txn must have a fee of 0. "
+                                << "txID: " << hash;
+            return temBAD_FEE;
+        }
+
         auto const innerAccount = stx.getAccountID(sfAccount);
-        if (auto const preflightResult = ripple::preflight(
+        if (auto const preflightResult = xrpl::preflight(
                 ctx.app, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
             preflightResult.ter != tesSUCCESS)
         {
@@ -315,16 +325,6 @@ Batch::preflight(PreflightContext const& ctx)
                                 << transHuman(preflightResult.ter) << " "
                                 << "txID: " << hash;
             return temINVALID_INNER_BATCH;
-        }
-
-        // Check that the fee is zero
-        if (auto const fee = stx.getFieldAmount(sfFee);
-            !fee.native() || fee.xrp() != beast::zero)
-        {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn must have a fee of 0. "
-                                << "txID: " << hash;
-            return temBAD_FEE;
         }
 
         // Check that Sequence and TicketSequence are not both present
@@ -521,4 +521,4 @@ Batch::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

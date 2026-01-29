@@ -7,7 +7,7 @@
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 /// Body that holds JSON
 struct json_body
@@ -91,6 +91,6 @@ struct json_body
     };
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

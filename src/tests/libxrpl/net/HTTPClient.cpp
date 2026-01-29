@@ -2,18 +2,25 @@
 #include <xrpl/net/HTTPClient.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/use_awaitable.hpp>
+#include <boost/asio/use_future.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 
-#include <doctest/doctest.h>
+#include <gtest/gtest.h>
+#include <helpers/TestSink.h>
 
 #include <atomic>
 #include <map>
+#include <memory>
+#include <semaphore>
 #include <thread>
 
-using namespace ripple;
+using namespace xrpl;
 
 namespace {
 
@@ -24,16 +31,19 @@ private:
     boost::asio::io_context ioc_;
     boost::asio::ip::tcp::acceptor acceptor_;
     boost::asio::ip::tcp::endpoint endpoint_;
-    std::atomic<bool> running_{true};
+    bool running_{true};
+    bool finished_{false};
     unsigned short port_;
 
     // Custom headers to return
-    std::map<std::string, std::string> custom_headers_;
-    std::string response_body_;
-    unsigned int status_code_{200};
+    std::map<std::string, std::string> customHeaders_;
+    std::string responseBody_;
+    unsigned int statusCode_{200};
+
+    beast::Journal j_;
 
 public:
-    TestHTTPServer() : acceptor_(ioc_), port_(0)
+    TestHTTPServer() : acceptor_(ioc_), port_(0), j_(TestSink::instance())
     {
         // Bind to any available port
         endpoint_ = {boost::asio::ip::tcp::v4(), 0};
@@ -45,12 +55,19 @@ public:
         // Get the actual port that was assigned
         port_ = acceptor_.local_endpoint().port();
 
-        accept();
+        // Start the accept coroutine
+        boost::asio::co_spawn(ioc_, accept(), boost::asio::detached);
     }
+
+    TestHTTPServer(TestHTTPServer&&) = delete;
+    TestHTTPServer&
+    operator=(TestHTTPServer&&) = delete;
 
     ~TestHTTPServer()
     {
-        stop();
+        XRPL_ASSERT(
+            finished(),
+            "xrpl::TestHTTPServer::~TestHTTPServer : accept future ready");
     }
 
     boost::asio::io_context&
@@ -68,22 +85,21 @@ public:
     void
     setHeader(std::string const& name, std::string const& value)
     {
-        custom_headers_[name] = value;
+        customHeaders_[name] = value;
     }
 
     void
     setResponseBody(std::string const& body)
     {
-        response_body_ = body;
+        responseBody_ = body;
     }
 
     void
     setStatusCode(unsigned int code)
     {
-        status_code_ = code;
+        statusCode_ = code;
     }
 
-private:
     void
     stop()
     {
@@ -91,78 +107,84 @@ private:
         acceptor_.close();
     }
 
-    void
-    accept()
+    bool
+    finished() const
     {
-        if (!running_)
-            return;
-
-        acceptor_.async_accept(
-            ioc_,
-            endpoint_,
-            [&](boost::system::error_code const& error,
-                boost::asio::ip::tcp::socket peer) {
-                if (!running_)
-                    return;
-
-                if (!error)
-                {
-                    handleConnection(std::move(peer));
-                }
-            });
+        return finished_;
     }
 
-    void
+private:
+    boost::asio::awaitable<void>
+    accept()
+    {
+        while (running_)
+        {
+            try
+            {
+                auto socket =
+                    co_await acceptor_.async_accept(boost::asio::use_awaitable);
+
+                if (!running_)
+                    break;
+
+                // Handle this connection
+                co_await handleConnection(std::move(socket));
+            }
+            catch (std::exception const& e)
+            {
+                // Accept or handle failed, stop accepting
+                JLOG(j_.debug()) << "Error: " << e.what();
+                break;
+            }
+        }
+
+        finished_ = true;
+    }
+
+    boost::asio::awaitable<void>
     handleConnection(boost::asio::ip::tcp::socket socket)
     {
         try
         {
-            // Read the HTTP request
             boost::beast::flat_buffer buffer;
             boost::beast::http::request<boost::beast::http::string_body> req;
-            boost::beast::http::read(socket, buffer, req);
+
+            // Read the HTTP request asynchronously
+            co_await boost::beast::http::async_read(
+                socket, buffer, req, boost::asio::use_awaitable);
 
             // Create response
             boost::beast::http::response<boost::beast::http::string_body> res;
             res.version(req.version());
-            res.result(status_code_);
+            res.result(statusCode_);
             res.set(boost::beast::http::field::server, "TestServer");
 
-            // Add custom headers
-            for (auto const& [name, value] : custom_headers_)
+            // Set body and prepare payload first
+            res.body() = responseBody_;
+            res.prepare_payload();
+
+            // Override Content-Length with custom headers after
+            // prepare_payload. This allows us to test case-insensitive
+            // header parsing.
+            for (auto const& [name, value] : customHeaders_)
             {
                 res.set(name, value);
             }
 
-            // Set body and prepare payload first
-            res.body() = response_body_;
-            res.prepare_payload();
-
-            // Override Content-Length with custom headers after prepare_payload
-            // This allows us to test case-insensitive header parsing
-            for (auto const& [name, value] : custom_headers_)
-            {
-                if (boost::iequals(name, "Content-Length"))
-                {
-                    res.erase(boost::beast::http::field::content_length);
-                    res.set(name, value);
-                }
-            }
-
-            // Send response
-            boost::beast::http::write(socket, res);
+            // Send response asynchronously
+            co_await boost::beast::http::async_write(
+                socket, res, boost::asio::use_awaitable);
 
             // Shutdown socket gracefully
-            boost::system::error_code ec;
-            socket.shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
+            boost::system::error_code shutdownEc;
+            socket.shutdown(
+                boost::asio::ip::tcp::socket::shutdown_send, shutdownEc);
         }
-        catch (std::exception const&)
+        catch (std::exception const& e)
         {
-            // Connection handling errors are expected
+            // Error reading or writing, just close the connection
+            JLOG(j_.debug()) << "Connection error: " << e.what();
         }
-
-        if (running_)
-            accept();
     }
 };
 
@@ -171,13 +193,13 @@ bool
 runHTTPTest(
     TestHTTPServer& server,
     std::string const& path,
-    std::atomic<bool>& completed,
-    std::atomic<int>& result_status,
-    std::string& result_data,
-    boost::system::error_code& result_error)
+    bool& completed,
+    int& resultStatus,
+    std::string& resultData,
+    boost::system::error_code& resultError)
 {
     // Create a null journal for testing
-    beast::Journal j{beast::Journal::getNullSink()};
+    beast::Journal j{TestSink::instance()};
 
     // Initialize HTTPClient SSL context
     HTTPClient::initializeSSLContext("", "", false, j);
@@ -193,9 +215,9 @@ runHTTPTest(
         [&](boost::system::error_code const& ec,
             int status,
             std::string const& data) -> bool {
-            result_error = ec;
-            result_status = status;
-            result_data = data;
+            resultError = ec;
+            resultStatus = status;
+            resultData = data;
             completed = true;
             return false;  // don't retry
         },
@@ -203,12 +225,18 @@ runHTTPTest(
 
     // Run the IO context until completion
     auto start = std::chrono::steady_clock::now();
-    while (!completed &&
-           std::chrono::steady_clock::now() - start < std::chrono::seconds(10))
+    while (server.ioc().run_one() != 0)
     {
-        if (server.ioc().run_one() == 0)
+        if (std::chrono::steady_clock::now() - start >=
+                std::chrono::seconds(10) ||
+            server.finished())
         {
             break;
+        }
+
+        if (completed)
+        {
+            server.stop();
         }
     }
 
@@ -217,10 +245,10 @@ runHTTPTest(
 
 }  // anonymous namespace
 
-TEST_CASE("HTTPClient case insensitive Content-Length")
+TEST(HTTPClient, case_insensitive_content_length)
 {
     // Test different cases of Content-Length header
-    std::vector<std::string> header_cases = {
+    std::vector<std::string> headerCases = {
         "Content-Length",  // Standard case
         "content-length",  // Lowercase - this tests the regex icase fix
         "CONTENT-LENGTH",  // Uppercase
@@ -228,100 +256,95 @@ TEST_CASE("HTTPClient case insensitive Content-Length")
         "content-Length"   // Mixed case 2
     };
 
-    for (auto const& header_name : header_cases)
+    for (auto const& headerName : headerCases)
     {
         TestHTTPServer server;
-        std::string test_body = "Hello World!";
-        server.setResponseBody(test_body);
-        server.setHeader(header_name, std::to_string(test_body.size()));
+        std::string testBody = "Hello World!";
+        server.setResponseBody(testBody);
+        server.setHeader(headerName, std::to_string(testBody.size()));
 
-        std::atomic<bool> completed{false};
-        std::atomic<int> result_status{0};
-        std::string result_data;
-        boost::system::error_code result_error;
+        bool completed{false};
+        int resultStatus{0};
+        std::string resultData;
+        boost::system::error_code resultError;
 
-        bool test_completed = runHTTPTest(
-            server,
-            "/test",
-            completed,
-            result_status,
-            result_data,
-            result_error);
+        bool testCompleted = runHTTPTest(
+            server, "/test", completed, resultStatus, resultData, resultError);
 
         // Verify results
-        CHECK(test_completed);
-        CHECK(!result_error);
-        CHECK(result_status == 200);
-        CHECK(result_data == test_body);
+        EXPECT_TRUE(testCompleted);
+        EXPECT_FALSE(resultError);
+        EXPECT_EQ(resultStatus, 200);
+        EXPECT_EQ(resultData, testBody);
     }
 }
 
-TEST_CASE("HTTPClient basic HTTP request")
+TEST(HTTPClient, basic_http_request)
 {
     TestHTTPServer server;
-    std::string test_body = "Test response body";
-    server.setResponseBody(test_body);
+    std::string testBody = "Test response body";
+    server.setResponseBody(testBody);
     server.setHeader("Content-Type", "text/plain");
 
-    std::atomic<bool> completed{false};
-    std::atomic<int> result_status{0};
-    std::string result_data;
-    boost::system::error_code result_error;
+    bool completed{false};
+    int resultStatus{0};
+    std::string resultData;
+    boost::system::error_code resultError;
 
-    bool test_completed = runHTTPTest(
-        server, "/basic", completed, result_status, result_data, result_error);
+    bool testCompleted = runHTTPTest(
+        server, "/basic", completed, resultStatus, resultData, resultError);
 
-    CHECK(test_completed);
-    CHECK(!result_error);
-    CHECK(result_status == 200);
-    CHECK(result_data == test_body);
+    EXPECT_TRUE(testCompleted);
+    EXPECT_FALSE(resultError);
+    EXPECT_EQ(resultStatus, 200);
+    EXPECT_EQ(resultData, testBody);
 }
 
-TEST_CASE("HTTPClient empty response")
+TEST(HTTPClient, empty_response)
 {
     TestHTTPServer server;
     server.setResponseBody("");  // Empty body
     server.setHeader("Content-Length", "0");
 
-    std::atomic<bool> completed{false};
-    std::atomic<int> result_status{0};
-    std::string result_data;
-    boost::system::error_code result_error;
+    bool completed{false};
+    int resultStatus{0};
+    std::string resultData;
+    boost::system::error_code resultError;
 
-    bool test_completed = runHTTPTest(
-        server, "/empty", completed, result_status, result_data, result_error);
+    bool testCompleted = runHTTPTest(
+        server, "/empty", completed, resultStatus, resultData, resultError);
 
-    CHECK(test_completed);
-    CHECK(!result_error);
-    CHECK(result_status == 200);
-    CHECK(result_data.empty());
+    EXPECT_TRUE(testCompleted);
+    EXPECT_FALSE(resultError);
+    EXPECT_EQ(resultStatus, 200);
+    EXPECT_TRUE(resultData.empty());
 }
 
-TEST_CASE("HTTPClient different status codes")
+TEST(HTTPClient, different_status_codes)
 {
-    std::vector<unsigned int> status_codes = {200, 404, 500};
+    std::vector<unsigned int> statusCodes = {200, 404, 500};
 
-    for (auto status : status_codes)
+    for (auto status : statusCodes)
     {
         TestHTTPServer server;
         server.setStatusCode(status);
         server.setResponseBody("Status " + std::to_string(status));
 
-        std::atomic<bool> completed{false};
-        std::atomic<int> result_status{0};
-        std::string result_data;
-        boost::system::error_code result_error;
+        bool completed{false};
+        int resultStatus{0};
+        std::string resultData;
+        boost::system::error_code resultError;
 
-        bool test_completed = runHTTPTest(
+        bool testCompleted = runHTTPTest(
             server,
             "/status",
             completed,
-            result_status,
-            result_data,
-            result_error);
+            resultStatus,
+            resultData,
+            resultError);
 
-        CHECK(test_completed);
-        CHECK(!result_error);
-        CHECK(result_status == static_cast<int>(status));
+        EXPECT_TRUE(testCompleted);
+        EXPECT_FALSE(resultError);
+        EXPECT_EQ(resultStatus, static_cast<int>(status));
     }
 }

@@ -14,7 +14,7 @@
 #include <numeric>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 to_string(Manifest const& m)
@@ -187,11 +187,10 @@ Manifest::verify() const
 
     // Signing key and signature are not required for
     // master key revocations
-    if (!revoked() && !ripple::verify(st, HashPrefix::manifest, *signingKey))
+    if (!revoked() && !xrpl::verify(st, HashPrefix::manifest, *signingKey))
         return false;
 
-    return ripple::verify(
-        st, HashPrefix::manifest, masterKey, sfMasterSignature);
+    return xrpl::verify(st, HashPrefix::manifest, masterKey, sfMasterSignature);
 }
 
 uint256
@@ -374,7 +373,7 @@ ManifestCache::applyManifest(Manifest m)
         -> std::optional<ManifestDisposition> {
         XRPL_ASSERT(
             lock.owns_lock(),
-            "ripple::ManifestCache::applyManifest::prewriteCheck : locked");
+            "xrpl::ManifestCache::applyManifest::prewriteCheck : locked");
         (void)lock;  // not used. parameter is present to ensure the mutex is
                      // locked when the lambda is called.
         if (iter != map_.end() && m.sequence <= iter->second.sequence)
@@ -525,7 +524,7 @@ void
 ManifestCache::load(DatabaseCon& dbCon, std::string const& dbTable)
 {
     auto db = dbCon.checkoutDb();
-    ripple::getManifests(*db, dbTable, *this, j_);
+    xrpl::getManifests(*db, dbTable, *this, j_);
 }
 
 bool
@@ -596,4 +595,4 @@ ManifestCache::save(
 
     saveManifests(*db, dbTable, isTrusted, map_, j_);
 }
-}  // namespace ripple
+}  // namespace xrpl

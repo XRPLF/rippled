@@ -6,7 +6,7 @@
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Disposition.h>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 struct Entry;
@@ -81,6 +81,6 @@ std::ostream&
 operator<<(std::ostream& os, Consumer const& v);
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 namespace oracle {
@@ -191,18 +191,38 @@ public:
         // Aggregate data set includes all price oracle instances, no trimming
         // or time threshold
         {
-            Env env(*this);
-            OraclesData oracles;
-            prep(env, oracles);
-            // entire and trimmed stats
-            auto ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
-            BEAST_EXPECT(ret[jss::entire_set][jss::mean] == "74.45");
-            BEAST_EXPECT(ret[jss::entire_set][jss::size].asUInt() == 10);
-            BEAST_EXPECT(
-                ret[jss::entire_set][jss::standard_deviation] ==
-                "0.3027650354097492");
-            BEAST_EXPECT(ret[jss::median] == "74.45");
-            BEAST_EXPECT(ret[jss::time] == 946694900);
+            auto const all = testable_amendments();
+            for (auto const& feats :
+                 {all - featureSingleAssetVault - featureLendingProtocol, all})
+            {
+                for (auto const mantissaSize :
+                     {MantissaRange::small, MantissaRange::large})
+                {
+                    // Regardless of the features enabled, RPC is controlled by
+                    // the global mantissa size. And since it's a thread-local,
+                    // overriding it locally won't make a difference either.
+                    // This will mean all RPC will use the default of "large".
+                    NumberMantissaScaleGuard mg(mantissaSize);
+
+                    Env env(*this, feats);
+                    OraclesData oracles;
+                    prep(env, oracles);
+                    // entire and trimmed stats
+                    auto ret =
+                        Oracle::aggregatePrice(env, "XRP", "USD", oracles);
+                    BEAST_EXPECT(ret[jss::entire_set][jss::mean] == "74.45");
+                    BEAST_EXPECT(
+                        ret[jss::entire_set][jss::size].asUInt() == 10);
+                    // Short: 0.3027650354097492
+                    BEAST_EXPECTS(
+                        ret[jss::entire_set][jss::standard_deviation] ==
+                            "0.3027650354097491666",
+                        ret[jss::entire_set][jss::standard_deviation]
+                            .asString());
+                    BEAST_EXPECT(ret[jss::median] == "74.45");
+                    BEAST_EXPECT(ret[jss::time] == 946694900);
+                }
+            }
         }
 
         // Aggregate data set includes all price oracle instances
@@ -215,15 +235,19 @@ public:
                 Oracle::aggregatePrice(env, "XRP", "USD", oracles, 20, 100);
             BEAST_EXPECT(ret[jss::entire_set][jss::mean] == "74.45");
             BEAST_EXPECT(ret[jss::entire_set][jss::size].asUInt() == 10);
-            BEAST_EXPECT(
+            // Short: "0.3027650354097492",
+            BEAST_EXPECTS(
                 ret[jss::entire_set][jss::standard_deviation] ==
-                "0.3027650354097492");
+                    "0.3027650354097491666",
+                ret[jss::entire_set][jss::standard_deviation].asString());
             BEAST_EXPECT(ret[jss::median] == "74.45");
             BEAST_EXPECT(ret[jss::trimmed_set][jss::mean] == "74.45");
             BEAST_EXPECT(ret[jss::trimmed_set][jss::size].asUInt() == 6);
-            BEAST_EXPECT(
+            // Short: "0.187082869338697",
+            BEAST_EXPECTS(
                 ret[jss::trimmed_set][jss::standard_deviation] ==
-                "0.187082869338697");
+                    "0.1870828693386970693",
+                ret[jss::trimmed_set][jss::standard_deviation].asString());
             BEAST_EXPECT(ret[jss::time] == 946694900);
         }
 
@@ -274,15 +298,19 @@ public:
                 Oracle::aggregatePrice(env, "XRP", "USD", oracles, 20, "200");
             BEAST_EXPECT(ret[jss::entire_set][jss::mean] == "74.6");
             BEAST_EXPECT(ret[jss::entire_set][jss::size].asUInt() == 7);
-            BEAST_EXPECT(
+            // Short: 0.2160246899469287
+            BEAST_EXPECTS(
                 ret[jss::entire_set][jss::standard_deviation] ==
-                "0.2160246899469287");
+                    "0.2160246899469286744",
+                ret[jss::entire_set][jss::standard_deviation].asString());
             BEAST_EXPECT(ret[jss::median] == "74.6");
             BEAST_EXPECT(ret[jss::trimmed_set][jss::mean] == "74.6");
             BEAST_EXPECT(ret[jss::trimmed_set][jss::size].asUInt() == 5);
-            BEAST_EXPECT(
+            // Short: 0.158113883008419
+            BEAST_EXPECTS(
                 ret[jss::trimmed_set][jss::standard_deviation] ==
-                "0.158113883008419");
+                    "0.1581138830084189666",
+                ret[jss::trimmed_set][jss::standard_deviation].asString());
             BEAST_EXPECT(ret[jss::time] == 946694900);
         }
 
@@ -327,9 +355,9 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(GetAggregatePrice, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(GetAggregatePrice, rpc, xrpl);
 
 }  // namespace oracle
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

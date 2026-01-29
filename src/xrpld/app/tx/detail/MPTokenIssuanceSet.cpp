@@ -5,7 +5,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 MPTokenIssuanceSet::checkExtraFeatures(PreflightContext const& ctx)
@@ -458,4 +458,4 @@ MPTokenIssuanceSet::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

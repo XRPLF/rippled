@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Timing parameters to control validation staleness and expiration.
 
@@ -418,7 +418,7 @@ private:
     {
         XRPL_ASSERT(
             val.trusted(),
-            "ripple::Validations::updateTrie : trusted input validation");
+            "xrpl::Validations::updateTrie : trusted input validation");
 
         // Clear any prior acquiring ledger for this node
         if (prior)
@@ -455,9 +455,9 @@ private:
         are checked and any stale validations are flushed from the trie.
 
         @param lock Existing lock of mutex_
-        @param f Invokable with signature (LedgerTrie<Ledger> &)
+        @param f Invocable with signature (LedgerTrie<Ledger> &)
 
-        @warning The invokable `f` is expected to be a simple transformation of
+        @warning The invocable `f` is expected to be a simple transformation of
                  its arguments and will be called with mutex_ under lock.
 
     */
@@ -476,14 +476,14 @@ private:
         Iterate current validations, flushing any which are stale.
 
         @param lock Existing lock of mutex_
-        @param pre Invokable with signature (std::size_t) called prior to
+        @param pre Invocable with signature (std::size_t) called prior to
                    looping.
-        @param f Invokable with signature (NodeID const &, Validations const &)
+        @param f Invocable with signature (NodeID const &, Validations const &)
                  for each current validation.
 
-        @note The invokable `pre` is called _prior_ to checking for staleness
+        @note The invocable `pre` is called _prior_ to checking for staleness
               and reflects an upper-bound on the number of calls to `f.
-        @warning The invokable `f` is expected to be a simple transformation of
+        @warning The invocable `f` is expected to be a simple transformation of
                  its arguments and will be called with mutex_ under lock.
     */
 
@@ -517,12 +517,12 @@ private:
 
         @param lock Existing lock on mutex_
         @param ledgerID The identifier of the ledger
-        @param pre Invokable with signature(std::size_t)
-        @param f Invokable with signature (NodeID const &, Validation const &)
+        @param pre Invocable with signature(std::size_t)
+        @param f Invocable with signature (NodeID const &, Validation const &)
 
-        @note The invokable `pre` is called prior to iterating validations. The
+        @note The invocable `pre` is called prior to iterating validations. The
               argument is the number of times `f` will be called.
-        @warning The invokable f is expected to be a simple transformation of
+        @warning The invocable f is expected to be a simple transformation of
        its arguments and will be called with mutex_ under lock.
     */
     template <class Pre, class F>
@@ -698,7 +698,7 @@ public:
     {
         std::lock_guard lock{mutex_};
         XRPL_ASSERT(
-            low < high, "ripple::Validations::setSeqToKeep : valid inputs");
+            low < high, "xrpl::Validations::setSeqToKeep : valid inputs");
         toKeep_ = {low, high};
     }
 
@@ -1156,5 +1156,5 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 #endif

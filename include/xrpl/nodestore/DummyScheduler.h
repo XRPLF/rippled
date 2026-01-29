@@ -3,10 +3,10 @@
 
 #include <xrpl/nodestore/Scheduler.h>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
-/** Simple NodeStore Scheduler that just peforms the tasks synchronously. */
+/** Simple NodeStore Scheduler that just performs the tasks synchronously. */
 class DummyScheduler : public Scheduler
 {
 public:
@@ -21,6 +21,6 @@ public:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

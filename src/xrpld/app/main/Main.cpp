@@ -53,7 +53,7 @@
 
 namespace po = boost::program_options;
 
-namespace ripple {
+namespace xrpl {
 
 bool
 adjustDescriptorLimit(int needed, beast::Journal j)
@@ -248,9 +248,9 @@ runUnitTests(
     char** argv)
 {
     using namespace beast::unit_test;
-    using namespace ripple::test;
+    using namespace xrpl::test;
 
-    ripple::test::envUseIPv4 = (!ipv6);
+    xrpl::test::envUseIPv4 = (!ipv6);
 
     if (!child && num_jobs == 1)
     {
@@ -331,8 +331,7 @@ run(int argc, char** argv)
 {
     using namespace std;
 
-    beast::setCurrentThreadName(
-        "rippled: main " + BuildInfo::getVersionString());
+    beast::setCurrentThreadName("main");
 
     po::variables_map vm;
 
@@ -829,7 +828,7 @@ run(int argc, char** argv)
     // LCOV_EXCL_STOP
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 int
 main(int argc, char** argv)
@@ -854,5 +853,5 @@ main(int argc, char** argv)
 
     atexit(&google::protobuf::ShutdownProtobufLibrary);
 
-    return ripple::run(argc, argv);
+    return xrpl::run(argc, argv);
 }

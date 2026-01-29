@@ -1,10 +1,13 @@
+#include <xrpl/protocol/Rules.h>
+// Do not remove. Forces Rules.h to stay first, to verify it can compile
+// without any hidden dependencies
 #include <xrpl/basics/LocalValue.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STVector256.h>
 
 #include <memory>
@@ -12,7 +15,7 @@
 #include <unordered_set>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 // Use a static inside a function to help prevent order-of-initialization issues
@@ -33,6 +36,15 @@ getCurrentTransactionRules()
 void
 setCurrentTransactionRules(std::optional<Rules> r)
 {
+    // Make global changes associated with the rules before the value is moved.
+    // Push the appropriate setting, instead of having the class pull every time
+    // the value is needed. That could get expensive fast.
+    bool enableLargeNumbers = !r ||
+        (r->enabled(featureSingleAssetVault) ||
+         r->enabled(featureLendingProtocol));
+    Number::setMantissaScale(
+        enableLargeNumbers ? MantissaRange::large : MantissaRange::small);
+
     *getCurrentTransactionRulesRef() = std::move(r);
 }
 
@@ -82,7 +94,7 @@ public:
             return false;
         XRPL_ASSERT(
             presets_ == other.presets_,
-            "ripple::Rules::Impl::operator==(Impl) const : input presets do "
+            "xrpl::Rules::Impl::operator==(Impl) const : input presets do "
             "match");
         return *digest_ == *other.digest_;
     }
@@ -110,7 +122,7 @@ Rules::presets() const
 bool
 Rules::enabled(uint256 const& feature) const
 {
-    XRPL_ASSERT(impl_, "ripple::Rules::enabled : initialized");
+    XRPL_ASSERT(impl_, "xrpl::Rules::enabled : initialized");
 
     return impl_->enabled(feature);
 }
@@ -120,7 +132,7 @@ Rules::operator==(Rules const& other) const
 {
     XRPL_ASSERT(
         impl_ && other.impl_,
-        "ripple::Rules::operator==(Rules) const : both initialized");
+        "xrpl::Rules::operator==(Rules) const : both initialized");
     if (impl_.get() == other.impl_.get())
         return true;
     return *impl_ == *other.impl_;
@@ -139,4 +151,4 @@ isFeatureEnabled(uint256 const& feature)
     return rules && rules->enabled(feature);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

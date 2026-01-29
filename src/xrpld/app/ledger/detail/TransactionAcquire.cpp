@@ -7,7 +7,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 using namespace std::chrono_literals;
 
@@ -27,7 +27,7 @@ TransactionAcquire::TransactionAcquire(
           app,
           hash,
           TX_ACQUIRE_TIMEOUT,
-          {jtTXN_DATA, "TransactionAcquire", {}},
+          {jtTXN_DATA, "TxAcq", {}},
           app.journal("TransactionAcquire"))
     , mHaveRoot(false)
     , mPeerSet(std::move(peerSet))
@@ -60,7 +60,7 @@ TransactionAcquire::done()
         // just updates the consensus and related structures when we acquire
         // a transaction set. No need to update them if we're shutting down.
         app_.getJobQueue().addJob(
-            jtTXN_DATA, "completeAcquire", [pap, hash, map]() {
+            jtTXN_DATA, "ComplAcquire", [pap, hash, map]() {
                 pap->getInboundTransactions().giveSet(hash, map, true);
             });
     }
@@ -244,4 +244,4 @@ TransactionAcquire::stillNeed()
     failed_ = false;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,6 +1,6 @@
 #include <xrpl/nodestore/detail/DatabaseNodeImp.h>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 void
@@ -194,4 +194,4 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

@@ -6,7 +6,7 @@
 
 #include <initializer_list>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ReducedOffer_test : public beast::unit_test::suite
@@ -719,7 +719,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(ReducedOffer, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(ReducedOffer, app, xrpl, 2);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

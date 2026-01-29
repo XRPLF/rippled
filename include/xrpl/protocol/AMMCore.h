@@ -7,7 +7,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint16_t constexpr TRADING_FEE_THRESHOLD = 1000;  // 1%
 
@@ -102,6 +102,6 @@ feeMultHalf(std::uint16_t tfee)
     return 1 - getFee(tfee) / 2;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_PROTOCOL_AMMCORE_H_INCLUDED

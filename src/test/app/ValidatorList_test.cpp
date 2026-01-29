@@ -16,7 +16,7 @@
 
 #include <boost/beast/core/multi_buffer.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ValidatorList_test : public beast::unit_test::suite
@@ -2294,7 +2294,7 @@ private:
     {
         testcase("Sha512 hashing");
         // Tests that ValidatorList hash_append helpers with a single blob
-        // returns the same result as ripple::Sha512Half used by the
+        // returns the same result as xrpl::Sha512Half used by the
         // TMValidatorList protocol message handler
         std::string const manifest = "This is not really a manifest";
         std::string const blob = "This is not really a blob";
@@ -2370,7 +2370,8 @@ private:
                                         &extractHeader](Message& message) {
             auto [header, buffers] = extractHeader(message);
             if (BEAST_EXPECT(header) &&
-                BEAST_EXPECT(header->message_type == protocol::mtVALIDATORLIST))
+                BEAST_EXPECT(
+                    header->message_type == protocol::mtVALIDATOR_LIST))
             {
                 auto const msg =
                     detail::parseMessageContent<protocol::TMValidatorList>(
@@ -2386,7 +2387,7 @@ private:
             if (BEAST_EXPECT(header) &&
                 BEAST_EXPECT(
                     header->message_type ==
-                    protocol::mtVALIDATORLISTCOLLECTION))
+                    protocol::mtVALIDATOR_LIST_COLLECTION))
             {
                 auto const msg = detail::parseMessageContent<
                     protocol::TMValidatorListCollection>(
@@ -4145,7 +4146,7 @@ public:
     }
 };  // namespace test
 
-BEAST_DEFINE_TESTSUITE(ValidatorList, app, ripple);
+BEAST_DEFINE_TESTSUITE(ValidatorList, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

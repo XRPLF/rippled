@@ -10,7 +10,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 bool
@@ -952,9 +952,9 @@ struct Flow_test : public beast::unit_test::suite
     }
 
     void
-    testReexecuteDirectStep(FeatureBitset features)
+    testReExecuteDirectStep(FeatureBitset features)
     {
-        testcase("ReexecuteDirectStep");
+        testcase("ReExecuteDirectStep");
 
         using namespace jtx;
         Env env(*this, features);
@@ -1291,7 +1291,7 @@ struct Flow_test : public beast::unit_test::suite
         testSelfFundedXRPEndpoint(false, features);
         testSelfFundedXRPEndpoint(true, features);
         testUnfundedOffer(features);
-        testReexecuteDirectStep(features);
+        testReExecuteDirectStep(features);
         testSelfPayLowQualityOffer(features);
         testTicketPay(features);
     }
@@ -1329,8 +1329,8 @@ struct Flow_manual_test : public Flow_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Flow, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Flow_manual, app, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(Flow, app, xrpl, 2);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Flow_manual, app, xrpl, 4);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

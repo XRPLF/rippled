@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class OfferBaseUtil_test : public beast::unit_test::suite
@@ -20,7 +20,10 @@ class OfferBaseUtil_test : public beast::unit_test::suite
     std::uint32_t
     lastClose(jtx::Env& env)
     {
-        return env.current()->info().parentCloseTime.time_since_epoch().count();
+        return env.current()
+            ->header()
+            .parentCloseTime.time_since_epoch()
+            .count();
     }
 
     static auto
@@ -1295,7 +1298,7 @@ public:
     testNegativeBalance(FeatureBitset features)
     {
         // This test creates an offer test for negative balance
-        // with transfer fees and miniscule funds.
+        // with transfer fees and minuscule funds.
         testcase("Negative Balance");
 
         using namespace jtx;
@@ -2287,7 +2290,7 @@ public:
 
         // clang-format off
         TestData const tests[]{
-            // acct                     fundXrp        bookAmt   preTrust  offerAmt                   tec     spentXrp       balanceUSD offers  owners
+            // acct                     fundXrp        bookAmt   preTrust  offerAmount                   tec     spentXrp       balanceUSD offers  owners
             {"ann",             reserve(env, 0) + 0 * f,    1,   noPreTrust, 1000,      tecUNFUNDED_OFFER,               f, USD(      0),    0, 0},  // Account is at the reserve, and will dip below once fees are subtracted.
             {"bev",             reserve(env, 0) + 1 * f,    1,   noPreTrust, 1000,      tecUNFUNDED_OFFER,               f, USD(      0),    0, 0},  // Account has just enough for the reserve and the fee.
             {"cam",             reserve(env, 0) + 2 * f,    0,   noPreTrust, 1000, tecINSUF_RESERVE_OFFER,               f, USD(      0),    0, 0},  // Account has enough for the reserve, the fee and the offer, and a bit more, but not enough for the reserve after the offer is placed.
@@ -5297,10 +5300,10 @@ class Offer_manual_test : public OfferBaseUtil_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, app, ripple, 2);
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, app, ripple, 20);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, app, xrpl, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, app, xrpl, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, app, xrpl, 2);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, app, xrpl, 20);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

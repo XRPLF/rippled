@@ -8,7 +8,7 @@
 
 #include <boost/container/flat_set.hpp>
 
-namespace ripple {
+namespace xrpl {
 class Config;
 namespace path {
 
@@ -107,6 +107,6 @@ public:
 };
 
 }  // namespace path
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

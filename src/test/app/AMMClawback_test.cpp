@@ -6,7 +6,7 @@
 
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 class AMMClawback_test : public beast::unit_test::suite
 {
@@ -2043,7 +2043,7 @@ class AMMClawback_test : public beast::unit_test::suite
     void
     testSingleDepositAndClawback(FeatureBitset features)
     {
-        testcase("test single depoit and clawback");
+        testcase("test single deposit and clawback");
         using namespace jtx;
         std::string logs;
 
@@ -2425,7 +2425,10 @@ class AMMClawback_test : public beast::unit_test::suite
     void
     run() override
     {
-        FeatureBitset const all = jtx::testable_amendments();
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        FeatureBitset const all = jtx::testable_amendments() -
+            featureSingleAssetVault - featureLendingProtocol;
 
         testInvalidRequest();
         testFeatureDisabled(all - featureAMMClawback);
@@ -2447,6 +2450,6 @@ class AMMClawback_test : public beast::unit_test::suite
         }
     }
 };
-BEAST_DEFINE_TESTSUITE(AMMClawback, app, ripple);
+BEAST_DEFINE_TESTSUITE(AMMClawback, app, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

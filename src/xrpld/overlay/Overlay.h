@@ -23,7 +23,7 @@ class context;
 }  // namespace asio
 }  // namespace boost
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages the set of connected peers. */
 class Overlay : public beast::PropertyStream::Source
@@ -94,7 +94,7 @@ public:
     size() const = 0;
 
     /** Return diagnostics on the status of all peers.
-        @deprecated This is superceded by PropertyStream
+        @deprecated This is superseded by PropertyStream
     */
     virtual Json::Value
     json() = 0;
@@ -215,6 +215,6 @@ public:
     txMetrics() const = 0;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

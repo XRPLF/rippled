@@ -12,7 +12,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STArray::STArray(STArray&& other)
     : STBase(other.getFName()), v_(std::move(other.v_))
@@ -180,4 +180,4 @@ STArray::sort(bool (*compare)(STObject const&, STObject const&))
     std::sort(v_.begin(), v_.end(), compare);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -6,10 +6,11 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
@@ -115,6 +116,7 @@ VaultWithdraw::doApply()
 
     auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
+
     MPTIssue const share{mptIssuanceID};
     STAmount sharesRedeemed = {share};
     STAmount assetsWithdrawn;
@@ -182,7 +184,7 @@ VaultWithdraw::doApply()
     [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
     XRPL_ASSERT(
         lossUnrealized <= (assetsTotal - assetsAvailable),
-        "ripple::VaultWithdraw::doApply : loss and assets do balance");
+        "xrpl::VaultWithdraw::doApply : loss and assets do balance");
 
     // The vault must have enough assets on hand. The vault may hold assets
     // that it has already pledged. That is why we look at AssetAvailable
@@ -239,6 +241,8 @@ VaultWithdraw::doApply()
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
 
+    associateAsset(*vault, vaultAsset);
+
     return doWithdraw(
         view(),
         ctx_.tx,
@@ -250,4 +254,4 @@ VaultWithdraw::doApply()
         j_);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

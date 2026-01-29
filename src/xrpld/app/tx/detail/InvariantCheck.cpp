@@ -25,7 +25,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /*
 assert(enforce)
@@ -84,9 +84,9 @@ operator|(Privilege lhs, Privilege rhs)
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, amendment, privileges, ...) \
-    case tag: {                                                                \
-        return (privileges) & priv;                                            \
+#define TRANSACTION(tag, value, name, delegable, amendment, privileges, ...) \
+    case tag: {                                                              \
+        return (privileges) & priv;                                          \
     }
 
 bool
@@ -95,6 +95,7 @@ hasPrivilege(STTx const& tx, Privilege priv)
     switch (tx.getTxnType())
     {
 #include <xrpl/protocol/detail/transactions.macro>
+
         // Deprecated types
         default:
             return false;
@@ -525,7 +526,7 @@ AccountRootsDeletedClean::finalize(
             // assert.
             XRPL_ASSERT(
                 enforce,
-                "ripple::AccountRootsDeletedClean::finalize::objectExists : "
+                "xrpl::AccountRootsDeletedClean::finalize::objectExists : "
                 "account deletion left no objects behind");
             return true;
         }
@@ -542,7 +543,7 @@ AccountRootsDeletedClean::finalize(
                                "behind a non-zero balance";
             XRPL_ASSERT(
                 enforce,
-                "ripple::AccountRootsDeletedClean::finalize : "
+                "xrpl::AccountRootsDeletedClean::finalize : "
                 "deleted account has zero balance");
             if (enforce)
                 return false;
@@ -554,7 +555,7 @@ AccountRootsDeletedClean::finalize(
                                "behind a non-zero owner count";
             XRPL_ASSERT(
                 enforce,
-                "ripple::AccountRootsDeletedClean::finalize : "
+                "xrpl::AccountRootsDeletedClean::finalize : "
                 "deleted account has zero owner count");
             if (enforce)
                 return false;
@@ -567,7 +568,7 @@ AccountRootsDeletedClean::finalize(
         }
 
         {
-            // NFT pages. ntfpage_min and nftpage_max were already explicitly
+            // NFT pages. nftpage_min and nftpage_max were already explicitly
             // checked above as entries in directAccountKeylets. This uses
             // view.succ() to check for any NFT pages in between the two
             // endpoints.
@@ -796,7 +797,7 @@ TransfersNotFrozen::finalize(
             // assert.
             XRPL_ASSERT(
                 enforce,
-                "ripple::TransfersNotFrozen::finalize : enforce "
+                "xrpl::TransfersNotFrozen::finalize : enforce "
                 "invariant.");
             if (enforce)
             {
@@ -820,8 +821,7 @@ TransfersNotFrozen::isValidEntry(
     std::shared_ptr<SLE const> const& after)
 {
     // `after` can never be null, even if the trust line is deleted.
-    XRPL_ASSERT(
-        after, "ripple::TransfersNotFrozen::isValidEntry : valid after.");
+    XRPL_ASSERT(after, "xrpl::TransfersNotFrozen::isValidEntry : valid after.");
     if (!after)
     {
         return false;
@@ -877,7 +877,7 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 {
     XRPL_ASSERT(
         change.balanceChangeSign,
-        "ripple::TransfersNotFrozen::recordBalance : valid trustline "
+        "xrpl::TransfersNotFrozen::recordBalance : valid trustline "
         "balance sign.");
     auto& changes = balanceChanges_[issue];
     if (change.balanceChangeSign < 0)
@@ -996,7 +996,7 @@ TransfersNotFrozen::validateFrozenState(
     // The comment above starting with "assert(enforce)" explains this assert.
     XRPL_ASSERT(
         enforce,
-        "ripple::TransfersNotFrozen::validateFrozenState : enforce "
+        "xrpl::TransfersNotFrozen::validateFrozenState : enforce "
         "invariant.");
 
     if (enforce)
@@ -1084,7 +1084,7 @@ ValidNewAccountRoot::finalize(
 
     JLOG(j.fatal()) << "Invariant failed: account root created illegally";
     return false;
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 
@@ -1486,7 +1486,7 @@ ValidMPTIssuance::finalize(
             // assert.
             XRPL_ASSERT_PARTS(
                 enforceCreatedByIssuer,
-                "ripple::ValidMPTIssuance::finalize",
+                "xrpl::ValidMPTIssuance::finalize",
                 "no issuer MPToken");
             if (enforceCreatedByIssuer)
                 return false;
@@ -1598,7 +1598,7 @@ ValidMPTIssuance::finalize(
             // non-amendment-gated side effects.
             XRPL_ASSERT_PARTS(
                 !enforceEscrowFinish,
-                "ripple::ValidMPTIssuance::finalize",
+                "xrpl::ValidMPTIssuance::finalize",
                 "not escrow finish tx");
             return true;
         }
@@ -1811,7 +1811,7 @@ ValidPseudoAccounts::finalize(
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
     XRPL_ASSERT(
         errors_.empty() || enforce,
-        "ripple::ValidPseudoAccounts::finalize : no bad "
+        "xrpl::ValidPseudoAccounts::finalize : no bad "
         "changes or enforce invariant");
     if (!errors_.empty())
     {
@@ -2089,8 +2089,8 @@ ValidAMM::finalizeDEX(bool enforce, beast::Journal const& j) const
 
 bool
 ValidAMM::generalInvariant(
-    ripple::STTx const& tx,
-    ripple::ReadView const& view,
+    xrpl::STTx const& tx,
+    xrpl::ReadView const& view,
     ZeroAllowed zeroAllowed,
     beast::Journal const& j) const
 {
@@ -2135,8 +2135,8 @@ ValidAMM::generalInvariant(
 
 bool
 ValidAMM::finalizeDeposit(
-    ripple::STTx const& tx,
-    ripple::ReadView const& view,
+    xrpl::STTx const& tx,
+    xrpl::ReadView const& view,
     bool enforce,
     beast::Journal const& j) const
 {
@@ -2156,8 +2156,8 @@ ValidAMM::finalizeDeposit(
 
 bool
 ValidAMM::finalizeWithdraw(
-    ripple::STTx const& tx,
-    ripple::ReadView const& view,
+    xrpl::STTx const& tx,
+    xrpl::ReadView const& view,
     bool enforce,
     beast::Journal const& j) const
 {
@@ -2317,12 +2317,12 @@ NoModifiedUnmodifiableFields::finalize(
         }
         XRPL_ASSERT(
             !bad || enforce,
-            "ripple::NoModifiedUnmodifiableFields::finalize : no bad "
+            "xrpl::NoModifiedUnmodifiableFields::finalize : no bad "
             "changes or enforce invariant");
         if (bad)
         {
             JLOG(j.fatal())
-                << "Invariant failed: changed an unchangable field for "
+                << "Invariant failed: changed an unchangeable field for "
                 << tx.getTransactionID();
             if (enforce)
                 return false;
@@ -2623,6 +2623,7 @@ ValidVault::Vault::make(SLE const& from)
     self.key = from.key();
     self.asset = from.at(sfAsset);
     self.pseudoId = from.getAccountID(sfAccount);
+    self.owner = from.at(sfOwner);
     self.shareMPTID = from.getFieldH192(sfShareMPTID);
     self.assetsTotal = from.at(sfAssetsTotal);
     self.assetsAvailable = from.at(sfAssetsAvailable);
@@ -2657,7 +2658,7 @@ ValidVault::visitEntry(
     // `isDelete` indicates whether an object is being deleted or modified.
     XRPL_ASSERT(
         after != nullptr && (before != nullptr || !isDelete),
-        "ripple::ValidVault::visitEntry : some object is available");
+        "xrpl::ValidVault::visitEntry : some object is available");
 
     // Number balanceDelta will capture the difference (delta) between "before"
     // state (zero if created) and "after" state (zero if destroyed), so the
@@ -2755,7 +2756,7 @@ ValidVault::finalize(
                 "Invariant failed: vault operation succeeded without modifying "
                 "a vault";
             XRPL_ASSERT(
-                enforce, "ripple::ValidVault::finalize : vault noop invariant");
+                enforce, "xrpl::ValidVault::finalize : vault noop invariant");
             return !enforce;
         }
 
@@ -2768,7 +2769,7 @@ ValidVault::finalize(
             "Invariant failed: vault updated by a wrong transaction type";
         XRPL_ASSERT(
             enforce,
-            "ripple::ValidVault::finalize : illegal vault transaction "
+            "xrpl::ValidVault::finalize : illegal vault transaction "
             "invariant");
         return !enforce;  // Also not a vault operation
     }
@@ -2778,7 +2779,7 @@ ValidVault::finalize(
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault operation updated more than single vault";
         XRPL_ASSERT(
-            enforce, "ripple::ValidVault::finalize : single vault invariant");
+            enforce, "xrpl::ValidVault::finalize : single vault invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -2794,7 +2795,7 @@ ValidVault::finalize(
                 "Invariant failed: vault deleted by a wrong transaction type";
             XRPL_ASSERT(
                 enforce,
-                "ripple::ValidVault::finalize : illegal vault deletion "
+                "xrpl::ValidVault::finalize : illegal vault deletion "
                 "invariant");
             return !enforce;  // That's all we can do here
         }
@@ -2821,7 +2822,7 @@ ValidVault::finalize(
                                "delete shares";
             XRPL_ASSERT(
                 enforce,
-                "ripple::ValidVault::finalize : shares deletion invariant");
+                "xrpl::ValidVault::finalize : shares deletion invariant");
             return !enforce;  // That's all we can do here
         }
 
@@ -2852,7 +2853,7 @@ ValidVault::finalize(
         JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without "
                            "deleting a vault";
         XRPL_ASSERT(
-            enforce, "ripple::ValidVault::finalize : vault deletion invariant");
+            enforce, "xrpl::ValidVault::finalize : vault deletion invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -2860,7 +2861,7 @@ ValidVault::finalize(
     auto const& afterVault = afterVault_[0];
     XRPL_ASSERT(
         beforeVault_.empty() || beforeVault_[0].key == afterVault.key,
-        "ripple::ValidVault::finalize : single vault operation");
+        "xrpl::ValidVault::finalize : single vault operation");
 
     auto const updatedShares = [&]() -> std::optional<Shares> {
         // At this moment we only know that a vault is being updated and there
@@ -2901,8 +2902,7 @@ ValidVault::finalize(
     {
         JLOG(j.fatal()) << "Invariant failed: updated vault must have shares";
         XRPL_ASSERT(
-            enforce,
-            "ripple::ValidVault::finalize : vault has shares invariant");
+            enforce, "xrpl::ValidVault::finalize : vault has shares invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -2972,7 +2972,7 @@ ValidVault::finalize(
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault created by a wrong transaction type";
         XRPL_ASSERT(
-            enforce, "ripple::ValidVault::finalize : vault creation invariant");
+            enforce, "xrpl::ValidVault::finalize : vault creation invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -3007,7 +3007,7 @@ ValidVault::finalize(
         JLOG(j.fatal()) << "Invariant failed: vault operation succeeded "
                            "without updating shares";
         XRPL_ASSERT(
-            enforce, "ripple::ValidVault::finalize : shares noop invariant");
+            enforce, "xrpl::ValidVault::finalize : shares noop invariant");
         return !enforce;  // That's all we can do here
     }
 
@@ -3066,6 +3066,10 @@ ValidVault::finalize(
 
         return it != deltas_.end() ? std::optional<Number>(it->second)
                                    : std::nullopt;
+    };
+
+    auto const vaultHoldsNoAssets = [&](Vault const& vault) {
+        return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
     };
 
     // Technically this does not need to be a lambda, but it's more
@@ -3137,7 +3141,7 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "ripple::ValidVault::finalize : set updated a vault");
+                    "xrpl::ValidVault::finalize : set updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
                 auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
@@ -3189,7 +3193,7 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "ripple::ValidVault::finalize : deposit updated a vault");
+                    "xrpl::ValidVault::finalize : deposit updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
                 auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
@@ -3316,7 +3320,7 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "ripple::ValidVault::finalize : withdrawal updated a "
+                    "xrpl::ValidVault::finalize : withdrawal updated a "
                     "vault");
                 auto const& beforeVault = beforeVault_[0];
 
@@ -3444,33 +3448,60 @@ ValidVault::finalize(
 
                 XRPL_ASSERT(
                     !beforeVault_.empty(),
-                    "ripple::ValidVault::finalize : clawback updated a vault");
+                    "xrpl::ValidVault::finalize : clawback updated a vault");
                 auto const& beforeVault = beforeVault_[0];
 
                 if (vaultAsset.native() ||
                     vaultAsset.getIssuer() != tx[sfAccount])
                 {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback may only be performed by "
-                        "the asset issuer";
-                    return false;  // That's all we can do
+                    // The owner can use clawback to force-burn shares when the
+                    // vault is empty but there are outstanding shares
+                    if (!(beforeShares && beforeShares->sharesTotal > 0 &&
+                          vaultHoldsNoAssets(beforeVault) &&
+                          beforeVault.owner == tx[sfAccount]))
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback may only be performed "
+                            "by the asset issuer, or by the vault owner of an "
+                            "empty vault";
+                        return false;  // That's all we can do
+                    }
                 }
 
                 auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+                if (vaultDeltaAssets)
+                {
+                    if (*vaultDeltaAssets >= zero)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must decrease vault "
+                            "balance";
+                        result = false;
+                    }
 
-                if (!vaultDeltaAssets)
+                    if (beforeVault.assetsTotal + *vaultDeltaAssets !=
+                        afterVault.assetsTotal)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback and assets outstanding "
+                            "must add up";
+                        result = false;
+                    }
+
+                    if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
+                        afterVault.assetsAvailable)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback and assets available "
+                            "must add up";
+                        result = false;
+                    }
+                }
+                else if (!vaultHoldsNoAssets(beforeVault))
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback must change vault balance";
                     return false;  // That's all we can do
-                }
-
-                if (*vaultDeltaAssets >= zero)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must decrease vault "
-                        "balance";
-                    result = false;
                 }
 
                 auto const accountDeltaShares = deltaShares(tx[sfHolder]);
@@ -3505,24 +3536,6 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                if (beforeVault.assetsTotal + *vaultDeltaAssets !=
-                    afterVault.assetsTotal)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback and assets outstanding "
-                        "must add up";
-                    result = false;
-                }
-
-                if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
-                    afterVault.assetsAvailable)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback and assets available must "
-                        "add up";
-                    result = false;
-                }
-
                 return result;
             }
 
@@ -3536,7 +3549,7 @@ ValidVault::finalize(
             default:
                 // LCOV_EXCL_START
                 UNREACHABLE(
-                    "ripple::ValidVault::finalize : unknown transaction type");
+                    "xrpl::ValidVault::finalize : unknown transaction type");
                 return false;
                 // LCOV_EXCL_STOP
         }
@@ -3546,11 +3559,11 @@ ValidVault::finalize(
     {
         // The comment at the top of this file starting with "assert(enforce)"
         // explains this assert.
-        XRPL_ASSERT(enforce, "ripple::ValidVault::finalize : vault invariants");
+        XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault invariants");
         return !enforce;
     }
 
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

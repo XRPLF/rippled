@@ -14,7 +14,7 @@
 #include <string>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 struct epsilon_multiple
@@ -239,9 +239,9 @@ public:
 struct BookSpec
 {
     AccountID account;
-    ripple::Currency currency;
+    xrpl::Currency currency;
 
-    BookSpec(AccountID const& account_, ripple::Currency const& currency_)
+    BookSpec(AccountID const& account_, xrpl::Currency const& currency_)
         : account(account_), currency(currency_)
     {
     }
@@ -261,6 +261,12 @@ struct XRP_t
         return xrpIssue();
     }
 
+    bool
+    integral() const
+    {
+        return true;
+    }
+
     /** Returns an amount of XRP as PrettyAmount,
         which is trivially convertible to STAmount
 
@@ -277,7 +283,7 @@ struct XRP_t
     }
 
     /** Returns an amount of XRP as PrettyAmount,
-        which is trivially convertable to STAmount
+        which is trivially convertible to STAmount
 
         @param v The Number of XRP (not drops). May be fractional.
     */
@@ -383,9 +389,9 @@ class IOU
 {
 public:
     Account account;
-    ripple::Currency currency;
+    xrpl::Currency currency;
 
-    IOU(Account const& account_, ripple::Currency const& currency_)
+    IOU(Account const& account_, xrpl::Currency const& currency_)
         : account(account_), currency(currency_)
     {
     }
@@ -399,6 +405,11 @@ public:
     asset() const
     {
         return issue();
+    }
+    bool
+    integral() const
+    {
+        return issue().integral();
     }
 
     /** Implicit conversion to Issue or Asset.
@@ -465,14 +476,14 @@ class MPT
 {
 public:
     std::string name;
-    ripple::MPTID issuanceID;
+    xrpl::MPTID issuanceID;
 
-    MPT(std::string const& n, ripple::MPTID const& issuanceID_)
+    MPT(std::string const& n, xrpl::MPTID const& issuanceID_)
         : name(n), issuanceID(issuanceID_)
     {
     }
 
-    ripple::MPTID const&
+    xrpl::MPTID const&
     mpt() const
     {
         return issuanceID;
@@ -480,7 +491,7 @@ public:
 
     /** Explicit conversion to MPTIssue or asset.
      */
-    ripple::MPTIssue
+    xrpl::MPTIssue
     mptIssue() const
     {
         return MPTIssue{issuanceID};
@@ -490,13 +501,18 @@ public:
     {
         return mptIssue();
     }
+    bool
+    integral() const
+    {
+        return true;
+    }
 
     /** Implicit conversion to MPTIssue or asset.
 
         This allows passing an MPT
         value where an MPTIssue is expected.
     */
-    operator ripple::MPTIssue() const
+    operator xrpl::MPTIssue() const
     {
         return mptIssue();
     }
@@ -589,6 +605,6 @@ extern any_t const any;
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

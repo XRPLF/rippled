@@ -3,7 +3,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -40,4 +40,4 @@ public:
 }  // namespace delegate
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

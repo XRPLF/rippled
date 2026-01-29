@@ -12,12 +12,12 @@
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/core/PerfLog.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
@@ -33,7 +33,7 @@
 
 using namespace std::chrono_literals;
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 /** The threshold above which we treat a peer connection as high latency */
@@ -562,7 +562,7 @@ PeerImp::fail(std::string const& name, error_code ec)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::fail : strand in this thread");
+        "xrpl::PeerImp::fail : strand in this thread");
 
     if (!socket_.is_open())
         return;
@@ -586,7 +586,7 @@ PeerImp::fail(std::string const& reason)
     if (!socket_.is_open())
         return;
 
-    // Call to name() locks, log only if the message will be outputed
+    // Call to name() locks, log only if the message will be outputted
     if (journal_.active(beast::severities::kWarning))
     {
         std::string const n = name();
@@ -601,7 +601,7 @@ PeerImp::tryAsyncShutdown()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::tryAsyncShutdown : strand in this thread");
+        "xrpl::PeerImp::tryAsyncShutdown : strand in this thread");
 
     if (!shutdown_ || shutdownStarted_)
         return;
@@ -625,7 +625,7 @@ PeerImp::shutdown()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::shutdown: strand in this thread");
+        "xrpl::PeerImp::shutdown: strand in this thread");
 
     if (!socket_.is_open() || shutdown_)
         return;
@@ -668,7 +668,7 @@ PeerImp::close()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::close : strand in this thread");
+        "xrpl::PeerImp::close : strand in this thread");
 
     if (!socket_.is_open())
         return;
@@ -723,7 +723,7 @@ PeerImp::onTimer(error_code const& ec)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::onTimer : strand in this thread");
+        "xrpl::PeerImp::onTimer : strand in this thread");
 
     if (!socket_.is_open())
         return;
@@ -804,7 +804,7 @@ PeerImp::doAccept()
 {
     XRPL_ASSERT(
         read_buffer_.size() == 0,
-        "ripple::PeerImp::doAccept : empty read buffer");
+        "xrpl::PeerImp::doAccept : empty read buffer");
 
     JLOG(journal_.debug()) << "doAccept";
 
@@ -933,7 +933,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::onReadMessage : strand in this thread");
+        "xrpl::PeerImp::onReadMessage : strand in this thread");
 
     readPending_ = false;
 
@@ -1005,7 +1005,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
     readPending_ = true;
 
     XRPL_ASSERT(
-        !shutdownStarted_, "ripple::PeerImp::onReadMessage : shutdown started");
+        !shutdownStarted_, "xrpl::PeerImp::onReadMessage : shutdown started");
 
     // Timeout on writes only
     stream_.async_read_some(
@@ -1024,7 +1024,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::onWriteMessage : strand in this thread");
+        "xrpl::PeerImp::onWriteMessage : strand in this thread");
 
     writePending_ = false;
 
@@ -1051,7 +1051,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 
     XRPL_ASSERT(
         !send_queue_.empty(),
-        "ripple::PeerImp::onWriteMessage : non-empty send buffer");
+        "xrpl::PeerImp::onWriteMessage : non-empty send buffer");
     send_queue_.pop();
 
     if (shutdown_)
@@ -1062,7 +1062,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
         writePending_ = true;
         XRPL_ASSERT(
             !shutdownStarted_,
-            "ripple::PeerImp::onWriteMessage : shutdown started");
+            "xrpl::PeerImp::onWriteMessage : shutdown started");
 
         // Timeout on writes only
         return boost::asio::async_write(
@@ -1158,7 +1158,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
         fee_.update(Resource::feeModerateBurdenPeer, "oversize");
 
     app_.getJobQueue().addJob(
-        jtMANIFEST, "receiveManifests", [this, that = shared_from_this(), m]() {
+        jtMANIFEST, "RcvManifests", [this, that = shared_from_this(), m]() {
             overlay_.onManifests(m, that);
         });
 }
@@ -1343,7 +1343,7 @@ PeerImp::handleTransaction(
 {
     XRPL_ASSERT(
         eraseTxQueue != batch,
-        ("ripple::PeerImp::handleTransaction : valid inputs"));
+        ("xrpl::PeerImp::handleTransaction : valid inputs"));
     if (tracking_.load() == Tracking::diverged)
         return;
 
@@ -1351,8 +1351,8 @@ PeerImp::handleTransaction(
     {
         // If we've never been in synch, there's nothing we can do
         // with a transaction
-        JLOG(p_journal_.debug()) << "Ignoring incoming transaction: "
-                                 << "Need network ledger";
+        JLOG(p_journal_.debug())
+            << "Ignoring incoming transaction: Need network ledger";
         return;
     }
 
@@ -1452,7 +1452,7 @@ PeerImp::handleTransaction(
         {
             app_.getJobQueue().addJob(
                 jtTRANSACTION,
-                "recvTransaction->checkTransaction",
+                "RcvCheckTx",
                 [weak = std::weak_ptr<PeerImp>(shared_from_this()),
                  flags,
                  checkSignature,
@@ -1555,7 +1555,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 
     // Queue a job to process the request
     std::weak_ptr<PeerImp> weak = shared_from_this();
-    app_.getJobQueue().addJob(jtLEDGER_REQ, "recvGetLedger", [weak, m]() {
+    app_.getJobQueue().addJob(jtLEDGER_REQ, "RcvGetLedger", [weak, m]() {
         if (auto peer = weak.lock())
             peer->processLedgerRequest(m);
     });
@@ -1575,29 +1575,27 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
     fee_.update(
         Resource::feeModerateBurdenPeer, "received a proof path request");
     std::weak_ptr<PeerImp> weak = shared_from_this();
-    app_.getJobQueue().addJob(
-        jtREPLAY_REQ, "recvProofPathRequest", [weak, m]() {
-            if (auto peer = weak.lock())
+    app_.getJobQueue().addJob(jtREPLAY_REQ, "RcvProofPReq", [weak, m]() {
+        if (auto peer = weak.lock())
+        {
+            auto reply =
+                peer->ledgerReplayMsgHandler_.processProofPathRequest(m);
+            if (reply.has_error())
             {
-                auto reply =
-                    peer->ledgerReplayMsgHandler_.processProofPathRequest(m);
-                if (reply.has_error())
-                {
-                    if (reply.error() == protocol::TMReplyError::reBAD_REQUEST)
-                        peer->charge(
-                            Resource::feeMalformedRequest,
-                            "proof_path_request");
-                    else
-                        peer->charge(
-                            Resource::feeRequestNoReply, "proof_path_request");
-                }
+                if (reply.error() == protocol::TMReplyError::reBAD_REQUEST)
+                    peer->charge(
+                        Resource::feeMalformedRequest, "proof_path_request");
                 else
-                {
-                    peer->send(std::make_shared<Message>(
-                        reply, protocol::mtPROOF_PATH_RESPONSE));
-                }
+                    peer->charge(
+                        Resource::feeRequestNoReply, "proof_path_request");
             }
-        });
+            else
+            {
+                peer->send(std::make_shared<Message>(
+                    reply, protocol::mtPROOF_PATH_RESPONSE));
+            }
+        }
+    });
 }
 
 void
@@ -1629,30 +1627,27 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
 
     fee_.fee = Resource::feeModerateBurdenPeer;
     std::weak_ptr<PeerImp> weak = shared_from_this();
-    app_.getJobQueue().addJob(
-        jtREPLAY_REQ, "recvReplayDeltaRequest", [weak, m]() {
-            if (auto peer = weak.lock())
+    app_.getJobQueue().addJob(jtREPLAY_REQ, "RcvReplDReq", [weak, m]() {
+        if (auto peer = weak.lock())
+        {
+            auto reply =
+                peer->ledgerReplayMsgHandler_.processReplayDeltaRequest(m);
+            if (reply.has_error())
             {
-                auto reply =
-                    peer->ledgerReplayMsgHandler_.processReplayDeltaRequest(m);
-                if (reply.has_error())
-                {
-                    if (reply.error() == protocol::TMReplyError::reBAD_REQUEST)
-                        peer->charge(
-                            Resource::feeMalformedRequest,
-                            "replay_delta_request");
-                    else
-                        peer->charge(
-                            Resource::feeRequestNoReply,
-                            "replay_delta_request");
-                }
+                if (reply.error() == protocol::TMReplyError::reBAD_REQUEST)
+                    peer->charge(
+                        Resource::feeMalformedRequest, "replay_delta_request");
                 else
-                {
-                    peer->send(std::make_shared<Message>(
-                        reply, protocol::mtREPLAY_DELTA_RESPONSE));
-                }
+                    peer->charge(
+                        Resource::feeRequestNoReply, "replay_delta_request");
             }
-        });
+            else
+            {
+                peer->send(std::make_shared<Message>(
+                    reply, protocol::mtREPLAY_DELTA_RESPONSE));
+            }
+        }
+    });
 }
 
 void
@@ -1748,7 +1743,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     {
         std::weak_ptr<PeerImp> weak{shared_from_this()};
         app_.getJobQueue().addJob(
-            jtTXN_DATA, "recvPeerData", [weak, ledgerHash, m]() {
+            jtTXN_DATA, "RcvPeerData", [weak, ledgerHash, m]() {
                 if (auto peer = weak.lock())
                 {
                     peer->app_.getInboundTransactions().gotData(
@@ -1876,7 +1871,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue().addJob(
         isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
-        "recvPropose->checkPropose",
+        "checkPropose",
         [weak, isTrusted, m, proposal]() {
             if (auto peer = weak.lock())
                 peer->checkPropose(isTrusted, m, proposal);
@@ -2186,7 +2181,7 @@ PeerImp::onValidatorListMessage(
 
             XRPL_ASSERT(
                 applyResult.publisherKey,
-                "ripple::PeerImp::onValidatorListMessage : publisher key is "
+                "xrpl::PeerImp::onValidatorListMessage : publisher key is "
                 "set");
             auto const& pubKey = *applyResult.publisherKey;
 #ifndef NDEBUG
@@ -2195,7 +2190,7 @@ PeerImp::onValidatorListMessage(
             {
                 XRPL_ASSERT(
                     iter->second < applyResult.sequence,
-                    "ripple::PeerImp::onValidatorListMessage : lower sequence");
+                    "xrpl::PeerImp::onValidatorListMessage : lower sequence");
             }
 #endif
             publisherListSequences_[pubKey] = applyResult.sequence;
@@ -2208,12 +2203,12 @@ PeerImp::onValidatorListMessage(
             std::lock_guard<std::mutex> sl(recentLock_);
             XRPL_ASSERT(
                 applyResult.sequence && applyResult.publisherKey,
-                "ripple::PeerImp::onValidatorListMessage : nonzero sequence "
+                "xrpl::PeerImp::onValidatorListMessage : nonzero sequence "
                 "and set publisher key");
             XRPL_ASSERT(
                 publisherListSequences_[*applyResult.publisherKey] <=
                     applyResult.sequence,
-                "ripple::PeerImp::onValidatorListMessage : maximum sequence");
+                "xrpl::PeerImp::onValidatorListMessage : maximum sequence");
         }
 #endif  // !NDEBUG
 
@@ -2226,7 +2221,7 @@ PeerImp::onValidatorListMessage(
         // LCOV_EXCL_START
         default:
             UNREACHABLE(
-                "ripple::PeerImp::onValidatorListMessage : invalid best list "
+                "xrpl::PeerImp::onValidatorListMessage : invalid best list "
                 "disposition");
             // LCOV_EXCL_STOP
     }
@@ -2272,7 +2267,7 @@ PeerImp::onValidatorListMessage(
         // LCOV_EXCL_START
         default:
             UNREACHABLE(
-                "ripple::PeerImp::onValidatorListMessage : invalid worst list "
+                "xrpl::PeerImp::onValidatorListMessage : invalid worst list "
                 "disposition");
             // LCOV_EXCL_STOP
     }
@@ -2327,7 +2322,7 @@ PeerImp::onValidatorListMessage(
             // LCOV_EXCL_START
             default:
                 UNREACHABLE(
-                    "ripple::PeerImp::onValidatorListMessage : invalid list "
+                    "xrpl::PeerImp::onValidatorListMessage : invalid list "
                     "disposition");
                 // LCOV_EXCL_STOP
         }
@@ -2490,18 +2485,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         }
         else if (isTrusted || !app_.getFeeTrack().isLoadedLocal())
         {
-            std::string const name = [isTrusted, val]() {
-                std::string ret =
-                    isTrusted ? "Trusted validation" : "Untrusted validation";
-
-#ifdef DEBUG
-                ret += " " +
-                    std::to_string(val->getFieldU32(sfLedgerSequence)) + ": " +
-                    to_string(val->getNodeID());
-#endif
-
-                return ret;
-            }();
+            std::string const name = isTrusted ? "ChkTrust" : "ChkUntrust";
 
             std::weak_ptr<PeerImp> weak = shared_from_this();
             app_.getJobQueue().addJob(
@@ -2561,11 +2545,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             }
 
             std::weak_ptr<PeerImp> weak = shared_from_this();
-            app_.getJobQueue().addJob(
-                jtREQUESTED_TXN, "doTransactions", [weak, m]() {
-                    if (auto peer = weak.lock())
-                        peer->doTransactions(m);
-                });
+            app_.getJobQueue().addJob(jtREQUESTED_TXN, "DoTxs", [weak, m]() {
+                if (auto peer = weak.lock())
+                    peer->doTransactions(m);
+            });
             return;
         }
 
@@ -2618,6 +2601,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                         newObj.set_ledgerseq(obj.ledgerseq());
 
                     // VFALCO NOTE "seq" in the message is obsolete
+
+                    // Check if by adding this object, reply has reached its
+                    // limit
+                    if (reply.objects_size() >= Tuning::hardMaxReplyNodes)
+                    {
+                        fee_.update(
+                            Resource::feeModerateBurdenPeer,
+                            " Reply limit reached. Truncating reply.");
+                        break;
+                    }
                 }
             }
         }
@@ -2695,11 +2688,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)
     }
 
     std::weak_ptr<PeerImp> weak = shared_from_this();
-    app_.getJobQueue().addJob(
-        jtMISSING_TXN, "handleHaveTransactions", [weak, m]() {
-            if (auto peer = weak.lock())
-                peer->handleHaveTransactions(m);
-        });
+    app_.getJobQueue().addJob(jtMISSING_TXN, "HandleHaveTxs", [weak, m]() {
+        if (auto peer = weak.lock())
+            peer->handleHaveTransactions(m);
+    });
 }
 
 void
@@ -2986,7 +2978,7 @@ PeerImp::checkTransaction(
             auto tx = std::make_shared<Transaction>(stx, reason, app_);
             XRPL_ASSERT(
                 tx->getStatus() == NEW,
-                "ripple::PeerImp::checkTransaction Transaction created "
+                "xrpl::PeerImp::checkTransaction Transaction created "
                 "correctly");
             if (tx->getStatus() == NEW)
             {
@@ -3089,7 +3081,7 @@ PeerImp::checkPropose(
     JLOG(p_journal_.trace())
         << "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
 
-    XRPL_ASSERT(packet, "ripple::PeerImp::checkPropose : non-null packet");
+    XRPL_ASSERT(packet, "xrpl::PeerImp::checkPropose : non-null packet");
 
     if (!cluster() && !peerPos.checkSign())
     {
@@ -3227,8 +3219,8 @@ PeerImp::sendLedgerBase(
 {
     JLOG(p_journal_.trace()) << "sendLedgerBase: Base data";
 
-    Serializer s(sizeof(LedgerInfo));
-    addRaw(ledger->info(), s);
+    Serializer s(sizeof(LedgerHeader));
+    addRaw(ledger->header(), s);
     ledgerData.add_nodes()->set_nodedata(s.getDataPtr(), s.getLength());
 
     auto const& stateMap{ledger->stateMap()};
@@ -3241,7 +3233,7 @@ PeerImp::sendLedgerBase(
         ledgerData.add_nodes()->set_nodedata(
             root.getDataPtr(), root.getLength());
 
-        if (ledger->info().txHash != beast::zero)
+        if (ledger->header().txHash != beast::zero)
         {
             auto const& txMap{ledger->txMap()};
             if (txMap.getHash() != beast::zero)
@@ -3326,7 +3318,7 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
     if (ledger)
     {
         // Validate retrieved ledger sequence
-        auto const ledgerSeq{ledger->info().seq};
+        auto const ledgerSeq{ledger->header().seq};
         if (m->has_ledgerseq())
         {
             if (ledgerSeq != m->ledgerseq())
@@ -3440,9 +3432,9 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
             return;
 
         // Fill out the reply
-        auto const ledgerHash{ledger->info().hash};
+        auto const ledgerHash{ledger->header().hash};
         ledgerData.set_ledgerhash(ledgerHash.begin(), ledgerHash.size());
-        ledgerData.set_ledgerseq(ledger->info().seq);
+        ledgerData.set_ledgerseq(ledger->header().seq);
         ledgerData.set_type(itype);
         if (m->has_requestcookie())
             ledgerData.set_requestcookie(m->requestcookie());
@@ -3655,4 +3647,4 @@ PeerImp::Metrics::total_bytes() const
     return totalBytes_;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

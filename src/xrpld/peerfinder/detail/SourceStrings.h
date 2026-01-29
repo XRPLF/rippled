@@ -5,7 +5,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Provides addresses from a static set of strings. */
@@ -21,6 +21,6 @@ public:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

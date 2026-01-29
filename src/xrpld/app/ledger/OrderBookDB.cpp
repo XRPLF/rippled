@@ -4,12 +4,12 @@
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/JobQueue.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/Indexes.h>
 
-namespace ripple {
+namespace xrpl {
 
 OrderBookDB::OrderBookDB(Application& app)
     : app_(app), seq_(0), j_(app.journal("OrderBookDB"))
@@ -48,9 +48,9 @@ OrderBookDB::setup(std::shared_ptr<ReadView const> const& ledger)
             update(ledger);
         else
             app_.getJobQueue().addJob(
-                jtUPDATE_PF,
-                "OrderBookDB::update: " + std::to_string(ledger->seq()),
-                [this, ledger]() { update(ledger); });
+                jtUPDATE_PF, "OrderBookUpd", [this, ledger]() {
+                    update(ledger);
+                });
     }
 }
 
@@ -249,7 +249,7 @@ OrderBookDB::makeBookListeners(Book const& book)
         mListeners[book] = ret;
         XRPL_ASSERT(
             getBookListeners(book) == ret,
-            "ripple::OrderBookDB::makeBookListeners : result roundtrip "
+            "xrpl::OrderBookDB::makeBookListeners : result roundtrip "
             "lookup");
     }
 
@@ -325,4 +325,4 @@ OrderBookDB::processTxn(
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -28,7 +28,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 class RPCParser;
 
@@ -102,7 +102,7 @@ private:
     jvParseCurrencyIssuer(std::string const& strCurrencyIssuer)
     {
         // Matches a sequence of 3 characters from
-        // `ripple::detail::isoCharSet` (the currency),
+        // `xrpl::detail::isoCharSet` (the currency),
         // optionally followed by a forward slash and some other characters
         // (the issuer).
         // https://www.boost.org/doc/libs/1_82_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
@@ -140,7 +140,7 @@ private:
         std::string const& strPk,
         TokenType type = TokenType::AccountPublic)
     {
-        if (parseBase58<ripple::PublicKey>(type, strPk))
+        if (parseBase58<xrpl::PublicKey>(type, strPk))
             return true;
 
         auto pkHex = strUnHex(strPk);
@@ -434,7 +434,7 @@ private:
         return jvRequest;
     }
 
-    // Return an error for attemping to subscribe/unsubscribe via RPC.
+    // Return an error for attempting to subscribe/unsubscribe via RPC.
     Json::Value
     parseEvented(Json::Value const& jvParams)
     {
@@ -1033,7 +1033,7 @@ private:
         // Parameter count should have already been verified.
         XRPL_ASSERT(
             jvParams.size() == 2,
-            "ripple::RPCParser::parseTransactionEntry : valid parameter count");
+            "xrpl::RPCParser::parseTransactionEntry : valid parameter count");
 
         std::string const txHash = jvParams[0u].asString();
         if (txHash.length() != 64)
@@ -1295,7 +1295,7 @@ public:
             {"wallet_propose", &RPCParser::parseWalletPropose, 0, 1},
             {"internal", &RPCParser::parseInternal, 1, -1},
 
-            // Evented methods
+            // Event methods
             {"path_find", &RPCParser::parseEvented, -1, -1},
             {"subscribe", &RPCParser::parseEvented, -1, -1},
             {"unsubscribe", &RPCParser::parseEvented, -1, -1},
@@ -1357,7 +1357,7 @@ JSONRPCRequest(
 
 namespace {
 // Special local exception type thrown when request can't be parsed.
-class RequestNotParseable : public std::runtime_error
+class RequestNotParsable : public std::runtime_error
 {
     using std::runtime_error::runtime_error;  // Inherit constructors
 };
@@ -1399,7 +1399,7 @@ struct RPCCallImp
             JLOG(j.debug()) << "RPC reply: " << strData << std::endl;
             if (strData.find("Unable to parse request") == 0 ||
                 strData.find(jss::invalid_API_version.c_str()) == 0)
-                Throw<RequestNotParseable>(strData);
+                Throw<RequestNotParsable>(strData);
             Json::Reader reader;
             Json::Value jvReply;
             if (!reader.parse(strData, jvReply))
@@ -1516,7 +1516,7 @@ rpcClient(
         }
         else
         {
-            ripple::ServerHandler::Setup setup;
+            xrpl::ServerHandler::Setup setup;
             try
             {
                 setup = setup_ServerHandler(
@@ -1618,7 +1618,7 @@ rpcClient(
         // YYY We could have a command line flag for single line output for
         // scripts. YYY We would intercept output here and simplify it.
     }
-    catch (RequestNotParseable& e)
+    catch (RequestNotParsable& e)
     {
         jvOutput = rpcError(rpcINVALID_PARAMS);
         jvOutput["error_what"] = e.what();
@@ -1720,4 +1720,4 @@ fromNetwork(
 
 }  // namespace RPCCall
 
-}  // namespace ripple
+}  // namespace xrpl

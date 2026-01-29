@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <limits>
 
-namespace ripple::test::jtx {
+namespace xrpl::test::jtx {
 
 /** Directory operations. */
 namespace directory {
@@ -57,6 +57,6 @@ maximumPageIndex(Env const& env) -> std::uint64_t
 
 }  // namespace directory
 
-}  // namespace ripple::test::jtx
+}  // namespace xrpl::test::jtx
 
 #endif

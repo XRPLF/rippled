@@ -7,7 +7,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 
 class Seed_test : public beast::unit_test::suite
 {
@@ -292,7 +292,7 @@ public:
         testcase("Parsing");
 
         // account IDs and node and account public and private
-        // keys should not be parseable as seeds.
+        // keys should not be parsable as seeds.
 
         auto const node1 = randomKeyPair(KeyType::secp256k1);
 
@@ -339,6 +339,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Seed, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Seed, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -4,7 +4,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
@@ -171,4 +171,4 @@ MPTokenIssuanceCreate::doApply()
     return result ? tesSUCCESS : result.error();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

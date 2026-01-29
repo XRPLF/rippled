@@ -32,14 +32,14 @@ target_protobuf_sources(xrpl.libpb xrpl/proto
 
 target_compile_options(xrpl.libpb
   PUBLIC
-    $<$<BOOL:${MSVC}>:-wd4996>
-    $<$<BOOL:${XCODE}>:
+    $<$<BOOL:${is_msvc}>:-wd4996>
+    $<$<BOOL:${is_xcode}>:
       --system-header-prefix="google/protobuf"
       -Wno-deprecated-dynamic-exception-spec
     >
   PRIVATE
-    $<$<BOOL:${MSVC}>:-wd4065>
-    $<$<NOT:$<BOOL:${MSVC}>>:-Wno-deprecated-declarations>
+    $<$<BOOL:${is_msvc}>:-wd4065>
+    $<$<NOT:$<BOOL:${is_msvc}>>:-Wno-deprecated-declarations>
 )
 
 target_link_libraries(xrpl.libpb
@@ -94,10 +94,18 @@ target_link_libraries(xrpl.libxrpl.protocol PUBLIC
 )
 
 # Level 05
+add_module(xrpl core)
+target_link_libraries(xrpl.libxrpl.core PUBLIC
+  xrpl.libxrpl.basics
+  xrpl.libxrpl.json
+  xrpl.libxrpl.protocol
+)
+
+# Level 06
 add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
-# Level 06
+# Level 07
 add_module(xrpl net)
 target_link_libraries(xrpl.libxrpl.net PUBLIC
   xrpl.libxrpl.basics
@@ -144,6 +152,7 @@ target_sources(xrpl.libxrpl PRIVATE ${sources})
 target_link_modules(xrpl PUBLIC
   basics
   beast
+  core
   crypto
   json
   protocol
@@ -197,7 +206,7 @@ if(xrpld)
   )
   exclude_if_included(xrpld)
   # define a macro for tests that might need to
-  # be exluded or run differently in CI environment
+  # be excluded or run differently in CI environment
   if(is_ci)
     target_compile_definitions(xrpld PRIVATE XRPL_RUNNING_IN_CI)
   endif ()
@@ -223,6 +232,4 @@ if(xrpld)
       src/test/ledger/Invariants_test.cpp
       PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
   endif()
-  # For the time being, we will keep the name of the binary as it was.
-  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")
 endif()

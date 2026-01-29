@@ -4,7 +4,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STObject.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Rules;
 namespace test {
@@ -108,6 +108,6 @@ STLedgerEntry::getType() const
     return type_;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

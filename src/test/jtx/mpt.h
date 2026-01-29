@@ -11,7 +11,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -418,7 +418,7 @@ public:
     operator[](std::string const& name) const;
 
     PrettyAmount
-    operator()(std::uint64_t amount) const;
+    operator()(std::int64_t amount) const;
 
     operator Asset() const;
 
@@ -552,6 +552,6 @@ private:
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

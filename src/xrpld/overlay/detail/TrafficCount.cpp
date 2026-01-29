@@ -1,6 +1,6 @@
 #include <xrpld/overlay/detail/TrafficCount.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::unordered_map<protocol::MessageType, TrafficCount::category> const
     type_lookup = {
@@ -9,8 +9,8 @@ std::unordered_map<protocol::MessageType, TrafficCount::category> const
         {protocol::mtMANIFESTS, TrafficCount::category::manifests},
         {protocol::mtENDPOINTS, TrafficCount::category::overlay},
         {protocol::mtTRANSACTION, TrafficCount::category::transaction},
-        {protocol::mtVALIDATORLIST, TrafficCount::category::validatorlist},
-        {protocol::mtVALIDATORLISTCOLLECTION,
+        {protocol::mtVALIDATOR_LIST, TrafficCount::category::validatorlist},
+        {protocol::mtVALIDATOR_LIST_COLLECTION,
          TrafficCount::category::validatorlist},
         {protocol::mtVALIDATION, TrafficCount::category::validation},
         {protocol::mtPROPOSE_LEDGER, TrafficCount::category::proposal},
@@ -127,4 +127,4 @@ TrafficCount::categorize(
 
     return TrafficCount::category::unknown;
 }
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,7 +1,7 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 Endpoint::Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops_)
@@ -10,4 +10,4 @@ Endpoint::Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops_)
 }
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl
