@@ -57,7 +57,7 @@ getDataInt64(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 }
 
 template <class IW>
-Expected<uint64_t, HostFunctionError>
+Expected<uint32_t, HostFunctionError>
 getDataUInt32(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const r = getDataSlice(runtime, params, i);

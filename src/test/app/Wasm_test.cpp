@@ -182,7 +182,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         auto re = engine.run(ledgerSqnWasm, ESCROW_FUNCTION_NAME, {}, imports, hfs, 1'000'000, env.journal);
 
-        checkResult(re, 0, 439);
+        checkResult(re, 0, 440);
 
         env.close();
         env.close();
@@ -190,7 +190,7 @@ struct Wasm_test : public beast::unit_test::suite
         // empty module - run the same instance
         re = engine.run({}, ESCROW_FUNCTION_NAME, {}, imports, hfs, 1'000'000, env.journal);
 
-        checkResult(re, 5, 486);
+        checkResult(re, 5, 488);
     }
 
     void

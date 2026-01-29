@@ -12,5 +12,5 @@ finish()
     if (result < 0)
         return result;
 
-    return sqn >= 5 ? (int32_t)sqn : 0;
+    return sqn >= 5 ? 5 : 0;
 }
