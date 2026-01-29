@@ -1361,25 +1361,11 @@ public:
              {Number{5625, -4}, Number{-2'498'774'732'165'998, -16}}});
 
         auto const cLarge = std::to_array<Case>(
-            {{Number{
-                  false, Number::maxMantissa() - 9, -1, Number::normalized{}},
-              Number{
-                  false,
-                  1'746'901'684'478'673'451ll,
-                  -17,
-                  Number::normalized{}}},
+            {{Number{false, Number::maxMantissa() - 9, -1, Number::normalized{}},
+              Number{false, 1'746'901'684'478'673'451ll, -17, Number::normalized{}}},
              {Number{false, Number::maxMantissa() - 9, 0, Number::normalized{}},
-              Number{
-                  false,
-                  1'846'901'684'478'673'451ll,
-                  -17,
-                  Number::normalized{}}},
-             {Number{Number::maxRep},
-              Number{
-                  false,
-                  1'861'728'612'932'620'011ll,
-                  -17,
-                  Number::normalized{}}}});
+              Number{false, 1'846'901'684'478'673'451ll, -17, Number::normalized{}}},
+             {Number{Number::maxRep}, Number{false, 1'861'728'612'932'620'011ll, -17, Number::normalized{}}}});
 
         if (Number::getMantissaScale() == MantissaRange::small)
         {

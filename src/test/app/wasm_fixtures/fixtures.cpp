@@ -1277,8 +1277,7 @@ extern std::string const vectorLieHex = "0061736d010000000105ffffffff0f";
 // data += b'\x0a\x02\x00\x0b'
 // # Function Section (ID 3) - usually 3rd
 // data += b'\x03\x02\x00\x00'
-extern std::string const sectionOrderingHex =
-    "0061736d010000000a02000b03020000";
+extern std::string const sectionOrderingHex = "0061736d010000000a02000b03020000";
 
 // Corruption Test: ghostPayload
 // Scenario: Valid headers, but file is truncated in the middle of a payload.
@@ -1305,8 +1304,7 @@ extern std::string const ghostPayloadHex = "0061736d01000000010a0160";
 // data += b'\x01\x60\x00\x00'
 // # Remaining 6 bytes are junk padding within the section size
 // data += b'\x00' * 6
-extern std::string const junkAfterSectionHex =
-    "0061736d01000000010a01600000000000000000";
+extern std::string const junkAfterSectionHex = "0061736d01000000010a01600000000000000000";
 
 // Corruption Test: invalidSectionId
 // Scenario: A section ID that doesn't exist (0xFF).
@@ -1337,8 +1335,7 @@ extern std::string const invalidSectionIdHex = "0061736d01000000ff0100";
 // data += b'\xff\xff\xff\xff\x0f\x7f'
 // # Instruction: end (0x0b)
 // data += b'\x0b'
-extern std::string const localVariableBombHex =
-    "0061736d01000000010401600000030201000a0f010d01ffffffff0f7f0b";
+extern std::string const localVariableBombHex = "0061736d01000000010401600000030201000a0f010d01ffffffff0f7f0b";
 
 extern std::string const infiniteLoopWasmHex =
     "0061736d010000000108026000006000017f030302000105030100020638097f004180080b"

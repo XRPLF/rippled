@@ -44,17 +44,13 @@ namespace xrpl {
 #define BYTES_PARAM uint8_t const*, int32_t
 
 // Declare wrapper function for each host function
-#define DECLARE_WRAP(NAME)    \
-    wasm_trap_t* NAME##_wrap( \
-        void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+#define DECLARE_WRAP(NAME) wasm_trap_t* NAME##_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 
-#define HOST_FUNCTION_BYTES_RETURN(NAME, ...)                  \
-    using NAME##_proto =                                       \
-        int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
+#define HOST_FUNCTION_BYTES_RETURN(NAME, ...)                                   \
+    using NAME##_proto = int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
     DECLARE_WRAP(NAME);
-#define HOST_FUNCTION_HASH_RETURN(NAME, ...)                   \
-    using NAME##_proto =                                       \
-        int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
+#define HOST_FUNCTION_HASH_RETURN(NAME, ...)                                    \
+    using NAME##_proto = int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
     DECLARE_WRAP(NAME);
 #define HOST_FUNCTION_NO_RETURN(NAME, ...)     \
     using NAME##_proto = int32_t(__VA_ARGS__); \
@@ -62,9 +58,8 @@ namespace xrpl {
 #define HOST_FUNCTION_INT_RETURN(NAME, ...)    \
     using NAME##_proto = int32_t(__VA_ARGS__); \
     DECLARE_WRAP(NAME);
-#define HOST_FUNCTION_UINT_RETURN(NAME, ...)                   \
-    using NAME##_proto =                                       \
-        int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
+#define HOST_FUNCTION_UINT_RETURN(NAME, ...)                                    \
+    using NAME##_proto = int32_t(__VA_ARGS__ __VA_OPT__(, ) uint8_t*, int32_t); \
     DECLARE_WRAP(NAME);
 
 #include <xrpld/app/wasm/host_functions.macro>

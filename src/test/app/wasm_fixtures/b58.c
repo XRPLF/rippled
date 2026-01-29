@@ -1,7 +1,6 @@
 #include <stdint.h>
 
-static char const b58digits_ordered[] =
-    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+static char const b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 uint8_t e_data[32 * 1024];
 

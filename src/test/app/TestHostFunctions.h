@@ -19,8 +19,7 @@ struct TestLedgerDataProvider : public HostFunctions
     void const* rt_ = nullptr;
 
 public:
-    TestLedgerDataProvider(jtx::Env& env)
-        : HostFunctions(env.journal), env_(env)
+    TestLedgerDataProvider(jtx::Env& env) : HostFunctions(env.journal), env_(env)
     {
     }
 
@@ -52,8 +51,7 @@ struct TestHostFunctions : public HostFunctions
     void const* rt_ = nullptr;
 
 public:
-    TestHostFunctions(test::jtx::Env& env, int cd = 0)
-        : HostFunctions(env.journal), env_(env), clock_drift_(cd)
+    TestHostFunctions(test::jtx::Env& env, int cd = 0) : HostFunctions(env.journal), env_(env), clock_drift_(cd)
     {
         accountID_ = env_.master.id();
         std::string t = "10000";
@@ -150,8 +148,7 @@ public:
             return data_;
         else if (sn == "FinishAfter")
         {
-            auto t =
-                env_.current()->parentCloseTime().time_since_epoch().count();
+            auto t = env_.current()->parentCloseTime().time_since_epoch().count();
             std::string s = std::to_string(t);
             return Bytes{s.begin(), s.end()};
         }
@@ -187,10 +184,9 @@ public:
                 return Bytes(accountID_.begin(), accountID_.end());
             }
         }
-        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
-                             0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
-                             0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
-                             0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
+        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41, 0xbf, 0x49, 0xd2,
+                             0x45, 0x9f, 0xa4, 0xa0, 0x34, 0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92,
+                             0xfc, 0xee, 0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
         return Bytes(&a[0], &a[sizeof(a)]);
     }
 
@@ -206,10 +202,9 @@ public:
                 return Bytes(accountID_.begin(), accountID_.end());
             }
         }
-        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
-                             0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
-                             0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
-                             0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
+        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41, 0xbf, 0x49, 0xd2,
+                             0x45, 0x9f, 0xa4, 0xa0, 0x34, 0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92,
+                             0xfc, 0xee, 0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
         return Bytes(&a[0], &a[sizeof(a)]);
     }
 
@@ -225,10 +220,9 @@ public:
                 return Bytes(accountID_.begin(), accountID_.end());
             }
         }
-        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
-                             0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
-                             0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
-                             0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
+        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41, 0xbf, 0x49, 0xd2,
+                             0x45, 0x9f, 0xa4, 0xa0, 0x34, 0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92,
+                             0xfc, 0xee, 0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
         return Bytes(&a[0], &a[sizeof(a)]);
     }
 
@@ -275,10 +269,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    checkSignature(
-        Slice const& message,
-        Slice const& signature,
-        Slice const& pubkey) override
+    checkSignature(Slice const& message, Slice const& signature, Slice const& pubkey) override
     {
         return 1;
     }
@@ -310,13 +301,9 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    credentialKeylet(
-        AccountID const& subject,
-        AccountID const& issuer,
-        Slice const& credentialType) override
+    credentialKeylet(AccountID const& subject, AccountID const& issuer, Slice const& credentialType) override
     {
-        if (!subject || !issuer || credentialType.empty() ||
-            credentialType.size() > maxCredentialTypeLength)
+        if (!subject || !issuer || credentialType.empty() || credentialType.size() > maxCredentialTypeLength)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
         auto const keylet = keylet::credential(subject, issuer, credentialType);
         return Bytes{keylet.key.begin(), keylet.key.end()};
@@ -405,18 +392,14 @@ public:
     {
         if (!asHex)
         {
-            log(msg, [&data] {
-                return std::string_view(
-                    reinterpret_cast<char const*>(data.data()), data.size());
-            });
+            log(msg, [&data] { return std::string_view(reinterpret_cast<char const*>(data.data()), data.size()); });
         }
         else
         {
             log(msg, [&data] {
                 std::string hex;
                 hex.reserve(data.size() * 2);
-                boost::algorithm::hex(
-                    data.begin(), data.end(), std::back_inserter(hex));
+                boost::algorithm::hex(data.begin(), data.end(), std::back_inserter(hex));
                 return hex;
             });
         }
@@ -552,10 +535,7 @@ struct PerfHostFunctions : public TestHostFunctions
 
     void const* rt_ = nullptr;
 
-    PerfHostFunctions(
-        test::jtx::Env& env,
-        Keylet const& k,
-        std::shared_ptr<STTx const>&& tx)
+    PerfHostFunctions(test::jtx::Env& env, Keylet const& k, std::shared_ptr<STTx const>&& tx)
         : TestHostFunctions(env), leKey(k), tx_(std::move(tx))
     {
     }
@@ -572,8 +552,7 @@ struct PerfHostFunctions : public TestHostFunctions
     Expected<std::int32_t, HostFunctionError>
     getParentLedgerTime() override
     {
-        auto time =
-            env_.current()->parentCloseTime().time_since_epoch().count();
+        auto time = env_.current()->parentCloseTime().time_since_epoch().count();
         if (time > std::numeric_limits<int32_t>::max())
             return Unexpected(HostFunctionError::INTERNAL);
         return static_cast<int32_t>(time);
@@ -606,8 +585,7 @@ struct PerfHostFunctions : public TestHostFunctions
         if (data.size() > 64)
             return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-        auto const amendmentName = std::string_view(
-            reinterpret_cast<char const*>(data.data()), data.size());
+        auto const amendmentName = std::string_view(reinterpret_cast<char const*>(data.data()), data.size());
         auto const& table = env_.app().getAmendmentTable();
         auto const amendment = table.find(std::string(amendmentName));
         return env_.current()->rules().enabled(amendment);
@@ -734,16 +712,14 @@ struct PerfHostFunctions : public TestHostFunctions
             }
             break;
             case STI_UINT16: {
-                auto const& num(
-                    static_cast<STInteger<std::uint16_t> const*>(obj));
+                auto const& num(static_cast<STInteger<std::uint16_t> const*>(obj));
                 std::uint16_t const data = num->value();
                 auto const* b = reinterpret_cast<uint8_t const*>(&data);
                 auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
                 return Bytes{b, e};
             }
             case STI_UINT32: {
-                auto const* num(
-                    static_cast<STInteger<std::uint32_t> const*>(obj));
+                auto const* num(static_cast<STInteger<std::uint32_t> const*>(obj));
                 std::uint32_t const data = num->value();
                 auto const* b = reinterpret_cast<uint8_t const*>(&data);
                 auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
@@ -788,8 +764,7 @@ struct PerfHostFunctions : public TestHostFunctions
     static inline bool
     noField(STBase const* field)
     {
-        return !field || (STI_NOTPRESENT == field->getSType()) ||
-            (STI_UNKNOWN == field->getSType());
+        return !field || (STI_NOTPRESENT == field->getSType()) || (STI_UNKNOWN == field->getSType());
     }
 
     static Expected<STBase const*, HostFunctionError>
@@ -798,8 +773,7 @@ struct PerfHostFunctions : public TestHostFunctions
         if (locator.empty() || (locator.size() & 3))  // must be multiple of 4
             return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
 
-        int32_t const* locPtr =
-            reinterpret_cast<int32_t const*>(locator.data());
+        int32_t const* locPtr = reinterpret_cast<int32_t const*>(locator.data());
         int32_t const locSize = locator.size() / 4;
         STBase const* field = nullptr;
         auto const& knownSFields = SField::getKnownCodeToField();
@@ -1008,8 +982,7 @@ struct PerfHostFunctions : public TestHostFunctions
         if (data.size() > maxWasmDataLength)
             return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-        xrpl::detail::ApplyViewBase v(
-            env_.app().openLedger().current().get(), tapNONE);
+        xrpl::detail::ApplyViewBase v(env_.app().openLedger().current().get(), tapNONE);
 
         auto sle = v.peek(leKey);
         if (!sle)
@@ -1022,10 +995,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<int32_t, HostFunctionError>
-    checkSignature(
-        Slice const& message,
-        Slice const& signature,
-        Slice const& pubkey) override
+    checkSignature(Slice const& message, Slice const& signature, Slice const& pubkey) override
     {
         if (!publicKeyType(pubkey))
             return Unexpected(HostFunctionError::INVALID_PARAMS);
@@ -1074,16 +1044,12 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    credentialKeylet(
-        AccountID const& subject,
-        AccountID const& issuer,
-        Slice const& credentialType) override
+    credentialKeylet(AccountID const& subject, AccountID const& issuer, Slice const& credentialType) override
     {
         if (!subject || !issuer)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
 
-        if (credentialType.empty() ||
-            credentialType.size() > maxCredentialTypeLength)
+        if (credentialType.empty() || credentialType.size() > maxCredentialTypeLength)
             return Unexpected(HostFunctionError::INVALID_PARAMS);
 
         auto const keylet = keylet::credential(subject, issuer, credentialType);
@@ -1101,8 +1067,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    delegateKeylet(AccountID const& account, AccountID const& authorize)
-        override
+    delegateKeylet(AccountID const& account, AccountID const& authorize) override
     {
         if (!account || !authorize)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1113,8 +1078,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    depositPreauthKeylet(AccountID const& account, AccountID const& authorize)
-        override
+    depositPreauthKeylet(AccountID const& account, AccountID const& authorize) override
     {
         if (!account || !authorize)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1134,10 +1098,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    lineKeylet(
-        AccountID const& account1,
-        AccountID const& account2,
-        Currency const& currency) override
+    lineKeylet(AccountID const& account1, AccountID const& account2, Currency const& currency) override
     {
         if (!account1 || !account2)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1200,10 +1161,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    paychanKeylet(
-        AccountID const& account,
-        AccountID const& destination,
-        std::uint32_t seq) override
+    paychanKeylet(AccountID const& account, AccountID const& destination, std::uint32_t seq) override
     {
         if (!account || !destination)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -1214,8 +1172,7 @@ struct PerfHostFunctions : public TestHostFunctions
     }
 
     Expected<Bytes, HostFunctionError>
-    permissionedDomainKeylet(AccountID const& account, std::uint32_t seq)
-        override
+    permissionedDomainKeylet(AccountID const& account, std::uint32_t seq) override
     {
         if (!account)
             return Unexpected(HostFunctionError::INVALID_ACCOUNT);

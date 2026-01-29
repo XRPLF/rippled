@@ -88,9 +88,7 @@ struct HostFunctions
 {
     beast::Journal j_;
 
-    HostFunctions(
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : j_(j)
+    HostFunctions(beast::Journal j = beast::Journal{beast::Journal::getNullSink()}) : j_(j)
     {
     }
 
