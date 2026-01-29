@@ -11,11 +11,7 @@
 namespace xrpl {
 
 inline TER
-checkFreeze(
-    ReadView const& view,
-    AccountID const& src,
-    AccountID const& dst,
-    Currency const& currency)
+checkFreeze(ReadView const& view, AccountID const& src, AccountID const& dst, Currency const& currency)
 {
     XRPL_ASSERT(src != dst, "xrpl::checkFreeze : unequal input accounts");
 
@@ -44,18 +40,13 @@ checkFreeze(
 
     if (view.rules().enabled(fixFrozenLPTokenTransfer))
     {
-        if (auto const sleDst = view.read(keylet::account(dst));
-            sleDst && sleDst->isFieldPresent(sfAMMID))
+        if (auto const sleDst = view.read(keylet::account(dst)); sleDst && sleDst->isFieldPresent(sfAMMID))
         {
             auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));
             if (!sleAmm)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            if (isLPTokenFrozen(
-                    view,
-                    src,
-                    (*sleAmm)[sfAsset].get<Issue>(),
-                    (*sleAmm)[sfAsset2].get<Issue>()))
+            if (isLPTokenFrozen(view, src, (*sleAmm)[sfAsset].get<Issue>(), (*sleAmm)[sfAsset2].get<Issue>()))
             {
                 return terNO_LINE;
             }
@@ -85,8 +76,7 @@ checkNoRipple(
     if ((*sleIn)[sfFlags] & ((cur > prev) ? lsfHighNoRipple : lsfLowNoRipple) &&
         (*sleOut)[sfFlags] & ((cur > next) ? lsfHighNoRipple : lsfLowNoRipple))
     {
-        JLOG(j.info()) << "Path violates noRipple constraint between " << prev
-                       << ", " << cur << " and " << next;
+        JLOG(j.info()) << "Path violates noRipple constraint between " << prev << ", " << cur << " and " << next;
 
         return terNO_RIPPLE;
     }

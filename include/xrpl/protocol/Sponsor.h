@@ -9,10 +9,7 @@
 namespace xrpl {
 
 inline void
-addSerializeSponsorData(
-    Serializer& msg,
-    AccountID const& sponsorID,
-    std::uint32_t const& flags)
+addSerializeSponsorData(Serializer& msg, AccountID const& sponsorID, std::uint32_t const& flags)
 {
     msg.addBitString(sponsorID);
     msg.add32(flags);

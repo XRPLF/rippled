@@ -26,18 +26,13 @@ set_fee(
     std::optional<STAmount> maxFee = std::nullopt);
 
 Json::Value
-set_reserve(
-    jtx::Account const& account,
-    std::uint32_t flags,
-    std::uint32_t reserveCount);
+set_reserve(jtx::Account const& account, std::uint32_t flags, std::uint32_t reserveCount);
 
 Json::Value
 del(jtx::Account const& account);
 
 Json::Value
-transfer(
-    jtx::Account const& account,
-    std::optional<uint256> const& index = std::nullopt);
+transfer(jtx::Account const& account, std::optional<uint256> const& index = std::nullopt);
 
 struct sponsorAcc
 {
@@ -74,8 +69,7 @@ private:
     std::uint32_t flags;
 
 public:
-    as(jtx::Account const& account, std::uint32_t flags = 0)
-        : sponsor_(account), flags(flags)
+    as(jtx::Account const& account, std::uint32_t flags = 0) : sponsor_(account), flags(flags)
     {
     }
 
@@ -84,10 +78,7 @@ public:
 };
 
 Json::Value
-ledgerEntry(
-    jtx::Env& env,
-    jtx::Account const& sponsor,
-    jtx::Account const& sponsee);
+ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee);
 
 }  // namespace sponsor
 }  // namespace jtx

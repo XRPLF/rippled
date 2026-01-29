@@ -13,26 +13,14 @@ namespace xrpl {
 
 struct LedgerFill
 {
-    LedgerFill(
-        ReadView const& l,
-        RPC::Context const* ctx,
-        int o = 0,
-        std::vector<TxQ::TxDetails> q = {})
+    LedgerFill(ReadView const& l, RPC::Context const* ctx, int o = 0, std::vector<TxQ::TxDetails> q = {})
         : ledger(l), options(o), txQueue(std::move(q)), context(ctx)
     {
         if (context)
             closeTime = context->ledgerMaster.getCloseTimeBySeq(ledger.seq());
     }
 
-    enum Options {
-        dumpTxrp = 1,
-        dumpState = 2,
-        expand = 4,
-        full = 8,
-        binary = 16,
-        ownerFunds = 32,
-        dumpQueue = 64
-    };
+    enum Options { dumpTxrp = 1, dumpState = 2, expand = 4, full = 8, binary = 16, ownerFunds = 32, dumpQueue = 64 };
 
     ReadView const& ledger;
     int options;

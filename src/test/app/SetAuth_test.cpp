@@ -12,16 +12,12 @@ struct SetAuth_test : public beast::unit_test::suite
     // If the trust line does not exist, then it should
     // be created under the new rules.
     static Json::Value
-    auth(
-        jtx::Account const& account,
-        jtx::Account const& dest,
-        std::string const& currency)
+    auth(jtx::Account const& account, jtx::Account const& dest, std::string const& currency)
     {
         using namespace jtx;
         Json::Value jv;
         jv[jss::Account] = account.human();
-        jv[jss::LimitAmount] = STAmount(Issue{to_currency(currency), dest})
-                                   .getJson(JsonOptions::none);
+        jv[jss::LimitAmount] = STAmount(Issue{to_currency(currency), dest}).getJson(JsonOptions::none);
         jv[jss::TransactionType] = jss::TrustSet;
         jv[jss::Flags] = tfSetfAuth;
         return jv;
@@ -40,8 +36,7 @@ struct SetAuth_test : public beast::unit_test::suite
         env(fset(gw, asfRequireAuth));
         env.close();
         env(auth(gw, "alice", "USD"));
-        BEAST_EXPECT(
-            env.le(keylet::line(Account("alice").id(), gw.id(), USD.currency)));
+        BEAST_EXPECT(env.le(keylet::line(Account("alice").id(), gw.id(), USD.currency)));
         env(trust("alice", USD(1000)));
         env(trust("bob", USD(1000)));
         env(pay(gw, "alice", USD(100)));

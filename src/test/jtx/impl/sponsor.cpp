@@ -33,11 +33,7 @@ set(jtx::Account const& account,
 }
 
 Json::Value
-set_fee(
-    jtx::Account const& account,
-    uint32_t flags,
-    STAmount feeAmount,
-    std::optional<STAmount> maxFee)
+set_fee(jtx::Account const& account, uint32_t flags, STAmount feeAmount, std::optional<STAmount> maxFee)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::SponsorshipSet;
@@ -101,10 +97,7 @@ as::operator()(Env& env, JTx& jt) const
 }
 
 Json::Value
-ledgerEntry(
-    jtx::Env& env,
-    jtx::Account const& sponsor,
-    jtx::Account const& sponsee)
+ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee)
 {
     Json::Value jvParams;
     jvParams[jss::ledger_index] = jss::validated;

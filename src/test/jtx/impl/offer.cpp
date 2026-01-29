@@ -7,11 +7,7 @@ namespace test {
 namespace jtx {
 
 Json::Value
-offer(
-    Account const& account,
-    STAmount const& takerPays,
-    STAmount const& takerGets,
-    std::uint32_t flags)
+offer(Account const& account, STAmount const& takerPays, STAmount const& takerGets, std::uint32_t flags)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();

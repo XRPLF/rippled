@@ -24,18 +24,15 @@ private:
     STAmount const value_;
 
 public:
-    balance(Account const& account, none_t)
-        : none_(true), account_(account), value_(XRP)
+    balance(Account const& account, none_t) : none_(true), account_(account), value_(XRP)
     {
     }
 
-    balance(Account const& account, None const& value)
-        : none_(true), account_(account), value_(value.asset)
+    balance(Account const& account, None const& value) : none_(true), account_(account), value_(value.asset)
     {
     }
 
-    balance(Account const& account, STAmount const& value)
-        : none_(false), account_(account), value_(value)
+    balance(Account const& account, STAmount const& value) : none_(false), account_(account), value_(value)
     {
     }
 

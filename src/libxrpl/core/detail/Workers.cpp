@@ -5,11 +5,7 @@
 
 namespace xrpl {
 
-Workers::Workers(
-    Callback& callback,
-    perf::PerfLog* perfLog,
-    std::string const& threadNames,
-    int numberOfThreads)
+Workers::Workers(Callback& callback, perf::PerfLog* perfLog, std::string const& threadNames, int numberOfThreads)
     : m_callback(callback)
     , perfLog_(perfLog)
     , m_threadNames(threadNames)
@@ -100,9 +96,7 @@ Workers::stop()
     m_cv.wait(lk, [this] { return m_allPaused; });
     lk.unlock();
 
-    XRPL_ASSERT(
-        numberOfCurrentlyRunningTasks() == 0,
-        "xrpl::Workers::stop : zero running tasks");
+    XRPL_ASSERT(numberOfCurrentlyRunningTasks() == 0, "xrpl::Workers::stop : zero running tasks");
 }
 
 void
@@ -138,15 +132,8 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 
 //------------------------------------------------------------------------------
 
-Workers::Worker::Worker(
-    Workers& workers,
-    std::string const& threadName,
-    int const instance)
-    : m_workers{workers}
-    , threadName_{threadName}
-    , instance_{instance}
-    , wakeCount_{0}
-    , shouldExit_{false}
+Workers::Worker::Worker(Workers& workers, std::string const& threadName, int const instance)
+    : m_workers{workers}, threadName_{threadName}, instance_{instance}, wakeCount_{0}, shouldExit_{false}
 {
     thread_ = std::thread{&Workers::Worker::run, this};
 }

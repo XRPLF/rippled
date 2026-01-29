@@ -24,8 +24,7 @@ class BasicSink : public beast::Journal::Sink
     Scheduler::clock_type const& clock_;
 
 public:
-    BasicSink(Scheduler::clock_type const& clock)
-        : Sink(beast::severities::kDisabled, false), clock_{clock}
+    BasicSink(Scheduler::clock_type const& clock) : Sink(beast::severities::kDisabled, false), clock_{clock}
     {
     }
 
@@ -35,16 +34,13 @@ public:
         if (level < threshold())
             return;
 
-        std::cout << clock_.now().time_since_epoch().count() << " " << text
-                  << std::endl;
+        std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text)
-        override
+    writeAlways(beast::severities::Severity level, std::string const& text) override
     {
-        std::cout << clock_.now().time_since_epoch().count() << " " << text
-                  << std::endl;
+        std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
     }
 };
 
@@ -94,13 +90,7 @@ public:
         for (std::size_t i = 0; i < numPeers; ++i)
         {
             peers.emplace_back(
-                PeerID{static_cast<std::uint32_t>(peers.size())},
-                scheduler,
-                oracle,
-                net,
-                trustGraph,
-                collectors,
-                j);
+                PeerID{static_cast<std::uint32_t>(peers.size())}, scheduler, oracle, net, trustGraph, collectors, j);
             newPeers.emplace_back(&peers.back());
         }
         PeerGroup res{newPeers};

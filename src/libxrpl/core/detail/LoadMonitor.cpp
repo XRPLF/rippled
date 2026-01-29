@@ -15,8 +15,7 @@ TODO
 
 //------------------------------------------------------------------------------
 
-LoadMonitor::Stats::Stats()
-    : count(0), latencyAvg(0), latencyPeak(0), isOverloaded(false)
+LoadMonitor::Stats::Stats() : count(0), latencyAvg(0), latencyPeak(0), isOverloaded(false)
 {
 }
 
@@ -90,10 +89,8 @@ LoadMonitor::addLoadSample(LoadEvent const& s)
     if (latency > 500ms)
     {
         auto mj = (latency > 1s) ? j_.warn() : j_.info();
-        JLOG(mj) << "Job: " << s.name()
-                 << " run: " << round<milliseconds>(s.runTime()).count() << "ms"
-                 << " wait: " << round<milliseconds>(s.waitTime()).count()
-                 << "ms";
+        JLOG(mj) << "Job: " << s.name() << " run: " << round<milliseconds>(s.runTime()).count() << "ms"
+                 << " wait: " << round<milliseconds>(s.waitTime()).count() << "ms";
     }
 
     addSamples(1, latency);
@@ -121,18 +118,14 @@ LoadMonitor::addSamples(int count, std::chrono::milliseconds latency)
 }
 
 void
-LoadMonitor::setTargetLatency(
-    std::chrono::milliseconds avg,
-    std::chrono::milliseconds pk)
+LoadMonitor::setTargetLatency(std::chrono::milliseconds avg, std::chrono::milliseconds pk)
 {
     mTargetLatencyAvg = avg;
     mTargetLatencyPk = pk;
 }
 
 bool
-LoadMonitor::isOverTarget(
-    std::chrono::milliseconds avg,
-    std::chrono::milliseconds peak)
+LoadMonitor::isOverTarget(std::chrono::milliseconds avg, std::chrono::milliseconds peak)
 {
     using namespace std::chrono_literals;
     return (mTargetLatencyPk > 0ms && (peak > mTargetLatencyPk)) ||
@@ -149,9 +142,7 @@ LoadMonitor::isOver()
     if (mLatencyEvents == 0)
         return 0;
 
-    return isOverTarget(
-        mLatencyMSAvg / (mLatencyEvents * 4),
-        mLatencyMSPeak / (mLatencyEvents * 4));
+    return isOverTarget(mLatencyMSAvg / (mLatencyEvents * 4), mLatencyMSPeak / (mLatencyEvents * 4));
 }
 
 LoadMonitor::Stats

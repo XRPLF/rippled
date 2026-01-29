@@ -37,19 +37,15 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainDelete::doApply()
 {
-    XRPL_ASSERT(
-        ctx_.tx.isFieldPresent(sfDomainID),
-        "xrpl::PermissionedDomainDelete::doApply : required field present");
+    XRPL_ASSERT(ctx_.tx.isFieldPresent(sfDomainID), "xrpl::PermissionedDomainDelete::doApply : required field present");
 
-    auto const slePd =
-        view().peek({ltPERMISSIONED_DOMAIN, ctx_.tx.at(sfDomainID)});
+    auto const slePd = view().peek({ltPERMISSIONED_DOMAIN, ctx_.tx.at(sfDomainID)});
     auto const page = (*slePd)[sfOwnerNode];
 
     if (!view().dirRemove(keylet::ownerDir(account_), page, slePd->key(), true))
     {
         // LCOV_EXCL_START
-        JLOG(j_.fatal())
-            << "Unable to delete permissioned domain directory entry.";
+        JLOG(j_.fatal()) << "Unable to delete permissioned domain directory entry.";
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }

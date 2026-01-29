@@ -49,8 +49,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == *mptHolder)
         return temMALFORMED;
 
-    if (clawAmount.mpt() > MPTAmount{maxMPTokenAmount} ||
-        clawAmount <= beast::zero)
+    if (clawAmount.mpt() > MPTAmount{maxMPTokenAmount} || clawAmount <= beast::zero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -65,9 +64,8 @@ Clawback::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 Clawback::preflight(PreflightContext const& ctx)
 {
-    if (auto const ret = std::visit(
-            [&]<typename T>(T const&) { return preflightHelper<T>(ctx); },
-            ctx.tx[sfAmount].asset().value());
+    if (auto const ret =
+            std::visit([&]<typename T>(T const&) { return preflightHelper<T>(ctx); }, ctx.tx[sfAmount].asset().value());
         !isTesSuccess(ret))
         return ret;
 
@@ -96,12 +94,10 @@ preclaimHelper<Issue>(
 
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) ||
-        (issuerFlagsIn & lsfNoFreeze))
+    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) || (issuerFlagsIn & lsfNoFreeze))
         return tecNO_PERMISSION;
 
-    auto const sleRippleState =
-        ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
+    auto const sleRippleState = ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -124,13 +120,7 @@ preclaimHelper<Issue>(
     // We can't directly check the balance of trustline because
     // the available balance of a trustline is prone to new changes (eg.
     // XLS-34). So we must use `accountHolds`.
-    if (accountHolds(
-            ctx.view,
-            holder,
-            clawAmount.getCurrency(),
-            issuer,
-            fhIGNORE_FREEZE,
-            ctx.j) <= beast::zero)
+    if (accountHolds(ctx.view, holder, clawAmount.getCurrency(), issuer, fhIGNORE_FREEZE, ctx.j) <= beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -145,8 +135,7 @@ preclaimHelper<MPTIssue>(
     AccountID const& holder,
     STAmount const& clawAmount)
 {
-    auto const issuanceKey =
-        keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -160,13 +149,8 @@ preclaimHelper<MPTIssue>(
     if (!ctx.view.exists(keylet::mptoken(issuanceKey.key, holder)))
         return tecOBJECT_NOT_FOUND;
 
-    if (accountHolds(
-            ctx.view,
-            holder,
-            clawAmount.get<MPTIssue>(),
-            fhIGNORE_FREEZE,
-            ahIGNORE_AUTH,
-            ctx.j) <= beast::zero)
+    if (accountHolds(ctx.view, holder, clawAmount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j) <=
+        beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -177,8 +161,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
 {
     AccountID const issuer = ctx.tx[sfAccount];
     auto const clawAmount = ctx.tx[sfAmount];
-    AccountID const holder =
-        clawAmount.holds<Issue>() ? clawAmount.getIssuer() : ctx.tx[sfHolder];
+    AccountID const holder = clawAmount.holds<Issue>() ? clawAmount.getIssuer() : ctx.tx[sfHolder];
 
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
     auto const sleHolder = ctx.view.read(keylet::account(holder));
@@ -187,17 +170,13 @@ Clawback::preclaim(PreclaimContext const& ctx)
 
     // Note the order of checks - when SAV is active, this check here will make
     // the one which follows `sleHolder->isFieldPresent(sfAMMID)` redundant.
-    if (ctx.view.rules().enabled(featureSingleAssetVault) &&
-        isPseudoAccount(sleHolder))
+    if (ctx.view.rules().enabled(featureSingleAssetVault) && isPseudoAccount(sleHolder))
         return tecPSEUDO_ACCOUNT;
     else if (sleHolder->isFieldPresent(sfAMMID))
         return tecAMM_ACCOUNT;
 
     return std::visit(
-        [&]<typename T>(T const&) {
-            return preclaimHelper<T>(
-                ctx, *sleIssuer, issuer, holder, clawAmount);
-        },
+        [&]<typename T>(T const&) { return preclaimHelper<T>(ctx, *sleIssuer, issuer, holder, clawAmount); },
         ctx.tx[sfAmount].asset().value());
 }
 
@@ -220,20 +199,9 @@ applyHelper<Issue>(ApplyContext& ctx)
 
     // Get the spendable balance. Must use `accountHolds`.
     STAmount const spendableAmount = accountHolds(
-        ctx.view(),
-        holder,
-        clawAmount.getCurrency(),
-        clawAmount.getIssuer(),
-        fhIGNORE_FREEZE,
-        ctx.journal);
+        ctx.view(), holder, clawAmount.getCurrency(), clawAmount.getIssuer(), fhIGNORE_FREEZE, ctx.journal);
 
-    return rippleCredit(
-        ctx.view(),
-        holder,
-        issuer,
-        std::min(spendableAmount, clawAmount),
-        true,
-        ctx.journal);
+    return rippleCredit(ctx.view(), holder, issuer, std::min(spendableAmount, clawAmount), true, ctx.journal);
 }
 
 template <>
@@ -245,13 +213,8 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
     AccountID const holder = ctx.tx[sfHolder];
 
     // Get the spendable balance. Must use `accountHolds`.
-    STAmount const spendableAmount = accountHolds(
-        ctx.view(),
-        holder,
-        clawAmount.get<MPTIssue>(),
-        fhIGNORE_FREEZE,
-        ahIGNORE_AUTH,
-        ctx.journal);
+    STAmount const spendableAmount =
+        accountHolds(ctx.view(), holder, clawAmount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.journal);
 
     return rippleCredit(
         ctx.view(),
@@ -265,9 +228,7 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
 TER
 Clawback::doApply()
 {
-    return std::visit(
-        [&]<typename T>(T const&) { return applyHelper<T>(ctx_); },
-        ctx_.tx[sfAmount].asset().value());
+    return std::visit([&]<typename T>(T const&) { return applyHelper<T>(ctx_); }, ctx_.tx[sfAmount].asset().value());
 }
 
 }  // namespace xrpl

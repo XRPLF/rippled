@@ -19,10 +19,7 @@ loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 
 /// Ensure the periodic payment is always rounded consistently
 inline Number
-roundPeriodicPayment(
-    Asset const& asset,
-    Number const& periodicPayment,
-    std::int32_t scale)
+roundPeriodicPayment(Asset const& asset, Number const& periodicPayment, std::int32_t scale)
 {
     return roundToAsset(asset, periodicPayment, scale, Number::upward);
 }
@@ -113,8 +110,7 @@ struct LoanState
     interestOutstanding() const
     {
         XRPL_ASSERT_PARTS(
-            interestDue + managementFeeDue ==
-                valueOutstanding - principalOutstanding,
+            interestDue + managementFeeDue == valueOutstanding - principalOutstanding,
             "xrpl::LoanState::interestOutstanding",
             "other values add up correctly");
         return interestDue + managementFeeDue;
@@ -159,11 +155,7 @@ struct LoanProperties
 // accumulated rounding errors and leftover dust amounts.
 template <class NumberProxy>
 void
-adjustImpreciseNumber(
-    NumberProxy value,
-    Number const& adjustment,
-    Asset const& asset,
-    int vaultScale)
+adjustImpreciseNumber(NumberProxy value, Number const& adjustment, Asset const& asset, int vaultScale)
 {
     value = roundToAsset(asset, value + adjustment, vaultScale);
 
@@ -176,8 +168,7 @@ getAssetsTotalScale(SLE::const_ref vaultSle)
 {
     if (!vaultSle)
         return Number::minExponent - 1;  // LCOV_EXCL_LINE
-    return STAmount{vaultSle->at(sfAsset), vaultSle->at(sfAssetsTotal)}
-        .exponent();
+    return STAmount{vaultSle->at(sfAsset), vaultSle->at(sfAssetsTotal)}.exponent();
 }
 
 TER
@@ -209,11 +200,7 @@ LoanState
 constructRoundedLoanState(SLE::const_ref loan);
 
 Number
-computeManagementFee(
-    Asset const& asset,
-    Number const& interest,
-    TenthBips32 managementFeeRate,
-    std::int32_t scale);
+computeManagementFee(Asset const& asset, Number const& interest, TenthBips32 managementFeeRate, std::int32_t scale);
 
 Number
 computeFullPaymentInterest(
@@ -317,15 +304,11 @@ struct ExtendedPaymentComponents : public PaymentComponents
     // borrower is sufficient to cover all components of the payment.
     Number totalDue;
 
-    ExtendedPaymentComponents(
-        PaymentComponents const& p,
-        Number fee,
-        Number interest = numZero)
+    ExtendedPaymentComponents(PaymentComponents const& p, Number fee, Number interest = numZero)
         : PaymentComponents(p)
         , untrackedManagementFee(fee)
         , untrackedInterest(interest)
-        , totalDue(
-              trackedValueDelta + untrackedInterest + untrackedManagementFee)
+        , totalDue(trackedValueDelta + untrackedInterest + untrackedManagementFee)
     {
     }
 };
@@ -378,9 +361,7 @@ Number
 computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining);
 
 Number
-computePaymentFactor(
-    Number const& periodicRate,
-    std::uint32_t paymentsRemaining);
+computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining);
 
 std::pair<Number, Number>
 computeInterestAndFeeParts(
@@ -390,10 +371,7 @@ computeInterestAndFeeParts(
     std::int32_t loanScale);
 
 Number
-loanPeriodicPayment(
-    Number const& principalOutstanding,
-    Number const& periodicRate,
-    std::uint32_t paymentsRemaining);
+loanPeriodicPayment(Number const& principalOutstanding, Number const& periodicRate, std::uint32_t paymentsRemaining);
 
 Number
 loanPrincipalFromPeriodicPayment(

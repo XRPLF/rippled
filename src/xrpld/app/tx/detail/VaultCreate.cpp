@@ -23,8 +23,7 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1))
         return false;
 
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDomains))
+    if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDomains))
         return false;
 
     return true;
@@ -65,8 +64,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->length() == 0 ||
-            metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -107,15 +105,13 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        auto const sleDomain =
-            ctx.view.read(keylet::permissionedDomain(*domain));
+        auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
         if (!sleDomain)
             return tecOBJECT_NOT_FOUND;
     }
 
     auto const sequence = ctx.tx.getSeqValue();
-    if (auto const accountId = pseudoAccountAddress(
-            ctx.view, keylet::vault(account, sequence).key);
+    if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
         accountId == beast::zero)
         return terADDRESS_COLLISION;
 
@@ -145,17 +141,13 @@ VaultCreate::doApply()
     {
         adjustOwnerCount(view(), tx, owner, sponsor, 2, j_);
         addSponsorToLedgerEntry(vault, sponsor);
-        if (auto const ret = checkInsufficientReserve(
-                view(), tx, owner, mPriorBalance, sponsor, 0);
-            !isTesSuccess(ret))
+        if (auto const ret = checkInsufficientReserve(view(), tx, owner, mPriorBalance, sponsor, 0); !isTesSuccess(ret))
             return ret;
     }
     else
     {
         // after Sponsor Amendment, check insufficient reserve first
-        if (auto const ret = checkInsufficientReserve(
-                view(), tx, owner, mPriorBalance, sponsor, 2);
-            !isTesSuccess(ret))
+        if (auto const ret = checkInsufficientReserve(view(), tx, owner, mPriorBalance, sponsor, 2); !isTesSuccess(ret))
             return ret;
         adjustOwnerCount(view(), tx, owner, sponsor, 2, j_);
         addSponsorToLedgerEntry(vault, sponsor);
@@ -168,14 +160,11 @@ VaultCreate::doApply()
     auto pseudoId = pseudo->at(sfAccount);
     auto asset = tx[sfAsset];
 
-    if (auto ter =
-            addEmptyHolding(view(), tx, pseudoId, mPriorBalance, asset, j_);
-        !isTesSuccess(ter))
+    if (auto ter = addEmptyHolding(view(), tx, pseudoId, mPriorBalance, asset, j_); !isTesSuccess(ter))
         return ter;
 
-    std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
-        ? 0
-        : ctx_.tx[~sfScale].value_or(vaultDefaultIOUScale);
+    std::uint8_t const scale =
+        (asset.holds<MPTIssue>() || asset.native()) ? 0 : ctx_.tx[~sfScale].value_or(vaultDefaultIOUScale);
 
     auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
@@ -229,23 +218,15 @@ VaultCreate::doApply()
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
-    if (auto const err = authorizeMPToken(
-            view(), tx, mPriorBalance, mptIssuanceID, account_, ctx_.journal);
+    if (auto const err = authorizeMPToken(view(), tx, mPriorBalance, mptIssuanceID, account_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
     if (txFlags & tfVaultPrivate)
     {
-        if (auto const err = authorizeMPToken(
-                view(),
-                tx,
-                mPriorBalance,
-                mptIssuanceID,
-                pseudoId,
-                ctx_.journal,
-                {},
-                account_);
+        if (auto const err =
+                authorizeMPToken(view(), tx, mPriorBalance, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
             !isTesSuccess(err))
             return err;
     }

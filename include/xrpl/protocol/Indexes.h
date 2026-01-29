@@ -94,10 +94,7 @@ static book_t const book{};
 */
 /** @{ */
 Keylet
-line(
-    AccountID const& id0,
-    AccountID const& id1,
-    Currency const& currency) noexcept;
+line(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept;
 
 inline Keylet
 line(AccountID const& id, Issue const& issue) noexcept
@@ -177,9 +174,7 @@ Keylet
 depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
 
 Keylet
-depositPreauth(
-    AccountID const& owner,
-    std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept;
+depositPreauth(AccountID const& owner, std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept;
 
 inline Keylet
 depositPreauth(uint256 const& key) noexcept
@@ -206,8 +201,7 @@ page(uint256 const& root, std::uint64_t index = 0) noexcept;
 inline Keylet
 page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
-    XRPL_ASSERT(
-        root.type == ltDIR_NODE, "xrpl::keylet::page : valid root type");
+    XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::keylet::page : valid root type");
     return page(root.key, index);
 }
 /** @} */
@@ -287,10 +281,7 @@ Keylet
 oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
 
 Keylet
-credential(
-    AccountID const& subject,
-    AccountID const& issuer,
-    Slice const& credType) noexcept;
+credential(AccountID const& subject, AccountID const& issuer, Slice const& credType) noexcept;
 
 inline Keylet
 credential(uint256 const& key) noexcept

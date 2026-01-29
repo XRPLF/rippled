@@ -23,8 +23,7 @@ CreateCheck::preflight(PreflightContext const& ctx)
         STAmount const sendMax{ctx.tx.getFieldAmount(sfSendMax)};
         if (!isLegalNet(sendMax) || sendMax.signum() <= 0)
         {
-            JLOG(ctx.j.warn()) << "Malformed transaction: bad sendMax amount: "
-                               << sendMax.getFullText();
+            JLOG(ctx.j.warn()) << "Malformed transaction: bad sendMax amount: " << sendMax.getFullText();
             return temBAD_AMOUNT;
         }
 
@@ -99,28 +98,20 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
             if (issuerId != srcId)
             {
                 // Check if the issuer froze the line
-                auto const sleTrust = ctx.view.read(
-                    keylet::line(srcId, issuerId, sendMax.getCurrency()));
-                if (sleTrust &&
-                    sleTrust->isFlag(
-                        (issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
+                auto const sleTrust = ctx.view.read(keylet::line(srcId, issuerId, sendMax.getCurrency()));
+                if (sleTrust && sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
                 {
-                    JLOG(ctx.j.warn())
-                        << "Creating a check for frozen trustline.";
+                    JLOG(ctx.j.warn()) << "Creating a check for frozen trustline.";
                     return tecFROZEN;
                 }
             }
             if (issuerId != dstId)
             {
                 // Check if dst froze the line.
-                auto const sleTrust = ctx.view.read(
-                    keylet::line(issuerId, dstId, sendMax.getCurrency()));
-                if (sleTrust &&
-                    sleTrust->isFlag(
-                        (dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
+                auto const sleTrust = ctx.view.read(keylet::line(issuerId, dstId, sendMax.getCurrency()));
+                if (sleTrust && sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
                 {
-                    JLOG(ctx.j.warn())
-                        << "Creating a check for destination frozen trustline.";
+                    JLOG(ctx.j.warn()) << "Creating a check for destination frozen trustline.";
                     return tecFROZEN;
                 }
             }
@@ -145,9 +136,7 @@ CreateCheck::doApply()
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sle, mPriorBalance, sponsor, 1);
-        !isTesSuccess(ret))
+    if (auto const ret = checkInsufficientReserve(view(), ctx_.tx, sle, mPriorBalance, sponsor, 1); !isTesSuccess(ret))
         return ret;
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
@@ -176,13 +165,9 @@ CreateCheck::doApply()
     // destination's owner directory.
     if (dstAccountId != account_)
     {
-        auto const page = view().dirInsert(
-            keylet::ownerDir(dstAccountId),
-            checkKeylet,
-            describeOwnerDir(dstAccountId));
+        auto const page = view().dirInsert(keylet::ownerDir(dstAccountId), checkKeylet, describeOwnerDir(dstAccountId));
 
-        JLOG(j_.trace()) << "Adding Check to destination directory "
-                         << to_string(checkKeylet.key) << ": "
+        JLOG(j_.trace()) << "Adding Check to destination directory " << to_string(checkKeylet.key) << ": "
                          << (page ? "success" : "failure");
 
         if (!page)
@@ -192,13 +177,9 @@ CreateCheck::doApply()
     }
 
     {
-        auto const page = view().dirInsert(
-            keylet::ownerDir(account_),
-            checkKeylet,
-            describeOwnerDir(account_));
+        auto const page = view().dirInsert(keylet::ownerDir(account_), checkKeylet, describeOwnerDir(account_));
 
-        JLOG(j_.trace()) << "Adding Check to owner directory "
-                         << to_string(checkKeylet.key) << ": "
+        JLOG(j_.trace()) << "Adding Check to owner directory " << to_string(checkKeylet.key) << ": "
                          << (page ? "success" : "failure");
 
         if (!page)

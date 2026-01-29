@@ -10,12 +10,10 @@ bool
 MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !(ctx.rules.enabled(featurePermissionedDomains) &&
-          ctx.rules.enabled(featureSingleAssetVault)))
+        !(ctx.rules.enabled(featurePermissionedDomains) && ctx.rules.enabled(featureSingleAssetVault)))
         return false;
 
-    if (ctx.tx.isFieldPresent(sfMutableFlags) &&
-        !ctx.rules.enabled(featureDynamicMPT))
+    if (ctx.tx.isFieldPresent(sfMutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
         return false;
 
     return true;
@@ -33,8 +31,8 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
     // If the mutable flags field is included, at least one flag must be
     // specified.
-    if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
-        (!*mutableFlags || *mutableFlags & tmfMPTokenIssuanceCreateMutableMask))
+    if (auto const mutableFlags = ctx.tx[~sfMutableFlags];
+        mutableFlags && (!*mutableFlags || *mutableFlags & tmfMPTokenIssuanceCreateMutableMask))
         return temINVALID_FLAG;
 
     if (auto const fee = ctx.tx[~sfTransferFee])
@@ -60,8 +58,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->length() == 0 ||
-            metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -78,23 +75,16 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 }
 
 Expected<MPTID, TER>
-MPTokenIssuanceCreate::create(
-    ApplyView& view,
-    STTx const& tx,
-    beast::Journal journal,
-    MPTCreateArgs const& args)
+MPTokenIssuanceCreate::create(ApplyView& view, STTx const& tx, beast::Journal journal, MPTCreateArgs const& args)
 {
     auto const acct = view.peek(keylet::account(args.account));
     if (!acct)
         return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
-    auto const sponsor = !isPseudoAccount((acct))
-        ? getTxReserveSponsor(view, tx)
-        : std::shared_ptr<SLE>();
+    auto const sponsor = !isPseudoAccount((acct)) ? getTxReserveSponsor(view, tx) : std::shared_ptr<SLE>();
     if (args.priorBalance)
     {
-        if (auto const ret = checkInsufficientReserve(
-                view, tx, acct, *(args.priorBalance), sponsor, 1);
+        if (auto const ret = checkInsufficientReserve(view, tx, acct, *(args.priorBalance), sponsor, 1);
             !isTesSuccess(ret))
             return Unexpected(ret);  // tecINSUFFICIENT_RESERVE
     }
@@ -104,10 +94,8 @@ MPTokenIssuanceCreate::create(
 
     // create the MPTokenIssuance
     {
-        auto const ownerNode = view.dirInsert(
-            keylet::ownerDir(args.account),
-            mptIssuanceKeylet,
-            describeOwnerDir(args.account));
+        auto const ownerNode =
+            view.dirInsert(keylet::ownerDir(args.account), mptIssuanceKeylet, describeOwnerDir(args.account));
 
         if (!ownerNode)
             return Unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE

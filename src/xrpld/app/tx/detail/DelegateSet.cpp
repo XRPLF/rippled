@@ -26,8 +26,7 @@ DelegateSet::preflight(PreflightContext const& ctx)
         if (!permissionSet.insert(permission[sfPermissionValue]).second)
             return temMALFORMED;
 
-        if (!Permission::getInstance().isDelegable(
-                permission[sfPermissionValue], ctx.rules))
+        if (!Permission::getInstance().isDelegable(permission[sfPermissionValue], ctx.rules))
             return temMALFORMED;
     }
 
@@ -70,8 +69,7 @@ DelegateSet::doApply()
     }
 
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleOwner, mPriorBalance, sponsor, 1);
+    if (auto const ret = checkInsufficientReserve(view(), ctx_.tx, sleOwner, mPriorBalance, sponsor, 1);
         !isTesSuccess(ret))
         return ret;
 
@@ -83,18 +81,14 @@ DelegateSet::doApply()
         sle->setAccountID(sfAuthorize, authAccount);
 
         sle->setFieldArray(sfPermissions, permissions);
-        auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_),
-            delegateKey,
-            describeOwnerDir(account_));
+        auto const page = ctx_.view().dirInsert(keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
 
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         (*sle)[sfOwnerNode] = *page;
         ctx_.view().insert(sle);
-        adjustOwnerCount(
-            ctx_.view(), ctx_.tx, sleOwner, sponsor, 1, ctx_.journal);
+        adjustOwnerCount(ctx_.view(), ctx_.tx, sleOwner, sponsor, 1, ctx_.journal);
         addSponsorToLedgerEntry(sle, sponsor);
     }
 
@@ -111,8 +105,7 @@ DelegateSet::deleteDelegate(
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(
-            keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), false))
+    if (!view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Delegate from owner.";

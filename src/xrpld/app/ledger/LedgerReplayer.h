@@ -53,10 +53,7 @@ std::uint32_t constexpr MAX_QUEUED_TASKS = 100;
 class LedgerReplayer final
 {
 public:
-    LedgerReplayer(
-        Application& app,
-        InboundLedgers& inboundLedgers,
-        std::unique_ptr<PeerSetBuilder> peerSetBuilder);
+    LedgerReplayer(Application& app, InboundLedgers& inboundLedgers, std::unique_ptr<PeerSetBuilder> peerSetBuilder);
 
     ~LedgerReplayer();
 
@@ -68,10 +65,7 @@ public:
      * @note totalNumLedgers must > 0 && totalNumLedgers must <= 256
      */
     void
-    replay(
-        InboundLedger::Reason r,
-        uint256 const& finishLedgerHash,
-        std::uint32_t totalNumLedgers);
+    replay(InboundLedger::Reason r, uint256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
 
     /** Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task */
     void
@@ -84,9 +78,7 @@ public:
      * @note  info and data must have been verified against the ledger hash
      */
     void
-    gotSkipList(
-        LedgerHeader const& info,
-        boost::intrusive_ptr<SHAMapItem const> const& data);
+    gotSkipList(LedgerHeader const& info, boost::intrusive_ptr<SHAMapItem const> const& data);
 
     /**
      * Process a ledger delta (extracted from a TMReplayDeltaResponse message)
@@ -95,9 +87,7 @@ public:
      * @note info and txns must have been verified against the ledger hash
      */
     void
-    gotReplayDelta(
-        LedgerHeader const& info,
-        std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
+    gotReplayDelta(LedgerHeader const& info, std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
 
     /** Remove completed tasks */
     void

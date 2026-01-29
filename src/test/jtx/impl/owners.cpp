@@ -7,20 +7,15 @@ std::uint32_t
 owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type)
 {
     std::uint32_t count = 0;
-    forEachItem(
-        view, id, [&count, type](std::shared_ptr<SLE const> const& sle) {
-            if (sle->getType() == type)
-                ++count;
-        });
+    forEachItem(view, id, [&count, type](std::shared_ptr<SLE const> const& sle) {
+        if (sle->getType() == type)
+            ++count;
+    });
     return count;
 }
 
 void
-owned_count_helper(
-    test::jtx::Env& env,
-    AccountID const& id,
-    LedgerEntryType type,
-    std::uint32_t value)
+owned_count_helper(test::jtx::Env& env, AccountID const& id, LedgerEntryType type, std::uint32_t value)
 {
     env.test.expect(owned_count_of(*env.current(), id, type) == value);
 }
@@ -39,22 +34,19 @@ owners::operator()(Env& env) const
 void
 sponsored_owners::operator()(Env& env) const
 {
-    env.test.expect(
-        env.le(account_)->getFieldU32(sfSponsoredOwnerCount) == value_);
+    env.test.expect(env.le(account_)->getFieldU32(sfSponsoredOwnerCount) == value_);
 }
 
 void
 sponsoring_owners::operator()(Env& env) const
 {
-    env.test.expect(
-        env.le(account_)->getFieldU32(sfSponsoringOwnerCount) == value_);
+    env.test.expect(env.le(account_)->getFieldU32(sfSponsoringOwnerCount) == value_);
 }
 
 void
 sponsoring_account_count::operator()(Env& env) const
 {
-    env.test.expect(
-        env.le(account_)->getFieldU32(sfSponsoringAccountCount) == value_);
+    env.test.expect(env.le(account_)->getFieldU32(sfSponsoringAccountCount) == value_);
 }
 
 }  // namespace jtx

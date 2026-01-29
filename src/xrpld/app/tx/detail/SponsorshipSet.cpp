@@ -17,22 +17,18 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
     {
-        if ((flags & tfSponsorshipSetRequireSignForFee) &&
-            (flags & tfSponsorshipClearRequireSignForFee))
+        if ((flags & tfSponsorshipSetRequireSignForFee) && (flags & tfSponsorshipClearRequireSignForFee))
             return temINVALID_FLAG;
 
-        if ((flags & tfSponsorshipSetRequireSignForReserve) &&
-            (flags & tfSponsorshipClearRequireSignForReserve))
+        if ((flags & tfSponsorshipSetRequireSignForReserve) && (flags & tfSponsorshipClearRequireSignForReserve))
             return temINVALID_FLAG;
 
         if (flags & tfDeleteObject)
         {
             // check Flags
             if (flags &
-                (tfSponsorshipSetRequireSignForFee |
-                 tfSponsorshipSetRequireSignForReserve |
-                 tfSponsorshipClearRequireSignForFee |
-                 tfSponsorshipClearRequireSignForReserve))
+                (tfSponsorshipSetRequireSignForFee | tfSponsorshipSetRequireSignForReserve |
+                 tfSponsorshipClearRequireSignForFee | tfSponsorshipClearRequireSignForReserve))
                 return temINVALID_FLAG;
         }
     }
@@ -54,18 +50,15 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     if (flags & tfDeleteObject)
     {
         // can not combine with any modification flags when deleting
-        constexpr std::uint32_t modifyFlags =
-            tfSponsorshipSetRequireSignForFee |
-            tfSponsorshipSetRequireSignForReserve |
-            tfSponsorshipClearRequireSignForFee |
+        constexpr std::uint32_t modifyFlags = tfSponsorshipSetRequireSignForFee |
+            tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForFee |
             tfSponsorshipClearRequireSignForReserve;
 
         if (flags & modifyFlags)
             return temINVALID_FLAG;
 
         // can not include these fields when deleting
-        if (ctx.tx.isFieldPresent(sfFeeAmount) ||
-            ctx.tx.isFieldPresent(sfReserveCount) ||
+        if (ctx.tx.isFieldPresent(sfFeeAmount) || ctx.tx.isFieldPresent(sfReserveCount) ||
             ctx.tx.isFieldPresent(sfMaxFee))
             return temMALFORMED;
     }
@@ -76,17 +69,14 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
         if (account != sponsor)
             return temMALFORMED;
 
-        if ((flags & tfSponsorshipSetRequireSignForFee) &&
-            (flags & tfSponsorshipClearRequireSignForFee))
+        if ((flags & tfSponsorshipSetRequireSignForFee) && (flags & tfSponsorshipClearRequireSignForFee))
             return temINVALID_FLAG;
 
-        if ((flags & tfSponsorshipSetRequireSignForReserve) &&
-            (flags & tfSponsorshipClearRequireSignForReserve))
+        if ((flags & tfSponsorshipSetRequireSignForReserve) && (flags & tfSponsorshipClearRequireSignForReserve))
             return temINVALID_FLAG;
 
         // Check FeeAmount and MaxFee
-        auto const checkOptionalAmountField =
-            [&](SField const& field) -> NotTEC {
+        auto const checkOptionalAmountField = [&](SField const& field) -> NotTEC {
             if (!ctx.tx.isFieldPresent(field))
                 return tesSUCCESS;
 
@@ -101,12 +91,10 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
             return tesSUCCESS;
         };
 
-        if (auto const ret = checkOptionalAmountField(sfFeeAmount);
-            !isTesSuccess(ret))
+        if (auto const ret = checkOptionalAmountField(sfFeeAmount); !isTesSuccess(ret))
             return ret;
 
-        if (auto const ret = checkOptionalAmountField(sfMaxFee);
-            !isTesSuccess(ret))
+        if (auto const ret = checkOptionalAmountField(sfMaxFee); !isTesSuccess(ret))
             return ret;
 
         // Check ReserveCount
@@ -147,11 +135,9 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttSPONSORSHIP_SET, granularPermissions);
 
-    auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) ||
-        tx.isFieldPresent(sfMaxFee) ||
-        txFlags & tfSponsorshipSetRequireSignForFee;
-    auto const sponsoringReserve = tx.isFieldPresent(sfReserveCount) ||
-        txFlags & tfSponsorshipSetRequireSignForReserve;
+    auto const sponsoringFee =
+        tx.isFieldPresent(sfFeeAmount) || tx.isFieldPresent(sfMaxFee) || txFlags & tfSponsorshipSetRequireSignForFee;
+    auto const sponsoringReserve = tx.isFieldPresent(sfReserveCount) || txFlags & tfSponsorshipSetRequireSignForReserve;
 
     if (sponsoringFee && !granularPermissions.contains(SponsorFee))
         return terNO_DELEGATE_PERMISSION;
@@ -218,20 +204,12 @@ SponsorshipSet::doApply()
         if (!sponsorObjSle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const sponsor =
-            getLedgerEntryReserveSponsor(ctx_.view(), sponsorObjSle);
+        auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), sponsorObjSle);
         adjustOwnerCount(ctx_.view(), sponsorAccSle, sponsor, -1, ctx_.journal);
 
+        ctx_.view().dirRemove(keylet::ownerDir(sponsorAcc), (*sponsorObjSle)[sfOwnerNode], sponsorObjSle->key(), false);
         ctx_.view().dirRemove(
-            keylet::ownerDir(sponsorAcc),
-            (*sponsorObjSle)[sfOwnerNode],
-            sponsorObjSle->key(),
-            false);
-        ctx_.view().dirRemove(
-            keylet::ownerDir(sponseeAcc),
-            (*sponsorObjSle)[sfSponseeNode],
-            sponsorObjSle->key(),
-            false);
+            keylet::ownerDir(sponseeAcc), (*sponsorObjSle)[sfSponseeNode], sponsorObjSle->key(), false);
 
         // transfer feeAmount from ledger entry
         auto const feeAmount = sponsorObjSle->getFieldAmount(sfFeeAmount);
@@ -253,13 +231,8 @@ SponsorshipSet::doApply()
         // Create
         auto newSle = std::make_shared<SLE>(sponsorKeylet);
 
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.view(),
-                ctx_.tx,
-                sponsorAccSle,
-                mPriorBalance,
-                reserveSponsorAccSle,
-                1);
+        if (auto const ret =
+                checkInsufficientReserve(ctx_.view(), ctx_.tx, sponsorAccSle, mPriorBalance, reserveSponsorAccSle, 1);
             !isTesSuccess(ret))
             return tecUNFUNDED;
 
@@ -284,22 +257,17 @@ SponsorshipSet::doApply()
 
         (*newSle)[sfFlags] = flags;
 
-        auto const sponsorPage = view().dirInsert(
-            keylet::ownerDir(sponsorAcc),
-            sponsorKeylet,
-            describeOwnerDir(sponsorAcc));
+        auto const sponsorPage =
+            view().dirInsert(keylet::ownerDir(sponsorAcc), sponsorKeylet, describeOwnerDir(sponsorAcc));
         (*newSle)[sfOwnerNode] = *sponsorPage;
 
-        auto const sponseePage = view().dirInsert(
-            keylet::ownerDir(sponseeAcc),
-            sponsorKeylet,
-            describeOwnerDir(sponseeAcc));
+        auto const sponseePage =
+            view().dirInsert(keylet::ownerDir(sponseeAcc), sponsorKeylet, describeOwnerDir(sponseeAcc));
         (*newSle)[sfSponseeNode] = *sponseePage;
 
         auto viewJ = ctx_.app.journal("View");
 
-        adjustOwnerCount(
-            view(), ctx_.tx, sponsorAccSle, reserveSponsorAccSle, 1, viewJ);
+        adjustOwnerCount(view(), ctx_.tx, sponsorAccSle, reserveSponsorAccSle, 1, viewJ);
         addSponsorToLedgerEntry(newSle, reserveSponsorAccSle);
 
         ctx_.view().insert(newSle);
@@ -309,8 +277,7 @@ SponsorshipSet::doApply()
     // Update
     if (feeAmount)
     {
-        auto const currentFeeAmount =
-            (*sponsorObjSle)[~sfFeeAmount].value_or(XRPAmount(0));
+        auto const currentFeeAmount = (*sponsorObjSle)[~sfFeeAmount].value_or(XRPAmount(0));
         auto feeAmountDelta = XRPAmount(*feeAmount - currentFeeAmount);
 
         // transfer feeAmount to ledger entry
@@ -350,10 +317,7 @@ SponsorshipSet::doApply()
 }
 
 TER
-SponsorshipSet::deleteSponsorship(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    beast::Journal j)
+SponsorshipSet::deleteSponsorship(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
 {
     auto const sponsor = sle->getAccountID(sfOwner);
     auto const sponsee = sle->getAccountID(sfSponsee);
@@ -372,11 +336,9 @@ SponsorshipSet::deleteSponsorship(
     view.update(sponsorAccSle);
 
     // delete sponsor node
-    view.dirRemove(
-        keylet::ownerDir(sponsor), (*sle)[sfOwnerNode], sle->key(), false);
+    view.dirRemove(keylet::ownerDir(sponsor), (*sle)[sfOwnerNode], sle->key(), false);
     // delete sponsee node
-    view.dirRemove(
-        keylet::ownerDir(sponsee), (*sle)[sfSponseeNode], sle->key(), false);
+    view.dirRemove(keylet::ownerDir(sponsee), (*sle)[sfSponseeNode], sle->key(), false);
 
     view.erase(sle);
 

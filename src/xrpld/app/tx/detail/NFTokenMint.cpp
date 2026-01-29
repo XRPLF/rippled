@@ -22,8 +22,7 @@ extractNFTokenFlagsFromTxFlags(std::uint32_t txFlags)
 static bool
 hasOfferFields(PreflightContext const& ctx)
 {
-    return ctx.tx.isFieldPresent(sfAmount) ||
-        ctx.tx.isFieldPresent(sfDestination) ||
+    return ctx.tx.isFieldPresent(sfAmount) || ctx.tx.isFieldPresent(sfDestination) ||
         ctx.tx.isFieldPresent(sfExpiration);
 }
 
@@ -49,14 +48,11 @@ NFTokenMint::getFlagsMask(PreflightContext const& ctx)
     // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
     // tfTrustLine flag as a way to prevent the attack.  But until the
     // amendment passes we still need to keep the old behavior available.
-    std::uint32_t const nfTokenMintMask =
-        ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine)
+    std::uint32_t const nfTokenMintMask = ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine)
         // if featureDynamicNFT enabled then new flag allowing mutable URI
         // available
-        ? ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMaskWithMutable
-                                               : tfNFTokenMintMask
-        : ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable
-                                               : tfNFTokenMintOldMask;
+        ? ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMaskWithMutable : tfNFTokenMintMask
+        : ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable : tfNFTokenMintOldMask;
 
     return nfTokenMintMask;
 }
@@ -171,8 +167,7 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
         if (!sle)
             return tecNO_ISSUER;
 
-        if (auto const minter = (*sle)[~sfNFTokenMinter];
-            minter != ctx.tx[sfAccount])
+        if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != ctx.tx[sfAccount])
             return tecNO_PERMISSION;
     }
 
@@ -231,14 +226,10 @@ NFTokenMint::doApply()
             std::uint32_t const acctSeq = root->at(sfSequence);
 
             root->at(sfFirstNFTokenSequence) =
-                ctx_.tx.isFieldPresent(sfIssuer) ||
-                    ctx_.tx.getSeqProxy().isTicket()
-                ? acctSeq
-                : acctSeq - 1;
+                ctx_.tx.isFieldPresent(sfIssuer) || ctx_.tx.getSeqProxy().isTicket() ? acctSeq : acctSeq - 1;
         }
 
-        std::uint32_t const mintedNftCnt =
-            (*root)[~sfMintedNFTokens].value_or(0u);
+        std::uint32_t const mintedNftCnt = (*root)[~sfMintedNFTokens].value_or(0u);
 
         (*root)[sfMintedNFTokens] = mintedNftCnt + 1u;
         if ((*root)[sfMintedNFTokens] == 0u)
@@ -260,12 +251,10 @@ NFTokenMint::doApply()
     if (!tokenSeq.has_value())
         return (tokenSeq.error());
 
-    std::uint32_t const ownerCountBefore =
-        view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
+    std::uint32_t const ownerCountBefore = view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
 
     // Assemble the new NFToken.
-    SOTemplate const* nfTokenTemplate =
-        InnerObjectFormats::getInstance().findSOTemplateBySField(sfNFToken);
+    SOTemplate const* nfTokenTemplate = InnerObjectFormats::getInstance().findSOTemplateBySField(sfNFToken);
 
     if (nfTokenTemplate == nullptr)
         // Should never happen.
@@ -278,17 +267,15 @@ NFTokenMint::doApply()
         nft::toTaxon(ctx_.tx[sfNFTokenTaxon]),
         tokenSeq.value());
 
-    STObject newToken(
-        *nfTokenTemplate, sfNFToken, [this, &nftokenID](STObject& object) {
-            object.setFieldH256(sfNFTokenID, nftokenID);
+    STObject newToken(*nfTokenTemplate, sfNFToken, [this, &nftokenID](STObject& object) {
+        object.setFieldH256(sfNFTokenID, nftokenID);
 
-            if (auto const uri = ctx_.tx[~sfURI])
-                object.setFieldVL(sfURI, *uri);
-        });
+        if (auto const uri = ctx_.tx[~sfURI])
+            object.setFieldVL(sfURI, *uri);
+    });
 
     auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
-    if (TER const ret = nft::insertToken(
-            ctx_.view(), ctx_.tx, account_, sponsor, std::move(newToken));
+    if (TER const ret = nft::insertToken(ctx_.view(), ctx_.tx, account_, sponsor, std::move(newToken));
         ret != tesSUCCESS)
         return ret;
 
@@ -316,18 +303,12 @@ NFTokenMint::doApply()
     // allows NFTs to be added to the page (and burn fees) without
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page or sell offer is added.
-    if (auto const ownerCountAfter =
-            view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
+    if (auto const ownerCountAfter = view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
         auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(),
-                ctx_.tx,
-                view().read(keylet::account(account_)),
-                mPriorBalance,
-                sponsor,
-                0);
+                ctx_.view(), ctx_.tx, view().read(keylet::account(account_)), mPriorBalance, sponsor, 0);
             !isTesSuccess(ret))
             return ret;
     }

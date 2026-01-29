@@ -68,8 +68,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
     auto
     calcMedFeeLevel(FeeLevel64 const feeLevel1, FeeLevel64 const feeLevel2)
     {
-        FeeLevel64 const expectedMedFeeLevel =
-            (feeLevel1 + feeLevel2 + FeeLevel64{1}) / 2;
+        FeeLevel64 const expectedMedFeeLevel = (feeLevel1 + feeLevel2 + FeeLevel64{1}) / 2;
 
         return std::max(expectedMedFeeLevel, minEscalationFeeLevel).fee();
     }
@@ -331,13 +330,7 @@ public:
         env(noop(env.master), fee(baseFee * 2), queued);
         ++metrics.txCount;
 
-        checkMetrics(
-            *this,
-            env,
-            metrics.txCount,
-            metrics.txQMaxSize,
-            metrics.txPerLedger + 1,
-            metrics.txPerLedger);
+        checkMetrics(*this, env, metrics.txCount, metrics.txQMaxSize, metrics.txPerLedger + 1, metrics.txPerLedger);
     }
 
     void
@@ -400,10 +393,7 @@ public:
         env(noop(alice), ticket::use(tkt1 + 10), fee(baseFee * 2.0), queued);
         env(noop(alice), ticket::use(tkt1 + 11), fee(baseFee * 2.1), queued);
         env(noop(alice), ticket::use(tkt1 + 12), fee(baseFee * 2.2), queued);
-        env(noop(alice),
-            ticket::use(tkt1 + 13),
-            fee(baseFee * 2.3),
-            ter(telCAN_NOT_QUEUE_FULL));
+        env(noop(alice), ticket::use(tkt1 + 13), fee(baseFee * 2.3), ter(telCAN_NOT_QUEUE_FULL));
         checkMetrics(*this, env, 8, 8, 5, 4, expectedMinFeeLevel);
 
         // Check which of the queued transactions got into the ledger by
@@ -509,22 +499,10 @@ public:
         env(noop(alice), ticket::use(tkt1 + 15), fee(baseFee * 2.7), queued);
         env(noop(alice), ticket::use(tkt250 - 2), fee(baseFee * 2.6), queued);
         env(noop(alice), ticket::use(tkt1 + 16), fee(baseFee * 2.5), queued);
-        env(noop(alice),
-            ticket::use(tkt250 - 3),
-            fee(baseFee * 2.4),
-            ter(telCAN_NOT_QUEUE_FULL));
-        env(noop(alice),
-            ticket::use(tkt1 + 17),
-            fee(baseFee * 2.3),
-            ter(telCAN_NOT_QUEUE_FULL));
-        env(noop(alice),
-            ticket::use(tkt250 - 4),
-            fee(baseFee * 2.2),
-            ter(telCAN_NOT_QUEUE_FULL));
-        env(noop(alice),
-            ticket::use(tkt1 + 18),
-            fee(baseFee * 2.1),
-            ter(telCAN_NOT_QUEUE_FULL));
+        env(noop(alice), ticket::use(tkt250 - 3), fee(baseFee * 2.4), ter(telCAN_NOT_QUEUE_FULL));
+        env(noop(alice), ticket::use(tkt1 + 17), fee(baseFee * 2.3), ter(telCAN_NOT_QUEUE_FULL));
+        env(noop(alice), ticket::use(tkt250 - 4), fee(baseFee * 2.2), ter(telCAN_NOT_QUEUE_FULL));
+        env(noop(alice), ticket::use(tkt1 + 18), fee(baseFee * 2.1), ter(telCAN_NOT_QUEUE_FULL));
 
         checkMetrics(*this, env, 10, 12, 7, 6);
 
@@ -565,24 +543,12 @@ public:
         // let's try replacing them.
 
         // The lowest fee ticket is baseFee * 2.1, trying to replace it
-        env(noop(alice),
-            ticket::use(tkt1 + 18),
-            fee(baseFee * 2.1 * 1.25 - 1),
-            ter(telCAN_NOT_QUEUE_FEE));
-        env(noop(alice),
-            ticket::use(tkt1 + 18),
-            fee(baseFee * 2.1 * 1.25 + 1),
-            queued);
+        env(noop(alice), ticket::use(tkt1 + 18), fee(baseFee * 2.1 * 1.25 - 1), ter(telCAN_NOT_QUEUE_FEE));
+        env(noop(alice), ticket::use(tkt1 + 18), fee(baseFee * 2.1 * 1.25 + 1), queued);
 
         // New lowest fee ticket is baseFee * 2.2
-        env(noop(alice),
-            ticket::use(tkt250 - 4),
-            fee(baseFee * 2.2 * 1.25 - 1),
-            ter(telCAN_NOT_QUEUE_FEE));
-        env(noop(alice),
-            ticket::use(tkt250 - 4),
-            fee(baseFee * 2.2 * 1.25 + 1),
-            queued);
+        env(noop(alice), ticket::use(tkt250 - 4), fee(baseFee * 2.2 * 1.25 - 1), ter(telCAN_NOT_QUEUE_FEE));
+        env(noop(alice), ticket::use(tkt250 - 4), fee(baseFee * 2.2 * 1.25 + 1), queued);
 
         env.close();
         env.require(owners(alice, 227), tickets(alice, 227));
@@ -658,10 +624,7 @@ public:
         checkMetrics(*this, env, 0, std::nullopt, 3, 2);
 
         // Future transaction for Alice - fails
-        env(noop(alice),
-            fee(openLedgerCost(env)),
-            seq(env.seq(alice) + 1),
-            ter(terPRE_SEQ));
+        env(noop(alice), fee(openLedgerCost(env)), seq(env.seq(alice) + 1), ter(terPRE_SEQ));
         checkMetrics(*this, env, 0, std::nullopt, 3, 2);
 
         // Current transaction for Alice: held
@@ -747,16 +710,12 @@ public:
             auto aliceStat = txQ.getAccountTxs(alice.id());
             BEAST_EXPECT(aliceStat.size() == 1);
             BEAST_EXPECT(aliceStat.begin()->feeLevel == baseFeeLevel);
-            BEAST_EXPECT(
-                aliceStat.begin()->lastValid &&
-                *aliceStat.begin()->lastValid == 8);
+            BEAST_EXPECT(aliceStat.begin()->lastValid && *aliceStat.begin()->lastValid == 8);
             BEAST_EXPECT(!aliceStat.begin()->consequences.isBlocker());
 
             auto bobStat = txQ.getAccountTxs(bob.id());
             BEAST_EXPECT(bobStat.size() == 1);
-            BEAST_EXPECT(
-                bobStat.begin()->feeLevel ==
-                FeeLevel64{baseFeeLevel.fee() * largeFeeMultiplier});
+            BEAST_EXPECT(bobStat.begin()->feeLevel == FeeLevel64{baseFeeLevel.fee() * largeFeeMultiplier});
             BEAST_EXPECT(!bobStat.begin()->lastValid);
             BEAST_EXPECT(!bobStat.begin()->consequences.isBlocker());
 
@@ -977,10 +936,8 @@ public:
 
             Env::ParsedResult parsed;
 
-            env.app().openLedger().modify([&](OpenView& view,
-                                              beast::Journal j) {
-                auto const result =
-                    xrpl::apply(env.app(), view, *jt.stx, tapNONE, env.journal);
+            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+                auto const result = xrpl::apply(env.app(), view, *jt.stx, tapNONE, env.journal);
                 parsed.ter = result.ter;
                 return result.applied;
             });
@@ -1003,8 +960,7 @@ public:
         Env env(
             *this,
             makeConfig(
-                {{"minimum_txn_in_ledger_standalone", "3"}},
-                {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
+                {{"minimum_txn_in_ledger_standalone", "3"}}, {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -1078,11 +1034,7 @@ public:
         auto lastLedgerSeq = env.current()->header().seq + 2;
         for (auto i = 0; i < 7; i++)
         {
-            env(noop(alice),
-                seq(aliceSeq),
-                json(jss::LastLedgerSequence, lastLedgerSeq + i),
-                fee(--aliceFee),
-                queued);
+            env(noop(alice), seq(aliceSeq), json(jss::LastLedgerSequence, lastLedgerSeq + i), fee(--aliceFee), queued);
             ++aliceSeq;
         }
         checkMetrics(*this, env, 8, 8, 5, 4, 513);
@@ -1096,12 +1048,10 @@ public:
             for (auto const& tx : aliceStat)
             {
                 BEAST_EXPECT(tx.seqProxy.isSeq() && tx.seqProxy.value() == seq);
-                BEAST_EXPECT(
-                    tx.feeLevel == toFeeLevel(XRPAmount(--aliceFee), baseFee));
+                BEAST_EXPECT(tx.feeLevel == toFeeLevel(XRPAmount(--aliceFee), baseFee));
                 BEAST_EXPECT(tx.lastValid);
                 BEAST_EXPECT(
-                    (tx.consequences.fee() == drops(aliceFee) &&
-                     tx.consequences.potentialSpend() == drops(0) &&
+                    (tx.consequences.fee() == drops(aliceFee) && tx.consequences.potentialSpend() == drops(0) &&
                      !tx.consequences.isBlocker()) ||
                     tx.seqProxy.value() == env.seq(alice) + 6);
                 ++seq;
@@ -1138,20 +1088,14 @@ public:
         // Alice wants this tx more than the dropped tx,
         // so resubmits with higher fee, but the queue
         // is full, and her account is the cheapest.
-        env(noop(alice),
-            seq(aliceSeq - 1),
-            fee(aliceFee),
-            ter(telCAN_NOT_QUEUE_FULL));
+        env(noop(alice), seq(aliceSeq - 1), fee(aliceFee), ter(telCAN_NOT_QUEUE_FULL));
         checkMetrics(*this, env, 8, 8, 5, 4, 538);
 
         // Try to replace a middle item in the queue
         // without enough fee.
         aliceSeq = env.seq(alice) + 2;
         aliceFee = 29;
-        env(noop(alice),
-            seq(aliceSeq),
-            fee(aliceFee),
-            ter(telCAN_NOT_QUEUE_FEE));
+        env(noop(alice), seq(aliceSeq), fee(aliceFee), ter(telCAN_NOT_QUEUE_FEE));
         checkMetrics(*this, env, 8, 8, 5, 4, 538);
 
         // Replace a middle item from the queue successfully
@@ -1171,12 +1115,8 @@ public:
         // bankrupt Alice. Fails, because an account can't have
         // more than the minimum reserve in flight before the
         // last queued transaction
-        aliceFee =
-            env.le(alice)->getFieldAmount(sfBalance).xrp().drops() - (62);
-        env(noop(alice),
-            seq(aliceSeq),
-            fee(aliceFee),
-            ter(telCAN_NOT_QUEUE_BALANCE));
+        aliceFee = env.le(alice)->getFieldAmount(sfBalance).xrp().drops() - (62);
+        env(noop(alice), seq(aliceSeq), fee(aliceFee), ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(*this, env, 4, 10, 6, 5);
 
         // Try to spend more than Alice can afford with all the other txs.
@@ -1195,10 +1135,7 @@ public:
         // the fee is checked against the balance
         aliceFee /= 5;
         ++aliceSeq;
-        env(noop(alice),
-            seq(aliceSeq),
-            fee(aliceFee),
-            ter(telCAN_NOT_QUEUE_BALANCE));
+        env(noop(alice), seq(aliceSeq), fee(aliceFee), ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(*this, env, 4, 10, 6, 5);
 
         env.close();
@@ -1231,12 +1168,8 @@ public:
         // Try to replace a middle item in the queue
         // with enough fee to bankrupt bob and make the
         // later transactions unable to pay their fees
-        std::int64_t bobFee =
-            env.le(bob)->getFieldAmount(sfBalance).xrp().drops() - (9 * 10 - 1);
-        env(noop(bob),
-            seq(bobSeq + 5),
-            fee(bobFee),
-            ter(telCAN_NOT_QUEUE_BALANCE));
+        std::int64_t bobFee = env.le(bob)->getFieldAmount(sfBalance).xrp().drops() - (9 * 10 - 1);
+        env(noop(bob), seq(bobSeq + 5), fee(bobFee), ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(*this, env, 10, 12, 7, 6);
 
         // Attempt to replace a middle item in the queue with enough fee
@@ -1245,12 +1178,8 @@ public:
         //
         // The attempt fails because the sum of bob's fees now exceeds the
         // (artificially lowered to 200 drops) account reserve.
-        bobFee =
-            env.le(bob)->getFieldAmount(sfBalance).xrp().drops() - (9 * 10);
-        env(noop(bob),
-            seq(bobSeq + 5),
-            fee(bobFee),
-            ter(telCAN_NOT_QUEUE_BALANCE));
+        bobFee = env.le(bob)->getFieldAmount(sfBalance).xrp().drops() - (9 * 10);
+        env(noop(bob), seq(bobSeq + 5), fee(bobFee), ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(*this, env, 10, 12, 7, 6);
 
         // Close the ledger and verify that the queued transactions succeed
@@ -1361,44 +1290,29 @@ public:
         // This next test should remain unchanged regardless of
         // transaction ordering
         BEAST_EXPECT(
-            aliceSeq + bobSeq + charlieSeq + dariaSeq + elmoSeq + fredSeq +
-                gwenSeq + hankSeq + 6 ==
-            env.seq(alice) + env.seq(bob) + env.seq(charlie) + env.seq(daria) +
-                env.seq(elmo) + env.seq(fred) + env.seq(gwen) + env.seq(hank));
+            aliceSeq + bobSeq + charlieSeq + dariaSeq + elmoSeq + fredSeq + gwenSeq + hankSeq + 6 ==
+            env.seq(alice) + env.seq(bob) + env.seq(charlie) + env.seq(daria) + env.seq(elmo) + env.seq(fred) +
+                env.seq(gwen) + env.seq(hank));
         // These tests may change if TxQ ordering is changed
         using namespace std::string_literals;
         BEAST_EXPECTS(
-            aliceSeq == env.seq(alice),
-            "alice: "s + std::to_string(aliceSeq) + ", " +
-                std::to_string(env.seq(alice)));
+            aliceSeq == env.seq(alice), "alice: "s + std::to_string(aliceSeq) + ", " + std::to_string(env.seq(alice)));
         BEAST_EXPECTS(
-            bobSeq + 1 == env.seq(bob),
-            "bob: "s + std::to_string(bobSeq) + ", " +
-                std::to_string(env.seq(bob)));
+            bobSeq + 1 == env.seq(bob), "bob: "s + std::to_string(bobSeq) + ", " + std::to_string(env.seq(bob)));
         BEAST_EXPECTS(
             charlieSeq + 2 == env.seq(charlie),
-            "charlie: "s + std::to_string(charlieSeq) + ", " +
-                std::to_string(env.seq(charlie)));
+            "charlie: "s + std::to_string(charlieSeq) + ", " + std::to_string(env.seq(charlie)));
         BEAST_EXPECTS(
             dariaSeq + 1 == env.seq(daria),
-            "daria: "s + std::to_string(dariaSeq) + ", " +
-                std::to_string(env.seq(daria)));
+            "daria: "s + std::to_string(dariaSeq) + ", " + std::to_string(env.seq(daria)));
         BEAST_EXPECTS(
-            elmoSeq + 1 == env.seq(elmo),
-            "elmo: "s + std::to_string(elmoSeq) + ", " +
-                std::to_string(env.seq(elmo)));
+            elmoSeq + 1 == env.seq(elmo), "elmo: "s + std::to_string(elmoSeq) + ", " + std::to_string(env.seq(elmo)));
         BEAST_EXPECTS(
-            fredSeq == env.seq(fred),
-            "fred: "s + std::to_string(fredSeq) + ", " +
-                std::to_string(env.seq(fred)));
+            fredSeq == env.seq(fred), "fred: "s + std::to_string(fredSeq) + ", " + std::to_string(env.seq(fred)));
         BEAST_EXPECTS(
-            gwenSeq == env.seq(gwen),
-            "gwen: "s + std::to_string(gwenSeq) + ", " +
-                std::to_string(env.seq(gwen)));
+            gwenSeq == env.seq(gwen), "gwen: "s + std::to_string(gwenSeq) + ", " + std::to_string(env.seq(gwen)));
         BEAST_EXPECTS(
-            hankSeq + 1 == env.seq(hank),
-            "hank: "s + std::to_string(hankSeq) + ", " +
-                std::to_string(env.seq(hank)));
+            hankSeq + 1 == env.seq(hank), "hank: "s + std::to_string(hankSeq) + ", " + std::to_string(env.seq(hank)));
 
         // Which sequences get incremented may change if TxQ ordering is
         // changed
@@ -1424,19 +1338,10 @@ public:
         BEAST_EXPECT(qTxCount1.size() <= 3);
 
         // Fill up the queue again
-        env(noop(alice),
-            seq(aliceSeq + qTxCount1[alice.id()]++),
-            fee(15),
-            queued);
+        env(noop(alice), seq(aliceSeq + qTxCount1[alice.id()]++), fee(15), queued);
         env(noop(bob), seq(bobSeq + qTxCount1[bob.id()]++), fee(15), queued);
-        env(noop(charlie),
-            seq(charlieSeq + qTxCount1[charlie.id()]++),
-            fee(15),
-            queued);
-        env(noop(daria),
-            seq(dariaSeq + qTxCount1[daria.id()]++),
-            fee(15),
-            queued);
+        env(noop(charlie), seq(charlieSeq + qTxCount1[charlie.id()]++), fee(15), queued);
+        env(noop(daria), seq(dariaSeq + qTxCount1[daria.id()]++), fee(15), queued);
         env(noop(elmo), seq(elmoSeq + qTxCount1[elmo.id()]++), fee(15), queued);
         env(noop(fred), seq(fredSeq + qTxCount1[fred.id()]++), fee(15), queued);
         env(noop(gwen), seq(gwenSeq + qTxCount1[gwen.id()]++), fee(15), queued);
@@ -1447,10 +1352,7 @@ public:
         // Add another transaction, with a higher fee,
         // Not high enough to get into the ledger, but high
         // enough to get into the queue (and kick somebody out)
-        env(noop(alice),
-            fee(100),
-            seq(aliceSeq + qTxCount1[alice.id()]++),
-            queued);
+        env(noop(alice), fee(100), seq(aliceSeq + qTxCount1[alice.id()]++), queued);
 
         checkMetrics(*this, env, 10, 10, 6, 5, minFeeLevel);
 
@@ -1467,50 +1369,34 @@ public:
         // This next test should remain unchanged regardless of
         // transaction ordering
         BEAST_EXPECT(
-            aliceSeq + bobSeq + charlieSeq + dariaSeq + elmoSeq + fredSeq +
-                gwenSeq + hankSeq + 7 ==
-            env.seq(alice) + env.seq(bob) + env.seq(charlie) + env.seq(daria) +
-                env.seq(elmo) + env.seq(fred) + env.seq(gwen) + env.seq(hank));
+            aliceSeq + bobSeq + charlieSeq + dariaSeq + elmoSeq + fredSeq + gwenSeq + hankSeq + 7 ==
+            env.seq(alice) + env.seq(bob) + env.seq(charlie) + env.seq(daria) + env.seq(elmo) + env.seq(fred) +
+                env.seq(gwen) + env.seq(hank));
         // These tests may change if TxQ ordering is changed
         BEAST_EXPECTS(
-            aliceSeq + qTxCount1[alice.id()] - qTxCount2[alice.id()] ==
-                env.seq(alice),
-            "alice: "s + std::to_string(aliceSeq) + ", " +
-                std::to_string(env.seq(alice)));
+            aliceSeq + qTxCount1[alice.id()] - qTxCount2[alice.id()] == env.seq(alice),
+            "alice: "s + std::to_string(aliceSeq) + ", " + std::to_string(env.seq(alice)));
         BEAST_EXPECTS(
             bobSeq + qTxCount1[bob.id()] - qTxCount2[bob.id()] == env.seq(bob),
-            "bob: "s + std::to_string(bobSeq) + ", " +
-                std::to_string(env.seq(bob)));
+            "bob: "s + std::to_string(bobSeq) + ", " + std::to_string(env.seq(bob)));
         BEAST_EXPECTS(
-            charlieSeq + qTxCount1[charlie.id()] - qTxCount2[charlie.id()] ==
-                env.seq(charlie),
-            "charlie: "s + std::to_string(charlieSeq) + ", " +
-                std::to_string(env.seq(charlie)));
+            charlieSeq + qTxCount1[charlie.id()] - qTxCount2[charlie.id()] == env.seq(charlie),
+            "charlie: "s + std::to_string(charlieSeq) + ", " + std::to_string(env.seq(charlie)));
         BEAST_EXPECTS(
-            dariaSeq + qTxCount1[daria.id()] - qTxCount2[daria.id()] ==
-                env.seq(daria),
-            "daria: "s + std::to_string(dariaSeq) + ", " +
-                std::to_string(env.seq(daria)));
+            dariaSeq + qTxCount1[daria.id()] - qTxCount2[daria.id()] == env.seq(daria),
+            "daria: "s + std::to_string(dariaSeq) + ", " + std::to_string(env.seq(daria)));
         BEAST_EXPECTS(
-            elmoSeq + qTxCount1[elmo.id()] - qTxCount2[elmo.id()] ==
-                env.seq(elmo),
-            "elmo: "s + std::to_string(elmoSeq) + ", " +
-                std::to_string(env.seq(elmo)));
+            elmoSeq + qTxCount1[elmo.id()] - qTxCount2[elmo.id()] == env.seq(elmo),
+            "elmo: "s + std::to_string(elmoSeq) + ", " + std::to_string(env.seq(elmo)));
         BEAST_EXPECTS(
-            fredSeq + qTxCount1[fred.id()] - qTxCount2[fred.id()] ==
-                env.seq(fred),
-            "fred: "s + std::to_string(fredSeq) + ", " +
-                std::to_string(env.seq(fred)));
+            fredSeq + qTxCount1[fred.id()] - qTxCount2[fred.id()] == env.seq(fred),
+            "fred: "s + std::to_string(fredSeq) + ", " + std::to_string(env.seq(fred)));
         BEAST_EXPECTS(
-            gwenSeq + qTxCount1[gwen.id()] - qTxCount2[gwen.id()] ==
-                env.seq(gwen),
-            "gwen: "s + std::to_string(gwenSeq) + ", " +
-                std::to_string(env.seq(gwen)));
+            gwenSeq + qTxCount1[gwen.id()] - qTxCount2[gwen.id()] == env.seq(gwen),
+            "gwen: "s + std::to_string(gwenSeq) + ", " + std::to_string(env.seq(gwen)));
         BEAST_EXPECTS(
-            hankSeq + qTxCount1[hank.id()] - qTxCount2[hank.id()] ==
-                env.seq(hank),
-            "hank: "s + std::to_string(hankSeq) + ", " +
-                std::to_string(env.seq(hank)));
+            hankSeq + qTxCount1[hank.id()] - qTxCount2[hank.id()] == env.seq(hank),
+            "hank: "s + std::to_string(hankSeq) + ", " + std::to_string(env.seq(hank)));
     }
 
     void
@@ -1534,9 +1420,7 @@ public:
         // Immediately after the fset, the sfAccountTxnID field
         // is still uninitialized, so preflight succeeds here,
         // and this txn fails because it can't be stored in the queue.
-        env(noop(alice),
-            json(R"({"AccountTxnID": "0"})"),
-            ter(telCAN_NOT_QUEUE));
+        env(noop(alice), json(R"({"AccountTxnID": "0"})"), ter(telCAN_NOT_QUEUE));
 
         checkMetrics(*this, env, 0, std::nullopt, 2, 1);
         env.close();
@@ -1583,10 +1467,8 @@ public:
                 // calculate median fee level.
                 if (i == 4)
                 {
-                    double const feeMultiplier =
-                        static_cast<double>(cost.drops()) / baseFee;
-                    medFeeLevel = FeeLevel64{static_cast<uint64_t>(
-                        feeMultiplier * baseFeeLevel.fee())};
+                    double const feeMultiplier = static_cast<double>(cost.drops()) / baseFee;
+                    medFeeLevel = FeeLevel64{static_cast<uint64_t>(feeMultiplier * baseFeeLevel.fee())};
                 }
 
                 env(noop(alice), fee(cost));
@@ -1675,8 +1557,7 @@ public:
         Env env(
             *this,
             makeConfig(
-                {{"minimum_txn_in_ledger_standalone", "3"}},
-                {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
+                {{"minimum_txn_in_ledger_standalone", "3"}}, {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -1716,16 +1597,12 @@ public:
         // up to Alice's reserve.
         env(offer(bob, drops(5000), USD(5000)),
             fee(openLedgerCost(env)),
-            require(
-                balance(alice, drops(250)), owners(alice, 1), lines(alice, 1)));
+            require(balance(alice, drops(250)), owners(alice, 1), lines(alice, 1)));
         checkMetrics(*this, env, 4, 6, 5, 3);
 
         // Try adding a new transaction.
         // Too many fees in flight.
-        env(noop(alice),
-            fee(drops(200)),
-            seq(aliceSeq + 1),
-            ter(telCAN_NOT_QUEUE_BALANCE));
+        env(noop(alice), fee(drops(200)), seq(aliceSeq + 1), ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(*this, env, 4, 6, 5, 3);
 
         // Close the ledger. All of Alice's transactions
@@ -1736,10 +1613,7 @@ public:
 
         // Still can't add a new transaction for Alice,
         // no matter the fee.
-        env(noop(alice),
-            fee(drops(200)),
-            seq(aliceSeq + 1),
-            ter(telCAN_NOT_QUEUE_BALANCE));
+        env(noop(alice), fee(drops(200)), seq(aliceSeq + 1), ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(*this, env, 1, 10, 3, 5);
 
         /* At this point, Alice's transaction is indefinitely
@@ -1798,15 +1672,9 @@ public:
             env(noop(alice), seq(aliceSeq + 1), queued);
 
             // Can't replace either queued transaction with a blocker
-            env(fset(alice, asfAccountTxnID),
-                seq(aliceSeq + 0),
-                fee(baseFee * 2),
-                ter(telCAN_NOT_QUEUE_BLOCKS));
+            env(fset(alice, asfAccountTxnID), seq(aliceSeq + 0), fee(baseFee * 2), ter(telCAN_NOT_QUEUE_BLOCKS));
 
-            env(regkey(alice, bob),
-                seq(aliceSeq + 1),
-                fee(baseFee * 2),
-                ter(telCAN_NOT_QUEUE_BLOCKS));
+            env(regkey(alice, bob), seq(aliceSeq + 1), fee(baseFee * 2), ter(telCAN_NOT_QUEUE_BLOCKS));
 
             // Can't append a blocker to the queue.
             env(signers(alice, 2, {{bob}, {charlie}, {daria}}),
@@ -1833,10 +1701,7 @@ public:
 
             // Since there's only one entry in the queue we can replace
             // that entry with a blocker.
-            env(regkey(alice, bob),
-                seq(aliceSeq + 0),
-                fee(baseFee * 2),
-                queued);
+            env(regkey(alice, bob), seq(aliceSeq + 0), fee(baseFee * 2), queued);
 
             // Now that there's a blocker in the queue we can't append to
             // the queue.
@@ -1846,10 +1711,7 @@ public:
             env(noop(bob), queued);
 
             // We can replace the blocker with a different blocker.
-            env(signers(alice, 2, {{bob}, {charlie}, {daria}}),
-                seq(aliceSeq + 0),
-                fee(baseFee * 2.6),
-                queued);
+            env(signers(alice, 2, {{bob}, {charlie}, {daria}}), seq(aliceSeq + 0), fee(baseFee * 2.6), queued);
 
             // Prove that the queue is still blocked.
             env(noop(alice), seq(aliceSeq + 1), ter(telCAN_NOT_QUEUE_BLOCKED));
@@ -1933,20 +1795,12 @@ public:
             env(noop(alice), ticket::use(tkt + 1), queued);
 
             // Can't replace either queued transaction with a blocker
-            env(fset(alice, asfAccountTxnID),
-                ticket::use(tkt + 1),
-                fee(baseFee * 2),
-                ter(telCAN_NOT_QUEUE_BLOCKS));
+            env(fset(alice, asfAccountTxnID), ticket::use(tkt + 1), fee(baseFee * 2), ter(telCAN_NOT_QUEUE_BLOCKS));
 
-            env(regkey(alice, bob),
-                ticket::use(tkt + 2),
-                fee(baseFee * 2),
-                ter(telCAN_NOT_QUEUE_BLOCKS));
+            env(regkey(alice, bob), ticket::use(tkt + 2), fee(baseFee * 2), ter(telCAN_NOT_QUEUE_BLOCKS));
 
             // Can't append a blocker to the queue.
-            env(signers(alice, 2, {{bob}, {charlie}, {daria}}),
-                fee(baseFee * 2),
-                ter(telCAN_NOT_QUEUE_BLOCKS));
+            env(signers(alice, 2, {{bob}, {charlie}, {daria}}), fee(baseFee * 2), ter(telCAN_NOT_QUEUE_BLOCKS));
 
             env(signers(alice, 2, {{bob}, {charlie}, {daria}}),
                 ticket::use(tkt + 0),
@@ -1977,41 +1831,26 @@ public:
 
             // Since there's an entry in the queue we cannot append a
             // blocker to the account's queue.
-            env(regkey(alice, bob),
-                fee(baseFee * 2),
-                ter(telCAN_NOT_QUEUE_BLOCKS));
-            env(regkey(alice, bob),
-                ticket::use(tkt + 1),
-                fee(baseFee * 2),
-                ter(telCAN_NOT_QUEUE_BLOCKS));
+            env(regkey(alice, bob), fee(baseFee * 2), ter(telCAN_NOT_QUEUE_BLOCKS));
+            env(regkey(alice, bob), ticket::use(tkt + 1), fee(baseFee * 2), ter(telCAN_NOT_QUEUE_BLOCKS));
 
             // However we can _replace_ that lone entry with a blocker.
-            env(regkey(alice, bob),
-                ticket::use(tkt + 0),
-                fee(baseFee * 2),
-                queued);
+            env(regkey(alice, bob), ticket::use(tkt + 0), fee(baseFee * 2), queued);
 
             // Now that there's a blocker in the queue we can't append to
             // the queue.
             env(noop(alice), ter(telCAN_NOT_QUEUE_BLOCKED));
-            env(noop(alice),
-                ticket::use(tkt + 1),
-                ter(telCAN_NOT_QUEUE_BLOCKED));
+            env(noop(alice), ticket::use(tkt + 1), ter(telCAN_NOT_QUEUE_BLOCKED));
 
             // Other accounts are unaffected.
             env(noop(bob), queued);
 
             // We can replace the blocker with a different blocker.
-            env(signers(alice, 2, {{bob}, {charlie}, {daria}}),
-                ticket::use(tkt + 0),
-                fee(baseFee * 2.6),
-                queued);
+            env(signers(alice, 2, {{bob}, {charlie}, {daria}}), ticket::use(tkt + 0), fee(baseFee * 2.6), queued);
 
             // Prove that the queue is still blocked.
             env(noop(alice), ter(telCAN_NOT_QUEUE_BLOCKED));
-            env(noop(alice),
-                ticket::use(tkt + 1),
-                ter(telCAN_NOT_QUEUE_BLOCKED));
+            env(noop(alice), ticket::use(tkt + 1), ter(telCAN_NOT_QUEUE_BLOCKED));
 
             // We can replace the blocker with a non-blocker.  Then we can
             // successfully append to the queue.
@@ -2041,9 +1880,7 @@ public:
 
             // Since there's a blocker in the queue we can't append to
             // the queue.
-            env(noop(alice),
-                ticket::use(tkt + 1),
-                ter(telCAN_NOT_QUEUE_BLOCKED));
+            env(noop(alice), ticket::use(tkt + 1), ter(telCAN_NOT_QUEUE_BLOCKED));
 
             // Other accounts are unaffected.
             env(noop(bob), queued);
@@ -2068,8 +1905,7 @@ public:
         Env env(
             *this,
             makeConfig(
-                {{"minimum_txn_in_ledger_standalone", "3"}},
-                {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
+                {{"minimum_txn_in_ledger_standalone", "3"}}, {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
 
         auto alice = Account("alice");
         auto charlie = Account("charlie");
@@ -2143,10 +1979,7 @@ public:
 
         // So even a noop will look like alice
         // doesn't have the balance to pay the fee
-        env(noop(alice),
-            fee(drops(51)),
-            seq(aliceSeq + 2),
-            ter(terINSUF_FEE_B));
+        env(noop(alice), fee(drops(51)), seq(aliceSeq + 2), ter(terINSUF_FEE_B));
         checkMetrics(*this, env, 2, limit * 2, limit + 1, limit);
 
         env.close();
@@ -2176,10 +2009,7 @@ public:
 
         // So even a noop will look like alice
         // doesn't have the balance to pay the fee
-        env(noop(alice),
-            fee(drops(51)),
-            seq(aliceSeq + 1),
-            ter(telCAN_NOT_QUEUE_BALANCE));
+        env(noop(alice), fee(drops(51)), seq(aliceSeq + 1), ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(*this, env, 1, limit * 2, limit + 1, limit);
 
         env.close();
@@ -2267,8 +2097,7 @@ public:
         checkMetrics(*this, env, 0, limit * 2, 2, limit);
 
         // The payment succeeds
-        env.require(
-            balance(alice, aliceBal - XRP(500) - drops(20)), owners(alice, 0));
+        env.require(balance(alice, aliceBal - XRP(500) - drops(20)), owners(alice, 0));
 
         //////////////////////////////////////////
         // Large IOU payment allows later txs
@@ -2427,12 +2256,7 @@ public:
         env.memoize("carol");
         {
             auto const jtx = env.jt(offer_cancel(alice, 3), seq(5), fee(10));
-            auto const pf = preflight(
-                env.app(),
-                env.current()->rules(),
-                *jtx.stx,
-                tapNONE,
-                env.journal);
+            auto const pf = preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
@@ -2442,14 +2266,8 @@ public:
         {
             auto USD = alice["USD"];
 
-            auto const jtx =
-                env.jt(trust("carol", USD(50000000)), seq(1), fee(10));
-            auto const pf = preflight(
-                env.app(),
-                env.current()->rules(),
-                *jtx.stx,
-                tapNONE,
-                env.journal);
+            auto const jtx = env.jt(trust("carol", USD(50000000)), seq(1), fee(10));
+            auto const pf = preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
@@ -2458,12 +2276,7 @@ public:
 
         {
             auto const jtx = env.jt(ticket::create(alice, 1), seq(1), fee(10));
-            auto const pf = preflight(
-                env.app(),
-                env.current()->rules(),
-                *jtx.stx,
-                tapNONE,
-                env.journal);
+            auto const pf = preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
@@ -2571,18 +2384,9 @@ public:
         // Charlie is paying a high enough fee to go straight into the
         // ledger in order to get into the vicinity of an assert which
         // should no longer fire :-).
-        env(noop(charlie),
-            fee(baseFee * 800),
-            seq(charlieSeq - 1),
-            ter(tefPAST_SEQ));
-        env(noop(charlie),
-            fee(baseFee * 800),
-            seq(charlieSeq + 1),
-            ter(terPRE_SEQ));
-        env(noop(charlie),
-            fee(baseFee * 800),
-            seq(charlieSeq),
-            ter(tesSUCCESS));
+        env(noop(charlie), fee(baseFee * 800), seq(charlieSeq - 1), ter(tefPAST_SEQ));
+        env(noop(charlie), fee(baseFee * 800), seq(charlieSeq + 1), ter(terPRE_SEQ));
+        env(noop(charlie), fee(baseFee * 800), seq(charlieSeq), ter(tesSUCCESS));
     }
 
     void
@@ -2595,13 +2399,10 @@ public:
 
         auto fee = env.rpc("fee");
 
-        if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-            BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
+        if (BEAST_EXPECT(fee.isMember(jss::result)) && BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
         {
             auto const& result = fee[jss::result];
-            BEAST_EXPECT(
-                result.isMember(jss::ledger_current_index) &&
-                result[jss::ledger_current_index] == 3);
+            BEAST_EXPECT(result.isMember(jss::ledger_current_index) && result[jss::ledger_current_index] == 3);
             BEAST_EXPECT(result.isMember(jss::current_ledger_size));
             BEAST_EXPECT(result.isMember(jss::current_queue_size));
             BEAST_EXPECT(result.isMember(jss::expected_ledger_size));
@@ -2624,13 +2425,10 @@ public:
 
         fee = env.rpc("fee");
 
-        if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-            BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
+        if (BEAST_EXPECT(fee.isMember(jss::result)) && BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
         {
             auto const& result = fee[jss::result];
-            BEAST_EXPECT(
-                result.isMember(jss::ledger_current_index) &&
-                result[jss::ledger_current_index] == 4);
+            BEAST_EXPECT(result.isMember(jss::ledger_current_index) && result[jss::ledger_current_index] == 4);
             BEAST_EXPECT(result.isMember(jss::current_ledger_size));
             BEAST_EXPECT(result.isMember(jss::current_queue_size));
             BEAST_EXPECT(result.isMember(jss::expected_ledger_size));
@@ -2686,14 +2484,8 @@ public:
         BEAST_EXPECT(env.current()->header().seq == 3);
         env(noop(alice), seq(aliceSeq), last_ledger_seq(5), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 1), last_ledger_seq(5), ter(terQUEUED));
-        env(noop(alice),
-            seq(aliceSeq + 2),
-            last_ledger_seq(10),
-            ter(terQUEUED));
-        env(noop(alice),
-            seq(aliceSeq + 3),
-            last_ledger_seq(11),
-            ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 2), last_ledger_seq(10), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 3), last_ledger_seq(11), ter(terQUEUED));
         checkMetrics(*this, env, 4, std::nullopt, 2, 1);
         auto const bobSeq = env.seq(bob);
         // Ledger 4 gets 3,
@@ -2719,9 +2511,7 @@ public:
         env(noop(alice), seq(aliceSeq + 1), ter(terPRE_SEQ));
 
         // Cannot fill the gap with a blocker since Alice's queue is not empty.
-        env(fset(alice, asfAccountTxnID),
-            seq(aliceSeq),
-            ter(telCAN_NOT_QUEUE_BLOCKS));
+        env(fset(alice, asfAccountTxnID), seq(aliceSeq), ter(telCAN_NOT_QUEUE_BLOCKS));
         checkMetrics(*this, env, 2, 40, 5, 4);
 
         // However we can fill the gap with a non-blocker.
@@ -2729,9 +2519,7 @@ public:
         checkMetrics(*this, env, 3, 40, 5, 4);
 
         // Attempt to queue up a new aliceSeq + 1 tx that's a blocker.
-        env(fset(alice, asfAccountTxnID),
-            seq(aliceSeq + 1),
-            ter(telCAN_NOT_QUEUE_BLOCKS));
+        env(fset(alice, asfAccountTxnID), seq(aliceSeq + 1), ter(telCAN_NOT_QUEUE_BLOCKS));
         checkMetrics(*this, env, 3, 40, 5, 4);
 
         // Queue up a non-blocker replacement for aliceSeq + 1.
@@ -2761,9 +2549,7 @@ public:
         testcase("full queue gap handling");
 
         auto cfg = makeConfig(
-            {{"minimum_txn_in_ledger_standalone", "1"},
-             {"ledgers_in_queue", "10"},
-             {"maximum_txn_per_account", "11"}});
+            {{"minimum_txn_in_ledger_standalone", "1"}, {"ledgers_in_queue", "10"}, {"maximum_txn_per_account", "11"}});
         cfg->FEES.reference_fee = 10;
         Env env(*this, std::move(cfg));
 
@@ -2783,46 +2569,16 @@ public:
 
         // Start by procuring tickets for alice to use to keep her queue full
         // without affecting the sequence gap that will appear later.
-        env(ticket::create(alice, 11),
-            seq(aliceSeq + 0),
-            fee(baseFee * 20 + 1),
-            ter(terQUEUED));
-        env(noop(alice),
-            seq(aliceSeq + 11),
-            last_ledger_seq(11),
-            ter(terQUEUED));
-        env(noop(alice),
-            seq(aliceSeq + 12),
-            last_ledger_seq(11),
-            ter(terQUEUED));
-        env(noop(alice),
-            seq(aliceSeq + 13),
-            last_ledger_seq(11),
-            ter(terQUEUED));
-        env(noop(alice),
-            seq(aliceSeq + 14),
-            last_ledger_seq(11),
-            ter(terQUEUED));
-        env(noop(alice),
-            seq(aliceSeq + 15),
-            last_ledger_seq(11),
-            ter(terQUEUED));
-        env(noop(alice),
-            seq(aliceSeq + 16),
-            last_ledger_seq(5),
-            ter(terQUEUED));
-        env(noop(alice),
-            seq(aliceSeq + 17),
-            last_ledger_seq(5),
-            ter(terQUEUED));
-        env(noop(alice),
-            seq(aliceSeq + 18),
-            last_ledger_seq(5),
-            ter(terQUEUED));
-        env(noop(alice),
-            seq(aliceSeq + 19),
-            last_ledger_seq(11),
-            ter(terQUEUED));
+        env(ticket::create(alice, 11), seq(aliceSeq + 0), fee(baseFee * 20 + 1), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 11), last_ledger_seq(11), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 12), last_ledger_seq(11), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 13), last_ledger_seq(11), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 14), last_ledger_seq(11), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 15), last_ledger_seq(11), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 16), last_ledger_seq(5), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 17), last_ledger_seq(5), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 18), last_ledger_seq(5), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 19), last_ledger_seq(11), ter(terQUEUED));
         checkMetrics(*this, env, 10, std::nullopt, 2, 1);
 
         auto const bobSeq = env.seq(bob);
@@ -2945,9 +2701,7 @@ public:
                     json(jss::LastLedgerSequence, lastLedgerSeq),
                     ter(terQUEUED))(submitParams);
             else
-                envs(
-                    noop(alice), fee(baseFee * 100), seq(none), ter(terQUEUED))(
-                    submitParams);
+                envs(noop(alice), fee(baseFee * 100), seq(none), ter(terQUEUED))(submitParams);
         }
         checkMetrics(*this, env, 5, std::nullopt, 7, 6);
         {
@@ -2957,12 +2711,10 @@ public:
             for (auto const& tx : aliceStat)
             {
                 BEAST_EXPECT(tx.seqProxy == seq);
-                BEAST_EXPECT(
-                    tx.feeLevel == FeeLevel64{baseFeeLevel.fee() * 100});
+                BEAST_EXPECT(tx.feeLevel == FeeLevel64{baseFeeLevel.fee() * 100});
                 if (seq.value() == aliceSeq + 2)
                 {
-                    BEAST_EXPECT(
-                        tx.lastValid && *tx.lastValid == lastLedgerSeq);
+                    BEAST_EXPECT(tx.lastValid && *tx.lastValid == lastLedgerSeq);
                 }
                 else
                 {
@@ -3012,15 +2764,13 @@ public:
                     ++seq;
 
                 BEAST_EXPECT(tx.seqProxy.isSeq() && tx.seqProxy.value() == seq);
-                BEAST_EXPECT(
-                    tx.feeLevel == FeeLevel64{baseFeeLevel.fee() * 100});
+                BEAST_EXPECT(tx.feeLevel == FeeLevel64{baseFeeLevel.fee() * 100});
                 BEAST_EXPECT(!tx.lastValid);
                 ++seq;
             }
         }
         // Now, fill the gap.
-        envs(noop(alice), fee(baseFee * 100), seq(none), ter(terQUEUED))(
-            submitParams);
+        envs(noop(alice), fee(baseFee * 100), seq(none), ter(terQUEUED))(submitParams);
         checkMetrics(*this, env, 5, 18, 10, 9);
         {
             auto aliceStat = txQ.getAccountTxs(alice.id());
@@ -3077,20 +2827,14 @@ public:
 
         {
             // account_info without the "queue" argument.
-            auto const info =
-                env.rpc("json", "account_info", to_string(withoutQueue));
-            BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
+            auto const info = env.rpc("json", "account_info", to_string(withoutQueue));
+            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[jss::result].isMember(jss::queue_data));
         }
         {
             // account_info with the "queue" argument.
-            auto const info =
-                env.rpc("json", "account_info", to_string(withQueue));
-            BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
+            auto const info = env.rpc("json", "account_info", to_string(withQueue));
+            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& result = info[jss::result];
             BEAST_EXPECT(result.isMember(jss::queue_data));
             auto const& queue_data = result[jss::queue_data];
@@ -3109,11 +2853,8 @@ public:
         checkMetrics(*this, env, 0, 6, 4, 3);
 
         {
-            auto const info =
-                env.rpc("json", "account_info", to_string(withQueue));
-            BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
+            auto const info = env.rpc("json", "account_info", to_string(withQueue));
+            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& result = info[jss::result];
             BEAST_EXPECT(result.isMember(jss::queue_data));
             auto const& queue_data = result[jss::queue_data];
@@ -3128,22 +2869,15 @@ public:
         }
 
         auto submitParams = Json::Value(Json::objectValue);
-        envs(noop(alice), fee(baseFee * 10), seq(none), ter(terQUEUED))(
-            submitParams);
-        envs(noop(alice), fee(baseFee * 10), seq(none), ter(terQUEUED))(
-            submitParams);
-        envs(noop(alice), fee(baseFee * 10), seq(none), ter(terQUEUED))(
-            submitParams);
-        envs(noop(alice), fee(baseFee * 10), seq(none), ter(terQUEUED))(
-            submitParams);
+        envs(noop(alice), fee(baseFee * 10), seq(none), ter(terQUEUED))(submitParams);
+        envs(noop(alice), fee(baseFee * 10), seq(none), ter(terQUEUED))(submitParams);
+        envs(noop(alice), fee(baseFee * 10), seq(none), ter(terQUEUED))(submitParams);
+        envs(noop(alice), fee(baseFee * 10), seq(none), ter(terQUEUED))(submitParams);
         checkMetrics(*this, env, 4, 6, 4, 3);
 
         {
-            auto const info =
-                env.rpc("json", "account_info", to_string(withQueue));
-            BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
+            auto const info = env.rpc("json", "account_info", to_string(withQueue));
+            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& result = info[jss::result];
             auto const& data = result[jss::account_data];
             BEAST_EXPECT(result.isMember(jss::queue_data));
@@ -3152,19 +2886,15 @@ public:
             BEAST_EXPECT(queue_data.isMember(jss::txn_count));
             BEAST_EXPECT(queue_data[jss::txn_count] == 4);
             BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
-            BEAST_EXPECT(
-                queue_data[jss::lowest_sequence] == data[jss::Sequence]);
+            BEAST_EXPECT(queue_data[jss::lowest_sequence] == data[jss::Sequence]);
             BEAST_EXPECT(queue_data.isMember(jss::highest_sequence));
             BEAST_EXPECT(
                 queue_data[jss::highest_sequence] ==
-                data[jss::Sequence].asUInt() +
-                    queue_data[jss::txn_count].asUInt() - 1);
+                data[jss::Sequence].asUInt() + queue_data[jss::txn_count].asUInt() - 1);
             BEAST_EXPECT(queue_data.isMember(jss::auth_change_queued));
             BEAST_EXPECT(queue_data[jss::auth_change_queued] == false);
             BEAST_EXPECT(queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(
-                queue_data[jss::max_spend_drops_total] ==
-                std::to_string(baseFee * 40));
+            BEAST_EXPECT(queue_data[jss::max_spend_drops_total] == std::to_string(baseFee * 40));
             BEAST_EXPECT(queue_data.isMember(jss::transactions));
             auto const& queued = queue_data[jss::transactions];
             BEAST_EXPECT(queued.size() == queue_data[jss::txn_count]);
@@ -3172,16 +2902,13 @@ public:
             {
                 auto const& item = queued[i];
                 BEAST_EXPECT(item[jss::seq] == data[jss::Sequence].asInt() + i);
-                BEAST_EXPECT(
-                    item[jss::fee_level] ==
-                    std::to_string(baseFeeLevel.fee() * 10));
+                BEAST_EXPECT(item[jss::fee_level] == std::to_string(baseFeeLevel.fee() * 10));
                 BEAST_EXPECT(!item.isMember(jss::LastLedgerSequence));
 
                 BEAST_EXPECT(item.isMember(jss::fee));
                 BEAST_EXPECT(item[jss::fee] == std::to_string(baseFee * 10));
                 BEAST_EXPECT(item.isMember(jss::max_spend_drops));
-                BEAST_EXPECT(
-                    item[jss::max_spend_drops] == std::to_string(baseFee * 10));
+                BEAST_EXPECT(item[jss::max_spend_drops] == std::to_string(baseFee * 10));
                 BEAST_EXPECT(item.isMember(jss::auth_change));
                 BEAST_EXPECT(item[jss::auth_change].asBool() == false);
             }
@@ -3203,11 +2930,8 @@ public:
         checkMetrics(*this, env, 1, 8, 5, 4);
 
         {
-            auto const info =
-                env.rpc("json", "account_info", to_string(withQueue));
-            BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
+            auto const info = env.rpc("json", "account_info", to_string(withQueue));
+            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& result = info[jss::result];
             auto const& data = result[jss::account_data];
             BEAST_EXPECT(result.isMember(jss::queue_data));
@@ -3216,19 +2940,15 @@ public:
             BEAST_EXPECT(queue_data.isMember(jss::txn_count));
             BEAST_EXPECT(queue_data[jss::txn_count] == 1);
             BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
-            BEAST_EXPECT(
-                queue_data[jss::lowest_sequence] == data[jss::Sequence]);
+            BEAST_EXPECT(queue_data[jss::lowest_sequence] == data[jss::Sequence]);
             BEAST_EXPECT(queue_data.isMember(jss::highest_sequence));
             BEAST_EXPECT(
                 queue_data[jss::highest_sequence] ==
-                data[jss::Sequence].asUInt() +
-                    queue_data[jss::txn_count].asUInt() - 1);
+                data[jss::Sequence].asUInt() + queue_data[jss::txn_count].asUInt() - 1);
             BEAST_EXPECT(queue_data.isMember(jss::auth_change_queued));
             BEAST_EXPECT(queue_data[jss::auth_change_queued] == true);
             BEAST_EXPECT(queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(
-                queue_data[jss::max_spend_drops_total] ==
-                std::to_string(baseFee * 10));
+            BEAST_EXPECT(queue_data[jss::max_spend_drops_total] == std::to_string(baseFee * 10));
             BEAST_EXPECT(queue_data.isMember(jss::transactions));
             auto const& queued = queue_data[jss::transactions];
             BEAST_EXPECT(queued.size() == queue_data[jss::txn_count]);
@@ -3236,14 +2956,11 @@ public:
             {
                 auto const& item = queued[i];
                 BEAST_EXPECT(item[jss::seq] == data[jss::Sequence].asInt() + i);
-                BEAST_EXPECT(
-                    item[jss::fee_level] ==
-                    std::to_string(baseFeeLevel.fee() * 10));
+                BEAST_EXPECT(item[jss::fee_level] == std::to_string(baseFeeLevel.fee() * 10));
                 BEAST_EXPECT(item.isMember(jss::fee));
                 BEAST_EXPECT(item[jss::fee] == std::to_string(baseFee * 10));
                 BEAST_EXPECT(item.isMember(jss::max_spend_drops));
-                BEAST_EXPECT(
-                    item[jss::max_spend_drops] == std::to_string(baseFee * 10));
+                BEAST_EXPECT(item[jss::max_spend_drops] == std::to_string(baseFee * 10));
                 BEAST_EXPECT(item.isMember(jss::auth_change));
 
                 if (i == queued.size() - 1)
@@ -3260,19 +2977,12 @@ public:
             }
         }
 
-        envs(
-            noop(alice),
-            fee(baseFee * 10),
-            seq(none),
-            ter(telCAN_NOT_QUEUE_BLOCKED))(submitParams);
+        envs(noop(alice), fee(baseFee * 10), seq(none), ter(telCAN_NOT_QUEUE_BLOCKED))(submitParams);
         checkMetrics(*this, env, 1, 8, 5, 4);
 
         {
-            auto const info =
-                env.rpc("json", "account_info", to_string(withQueue));
-            BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
+            auto const info = env.rpc("json", "account_info", to_string(withQueue));
+            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& result = info[jss::result];
             auto const& data = result[jss::account_data];
             BEAST_EXPECT(result.isMember(jss::queue_data));
@@ -3281,19 +2991,15 @@ public:
             BEAST_EXPECT(queue_data.isMember(jss::txn_count));
             BEAST_EXPECT(queue_data[jss::txn_count] == 1);
             BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
-            BEAST_EXPECT(
-                queue_data[jss::lowest_sequence] == data[jss::Sequence]);
+            BEAST_EXPECT(queue_data[jss::lowest_sequence] == data[jss::Sequence]);
             BEAST_EXPECT(queue_data.isMember(jss::highest_sequence));
             BEAST_EXPECT(
                 queue_data[jss::highest_sequence] ==
-                data[jss::Sequence].asUInt() +
-                    queue_data[jss::txn_count].asUInt() - 1);
+                data[jss::Sequence].asUInt() + queue_data[jss::txn_count].asUInt() - 1);
             BEAST_EXPECT(queue_data.isMember(jss::auth_change_queued));
             BEAST_EXPECT(queue_data[jss::auth_change_queued].asBool());
             BEAST_EXPECT(queue_data.isMember(jss::max_spend_drops_total));
-            BEAST_EXPECT(
-                queue_data[jss::max_spend_drops_total] ==
-                std::to_string(baseFee * 10));
+            BEAST_EXPECT(queue_data[jss::max_spend_drops_total] == std::to_string(baseFee * 10));
             BEAST_EXPECT(queue_data.isMember(jss::transactions));
             auto const& queued = queue_data[jss::transactions];
             BEAST_EXPECT(queued.size() == queue_data[jss::txn_count]);
@@ -3301,19 +3007,14 @@ public:
             {
                 auto const& item = queued[i];
                 BEAST_EXPECT(item[jss::seq] == data[jss::Sequence].asInt() + i);
-                BEAST_EXPECT(
-                    item[jss::fee_level] ==
-                    std::to_string(baseFeeLevel.fee() * 10));
+                BEAST_EXPECT(item[jss::fee_level] == std::to_string(baseFeeLevel.fee() * 10));
 
                 if (i == queued.size() - 1)
                 {
                     BEAST_EXPECT(item.isMember(jss::fee));
-                    BEAST_EXPECT(
-                        item[jss::fee] == std::to_string(baseFee * 10));
+                    BEAST_EXPECT(item[jss::fee] == std::to_string(baseFee * 10));
                     BEAST_EXPECT(item.isMember(jss::max_spend_drops));
-                    BEAST_EXPECT(
-                        item[jss::max_spend_drops] ==
-                        std::to_string(baseFee * 10));
+                    BEAST_EXPECT(item[jss::max_spend_drops] == std::to_string(baseFee * 10));
                     BEAST_EXPECT(item.isMember(jss::auth_change));
                     BEAST_EXPECT(item[jss::auth_change].asBool());
                     BEAST_EXPECT(item.isMember(jss::LastLedgerSequence));
@@ -3322,12 +3023,9 @@ public:
                 else
                 {
                     BEAST_EXPECT(item.isMember(jss::fee));
-                    BEAST_EXPECT(
-                        item[jss::fee] == std::to_string(baseFee * 10));
+                    BEAST_EXPECT(item[jss::fee] == std::to_string(baseFee * 10));
                     BEAST_EXPECT(item.isMember(jss::max_spend_drops));
-                    BEAST_EXPECT(
-                        item[jss::max_spend_drops] ==
-                        std::to_string(baseFee * 10));
+                    BEAST_EXPECT(item[jss::max_spend_drops] == std::to_string(baseFee * 10));
                     BEAST_EXPECT(item.isMember(jss::auth_change));
                     BEAST_EXPECT(!item[jss::auth_change].asBool());
                     BEAST_EXPECT(!item.isMember(jss::LastLedgerSequence));
@@ -3336,11 +3034,8 @@ public:
         }
 
         {
-            auto const info =
-                env.rpc("json", "account_info", to_string(prevLedgerWithQueue));
-            BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                RPC::contains_error(info[jss::result]));
+            auto const info = env.rpc("json", "account_info", to_string(prevLedgerWithQueue));
+            BEAST_EXPECT(info.isMember(jss::result) && RPC::contains_error(info[jss::result]));
         }
 
         env.close();
@@ -3349,11 +3044,8 @@ public:
         checkMetrics(*this, env, 0, 10, 0, 5);
 
         {
-            auto const info =
-                env.rpc("json", "account_info", to_string(withQueue));
-            BEAST_EXPECT(
-                info.isMember(jss::result) &&
-                info[jss::result].isMember(jss::account_data));
+            auto const info = env.rpc("json", "account_info", to_string(withQueue));
+            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& result = info[jss::result];
             BEAST_EXPECT(result.isMember(jss::queue_data));
             auto const& queue_data = result[jss::queue_data];
@@ -3384,12 +3076,9 @@ public:
 
         {
             auto const server_info = env.rpc("server_info");
-            BEAST_EXPECT(
-                server_info.isMember(jss::result) &&
-                server_info[jss::result].isMember(jss::info));
+            BEAST_EXPECT(server_info.isMember(jss::result) && server_info[jss::result].isMember(jss::info));
             auto const& info = server_info[jss::result][jss::info];
-            BEAST_EXPECT(
-                info.isMember(jss::load_factor) && info[jss::load_factor] == 1);
+            BEAST_EXPECT(info.isMember(jss::load_factor) && info[jss::load_factor] == 1);
             BEAST_EXPECT(!info.isMember(jss::load_factor_server));
             BEAST_EXPECT(!info.isMember(jss::load_factor_local));
             BEAST_EXPECT(!info.isMember(jss::load_factor_net));
@@ -3398,23 +3087,14 @@ public:
         {
             auto const server_state = env.rpc("server_state");
             auto const& state = server_state[jss::result][jss::state];
+            BEAST_EXPECT(state.isMember(jss::load_factor) && state[jss::load_factor] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_base) && state[jss::load_base] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_server) && state[jss::load_factor_server] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor) &&
-                state[jss::load_factor] == 256);
+                state.isMember(jss::load_factor_fee_escalation) && state[jss::load_factor_fee_escalation] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_queue) && state[jss::load_factor_fee_queue] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_base) && state[jss::load_base] == 256);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_server) &&
-                state[jss::load_factor_server] == 256);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_escalation) &&
-                state[jss::load_factor_fee_escalation] == 256);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_queue) &&
-                state[jss::load_factor_fee_queue] == 256);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_reference) &&
-                state[jss::load_factor_fee_reference] == 256);
+                state.isMember(jss::load_factor_fee_reference) && state[jss::load_factor_fee_reference] == 256);
         }
 
         checkMetrics(*this, env, 0, 6, 0, 3);
@@ -3425,98 +3105,62 @@ public:
         auto aliceSeq = env.seq(alice);
         auto submitParams = Json::Value(Json::objectValue);
         for (auto i = 0; i < 4; ++i)
-            envs(
-                noop(alice),
-                fee(baseFee * 10),
-                seq(aliceSeq + i),
-                ter(terQUEUED))(submitParams);
+            envs(noop(alice), fee(baseFee * 10), seq(aliceSeq + i), ter(terQUEUED))(submitParams);
         checkMetrics(*this, env, 4, 6, 4, 3);
 
         {
             auto const server_info = env.rpc("server_info");
-            BEAST_EXPECT(
-                server_info.isMember(jss::result) &&
-                server_info[jss::result].isMember(jss::info));
+            BEAST_EXPECT(server_info.isMember(jss::result) && server_info[jss::result].isMember(jss::info));
             auto const& info = server_info[jss::result][jss::info];
             // Avoid double rounding issues by comparing to a range.
             BEAST_EXPECT(
-                info.isMember(jss::load_factor) &&
-                info[jss::load_factor] > 888.88 &&
-                info[jss::load_factor] < 888.89);
-            BEAST_EXPECT(
-                info.isMember(jss::load_factor_server) &&
-                info[jss::load_factor_server] == 1);
+                info.isMember(jss::load_factor) && info[jss::load_factor] > 888.88 && info[jss::load_factor] < 888.89);
+            BEAST_EXPECT(info.isMember(jss::load_factor_server) && info[jss::load_factor_server] == 1);
             BEAST_EXPECT(!info.isMember(jss::load_factor_local));
             BEAST_EXPECT(!info.isMember(jss::load_factor_net));
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_fee_escalation) &&
-                info[jss::load_factor_fee_escalation] > 888.88 &&
+                info.isMember(jss::load_factor_fee_escalation) && info[jss::load_factor_fee_escalation] > 888.88 &&
                 info[jss::load_factor_fee_escalation] < 888.89);
         }
         {
             auto const server_state = env.rpc("server_state");
             auto const& state = server_state[jss::result][jss::state];
+            BEAST_EXPECT(state.isMember(jss::load_factor) && state[jss::load_factor] == 227555);
+            BEAST_EXPECT(state.isMember(jss::load_base) && state[jss::load_base] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_server) && state[jss::load_factor_server] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor) &&
-                state[jss::load_factor] == 227555);
+                state.isMember(jss::load_factor_fee_escalation) && state[jss::load_factor_fee_escalation] == 227555);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_queue) && state[jss::load_factor_fee_queue] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_base) && state[jss::load_base] == 256);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_server) &&
-                state[jss::load_factor_server] == 256);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_escalation) &&
-                state[jss::load_factor_fee_escalation] == 227555);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_queue) &&
-                state[jss::load_factor_fee_queue] == 256);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_reference) &&
-                state[jss::load_factor_fee_reference] == 256);
+                state.isMember(jss::load_factor_fee_reference) && state[jss::load_factor_fee_reference] == 256);
         }
 
         env.app().getFeeTrack().setRemoteFee(256000);
 
         {
             auto const server_info = env.rpc("server_info");
-            BEAST_EXPECT(
-                server_info.isMember(jss::result) &&
-                server_info[jss::result].isMember(jss::info));
+            BEAST_EXPECT(server_info.isMember(jss::result) && server_info[jss::result].isMember(jss::info));
             auto const& info = server_info[jss::result][jss::info];
             // Avoid double rounding issues by comparing to a range.
-            BEAST_EXPECT(
-                info.isMember(jss::load_factor) &&
-                info[jss::load_factor] == 1000);
+            BEAST_EXPECT(info.isMember(jss::load_factor) && info[jss::load_factor] == 1000);
             BEAST_EXPECT(!info.isMember(jss::load_factor_server));
             BEAST_EXPECT(!info.isMember(jss::load_factor_local));
+            BEAST_EXPECT(info.isMember(jss::load_factor_net) && info[jss::load_factor_net] == 1000);
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_net) &&
-                info[jss::load_factor_net] == 1000);
-            BEAST_EXPECT(
-                info.isMember(jss::load_factor_fee_escalation) &&
-                info[jss::load_factor_fee_escalation] > 888.88 &&
+                info.isMember(jss::load_factor_fee_escalation) && info[jss::load_factor_fee_escalation] > 888.88 &&
                 info[jss::load_factor_fee_escalation] < 888.89);
         }
         {
             auto const server_state = env.rpc("server_state");
             auto const& state = server_state[jss::result][jss::state];
+            BEAST_EXPECT(state.isMember(jss::load_factor) && state[jss::load_factor] == 256000);
+            BEAST_EXPECT(state.isMember(jss::load_base) && state[jss::load_base] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_server) && state[jss::load_factor_server] == 256000);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor) &&
-                state[jss::load_factor] == 256000);
+                state.isMember(jss::load_factor_fee_escalation) && state[jss::load_factor_fee_escalation] == 227555);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_queue) && state[jss::load_factor_fee_queue] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_base) && state[jss::load_base] == 256);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_server) &&
-                state[jss::load_factor_server] == 256000);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_escalation) &&
-                state[jss::load_factor_fee_escalation] == 227555);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_queue) &&
-                state[jss::load_factor_fee_queue] == 256);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_reference) &&
-                state[jss::load_factor_fee_reference] == 256);
+                state.isMember(jss::load_factor_fee_reference) && state[jss::load_factor_fee_reference] == 256);
         }
 
         env.app().getFeeTrack().setRemoteFee(256);
@@ -3528,65 +3172,48 @@ public:
 
         {
             auto const server_info = env.rpc("server_info");
-            BEAST_EXPECT(
-                server_info.isMember(jss::result) &&
-                server_info[jss::result].isMember(jss::info));
+            BEAST_EXPECT(server_info.isMember(jss::result) && server_info[jss::result].isMember(jss::info));
             auto const& info = server_info[jss::result][jss::info];
             // Avoid double rounding issues by comparing to a range.
             BEAST_EXPECT(
-                info.isMember(jss::load_factor) &&
-                info[jss::load_factor] > 888.88 &&
-                info[jss::load_factor] < 888.89);
+                info.isMember(jss::load_factor) && info[jss::load_factor] > 888.88 && info[jss::load_factor] < 888.89);
             // There can be a race between LoadManager lowering the fee,
             // and the call to server_info, so check a wide range.
             // The important thing is that it's not 1.
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_server) &&
-                info[jss::load_factor_server] > 1.245 &&
+                info.isMember(jss::load_factor_server) && info[jss::load_factor_server] > 1.245 &&
                 info[jss::load_factor_server] < 2.4415);
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_local) &&
-                info[jss::load_factor_local] > 1.245 &&
+                info.isMember(jss::load_factor_local) && info[jss::load_factor_local] > 1.245 &&
                 info[jss::load_factor_local] < 2.4415);
             BEAST_EXPECT(!info.isMember(jss::load_factor_net));
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_fee_escalation) &&
-                info[jss::load_factor_fee_escalation] > 888.88 &&
+                info.isMember(jss::load_factor_fee_escalation) && info[jss::load_factor_fee_escalation] > 888.88 &&
                 info[jss::load_factor_fee_escalation] < 888.89);
         }
         {
             auto const server_state = env.rpc("server_state");
             auto const& state = server_state[jss::result][jss::state];
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor) &&
-                state[jss::load_factor] == 227555);
-            BEAST_EXPECT(
-                state.isMember(jss::load_base) && state[jss::load_base] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor) && state[jss::load_factor] == 227555);
+            BEAST_EXPECT(state.isMember(jss::load_base) && state[jss::load_base] == 256);
             // There can be a race between LoadManager lowering the fee,
             // and the call to server_info, so check a wide range.
             // The important thing is that it's not 256.
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_server) &&
-                state[jss::load_factor_server] >= 320 &&
+                state.isMember(jss::load_factor_server) && state[jss::load_factor_server] >= 320 &&
                 state[jss::load_factor_server] <= 625);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_escalation) &&
-                state[jss::load_factor_fee_escalation] == 227555);
+                state.isMember(jss::load_factor_fee_escalation) && state[jss::load_factor_fee_escalation] == 227555);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_queue) && state[jss::load_factor_fee_queue] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_queue) &&
-                state[jss::load_factor_fee_queue] == 256);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_reference) &&
-                state[jss::load_factor_fee_reference] == 256);
+                state.isMember(jss::load_factor_fee_reference) && state[jss::load_factor_fee_reference] == 256);
         }
 
         env.close();
 
         {
             auto const server_info = env.rpc("server_info");
-            BEAST_EXPECT(
-                server_info.isMember(jss::result) &&
-                server_info[jss::result].isMember(jss::info));
+            BEAST_EXPECT(server_info.isMember(jss::result) && server_info[jss::result].isMember(jss::info));
             auto const& info = server_info[jss::result][jss::info];
             // Avoid double rounding issues by comparing to a range.
 
@@ -3594,13 +3221,10 @@ public:
             // and the call to server_info, so check a wide range.
             // The important thing is that it's not 1.
             BEAST_EXPECT(
-                info.isMember(jss::load_factor) &&
-                info[jss::load_factor] > 1.245 &&
-                info[jss::load_factor] < 2.4415);
+                info.isMember(jss::load_factor) && info[jss::load_factor] > 1.245 && info[jss::load_factor] < 2.4415);
             BEAST_EXPECT(!info.isMember(jss::load_factor_server));
             BEAST_EXPECT(
-                info.isMember(jss::load_factor_local) &&
-                info[jss::load_factor_local] > 1.245 &&
+                info.isMember(jss::load_factor_local) && info[jss::load_factor_local] > 1.245 &&
                 info[jss::load_factor_local] < 2.4415);
             BEAST_EXPECT(!info.isMember(jss::load_factor_net));
             BEAST_EXPECT(!info.isMember(jss::load_factor_fee_escalation));
@@ -3609,27 +3233,19 @@ public:
             auto const server_state = env.rpc("server_state");
             auto const& state = server_state[jss::result][jss::state];
             BEAST_EXPECT(
-                state.isMember(jss::load_factor) &&
-                state[jss::load_factor] >= 320 &&
-                state[jss::load_factor] <= 625);
-            BEAST_EXPECT(
-                state.isMember(jss::load_base) && state[jss::load_base] == 256);
+                state.isMember(jss::load_factor) && state[jss::load_factor] >= 320 && state[jss::load_factor] <= 625);
+            BEAST_EXPECT(state.isMember(jss::load_base) && state[jss::load_base] == 256);
             // There can be a race between LoadManager lowering the fee,
             // and the call to server_info, so check a wide range.
             // The important thing is that it's not 256.
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_server) &&
-                state[jss::load_factor_server] >= 320 &&
+                state.isMember(jss::load_factor_server) && state[jss::load_factor_server] >= 320 &&
                 state[jss::load_factor_server] <= 625);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_escalation) &&
-                state[jss::load_factor_fee_escalation] == 256);
+                state.isMember(jss::load_factor_fee_escalation) && state[jss::load_factor_fee_escalation] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_queue) && state[jss::load_factor_fee_queue] == 256);
             BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_queue) &&
-                state[jss::load_factor_fee_queue] == 256);
-            BEAST_EXPECT(
-                state.isMember(jss::load_factor_fee_reference) &&
-                state[jss::load_factor_fee_reference] == 256);
+                state.isMember(jss::load_factor_fee_reference) && state[jss::load_factor_fee_reference] == 256);
         }
     }
 
@@ -3651,8 +3267,7 @@ public:
             BEAST_EXPECT(jv[jss::status] == "success");
         }
 
-        Account a{"a"}, b{"b"}, c{"c"}, d{"d"}, e{"e"}, f{"f"}, g{"g"}, h{"h"},
-            i{"i"};
+        Account a{"a"}, b{"b"}, c{"c"}, d{"d"}, e{"e"}, f{"f"}, g{"g"}, h{"h"}, i{"i"};
 
         // Fund the first few accounts at non escalated fee
         env.fund(XRP(50000), noripple(a, b, c, d));
@@ -3661,31 +3276,20 @@ public:
         // First transaction establishes the messaging
         using namespace std::chrono_literals;
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus" &&
-                jv.isMember(jss::load_factor) && jv[jss::load_factor] == 256 &&
-                jv.isMember(jss::load_base) && jv[jss::load_base] == 256 &&
-                jv.isMember(jss::load_factor_server) &&
-                jv[jss::load_factor_server] == 256 &&
-                jv.isMember(jss::load_factor_fee_escalation) &&
-                jv[jss::load_factor_fee_escalation] == 256 &&
-                jv.isMember(jss::load_factor_fee_queue) &&
-                jv[jss::load_factor_fee_queue] == 256 &&
-                jv.isMember(jss::load_factor_fee_reference) &&
+            return jv[jss::type] == "serverStatus" && jv.isMember(jss::load_factor) && jv[jss::load_factor] == 256 &&
+                jv.isMember(jss::load_base) && jv[jss::load_base] == 256 && jv.isMember(jss::load_factor_server) &&
+                jv[jss::load_factor_server] == 256 && jv.isMember(jss::load_factor_fee_escalation) &&
+                jv[jss::load_factor_fee_escalation] == 256 && jv.isMember(jss::load_factor_fee_queue) &&
+                jv[jss::load_factor_fee_queue] == 256 && jv.isMember(jss::load_factor_fee_reference) &&
                 jv[jss::load_factor_fee_reference] == 256;
         }));
         // Last transaction escalates the fee
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus" &&
-                jv.isMember(jss::load_factor) &&
-                jv[jss::load_factor] == 227555 && jv.isMember(jss::load_base) &&
-                jv[jss::load_base] == 256 &&
-                jv.isMember(jss::load_factor_server) &&
-                jv[jss::load_factor_server] == 256 &&
-                jv.isMember(jss::load_factor_fee_escalation) &&
-                jv[jss::load_factor_fee_escalation] == 227555 &&
-                jv.isMember(jss::load_factor_fee_queue) &&
-                jv[jss::load_factor_fee_queue] == 256 &&
-                jv.isMember(jss::load_factor_fee_reference) &&
+            return jv[jss::type] == "serverStatus" && jv.isMember(jss::load_factor) && jv[jss::load_factor] == 227555 &&
+                jv.isMember(jss::load_base) && jv[jss::load_base] == 256 && jv.isMember(jss::load_factor_server) &&
+                jv[jss::load_factor_server] == 256 && jv.isMember(jss::load_factor_fee_escalation) &&
+                jv[jss::load_factor_fee_escalation] == 227555 && jv.isMember(jss::load_factor_fee_queue) &&
+                jv[jss::load_factor_fee_queue] == 256 && jv.isMember(jss::load_factor_fee_reference) &&
                 jv[jss::load_factor_fee_reference] == 256;
         }));
 
@@ -3693,16 +3297,11 @@ public:
 
         // Closing ledger should publish a status update
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus" &&
-                jv.isMember(jss::load_factor) && jv[jss::load_factor] == 256 &&
-                jv.isMember(jss::load_base) && jv[jss::load_base] == 256 &&
-                jv.isMember(jss::load_factor_server) &&
-                jv[jss::load_factor_server] == 256 &&
-                jv.isMember(jss::load_factor_fee_escalation) &&
-                jv[jss::load_factor_fee_escalation] == 256 &&
-                jv.isMember(jss::load_factor_fee_queue) &&
-                jv[jss::load_factor_fee_queue] == 256 &&
-                jv.isMember(jss::load_factor_fee_reference) &&
+            return jv[jss::type] == "serverStatus" && jv.isMember(jss::load_factor) && jv[jss::load_factor] == 256 &&
+                jv.isMember(jss::load_base) && jv[jss::load_base] == 256 && jv.isMember(jss::load_factor_server) &&
+                jv[jss::load_factor_server] == 256 && jv.isMember(jss::load_factor_fee_escalation) &&
+                jv[jss::load_factor_fee_escalation] == 256 && jv.isMember(jss::load_factor_fee_queue) &&
+                jv[jss::load_factor_fee_queue] == 256 && jv.isMember(jss::load_factor_fee_reference) &&
                 jv[jss::load_factor_fee_reference] == 256;
         }));
 
@@ -3724,56 +3323,37 @@ public:
 
         // Last transaction escalates the fee
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus" &&
-                jv.isMember(jss::load_factor) &&
-                jv[jss::load_factor] == 200000 && jv.isMember(jss::load_base) &&
-                jv[jss::load_base] == 256 &&
-                jv.isMember(jss::load_factor_server) &&
-                jv[jss::load_factor_server] == 256 &&
-                jv.isMember(jss::load_factor_fee_escalation) &&
-                jv[jss::load_factor_fee_escalation] == 200000 &&
-                jv.isMember(jss::load_factor_fee_queue) &&
-                jv[jss::load_factor_fee_queue] == 256 &&
-                jv.isMember(jss::load_factor_fee_reference) &&
+            return jv[jss::type] == "serverStatus" && jv.isMember(jss::load_factor) && jv[jss::load_factor] == 200000 &&
+                jv.isMember(jss::load_base) && jv[jss::load_base] == 256 && jv.isMember(jss::load_factor_server) &&
+                jv[jss::load_factor_server] == 256 && jv.isMember(jss::load_factor_fee_escalation) &&
+                jv[jss::load_factor_fee_escalation] == 200000 && jv.isMember(jss::load_factor_fee_queue) &&
+                jv[jss::load_factor_fee_queue] == 256 && jv.isMember(jss::load_factor_fee_reference) &&
                 jv[jss::load_factor_fee_reference] == 256;
         }));
 
         env.close();
         //  Ledger close publishes with escalated fees for queued transactions
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus" &&
-                jv.isMember(jss::load_factor) &&
-                jv[jss::load_factor] == 184320 && jv.isMember(jss::load_base) &&
-                jv[jss::load_base] == 256 &&
-                jv.isMember(jss::load_factor_server) &&
-                jv[jss::load_factor_server] == 256 &&
-                jv.isMember(jss::load_factor_fee_escalation) &&
-                jv[jss::load_factor_fee_escalation] == 184320 &&
-                jv.isMember(jss::load_factor_fee_queue) &&
-                jv[jss::load_factor_fee_queue] == 256 &&
-                jv.isMember(jss::load_factor_fee_reference) &&
+            return jv[jss::type] == "serverStatus" && jv.isMember(jss::load_factor) && jv[jss::load_factor] == 184320 &&
+                jv.isMember(jss::load_base) && jv[jss::load_base] == 256 && jv.isMember(jss::load_factor_server) &&
+                jv[jss::load_factor_server] == 256 && jv.isMember(jss::load_factor_fee_escalation) &&
+                jv[jss::load_factor_fee_escalation] == 184320 && jv.isMember(jss::load_factor_fee_queue) &&
+                jv[jss::load_factor_fee_queue] == 256 && jv.isMember(jss::load_factor_fee_reference) &&
                 jv[jss::load_factor_fee_reference] == 256;
         }));
 
         env.close();
         // ledger close clears queue so fee is back to normal
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus" &&
-                jv.isMember(jss::load_factor) && jv[jss::load_factor] == 256 &&
-                jv.isMember(jss::load_base) && jv[jss::load_base] == 256 &&
-                jv.isMember(jss::load_factor_server) &&
-                jv[jss::load_factor_server] == 256 &&
-                jv.isMember(jss::load_factor_fee_escalation) &&
-                jv[jss::load_factor_fee_escalation] == 256 &&
-                jv.isMember(jss::load_factor_fee_queue) &&
-                jv[jss::load_factor_fee_queue] == 256 &&
-                jv.isMember(jss::load_factor_fee_reference) &&
+            return jv[jss::type] == "serverStatus" && jv.isMember(jss::load_factor) && jv[jss::load_factor] == 256 &&
+                jv.isMember(jss::load_base) && jv[jss::load_base] == 256 && jv.isMember(jss::load_factor_server) &&
+                jv[jss::load_factor_server] == 256 && jv.isMember(jss::load_factor_fee_escalation) &&
+                jv[jss::load_factor_fee_escalation] == 256 && jv.isMember(jss::load_factor_fee_queue) &&
+                jv[jss::load_factor_fee_queue] == 256 && jv.isMember(jss::load_factor_fee_reference) &&
                 jv[jss::load_factor_fee_reference] == 256;
         }));
 
-        BEAST_EXPECT(!wsc->findMsg(1s, [&](auto const& jv) {
-            return jv[jss::type] == "serverStatus";
-        }));
+        BEAST_EXPECT(!wsc->findMsg(1s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }));
 
         auto jv = wsc->invoke("unsubscribe", stream);
         BEAST_EXPECT(jv[jss::status] == "success");
@@ -3796,8 +3376,7 @@ public:
         fillQueue(env, alice);
 
         auto calcTotalFee = [&](std::int64_t alreadyPaid,
-                                std::optional<std::size_t> numToClear =
-                                    std::nullopt) -> std::uint64_t {
+                                std::optional<std::size_t> numToClear = std::nullopt) -> std::uint64_t {
             auto totalFactor = 0;
             auto const metrics = env.app().getTxQ().getMetrics(*env.current());
             if (!numToClear)
@@ -3809,8 +3388,7 @@ public:
             }
 
             auto const den = (metrics.txPerLedger * metrics.txPerLedger);
-            FeeLevel64 feeLevel =
-                (metrics.medFeeLevel * totalFactor + FeeLevel64{den - 1}) / den;
+            FeeLevel64 feeLevel = (metrics.medFeeLevel * totalFactor + FeeLevel64{den - 1}) / den;
 
             auto result = toDrops(feeLevel, env.current()->fees().base).drops();
 
@@ -3828,10 +3406,7 @@ public:
             std::uint64_t totalPaid = 0;
             for (int i = 0; i < 2; ++i)
             {
-                env(noop(alice),
-                    fee(baseFee * 10),
-                    seq(aliceSeq++),
-                    ter(terQUEUED));
+                env(noop(alice), fee(baseFee * 10), seq(aliceSeq++), ter(terQUEUED));
                 totalPaid += baseFee * 10;
             }
 
@@ -3839,10 +3414,7 @@ public:
             // This will be the first tx to call the operative function,
             // but it won't succeed.
             totalPaid += openLedgerCost(env).drops();
-            env(noop(alice),
-                fee(openLedgerCost(env)),
-                seq(aliceSeq++),
-                ter(terQUEUED));
+            env(noop(alice), fee(openLedgerCost(env)), seq(aliceSeq++), ter(terQUEUED));
 
             checkMetrics(*this, env, 3, std::nullopt, 4, 3);
 
@@ -3876,28 +3448,21 @@ public:
             uint64_t totalPaid = 0;
             for (int i = 0; i < 2; ++i)
             {
-                env(noop(alice),
-                    fee(baseFee * 10),
-                    seq(aliceSeq++),
-                    ter(terQUEUED));
+                env(noop(alice), fee(baseFee * 10), seq(aliceSeq++), ter(terQUEUED));
                 totalPaid += baseFee * 10;
             }
 
             // Queue up a transaction paying the open ledger fee
             // This will be the first tx to call the operative function,
             // but it won't succeed.
-            env(noop(alice),
-                fee(openLedgerCost(env)),
-                seq(aliceSeq++),
-                ter(terQUEUED));
+            env(noop(alice), fee(openLedgerCost(env)), seq(aliceSeq++), ter(terQUEUED));
 
             checkMetrics(*this, env, 3, std::nullopt, 9, 3);
 
             // Figure out how much it would cost to cover all the
             // queued txs + itself
             auto const metrics = env.app().getTxQ().getMetrics(*env.current());
-            std::uint64_t const totalFee =
-                calcTotalFee(totalPaid, metrics.txCount);
+            std::uint64_t const totalFee = calcTotalFee(totalPaid, metrics.txCount);
             // Replacing the last tx with the large fee succeeds.
             --aliceSeq;
             env(noop(alice), fee(totalFee), seq(aliceSeq++));
@@ -3916,10 +3481,7 @@ public:
             auto aliceSeq = env.seq(alice);
             for (int i = 0; i < 5; ++i)
             {
-                env(noop(alice),
-                    fee(baseFee * 10),
-                    seq(aliceSeq++),
-                    ter(terQUEUED));
+                env(noop(alice), fee(baseFee * 10), seq(aliceSeq++), ter(terQUEUED));
             }
 
             checkMetrics(*this, env, 5, 24, 13, 12);
@@ -3931,15 +3493,13 @@ public:
             env(noop(alice), fee(totalFee), seq(aliceSeq++));
 
             checkMetrics(*this, env, 2, 24, 16, 12);
-            auto const aliceQueue =
-                env.app().getTxQ().getAccountTxs(alice.id());
+            auto const aliceQueue = env.app().getTxQ().getAccountTxs(alice.id());
             BEAST_EXPECT(aliceQueue.size() == 2);
             SeqProxy seq = SeqProxy::sequence(aliceSeq);
             for (auto const& tx : aliceQueue)
             {
                 BEAST_EXPECT(tx.seqProxy == seq);
-                BEAST_EXPECT(
-                    tx.feeLevel == FeeLevel64{baseFeeLevel.fee() * 10});
+                BEAST_EXPECT(tx.feeLevel == FeeLevel64{baseFeeLevel.fee() * 10});
                 seq.advanceBy(1);
             }
 
@@ -3956,18 +3516,12 @@ public:
             uint64_t totalPaid = 0;
             for (int i = 0; i < 2; ++i)
             {
-                env(noop(alice),
-                    fee(baseFee * 20),
-                    seq(aliceSeq++),
-                    ter(terQUEUED));
+                env(noop(alice), fee(baseFee * 20), seq(aliceSeq++), ter(terQUEUED));
                 totalPaid += baseFee * 20;
             }
             for (int i = 0; i < 2; ++i)
             {
-                env(noop(alice),
-                    fee(baseFee * 2.2),
-                    seq(aliceSeq++),
-                    ter(terQUEUED));
+                env(noop(alice), fee(baseFee * 2.2), seq(aliceSeq++), ter(terQUEUED));
                 totalPaid += baseFee * 2.2;
             }
 
@@ -4188,10 +3742,8 @@ public:
         //  which won't work if unit tests are separated to only
         //  be callable via RPC.)
         env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
-            auto const tx =
-                env.jt(noop(alice), seq(aliceSeq), fee(openLedgerCost(env)));
-            auto const result =
-                xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
+            auto const tx = env.jt(noop(alice), seq(aliceSeq), fee(openLedgerCost(env)));
+            auto const result = xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
             BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
             return result.applied;
         });
@@ -4258,12 +3810,8 @@ public:
         //  which won't work if unit tests are separated to only
         //  be callable via RPC.)
         env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
-            auto const tx = env.jt(
-                noop(alice),
-                ticket::use(tktSeq0 + 1),
-                fee(openLedgerCost(env)));
-            auto const result =
-                xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
+            auto const tx = env.jt(noop(alice), ticket::use(tktSeq0 + 1), fee(openLedgerCost(env)));
+            auto const result = xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
             BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
             return result.applied;
         });
@@ -4338,12 +3886,9 @@ public:
             {{"account_reserve", "1000"}, {"owner_reserve", "50"}});
 
         auto& votingSection = cfg->section("voting");
-        votingSection.set(
-            "account_reserve",
-            std::to_string(cfg->FEES.reference_fee.drops() * 100));
+        votingSection.set("account_reserve", std::to_string(cfg->FEES.reference_fee.drops() * 100));
 
-        votingSection.set(
-            "reference_fee", std::to_string(cfg->FEES.reference_fee.drops()));
+        votingSection.set("reference_fee", std::to_string(cfg->FEES.reference_fee.drops()));
 
         Env env(*this, std::move(cfg));
 
@@ -4372,13 +3917,7 @@ public:
                 break;
         }
         auto expectedPerLedger = xrpl::detail::numUpVotedAmendments() + 1;
-        checkMetrics(
-            *this,
-            env,
-            0,
-            ledgersInQueue * expectedPerLedger,
-            0,
-            expectedPerLedger);
+        checkMetrics(*this, env, 0, ledgersInQueue * expectedPerLedger, 0, expectedPerLedger);
 
         // Now wait 2 weeks modulo 256 ledgers for the amendments to be
         // enabled.  Speed the process by closing ledgers every 80 minutes,
@@ -4393,13 +3932,7 @@ public:
         auto const baseFee = env.current()->fees().base.drops();
         // We're very close to the flag ledger.  Fill the ledger.
         fillQueue(env, alice);
-        checkMetrics(
-            *this,
-            env,
-            0,
-            ledgersInQueue * expectedPerLedger,
-            expectedPerLedger + 1,
-            expectedPerLedger);
+        checkMetrics(*this, env, 0, ledgersInQueue * expectedPerLedger, expectedPerLedger + 1, expectedPerLedger);
 
         // Fill everyone's queues.
         auto seqAlice = env.seq(alice);
@@ -4411,46 +3944,21 @@ public:
 
         // Use fees to guarantee order
         int txFee{static_cast<int>(baseFee * 9)};
-        auto prepareFee = [&](uint64_t multiplier) {
-            return fee(txFee - multiplier * baseFee / 10);
-        };
+        auto prepareFee = [&](uint64_t multiplier) { return fee(txFee - multiplier * baseFee / 10); };
 
         uint64_t multiplier = 0;
         for (int i = 0; i < 10; ++i)
         {
-            env(noop(alice),
-                seq(seqAlice++),
-                prepareFee(++multiplier),
-                ter(terQUEUED));
-            env(noop(bob),
-                seq(seqBob++),
-                prepareFee(++multiplier),
-                ter(terQUEUED));
-            env(noop(carol),
-                seq(seqCarol++),
-                prepareFee(++multiplier),
-                ter(terQUEUED));
-            env(noop(daria),
-                seq(seqDaria++),
-                prepareFee(++multiplier),
-                ter(terQUEUED));
-            env(noop(ellie),
-                seq(seqEllie++),
-                prepareFee(++multiplier),
-                ter(terQUEUED));
-            env(noop(fiona),
-                seq(seqFiona++),
-                prepareFee(++multiplier),
-                ter(terQUEUED));
+            env(noop(alice), seq(seqAlice++), prepareFee(++multiplier), ter(terQUEUED));
+            env(noop(bob), seq(seqBob++), prepareFee(++multiplier), ter(terQUEUED));
+            env(noop(carol), seq(seqCarol++), prepareFee(++multiplier), ter(terQUEUED));
+            env(noop(daria), seq(seqDaria++), prepareFee(++multiplier), ter(terQUEUED));
+            env(noop(ellie), seq(seqEllie++), prepareFee(++multiplier), ter(terQUEUED));
+            env(noop(fiona), seq(seqFiona++), prepareFee(++multiplier), ter(terQUEUED));
         }
         std::size_t expectedInQueue = multiplier;
         checkMetrics(
-            *this,
-            env,
-            expectedInQueue,
-            ledgersInQueue * expectedPerLedger,
-            expectedPerLedger + 1,
-            expectedPerLedger);
+            *this, env, expectedInQueue, ledgersInQueue * expectedPerLedger, expectedPerLedger + 1, expectedPerLedger);
 
         // The next close should cause the in-ledger amendments to change.
         // Alice's queued transactions have a cached PreflightResult
@@ -4465,43 +3973,20 @@ public:
         {
             env.close(closeDuration);
             auto expectedInLedger = expectedInQueue;
-            expectedInQueue =
-                (expectedInQueue > expectedPerLedger + 2
-                     ? expectedInQueue - (expectedPerLedger + 2)
-                     : 0);
+            expectedInQueue = (expectedInQueue > expectedPerLedger + 2 ? expectedInQueue - (expectedPerLedger + 2) : 0);
             expectedInLedger -= expectedInQueue;
             ++expectedPerLedger;
             checkMetrics(
-                *this,
-                env,
-                expectedInQueue,
-                ledgersInQueue * expectedPerLedger,
-                expectedInLedger,
-                expectedPerLedger);
+                *this, env, expectedInQueue, ledgersInQueue * expectedPerLedger, expectedInLedger, expectedPerLedger);
             {
                 auto const expectedPerAccount = expectedInQueue / 6;
                 auto const expectedRemainder = expectedInQueue % 6;
                 BEAST_EXPECT(env.seq(alice) == seqAlice - expectedPerAccount);
-                BEAST_EXPECT(
-                    env.seq(bob) ==
-                    seqBob - expectedPerAccount -
-                        (expectedRemainder > 4 ? 1 : 0));
-                BEAST_EXPECT(
-                    env.seq(carol) ==
-                    seqCarol - expectedPerAccount -
-                        (expectedRemainder > 3 ? 1 : 0));
-                BEAST_EXPECT(
-                    env.seq(daria) ==
-                    seqDaria - expectedPerAccount -
-                        (expectedRemainder > 2 ? 1 : 0));
-                BEAST_EXPECT(
-                    env.seq(ellie) ==
-                    seqEllie - expectedPerAccount -
-                        (expectedRemainder > 1 ? 1 : 0));
-                BEAST_EXPECT(
-                    env.seq(fiona) ==
-                    seqFiona - expectedPerAccount -
-                        (expectedRemainder > 0 ? 1 : 0));
+                BEAST_EXPECT(env.seq(bob) == seqBob - expectedPerAccount - (expectedRemainder > 4 ? 1 : 0));
+                BEAST_EXPECT(env.seq(carol) == seqCarol - expectedPerAccount - (expectedRemainder > 3 ? 1 : 0));
+                BEAST_EXPECT(env.seq(daria) == seqDaria - expectedPerAccount - (expectedRemainder > 2 ? 1 : 0));
+                BEAST_EXPECT(env.seq(ellie) == seqEllie - expectedPerAccount - (expectedRemainder > 1 ? 1 : 0));
+                BEAST_EXPECT(env.seq(fiona) == seqFiona - expectedPerAccount - (expectedRemainder > 0 ? 1 : 0));
             }
         } while (expectedInQueue > 0);
     }
@@ -4566,29 +4051,16 @@ public:
         auto seqAlice = env.seq(alice);
         auto const seqSaveAlice = seqAlice;
         int feeDrops = baseFee * 4;
-        env(noop(alice),
-            seq(seqAlice++),
-            fee(--feeDrops),
-            last_ledger_seq(7),
-            ter(terQUEUED));
+        env(noop(alice), seq(seqAlice++), fee(--feeDrops), last_ledger_seq(7), ter(terQUEUED));
         env(noop(alice), seq(seqAlice++), fee(--feeDrops), ter(terQUEUED));
         env(noop(alice), seq(seqAlice++), fee(--feeDrops), ter(terQUEUED));
         BEAST_EXPECT(env.seq(alice) == seqSaveAlice);
 
         // Similarly for bob, but bob uses tickets in his transactions.
         // The drop penalty works a little differently with tickets.
-        env(noop(bob),
-            ticket::use(bobTicketSeq + 0),
-            last_ledger_seq(7),
-            ter(terQUEUED));
-        env(noop(bob),
-            ticket::use(bobTicketSeq + 1),
-            fee(--feeDrops),
-            ter(terQUEUED));
-        env(noop(bob),
-            ticket::use(bobTicketSeq + 2),
-            fee(--feeDrops),
-            ter(terQUEUED));
+        env(noop(bob), ticket::use(bobTicketSeq + 0), last_ledger_seq(7), ter(terQUEUED));
+        env(noop(bob), ticket::use(bobTicketSeq + 1), fee(--feeDrops), ter(terQUEUED));
+        env(noop(bob), ticket::use(bobTicketSeq + 2), fee(--feeDrops), ter(terQUEUED));
 
         // Fill the queue with higher fee transactions so alice's and
         // bob's transactions are stuck in the queue.
@@ -4731,23 +4203,15 @@ public:
 
         // Verify that bob's first transaction was removed from the queue
         // by queueing another low fee transaction into that spot.
-        env(noop(bob),
-            ticket::use(bobTicketSeq + 0),
-            fee(baseFee * 1.2),
-            ter(terQUEUED));
+        env(noop(bob), ticket::use(bobTicketSeq + 0), fee(baseFee * 1.2), ter(terQUEUED));
 
         // Verify that bob's second transaction was removed from the queue
         // by queueing another low fee transaction into that spot.
-        env(noop(bob),
-            ticket::use(bobTicketSeq + 1),
-            fee(baseFee * 1.1),
-            ter(terQUEUED));
+        env(noop(bob), ticket::use(bobTicketSeq + 1), fee(baseFee * 1.1), ter(terQUEUED));
 
         // Verify that the last entry in bob's queue is still there
         // by trying to replace it and having that fail.
-        env(noop(bob),
-            ticket::use(bobTicketSeq + 2),
-            ter(telCAN_NOT_QUEUE_FEE));
+        env(noop(bob), ticket::use(bobTicketSeq + 2), ter(telCAN_NOT_QUEUE_FEE));
     }
 
     void
@@ -4781,9 +4245,7 @@ public:
             auto const aliceSeq = env.seq(alice);
             env(offer(alice, USD(1000), XRP(1000)), ter(terQUEUED));
 
-            env(offer(alice, USD(1000), XRP(1001)),
-                seq(aliceSeq + 1),
-                ter(terQUEUED));
+            env(offer(alice, USD(1000), XRP(1001)), seq(aliceSeq + 1), ter(terQUEUED));
 
             // Alice creates transactions that cancel the first set of
             // offers, one through another offer, and one cancel
@@ -4792,9 +4254,7 @@ public:
                 json(jss::OfferSequence, aliceSeq),
                 ter(terQUEUED));
 
-            env(offer_cancel(alice, aliceSeq + 1),
-                seq(aliceSeq + 3),
-                ter(terQUEUED));
+            env(offer_cancel(alice, aliceSeq + 1), seq(aliceSeq + 3), ter(terQUEUED));
 
             env.close();
 
@@ -4814,13 +4274,9 @@ public:
             // Alice creates a couple offers using tickets, consuming the
             // tickets in reverse order
             auto const aliceSeq = env.seq(alice);
-            env(offer(alice, USD(1000), XRP(1000)),
-                ticket::use(aliceTkt + 4),
-                ter(terQUEUED));
+            env(offer(alice, USD(1000), XRP(1000)), ticket::use(aliceTkt + 4), ter(terQUEUED));
 
-            env(offer(alice, USD(1000), XRP(1001)),
-                ticket::use(aliceTkt + 3),
-                ter(terQUEUED));
+            env(offer(alice, USD(1000), XRP(1001)), ticket::use(aliceTkt + 3), ter(terQUEUED));
 
             // Alice creates a couple more transactions that cancel the first
             // set of offers, also in reverse order. This allows Alice to submit
@@ -4833,16 +4289,12 @@ public:
                 json(jss::OfferSequence, aliceTkt + 4),
                 ter(terQUEUED));
 
-            env(offer_cancel(alice, aliceTkt + 3),
-                ticket::use(aliceTkt + 1),
-                ter(terQUEUED));
+            env(offer_cancel(alice, aliceTkt + 3), ticket::use(aliceTkt + 1), ter(terQUEUED));
 
             // Create a couple more offers using sequences
             env(offer(alice, USD(1000), XRP(1000)), ter(terQUEUED));
 
-            env(offer(alice, USD(1000), XRP(1001)),
-                seq(aliceSeq + 1),
-                ter(terQUEUED));
+            env(offer(alice, USD(1000), XRP(1001)), seq(aliceSeq + 1), ter(terQUEUED));
 
             // And try to cancel those using tickets
             env(offer(alice, USD(1000), XRP(1002)),
@@ -4850,9 +4302,7 @@ public:
                 json(jss::OfferSequence, aliceSeq),
                 ter(terQUEUED));
 
-            env(offer_cancel(alice, aliceSeq + 1),
-                ticket::use(aliceTkt + 6),
-                ter(terQUEUED));
+            env(offer_cancel(alice, aliceSeq + 1), ticket::use(aliceTkt + 6), ter(terQUEUED));
 
             env.close();
 
@@ -4876,9 +4326,7 @@ public:
             *this,
             makeConfig(
                 {{"minimum_txn_in_ledger_standalone", "3"}},
-                {{"reference_fee", "0"},
-                 {"account_reserve", "0"},
-                 {"owner_reserve", "0"}}));
+                {{"reference_fee", "0"}, {"account_reserve", "0"}, {"owner_reserve", "0"}}));
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
 
@@ -4890,39 +4338,22 @@ public:
         {
             auto const fee = env.rpc("fee");
 
-            if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-                BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
+            if (BEAST_EXPECT(fee.isMember(jss::result)) && BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
 
                 BEAST_EXPECT(result.isMember(jss::levels));
                 auto const& levels = result[jss::levels];
-                BEAST_EXPECT(
-                    levels.isMember(jss::median_level) &&
-                    levels[jss::median_level] == "128000");
-                BEAST_EXPECT(
-                    levels.isMember(jss::minimum_level) &&
-                    levels[jss::minimum_level] == "256");
-                BEAST_EXPECT(
-                    levels.isMember(jss::open_ledger_level) &&
-                    levels[jss::open_ledger_level] == "256");
-                BEAST_EXPECT(
-                    levels.isMember(jss::reference_level) &&
-                    levels[jss::reference_level] == "256");
+                BEAST_EXPECT(levels.isMember(jss::median_level) && levels[jss::median_level] == "128000");
+                BEAST_EXPECT(levels.isMember(jss::minimum_level) && levels[jss::minimum_level] == "256");
+                BEAST_EXPECT(levels.isMember(jss::open_ledger_level) && levels[jss::open_ledger_level] == "256");
+                BEAST_EXPECT(levels.isMember(jss::reference_level) && levels[jss::reference_level] == "256");
 
                 auto const& drops = result[jss::drops];
-                BEAST_EXPECT(
-                    drops.isMember(jss::base_fee) &&
-                    drops[jss::base_fee] == "0");
-                BEAST_EXPECT(
-                    drops.isMember(jss::median_fee) &&
-                    drops[jss::median_fee] == "0");
-                BEAST_EXPECT(
-                    drops.isMember(jss::minimum_fee) &&
-                    drops[jss::minimum_fee] == "0");
-                BEAST_EXPECT(
-                    drops.isMember(jss::open_ledger_fee) &&
-                    drops[jss::open_ledger_fee] == "0");
+                BEAST_EXPECT(drops.isMember(jss::base_fee) && drops[jss::base_fee] == "0");
+                BEAST_EXPECT(drops.isMember(jss::median_fee) && drops[jss::median_fee] == "0");
+                BEAST_EXPECT(drops.isMember(jss::minimum_fee) && drops[jss::minimum_fee] == "0");
+                BEAST_EXPECT(drops.isMember(jss::open_ledger_fee) && drops[jss::open_ledger_fee] == "0");
             }
         }
 
@@ -4958,39 +4389,22 @@ public:
         {
             auto const fee = env.rpc("fee");
 
-            if (BEAST_EXPECT(fee.isMember(jss::result)) &&
-                BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
+            if (BEAST_EXPECT(fee.isMember(jss::result)) && BEAST_EXPECT(!RPC::contains_error(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
 
                 BEAST_EXPECT(result.isMember(jss::levels));
                 auto const& levels = result[jss::levels];
-                BEAST_EXPECT(
-                    levels.isMember(jss::median_level) &&
-                    levels[jss::median_level] == "128000");
-                BEAST_EXPECT(
-                    levels.isMember(jss::minimum_level) &&
-                    levels[jss::minimum_level] == "256");
-                BEAST_EXPECT(
-                    levels.isMember(jss::open_ledger_level) &&
-                    levels[jss::open_ledger_level] == "355555");
-                BEAST_EXPECT(
-                    levels.isMember(jss::reference_level) &&
-                    levels[jss::reference_level] == "256");
+                BEAST_EXPECT(levels.isMember(jss::median_level) && levels[jss::median_level] == "128000");
+                BEAST_EXPECT(levels.isMember(jss::minimum_level) && levels[jss::minimum_level] == "256");
+                BEAST_EXPECT(levels.isMember(jss::open_ledger_level) && levels[jss::open_ledger_level] == "355555");
+                BEAST_EXPECT(levels.isMember(jss::reference_level) && levels[jss::reference_level] == "256");
 
                 auto const& drops = result[jss::drops];
-                BEAST_EXPECT(
-                    drops.isMember(jss::base_fee) &&
-                    drops[jss::base_fee] == "0");
-                BEAST_EXPECT(
-                    drops.isMember(jss::median_fee) &&
-                    drops[jss::median_fee] == "0");
-                BEAST_EXPECT(
-                    drops.isMember(jss::minimum_fee) &&
-                    drops[jss::minimum_fee] == "0");
-                BEAST_EXPECT(
-                    drops.isMember(jss::open_ledger_fee) &&
-                    drops[jss::open_ledger_fee] == "1389");
+                BEAST_EXPECT(drops.isMember(jss::base_fee) && drops[jss::base_fee] == "0");
+                BEAST_EXPECT(drops.isMember(jss::median_fee) && drops[jss::median_fee] == "0");
+                BEAST_EXPECT(drops.isMember(jss::minimum_fee) && drops[jss::minimum_fee] == "0");
+                BEAST_EXPECT(drops.isMember(jss::open_ledger_fee) && drops[jss::open_ledger_fee] == "1389");
             }
         }
 

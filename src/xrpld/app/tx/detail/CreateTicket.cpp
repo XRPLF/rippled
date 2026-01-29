@@ -17,8 +17,7 @@ CreateTicket::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 CreateTicket::preflight(PreflightContext const& ctx)
 {
-    if (std::uint32_t const count = ctx.tx[sfTicketCount];
-        count < minValidCount || count > maxValidCount)
+    if (std::uint32_t const count = ctx.tx[sfTicketCount]; count < minValidCount || count > maxValidCount)
         return temINVALID_COUNT;
 
     return tesSUCCESS;
@@ -34,11 +33,9 @@ CreateTicket::preclaim(PreclaimContext const& ctx)
 
     // Make sure the TicketCreate would not cause the account to own
     // too many tickets.
-    std::uint32_t const curTicketCount =
-        (*sleAccountRoot)[~sfTicketCount].value_or(0u);
+    std::uint32_t const curTicketCount = (*sleAccountRoot)[~sfTicketCount].value_or(0u);
     std::uint32_t const addedTickets = ctx.tx[sfTicketCount];
-    std::uint32_t const consumedTickets =
-        ctx.tx.getSeqProxy().isTicket() ? 1u : 0u;
+    std::uint32_t const consumedTickets = ctx.tx.getSeqProxy().isTicket() ? 1u : 0u;
 
     // Note that unsigned integer underflow can't currently happen because
     //  o curTicketCount   >= 0
@@ -64,13 +61,7 @@ CreateTicket::doApply()
     // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret = checkInsufficientReserve(
-            view(),
-            ctx_.tx,
-            sleAccountRoot,
-            mPriorBalance,
-            sponsor,
-            ticketCount);
+    if (auto const ret = checkInsufficientReserve(view(), ctx_.tx, sleAccountRoot, mPriorBalance, sponsor, ticketCount);
         !isTesSuccess(ret))
         return ret;
 
@@ -84,8 +75,7 @@ CreateTicket::doApply()
 
     // Sanity check that the transaction machinery really did already
     // increment the account root Sequence.
-    if (std::uint32_t const txSeq = ctx_.tx[sfSequence];
-        txSeq != 0 && txSeq != (firstTicketSeq - 1))
+    if (std::uint32_t const txSeq = ctx_.tx[sfSequence]; txSeq != 0 && txSeq != (firstTicketSeq - 1))
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     for (std::uint32_t i = 0; i < ticketCount; ++i)
@@ -99,13 +89,9 @@ CreateTicket::doApply()
 
         view().insert(sleTicket);
 
-        auto const page = view().dirInsert(
-            keylet::ownerDir(account_),
-            ticketKeylet,
-            describeOwnerDir(account_));
+        auto const page = view().dirInsert(keylet::ownerDir(account_), ticketKeylet, describeOwnerDir(account_));
 
-        JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key)
-                         << ": " << (page ? "success" : "failure");
+        JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key) << ": " << (page ? "success" : "failure");
 
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
@@ -115,14 +101,12 @@ CreateTicket::doApply()
     }
 
     // Update the record of the number of Tickets this account owns.
-    std::uint32_t const oldTicketCount =
-        (*(sleAccountRoot))[~sfTicketCount].value_or(0u);
+    std::uint32_t const oldTicketCount = (*(sleAccountRoot))[~sfTicketCount].value_or(0u);
 
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(
-        view(), ctx_.tx, sleAccountRoot, sponsor, ticketCount, viewJ);
+    adjustOwnerCount(view(), ctx_.tx, sleAccountRoot, sponsor, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.
