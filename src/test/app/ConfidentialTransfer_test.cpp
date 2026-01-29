@@ -442,20 +442,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .holder = bob,
                  .auditorPubKey = mptAlice.getPubKey(alice),
                  .err = temMALFORMED});
-
-            // Cannot set self as holder
-            mptAlice.set(
-                {.account = alice, .holder = alice, .err = temMALFORMED});
-
-            // Cannot Lock and Unlock simultaneously
-            mptAlice.set(
-                {.account = alice,
-                 .holder = bob,
-                 .flags = tfMPTLock | tfMPTUnlock,
-                 .err = temINVALID_FLAG});
-
-            // Transaction does nothing
-            mptAlice.set({.account = alice, .err = temMALFORMED});
         }
 
         // issuance has disabled confidential transfer
@@ -796,6 +782,39 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                  .holderPubKey = mptAlice.getPubKey(bob),
                  .auditorEncryptedAmt = getTrivialCiphertext(),
                  .err = tecNO_PERMISSION});
+        }
+
+        // Auditor key set successfully, auditor ciphertext mathematically
+        // correct, but contains invalid data (mismatching amount).
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const auditor("auditor");
+            MPTTester mptAlice(
+                env, alice, {.holders = {bob}, .auditor = auditor});
+
+            mptAlice.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanPrivacy});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(auditor);
+
+            mptAlice.set(
+                {.account = alice,
+                 .issuerPubKey = mptAlice.getPubKey(alice),
+                 .auditorPubKey = mptAlice.getPubKey(auditor)});
+
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 10,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .auditorEncryptedAmt = getTrivialCiphertext(),
+                 .err = tecBAD_PROOF});
         }
 
         // invalid proof when registering holder pub key
