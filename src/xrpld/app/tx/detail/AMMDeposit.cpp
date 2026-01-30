@@ -444,8 +444,9 @@ AMMDeposit::deposit(
         {
             auto const& lpIssue = lpTokensDeposit.issue();
             // Adjust the reserve if LP doesn't have LPToken trustline
-            auto const sle = view.read(keylet::line(account_, lpIssue.account, lpIssue.currency));
-            if (xrpLiquid(view, sponsor.value_or(account_), !sle, j_) >= depositAmount)
+            auto const trustlineExists = view.exists(keylet::line(account_, lpIssue.account, lpIssue.currency));
+            auto const ownerCountAdj = trustlineExists ? 0 : 1;
+            if (xrpLiquid(view, sponsor.value_or(account_), sponsor ? ownerCountAdj : 0, j_) >= depositAmount)
                 return tesSUCCESS;
         }
         else if (

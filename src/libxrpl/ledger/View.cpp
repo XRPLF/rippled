@@ -1043,7 +1043,7 @@ checkInsufficientReserve(
 std::optional<AccountID>
 getTxReserveSponsorAccountID(STTx const& tx)
 {
-    if (tx.isFieldPresent(sfSponsor) && tx.getFieldU32(sfSponsorFlags) & tfSponsorReserve)
+    if (tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx))
     {
         return tx.getAccountID(sfSponsor);
     }

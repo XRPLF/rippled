@@ -34,14 +34,15 @@ struct Fees
         bool isAccountSponsored = false,
         std::size_t sponsoringAccountCount = 0) const
     {
-        auto const accountReserveUnits =
-            (isAccountSponsored ? 0 : 1) + sponsoringAccountCount;
+        auto const accountReserveUnits = (isAccountSponsored ? 0 : 1) + sponsoringAccountCount;
 
-        auto const ownerReserveUnits =
-            (ownerCount - sponsoredOwnerCount) + sponsoringOwnerCount;
+        XRPL_ASSERT(
+            ownerCount >= sponsoredOwnerCount,
+            "xrpl::Fees::accountReserve : OwnerCount must be greater than or equal to SponsoredOwnerCount");
 
-        return (reserve * accountReserveUnits) +
-            (increment * ownerReserveUnits);
+        auto const ownerReserveUnits = (ownerCount - sponsoredOwnerCount) + sponsoringOwnerCount;
+
+        return (reserve * accountReserveUnits) + (increment * ownerReserveUnits);
     }
 };
 
