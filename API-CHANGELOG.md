@@ -34,6 +34,7 @@ This section contains changes targeting a future version.
   - `TRANSACTION_FLAGS`: Maps transaction type names to their supported flags and flag values.
   - `LEDGER_ENTRY_FLAGS`: Maps ledger entry type names to their flags and flag values.
   - `ACCOUNT_SET_FLAGS`: Maps AccountSet flag names (asf flags) to their numeric values.
+- `submit`: Augmented response fields (`accepted`, `applied`, `broadcast`, `queued`, `kept`, `account_sequence_next`, `account_sequence_available`, `open_ledger_cost`, `validated_ledger_index`) are now included in sign-and-submit mode. Previously, these fields were only returned when submitting a binary transaction blob.
 
 ### Bugfixes
 
