@@ -83,9 +83,15 @@ The [commandline](https://xrpl.org/docs/references/http-websocket-apis/api-conve
 
 The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it is not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode). However, use of reporting mode is now discouraged, in favor of using [Clio](https://github.com/XRPLF/clio) instead.
 
+## Unreleased
+
+### Additions and bugfixes in unreleased version
+
+- `noripple_check`: The `transactions` field is no longer included in the response if the response is an error or if there are no `problems`.
+
 ## XRP Ledger server version 2.5.0
 
-As of 2025-04-04, version 2.5.0 is in development. You can use a pre-release version by building from source or [using the `nightly` package](https://xrpl.org/docs/infrastructure/installation/install-rippled-on-ubuntu).
+[Version 2.5.0](https://github.com/XRPLF/rippled/releases/tag/2.5.0) was released on June 24, 2025.
 
 ### Additions and bugfixes in 2.5.0
 
