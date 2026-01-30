@@ -172,7 +172,8 @@ doNoRippleCheck(RPC::JsonContext& context)
         return false;
     });
 
-    result[jss::transactions] = std::move(jvTransactions);
+    if (transactions)
+        result[jss::transactions] = std::move(jvTransactions);
     return result;
 }
 
