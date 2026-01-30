@@ -1,6 +1,6 @@
 #include <test/jtx.h>
 
-#include <xrpld/rpc/detail/TransactionSign.h>
+#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/protocol/jss.h>
 
