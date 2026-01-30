@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -39,7 +40,7 @@ to_string(ProtocolVersion const& p);
           no duplicates and will be sorted in ascending protocol order.
 */
 std::vector<ProtocolVersion>
-parseProtocolVersions(boost::beast::string_view const& s);
+parseProtocolVersions(std::string_view const& s);
 
 /** Given a list of supported protocol versions, choose the one we prefer. */
 std::optional<ProtocolVersion>
@@ -47,7 +48,7 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions);
 
 /** Given a list of supported protocol versions, choose the one we prefer. */
 std::optional<ProtocolVersion>
-negotiateProtocolVersion(boost::beast::string_view const& versions);
+negotiateProtocolVersion(std::string_view const& versions);
 
 /** The list of all the protocol versions we support. */
 std::string const&

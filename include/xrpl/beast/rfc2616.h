@@ -10,6 +10,7 @@
 #include <cctype>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace beast {
@@ -181,7 +182,7 @@ split_commas(FwdIt first, FwdIt last)
 
 template <class Result = std::vector<std::string>>
 Result
-split_commas(boost::beast::string_view const& s)
+split_commas(std::string_view const& s)
 {
     return split_commas(s.begin(), s.end());
 }

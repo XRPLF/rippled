@@ -4,17 +4,18 @@
 
 #include <functional>
 #include <string>
+#include <string_view>
 
 namespace Json {
 
 class Value;
 
-using Output = std::function<void(boost::beast::string_view const&)>;
+using Output = std::function<void(std::string_view const&)>;
 
 inline Output
 stringOutput(std::string& s)
 {
-    return [&](boost::beast::string_view const& b) { s.append(b.data(), b.size()); };
+    return [&](std::string_view const& b) { s.append(b.data(), b.size()); };
 }
 
 /** Writes a minimal representation of a Json value to an Output in O(n) time.

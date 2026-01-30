@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <memory>
 #include <stdexcept>
+#include <string_view>
 
 namespace xrpl {
 
@@ -229,7 +230,7 @@ ServerHandler::onHandoff(
 static inline Json::Output
 makeOutput(Session& session)
 {
-    return [&](boost::beast::string_view const& b) { session.write(b.data(), b.size()); };
+    return [&](std::string_view const& b) { session.write(b.data(), b.size()); };
 }
 
 static std::map<std::string, std::string>
@@ -534,7 +535,7 @@ ServerHandler::processSession(
             auto const iter = session->request().find("X-User");
             if (iter != session->request().end())
                 return iter->value();
-            return boost::beast::string_view{};
+            return std::string_view{};
         }());
 
     if (beast::rfc2616::is_keep_alive(session->request()))
