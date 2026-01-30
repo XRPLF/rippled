@@ -616,7 +616,7 @@ LEDGER_ENTRY(ltSPONSORSHIP, 0x0090, Sponsorship, sponsorship, ({
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
     {sfOwner,                soeREQUIRED},
     {sfSponsee,              soeREQUIRED},
-    {sfFeeAmount,            soeDEFAULT},
+    {sfFeeAmount,            soeOPTIONAL},
     {sfMaxFee,               soeOPTIONAL},
     {sfReserveCount,         soeDEFAULT},
     {sfOwnerNode,            soeREQUIRED},

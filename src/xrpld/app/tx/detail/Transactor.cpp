@@ -478,9 +478,7 @@ Transactor::payFee()
     auto const feeAmountAfter = sle->getFieldAmount(payer.balanceField) - feePaid;
 
     if (feeAmountAfter == beast::zero && payer.balanceField == sfFeeAmount)
-        // Because ltSponsorship.sfFeeAmount is soeDEFAULT
-        // TODO: Use whether the field is soeDEFAULT instead of sfFeeAmount in
-        // the condition.
+        // Because ltSponsorship.sfFeeAmount is soeOptional
         sle->makeFieldAbsent(payer.balanceField);
     else
         sle->setFieldAmount(payer.balanceField, feeAmountAfter);
