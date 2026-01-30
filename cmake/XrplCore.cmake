@@ -5,7 +5,6 @@
 include(target_protobuf_sources)
 
 add_library(xrpl.libpb)
-set_target_properties(xrpl.libpb PROPERTIES UNITY_BUILD OFF)
 target_protobuf_sources(xrpl.libpb xrpl/proto LANGUAGE cpp IMPORT_DIRS include/xrpl/proto
                         PROTOS include/xrpl/proto/xrpl.proto)
 
