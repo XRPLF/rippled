@@ -4,10 +4,6 @@
 
 include(target_protobuf_sources)
 
-# Protocol buffers cannot participate in a unity build,
-# because all the generated sources
-# define a bunch of `static const` variables with the same names,
-# so we just build them as a separate library.
 add_library(xrpl.libpb)
 set_target_properties(xrpl.libpb PROPERTIES UNITY_BUILD OFF)
 target_protobuf_sources(xrpl.libpb xrpl/proto
@@ -224,12 +220,4 @@ if(xrpld)
     )
   endif()
 
-  # any files that don't play well with unity should be added here
-  if(tests)
-    set_source_files_properties(
-      # these two seem to produce conflicts in beast teardown template methods
-      src/test/rpc/ValidatorRPC_test.cpp
-      src/test/ledger/Invariants_test.cpp
-      PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
-  endif()
 endif()
