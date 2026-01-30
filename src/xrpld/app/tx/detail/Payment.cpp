@@ -299,6 +299,11 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
+        else if (txFlags & tfSponsorCreatedAccount)
+        {
+            // The minimum amount when creating a Sponsored Account is 1 drop.
+            // Since the reserve is covered by the sponsor, you don't need to hold the 1-increment reserve yourself.
+        }
         else if (dstAmount < STAmount(ctx.view.fees().reserve))
         {
             // accountReserve is the minimum amount that an account can have.

@@ -1155,7 +1155,6 @@ public:
     {
         testcase("Sponsor Account");
         using namespace test::jtx;
-        Env env{*this, testable_amendments() - featureSponsor};
 
         Account const alice("alice");
         Account const sponsor("sponsor");
@@ -1163,13 +1162,18 @@ public:
         Account const charlie("charlie");
         Account const gw("gw");
         auto const USD = gw["USD"];
+
+        {
+            // Disabled
+            Env env{*this, testable_amendments() - featureSponsor};
+            env.fund(XRP(10000), alice, sponsor);
+            env.close();
+            env(pay(alice, bob, XRP(100)), txflags(tfSponsorCreatedAccount), ter(temDISABLED));
+            env.close();
+        }
+
+        Env env{*this, testable_amendments()};
         env.fund(XRP(10000), alice, sponsor);
-
-        // Disabled
-        env(pay(alice, bob, XRP(100)), txflags(tfSponsorCreatedAccount), ter(temDISABLED));
-        env.close();
-
-        env.enableFeature(featureSponsor);
         env.close();
 
         // Invalid flags
@@ -1185,12 +1189,6 @@ public:
 
         // Invalid amount(iou)
         env(pay(alice, bob, USD(100)), txflags(tfSponsorCreatedAccount), ter(temBAD_AMOUNT));
-        env.close();
-
-        // Insufficient reserve
-        env(pay(alice, bob, (env.current()->fees().accountReserve(0) - drops(1))),
-            txflags(tfSponsorCreatedAccount),
-            ter(tecNO_DST_INSUF_XRP));
         env.close();
 
         // Account is not sponsored by normal Sponsor specification
@@ -1209,13 +1207,11 @@ public:
         // Use tfSponsorCreatedAccount to sponsor an account
         {
             // to funded account
-            env(pay(sponsor, bob, drops(env.current()->fees().accountReserve(0))),
-                txflags(tfSponsorCreatedAccount),
-                ter(tecNO_SPONSOR_PERMISSION));
+            env(pay(sponsor, bob, drops(1)), txflags(tfSponsorCreatedAccount), ter(tecNO_SPONSOR_PERMISSION));
+            env.close();
 
             // to non-funded account
-            env(pay(sponsor, charlie, drops(env.current()->fees().accountReserve(0))),
-                txflags(tfSponsorCreatedAccount));
+            env(pay(sponsor, charlie, drops(1)), txflags(tfSponsorCreatedAccount));
             env.close();
 
             auto const charlieSle = env.le(keylet::account(charlie));
