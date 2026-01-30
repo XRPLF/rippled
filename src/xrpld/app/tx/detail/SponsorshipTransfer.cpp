@@ -241,8 +241,6 @@ adjustReserveCount(ApplyView& view, AccountID const& account, AccountID const& s
 {
     if (delta == 0)
         return tesSUCCESS;
-    if (delta > 0)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
     auto const sponsorKeylet = keylet::sponsor(sponsor, account);
     auto const sponsorSle = view.peek(sponsorKeylet);
     if (!sponsorSle)
@@ -337,21 +335,35 @@ SponsorshipTransfer::doApply()
                     !isTesSuccess(ter))
                     return ter;
             }
+
+            // payback the reserve count if ltSponsorship exists
+            if (auto const sponsorSle = view().exists(keylet::sponsor(oldSponsor, account_)); sponsorSle)
+                if (auto const ter = adjustReserveCount(view(), account_, oldSponsor, ownerCountDelta);
+                    !isTesSuccess(ter))
+                    return ter;
         }
         else
         {
             // dissolve object sponsor
             auto const oldSponsor = objSle->getAccountID(sfSponsorAccount);
+            auto const oldSponsorSle = view().peek(keylet::account(oldSponsor));
+            if (!oldSponsorSle)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+
             // decrement sponsored count
             setSponsorFieldU32(accSle, sfSponsoredOwnerCount, -ownerCountDelta);
 
             view().update(accSle);
+
             // decrement old sponsoring count
-            if (auto const oldSponsorSle = view().peek(keylet::account(oldSponsor)))
-            {
-                setSponsorFieldU32(oldSponsorSle, sfSponsoringOwnerCount, -ownerCountDelta);
-                view().update(oldSponsorSle);
-            }
+            setSponsorFieldU32(oldSponsorSle, sfSponsoringOwnerCount, -ownerCountDelta);
+            view().update(oldSponsorSle);
+
+            // payback the reserve count if ltSponsorship exists
+            if (auto const sponsorSle = view().exists(keylet::sponsor(oldSponsor, account_)); sponsorSle)
+                if (auto const ter = adjustReserveCount(view(), account_, oldSponsor, ownerCountDelta);
+                    !isTesSuccess(ter))
+                    return ter;
 
             // remove sponsor from object
             objSle->makeFieldAbsent(sfSponsorAccount);

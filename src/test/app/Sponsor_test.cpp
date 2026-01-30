@@ -445,16 +445,25 @@ public:
             env(sponsor::set(sponsor, 0, 100, XRP(100), XRP(1)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
             env.close();
 
-            env(ticket::create(alice, 1),
+            env(did::set(alice),
+                did::uri("uri"),
                 sponsor::as(sponsor, tfSponsorReserve | tfSponsorFee),
                 sig(sfSponsorSignature, sponsor),
                 fee(XRP(1)),
                 ter(tesSUCCESS));
             env.close();
 
-            auto const sle = env.le(keylet::sponsor(sponsor, alice));
+            auto sle = env.le(keylet::sponsor(sponsor, alice));
             BEAST_EXPECT(sle);
             BEAST_EXPECT(sle->at(sfReserveCount) == 99);
+            BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(99));
+
+            env(did::del(alice), ter(tesSUCCESS));
+            env.close();
+
+            sle = env.le(keylet::sponsor(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(sle->at(sfReserveCount) == 100);  // paybacked
             BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(99));
         }
 
@@ -794,11 +803,11 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 1);
             BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
-            auto const sle1 = env.le(keylet::unchecked(checkId));
-            BEAST_EXPECT(sle1->isFieldPresent(sfSponsorAccount));
-            BEAST_EXPECT(sle1->getAccountID(sfSponsorAccount) == sponsor1.id());
-            auto const sponsorSle = env.le(keylet::sponsor(sponsor1, alice));
-            BEAST_EXPECT(sponsorSle->getFieldU32(sfReserveCount) == 99);
+            auto checkSle = env.le(keylet::unchecked(checkId));
+            BEAST_EXPECT(checkSle->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(checkSle->getAccountID(sfSponsorAccount) == sponsor1.id());
+            auto sponsor1Sle = env.le(keylet::sponsor(sponsor1, alice));
+            BEAST_EXPECT(sponsor1Sle->getFieldU32(sfReserveCount) == 99);
 
             // transfer sponsor
             env(sponsor::set_reserve(sponsor2, 0, 100), sponsor::sponseeAcc(alice));
@@ -816,11 +825,13 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
-            auto const sle2 = env.le(keylet::unchecked(checkId));
-            BEAST_EXPECT(sle2->isFieldPresent(sfSponsorAccount));
-            BEAST_EXPECT(sle2->getAccountID(sfSponsorAccount) == sponsor2.id());
-            auto const sponsorSle2 = env.le(keylet::sponsor(sponsor2, alice));
-            BEAST_EXPECT(sponsorSle2->getFieldU32(sfReserveCount) == 99);
+            checkSle = env.le(keylet::unchecked(checkId));
+            BEAST_EXPECT(checkSle->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(checkSle->getAccountID(sfSponsorAccount) == sponsor2.id());
+            sponsor1Sle = env.le(keylet::sponsor(sponsor1, alice));
+            BEAST_EXPECT(sponsor1Sle->getFieldU32(sfReserveCount) == 100);  // paybacked
+            auto sponsor2Sle = env.le(keylet::sponsor(sponsor2, alice));
+            BEAST_EXPECT(sponsor2Sle->getFieldU32(sfReserveCount) == 99);
 
             // dissolve sponsor
             adjustAccountXRPBalance(env, alice, reserve(env, 1));
@@ -837,10 +848,10 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
             BEAST_EXPECT(!env.le(keylet::account(sponsor2))->isFieldPresent(sfSponsoringOwnerCount));
-            auto const sle3 = env.le(keylet::unchecked(checkId));
-            BEAST_EXPECT(!sle3->isFieldPresent(sfSponsorAccount));
-            auto const sponsorSle3 = env.le(keylet::sponsor(sponsor2, alice));
-            BEAST_EXPECT(sponsorSle3->getFieldU32(sfReserveCount) == 99);  // no change
+            checkSle = env.le(keylet::unchecked(checkId));
+            BEAST_EXPECT(!checkSle->isFieldPresent(sfSponsorAccount));
+            sponsor2Sle = env.le(keylet::sponsor(sponsor2, alice));
+            BEAST_EXPECT(sponsor2Sle->getFieldU32(sfReserveCount) == 100);  // paybacked
         }
 
         {

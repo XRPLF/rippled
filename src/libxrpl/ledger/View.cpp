@@ -1167,16 +1167,19 @@ adjustOwnerCount(
 
         auto sponsorObjSle = view.peek(keylet::sponsor(sponsorAcc, account));
 
-        if (sponsorObjSle && amount > 0)
+        if (sponsorObjSle)
         {
             // pre funded
             // update the pre-funded ReserveCount on Sponsorship ledger object
             XRPL_ASSERT(sponsorObjSle, "xrpl::adjustOwnerCount : co-signing sponsor exists");
 
             auto const currentReserveCount = sponsorObjSle->getFieldU32(sfReserveCount);
-            XRPL_ASSERT(currentReserveCount >= amount, "xrpl::adjustOwnerCount : enough reserve count");
+            if (amount > 0)
+                XRPL_ASSERT(currentReserveCount >= amount, "xrpl::adjustOwnerCount : enough reserve count");
 
             if (currentReserveCount - amount > 0)
+                // if amount > 0, reduce the reserve count
+                // if amount < 0, payback the reserve count
                 sponsorObjSle->setFieldU32(sfReserveCount, currentReserveCount - amount);
             else
                 sponsorObjSle->makeFieldAbsent(sfReserveCount);
