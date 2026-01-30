@@ -147,7 +147,8 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // check Sponsor
-    if (!ctx.view.exists(keylet::account(sponsor)))
+    auto const sponsorAccSle = ctx.view.read(keylet::account(sponsor));
+    if (!sponsorAccSle)
         return tecNO_DST;
 
     // check Sponsee
@@ -214,6 +215,9 @@ SponsorshipSet::doApply()
     auto const reserveCount = ctx_.tx[~sfReserveCount];
 
     auto reserveSponsorAccSle = getTxReserveSponsor(view(), ctx_.tx);
+
+    if (feeAmount && (*feeAmount).xrp() > (*sponsorAccSle)[sfBalance])
+        return tecUNFUNDED;
 
     if (!sponsorObjSle)
     {

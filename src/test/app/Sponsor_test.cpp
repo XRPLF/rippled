@@ -156,22 +156,36 @@ public:
 
         // Invalid Sponsee
         env(sponsor::set(sponsor, 0), sponsor::sponseeAcc(noFunded), ter(tecNO_DST));
+        env.close();
 
         // Invalid Sponsor
         env(sponsor::set(sponsor, tfDeleteObject), sponsor::sponsorAcc(noFunded), ter(tecNO_DST));
+        env.close();
 
         // Invalid Delete operation (sponsorship not found)
         env(sponsor::set(sponsor, tfDeleteObject), sponsor::sponseeAcc(alice), ter(tecNO_ENTRY));
+        env.close();
 
         // DisallowIncomingSponsor: tested in other testcase
 
         // insufficent reserve to create sponsorship
         adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
         env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), ter(tecUNFUNDED));
+        env.close();
+
+        //  FeeAmount + Fee > Balance
+        /// Balance = 1000XRP, FeeAmount = 1001XRP
+        adjustAccountXRPBalance(env, sponsor, XRP(1000));
+        env(sponsor::set_fee(sponsor, 0, XRP(1001)), sponsor::sponseeAcc(alice), fee(XRP(1)), ter(tecUNFUNDED));
+        env.close();
+        /// Balance = 1000XRP, FeeAmount = 999XRP, Fee=2XRP
+        adjustAccountXRPBalance(env, sponsor, XRP(1000));
+        env(sponsor::set_fee(sponsor, 0, XRP(999)), sponsor::sponseeAcc(alice), fee(XRP(2)), ter(tecUNFUNDED));
+        env.close();
 
         // create sponsor to use above tests
-        adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
-        env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
+        adjustAccountXRPBalance(env, sponsor, XRP(1001));
+        env(sponsor::set(sponsor, 0, 100, XRP(1000)), sponsor::sponseeAcc(alice), fee(XRP(1)), ter(tesSUCCESS));
         env.close();
     }
 
