@@ -176,6 +176,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
         if (!BEAST_EXPECT(pa.isArray()))
             return;
 
+        BEAST_EXPECT(!result.isMember(jss::transactions));
         if (problems)
         {
             if (!BEAST_EXPECT(pa.size() == 2))
