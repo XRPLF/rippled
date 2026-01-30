@@ -11,7 +11,7 @@ In API version 2, the following deprecated methods are no longer available: ([#4
 - `tx_history` - Instead, use other methods such as `account_tx` or `ledger` with the `transactions` field set to `true`.
 - `ledger_header` - Instead, use the `ledger` method.
 
-## Modifications to JSON transaction element in V2
+## Modifications to JSON transaction element in API version 2
 
 In API version 2, JSON elements for transaction output have been changed and made consistent for all methods which output transactions. ([#4775](https://github.com/XRPLF/rippled/pull/4775))
 This helps to unify the JSON serialization format of transactions. ([clio#722](https://github.com/XRPLF/clio/issues/722), [#4727](https://github.com/XRPLF/rippled/issues/4727))
