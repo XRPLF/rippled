@@ -2465,8 +2465,7 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
-            BEAST_EXPECT(
-                env.le(keylet::line(bob, gw, USD.currency))->getAccountID(sfHighSponsorAccount) == sponsor2.id());
+            BEAST_EXPECT(env.le(keylet::line(bob, gw, USD.currency))->getAccountID(sfHighSponsor) == sponsor2.id());
         }
     }
 
@@ -3415,9 +3414,8 @@ public:
         {
             auto const validateSponsoredTrustline =
                 [&](std::shared_ptr<const SLE> const& sle, bool isIssuerHigh, Account const& sponsor) {
-                    BEAST_EXPECT(
-                        sle->getAccountID(isIssuerHigh ? sfLowSponsorAccount : sfHighSponsorAccount) == sponsor.id());
-                    BEAST_EXPECT(!sle->isFieldPresent(isIssuerHigh ? sfHighSponsorAccount : sfLowSponsorAccount));
+                    BEAST_EXPECT(sle->getAccountID(isIssuerHigh ? sfLowSponsor : sfHighSponsor) == sponsor.id());
+                    BEAST_EXPECT(!sle->isFieldPresent(isIssuerHigh ? sfHighSponsor : sfLowSponsor));
                 };
 
             auto const& highAcc = alice > bob ? alice : bob;

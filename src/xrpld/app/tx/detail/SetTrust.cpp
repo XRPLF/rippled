@@ -519,8 +519,8 @@ SetTrust::doApply()
 
         bool bReserveIncrease = false;
 
-        auto const currentHighSponsor = getLedgerEntryReserveSponsor(view(), sleRippleState, sfHighSponsorAccount);
-        auto const currentLowSponsor = getLedgerEntryReserveSponsor(view(), sleRippleState, sfLowSponsorAccount);
+        auto const currentHighSponsor = getLedgerEntryReserveSponsor(view(), sleRippleState, sfHighSponsor);
+        auto const currentLowSponsor = getLedgerEntryReserveSponsor(view(), sleRippleState, sfLowSponsor);
 
         if (bSetAuth)
         {
@@ -539,7 +539,7 @@ SetTrust::doApply()
             adjustOwnerCount(view(), ctx_.tx, sleLowAccount, txSponsorSle, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
-            addSponsorToLedgerEntry(sleRippleState, txSponsorSle, sfLowSponsorAccount);
+            addSponsorToLedgerEntry(sleRippleState, txSponsorSle, sfLowSponsor);
 
             if (!bHigh)
                 bReserveIncrease = true;
@@ -551,7 +551,7 @@ SetTrust::doApply()
             adjustOwnerCount(view(), sleLowAccount, currentLowSponsor, -1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
 
-            removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsorAccount);
+            removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
         }
 
         if (bHighReserveSet && !bHighReserved)
@@ -566,7 +566,7 @@ SetTrust::doApply()
             adjustOwnerCount(view(), ctx_.tx, sleHighAccount, txSponsorSle, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
-            addSponsorToLedgerEntry(sleRippleState, txSponsorSle, sfHighSponsorAccount);
+            addSponsorToLedgerEntry(sleRippleState, txSponsorSle, sfHighSponsor);
 
             if (bHigh)
                 bReserveIncrease = true;
@@ -578,7 +578,7 @@ SetTrust::doApply()
             adjustOwnerCount(view(), sleHighAccount, currentHighSponsor, -1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
 
-            removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsorAccount);
+            removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);
         }
 
         if (uFlagsIn != uFlagsOut)

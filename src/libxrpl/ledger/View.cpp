@@ -1101,7 +1101,7 @@ addSponsorToLedgerEntry(
     SF_ACCOUNT const& field)
 {
     XRPL_ASSERT(
-        (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsorAccount || field == sfLowSponsorAccount)) ||
+        (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
             (sle->getType() != ltRIPPLE_STATE && field == sfSponsorAccount),
         "addSponsorToLedgerEntry : Invalid field to the LedgerEntry");
     if (sponsorSle)
@@ -1112,7 +1112,7 @@ void
 removeSponsorFromLedgerEntry(std::shared_ptr<SLE> const& sle, SF_ACCOUNT const& field)
 {
     XRPL_ASSERT(
-        (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsorAccount || field == sfLowSponsorAccount)) ||
+        (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
             (sle->getType() != ltRIPPLE_STATE && field == sfSponsorAccount),
         "removeSponsorFromLedgerEntry : Invalid field to the LedgerEntry");
     if (sle->isFieldPresent(field))
@@ -1811,7 +1811,7 @@ trustCreate(
     sleRippleState->setFieldU32(sfFlags, uFlags);
     adjustOwnerCount(view, sleAccount, sponsorSle, 1, j);
 
-    addSponsorToLedgerEntry(sleRippleState, sponsorSle, bSetHigh ? sfHighSponsorAccount : sfLowSponsorAccount);
+    addSponsorToLedgerEntry(sleRippleState, sponsorSle, bSetHigh ? sfHighSponsor : sfLowSponsor);
 
     // ONLY: Create ripple balance.
     sleRippleState->setFieldAmount(sfBalance, bSetHigh ? -saBalance : saBalance);
@@ -1944,8 +1944,8 @@ trustDelete(
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
-    removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsorAccount);
-    removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsorAccount);
+    removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);
+    removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: state";
     view.erase(sleRippleState);
@@ -2074,11 +2074,11 @@ rippleCreditIOU(
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
-            auto const currentSponsor = getLedgerEntryReserveSponsor(
-                view, sleRippleState, !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
+            auto const currentSponsor =
+                getLedgerEntryReserveSponsor(view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
             adjustOwnerCount(view, view.peek(keylet::account(uSenderID)), currentSponsor, -1, j);
 
-            removeSponsorFromLedgerEntry(sleRippleState, !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
+            removeSponsorFromLedgerEntry(sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
 
             // Clear reserve flag.
             sleRippleState->setFieldU32(sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
@@ -2817,13 +2817,13 @@ updateTrustLine(
         // VFALCO Where is the line being deleted?
         // Clear the reserve of the sender, possibly delete the line!
         auto const currentSponsor =
-            getLedgerEntryReserveSponsor(view, state, !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
+            getLedgerEntryReserveSponsor(view, state, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
         adjustOwnerCount(view, sle, currentSponsor, -1, j);
 
         // Clear reserve flag.
         state->setFieldU32(sfFlags, flags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
 
-        removeSponsorFromLedgerEntry(state, !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
+        removeSponsorFromLedgerEntry(state, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
 
         // Balance is zero, receiver reserve is clear.
         if (!after  // Balance is zero.
@@ -3379,10 +3379,9 @@ deleteAMMTrustLine(
     if (!(sleState->getFlags() & uFlags))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorSle =
-        getLedgerEntryReserveSponsor(view, sleState, !ammLow ? sfLowSponsorAccount : sfHighSponsorAccount);
+    auto const sponsorSle = getLedgerEntryReserveSponsor(view, sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, -1, j);
-    removeSponsorFromLedgerEntry(sleState, !ammLow ? sfLowSponsorAccount : sfHighSponsorAccount);
+    removeSponsorFromLedgerEntry(sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
 
     return tesSUCCESS;
 }

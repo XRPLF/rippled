@@ -287,8 +287,8 @@ LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, state, ({
     {sfHighNode,             soeOPTIONAL},
     {sfHighQualityIn,        soeOPTIONAL},
     {sfHighQualityOut,       soeOPTIONAL},
-    {sfHighSponsorAccount,   soeOPTIONAL},
-    {sfLowSponsorAccount,    soeOPTIONAL},
+    {sfHighSponsor,          soeOPTIONAL},
+    {sfLowSponsor,           soeOPTIONAL},
 }))
 
 /** The ledger object which lists the network's fee settings.

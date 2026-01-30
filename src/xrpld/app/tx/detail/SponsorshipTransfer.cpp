@@ -133,13 +133,13 @@ getLedgerEntrySponsorField(T const& sle, AccountID const& owner)
             {
                 auto const highAccount = sle->getFieldAmount(sfHighLimit).getIssuer();
                 if (highAccount == owner)
-                    return sfHighSponsorAccount;
+                    return sfHighSponsor;
             }
             if (sle->isFlag(lsfLowReserve))
             {
                 auto const lowAccount = sle->getFieldAmount(sfLowLimit).getIssuer();
                 if (lowAccount == owner)
-                    return sfLowSponsorAccount;
+                    return sfLowSponsor;
             }
             // LCOV_EXCL_START
             XRPL_ASSERT(
