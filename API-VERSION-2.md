@@ -6,15 +6,15 @@ For info about how [API versioning](https://xrpl.org/request-formatting.html#api
 
 ## Removed methods
 
-In API version 2, the following deprecated methods are no longer available: (https://github.com/XRPLF/rippled/pull/4759)
+In API version 2, the following deprecated methods are no longer available: ([#4759](https://github.com/XRPLF/rippled/pull/4759))
 
 - `tx_history` - Instead, use other methods such as `account_tx` or `ledger` with the `transactions` field set to `true`.
 - `ledger_header` - Instead, use the `ledger` method.
 
 ## Modifications to JSON transaction element in V2
 
-In API version 2, JSON elements for transaction output have been changed and made consistent for all methods which output transactions. (https://github.com/XRPLF/rippled/pull/4775)
-This helps to unify the JSON serialization format of transactions. (https://github.com/XRPLF/clio/issues/722, https://github.com/XRPLF/rippled/issues/4727)
+In API version 2, JSON elements for transaction output have been changed and made consistent for all methods which output transactions. ([#4775](https://github.com/XRPLF/rippled/pull/4775))
+This helps to unify the JSON serialization format of transactions. ([clio#722](https://github.com/XRPLF/clio/issues/722), [#4727](https://github.com/XRPLF/rippled/issues/4727))
 
 - JSON transaction element is named `tx_json`
 - Binary transaction element is named `tx_blob`
@@ -39,9 +39,9 @@ This change affects the following methods:
 
 ## Modification to `Payment` transaction JSON schema
 
-When reading Payments, the `Amount` field should generally **not** be used. Instead, use [delivered_amount](https://xrpl.org/partial-payments.html#the-delivered_amount-field) to see the amount that the Payment delivered. To clarify its meaning, the `Amount` field is being renamed to `DeliverMax`. (https://github.com/XRPLF/rippled/pull/4733)
+When reading Payments, the `Amount` field should generally **not** be used. Instead, use [delivered_amount](https://xrpl.org/partial-payments.html#the-delivered_amount-field) to see the amount that the Payment delivered. To clarify its meaning, the `Amount` field is being renamed to `DeliverMax`. ([#4733](https://github.com/XRPLF/rippled/pull/4733))
 
-- In `Payment` transaction type, JSON RPC field `Amount` is renamed to `DeliverMax`. To enable smooth client transition, `Amount` is still handled, as described below: (https://github.com/XRPLF/rippled/pull/4733)
+- In `Payment` transaction type, JSON RPC field `Amount` is renamed to `DeliverMax`. To enable smooth client transition, `Amount` is still handled, as described below: ([#4733](https://github.com/XRPLF/rippled/pull/4733))
   - On JSON RPC input (e.g. `submit_multisigned` etc. methods), `Amount` is recognized as an alias to `DeliverMax` for both API version 1 and version 2 clients.
   - On JSON RPC input, submitting both `Amount` and `DeliverMax` fields is allowed _only_ if they are identical; otherwise such input is rejected with `rpcINVALID_PARAMS` error.
   - On JSON RPC output (e.g. `subscribe`, `account_tx` etc. methods), `DeliverMax` is present in both API version 1 and version 2.
@@ -49,18 +49,18 @@ When reading Payments, the `Amount` field should generally **not** be used. Inst
 
 ## Modifications to account_info response
 
-- `signer_lists` is returned in the root of the response. (In API version 1, it was nested under `account_data`.) (https://github.com/XRPLF/rippled/pull/3770)
-- When using an invalid `signer_lists` value, the API now returns an "invalidParams" error. (https://github.com/XRPLF/rippled/pull/4585)
+- `signer_lists` is returned in the root of the response. (In API version 1, it was nested under `account_data`.) ([#3770](https://github.com/XRPLF/rippled/pull/3770))
+- When using an invalid `signer_lists` value, the API now returns an "invalidParams" error. ([#4585](https://github.com/XRPLF/rippled/pull/4585))
   - (`signer_lists` must be a boolean. In API version 1, strings were accepted and may return a normal response - i.e. as if `signer_lists` were `true`.)
 
 ## Modifications to [account_tx](https://xrpl.org/account_tx.html#account_tx) response
 
-- Using `ledger_index_min`, `ledger_index_max`, and `ledger_index` returns `invalidParams` because if you use `ledger_index_min` or `ledger_index_max`, then it does not make sense to also specify `ledger_index`. In API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4571)
-  - The same applies for `ledger_index_min`, `ledger_index_max`, and `ledger_hash`. (https://github.com/XRPLF/rippled/issues/4545#issuecomment-1565065579)
+- Using `ledger_index_min`, `ledger_index_max`, and `ledger_index` returns `invalidParams` because if you use `ledger_index_min` or `ledger_index_max`, then it does not make sense to also specify `ledger_index`. In API version 1, no error was returned. ([#4571](https://github.com/XRPLF/rippled/pull/4571))
+  - The same applies for `ledger_index_min`, `ledger_index_max`, and `ledger_hash`. ([#4545](https://github.com/XRPLF/rippled/issues/4545#issuecomment-1565065579))
 - Using a `ledger_index_min` or `ledger_index_max` beyond the range of ledgers that the server has:
-  - returns `lgrIdxMalformed` in API version 2. Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/issues/4288)
-- Attempting to use a non-boolean value (such as a string) for the `binary` or `forward` parameters returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
+  - returns `lgrIdxMalformed` in API version 2. Previously, in API version 1, no error was returned. ([#4288](https://github.com/XRPLF/rippled/issues/4288))
+- Attempting to use a non-boolean value (such as a string) for the `binary` or `forward` parameters returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. ([#4620](https://github.com/XRPLF/rippled/pull/4620))
 
 ## Modifications to [noripple_check](https://xrpl.org/noripple_check.html#noripple_check) response
 
-- Attempting to use a non-boolean value (such as a string) for the `transactions` parameter returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
+- Attempting to use a non-boolean value (such as a string) for the `transactions` parameter returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. ([#4620](https://github.com/XRPLF/rippled/pull/4620))
