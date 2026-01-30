@@ -1,7 +1,5 @@
 #pragma once
 
-#include <boost/beast/core/string.hpp>
-
 #include <cstdint>
 #include <optional>
 #include <string>

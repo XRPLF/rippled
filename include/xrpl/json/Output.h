@@ -1,7 +1,5 @@
 #pragma once
 
-#include <boost/beast/core/string.hpp>
-
 #include <functional>
 #include <string>
 #include <string_view>
