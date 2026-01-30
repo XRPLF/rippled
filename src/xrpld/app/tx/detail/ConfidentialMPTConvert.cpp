@@ -1,4 +1,4 @@
-#include <xrpld/app/tx/detail/ConfidentialConvert.h>
+#include <xrpld/app/tx/detail/ConfidentialMPTConvert.h>
 
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -11,7 +11,7 @@
 namespace ripple {
 
 NotTEC
-ConfidentialConvert::preflight(PreflightContext const& ctx)
+ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureConfidentialTransfer))
         return temDISABLED;
@@ -56,7 +56,7 @@ ConfidentialConvert::preflight(PreflightContext const& ctx)
 }
 
 TER
-ConfidentialConvert::preclaim(PreclaimContext const& ctx)
+ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
     auto const issuanceID = ctx.tx[sfMPTokenIssuanceID];
@@ -157,7 +157,7 @@ ConfidentialConvert::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-ConfidentialConvert::doApply()
+ConfidentialMPTConvert::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
 

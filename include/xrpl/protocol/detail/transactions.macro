@@ -1062,9 +1062,9 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
 
 /** This transaction type converts into confidential MPT balance. */
 #if TRANSACTION_INCLUDE
-#include <xrpld/app/tx/detail/ConfidentialConvert.h>
+#include <xrpld/app/tx/detail/ConfidentialMPTConvert.h>
 #endif
-TRANSACTION(ttCONFIDENTIAL_CONVERT, 85, ConfidentialConvert,
+TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
     Delegation::delegatable,
     featureConfidentialTransfer,
     noPriv,
@@ -1081,9 +1081,9 @@ TRANSACTION(ttCONFIDENTIAL_CONVERT, 85, ConfidentialConvert,
 
 /** This transaction type merges MPT inbox. */
 #if TRANSACTION_INCLUDE
-#include <xrpld/app/tx/detail/ConfidentialMergeInbox.h>
+#include <xrpld/app/tx/detail/ConfidentialMPTMergeInbox.h>
 #endif
-TRANSACTION(ttCONFIDENTIAL_MERGE_INBOX, 86, ConfidentialMergeInbox,
+TRANSACTION(ttCONFIDENTIAL_MPT_MERGE_INBOX, 86, ConfidentialMPTMergeInbox,
     Delegation::delegatable,
     featureConfidentialTransfer,
     noPriv,
@@ -1093,9 +1093,9 @@ TRANSACTION(ttCONFIDENTIAL_MERGE_INBOX, 86, ConfidentialMergeInbox,
 
 /** This transaction type converts back into public MPT balance. */
 #if TRANSACTION_INCLUDE
-#include <xrpld/app/tx/detail/ConfidentialConvertBack.h>
+#include <xrpld/app/tx/detail/ConfidentialMPTConvertBack.h>
 #endif
-TRANSACTION(ttCONFIDENTIAL_CONVERT_BACK, 87, ConfidentialConvertBack,
+TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT_BACK, 87, ConfidentialMPTConvertBack,
     Delegation::delegatable,
     featureConfidentialTransfer,
     noPriv,
@@ -1111,9 +1111,9 @@ TRANSACTION(ttCONFIDENTIAL_CONVERT_BACK, 87, ConfidentialConvertBack,
 }))
 
 #if TRANSACTION_INCLUDE
-#include <xrpld/app/tx/detail/ConfidentialSend.h>
+#include <xrpld/app/tx/detail/ConfidentialMPTSend.h>
 #endif
-TRANSACTION(ttCONFIDENTIAL_SEND, 88, ConfidentialSend,
+TRANSACTION(ttCONFIDENTIAL_MPT_SEND, 88, ConfidentialMPTSend,
     Delegation::delegatable,
     featureConfidentialTransfer,
     noPriv,
@@ -1131,9 +1131,9 @@ TRANSACTION(ttCONFIDENTIAL_SEND, 88, ConfidentialSend,
 }))
 
 #if TRANSACTION_INCLUDE
-#include <xrpld/app/tx/detail/ConfidentialClawback.h>
+#include <xrpld/app/tx/detail/ConfidentialMPTClawback.h>
 #endif
-TRANSACTION(ttCONFIDENTIAL_CLAWBACK, 89, ConfidentialClawback,
+TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
     Delegation::delegatable,
     featureConfidentialTransfer,
     noPriv,

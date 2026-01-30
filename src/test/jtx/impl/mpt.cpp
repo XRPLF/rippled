@@ -818,7 +818,7 @@ MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
 }
 
 std::optional<Buffer>
-MPTTester::getConfidentialSendProof(
+MPTTester::getConfidentialMPTSendProof(
     Account const& sender,
     std::uint64_t const amount,
     std::vector<ConfidentialRecipient> const& recipients,
@@ -1095,7 +1095,7 @@ MPTTester::convert(MPTConvert const& arg)
     else
         Throw<std::runtime_error>("Account not specified");
 
-    jv[jss::TransactionType] = jss::ConfidentialConvert;
+    jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
     if (arg.id)
         jv[sfMPTokenIssuanceID] = to_string(*arg.id);
     else
@@ -1244,10 +1244,10 @@ MPTTester::convert(MPTConvert const& arg)
 }
 
 void
-MPTTester::send(MPTConfidentialSend const& arg)
+MPTTester::send(MPTConfidentialMPTSend const& arg)
 {
     Json::Value jv;
-    jv[jss::TransactionType] = jss::ConfidentialSend;
+    jv[jss::TransactionType] = jss::ConfidentialMPTSend;
 
     if (arg.account)
         jv[sfAccount] = arg.account->human();
@@ -1415,7 +1415,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
         // crash and allows certain error cases to be tested.
         if (arg.account != arg.dest && prevEncryptedSenderSpending)
         {
-            proof = getConfidentialSendProof(
+            proof = getConfidentialMPTSendProof(
                 *arg.account,
                 *arg.amt,
                 recipients,
@@ -1542,7 +1542,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
 }
 
 void
-MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
+MPTTester::confidentialClaw(MPTConfidentialMPTClawback const& arg)
 {
     Json::Value jv;
     auto const account = arg.account ? *arg.account : issuer_;
@@ -1553,7 +1553,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
     else
         Throw<std::runtime_error>("Holder not specified");
 
-    jv[jss::TransactionType] = jss::ConfidentialClawback;
+    jv[jss::TransactionType] = jss::ConfidentialMPTClawback;
     if (arg.id)
         jv[sfMPTokenIssuanceID] = to_string(*arg.id);
     else if (id_)
@@ -1750,7 +1750,7 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
         jv[sfMPTokenIssuanceID] = to_string(*id_);
     }
 
-    jv[sfTransactionType] = jss::ConfidentialMergeInbox;
+    jv[sfTransactionType] = jss::ConfidentialMPTMergeInbox;
     auto const prevInboxBalance =
         getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
     auto const prevSpendingBalance =
@@ -1830,7 +1830,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
     else
         Throw<std::runtime_error>("Account not specified");
 
-    jv[jss::TransactionType] = jss::ConfidentialConvertBack;
+    jv[jss::TransactionType] = jss::ConfidentialMPTConvertBack;
     if (arg.id)
         jv[sfMPTokenIssuanceID] = to_string(*arg.id);
     else

@@ -1,4 +1,4 @@
-#include <xrpld/app/tx/detail/ConfidentialMergeInbox.h>
+#include <xrpld/app/tx/detail/ConfidentialMPTMergeInbox.h>
 
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
@@ -10,7 +10,7 @@
 namespace ripple {
 
 NotTEC
-ConfidentialMergeInbox::preflight(PreflightContext const& ctx)
+ConfidentialMPTMergeInbox::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureConfidentialTransfer))
         return temDISABLED;
@@ -23,7 +23,7 @@ ConfidentialMergeInbox::preflight(PreflightContext const& ctx)
 }
 
 TER
-ConfidentialMergeInbox::preclaim(PreclaimContext const& ctx)
+ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
 {
     auto const sleIssuance =
         ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
@@ -52,7 +52,7 @@ ConfidentialMergeInbox::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-ConfidentialMergeInbox::doApply()
+ConfidentialMPTMergeInbox::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, account_));

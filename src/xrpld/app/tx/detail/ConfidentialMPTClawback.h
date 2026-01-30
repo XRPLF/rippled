@@ -5,12 +5,12 @@
 
 namespace ripple {
 
-class ConfidentialClawback : public Transactor
+class ConfidentialMPTClawback : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit ConfidentialClawback(ApplyContext& ctx) : Transactor(ctx)
+    explicit ConfidentialMPTClawback(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 

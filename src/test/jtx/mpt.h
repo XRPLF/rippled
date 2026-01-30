@@ -200,7 +200,7 @@ struct MPTMergeInbox
     std::optional<TER> err = std::nullopt;
 };
 
-struct MPTConfidentialSend
+struct MPTConfidentialMPTSend
 {
     std::optional<Account> account = std::nullopt;
     std::optional<Account> dest = std::nullopt;
@@ -242,7 +242,7 @@ struct MPTConvertBack
     std::optional<TER> err = std::nullopt;
 };
 
-struct MPTConfidentialClawback
+struct MPTConfidentialMPTClawback
 {
     std::optional<Account> account = std::nullopt;
     std::optional<Account> holder = std::nullopt;
@@ -330,14 +330,14 @@ public:
     mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
 
     void
-    send(MPTConfidentialSend const& arg = MPTConfidentialSend{});
+    send(MPTConfidentialMPTSend const& arg = MPTConfidentialMPTSend{});
 
     void
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
 
     void
     confidentialClaw(
-        MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
+        MPTConfidentialMPTClawback const& arg = MPTConfidentialMPTClawback{});
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
@@ -462,7 +462,7 @@ public:
     getSchnorrProof(Account const& account, uint256 const& ctxHash) const;
 
     std::optional<Buffer>
-    getConfidentialSendProof(
+    getConfidentialMPTSendProof(
         Account const& sender,
         std::uint64_t const amount,
         std::vector<ConfidentialRecipient> const& recipients,

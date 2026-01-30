@@ -1,4 +1,4 @@
-#include <xrpld/app/tx/detail/ConfidentialSend.h>
+#include <xrpld/app/tx/detail/ConfidentialMPTSend.h>
 
 #include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
@@ -12,7 +12,7 @@
 namespace ripple {
 
 NotTEC
-ConfidentialSend::preflight(PreflightContext const& ctx)
+ConfidentialMPTSend::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureConfidentialTransfer))
         return temDISABLED;
@@ -20,7 +20,7 @@ ConfidentialSend::preflight(PreflightContext const& ctx)
     auto const account = ctx.tx[sfAccount];
     auto const issuer = MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer();
 
-    // ConfidentialSend only allows holder to holder, holder to second account,
+    // ConfidentialMPTSend only allows holder to holder, holder to second account,
     // and second account to holder transfers. So issuer cannot be the sender.
     if (account == issuer)
         return temMALFORMED;
@@ -155,7 +155,7 @@ verifySendProofs(
             equalityProof, recipients, recipientCount, contextHash);
         !isTesSuccess(ter))
     {
-        JLOG(ctx.j.trace()) << "ConfidentialSend: Equality proof failed.";
+        JLOG(ctx.j.trace()) << "ConfidentialMPTSend: Equality proof failed.";
         return ter;
     }
 
@@ -168,7 +168,7 @@ verifySendProofs(
             contextHash);
         !isTesSuccess(ter))
     {
-        JLOG(ctx.j.trace()) << "ConfidentialSend: Amount linkage proof failed.";
+        JLOG(ctx.j.trace()) << "ConfidentialMPTSend: Amount linkage proof failed.";
         return ter;
     }
 
@@ -182,7 +182,7 @@ verifySendProofs(
         !isTesSuccess(ter))
     {
         JLOG(ctx.j.trace())
-            << "ConfidentialSend: Balance linkage proof failed.";
+            << "ConfidentialMPTSend: Balance linkage proof failed.";
         return ter;
     }
 
@@ -190,7 +190,7 @@ verifySendProofs(
 }
 
 TER
-ConfidentialSend::preclaim(PreclaimContext const& ctx)
+ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
 {
     // Check if sender account exists
     auto const account = ctx.tx[sfAccount];
@@ -287,7 +287,7 @@ ConfidentialSend::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-ConfidentialSend::doApply()
+ConfidentialMPTSend::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const destination = ctx_.tx[sfDestination];

@@ -1,16 +1,16 @@
-#ifndef XRPL_TX_CONFIDENTIALMERGEINBOX_H_INCLUDED
-#define XRPL_TX_CONFIDENTIALMERGEINBOX_H_INCLUDED
+#ifndef XRPL_TX_CONFIDENTIALSEND_H_INCLUDED
+#define XRPL_TX_CONFIDENTIALSEND_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-class ConfidentialMergeInbox : public Transactor
+class ConfidentialMPTSend : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit ConfidentialMergeInbox(ApplyContext& ctx) : Transactor(ctx)
+    explicit ConfidentialMPTSend(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 

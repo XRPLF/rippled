@@ -1,4 +1,4 @@
-#include <xrpld/app/tx/detail/ConfidentialClawback.h>
+#include <xrpld/app/tx/detail/ConfidentialMPTClawback.h>
 
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -11,7 +11,7 @@
 namespace ripple {
 
 NotTEC
-ConfidentialClawback::preflight(PreflightContext const& ctx)
+ConfidentialMPTClawback::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureConfidentialTransfer))
         return temDISABLED;
@@ -39,7 +39,7 @@ ConfidentialClawback::preflight(PreflightContext const& ctx)
 }
 
 TER
-ConfidentialClawback::preclaim(PreclaimContext const& ctx)
+ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
 {
     // Check if sender account exists
     auto const account = ctx.tx[sfAccount];
@@ -98,7 +98,7 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-ConfidentialClawback::doApply()
+ConfidentialMPTClawback::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const holder = ctx_.tx[sfHolder];

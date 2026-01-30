@@ -1,16 +1,16 @@
-#ifndef XRPL_TX_CONFIDENTIALCONVERTBACK_H_INCLUDED
-#define XRPL_TX_CONFIDENTIALCONVERTBACK_H_INCLUDED
+#ifndef XRPL_TX_CONFIDENTIALCONVERT_H_INCLUDED
+#define XRPL_TX_CONFIDENTIALCONVERT_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-class ConfidentialConvertBack : public Transactor
+class ConfidentialMPTConvert : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit ConfidentialConvertBack(ApplyContext& ctx) : Transactor(ctx)
+    explicit ConfidentialMPTConvert(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
