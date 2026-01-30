@@ -31,7 +31,10 @@ public:
         // Test 1: Sign-and-submit mode should return augmented fields
         {
             Json::Value jv;
-            jv[jss::tx_json] = pay(alice, bob, XRP(100));
+            jv[jss::tx_json][jss::TransactionType] = jss::Payment;
+            jv[jss::tx_json][jss::Account] = alice.human();
+            jv[jss::tx_json][jss::Destination] = bob.human();
+            jv[jss::tx_json][jss::Amount] = XRP(100).value().getJson(JsonOptions::none);
             jv[jss::secret] = alice.name();
             
             auto const result = env.rpc("json", "submit", to_string(jv))[jss::result];
