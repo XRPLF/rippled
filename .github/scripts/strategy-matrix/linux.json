@@ -208,5 +208,5 @@
     }
   ],
   "build_type": ["Debug", "Release"],
-  "cmake_args": []
+  "cmake_args": [""]
 }
