@@ -4112,34 +4112,6 @@ public:
     }
 
     void
-    testSponsorReserve()
-    {
-        testRequireFlag();
-        for (auto cosigning : {false, true})
-        {
-            testAMM(cosigning);
-            testCheck(cosigning);
-            testOffer(cosigning);
-            testTicket(cosigning);
-            testCredentials(cosigning);
-            testDelegate(cosigning);
-            testDepositPreauth(cosigning);
-            testDID(cosigning);
-            testEscrow(cosigning);
-            testMPToken(cosigning);
-            testNFToken(cosigning);
-            testNFTokenOffer(cosigning);
-            testPayChan(cosigning);
-            testPermissionedDomain(cosigning);
-            testOracle(cosigning);
-            testSignerList(cosigning);
-            testTrustSet(cosigning);
-            testVault(cosigning);
-            testXChain(cosigning);
-        }
-    }
-
-    void
     testBatch()
     {
         testcase("Batch");
@@ -4215,7 +4187,33 @@ public:
     }
 
     void
-    run() override
+    testSponsorReserve(bool cosigning)
+    {
+        testRequireFlag();
+        testAMM(cosigning);
+        testCheck(cosigning);
+        testOffer(cosigning);
+        testTicket(cosigning);
+        testCredentials(cosigning);
+        testDelegate(cosigning);
+        testDepositPreauth(cosigning);
+        testDID(cosigning);
+        testEscrow(cosigning);
+        testMPToken(cosigning);
+        testNFToken(cosigning);
+        testNFTokenOffer(cosigning);
+        testPayChan(cosigning);
+        testPermissionedDomain(cosigning);
+        testOracle(cosigning);
+        testSignerList(cosigning);
+        testTrustSet(cosigning);
+        testVault(cosigning);
+        testXChain(cosigning);
+    }
+
+protected:
+    void
+    testSponsor()
     {
         testDisabled();
         testInvalidSponsorshipSet();
@@ -4232,7 +4230,7 @@ public:
         testTransferSponsor();
         testSponsorFee();
         testSponsorAccount();
-        testSponsorReserve();
+
         testDisallowIncoming();
 
         testAccountDelete();
@@ -4240,9 +4238,42 @@ public:
         testDelegatePermission();
         testBatch();
     }
+
+    void
+    testTxSponsor(bool cosigning)
+    {
+        testSponsorReserve(cosigning);
+    }
+
+public:
+    void
+    run() override
+    {
+        testSponsor();
+    }
+};
+
+class SponsorTxCosigning_test : public Sponsor_test
+{
+    void
+    run() override
+    {
+        testTxSponsor(true);
+    }
+};
+
+class SponsorTxPrefunded_test : public Sponsor_test
+{
+    void
+    run() override
+    {
+        testTxSponsor(false);
+    }
 };
 
 BEAST_DEFINE_TESTSUITE(Sponsor, app, xrpl);
+BEAST_DEFINE_TESTSUITE(SponsorTxCosigning, app, xrpl);
+BEAST_DEFINE_TESTSUITE(SponsorTxPrefunded, app, xrpl);
 
 }  // namespace test
 }  // namespace xrpl
