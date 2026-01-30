@@ -554,7 +554,7 @@ class Simulate_test : public beast::unit_test::suite
             tx[jss::TransactionType] = jss::AccountSet;
             tx[sfDomain] = newDomain;
             tx[sfSponsor.jsonName] = sponsor.human();
-            tx[sfFlags.jsonName] = tfSponsorFee;
+            tx[sfSponsorFlags.jsonName] = tfSponsorFee;
             tx[sfSponsorSignature.jsonName] = Json::objectValue;
 
             // test with autofill
