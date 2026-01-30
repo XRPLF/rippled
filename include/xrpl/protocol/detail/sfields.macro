@@ -118,6 +118,7 @@ TYPED_SFIELD(sfSponsoredOwnerCount,      UINT32,    69)
 TYPED_SFIELD(sfSponsoringOwnerCount,     UINT32,    70)
 TYPED_SFIELD(sfSponsoringAccountCount,   UINT32,    71)
 TYPED_SFIELD(sfReserveCount,             UINT32,    72)
+TYPED_SFIELD(sfSponsorFlags,             UINT32,    73)
 
 // 64-bit integers (common)
 TYPED_SFIELD(sfIndexNext,                UINT64,     1)

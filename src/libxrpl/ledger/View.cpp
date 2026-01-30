@@ -965,7 +965,7 @@ calculateReserve(std::shared_ptr<SLE const> const& sle, Fees const& fees)
 bool
 isReserveSponsored(STTx const& tx)
 {
-    return tx.isFlag(tfSponsorReserve);
+    return tx.getFieldU32(sfSponsorFlags) & tfSponsorReserve;
 }
 
 bool
@@ -1043,7 +1043,7 @@ checkInsufficientReserve(
 std::optional<AccountID>
 getTxReserveSponsorAccountID(STTx const& tx)
 {
-    if (tx.isFieldPresent(sfSponsor) && tx.isFlag(tfSponsorReserve))
+    if (tx.isFieldPresent(sfSponsor) && tx.getFieldU32(sfSponsorFlags) & tfSponsorReserve)
     {
         return tx.getAccountID(sfSponsor);
     }

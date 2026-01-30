@@ -59,12 +59,16 @@ public:
         Account const sponsor("sponsor");
         env.fund(XRP(10000), alice, sponsor);
 
-        // check Sponsor field
-        env(noop(alice), fee(XRP(1)), sponsor::as(sponsor), sig(sfSponsorSignature, sponsor), ter(temDISABLED));
+        // check Sponsor fields
+        auto const jt = noop(alice);
+        auto jt1 = jt;
+        jt1[sfSponsor.jsonName] = sponsor.human();
+        env(jt1, ter(temDISABLED));
+        env(jt, sig(sfSponsorSignature, sponsor), ter(temDISABLED));
 
-        // check Sponsor flags
-        for (auto flag : {tfSponsorFee, tfSponsorReserve, tfSponsorFee | tfSponsorReserve})
-            env(noop(alice), fee(XRP(1)), txflags(flag), ter(temINVALID_FLAG));
+        auto jt2 = jt;
+        jt2[sfSponsorFlags.jsonName] = tfSponsorFee | tfSponsorReserve;
+        env(jt2, ter(temDISABLED));
 
         // check Sponsor transactions
         env(sponsor::transfer(alice), ter(temDISABLED));
@@ -296,7 +300,7 @@ public:
             ter(terNO_ACCOUNT));
 
         // Invalid Flags
-        env(noop(alice), sponsor::as(sponsor, 4), ter(temINVALID_FLAG));
+        env(noop(alice), sponsor::as(sponsor, (tfSponsorFee | tfSponsorReserve) + 1), ter(temINVALID_FLAG));
     }
 
     void

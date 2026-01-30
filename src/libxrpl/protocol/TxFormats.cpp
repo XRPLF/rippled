@@ -29,6 +29,7 @@ TxFormats::TxFormats()
         {sfNetworkID, soeOPTIONAL},
         {sfDelegate, soeOPTIONAL},
         {sfSponsor, soeOPTIONAL},
+        {sfSponsorFlags, soeOPTIONAL},
         {sfSponsorSignature, soeOPTIONAL},
     };
 

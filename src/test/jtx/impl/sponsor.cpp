@@ -93,7 +93,7 @@ void
 as::operator()(Env& env, JTx& jt) const
 {
     jt.jv[sfSponsor.jsonName] = sponsor_.human();
-    jt.jv[sfFlags.jsonName] = jt.jv[sfFlags.jsonName].asUInt() | flags;
+    jt.jv[sfSponsorFlags.jsonName] = flags;
 }
 
 Json::Value

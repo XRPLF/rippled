@@ -70,13 +70,6 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
         return temINVALID_FLAG;
     }
 
-    if (!ctx.rules.enabled(featureSponsor) && ctx.tx.getFlags() & ~tfSponsorMask)
-    {
-        JLOG(ctx.j.debug()) << "preflight0: Sponsor flags set without Sponsor "
-                               "amendment enabled";
-        return temINVALID_FLAG;
-    }
-
     return tesSUCCESS;
 }
 
@@ -153,10 +146,17 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     }
 
     bool const hasSponsor = ctx.tx.isFieldPresent(sfSponsor);
+    bool const hasSponsorFlags = ctx.tx.isFieldPresent(sfSponsorFlags);
     bool const hasSponsorSig = ctx.tx.isFieldPresent(sfSponsorSignature);
 
-    if ((hasSponsor || hasSponsorSig) && !ctx.rules.enabled(featureSponsor))
+    if ((hasSponsor || hasSponsorFlags || hasSponsorSig) && !ctx.rules.enabled(featureSponsor))
         return temDISABLED;
+
+    if (hasSponsorFlags && ctx.tx.getFieldU32(sfSponsorFlags) & tfSponsorMask)
+    {
+        JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
+        return temINVALID_FLAG;
+    }
 
     if (hasSponsorSig && !hasSponsor)
     {
@@ -310,10 +310,12 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     if (!sponsorSle)
         return terNO_SPONSORSHIP;
 
-    if (tx.isFlag(tfSponsorFee) && sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
+    auto const sponsorFlags = tx.getFieldU32(sfSponsorFlags);
+
+    if (sponsorFlags & tfSponsorFee && sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
         return terNO_SPONSORSHIP;
 
-    if (tx.isFlag(tfSponsorReserve) && sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
+    if (sponsorFlags & tfSponsorReserve && sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
         return terNO_SPONSORSHIP;
 
     return tesSUCCESS;
@@ -1143,7 +1145,7 @@ FeePayer
 Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 {
     auto const id = tx.getAccountID(sfAccount);
-    if (tx.isFieldPresent(sfSponsor) && tx.isFlag(tfSponsorFee))
+    if (tx.isFieldPresent(sfSponsor) && tx.getFieldU32(sfSponsorFlags) & tfSponsorFee)
     {
         auto const sponsor = tx.getAccountID(sfSponsor);
         auto const hasSignature = tx.isFieldPresent(sfSponsorSignature);
