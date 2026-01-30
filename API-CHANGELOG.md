@@ -147,7 +147,7 @@ This release contains bug fixes only and no API changes.
 
 ## XRP Ledger server version 1.12.0
 
-[Version 1.12.0](https://github.com/XRPLF/rippled/releases/tag/1.12.0) was released on Sep 6, 2023. The following additions are non-breaking (because they are purely additive).
+[Version 1.12.0](https://github.com/XRPLF/rippled/releases/tag/1.12.0) was released on Sep 6, 2023. The following additions are non-breaking (because they are purely additive):
 
 - `server_info`: Added `ports`, an array which advertises the RPC and WebSocket ports. This information is also included in the `/crawl` endpoint (which calls `server_info` internally). `grpc` and `peer` ports are also included. ([#4427](https://github.com/XRPLF/rippled/pull/4427))
   - `ports` contains objects, each containing a `port` for the listening port (a number string), and a `protocol` array listing the supported protocols on that port.
