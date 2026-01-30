@@ -4177,11 +4177,62 @@ public:
             BEAST_EXPECT(sponsorshipSle->at(sfFeeAmount) == XRP(100 - 1));
             BEAST_EXPECT(sponsorshipSle->at(sfReserveCount) == 100);
         }
-
         //
         // Inner transaction
         //
-        // TEQU: TODO
+        {
+            // test inner transaction with co-signing sponsor
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
+            auto jt = env.jtnofill(
+                noop(alice), sponsor::as(sponsor, tfSponsorReserve | tfSponsorFee), sig(sfSponsorSignature, sponsor));
+
+            auto const seq = env.seq(alice);
+            // should fail because inner transaction cannot include SponsorSignature
+            env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
+                batch::inner(jt.jv, seq + 1),
+                batch::inner(ticket::create(alice, 1), seq + 2),
+                ter(temBAD_SIGNATURE));
+        }
+        {
+            // test outer transaction with prefunded sponsor
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000), alice, bob);
+            env.fund(XRP(1001), sponsor);
+            env.close();
+
+            env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::sponseeAcc(alice), fee(XRP(1)), ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.balance(sponsor) == XRP(900));
+
+            auto jt = env.jtnofill(ticket::create(alice, 1), sponsor::as(sponsor, tfSponsorReserve | tfSponsorFee));
+            // remove txn signature since it is filled by env.jtnofill()
+            jt.jv.removeMember(jss::TxnSignature);
+
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
+                batch::inner(noop(alice), seq + 1),
+                batch::inner(jt.jv, seq + 2),
+                ter(tesSUCCESS));
+            env.close();
+
+            // affect sponsor reserve
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // fee is paid by outer transaction originator (alice)
+            BEAST_EXPECT(env.balance(alice) == XRP(999));
+            BEAST_EXPECT(env.balance(sponsor) == XRP(900));
+
+            // reserve count is decreased
+            auto const sponsorshipSle = env.le(keylet::sponsor(sponsor, alice));
+            BEAST_EXPECT(sponsorshipSle);
+            BEAST_EXPECT(sponsorshipSle->at(sfFeeAmount) == XRP(100));
+            BEAST_EXPECT(sponsorshipSle->at(sfReserveCount) == 99);
+        }
     }
 
     void

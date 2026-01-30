@@ -284,6 +284,14 @@ Batch::preflight(PreflightContext const& ctx)
                 return ret;
             }
         }
+        if (stx.isFieldPresent(sfSponsorSignature))
+        {
+            auto const sponsorSignature = stx.getFieldObject(sfSponsorSignature);
+            if (auto const ret = checkSignatureFields(sponsorSignature, hash, "sponsor signature "))
+            {
+                return ret;
+            }
+        }
 
         // Check that the Fee is native asset (XRP) and zero
         if (auto const fee = stx.getFieldAmount(sfFee); !fee.native() || fee.xrp() != beast::zero)
