@@ -410,6 +410,11 @@ DeleteAccount::doApply()
 
         auto const sponsoringAccountCount = sponsorSle->getFieldU32(sfSponsoringAccountCount);
 
+        if (sponsoringAccountCount == 0)
+            // sanity check
+            // Since sfSponsoringAccountCount is set to soeDEFAULT, the field will not be populated with a value of 0.
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
         if (sponsoringAccountCount == 1)
             sponsorSle->makeFieldAbsent(sfSponsoringAccountCount);
         else
