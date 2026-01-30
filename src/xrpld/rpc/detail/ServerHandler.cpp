@@ -531,10 +531,13 @@ ServerHandler::processSession(
         makeOutput(*session),
         coro,
         forwardedFor(session->request()),
-        [&] {
+        [&]() -> std::string_view {
             auto const iter = session->request().find("X-User");
             if (iter != session->request().end())
-                return iter->value();
+            {
+                auto const val = iter->value();
+                return std::string_view(val.data(), val.size());
+            }
             return std::string_view{};
         }());
 
