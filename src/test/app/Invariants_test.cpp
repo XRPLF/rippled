@@ -101,7 +101,8 @@ class Invariants_test : public beast::unit_test::suite
                 if (messages.find(m) == std::string::npos)
                 {
                     // uncomment if you want to log the invariant failure
-                    // std::cerr << "   --> " << m << std::endl;
+                    // std::cerr << " expected --> " << m << std::endl;
+                    // std::cerr << " actual   --> " << messages << std::endl;
                     fail();
                 }
             }
@@ -3512,6 +3513,26 @@ class Invariants_test : public beast::unit_test::suite
                     return false;
                 sle->setFieldU32(sfSponsoringOwnerCount, 1);
                 ac.view().update(sle);
+                return true;
+            });
+        }
+
+        {
+            auto const expect_message = "OwnerCount must be greater than or equal to SponsoredOwnerCount.";
+
+            doInvariantCheck({{expect_message}}, [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+                sle->setFieldU32(sfOwnerCount, 0);
+                sle->setFieldU32(sfSponsoredOwnerCount, 1);
+                ac.view().update(sle);
+
+                auto const sle2 = ac.view().peek(keylet::account(A2.id()));
+                if (!sle2)
+                    return false;
+                sle2->setFieldU32(sfSponsoringOwnerCount, 1);
+                ac.view().update(sle2);
                 return true;
             });
         }

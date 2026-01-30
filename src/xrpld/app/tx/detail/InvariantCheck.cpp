@@ -3287,6 +3287,17 @@ SponsorshipOwnerCountsMatch::visitEntry(
         return 0;
     };
 
+    auto getOwnerCount = [](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+        if (sle && sle->getType() == ltACCOUNT_ROOT)
+            return sle->getFieldU32(sfOwnerCount);
+        return 0;
+    };
+    auto getSponsoredOwnerCount = [](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+        if (sle && sle->getType() == ltACCOUNT_ROOT)
+            return sle->getFieldU32(sfSponsoredOwnerCount);
+        return 0;
+    };
+
     std::int64_t const beforeSponsored = getSponsored(before);
     std::int64_t const afterSponsored = getSponsored(after);
     std::int64_t const beforeSponsoring = getSponsoring(before);
@@ -3294,6 +3305,9 @@ SponsorshipOwnerCountsMatch::visitEntry(
 
     deltaSponsoredOwnerCount_ += (afterSponsored - beforeSponsored);
     deltaSponsoringOwnerCount_ += (afterSponsoring - beforeSponsoring);
+
+    if (getOwnerCount(after) < getSponsoredOwnerCount(after))
+        invalidOwnerCountLessThanSponsoredOwnerCount_ += 1;
 }
 
 bool
@@ -3303,6 +3317,12 @@ SponsorshipOwnerCountsMatch::finalize(STTx const&, TER const, XRPAmount const, R
     {
         JLOG(j.fatal()) << "Invariant failed: SponsoredOwnerCount does not "
                            "equal SponsoringOwnerCount delta.";
+        return false;
+    }
+
+    if (invalidOwnerCountLessThanSponsoredOwnerCount_ > 0)
+    {
+        JLOG(j.fatal()) << "Invariant failed: OwnerCount must be greater than or equal to SponsoredOwnerCount.";
         return false;
     }
 
