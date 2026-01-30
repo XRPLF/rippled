@@ -8,6 +8,10 @@ The API version controls the API behavior you see. This includes what properties
 
 For a log of breaking changes, see the **API Version [number]** headings. In general, breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version [x.y.z]** headings. Non-breaking changes are associated with a particular XRP Ledger (`rippled`) release.
 
+## API Version 3 (Beta)
+
+API version 3 is currently a beta API. It requires enabling `[beta_rpc_api]` in the rippled configuration to use. See [API-VERSION-3.md](API-VERSION-3.md) for the full list of changes in API version 3.
+
 ## API Version 2
 
 API version 2 is available in `rippled` version 2.0.0 and later. See [API-VERSION-2.md](API-VERSION-2.md) for the full list of breaking changes in API version 2.
