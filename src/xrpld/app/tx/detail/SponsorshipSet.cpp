@@ -16,22 +16,11 @@ NotTEC
 SponsorshipSet::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
-    {
-        if ((flags & tfSponsorshipSetRequireSignForFee) && (flags & tfSponsorshipClearRequireSignForFee))
-            return temINVALID_FLAG;
 
-        if ((flags & tfSponsorshipSetRequireSignForReserve) && (flags & tfSponsorshipClearRequireSignForReserve))
-            return temINVALID_FLAG;
-
-        if (flags & tfDeleteObject)
-        {
-            // check Flags
-            if (flags &
-                (tfSponsorshipSetRequireSignForFee | tfSponsorshipSetRequireSignForReserve |
-                 tfSponsorshipClearRequireSignForFee | tfSponsorshipClearRequireSignForReserve))
-                return temINVALID_FLAG;
-        }
-    }
+    if ((flags & tfSponsorshipSetRequireSignForFee) && (flags & tfSponsorshipClearRequireSignForFee))
+        return temINVALID_FLAG;
+    if ((flags & tfSponsorshipSetRequireSignForReserve) && (flags & tfSponsorshipClearRequireSignForReserve))
+        return temINVALID_FLAG;
 
     auto const account = ctx.tx.getAccountID(sfAccount);
     bool const hasSponsor = ctx.tx.isFieldPresent(sfSponsorAccount);
