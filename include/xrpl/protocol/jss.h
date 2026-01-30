@@ -455,6 +455,7 @@ JSS(node_write_retries);      // out: GetCounts
 JSS(node_writes_delayed);     // out::GetCounts
 JSS(nth);                     // out: RPC server_definitions
 JSS(obligations);             // out: GatewayBalances
+JSS(obsolete);                // out: AmendmentTableImpl
 JSS(offers);                  // out: NetworkOPs, AccountOffers, Subscribe
 JSS(offer_id);                // out: insertNFTokenOfferID
 JSS(offline);                 // in: TransactionSign

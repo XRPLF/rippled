@@ -92,6 +92,10 @@ This release contains bug fixes only and no API changes.
 
 [Version 2.5.0](https://github.com/XRPLF/rippled/releases/tag/2.5.0) was released on Jun 24, 2025.
 
+### Breaking changes in 2.5.0
+
+- `feature`: The `vetoed` field is now always a boolean. Obsolete amendments now have `"vetoed": true` and a new `"obsolete": true` field, instead of the previous `"vetoed": "Obsolete"` string value. This change improves type safety for API clients.
+
 ### Additions and bugfixes in 2.5.0
 
 - `tx`: Added `ctid` field to the response and improved error handling. ([#4738](https://github.com/XRPLF/rippled/pull/4738))

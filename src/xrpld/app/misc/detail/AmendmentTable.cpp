@@ -928,7 +928,8 @@ AmendmentTableImpl::injectJson(
     {
         if (fs.vote == AmendmentVote::obsolete)
         {
-            v[jss::vetoed] = "Obsolete";
+            v[jss::vetoed] = true;
+            v[jss::obsolete] = true;
         }
         else
         {
