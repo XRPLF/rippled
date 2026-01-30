@@ -37,7 +37,7 @@ This change affects the following methods:
 - `subscribe` - Renamed transaction element from `transaction` to `tx_json`. Changed location of `hash` and added new elements
 - `sign`, `sign_for`, `submit` and `submit_multisigned` - Changed location of `hash` element.
 
-## Modification to `Payment` transaction JSON schema
+## Modifications to `Payment` transaction JSON schema
 
 When reading Payments, the `Amount` field should generally **not** be used. Instead, use [delivered_amount](https://xrpl.org/partial-payments.html#the-delivered_amount-field) to see the amount that the Payment delivered. To clarify its meaning, the `Amount` field is being renamed to `DeliverMax`. ([#4733](https://github.com/XRPLF/rippled/pull/4733))
 
