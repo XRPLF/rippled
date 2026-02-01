@@ -263,6 +263,8 @@ LoanBrokerSet::doApply()
         if (auto const coverLiq = tx[~sfCoverRateLiquidation])
             broker->at(sfCoverRateLiquidation) = *coverLiq;
 
+        addSponsorToLedgerEntry(broker, sponsor);
+
         view.insert(broker);
 
         associateAsset(*broker, vaultAsset);

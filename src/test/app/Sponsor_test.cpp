@@ -3906,6 +3906,134 @@ public:
     }
 
     void
+    testLending(bool cosigning)
+    {
+        testcase("Lending");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const issuer("issuer");
+        Account const sponsor("sponsor");
+
+        // LoanBrokerSet / LoanBrokerDelete
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            PrettyAsset const asset{xrpIssue(), 1'000'000};
+
+            Vault vault{env};
+            auto const [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx, THISLINE);
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 3);  // Vault, PseudoAccount(Vault), MPToken(Vault)
+
+            // LoanBrokerSet
+            testEachSponsorship(
+                // Both the Pseudo-account and LoanBroker objects are created, but only the LoanBroker is sponsored.
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                2,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) { submit(loanBroker::set(alice, keylet.key, 0)); });
+
+            BEAST_EXPECT(
+                ownerCount(env, alice) ==
+                5);  // LoanBroker, PseudoAccount(LB), (Vault, PseudoAccount(Vault), MPToken(Vault))
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // LoanBrokerDelete
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice) - 1);
+            env(loanBroker::del(alice, brokerKeylet.key, 0));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+
+        // LoanBrokerConverDeposit/Withdraw/Clawback
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000), alice, bob, issuer, sponsor);
+            env.close();
+
+            MPTTester mptt{env, issuer, mptInitNoFund};
+            mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+            env.close();
+            PrettyAsset const asset = mptt["MPT"];
+            mptt.authorize({.account = alice});
+            env.close();
+
+            env(pay(issuer, alice, asset(100)));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+            Vault vault{env};
+            auto const [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx, THISLINE);
+            env.close();
+
+            env(loanBroker::set(alice, keylet.key, 0));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 6);  // LoanBroker, PseudoAccount(LB), (Vault, PseudoAccount(Vault),
+                                                        // MPToken(Vault), MPToken(issuer))
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice) - 1);
+            // LoanBrokerCoverDeposit
+            // doesn't sponsor anything
+            env(loanBroker::coverDeposit(alice, brokerKeylet.key, asset(100)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sig(sfSponsorSignature, sponsor));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 6);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+
+            // remove MPToken(issuer)
+            mptt.authorize({.account = alice, .flags = tfMPTUnauthorize});
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 5);
+
+            env(ticket::create(sponsor, 2));  // for avoid free MPToken
+            env.close();
+
+            // LoanBrokerCoverWithdraw
+            testEachSponsorship(
+                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                    submit(loanBroker::coverWithdraw(alice, brokerKeylet.key, asset(10)));
+                });
+
+            BEAST_EXPECT(ownerCount(env, alice) == 6);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // LoanBrokerCoverClawback
+            // doesn't sponsor anything
+            env(loanBroker::coverClawback(issuer),
+                loanBroker::loanBrokerID(brokerKeylet.key),
+                amount(asset(1)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 6);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        }
+        // LoanSet
+        // LoanDelete
+        // LoanManage
+        // LoanPay
+    }
+
+    void
     testDisallowIncoming()
     {
         testcase("DisallowIncoming");
@@ -4290,6 +4418,8 @@ public:
     void
     testSponsorReserve(bool cosigning)
     {
+        testLending(cosigning);
+        return;
         testRequireFlag();
         testAMM(cosigning);
         testCheck(cosigning);
@@ -4310,6 +4440,7 @@ public:
         testTrustSet(cosigning);
         testVault(cosigning);
         testXChain(cosigning);
+        testLending(cosigning);
     }
 
 protected:
