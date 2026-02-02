@@ -18,7 +18,7 @@ Please follow [the official installation instructions of nix package manager](ht
 
 ### Basic Usage
 
-From the root of the rippled repository, enter the default development shell:
+From the root of the xrpld repository, enter the default development shell:
 
 ```bash
 nix --experimental-features='nix-command flakes' develop
