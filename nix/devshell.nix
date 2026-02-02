@@ -12,18 +12,18 @@ let
     pkg-config
     llvmPackages_18.clang-tools
   ];
-  default_compiler = if pkgs.stdenv.isDarwin then "none" else "gcc";
-  strToCompiler =
+  default_compiler = if pkgs.stdenv.isDarwin then "apple-clang" else "gcc";
+  strToCompilerEnv =
     compiler:
     (
       if compiler == "gcc" then
-        [ pkgs.gcc12Stdenv ]
+        pkgs.gcc14Stdenv
       else if compiler == "clang" then
-        [ pkgs.clang16Stdenv ]
-      else if compiler == "none" then
-        [ ]
+        pkgs.llvmPackages_18.stdenv
+      else if compiler == "apple-clang" then
+        pkgs.stdenvNoCC
       else
-        builtins.throw "Invalid compiler: ${compiler}. Must be one of: gcc, clang, none"
+        throw "Invalid compiler: ${compiler}. Must be one of: gcc, clang, none"
     );
 
   # Helper function to create a shell with a specific compiler
@@ -32,22 +32,21 @@ let
       compiler ? default_compiler,
     }:
     let
-      compilerPackages = strToCompiler default_compiler;
+      compilerStdEnv = strToCompilerEnv compiler;
 
-      compilerName =
-        if compiler == "none" then
-          (if pkgs.stdenv.isDarwin then "apple-clang" else "system default")
-        else
-          compiler;
+      compilerName = if compiler == "apple-clang" then "clang" else compiler;
+
+      shellAttrs = {
+        packages = common_packages;
+
+        shellHook = ''
+          echo "Welcome to xrpld development shell";
+          echo "Compiler: "
+          ${compilerName} --version
+        '';
+      };
     in
-    pkgs.mkShell {
-      packages = common_packages ++ compilerPackages;
-
-      shellHook = ''
-        echo "Welcome to xrpld development shell"
-        echo "Compiler: " ''$(${compilerName} --version)
-      '';
-    };
+    pkgs.mkShell.override { stdenv = compilerStdEnv; } shellAttrs;
 
 in
 {

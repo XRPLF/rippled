@@ -7,7 +7,7 @@
   outputs =
     { nixpkgs, ... }:
     let
-      forEachSystem = import nix/utils.nix { inherit nixpkgs; };
+      forEachSystem = (import nix/utils.nix { inherit nixpkgs; }).forEachSystem;
     in
     {
       devShells = forEachSystem (import nix/devshell.nix);
