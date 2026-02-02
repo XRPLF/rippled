@@ -1064,7 +1064,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
 #if TRANSACTION_INCLUDE
 #include <xrpld/app/tx/detail/ConfidentialMPTConvert.h>
 #endif
-TRANSACTION(ttCONFIDENTIAL_CONVERT, 85, ConfidentialConvert,
+TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
     Delegation::delegable,
     featureConfidentialTransfer,
     noPriv,
@@ -1083,7 +1083,7 @@ TRANSACTION(ttCONFIDENTIAL_CONVERT, 85, ConfidentialConvert,
 #if TRANSACTION_INCLUDE
 #include <xrpld/app/tx/detail/ConfidentialMPTMergeInbox.h>
 #endif
-TRANSACTION(ttCONFIDENTIAL_MERGE_INBOX, 86, ConfidentialMergeInbox,
+TRANSACTION(ttCONFIDENTIAL_MPT_MERGE_INBOX, 86, ConfidentialMPTMergeInbox,
     Delegation::delegable,
     featureConfidentialTransfer,
     noPriv,
@@ -1095,7 +1095,7 @@ TRANSACTION(ttCONFIDENTIAL_MERGE_INBOX, 86, ConfidentialMergeInbox,
 #if TRANSACTION_INCLUDE
 #include <xrpld/app/tx/detail/ConfidentialMPTConvertBack.h>
 #endif
-TRANSACTION(ttCONFIDENTIAL_CONVERT_BACK, 87, ConfidentialConvertBack,
+TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT_BACK, 87, ConfidentialMPTConvertBack,
     Delegation::delegable,
     featureConfidentialTransfer,
     noPriv,
@@ -1113,7 +1113,7 @@ TRANSACTION(ttCONFIDENTIAL_CONVERT_BACK, 87, ConfidentialConvertBack,
 #if TRANSACTION_INCLUDE
 #include <xrpld/app/tx/detail/ConfidentialMPTSend.h>
 #endif
-TRANSACTION(ttCONFIDENTIAL_SEND, 88, ConfidentialSend,
+TRANSACTION(ttCONFIDENTIAL_MPT_SEND, 88, ConfidentialMPTSend,
     Delegation::delegable,
     featureConfidentialTransfer,
     noPriv,
@@ -1133,7 +1133,7 @@ TRANSACTION(ttCONFIDENTIAL_SEND, 88, ConfidentialSend,
 #if TRANSACTION_INCLUDE
 #include <xrpld/app/tx/detail/ConfidentialMPTClawback.h>
 #endif
-TRANSACTION(ttCONFIDENTIAL_CLAWBACK, 89, ConfidentialClawback,
+TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
     Delegation::delegable,
     featureConfidentialTransfer,
     noPriv,

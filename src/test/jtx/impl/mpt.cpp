@@ -1350,7 +1350,7 @@ MPTTester::send(MPTConfidentialMPTSend const& arg)
 }
 
 void
-MPTTester::confidentialClaw(MPTConfidentialMPTClawback const& arg)
+MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
 {
     Json::Value jv;
     auto const account = arg.account ? *arg.account : issuer_;

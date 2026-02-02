@@ -238,7 +238,7 @@ struct MPTConvertBack
     std::optional<TER> err = std::nullopt;
 };
 
-struct MPTConfidentialMPTClawback
+struct MPTConfidentialClawback
 {
     std::optional<Account> account = std::nullopt;
     std::optional<Account> holder = std::nullopt;
@@ -332,7 +332,7 @@ public:
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
 
     void
-    confidentialClaw(MPTConfidentialMPTClawback const& arg = MPTConfidentialMPTClawback{});
+    confidentialClaw(MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
