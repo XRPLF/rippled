@@ -2,7 +2,7 @@
 
 #include <boost/predef.h>
 
-#include <doctest/doctest.h>
+#include <gtest/gtest.h>
 
 using namespace xrpl;
 
@@ -13,34 +13,34 @@ parseVmRSSkB(std::string const& status);
 }  // namespace xrpl::detail
 #endif
 
-TEST_CASE("MallocTrimReport structure")
+TEST(MallocTrimReport, structure)
 {
     // Test default construction
     MallocTrimReport report;
-    CHECK(report.supported == false);
-    CHECK(report.trimResult == -1);
-    CHECK(report.rssBeforeKB == -1);
-    CHECK(report.rssAfterKB == -1);
-    CHECK(report.deltaKB() == 0);
+    EXPECT_EQ(report.supported, false);
+    EXPECT_EQ(report.trimResult, -1);
+    EXPECT_EQ(report.rssBeforeKB, -1);
+    EXPECT_EQ(report.rssAfterKB, -1);
+    EXPECT_EQ(report.deltaKB(), 0);
 
     // Test deltaKB calculation - memory freed
     report.rssBeforeKB = 1000;
     report.rssAfterKB = 800;
-    CHECK(report.deltaKB() == -200);
+    EXPECT_EQ(report.deltaKB(), -200);
 
     // Test deltaKB calculation - memory increased
     report.rssBeforeKB = 500;
     report.rssAfterKB = 600;
-    CHECK(report.deltaKB() == 100);
+    EXPECT_EQ(report.deltaKB(), 100);
 
     // Test deltaKB calculation - no change
     report.rssBeforeKB = 1234;
     report.rssAfterKB = 1234;
-    CHECK(report.deltaKB() == 0);
+    EXPECT_EQ(report.deltaKB(), 0);
 }
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
-TEST_CASE("parseVmRSSkB")
+TEST(parseVmRSSkB, standard_format)
 {
     using xrpl::detail::parseVmRSSkB;
 
@@ -48,7 +48,7 @@ TEST_CASE("parseVmRSSkB")
     {
         std::string status = "VmRSS:      123456 kB\n";
         long result = parseVmRSSkB(status);
-        CHECK(result == 123456);
+        EXPECT_EQ(result, 123456);
     }
 
     // Test with multiple lines
@@ -60,21 +60,21 @@ TEST_CASE("parseVmRSSkB")
             "VmRSS:      987654 kB\n"
             "VmData:   123456 kB\n";
         long result = parseVmRSSkB(status);
-        CHECK(result == 987654);
+        EXPECT_EQ(result, 987654);
     }
 
     // Test with minimal whitespace
     {
         std::string status = "VmRSS: 42 kB";
         long result = parseVmRSSkB(status);
-        CHECK(result == 42);
+        EXPECT_EQ(result, 42);
     }
 
     // Test with extra whitespace
     {
         std::string status = "VmRSS:          999999 kB";
         long result = parseVmRSSkB(status);
-        CHECK(result == 999999);
+        EXPECT_EQ(result, 999999);
     }
 
     // Test with tabs
@@ -83,14 +83,14 @@ TEST_CASE("parseVmRSSkB")
         long result = parseVmRSSkB(status);
         // Note: tabs are not explicitly handled as spaces, this documents
         // current behavior
-        CHECK(result == 12345);
+        EXPECT_EQ(result, 12345);
     }
 
     // Test zero value
     {
         std::string status = "VmRSS:      0 kB\n";
         long result = parseVmRSSkB(status);
-        CHECK(result == 0);
+        EXPECT_EQ(result, 0);
     }
 
     // Test missing VmRSS
@@ -100,14 +100,14 @@ TEST_CASE("parseVmRSSkB")
             "VmPeak:  1234567 kB\n"
             "VmSize:  1234567 kB\n";
         long result = parseVmRSSkB(status);
-        CHECK(result == -1);
+        EXPECT_EQ(result, -1);
     }
 
     // Test empty string
     {
         std::string status = "";
         long result = parseVmRSSkB(status);
-        CHECK(result == -1);
+        EXPECT_EQ(result, -1);
     }
 
     // Test malformed data (VmRSS but no number)
@@ -115,7 +115,7 @@ TEST_CASE("parseVmRSSkB")
         std::string status = "VmRSS:      \n";
         long result = parseVmRSSkB(status);
         // sscanf should fail to parse and return -1 unchanged
-        CHECK(result == -1);
+        EXPECT_EQ(result, -1);
     }
 
     // Test malformed data (VmRSS but invalid number)
@@ -123,19 +123,19 @@ TEST_CASE("parseVmRSSkB")
         std::string status = "VmRSS:      abc kB\n";
         long result = parseVmRSSkB(status);
         // sscanf should fail and return -1 unchanged
-        CHECK(result == -1);
+        EXPECT_EQ(result, -1);
     }
 
     // Test partial match (should not match "NotVmRSS:")
     {
         std::string status = "NotVmRSS:      123456 kB\n";
         long result = parseVmRSSkB(status);
-        CHECK(result == -1);
+        EXPECT_EQ(result, -1);
     }
 }
 #endif
 
-TEST_CASE("mallocTrim basic functionality")
+TEST(mallocTrim, basic_functionality)
 {
     beast::Journal journal{beast::Journal::getNullSink()};
 
@@ -145,63 +145,59 @@ TEST_CASE("mallocTrim basic functionality")
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
         // On Linux with glibc, should be supported
-        CHECK(report.supported == true);
+        EXPECT_EQ(report.supported, true);
         // trimResult should be 0 or 1 (success indicators)
-        CHECK(report.trimResult >= 0);
+        EXPECT_GE(report.trimResult, 0);
 #else
         // On other platforms, should be unsupported
-        CHECK(report.supported == false);
-        CHECK(report.trimResult == -1);
-        CHECK(report.rssBeforeKB == -1);
-        CHECK(report.rssAfterKB == -1);
+        EXPECT_EQ(report.supported, false);
+        EXPECT_EQ(report.trimResult, -1);
+        EXPECT_EQ(report.rssBeforeKB, -1);
+        EXPECT_EQ(report.rssAfterKB, -1);
 #endif
     }
 
     // Test with tag
     {
-        MallocTrimReport report =
-            mallocTrim(std::optional<std::string>("test_tag"), journal);
+        MallocTrimReport report = mallocTrim(std::optional<std::string>("test_tag"), journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
-        CHECK(report.supported == true);
-        CHECK(report.trimResult >= 0);
+        EXPECT_EQ(report.supported, true);
+        EXPECT_GE(report.trimResult, 0);
 #else
-        CHECK(report.supported == false);
+        EXPECT_EQ(report.supported, false);
 #endif
     }
 }
 
-TEST_CASE("mallocTrim with debug logging")
+TEST(mallocTrim, debug_logging)
 {
     beast::Journal journal{beast::Journal::getNullSink()};
 
-    MallocTrimReport report =
-        mallocTrim(std::optional<std::string>("debug_test"), journal);
+    MallocTrimReport report = mallocTrim(std::optional<std::string>("debug_test"), journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
-    CHECK(report.supported == true);
+    EXPECT_EQ(report.supported, true);
     // The function should complete without crashing
 #else
-    CHECK(report.supported == false);
+    EXPECT_EQ(report.supported, false);
 #endif
 }
 
-TEST_CASE("mallocTrim repeated calls")
+TEST(mallocTrim, repeated_calls)
 {
     beast::Journal journal{beast::Journal::getNullSink()};
 
     // Call malloc_trim multiple times to ensure it's safe
     for (int i = 0; i < 5; ++i)
     {
-        MallocTrimReport report = mallocTrim(
-            std::optional<std::string>("iteration_" + std::to_string(i)),
-            journal);
+        MallocTrimReport report = mallocTrim(std::optional<std::string>("iteration_" + std::to_string(i)), journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
-        CHECK(report.supported == true);
-        CHECK(report.trimResult >= 0);
+        EXPECT_EQ(report.supported, true);
+        EXPECT_GE(report.trimResult, 0);
 #else
-        CHECK(report.supported == false);
+        EXPECT_EQ(report.supported, false);
 #endif
     }
 }

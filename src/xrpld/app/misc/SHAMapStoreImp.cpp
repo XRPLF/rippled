@@ -5,7 +5,6 @@
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/basics/MallocTrim.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
@@ -492,8 +491,6 @@ SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 {
     ledgerMaster_->clearLedgerCachePrior(validatedSeq);
     fullBelowCache_->clear();
-
-    // mallocTrim(std::optional<std::string>("clearCaches"), journal_);
 }
 
 void
@@ -548,8 +545,6 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         [&db](LedgerIndex min) -> void { db->deleteAccountTransactionsBeforeLedgerSeq(min); });
     if (healthWait() == stopping)
         return;
-
-    // mallocTrim(std::optional<std::string>("clearPrior"), journal_);
 }
 
 SHAMapStoreImp::HealthResult
