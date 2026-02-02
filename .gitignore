@@ -74,3 +74,6 @@ DerivedData
 
 # direnv
 .direnv
+
+# clangd's local cache
+.cache
