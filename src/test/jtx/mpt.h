@@ -440,7 +440,7 @@ public:
     getSchnorrProof(Account const& account, uint256 const& ctxHash) const;
 
     std::optional<Buffer>
-    getConfidentialMPTSendProof(
+    getConfidentialSendProof(
         Account const& sender,
         std::uint64_t const amount,
         std::vector<ConfidentialRecipient> const& recipients,

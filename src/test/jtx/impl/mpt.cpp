@@ -735,7 +735,7 @@ MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
 }
 
 std::optional<Buffer>
-MPTTester::getConfidentialMPTSendProof(
+MPTTester::getConfidentialSendProof(
     Account const& sender,
     std::uint64_t const amount,
     std::vector<ConfidentialRecipient> const& recipients,
@@ -1248,7 +1248,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
         // crash and allows certain error cases to be tested.
         if (arg.account != arg.dest && prevEncryptedSenderSpending)
         {
-            proof = getConfidentialMPTSendProof(
+            proof = getConfidentialSendProof(
                 *arg.account,
                 *arg.amt,
                 recipients,
