@@ -32,16 +32,18 @@ This will:
 
 The first time you run this command, it will take a few minutes to download and build the environment. Subsequent runs will be much faster.
 
-> **HINT**: To avoid typing `--experimental-features='nix-command flakes'` every time, you can permanently enable flakes by creating `~/.config/nix/nix.conf`:
+> [!TIP]
+> To avoid typing `--experimental-features='nix-command flakes'` every time, you can permanently enable flakes by creating `~/.config/nix/nix.conf`:
 >
 > ```bash
 > mkdir -p ~/.config/nix
 > echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 > ```
 >
-> After this, you can simply use `nix develop` instead. 
->
-> **Note**: The examples below assume you've enabled flakes in your config. If you haven't, add `--experimental-features='nix-command flakes'` after each `nix` command.
+> After this, you can simply use `nix develop` instead.
+
+> [!NOTE]
+> The examples below assume you've enabled flakes in your config. If you haven't, add `--experimental-features='nix-command flakes'` after each `nix` command.
 
 ### Choosing a different compiler
 
@@ -65,21 +67,11 @@ nix develop
 
 ## Building xrpld with Nix
 
-Once inside the Nix development shell, follow the standard [build instructions](../../BUILD.md#build-and-test). The Nix shell provides all necessary tools (CMake, Ninja, Conan, etc.), so you can proceed directly to creating the build directory and running Conan.
+Once inside the Nix development shell, follow the standard [build instructions](../../BUILD.md#steps). The Nix shell provides all necessary tools (CMake, Ninja, Conan, etc.).
 
 ## Automatic Activation with direnv
 
-[direnv](https://direnv.net/) can automatically activate the Nix development shell when you enter the repository directory.
-
-To set it up:
-1. Install direnv following instructions from [direnv.net](https://direnv.net/)
-2. Create `.envrc` in the repository root:
-   ```bash
-   echo "use flake" > .envrc
-   direnv allow
-   ```
-
-For more advanced features, see [nix-direnv](https://github.com/nix-community/nix-direnv).
+[direnv](https://direnv.net/) or [nix-direnv](https://github.com/nix-community/nix-direnv) can automatically activate the Nix development shell when you enter the repository directory.
 
 ## Conan and Prebuilt Packages
 
