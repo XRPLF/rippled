@@ -145,6 +145,6 @@ gccShells
   clang = makeShell { compiler = "clang"; };
 
   # No compiler
-  no_compiler = makeShell { compiler = "none"; };
+  no-compiler = makeShell { compiler = "none"; };
   apple-clang = makeShell { compiler = "apple-clang"; };
 }

@@ -76,7 +76,7 @@ Once inside the Nix development shell, follow the standard [build instructions](
 
 ## Conan and Prebuilt Packages
 
-Please note that there is no guarantee that binaries from conan cache will work when using nix. If you have any error please use `--build '*'` to force conan to compile everything from source:
+Please note that there is no guarantee that binaries from conan cache will work when using nix. If you encounter any errors, please use `--build '*'` to force conan to compile everything from source:
 
 ```bash
 conan install .. --output-folder . --build '*' --settings build_type=Release
