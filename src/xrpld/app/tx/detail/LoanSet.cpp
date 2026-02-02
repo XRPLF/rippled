@@ -494,15 +494,13 @@ LoanSet::doApply()
     if (auto const ter = requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))
         return ter;
 
-    auto const sponsorAccount = getTxReserveSponsorAccountID(tx);
-
     if (auto const ter = accountSendMulti(
             view,
             vaultPseudo,
             vaultAsset,
             {{borrower, loanAssetsToBorrower}, {brokerOwner, originationFee}},
             j_,
-            sponsorAccount,
+            {},  // Vault and Broker cannot be sponsored
             WaiveTransferFee::Yes))
         return ter;
 
@@ -548,6 +546,7 @@ LoanSet::doApply()
     loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
+    addSponsorToLedgerEntry(loan, sponsorSle);
     view.insert(loan);
 
     // Update the balances in the vault

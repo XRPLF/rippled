@@ -489,15 +489,13 @@ LoanPay::doApply()
             return ter;
     }
 
-    auto const sponsorAccount = getTxReserveSponsorAccountID(tx);
-
     if (auto const ter = accountSendMulti(
             view,
             account_,
             asset,
             {{vaultPseudoAccount, totalPaidToVaultRounded}, {brokerPayee, totalPaidToBroker}},
             j_,
-            sponsorAccount,
+            {},  // Vault and Broker cannot be sponsored
             WaiveTransferFee::Yes))
         return ter;
 

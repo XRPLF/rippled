@@ -7,9 +7,6 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
 
-#include "test/jtx/envconfig.h"
-#include "test/jtx/sponsor.h"
-
 namespace xrpl {
 namespace test {
 
@@ -4028,9 +4025,100 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
         }
         // LoanSet
-        // LoanDelete
-        // LoanManage
-        // LoanPay
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, issuer, sponsor);
+            env.close();
+
+            MPTTester mptt{env, issuer, mptInitNoFund};
+            mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+            env.close();
+            PrettyAsset const asset = mptt["MPT"];
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = bob});
+            env.close();
+
+            env(pay(issuer, alice, asset(1000)));
+            env(pay(issuer, bob, asset(1000)));
+            env.close();
+
+            Vault vault{env};
+            auto const [tx, keylet] = vault.create({.owner = bob, .asset = asset});
+            env(tx, THISLINE);
+            env.close();
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(100)}), THISLINE);
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(bob.id(), env.seq(bob));
+            env(loanBroker::set(bob, keylet.key, 0));
+            env.close();
+            env(loanBroker::coverDeposit(bob, brokerKeylet.key, asset(100)));
+            env.close();
+
+            auto broker = env.le(brokerKeylet);
+            BEAST_EXPECT(broker->getFieldU32(sfOwnerCount) == 0);
+            BEAST_EXPECT(!broker->isFieldPresent(sfSponsoredOwnerCount));
+            BEAST_EXPECT(!broker->isFieldPresent(sfSponsoringOwnerCount));
+
+            auto const loanSeq = broker->getFieldU32(sfLoanSequence);
+            testEachSponsorship(
+                env, cosigning, sponsor, alice, 1, 1, tecINSUFFICIENT_RESERVE, [&](Env& env, auto const& submit) {
+                    submit(loan::set(alice, brokerKeylet.key, 10), sig(sfCounterpartySignature, bob), fee(XRP(1)));
+                });
+            broker = env.le(brokerKeylet);
+            // broker'object doesn't sponsored
+            BEAST_EXPECT(broker->getFieldU32(sfOwnerCount) == 1);
+            BEAST_EXPECT(!broker->isFieldPresent(sfSponsoredOwnerCount));
+            BEAST_EXPECT(!broker->isFieldPresent(sfSponsoringOwnerCount));
+
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSeq);
+
+            auto sponsorSle = env.le(keylet::account(sponsor));
+            BEAST_EXPECT(sponsorSle->getFieldU32(sfOwnerCount) == 0);
+            BEAST_EXPECT(!sponsorSle->isFieldPresent(sfSponsoredOwnerCount));
+            BEAST_EXPECT(sponsorSle->getFieldU32(sfSponsoringOwnerCount) == 1);
+
+            // LoanManage
+            env(loan::manage(bob, loanKeylet.key, lsfLoanImpaired),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            // doesn't sponsor anything
+            sponsorSle = env.le(keylet::account(sponsor));
+            BEAST_EXPECT(sponsorSle->getFieldU32(sfOwnerCount) == 0);
+            BEAST_EXPECT(!sponsorSle->isFieldPresent(sfSponsoredOwnerCount));
+            BEAST_EXPECT(sponsorSle->getFieldU32(sfSponsoringOwnerCount) == 1);
+
+            // LoanPay
+            env(loan::pay(alice, loanKeylet.key, asset(10)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            // doesn't sponsor anything
+            sponsorSle = env.le(keylet::account(sponsor));
+            BEAST_EXPECT(sponsorSle->getFieldU32(sfOwnerCount) == 0);
+            BEAST_EXPECT(!sponsorSle->isFieldPresent(sfSponsoredOwnerCount));
+            BEAST_EXPECT(sponsorSle->getFieldU32(sfSponsoringOwnerCount) == 1);
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+
+            // LoanDelete
+            env(loan::del(alice, loanKeylet.key),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            // Sponsored ltLoan is deleted
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            // Sponsor for ltLoan object is deleted
+            sponsorSle = env.le(keylet::account(sponsor));
+            BEAST_EXPECT(sponsorSle->getFieldU32(sfOwnerCount) == 0);
+            BEAST_EXPECT(!sponsorSle->isFieldPresent(sfSponsoredOwnerCount));
+        }
     }
 
     void
@@ -4418,8 +4506,6 @@ public:
     void
     testSponsorReserve(bool cosigning)
     {
-        testLending(cosigning);
-        return;
         testRequireFlag();
         testAMM(cosigning);
         testCheck(cosigning);
