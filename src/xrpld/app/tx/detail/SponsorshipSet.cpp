@@ -22,6 +22,26 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     if ((flags & tfSponsorshipSetRequireSignForReserve) && (flags & tfSponsorshipClearRequireSignForReserve))
         return temINVALID_FLAG;
 
+    if (flags & tfDeleteObject)
+    {
+        // can not combine with any modification flags when deleting
+        constexpr std::uint32_t modifyFlags = tfSponsorshipSetRequireSignForFee |
+            tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForFee |
+            tfSponsorshipClearRequireSignForReserve;
+
+        if (flags & modifyFlags)
+            return temINVALID_FLAG;
+    }
+    else
+    {
+        //  can not combine set flag with clear flag
+        if ((flags & tfSponsorshipSetRequireSignForFee) && (flags & tfSponsorshipClearRequireSignForFee))
+            return temINVALID_FLAG;
+
+        if ((flags & tfSponsorshipSetRequireSignForReserve) && (flags & tfSponsorshipClearRequireSignForReserve))
+            return temINVALID_FLAG;
+    }
+
     auto const account = ctx.tx.getAccountID(sfAccount);
     bool const hasSponsor = ctx.tx.isFieldPresent(sfCounterpartySponsor);
     bool const hasSponsee = ctx.tx.isFieldPresent(sfSponsee);
@@ -38,14 +58,6 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
 
     if (flags & tfDeleteObject)
     {
-        // can not combine with any modification flags when deleting
-        constexpr std::uint32_t modifyFlags = tfSponsorshipSetRequireSignForFee |
-            tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForFee |
-            tfSponsorshipClearRequireSignForReserve;
-
-        if (flags & modifyFlags)
-            return temINVALID_FLAG;
-
         // can not include these fields when deleting
         if (ctx.tx.isFieldPresent(sfFeeAmount) || ctx.tx.isFieldPresent(sfReserveCount) ||
             ctx.tx.isFieldPresent(sfMaxFee))
@@ -58,12 +70,6 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
         if (account != sponsor)
             return temMALFORMED;
 
-        if ((flags & tfSponsorshipSetRequireSignForFee) && (flags & tfSponsorshipClearRequireSignForFee))
-            return temINVALID_FLAG;
-
-        if ((flags & tfSponsorshipSetRequireSignForReserve) && (flags & tfSponsorshipClearRequireSignForReserve))
-            return temINVALID_FLAG;
-
         // Check FeeAmount and MaxFee
         auto const checkOptionalAmountField = [&](SField const& field) -> NotTEC {
             if (!ctx.tx.isFieldPresent(field))
@@ -74,7 +80,7 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
             if (!isXRP(amount))
                 return temBAD_AMOUNT;
 
-            if (amount.xrp().drops() <= 0)
+            if (amount.xrp() <= XRPAmount{0})
                 return temBAD_AMOUNT;
 
             return tesSUCCESS;
