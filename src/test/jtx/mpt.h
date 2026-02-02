@@ -332,8 +332,7 @@ public:
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
 
     void
-    confidentialClaw(
-        MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
+    confidentialClaw(MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
@@ -348,9 +347,7 @@ public:
     checkIssuanceConfidentialBalance(std::int64_t expectedAmount) const;
 
     [[nodiscard]] bool
-    checkFlags(
-        uint32_t const expectedFlags,
-        std::optional<Account> const& holder = std::nullopt) const;
+    checkFlags(uint32_t const expectedFlags, std::optional<Account> const& holder = std::nullopt) const;
 
     [[nodiscard]] bool
     checkMetadata(std::string const& metadata) const;
@@ -401,9 +398,7 @@ public:
     getIssuanceConfidentialBalance() const;
 
     std::optional<Buffer>
-    getEncryptedBalance(
-        Account const& account,
-        EncryptedBalanceType option = HOLDER_ENCRYPTED_INBOX) const;
+    getEncryptedBalance(Account const& account, EncryptedBalanceType option = HOLDER_ENCRYPTED_INBOX) const;
 
     MPT
     operator[](std::string const& name) const;
@@ -426,28 +421,20 @@ public:
     getPrivKey(Account const& account) const;
 
     Buffer
-    encryptAmount(
-        Account const& account,
-        uint64_t const amt,
-        Buffer const& blindingFactor) const;
+    encryptAmount(Account const& account, uint64_t const amt, Buffer const& blindingFactor) const;
 
     std::optional<uint64_t>
     decryptAmount(Account const& account, Buffer const& amt) const;
 
     std::optional<uint64_t>
-    getDecryptedBalance(
-        Account const& account,
-        EncryptedBalanceType balanceType) const;
+    getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const;
 
     std::int64_t
     getIssuanceOutstandingBalance() const;
 
     std::optional<Buffer>
-    getClawbackProof(
-        Account const& holder,
-        std::uint64_t amount,
-        Buffer const& privateKey,
-        uint256 const& txHash) const;
+    getClawbackProof(Account const& holder, std::uint64_t amount, Buffer const& privateKey, uint256 const& txHash)
+        const;
 
     std::optional<Buffer>
     getSchnorrProof(Account const& account, uint256 const& ctxHash) const;
@@ -492,9 +479,7 @@ public:
         PedersenProofParams const& params) const;
 
     Buffer
-    getPedersenCommitment(
-        std::uint64_t const amount,
-        Buffer const& pedersenBlindingFactor);
+    getPedersenCommitment(std::uint64_t const amount, Buffer const& pedersenBlindingFactor);
 
 private:
     using SLEP = SLE::const_pointer;

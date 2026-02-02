@@ -29,8 +29,7 @@ incrementConfidentialVersion(STObject& mptoken)
     // Retrieve current version and increment.
     // Unsigned integer overflow is defined behavior in C++ (wraps to 0),
     // which is acceptable here.
-    mptoken[sfConfidentialBalanceVersion] =
-        mptoken[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
+    mptoken[sfConfidentialBalanceVersion] = mptoken[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
 }
 
 void
@@ -79,10 +78,7 @@ makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2);
 
 // serialize two secp256k1_pubkey components back into compressed 66-byte form
 bool
-serializeEcPair(
-    secp256k1_pubkey const& in1,
-    secp256k1_pubkey const& in2,
-    Buffer& buffer);
+serializeEcPair(secp256k1_pubkey const& in1, secp256k1_pubkey const& in2, Buffer& buffer);
 
 /**
  * @brief Verifies that a buffer contains two valid, parsable EC public keys.
@@ -100,22 +96,13 @@ homomorphicSubtract(Slice const& a, Slice const& b, Buffer& out);
 
 // returns ciphertext and the blinding factor used
 std::optional<Buffer>
-encryptAmount(
-    uint64_t const amt,
-    Slice const& pubKeySlice,
-    Slice const& blindingFactor);
+encryptAmount(uint64_t const amt, Slice const& pubKeySlice, Slice const& blindingFactor);
 
 std::optional<Buffer>
-encryptCanonicalZeroAmount(
-    Slice const& pubKeySlice,
-    AccountID const& account,
-    MPTID const& mptId);
+encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, MPTID const& mptId);
 
 TER
-verifySchnorrProof(
-    Slice const& pubKeySlice,
-    Slice const& proofSlice,
-    uint256 const& contextHash);
+verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash);
 
 TER
 verifyElGamalEncryption(
@@ -218,10 +205,7 @@ verifyBalancePcmLinkage(
  * @brief Generates a new secp256k1 key pair.
  */
 SECP256K1_API int
-secp256k1_elgamal_generate_keypair(
-    secp256k1_context const* ctx,
-    unsigned char* privkey,
-    secp256k1_pubkey* pubkey);
+secp256k1_elgamal_generate_keypair(secp256k1_context const* ctx, unsigned char* privkey, secp256k1_pubkey* pubkey);
 
 /**
  * @brief Encrypts a 64-bit amount using ElGamal.
@@ -302,19 +286,14 @@ generate_canonical_encrypted_zero(
  * @return 1 on success, 0 on failure.
  */
 SECP256K1_API int
-generate_random_scalar(
-    secp256k1_context const* ctx,
-    unsigned char* scalar_bytes);
+generate_random_scalar(secp256k1_context const* ctx, unsigned char* scalar_bytes);
 
 /**
  * Computes the point M = amount * G.
  * IMPORTANT: This function MUST NOT be called with amount = 0.
  */
 SECP256K1_API int
-compute_amount_point(
-    secp256k1_context const* ctx,
-    secp256k1_pubkey* mG,
-    uint64_t amount);
+compute_amount_point(secp256k1_context const* ctx, secp256k1_pubkey* mG, uint64_t amount);
 
 /**
  * Builds the challenge hash input for the NON-ZERO amount case.

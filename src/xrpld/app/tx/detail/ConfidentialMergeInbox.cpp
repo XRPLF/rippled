@@ -25,8 +25,7 @@ ConfidentialMergeInbox::preflight(PreflightContext const& ctx)
 TER
 ConfidentialMergeInbox::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleIssuance =
-        ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -38,8 +37,7 @@ ConfidentialMergeInbox::preclaim(PreclaimContext const& ctx)
     if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sleMptoken = ctx.view.read(
-        keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
+    auto const sleMptoken = ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
@@ -70,16 +68,14 @@ ConfidentialMergeInbox::doApply()
     // homomorphically add holder's encrypted balance
     Buffer sum(ecGamalEncryptedTotalLength);
     if (TER const ter = homomorphicAdd(
-            (*sleMptoken)[sfConfidentialBalanceSpending],
-            (*sleMptoken)[sfConfidentialBalanceInbox],
-            sum);
+            (*sleMptoken)[sfConfidentialBalanceSpending], (*sleMptoken)[sfConfidentialBalanceInbox], sum);
         !isTesSuccess(ter))
         return tecINTERNAL;
 
     (*sleMptoken)[sfConfidentialBalanceSpending] = sum;
 
-    auto const zeroEncryption = encryptCanonicalZeroAmount(
-        (*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
+    auto const zeroEncryption =
+        encryptCanonicalZeroAmount((*sleMptoken)[sfHolderElGamalPublicKey], account_, mptIssuanceID);
 
     if (!zeroEncryption)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -87,8 +83,7 @@ ConfidentialMergeInbox::doApply()
     (*sleMptoken)[sfConfidentialBalanceInbox] = *zeroEncryption;
 
     // it's fine if it reaches max uint32, it just resets to 0
-    (*sleMptoken)[sfConfidentialBalanceVersion] =
-        (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
+    (*sleMptoken)[sfConfidentialBalanceVersion] = (*sleMptoken)[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
 
     view().update(sleMptoken);
     return tesSUCCESS;

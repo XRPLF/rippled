@@ -72,14 +72,11 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
             if (ctx.view.rules().enabled(featureConfidentialTransfer))
             {
-                auto const sleMptIssuance = ctx.view.read(
-                    keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
 
                 // if there still existing encrypted balances of MPT in
                 // circulation
-                if (sleMptIssuance &&
-                    (*sleMptIssuance)[~sfConfidentialOutstandingAmount]
-                            .value_or(0) != 0)
+                if (sleMptIssuance && (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0) != 0)
                 {
                     // this MPT still has encrypted balance, since we don't know
                     // if it's non-zero or not, we won't allow deletion of

@@ -70,8 +70,7 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // Check holder's MPToken
-    auto const sleHolderMPToken =
-        ctx.view.read(keylet::mptoken(mptIssuanceID, holder));
+    auto const sleHolderMPToken = ctx.view.read(keylet::mptoken(mptIssuanceID, holder));
     if (!sleHolderMPToken)
         return tecOBJECT_NOT_FOUND;
 
@@ -84,8 +83,7 @@ ConfidentialClawback::preclaim(PreclaimContext const& ctx)
     if (amount > (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0))
         return tecINSUFFICIENT_FUNDS;
 
-    auto const contextHash = getClawbackContextHash(
-        account, ctx.tx[sfSequence], mptIssuanceID, amount, holder);
+    auto const contextHash = getClawbackContextHash(account, ctx.tx[sfSequence], mptIssuanceID, amount, holder);
 
     // Verify the revealed confidential amount by the issuer matches the exact
     // confidential balance of the holder.
@@ -115,13 +113,11 @@ ConfidentialClawback::doApply()
     Slice const issuerPubKey = (*sleIssuance)[sfIssuerElGamalPublicKey];
 
     // After clawback, the balance should be encrypted zero.
-    auto const encZeroForHolder =
-        encryptCanonicalZeroAmount(holderPubKey, holder, mptIssuanceID);
+    auto const encZeroForHolder = encryptCanonicalZeroAmount(holderPubKey, holder, mptIssuanceID);
     if (!encZeroForHolder)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const encZeroForIssuer =
-        encryptCanonicalZeroAmount(issuerPubKey, holder, mptIssuanceID);
+    auto const encZeroForIssuer = encryptCanonicalZeroAmount(issuerPubKey, holder, mptIssuanceID);
     if (!encZeroForIssuer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -140,8 +136,7 @@ ConfidentialClawback::doApply()
 
         Slice const auditorPubKey = (*sleIssuance)[sfAuditorElGamalPublicKey];
 
-        auto const encZeroForAuditor =
-            encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
+        auto const encZeroForAuditor = encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
 
         if (!encZeroForAuditor)
             return tecINTERNAL;  // LCOV_EXCL_LINE
