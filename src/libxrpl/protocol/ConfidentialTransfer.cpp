@@ -75,6 +75,9 @@ getConvertBackContextHash(
     Serializer s;
     addCommonZKPFields(s, ttCONFIDENTIAL_MPT_CONVERT_BACK, account, sequence, issuanceID);
 
+    s.add64(amount);
+    s.addInteger(version);
+
     return s.getSHA512Half();
 }
 
