@@ -2987,5 +2987,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ConfidentialTransfer, app, ripple);
+BEAST_DEFINE_TESTSUITE(ConfidentialTransfer, app, xrpl);
 }  // namespace xrpl
