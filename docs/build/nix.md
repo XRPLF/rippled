@@ -25,6 +25,7 @@ nix --experimental-features='nix-command flakes' develop
 ```
 
 This will:
+
 - Download and set up all required development tools (CMake, Ninja, Conan, etc.)
 - Configure the appropriate compiler for your platform:
   - **macOS**: Apple Clang (default system compiler)

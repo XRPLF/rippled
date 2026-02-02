@@ -3,7 +3,7 @@ environment complete with Git, Python, Conan, CMake, and a C++ compiler.
 This document exists to help readers set one up on any of the Big Three
 platforms: Linux, macOS, or Windows.
 
-As an alternative to system packages, the Nix development shell can be used to provide a development environment. See [using nix develompent shell](./nix.md) for more details.
+As an alternative to system packages, the Nix development shell can be used to provide a development environment. See [using nix development shell](./nix.md) for more details.
 
 [BUILD.md]: ../../BUILD.md
 
