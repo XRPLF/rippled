@@ -29,8 +29,7 @@ to_string(SHAMapType t)
         case SHAMapType::FREE:
             return "Free Tree";
         default:
-            return std::to_string(
-                safe_cast<std::underlying_type_t<SHAMapType>>(t));
+            return std::to_string(safe_cast<std::underlying_type_t<SHAMapType>>(t));
     }
 }
 
@@ -38,14 +37,12 @@ class SHAMapMissingNode : public std::runtime_error
 {
 public:
     SHAMapMissingNode(SHAMapType t, SHAMapHash const& hash)
-        : std::runtime_error(
-              "Missing Node: " + to_string(t) + ": hash " + to_string(hash))
+        : std::runtime_error("Missing Node: " + to_string(t) + ": hash " + to_string(hash))
     {
     }
 
     SHAMapMissingNode(SHAMapType t, uint256 const& id)
-        : std::runtime_error(
-              "Missing Node: " + to_string(t) + ": id " + to_string(id))
+        : std::runtime_error("Missing Node: " + to_string(t) + ": id " + to_string(id))
     {
     }
 };

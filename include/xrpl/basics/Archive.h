@@ -13,9 +13,7 @@ namespace xrpl {
     @throws runtime_error
 */
 void
-extractTarLz4(
-    boost::filesystem::path const& src,
-    boost::filesystem::path const& dst);
+extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const& dst);
 
 }  // namespace xrpl
 

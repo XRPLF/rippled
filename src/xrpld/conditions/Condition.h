@@ -61,13 +61,11 @@ public:
     /** For compound conditions, set of conditions includes */
     std::set<Type> subtypes;
 
-    Condition(Type t, std::uint32_t c, Slice fp)
-        : type(t), fingerprint(fp), cost(c)
+    Condition(Type t, std::uint32_t c, Slice fp) : type(t), fingerprint(fp), cost(c)
     {
     }
 
-    Condition(Type t, std::uint32_t c, Buffer&& fp)
-        : type(t), fingerprint(std::move(fp)), cost(c)
+    Condition(Type t, std::uint32_t c, Buffer&& fp) : type(t), fingerprint(std::move(fp)), cost(c)
     {
     }
 
@@ -82,8 +80,8 @@ public:
 inline bool
 operator==(Condition const& lhs, Condition const& rhs)
 {
-    return lhs.type == rhs.type && lhs.cost == rhs.cost &&
-        lhs.subtypes == rhs.subtypes && lhs.fingerprint == rhs.fingerprint;
+    return lhs.type == rhs.type && lhs.cost == rhs.cost && lhs.subtypes == rhs.subtypes &&
+        lhs.fingerprint == rhs.fingerprint;
 }
 
 inline bool

@@ -17,16 +17,11 @@ namespace detail {
 
 template <class T>
 struct is_empty_base_optimization_derived
-    : std::integral_constant<
-          bool,
-          std::is_empty<T>::value && !boost::is_final<T>::value>
+    : std::integral_constant<bool, std::is_empty<T>::value && !boost::is_final<T>::value>
 {
 };
 
-template <
-    class T,
-    int UniqueID = 0,
-    bool isDerived = is_empty_base_optimization_derived<T>::value>
+template <class T, int UniqueID = 0, bool isDerived = is_empty_base_optimization_derived<T>::value>
 class empty_base_optimization : private T
 {
 public:

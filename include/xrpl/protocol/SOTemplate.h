@@ -42,24 +42,19 @@ private:
             auto nm = std::to_string(fieldName.getCode());
             if (fieldName.hasName())
                 nm += ": '" + fieldName.getName() + "'";
-            Throw<std::runtime_error>(
-                "SField (" + nm + ") in SOElement must be useful.");
+            Throw<std::runtime_error>("SField (" + nm + ") in SOElement must be useful.");
         }
     }
 
 public:
-    SOElement(SField const& fieldName, SOEStyle style)
-        : sField_(fieldName), style_(style)
+    SOElement(SField const& fieldName, SOEStyle style) : sField_(fieldName), style_(style)
     {
         init(fieldName);
     }
 
     template <typename T>
         requires(std::is_same_v<T, STAmount> || std::is_same_v<T, STIssue>)
-    SOElement(
-        TypedField<T> const& fieldName,
-        SOEStyle style,
-        SOETxMPTIssue supportMpt = soeMPTNotSupported)
+    SOElement(TypedField<T> const& fieldName, SOEStyle style, SOETxMPTIssue supportMpt = soeMPTNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
     {
         init(fieldName);
@@ -103,9 +98,7 @@ public:
         After creating the template fields cannot be
         added, modified, or removed.
     */
-    SOTemplate(
-        std::initializer_list<SOElement> uniqueFields,
-        std::initializer_list<SOElement> commonFields = {});
+    SOTemplate(std::initializer_list<SOElement> uniqueFields, std::initializer_list<SOElement> commonFields = {});
 
     /* Provide for the enumeration of fields */
     std::vector<SOElement>::const_iterator

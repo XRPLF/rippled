@@ -15,9 +15,7 @@ SkipListAcquire::SkipListAcquire(
           app,
           ledgerHash,
           LedgerReplayParameters::SUB_TASK_TIMEOUT,
-          {jtREPLAY_TASK,
-           "SkipListAcquire",
-           LedgerReplayParameters::MAX_QUEUED_TASKS},
+          {jtREPLAY_TASK, "SkipListAcq", LedgerReplayParameters::MAX_QUEUED_TASKS},
           app.journal("LedgerReplaySkipList"))
     , inboundLedgers_(inboundLedgers)
     , peerSet_(std::move(peerSet))
@@ -56,32 +54,25 @@ SkipListAcquire::trigger(std::size_t limit, ScopedLockType& sl)
         peerSet_->addPeers(
             limit,
             [this](auto peer) {
-                return peer->supportsFeature(ProtocolFeature::LedgerReplay) &&
-                    peer->hasLedger(hash_, 0);
+                return peer->supportsFeature(ProtocolFeature::LedgerReplay) && peer->hasLedger(hash_, 0);
             },
             [this](auto peer) {
                 if (peer->supportsFeature(ProtocolFeature::LedgerReplay))
                 {
-                    JLOG(journal_.trace())
-                        << "Add a peer " << peer->id() << " for " << hash_;
+                    JLOG(journal_.trace()) << "Add a peer " << peer->id() << " for " << hash_;
                     protocol::TMProofPathRequest request;
                     request.set_ledgerhash(hash_.data(), hash_.size());
-                    request.set_key(
-                        keylet::skip().key.data(), keylet::skip().key.size());
-                    request.set_type(
-                        protocol::TMLedgerMapType::lmACCOUNT_STATE);
+                    request.set_key(keylet::skip().key.data(), keylet::skip().key.size());
+                    request.set_type(protocol::TMLedgerMapType::lmACCOUNT_STATE);
                     peerSet_->sendRequest(request, peer);
                 }
                 else
                 {
-                    JLOG(journal_.trace()) << "Add a no feature peer "
-                                           << peer->id() << " for " << hash_;
-                    if (++noFeaturePeerCount_ >=
-                        LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
+                    JLOG(journal_.trace()) << "Add a no feature peer " << peer->id() << " for " << hash_;
+                    if (++noFeaturePeerCount_ >= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT)
                     {
                         JLOG(journal_.debug()) << "Fall back for " << hash_;
-                        timerInterval_ =
-                            LedgerReplayParameters::SUB_TASK_FALLBACK_TIMEOUT;
+                        timerInterval_ = LedgerReplayParameters::SUB_TASK_FALLBACK_TIMEOUT;
                         fallBack_ = true;
                     }
                 }
@@ -115,13 +106,9 @@ SkipListAcquire::pmDowncast()
 }
 
 void
-SkipListAcquire::processData(
-    std::uint32_t ledgerSeq,
-    boost::intrusive_ptr<SHAMapItem const> const& item)
+SkipListAcquire::processData(std::uint32_t ledgerSeq, boost::intrusive_ptr<SHAMapItem const> const& item)
 {
-    XRPL_ASSERT(
-        ledgerSeq != 0 && item,
-        "xrpl::SkipListAcquire::processData : valid inputs");
+    XRPL_ASSERT(ledgerSeq != 0 && item, "xrpl::SkipListAcquire::processData : valid inputs");
     ScopedLockType sl(mtx_);
     if (isDone())
         return;
@@ -129,12 +116,9 @@ SkipListAcquire::processData(
     JLOG(journal_.trace()) << "got data for " << hash_;
     try
     {
-        if (auto sle =
-                std::make_shared<SLE>(SerialIter{item->slice()}, item->key());
-            sle)
+        if (auto sle = std::make_shared<SLE>(SerialIter{item->slice()}, item->key()); sle)
         {
-            if (auto const& skipList = sle->getFieldV256(sfHashes).value();
-                !skipList.empty())
+            if (auto const& skipList = sle->getFieldV256(sfHashes).value(); !skipList.empty())
                 onSkipListAcquired(skipList, ledgerSeq, sl);
             return;
         }
@@ -144,8 +128,7 @@ SkipListAcquire::processData(
     }
 
     failed_ = true;
-    JLOG(journal_.error()) << "failed to retrieve Skip list from verified data "
-                           << hash_;
+    JLOG(journal_.error()) << "failed to retrieve Skip list from verified data " << hash_;
     notify(sl);
 }
 
@@ -156,8 +139,7 @@ SkipListAcquire::addDataCallback(OnSkipListDataCB&& cb)
     dataReadyCallbacks_.emplace_back(std::move(cb));
     if (isDone())
     {
-        JLOG(journal_.debug())
-            << "task added to a finished SkipListAcquire " << hash_;
+        JLOG(journal_.debug()) << "task added to a finished SkipListAcquire " << hash_;
         notify(sl);
     }
 }
@@ -170,12 +152,9 @@ SkipListAcquire::getData() const
 }
 
 void
-SkipListAcquire::retrieveSkipList(
-    std::shared_ptr<Ledger const> const& ledger,
-    ScopedLockType& sl)
+SkipListAcquire::retrieveSkipList(std::shared_ptr<Ledger const> const& ledger, ScopedLockType& sl)
 {
-    if (auto const hashIndex = ledger->read(keylet::skip());
-        hashIndex && hashIndex->isFieldPresent(sfHashes))
+    if (auto const hashIndex = ledger->read(keylet::skip()); hashIndex && hashIndex->isFieldPresent(sfHashes))
     {
         auto const& slist = hashIndex->getFieldV256(sfHashes).value();
         if (!slist.empty())
@@ -186,16 +165,12 @@ SkipListAcquire::retrieveSkipList(
     }
 
     failed_ = true;
-    JLOG(journal_.error()) << "failed to retrieve Skip list from a ledger "
-                           << hash_;
+    JLOG(journal_.error()) << "failed to retrieve Skip list from a ledger " << hash_;
     notify(sl);
 }
 
 void
-SkipListAcquire::onSkipListAcquired(
-    std::vector<uint256> const& skipList,
-    std::uint32_t ledgerSeq,
-    ScopedLockType& sl)
+SkipListAcquire::onSkipListAcquired(std::vector<uint256> const& skipList, std::uint32_t ledgerSeq, ScopedLockType& sl)
 {
     complete_ = true;
     data_ = std::make_shared<SkipListData>(ledgerSeq, skipList);

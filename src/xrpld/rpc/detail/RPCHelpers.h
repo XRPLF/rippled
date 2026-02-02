@@ -48,10 +48,7 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
  * @return true if the SLE is owned by the account, false otherwise.
  */
 bool
-isRelatedToAccount(
-    ReadView const& ledger,
-    std::shared_ptr<SLE const> const& sle,
-    AccountID const& accountID);
+isRelatedToAccount(ReadView const& ledger, std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
 
 /**
  * @brief Parses an array of account IDs from a JSON value.
@@ -78,10 +75,7 @@ parseAccountIds(Json::Value const& jvArray);
  * std::nullopt on success.
  */
 std::optional<Json::Value>
-readLimitField(
-    unsigned int& limit,
-    Tuning::LimitRange const& range,
-    JsonContext const& context);
+readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext const& context);
 
 /**
  * @brief Extracts a Seed from RPC parameters.
@@ -153,10 +147,7 @@ isAccountObjectsValidType(LedgerEntryType const& type);
  * or std::nullopt otherwise.
  */
 std::optional<std::pair<PublicKey, SecretKey>>
-keypairForSignature(
-    Json::Value const& params,
-    Json::Value& error,
-    unsigned int apiVersion = apiVersionIfUnspecified);
+keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int apiVersion = apiVersionIfUnspecified);
 
 }  // namespace RPC
 

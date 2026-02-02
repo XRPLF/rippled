@@ -17,8 +17,7 @@ doSignFor(RPC::JsonContext& context)
 {
     if (context.role != Role::ADMIN && !context.app.config().canSign())
     {
-        return RPC::make_error(
-            rpcNOT_SUPPORTED, "Signing is not supported by this server.");
+        return RPC::make_error(rpcNOT_SUPPORTED, "Signing is not supported by this server.");
     }
 
     context.loadType = Resource::feeHeavyBurdenRPC;

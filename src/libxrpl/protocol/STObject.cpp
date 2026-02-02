@@ -41,8 +41,7 @@
 
 namespace xrpl {
 
-STObject::STObject(STObject&& other)
-    : STBase(other.getFName()), v_(std::move(other.v_)), mType(other.mType)
+STObject::STObject(STObject&& other) : STBase(other.getFName()), v_(std::move(other.v_)), mType(other.mType)
 {
 }
 
@@ -55,17 +54,14 @@ STObject::STObject(SOTemplate const& type, SField const& name) : STBase(name)
     set(type);
 }
 
-STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name)
-    : STBase(name)
+STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) : STBase(name)
 {
     v_.reserve(type.size());
     set(sit);
     applyTemplate(type);  // May throw
 }
 
-STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(
-    false)
-    : STBase(name), mType(nullptr)
+STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(false) : STBase(name), mType(nullptr)
 {
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STObject exceeded");
@@ -87,8 +83,7 @@ STObject::makeInnerObject(SField const& name)
     if (!rules || (rules->enabled(fixInnerObjTemplate) && isAMMObj) ||
         (rules->enabled(fixInnerObjTemplate2) && !isAMMObj))
     {
-        if (SOTemplate const* elements =
-                InnerObjectFormats::getInstance().findSOTemplateBySField(name))
+        if (SOTemplate const* elements = InnerObjectFormats::getInstance().findSOTemplateBySField(name))
             obj.set(*elements);
     }
     return obj;
@@ -165,17 +160,13 @@ STObject::applyTemplate(SOTemplate const& type)
     v.reserve(type.size());
     for (auto const& e : type)
     {
-        auto const iter =
-            std::find_if(v_.begin(), v_.end(), [&](detail::STVar const& b) {
-                return b.get().getFName() == e.sField();
-            });
+        auto const iter = std::find_if(
+            v_.begin(), v_.end(), [&](detail::STVar const& b) { return b.get().getFName() == e.sField(); });
         if (iter != v_.end())
         {
             if ((e.style() == soeDEFAULT) && iter->get().isDefault())
             {
-                throwFieldErr(
-                    e.sField().fieldName,
-                    "may not be explicitly set to default.");
+                throwFieldErr(e.sField().fieldName, "may not be explicitly set to default.");
             }
             v.emplace_back(std::move(*iter));
             v_.erase(iter);
@@ -194,8 +185,7 @@ STObject::applyTemplate(SOTemplate const& type)
         // Anything left over in the object must be discardable
         if (!e->getFName().isDiscardable())
         {
-            throwFieldErr(
-                e->getFName().getName(), "found in disallowed location.");
+            throwFieldErr(e->getFName().getName(), "found in disallowed location.");
         }
     }
     // Swap the template matching data in for the old data,
@@ -206,8 +196,7 @@ STObject::applyTemplate(SOTemplate const& type)
 void
 STObject::applyTemplateFromSField(SField const& sField)
 {
-    SOTemplate const* elements =
-        InnerObjectFormats::getInstance().findSOTemplateBySField(sField);
+    SOTemplate const* elements = InnerObjectFormats::getInstance().findSOTemplateBySField(sField);
     if (elements)
         applyTemplate(*elements);  // May throw
 }
@@ -239,8 +228,7 @@ STObject::set(SerialIter& sit, int depth)
 
         if (type == STI_ARRAY && field == 1)
         {
-            JLOG(debugLog().error())
-                << "Encountered object with embedded end-of-array marker";
+            JLOG(debugLog().error()) << "Encountered object with embedded end-of-array marker";
             Throw<std::runtime_error>("Illegal end-of-array marker in object");
         }
 
@@ -248,8 +236,7 @@ STObject::set(SerialIter& sit, int depth)
 
         if (fn.isInvalid())
         {
-            JLOG(debugLog().error()) << "Unknown field: field_type=" << type
-                                     << ", field_name=" << field;
+            JLOG(debugLog().error()) << "Unknown field: field_type=" << type << ", field_name=" << field;
             Throw<std::runtime_error>("Unknown field");
         }
 
@@ -265,10 +252,9 @@ STObject::set(SerialIter& sit, int depth)
     // duplicate fields. This is a key invariant:
     auto const sf = getSortedFields(*this, withAllFields);
 
-    auto const dup = std::adjacent_find(
-        sf.cbegin(), sf.cend(), [](STBase const* lhs, STBase const* rhs) {
-            return lhs->getFName() == rhs->getFName();
-        });
+    auto const dup = std::adjacent_find(sf.cbegin(), sf.cend(), [](STBase const* lhs, STBase const* rhs) {
+        return lhs->getFName() == rhs->getFName();
+    });
 
     if (dup != sf.cend())
         Throw<std::runtime_error>("Duplicate field detected");
@@ -347,29 +333,17 @@ STObject::isEquivalent(STBase const& t) const
 
     if (mType != nullptr && v->mType == mType)
     {
-        return std::equal(
-            begin(),
-            end(),
-            v->begin(),
-            v->end(),
-            [](STBase const& st1, STBase const& st2) {
-                return (st1.getSType() == st2.getSType()) &&
-                    st1.isEquivalent(st2);
-            });
+        return std::equal(begin(), end(), v->begin(), v->end(), [](STBase const& st1, STBase const& st2) {
+            return (st1.getSType() == st2.getSType()) && st1.isEquivalent(st2);
+        });
     }
 
     auto const sf1 = getSortedFields(*this, withAllFields);
     auto const sf2 = getSortedFields(*v, withAllFields);
 
-    return std::equal(
-        sf1.begin(),
-        sf1.end(),
-        sf2.begin(),
-        sf2.end(),
-        [](STBase const* st1, STBase const* st2) {
-            return (st1->getSType() == st2->getSType()) &&
-                st1->isEquivalent(*st2);
-        });
+    return std::equal(sf1.begin(), sf1.end(), sf2.begin(), sf2.end(), [](STBase const* st1, STBase const* st2) {
+        return (st1->getSType() == st2->getSType()) && st1->isEquivalent(*st2);
+    });
 }
 
 uint256
@@ -578,6 +552,12 @@ void
 STObject::delField(int index)
 {
     v_.erase(v_.begin() + index);
+}
+
+SOEStyle
+STObject::getStyle(SField const& field) const
+{
+    return mType ? mType->style(field) : soeINVALID;
 }
 
 unsigned char
@@ -891,8 +871,7 @@ STObject::add(Serializer& s, WhichFields whichFields) const
 {
     // Depending on whichFields, signing fields are either serialized or
     // not.  Then fields are added to the Serializer sorted by fieldCode.
-    std::vector<STBase const*> const fields{
-        getSortedFields(*this, whichFields)};
+    std::vector<STBase const*> const fields{getSortedFields(*this, whichFields)};
 
     // insert sorted
     for (STBase const* const field : fields)
@@ -902,8 +881,7 @@ STObject::add(Serializer& s, WhichFields whichFields) const
         // must be OBJECT, or the object cannot be deserialized
         SerializedTypeID const sType{field->getSType()};
         XRPL_ASSERT(
-            (sType != STI_OBJECT) ||
-                (field->getFName().fieldType == STI_OBJECT),
+            (sType != STI_OBJECT) || (field->getFName().fieldType == STI_OBJECT),
             "xrpl::STObject::add : valid field type");
         field->addFieldID(s);
         field->add(s);
@@ -922,8 +900,7 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
     for (detail::STVar const& elem : objToSort.v_)
     {
         STBase const& base = elem.get();
-        if ((base.getSType() != STI_NOTPRESENT) &&
-            base.getFName().shouldInclude(whichFields))
+        if ((base.getSType() != STI_NOTPRESENT) && base.getFName().shouldInclude(whichFields))
         {
             sf.push_back(&base);
         }

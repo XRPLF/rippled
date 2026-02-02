@@ -8,10 +8,7 @@ extern std::unique_ptr<RelationalDatabase>
 getSQLiteDatabase(Application& app, Config const& config, JobQueue& jobQueue);
 
 std::unique_ptr<RelationalDatabase>
-RelationalDatabase::init(
-    Application& app,
-    Config const& config,
-    JobQueue& jobQueue)
+RelationalDatabase::init(Application& app, Config const& config, JobQueue& jobQueue)
 {
     bool use_sqlite = false;
 
@@ -24,9 +21,7 @@ RelationalDatabase::init(
         }
         else
         {
-            Throw<std::runtime_error>(
-                "Invalid rdb_section backend value: " +
-                get(rdb_section, "backend"));
+            Throw<std::runtime_error>("Invalid rdb_section backend value: " + get(rdb_section, "backend"));
         }
     }
     else

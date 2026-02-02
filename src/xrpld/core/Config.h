@@ -180,8 +180,7 @@ public:
     int PATH_SEARCH_MAX = 3;
 
     // Validation
-    std::optional<std::size_t>
-        VALIDATION_QUORUM;  // validations to consider ledger authoritative
+    std::optional<std::size_t> VALIDATION_QUORUM;  // validations to consider ledger authoritative
 
     FeeSetup FEES;
 
@@ -276,8 +275,7 @@ public:
     // testing sidechains). With this variable the user is able to force rippled
     // to consider the ledger range to be present. It should be used for testing
     // only.
-    std::optional<std::pair<std::uint32_t, std::uint32_t>>
-        FORCED_LEDGER_RANGE_PRESENT;
+    std::optional<std::pair<std::uint32_t, std::uint32_t>> FORCED_LEDGER_RANGE_PRESENT;
 
     std::optional<std::size_t> VALIDATOR_LIST_THRESHOLD;
 
@@ -287,11 +285,7 @@ public:
     /* Be very careful to make sure these bool params
         are in the right order. */
     void
-    setup(
-        std::string const& strConf,
-        bool bQuiet,
-        bool bSilent,
-        bool bStandalone);
+    setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStandalone);
 
     void
     setupControl(bool bQuiet, bool bSilent, bool bStandalone);
@@ -350,8 +344,7 @@ public:
               defaults in the code for every case.
     */
     int
-    getValueFor(SizedItem item, std::optional<std::size_t> node = std::nullopt)
-        const;
+    getValueFor(SizedItem item, std::optional<std::size_t> node = std::nullopt) const;
 
     beast::Journal
     journal() const

@@ -190,8 +190,7 @@ template <class T, class... Args>
 std::shared_ptr<T>
 io_list::emplace(Args&&... args)
 {
-    static_assert(
-        std::is_base_of<work, T>::value, "T must derive from io_list::work");
+    static_assert(std::is_base_of<work, T>::value, "T must derive from io_list::work");
     if (closed_)
         return nullptr;
     auto sp = std::make_shared<T>(std::forward<Args>(args)...);
