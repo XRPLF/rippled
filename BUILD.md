@@ -64,12 +64,16 @@ internally.
 Here are [sample instructions for setting up a C++ development environment on
 Linux](./docs/build/environment.md#linux).
 
+As an alternative to system packages, the Nix development shell can be used to provide a development environment. See [Nix instructions](./docs/build/nix.md) for more details.
+
 ### Mac
 
 Many xrpld engineers use macOS for development.
 
 Here are [sample instructions for setting up a C++ development environment on
 macOS](./docs/build/environment.md#macos).
+
+As an alternative to system packages, the Nix development shell can be used to provide a development environment. See [Nix instructions](./docs/build/nix.md) for more details.
 
 ### Windows
 
