@@ -34,7 +34,7 @@ DatabaseNodeImp::fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport
 
     try
     {
-        status = backend_->fetch(hash.data(), &nodeObject);
+        status = backend_->fetch(hash, &nodeObject);
     }
     catch (std::exception const& e)
     {
@@ -67,16 +67,8 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
     using namespace std::chrono;
     auto const before = steady_clock::now();
 
-    std::vector<uint256 const*> batch{};
-    batch.reserve(hashes.size());
-    for (size_t i = 0; i < hashes.size(); ++i)
-    {
-        auto const& hash = hashes[i];
-        batch.push_back(&hash);
-    }
-
     std::vector<std::shared_ptr<NodeObject>> results{hashes.size()};
-    results = backend_->fetchBatch(batch).first;
+    results = backend_->fetchBatch(hashes).first;
     for (size_t i = 0; i < results.size(); ++i)
     {
         if (!results[i])
