@@ -48,7 +48,7 @@ The first time you run this command, it will take a few minutes to download and 
 
 ### Choosing a different compiler
 
-Compiler could be chosen by providing its name with `.#` prefix, e.g. `nix develop .#gcc15`.
+A compiler can be chosen by providing its name with the `.#` prefix, e.g. `nix develop .#gcc15`.
 Use `nix flake show` to see all the available development shells.
 
 Use `nix develop .#no_compiler` to use the compiler from your system.
