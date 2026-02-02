@@ -16,14 +16,12 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfMutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
         return false;
 
-    if (ctx.tx.isFlag(tfMPTCanPrivacy) &&
-        !ctx.rules.enabled(featureConfidentialTransfer))
+    if (ctx.tx.isFlag(tfMPTCanPrivacy) && !ctx.rules.enabled(featureConfidentialTransfer))
         return false;
 
     // can not set tmfMPTCannotMutatePrivacy without featureConfidentialTransfer
     auto const mutableFlags = ctx.tx[~sfMutableFlags];
-    if (mutableFlags && (*mutableFlags & tmfMPTCannotMutatePrivacy) &&
-        !ctx.rules.enabled(featureConfidentialTransfer))
+    if (mutableFlags && (*mutableFlags & tmfMPTCannotMutatePrivacy) && !ctx.rules.enabled(featureConfidentialTransfer))
         return false;
 
     return true;
