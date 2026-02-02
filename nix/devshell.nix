@@ -10,48 +10,141 @@ let
     gcovr
     ccache
     pkg-config
+    gnumake
     llvmPackages_18.clang-tools
+    perl # needed for openssl
+    git
   ];
-  default_compiler = if pkgs.stdenv.isDarwin then "none" else "gcc";
-  strToCompiler =
-    compiler:
+
+  # Supported compiler versions
+  gcc_versions = [
+    13
+    14
+    15
+  ];
+  clang_versions = [
+    18
+    19
+    20
+    21
+  ];
+
+  default_compiler = if pkgs.stdenv.isDarwin then "apple-clang" else "gcc";
+  default_gcc_version = 14;
+  default_clang_version = 18;
+
+  strToCompilerEnv =
+    compiler: version:
     (
       if compiler == "gcc" then
-        [ pkgs.gcc12Stdenv ]
+        let
+          gccPkg = pkgs."gcc${toString version}Stdenv" or null;
+        in
+        if gccPkg != null && builtins.elem version gcc_versions then
+          gccPkg
+        else
+          throw "Invalid GCC version: ${toString version}. Must be one of: ${toString gcc_versions}"
       else if compiler == "clang" then
-        [ pkgs.clang16Stdenv ]
-      else if compiler == "none" then
-        [ ]
+        let
+          clangPkg = pkgs."llvmPackages_${toString version}".stdenv or null;
+        in
+        if clangPkg != null && builtins.elem version clang_versions then
+          clangPkg
+        else
+          throw "Invalid Clang version: ${toString version}. Must be one of: ${toString clang_versions}"
+      else if compiler == "apple-clang" || compiler == "none" then
+        pkgs.stdenvNoCC
       else
-        builtins.throw "Invalid compiler: ${compiler}. Must be one of: gcc, clang, none"
+        throw "Invalid compiler: ${compiler}. Must be one of: gcc, clang, apple-clang, none"
     );
 
   # Helper function to create a shell with a specific compiler
   makeShell =
     {
       compiler ? default_compiler,
+      version ? (
+        if compiler == "gcc" then
+          default_gcc_version
+        else if compiler == "clang" then
+          default_clang_version
+        else
+          null
+      ),
     }:
     let
-      compilerPackages = strToCompiler default_compiler;
+      compilerStdEnv = strToCompilerEnv compiler version;
 
       compilerName =
-        if compiler == "none" then
-          (if pkgs.stdenv.isDarwin then "apple-clang" else "system default")
+        if compiler == "apple-clang" then
+          "clang"
+        else if compiler == "none" then
+          null
         else
           compiler;
-    in
-    pkgs.mkShell {
-      packages = common_packages ++ compilerPackages;
 
-      shellHook = ''
-        echo "Welcome to xrpld development shell"
-        echo "Compiler: " ''$(${compilerName} --version)
-      '';
-    };
+      gccOnMacWarning =
+        if pkgs.stdenv.isDarwin && compiler == "gcc" then
+          ''
+            echo "WARNING: Using GCC on macOS may cause issues with prebuilt Conan packages."
+            echo "         Consider using 'nix develop .#clang' or the default shell instead."
+            echo ""
+          ''
+        else
+          "";
+
+      compilerVersion =
+        if compilerName != null then
+          ''
+            echo "Compiler: "
+            ${compilerName} --version
+          ''
+        else
+          ''
+            echo "No compiler specified - using system compiler"
+          '';
+
+      shellAttrs = {
+        packages = common_packages;
+
+        shellHook = ''
+          echo "Welcome to xrpld development shell";
+          ${gccOnMacWarning}${compilerVersion}
+        '';
+      };
+    in
+    pkgs.mkShell.override { stdenv = compilerStdEnv; } shellAttrs;
+
+  # Generate shells for each compiler version
+  gccShells = builtins.listToAttrs (
+    map (version: {
+      name = "gcc${toString version}";
+      value = makeShell {
+        compiler = "gcc";
+        version = version;
+      };
+    }) gcc_versions
+  );
+
+  clangShells = builtins.listToAttrs (
+    map (version: {
+      name = "clang${toString version}";
+      value = makeShell {
+        compiler = "clang";
+        version = version;
+      };
+    }) clang_versions
+  );
 
 in
-{
+gccShells
+// clangShells
+// {
+  # Default shells
   default = makeShell { };
   gcc = makeShell { compiler = "gcc"; };
   clang = makeShell { compiler = "clang"; };
+
+  # No compiler
+  no_compiler = makeShell { compiler = "none"; };
+  apple-clang = makeShell { compiler = "apple-clang"; };
 }
