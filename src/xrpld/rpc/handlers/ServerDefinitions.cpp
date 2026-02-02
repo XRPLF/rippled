@@ -14,7 +14,7 @@
 
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -53,14 +53,12 @@ ServerDefinitions::translate(std::string const& inp)
         return out;
     };
 
-    auto contains = [&](char const* s) -> bool {
-        return inp.find(s) != std::string::npos;
-    };
+    auto contains = [&](char const* s) -> bool { return inp.find(s) != std::string::npos; };
 
     if (contains("UINT"))
     {
-        if (contains("512") || contains("384") || contains("256") ||
-            contains("192") || contains("160") || contains("128"))
+        if (contains("512") || contains("384") || contains("256") || contains("192") || contains("160") ||
+            contains("128"))
             return replace("UINT", "Hash");
         else
             return replace("UINT", "UInt");
@@ -117,8 +115,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     std::map<int32_t, std::string> typeMap{{-1, "Done"}};
     for (auto const& [rawName, typeValue] : sTypeMap)
     {
-        std::string typeName =
-            translate(std::string(rawName).substr(4) /* remove STI_ */);
+        std::string typeName = translate(std::string(rawName).substr(4) /* remove STI_ */);
         defs_[jss::TYPES][typeName] = typeValue;
         typeMap[typeValue] = typeName;
     }
@@ -214,7 +211,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::FIELDS][i++] = a;
     }
 
-    for (auto const& [code, f] : ripple::SField::getKnownCodeToField())
+    for (auto const& [code, f] : xrpl::SField::getKnownCodeToField())
     {
         if (f->fieldName == "")
             continue;
@@ -228,14 +225,12 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         // whether the field is variable-length encoded
         // this means that the length is included before the content
         innerObj[jss::isVLEncoded] =
-            (type == 7U /* Blob       */ || type == 8U /* AccountID  */ ||
-             type == 19U /* Vector256  */);
+            (type == 7U /* Blob       */ || type == 8U /* AccountID  */ || type == 19U /* Vector256  */);
 
         // whether the field is included in serialization
         innerObj[jss::isSerialized] =
-            (type < 10000 && f->fieldName != "hash" &&
-             f->fieldName != "index"); /* hash, index, TRANSACTION,
-                                         LEDGER_ENTRY, VALIDATION, METADATA */
+            (type < 10000 && f->fieldName != "hash" && f->fieldName != "index"); /* hash, index, TRANSACTION,
+                                                                                   LEDGER_ENTRY, VALIDATION, METADATA */
 
         // whether the field is included in serialization when signing
         innerObj[jss::isSigningField] = f->shouldInclude(false);
@@ -268,7 +263,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     // generate hash
     {
         std::string const out = Json::FastWriter().write(defs_);
-        defsHash_ = ripple::sha512Half(ripple::Slice{out.data(), out.size()});
+        defsHash_ = xrpl::sha512Half(xrpl::Slice{out.data(), out.size()});
         defs_[jss::hash] = to_string(defsHash_);
     }
 }
@@ -283,8 +278,7 @@ doServerDefinitions(RPC::JsonContext& context)
     uint256 hash;
     if (params.isMember(jss::hash))
     {
-        if (!params[jss::hash].isString() ||
-            !hash.parseHex(params[jss::hash].asString()))
+        if (!params[jss::hash].isString() || !hash.parseHex(params[jss::hash].asString()))
             return RPC::invalid_field_error(jss::hash);
     }
 
@@ -298,4 +292,4 @@ doServerDefinitions(RPC::JsonContext& context)
     return defs.get();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

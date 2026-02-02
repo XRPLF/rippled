@@ -13,7 +13,7 @@
 #include <memory>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -28,8 +28,7 @@ struct JTx
     requires_t require;
     std::optional<TER> ter = TER{tesSUCCESS};
     std::optional<std::pair<error_code_i, std::string>> rpcCode = std::nullopt;
-    std::optional<std::pair<std::string, std::optional<std::string>>>
-        rpcException = std::nullopt;
+    std::optional<std::pair<std::string, std::optional<std::string>>> rpcException = std::nullopt;
     bool fill_fee = true;
     bool fill_seq = true;
     bool fill_sig = true;
@@ -159,6 +158,6 @@ private:
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

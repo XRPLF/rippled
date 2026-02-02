@@ -4,7 +4,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/messages.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -21,13 +21,11 @@ public:
         message.set_type(protocol::TMPing::ptPING);
 
         // a known message is categorized to a proper category
-        auto const known =
-            TrafficCount::categorize(message, protocol::mtPING, false);
+        auto const known = TrafficCount::categorize(message, protocol::mtPING, false);
         BEAST_EXPECT(known == TrafficCount::category::base);
 
         // an unknown message type is categorized as unknown
-        auto const unknown = TrafficCount::categorize(
-            message, static_cast<protocol::MessageType>(99), false);
+        auto const unknown = TrafficCount::categorize(message, static_cast<protocol::MessageType>(99), false);
         BEAST_EXPECT(unknown == TrafficCount::category::unknown);
     }
 
@@ -57,18 +55,12 @@ public:
             });
 
             auto const counts_new = m_traffic.getCounts();
-            std::for_each(
-                counts_new.begin(), counts_new.end(), [&](auto const& pair) {
-                    BEAST_EXPECT(
-                        pair.second.bytesIn.load() == tc.expectedBytesIn);
-                    BEAST_EXPECT(
-                        pair.second.bytesOut.load() == tc.expectedBytesOut);
-                    BEAST_EXPECT(
-                        pair.second.messagesIn.load() == tc.expectedMessagesIn);
-                    BEAST_EXPECT(
-                        pair.second.messagesOut.load() ==
-                        tc.expectedMessagesOut);
-                });
+            std::for_each(counts_new.begin(), counts_new.end(), [&](auto const& pair) {
+                BEAST_EXPECT(pair.second.bytesIn.load() == tc.expectedBytesIn);
+                BEAST_EXPECT(pair.second.bytesOut.load() == tc.expectedBytesOut);
+                BEAST_EXPECT(pair.second.messagesIn.load() == tc.expectedMessagesIn);
+                BEAST_EXPECT(pair.second.messagesOut.load() == tc.expectedMessagesOut);
+            });
         };
 
         auto const testcases = {
@@ -114,13 +106,10 @@ public:
         testcase("category-to-string");
 
         // known category returns known string value
-        BEAST_EXPECT(
-            TrafficCount::to_string(TrafficCount::category::total) == "total");
+        BEAST_EXPECT(TrafficCount::to_string(TrafficCount::category::total) == "total");
 
         // return "unknown" for unknown categories
-        BEAST_EXPECT(
-            TrafficCount::to_string(
-                static_cast<TrafficCount::category>(1000)) == "unknown");
+        BEAST_EXPECT(TrafficCount::to_string(static_cast<TrafficCount::category>(1000)) == "unknown");
     }
 
     void
@@ -132,7 +121,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(traffic_count, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(traffic_count, overlay, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

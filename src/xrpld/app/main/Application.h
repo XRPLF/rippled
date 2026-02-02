@@ -14,7 +14,7 @@
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 namespace unl {
 class Manager;
@@ -259,11 +259,8 @@ public:
 };
 
 std::unique_ptr<Application>
-make_Application(
-    std::unique_ptr<Config> config,
-    std::unique_ptr<Logs> logs,
-    std::unique_ptr<TimeKeeper> timeKeeper);
+make_Application(std::unique_ptr<Config> config, std::unique_ptr<Logs> logs, std::unique_ptr<TimeKeeper> timeKeeper);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

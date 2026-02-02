@@ -9,15 +9,10 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
-sign(
-    STObject& st,
-    HashPrefix const& prefix,
-    KeyType type,
-    SecretKey const& sk,
-    SF_VL const& sigField)
+sign(STObject& st, HashPrefix const& prefix, KeyType type, SecretKey const& sk, SF_VL const& sigField)
 {
     Serializer ss;
     ss.add32(prefix);
@@ -26,11 +21,7 @@ sign(
 }
 
 bool
-verify(
-    STObject const& st,
-    HashPrefix const& prefix,
-    PublicKey const& pk,
-    SF_VL const& sigField)
+verify(STObject const& st, HashPrefix const& prefix, PublicKey const& pk, SF_VL const& sigField)
 {
     auto const sig = get(st, sigField);
     if (!sig)
@@ -38,8 +29,7 @@ verify(
     Serializer ss;
     ss.add32(prefix);
     st.addWithoutSigningFields(ss);
-    return verify(
-        pk, Slice(ss.data(), ss.size()), Slice(sig->data(), sig->size()));
+    return verify(pk, Slice(ss.data(), ss.size()), Slice(sig->data(), sig->size()));
 }
 
 // Questions regarding buildMultiSigningData:
@@ -90,4 +80,4 @@ startMultiSigningData(STObject const& obj)
     return s;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,6 +1,6 @@
 #include <xrpld/app/ledger/OrderBookDB.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 BookListeners::addSubscriber(InfoSub::ref sub)
@@ -17,9 +17,7 @@ BookListeners::removeSubscriber(std::uint64_t seq)
 }
 
 void
-BookListeners::publish(
-    MultiApiJson const& jvObj,
-    hash_set<std::uint64_t>& havePublished)
+BookListeners::publish(MultiApiJson const& jvObj, hash_set<std::uint64_t>& havePublished)
 {
     std::lock_guard sl(mLock);
     auto it = mListeners.cbegin();
@@ -30,7 +28,7 @@ BookListeners::publish(
 
         if (p)
         {
-            // Only publish jvObj if this is the first occurence
+            // Only publish jvObj if this is the first occurrence
             if (havePublished.emplace(p->getSeq()).second)
             {
                 jvObj.visit(
@@ -44,4 +42,4 @@ BookListeners::publish(
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

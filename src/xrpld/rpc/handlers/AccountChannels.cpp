@@ -11,7 +11,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 addChannel(Json::Value& jsonLines, SLE const& line)
@@ -144,12 +144,11 @@ doAccountChannels(RPC::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&visitData, &accountID, &count, &limit, &marker, &nextHint](
-                std::shared_ptr<SLE const> const& sleCur) {
+            [&visitData, &accountID, &count, &limit, &marker, &nextHint](std::shared_ptr<SLE const> const& sleCur) {
                 if (!sleCur)
                 {
                     // LCOV_EXCL_START
-                    UNREACHABLE("ripple::doAccountChannels : null SLE");
+                    UNREACHABLE("xrpl::doAccountChannels : null SLE");
                     return false;
                     // LCOV_EXCL_STOP
                 }
@@ -160,10 +159,8 @@ doAccountChannels(RPC::JsonContext& context)
                     nextHint = RPC::getStartHint(sleCur, visitData.accountID);
                 }
 
-                if (count <= limit && sleCur->getType() == ltPAYCHAN &&
-                    (*sleCur)[sfAccount] == accountID &&
-                    (!visitData.raDstAccount ||
-                     *visitData.raDstAccount == (*sleCur)[sfDestination]))
+                if (count <= limit && sleCur->getType() == ltPAYCHAN && (*sleCur)[sfAccount] == accountID &&
+                    (!visitData.raDstAccount || *visitData.raDstAccount == (*sleCur)[sfDestination]))
                 {
                     visitData.items.emplace_back(sleCur);
                 }
@@ -180,8 +177,7 @@ doAccountChannels(RPC::JsonContext& context)
     if (count == limit + 1 && marker)
     {
         result[jss::limit] = limit;
-        result[jss::marker] =
-            to_string(*marker) + "," + std::to_string(nextHint);
+        result[jss::marker] = to_string(*marker) + "," + std::to_string(nextHint);
     }
 
     result[jss::account] = toBase58(accountID);
@@ -194,4 +190,4 @@ doAccountChannels(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

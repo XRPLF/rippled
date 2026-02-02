@@ -9,17 +9,14 @@
 #include <optional>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
 namespace batch {
 
 XRPAmount
-calcBatchFee(
-    test::jtx::Env const& env,
-    uint32_t const& numSigners,
-    uint32_t const& txns)
+calcBatchFee(test::jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns)
 {
     XRPAmount const feeDrops = env.current()->fees().base;
     return ((numSigners + 2) * feeDrops) + feeDrops * txns;
@@ -27,11 +24,7 @@ calcBatchFee(
 
 // Batch.
 Json::Value
-outer(
-    jtx::Account const& account,
-    uint32_t seq,
-    STAmount const& fee,
-    std::uint32_t flags)
+outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::Batch;
@@ -81,10 +74,8 @@ sig::operator()(Env& env, JTx& jt) const
 
         Serializer msg;
         serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
-        auto const sig = ripple::sign(
-            *publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
-        jo[sfTxnSignature.getJsonName()] =
-            strHex(Slice{sig.data(), sig.size()});
+        auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
+        jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
     }
 }
 
@@ -121,10 +112,8 @@ msig::operator()(Env& env, JTx& jt) const
         Serializer msg;
         serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
         finishMultiSigningData(e.acct.id(), msg);
-        auto const sig = ripple::sign(
-            *publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
-        iso[sfTxnSignature.getJsonName()] =
-            strHex(Slice{sig.data(), sig.size()});
+        auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
+        iso[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
     }
 }
 
@@ -132,4 +121,4 @@ msig::operator()(Env& env, JTx& jt) const
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

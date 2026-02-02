@@ -13,7 +13,7 @@
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -25,15 +25,13 @@ protected:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
 
 public:
-    using callback_type = std::function<
-        void(error_code const&, endpoint_type const&, response_type&&)>;
+    using callback_type = std::function<void(error_code const&, endpoint_type const&, response_type&&)>;
 
 protected:
     using socket_type = boost::asio::ip::tcp::socket;
     using resolver_type = boost::asio::ip::tcp::resolver;
     using results_type = boost::asio::ip::tcp::resolver::results_type;
-    using request_type =
-        boost::beast::http::request<boost::beast::http::empty_body>;
+    using request_type = boost::beast::http::request<boost::beast::http::empty_body>;
 
     std::string host_;
     std::string path_;
@@ -123,9 +121,7 @@ template <class Impl>
 WorkBase<Impl>::~WorkBase()
 {
     if (cb_)
-        cb_(make_error_code(boost::system::errc::not_a_socket),
-            lastEndpoint_,
-            std::move(res_));
+        cb_(make_error_code(boost::system::errc::not_a_socket), lastEndpoint_, std::move(res_));
     close();
 }
 
@@ -135,20 +131,14 @@ WorkBase<Impl>::run()
 {
     if (!strand_.running_in_this_thread())
         return boost::asio::post(
-            ios_,
-            boost::asio::bind_executor(
-                strand_, std::bind(&WorkBase::run, impl().shared_from_this())));
+            ios_, boost::asio::bind_executor(strand_, std::bind(&WorkBase::run, impl().shared_from_this())));
 
     resolver_.async_resolve(
         host_,
         port_,
         boost::asio::bind_executor(
             strand_,
-            std::bind(
-                &WorkBase::onResolve,
-                impl().shared_from_this(),
-                std::placeholders::_1,
-                std::placeholders::_2)));
+            std::bind(&WorkBase::onResolve, impl().shared_from_this(), std::placeholders::_1, std::placeholders::_2)));
 }
 
 template <class Impl>
@@ -160,9 +150,7 @@ WorkBase<Impl>::cancel()
         return boost::asio::post(
             ios_,
 
-            boost::asio::bind_executor(
-                strand_,
-                std::bind(&WorkBase::cancel, impl().shared_from_this())));
+            boost::asio::bind_executor(strand_, std::bind(&WorkBase::cancel, impl().shared_from_this())));
     }
 
     error_code ec;
@@ -193,11 +181,7 @@ WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
         results,
         boost::asio::bind_executor(
             strand_,
-            std::bind(
-                &WorkBase::onConnect,
-                impl().shared_from_this(),
-                std::placeholders::_1,
-                std::placeholders::_2)));
+            std::bind(&WorkBase::onConnect, impl().shared_from_this(), std::placeholders::_1, std::placeholders::_2)));
 }
 
 template <class Impl>
@@ -226,11 +210,7 @@ WorkBase<Impl>::onStart()
         impl().stream(),
         req_,
         boost::asio::bind_executor(
-            strand_,
-            std::bind(
-                &WorkBase::onRequest,
-                impl().shared_from_this(),
-                std::placeholders::_1)));
+            strand_, std::bind(&WorkBase::onRequest, impl().shared_from_this(), std::placeholders::_1)));
 }
 
 template <class Impl>
@@ -245,11 +225,7 @@ WorkBase<Impl>::onRequest(error_code const& ec)
         readBuf_,
         res_,
         boost::asio::bind_executor(
-            strand_,
-            std::bind(
-                &WorkBase::onResponse,
-                impl().shared_from_this(),
-                std::placeholders::_1)));
+            strand_, std::bind(&WorkBase::onResponse, impl().shared_from_this(), std::placeholders::_1)));
 }
 
 template <class Impl>
@@ -260,7 +236,7 @@ WorkBase<Impl>::onResponse(error_code const& ec)
         return fail(ec);
 
     close();
-    XRPL_ASSERT(cb_, "ripple::detail::WorkBase::onResponse : callback is set");
+    XRPL_ASSERT(cb_, "xrpl::detail::WorkBase::onResponse : callback is set");
     cb_(ec, lastEndpoint_, std::move(res_));
     cb_ = nullptr;
 }
@@ -281,6 +257,6 @@ WorkBase<Impl>::close()
 
 }  // namespace detail
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

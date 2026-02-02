@@ -1,9 +1,8 @@
 #include <xrpl/ledger/ApplyViewImpl.h>
 
-namespace ripple {
+namespace xrpl {
 
-ApplyViewImpl::ApplyViewImpl(ReadView const* base, ApplyFlags flags)
-    : ApplyViewBase(base, flags)
+ApplyViewImpl::ApplyViewImpl(ReadView const* base, ApplyFlags flags) : ApplyViewBase(base, flags)
 {
 }
 
@@ -37,4 +36,4 @@ ApplyViewImpl::visit(
     items_.visit(to, func);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

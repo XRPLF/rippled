@@ -3,12 +3,14 @@
 #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
 
+#include <boost/preprocessor/stringize.hpp>
+
 #include <algorithm>
 #include <cstdint>
 #include <string>
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 namespace BuildInfo {
 
@@ -17,10 +19,10 @@ namespace BuildInfo {
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
 // clang-format off
-char const* const versionString = "3.1.0-b0"
+char const* const versionString = "3.2.0-b0"
 // clang-format on
 
-#if defined(DEBUG) || defined(SANITIZER)
+#if defined(DEBUG) || defined(SANITIZERS)
     "+"
 #ifdef GIT_COMMIT_HASH
     GIT_COMMIT_HASH
@@ -28,13 +30,13 @@ char const* const versionString = "3.1.0-b0"
 #endif
 #ifdef DEBUG
     "DEBUG"
-#ifdef SANITIZER
+#ifdef SANITIZERS
     "."
 #endif
 #endif
 
-#ifdef SANITIZER
-    BOOST_PP_STRINGIZE(SANITIZER)
+#ifdef SANITIZERS
+    BOOST_PP_STRINGIZE(SANITIZERS)  // cspell: disable-line
 #endif
 #endif
 
@@ -65,10 +67,8 @@ getFullVersionString()
     return value;
 }
 
-static constexpr std::uint64_t implementationVersionIdentifier =
-    0x183B'0000'0000'0000LLU;
-static constexpr std::uint64_t implementationVersionIdentifierMask =
-    0xFFFF'0000'0000'0000LLU;
+static constexpr std::uint64_t implementationVersionIdentifier = 0x183B'0000'0000'0000LLU;
+static constexpr std::uint64_t implementationVersionIdentifierMask = 0xFFFF'0000'0000'0000LLU;
 
 std::uint64_t
 encodeSoftwareVersion(char const* const versionStr)
@@ -107,9 +107,7 @@ encodeSoftwareVersion(char const* const versionStr)
                     if (prefix != identifier.substr(0, prefix.length()))
                         return 0;
 
-                    if (!beast::lexicalCastChecked(
-                            ret,
-                            std::string(identifier.substr(prefix.length()))))
+                    if (!beast::lexicalCastChecked(ret, std::string(identifier.substr(prefix.length()))))
                         return 0;
 
                     if (std::clamp(ret, lok, hik) != ret)
@@ -145,8 +143,7 @@ getEncodedVersion()
 bool
 isRippledVersion(std::uint64_t version)
 {
-    return (version & implementationVersionIdentifierMask) ==
-        implementationVersionIdentifier;
+    return (version & implementationVersionIdentifierMask) == implementationVersionIdentifier;
 }
 
 bool
@@ -159,4 +156,4 @@ isNewerVersion(std::uint64_t version)
 
 }  // namespace BuildInfo
 
-}  // namespace ripple
+}  // namespace xrpl

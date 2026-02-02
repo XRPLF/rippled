@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // Various protocol and system specific constant globals.
 
@@ -23,6 +23,8 @@ systemName()
 
 /** Number of drops in the genesis account. */
 constexpr XRPAmount INITIAL_XRP{100'000'000'000 * DROPS_PER_XRP};
+static_assert(INITIAL_XRP.drops() == 100'000'000'000'000'000);
+static_assert(Number::maxRep >= INITIAL_XRP.drops());
 
 /** Returns true if the amount does not exceed the initial XRP in existence. */
 inline bool
@@ -60,7 +62,7 @@ constexpr std::ratio<80, 100> amendmentMajorityCalcThreshold;
 /** The minimum amount of time an amendment must hold a majority */
 constexpr std::chrono::seconds const defaultAmendmentMajorityTime = weeks{2};
 
-}  // namespace ripple
+}  // namespace xrpl
 
 /** Default peer port (IANA registered) */
 inline std::uint16_t constexpr DEFAULT_PEER_PORT{2459};

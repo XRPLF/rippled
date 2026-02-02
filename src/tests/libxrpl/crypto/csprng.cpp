@@ -1,15 +1,15 @@
 #include <xrpl/crypto/csprng.h>
 
-#include <doctest/doctest.h>
+#include <gtest/gtest.h>
 
-using namespace ripple;
+using namespace xrpl;
 
-TEST_CASE("get values")
+TEST(csprng, get_values)
 {
     auto& engine = crypto_prng();
     auto rand_val = engine();
-    CHECK(rand_val >= engine.min());
-    CHECK(rand_val <= engine.max());
+    EXPECT_GE(rand_val, engine.min());
+    EXPECT_LE(rand_val, engine.max());
     uint16_t twoByte{0};
     engine(&twoByte, sizeof(uint16_t));
 }

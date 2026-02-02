@@ -6,7 +6,7 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 
-namespace ripple {
+namespace xrpl {
 namespace cryptoconditions {
 
 struct Fulfillment
@@ -78,8 +78,7 @@ inline bool
 operator==(Fulfillment const& lhs, Fulfillment const& rhs)
 {
     // FIXME: for compound conditions, need to also check subtypes
-    return lhs.type() == rhs.type() && lhs.cost() == rhs.cost() &&
-        lhs.fingerprint() == rhs.fingerprint();
+    return lhs.type() == rhs.type() && lhs.cost() == rhs.cost() && lhs.fingerprint() == rhs.fingerprint();
 }
 
 inline bool
@@ -122,6 +121,6 @@ bool
 validate(Fulfillment const& f, Condition const& c);
 
 }  // namespace cryptoconditions
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

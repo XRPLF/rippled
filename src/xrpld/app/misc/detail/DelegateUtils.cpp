@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/STArray.h>
 
-namespace ripple {
+namespace xrpl {
 NotTEC
 checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
 {
@@ -35,13 +35,11 @@ loadGranularPermission(
     for (auto const& permission : permissionArray)
     {
         auto const permissionValue = permission[sfPermissionValue];
-        auto const granularValue =
-            static_cast<GranularPermissionType>(permissionValue);
-        auto const& type =
-            Permission::getInstance().getGranularTxType(granularValue);
+        auto const granularValue = static_cast<GranularPermissionType>(permissionValue);
+        auto const& type = Permission::getInstance().getGranularTxType(granularValue);
         if (type && *type == txType)
             granularPermissions.insert(granularValue);
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -2,16 +2,14 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
 namespace delegate {
 
 Json::Value
-set(jtx::Account const& account,
-    jtx::Account const& authorize,
-    std::vector<std::string> const& permissions)
+set(jtx::Account const& account, jtx::Account const& authorize, std::vector<std::string> const& permissions)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::DelegateSet;
@@ -45,4 +43,4 @@ entry(jtx::Env& env, jtx::Account const& account, jtx::Account const& authorize)
 }  // namespace delegate
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

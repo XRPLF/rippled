@@ -4,7 +4,8 @@
 #include <xrpld/app/main/DBInit.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/SociDB.h>
-#include <xrpld/perflog/PerfLog.h>
+
+#include <xrpl/core/PerfLog.h>
 
 #include <boost/filesystem/path.hpp>
 
@@ -16,7 +17,7 @@ namespace soci {
 class session;
 }
 
-namespace ripple {
+namespace xrpl {
 
 class LockedSociSession
 {
@@ -28,12 +29,10 @@ private:
     std::unique_lock<mutex> lock_;
 
 public:
-    LockedSociSession(std::shared_ptr<soci::session> it, mutex& m)
-        : session_(std::move(it)), lock_(m)
+    LockedSociSession(std::shared_ptr<soci::session> it, mutex& m) : session_(std::move(it)), lock_(m)
     {
     }
-    LockedSociSession(LockedSociSession&& rhs) noexcept
-        : session_(std::move(rhs.session_)), lock_(std::move(rhs.lock_))
+    LockedSociSession(LockedSociSession&& rhs) noexcept : session_(std::move(rhs.session_)), lock_(std::move(rhs.lock_))
     {
     }
     LockedSociSession() = delete;
@@ -82,10 +81,9 @@ public:
         {
             XRPL_ASSERT(
                 !useGlobalPragma || globalPragma,
-                "ripple::DatabaseCon::Setup::commonPragma : consistent global "
+                "xrpl::DatabaseCon::Setup::commonPragma : consistent global "
                 "pragma");
-            return useGlobalPragma && globalPragma ? globalPragma.get()
-                                                   : nullptr;
+            return useGlobalPragma && globalPragma ? globalPragma.get() : nullptr;
         }
 
         static std::unique_ptr<std::vector<std::string> const> globalPragma;
@@ -108,8 +106,7 @@ public:
         beast::Journal journal)
         // Use temporary files or regular DB files?
         : DatabaseCon(
-              setup.standAlone && setup.startUp != Config::LOAD &&
-                      setup.startUp != Config::LOAD_FILE &&
+              setup.standAlone && setup.startUp != Config::LOAD && setup.startUp != Config::LOAD_FILE &&
                       setup.startUp != Config::REPLAY
                   ? ""
                   : (setup.dataDir / dbName),
@@ -171,11 +168,8 @@ public:
     checkoutDb()
     {
         using namespace std::chrono_literals;
-        LockedSociSession session = perf::measureDurationAndLog(
-            [&]() { return LockedSociSession(session_, lock_); },
-            "checkoutDb",
-            10ms,
-            j_);
+        LockedSociSession session =
+            perf::measureDurationAndLog([&]() { return LockedSociSession(session_, lock_); }, "checkoutDb", 10ms, j_);
 
         return session;
     }
@@ -237,10 +231,8 @@ std::shared_ptr<Checkpointer>
 checkpointerFromId(std::uintptr_t id);
 
 DatabaseCon::Setup
-setup_DatabaseCon(
-    Config const& c,
-    std::optional<beast::Journal> j = std::nullopt);
+setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j = std::nullopt);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

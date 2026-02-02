@@ -5,11 +5,10 @@
 #include <sstream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
-Charge::Charge(value_type cost, std::string const& label)
-    : m_cost(cost), m_label(label)
+Charge::Charge(value_type cost, std::string const& label) : m_cost(cost), m_label(label)
 {
 }
 
@@ -59,4 +58,4 @@ Charge::operator*(value_type m) const
 }
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl

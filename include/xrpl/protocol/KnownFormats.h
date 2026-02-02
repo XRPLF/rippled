@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <forward_list>
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages a list of known formats.
 
@@ -37,8 +37,7 @@ public:
         {
             // Verify that KeyType is appropriate.
             static_assert(
-                std::is_enum<KeyType>::value ||
-                    std::is_integral<KeyType>::value,
+                std::is_enum<KeyType>::value || std::is_integral<KeyType>::value,
                 "KnownFormats KeyType must be integral or enum.");
         }
 
@@ -100,8 +99,7 @@ public:
         if (auto const result = findByName(name))
             return result->getType();
         Throw<std::runtime_error>(
-            name_ + ": Unknown format name '" +
-            name.substr(0, std::min(name.size(), std::size_t(32))) + "'");
+            name_ + ": Unknown format name '" + name.substr(0, std::min(name.size(), std::size_t(32))) + "'");
     }
 
     /** Retrieve a format based on its type.
@@ -157,9 +155,7 @@ protected:
     {
         if (auto const item = findByType(type))
         {
-            LogicError(
-                std::string("Duplicate key for item '") + name +
-                "': already maps to " + item->getName());
+            LogicError(std::string("Duplicate key for item '") + name + "': already maps to " + item->getName());
         }
 
         formats_.emplace_front(name, type, uniqueFields, commonFields);
@@ -183,6 +179,6 @@ private:
     boost::container::flat_map<KeyType, Item const*> types_;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

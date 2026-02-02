@@ -5,7 +5,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -16,8 +16,7 @@ struct prop
     std::unique_ptr<basic_prop> p_;
 
     template <class... Args>
-    prop(Args&&... args)
-        : p_(std::make_unique<prop_type<Prop>>(std::forward<Args>(args)...))
+    prop(Args&&... args) : p_(std::make_unique<prop_type<Prop>>(std::forward<Args>(args)...))
     {
     }
 
@@ -30,6 +29,6 @@ struct prop
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

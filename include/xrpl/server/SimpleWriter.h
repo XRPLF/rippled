@@ -10,7 +10,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 /// Deprecated: Writer that serializes a HTTP/1 message
 class SimpleWriter : public Writer
@@ -19,8 +19,7 @@ class SimpleWriter : public Writer
 
 public:
     template <bool isRequest, class Body, class Fields>
-    explicit SimpleWriter(
-        boost::beast::http::message<isRequest, Body, Fields> const& msg)
+    explicit SimpleWriter(boost::beast::http::message<isRequest, Body, Fields> const& msg)
     {
         boost::beast::ostream(sb_) << msg;
     }
@@ -55,6 +54,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

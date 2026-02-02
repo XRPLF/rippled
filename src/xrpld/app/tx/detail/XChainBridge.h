@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/XChainAttestations.h>
 
-namespace ripple {
+namespace xrpl {
 
 constexpr size_t xbridgeMaxAccountCreateClaims = 128;
 
@@ -176,8 +176,7 @@ public:
     // Blocker since we cannot accurately calculate the consequences
     static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
 
-    explicit XChainAddAccountCreateAttestation(ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit XChainAddAccountCreateAttestation(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -239,6 +238,6 @@ using XChainAccountCreateCommit = XChainCreateAccountCommit;
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

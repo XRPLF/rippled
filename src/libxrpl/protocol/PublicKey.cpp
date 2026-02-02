@@ -21,7 +21,7 @@
 #include <ostream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 std::ostream&
 operator<<(std::ostream& os, PublicKey const& pk)
@@ -109,16 +109,11 @@ sliceToHex(Slice const& slice)
 std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig)
 {
-    using uint264 =
-        boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
-            264,
-            264,
-            boost::multiprecision::signed_magnitude,
-            boost::multiprecision::unchecked,
-            void>>;
+    using uint264 = boost::multiprecision::number<
+        boost::multiprecision::
+            cpp_int_backend<264, 264, boost::multiprecision::signed_magnitude, boost::multiprecision::unchecked, void>>;
 
-    static uint264 const G(
-        "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+    static uint264 const G("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
 
     // The format of a signature should be:
     // <30> <len> [ <02> <lenR> <R> ] [ <02> <lenS> <S> ]
@@ -155,9 +150,8 @@ ed25519Canonical(Slice const& sig)
         return false;
     // Big-endian Order, the Ed25519 subgroup order
     std::uint8_t const Order[] = {
-        0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0xDE, 0xF9, 0xDE, 0xA2, 0xF7,
-        0x9C, 0xD6, 0x58, 0x12, 0x63, 0x1A, 0x5C, 0xF5, 0xD3, 0xED,
+        0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x14, 0xDE, 0xF9, 0xDE, 0xA2, 0xF7, 0x9C, 0xD6, 0x58, 0x12, 0x63, 0x1A, 0x5C, 0xF5, 0xD3, 0xED,
     };
     // Take the second half of signature
     // and byte-reverse it to big-endian.
@@ -216,19 +210,14 @@ publicKeyType(Slice const& slice)
 }
 
 bool
-verifyDigest(
-    PublicKey const& publicKey,
-    uint256 const& digest,
-    Slice const& sig,
-    bool mustBeFullyCanonical) noexcept
+verifyDigest(PublicKey const& publicKey, uint256 const& digest, Slice const& sig, bool mustBeFullyCanonical) noexcept
 {
     if (publicKeyType(publicKey) != KeyType::secp256k1)
         LogicError("sign: secp256k1 required for digest signing");
     auto const canonicality = ecdsaCanonicality(sig);
     if (!canonicality)
         return false;
-    if (mustBeFullyCanonical &&
-        (*canonicality != ECDSACanonicality::fullyCanonical))
+    if (mustBeFullyCanonical && (*canonicality != ECDSACanonicality::fullyCanonical))
         return false;
 
     secp256k1_pubkey pubkey_imp;
@@ -241,28 +230,19 @@ verifyDigest(
 
     secp256k1_ecdsa_signature sig_imp;
     if (secp256k1_ecdsa_signature_parse_der(
-            secp256k1Context(),
-            &sig_imp,
-            reinterpret_cast<unsigned char const*>(sig.data()),
-            sig.size()) != 1)
+            secp256k1Context(), &sig_imp, reinterpret_cast<unsigned char const*>(sig.data()), sig.size()) != 1)
         return false;
     if (*canonicality != ECDSACanonicality::fullyCanonical)
     {
         secp256k1_ecdsa_signature sig_norm;
-        if (secp256k1_ecdsa_signature_normalize(
-                secp256k1Context(), &sig_norm, &sig_imp) != 1)
+        if (secp256k1_ecdsa_signature_normalize(secp256k1Context(), &sig_norm, &sig_imp) != 1)
             return false;
         return secp256k1_ecdsa_verify(
-                   secp256k1Context(),
-                   &sig_norm,
-                   reinterpret_cast<unsigned char const*>(digest.data()),
-                   &pubkey_imp) == 1;
+                   secp256k1Context(), &sig_norm, reinterpret_cast<unsigned char const*>(digest.data()), &pubkey_imp) ==
+            1;
     }
     return secp256k1_ecdsa_verify(
-               secp256k1Context(),
-               &sig_imp,
-               reinterpret_cast<unsigned char const*>(digest.data()),
-               &pubkey_imp) == 1;
+               secp256k1Context(), &sig_imp, reinterpret_cast<unsigned char const*>(digest.data()), &pubkey_imp) == 1;
 }
 
 bool
@@ -283,9 +263,7 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
             // byte to distinguish them from secp256k1 keys
             // so when verifying the signature, we need to
             // first strip that prefix.
-            return ed25519_sign_open(
-                       m.data(), m.size(), publicKey.data() + 1, sig.data()) ==
-                0;
+            return ed25519_sign_open(m.data(), m.size(), publicKey.data() + 1, sig.data()) == 0;
         }
     }
     return false;
@@ -301,4 +279,4 @@ calcNodeID(PublicKey const& pk)
     return NodeID{static_cast<ripesha_hasher::result_type>(h)};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

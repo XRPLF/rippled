@@ -10,16 +10,14 @@
 #include <memory>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 class ManagerImp : public Manager
 {
 public:
     boost::asio::io_context& io_context_;
-    std::optional<boost::asio::executor_work_guard<
-        boost::asio::io_context::executor_type>>
-        work_;
+    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     clock_type& m_clock;
     beast::Journal m_journal;
     StoreSqdb m_store;
@@ -83,17 +81,13 @@ public:
     }
 
     void
-    addFixedPeer(
-        std::string const& name,
-        std::vector<beast::IP::Endpoint> const& addresses) override
+    addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) override
     {
         m_logic.addFixedPeer(name, addresses);
     }
 
     void
-    addFallbackStrings(
-        std::string const& name,
-        std::vector<std::string> const& strings) override
+    addFallbackStrings(std::string const& name, std::vector<std::string> const& strings) override
     {
         m_logic.addStaticSource(SourceStrings::New(name, strings));
     }
@@ -107,9 +101,7 @@ public:
     //--------------------------------------------------------------------------
 
     std::pair<std::shared_ptr<Slot>, Result>
-    new_inbound_slot(
-        beast::IP::Endpoint const& local_endpoint,
-        beast::IP::Endpoint const& remote_endpoint) override
+    new_inbound_slot(beast::IP::Endpoint const& local_endpoint, beast::IP::Endpoint const& remote_endpoint) override
     {
         return m_logic.new_inbound_slot(local_endpoint, remote_endpoint);
     }
@@ -121,8 +113,7 @@ public:
     }
 
     void
-    on_endpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints)
-        override
+    on_endpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) override
     {
         SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
         m_logic.on_endpoints(impl, endpoints);
@@ -153,19 +144,14 @@ public:
     //--------------------------------------------------------------------------
 
     bool
-    onConnected(
-        std::shared_ptr<Slot> const& slot,
-        beast::IP::Endpoint const& local_endpoint) override
+    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& local_endpoint) override
     {
         SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
         return m_logic.onConnected(impl, local_endpoint);
     }
 
     Result
-    activate(
-        std::shared_ptr<Slot> const& slot,
-        PublicKey const& key,
-        bool reserved) override
+    activate(std::shared_ptr<Slot> const& slot, PublicKey const& key, bool reserved) override
     {
         SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
         return m_logic.activate(impl, key, reserved);
@@ -219,14 +205,10 @@ private:
     struct Stats
     {
         template <class Handler>
-        Stats(
-            Handler const& handler,
-            beast::insight::Collector::ptr const& collector)
+        Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
             : hook(collector->make_hook(handler))
-            , activeInboundPeers(
-                  collector->make_gauge("Peer_Finder", "Active_Inbound_Peers"))
-            , activeOutboundPeers(
-                  collector->make_gauge("Peer_Finder", "Active_Outbound_Peers"))
+            , activeInboundPeers(collector->make_gauge("Peer_Finder", "Active_Inbound_Peers"))
+            , activeOutboundPeers(collector->make_gauge("Peer_Finder", "Active_Outbound_Peers"))
         {
         }
 
@@ -261,9 +243,8 @@ make_Manager(
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
 {
-    return std::make_unique<ManagerImp>(
-        io_context, clock, journal, config, collector);
+    return std::make_unique<ManagerImp>(io_context, clock, journal, config, collector);
 }
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl

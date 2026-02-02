@@ -3,7 +3,6 @@
 #include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/json/Object.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
@@ -11,7 +10,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -31,7 +30,7 @@ sign(Json::Value& jv, Account const& account, Json::Value& sigObject)
     Serializer ss;
     ss.add32(HashPrefix::txSign);
     parse(jv).addWithoutSigningFields(ss);
-    auto const sig = ripple::sign(account.pk(), account.sk(), ss.slice());
+    auto const sig = xrpl::sign(account.pk(), account.sk(), ss.slice());
     sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
 }
 
@@ -64,10 +63,7 @@ fill_seq(Json::Value& jv, ReadView const& view)
 }
 
 Json::Value
-cmdToJSONRPC(
-    std::vector<std::string> const& args,
-    beast::Journal j,
-    unsigned int apiVersion)
+cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion)
 {
     Json::Value jv = Json::Value(Json::objectValue);
     auto const paramsObj = rpcCmdToJson(args, jv, apiVersion, j);
@@ -76,14 +72,12 @@ cmdToJSONRPC(
     jv.clear();
 
     // Allow parser to rewrite method.
-    jv[jss::method] = paramsObj.isMember(jss::method)
-        ? paramsObj[jss::method].asString()
-        : args[0];
+    jv[jss::method] = paramsObj.isMember(jss::method) ? paramsObj[jss::method].asString() : args[0];
 
     // If paramsObj is not empty, put it in a [params] array.
     if (paramsObj.begin() != paramsObj.end())
     {
-        auto& paramsArray = Json::setArray(jv, jss::params);
+        auto& paramsArray = jv[jss::params] = Json::arrayValue;
         paramsArray.append(paramsObj);
     }
     if (paramsObj.isMember(jss::jsonrpc))
@@ -97,4 +91,4 @@ cmdToJSONRPC(
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

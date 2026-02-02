@@ -13,7 +13,7 @@
 #include <functional>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 namespace tests {
 
 class FetchPack_test : public beast::unit_test::suite
@@ -36,8 +36,7 @@ public:
 
     struct TestFilter : SHAMapSyncFilter
     {
-        TestFilter(Map& map, beast::Journal journal)
-            : mMap(map), mJournal(journal)
+        TestFilter(Map& map, beast::Journal journal) : mMap(map), mJournal(journal)
         {
         }
 
@@ -72,7 +71,7 @@ public:
     {
         Serializer s;
         for (int d = 0; d < 3; ++d)
-            s.add32(ripple::rand_int<std::uint32_t>(r));
+            s.add32(xrpl::rand_int<std::uint32_t>(r));
         return make_shamapitem(s.getSHA512Half(), s.slice());
     }
 
@@ -81,8 +80,7 @@ public:
     {
         while (n--)
         {
-            auto const result(t.addItem(
-                SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
+            auto const result(t.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
             assert(result);
             (void)result;
         }
@@ -151,7 +149,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FetchPack, shamap, ripple);
+BEAST_DEFINE_TESTSUITE(FetchPack, shamap, xrpl);
 
 }  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl

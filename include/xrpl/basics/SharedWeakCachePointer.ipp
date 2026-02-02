@@ -3,36 +3,30 @@
 
 #include <xrpl/basics/SharedWeakCachePointer.h>
 
-namespace ripple {
+namespace xrpl {
 template <class T>
-SharedWeakCachePointer<T>::SharedWeakCachePointer(
-    SharedWeakCachePointer const& rhs) = default;
+SharedWeakCachePointer<T>::SharedWeakCachePointer(SharedWeakCachePointer const& rhs) = default;
 
 template <class T>
 template <class TT>
     requires std::convertible_to<TT*, T*>
-SharedWeakCachePointer<T>::SharedWeakCachePointer(
-    std::shared_ptr<TT> const& rhs)
-    : combo_{rhs}
+SharedWeakCachePointer<T>::SharedWeakCachePointer(std::shared_ptr<TT> const& rhs) : combo_{rhs}
 {
 }
 
 template <class T>
-SharedWeakCachePointer<T>::SharedWeakCachePointer(
-    SharedWeakCachePointer&& rhs) = default;
+SharedWeakCachePointer<T>::SharedWeakCachePointer(SharedWeakCachePointer&& rhs) = default;
 
 template <class T>
 template <class TT>
     requires std::convertible_to<TT*, T*>
-SharedWeakCachePointer<T>::SharedWeakCachePointer(std::shared_ptr<TT>&& rhs)
-    : combo_{std::move(rhs)}
+SharedWeakCachePointer<T>::SharedWeakCachePointer(std::shared_ptr<TT>&& rhs) : combo_{std::move(rhs)}
 {
 }
 
 template <class T>
 SharedWeakCachePointer<T>&
-SharedWeakCachePointer<T>::operator=(SharedWeakCachePointer const& rhs) =
-    default;
+SharedWeakCachePointer<T>::operator=(SharedWeakCachePointer const& rhs) = default;
 
 template <class T>
 template <class TT>
@@ -169,5 +163,5 @@ SharedWeakCachePointer<T>::convertToWeak()
 
     return false;
 }
-}  // namespace ripple
+}  // namespace xrpl
 #endif

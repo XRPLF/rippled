@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 void
 LogThrow(std::string const& title)
@@ -30,4 +30,4 @@ LogicError(std::string const& s) noexcept
     // LCOV_EXCL_STOP
 }
 
-}  // namespace ripple
+}  // namespace xrpl

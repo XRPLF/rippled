@@ -3,7 +3,7 @@
 
 #include <xrpld/app/rdb/RelationalDatabase.h>
 
-namespace ripple {
+namespace xrpl {
 
 class SQLiteDatabase : public RelationalDatabase
 {
@@ -89,9 +89,7 @@ public:
      * @return True if saving was successful.
      */
     virtual bool
-    saveValidatedLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        bool current) = 0;
+    saveValidatedLedger(std::shared_ptr<Ledger const> const& ledger, bool current) = 0;
 
     /**
      * @brief getLimitedOldestLedgerInfo Returns the info of the oldest ledger
@@ -100,7 +98,7 @@ public:
      * @param ledgerFirstIndex Minimum ledger sequence.
      * @return Ledger info if found, otherwise no value.
      */
-    virtual std::optional<LedgerInfo>
+    virtual std::optional<LedgerHeader>
     getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex) = 0;
 
     /**
@@ -110,7 +108,7 @@ public:
      * @param ledgerFirstIndex Minimum ledger sequence.
      * @return Ledger info if found, otherwise no value.
      */
-    virtual std::optional<LedgerInfo>
+    virtual std::optional<LedgerHeader>
     getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex) = 0;
 
     /**
@@ -248,10 +246,7 @@ public:
      *         default error code is not changed.
      */
     virtual std::variant<AccountTx, TxSearched>
-    getTransaction(
-        uint256 const& id,
-        std::optional<ClosedInterval<uint32_t>> const& range,
-        error_code_i& ec) = 0;
+    getTransaction(uint256 const& id, std::optional<ClosedInterval<uint32_t>> const& range, error_code_i& ec) = 0;
 
     /**
      * @brief getKBUsedAll Returns the amount of space used by all databases.
@@ -289,6 +284,6 @@ public:
     closeTransactionDB() = 0;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

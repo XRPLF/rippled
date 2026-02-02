@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class DelegateSet : public Transactor
 {
@@ -25,13 +25,9 @@ public:
 
     // Interface used by DeleteAccount
     static TER
-    deleteDelegate(
-        ApplyView& view,
-        std::shared_ptr<SLE> const& sle,
-        AccountID const& account,
-        beast::Journal j);
+    deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, AccountID const& account, beast::Journal j);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

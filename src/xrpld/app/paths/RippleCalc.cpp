@@ -6,7 +6,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace path {
 
 RippleCalc::Output
@@ -44,22 +44,18 @@ RippleCalc::rippleCalculate(
     auto j = l.journal("Flow");
 
     {
-        bool const defaultPaths =
-            !pInputs ? true : pInputs->defaultPathsAllowed;
+        bool const defaultPaths = !pInputs ? true : pInputs->defaultPathsAllowed;
 
-        bool const partialPayment =
-            !pInputs ? false : pInputs->partialPaymentAllowed;
+        bool const partialPayment = !pInputs ? false : pInputs->partialPaymentAllowed;
 
         auto const limitQuality = [&]() -> std::optional<Quality> {
-            if (pInputs && pInputs->limitQuality &&
-                saMaxAmountReq > beast::zero)
+            if (pInputs && pInputs->limitQuality && saMaxAmountReq > beast::zero)
                 return Quality{Amounts(saMaxAmountReq, saDstAmountReq)};
             return std::nullopt;
         }();
 
         auto const sendMax = [&]() -> std::optional<STAmount> {
-            if (saMaxAmountReq >= beast::zero ||
-                saMaxAmountReq.getCurrency() != saDstAmountReq.getCurrency() ||
+            if (saMaxAmountReq >= beast::zero || saMaxAmountReq.getCurrency() != saDstAmountReq.getCurrency() ||
                 saMaxAmountReq.getIssuer() != uSrcAccountID)
             {
                 return saMaxAmountReq;
@@ -97,10 +93,8 @@ RippleCalc::rippleCalculate(
     }
 
     j.debug() << "RippleCalc Result> "
-              << " actualIn: " << flowOut.actualAmountIn
-              << ", actualOut: " << flowOut.actualAmountOut
-              << ", result: " << flowOut.result()
-              << ", dstAmtReq: " << saDstAmountReq
+              << " actualIn: " << flowOut.actualAmountIn << ", actualOut: " << flowOut.actualAmountOut
+              << ", result: " << flowOut.result() << ", dstAmtReq: " << saDstAmountReq
               << ", sendMax: " << saMaxAmountReq;
 
     flowSB.apply(view);
@@ -108,4 +102,4 @@ RippleCalc::rippleCalculate(
 }
 
 }  // namespace path
-}  // namespace ripple
+}  // namespace xrpl

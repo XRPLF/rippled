@@ -10,7 +10,7 @@
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -53,13 +53,10 @@ fill_seq(Json::Value& jv, ReadView const& view);
 
 /** Given a rippled unit test rpc command, return the corresponding JSON. */
 Json::Value
-cmdToJSONRPC(
-    std::vector<std::string> const& args,
-    beast::Journal j,
-    unsigned int apiVersion);
+cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion);
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

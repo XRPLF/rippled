@@ -4,7 +4,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ByzantineFailureSim_test : public beast::unit_test::suite
@@ -22,8 +22,7 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         Sim sim;
         ConsensusParms const parms{};
 
-        SimDuration const delay =
-            round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+        SimDuration const delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
         PeerGroup a = sim.createGroup(1);
         PeerGroup b = sim.createGroup(1);
         PeerGroup c = sim.createGroup(1);
@@ -46,12 +45,10 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
 
         sim.collectors.add(sc);
 
-        for (TrustGraph<Peer*>::ForkInfo const& fi :
-             sim.trustGraph.forkablePairs(0.8))
+        for (TrustGraph<Peer*>::ForkInfo const& fi : sim.trustGraph.forkablePairs(0.8))
         {
             std::cout << "Can fork " << PeerGroup{fi.unlA} << " "
-                      << " " << PeerGroup{fi.unlB} << " overlap " << fi.overlap
-                      << " required " << fi.required << "\n";
+                      << " " << PeerGroup{fi.unlB} << " overlap " << fi.overlap << " required " << fi.required << "\n";
         };
 
         // set prior state
@@ -63,23 +60,21 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         {
             peer->submit(Tx{0});
             // Peers 0,1,2,6 will close the next ledger differently by injecting
-            // a non-consensus approved transaciton
+            // a non-consensus approved transaction
             if (byzantineNodes.contains(peer))
             {
-                peer->txInjections.emplace(
-                    peer->lastClosedLedger.seq(), Tx{42});
+                peer->txInjections.emplace(peer->lastClosedLedger.seq(), Tx{42});
             }
         }
         sim.run(4);
         std::cout << "Branches: " << sim.branches() << "\n";
-        std::cout << "Fully synchronized: " << std::boolalpha
-                  << sim.synchronized() << "\n";
+        std::cout << "Fully synchronized: " << std::boolalpha << sim.synchronized() << "\n";
         // Not tessting anything currently.
         pass();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(ByzantineFailureSim, consensus, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(ByzantineFailureSim, consensus, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 
 #include <xrpld/core/Config.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // frequently used macros defined here for convenience.
@@ -44,7 +44,7 @@ envconfig()
 ///
 /// @param modfunc callable function or lambda to modify the default config.
 /// The first argument to the function must be std::unique_ptr to
-/// ripple::Config. The function takes ownership of the unique_ptr and
+/// xrpl::Config. The function takes ownership of the unique_ptr and
 /// relinquishes ownership by returning a unique_ptr.
 ///
 /// @param args additional arguments that will be passed to
@@ -104,17 +104,13 @@ std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
 ///
 /// @param cfg config instance to be modified
 std::unique_ptr<Config>
-addGrpcConfigWithSecureGateway(
-    std::unique_ptr<Config>,
-    std::string const& secureGateway);
+addGrpcConfigWithSecureGateway(std::unique_ptr<Config>, std::string const& secureGateway);
 
 std::unique_ptr<Config>
-makeConfig(
-    std::map<std::string, std::string> extraTxQ = {},
-    std::map<std::string, std::string> extraVoting = {});
+makeConfig(std::map<std::string, std::string> extraTxQ = {}, std::map<std::string, std::string> extraVoting = {});
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

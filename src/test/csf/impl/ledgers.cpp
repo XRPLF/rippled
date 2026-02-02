@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -88,8 +88,7 @@ LedgerOracle::accept(
     next.closeTimeResolution = closeTimeResolution;
     next.closeTimeAgree = consensusCloseTime != NetClock::time_point{};
     if (next.closeTimeAgree)
-        next.closeTime = effCloseTime(
-            consensusCloseTime, closeTimeResolution, parent.closeTime());
+        next.closeTime = effCloseTime(consensusCloseTime, closeTimeResolution, parent.closeTime());
     else
         next.closeTime = parent.closeTime() + 1s;
 
@@ -152,4 +151,4 @@ LedgerOracle::branches(std::set<Ledger> const& ledgers) const
 }
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

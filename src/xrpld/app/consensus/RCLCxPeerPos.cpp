@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Used to construct received proposals
 RCLCxPeerPos::RCLCxPeerPos(
@@ -11,15 +11,13 @@ RCLCxPeerPos::RCLCxPeerPos(
     Slice const& signature,
     uint256 const& suppression,
     Proposal&& proposal)
-    : publicKey_(publicKey)
-    , suppression_(suppression)
-    , proposal_(std::move(proposal))
+    : publicKey_(publicKey), suppression_(suppression), proposal_(std::move(proposal))
 {
     // The maximum allowed size of a signature is 72 bytes; we verify
     // this elsewhere, but we want to be extra careful here:
     XRPL_ASSERT(
         signature.size() != 0 && signature.size() <= signature_.capacity(),
-        "ripple::RCLCxPeerPos::RCLCxPeerPos : valid signature size");
+        "xrpl::RCLCxPeerPos::RCLCxPeerPos : valid signature size");
 
     if (signature.size() != 0 && signature.size() <= signature_.capacity())
         signature_.assign(signature.begin(), signature.end());
@@ -28,8 +26,7 @@ RCLCxPeerPos::RCLCxPeerPos(
 bool
 RCLCxPeerPos::checkSign() const
 {
-    return verifyDigest(
-        publicKey(), proposal_.signingHash(), signature(), false);
+    return verifyDigest(publicKey(), proposal_.signingHash(), signature(), false);
 }
 
 Json::Value
@@ -63,4 +60,4 @@ proposalUniqueId(
     return s.getSHA512Half();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

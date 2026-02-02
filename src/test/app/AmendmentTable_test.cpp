@@ -16,7 +16,7 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class AmendmentTable_test final : public beast::unit_test::suite
 {
@@ -34,9 +34,7 @@ private:
     }
 
     static Section
-    makeSection(
-        std::string const& name,
-        std::vector<std::string> const& amendments)
+    makeSection(std::string const& name, std::vector<std::string> const& amendments)
     {
         Section section(name);
         for (auto const& a : amendments)
@@ -62,17 +60,13 @@ private:
     makeConfig()
     {
         auto cfg = test::jtx::envconfig();
-        cfg->section(SECTION_AMENDMENTS) =
-            makeSection(SECTION_AMENDMENTS, enabled_);
-        cfg->section(SECTION_VETO_AMENDMENTS) =
-            makeSection(SECTION_VETO_AMENDMENTS, vetoed_);
+        cfg->section(SECTION_AMENDMENTS) = makeSection(SECTION_AMENDMENTS, enabled_);
+        cfg->section(SECTION_VETO_AMENDMENTS) = makeSection(SECTION_VETO_AMENDMENTS, vetoed_);
         return cfg;
     }
 
     static std::vector<AmendmentTable::FeatureInfo>
-    makeFeatureInfo(
-        std::vector<std::string> const& amendments,
-        VoteBehavior voteBehavior)
+    makeFeatureInfo(std::vector<std::string> const& amendments, VoteBehavior voteBehavior)
     {
         std::vector<AmendmentTable::FeatureInfo> result;
         result.reserve(amendments.size());
@@ -92,8 +86,7 @@ private:
     static std::vector<AmendmentTable::FeatureInfo>
     makeDefaultYes(uint256 const amendment)
     {
-        std::vector<AmendmentTable::FeatureInfo> result{
-            {to_string(amendment), amendment, VoteBehavior::DefaultYes}};
+        std::vector<AmendmentTable::FeatureInfo> result{{to_string(amendment), amendment, VoteBehavior::DefaultYes}};
         return result;
     }
 
@@ -120,10 +113,7 @@ private:
 
     template <class Arg, class... Args>
     static void
-    combine_arg(
-        std::vector<Arg>& dest,
-        std::vector<Arg> const& src,
-        Args const&... args)
+    combine_arg(std::vector<Arg>& dest, std::vector<Arg> const& src, Args const&... args)
     {
         assert(dest.capacity() >= dest.size() + src.size());
         std::copy(src.begin(), src.end(), std::back_inserter(dest));
@@ -151,14 +141,11 @@ private:
     // Enabled amendments are typically a subset of supported amendments.
     // Vetoed amendments should be supported but not enabled.
     // Unsupported amendments may be added to the AmendmentTable.
-    std::vector<std::string> const
-        yes_{"g", "i", "k", "m", "o", "q", "r", "s", "t", "u"};
-    std::vector<std::string> const
-        enabled_{"b", "d", "f", "h", "j", "l", "n", "p"};
+    std::vector<std::string> const yes_{"g", "i", "k", "m", "o", "q", "r", "s", "t", "u"};
+    std::vector<std::string> const enabled_{"b", "d", "f", "h", "j", "l", "n", "p"};
     std::vector<std::string> const vetoed_{"a", "c", "e"};
     std::vector<std::string> const obsolete_{"0", "1", "2"};
-    std::vector<std::string> const allSupported_{
-        combine(yes_, enabled_, vetoed_, obsolete_)};
+    std::vector<std::string> const allSupported_{combine(yes_, enabled_, vetoed_, obsolete_)};
     std::vector<std::string> const unsupported_{"v", "w", "x"};
     std::vector<std::string> const unsupportedMajority_{"y", "z"};
 
@@ -180,8 +167,7 @@ public:
         Section const& enabled,
         Section const& vetoed)
     {
-        return make_AmendmentTable(
-            app, majorityTime, supported, enabled, vetoed, journal_);
+        return make_AmendmentTable(app, majorityTime, supported, enabled, vetoed, journal_);
     }
 
     std::unique_ptr<AmendmentTable>
@@ -198,22 +184,16 @@ public:
     std::unique_ptr<AmendmentTable>
     makeTable(test::jtx::Env& env, std::chrono::seconds majorityTime)
     {
-        static std::vector<AmendmentTable::FeatureInfo> const supported =
-            combine(
-                makeDefaultYes(yes_),
-                // Use non-intuitive default votes for "enabled_" and "vetoed_"
-                // so that when the tests later explicitly enable or veto them,
-                // we can be certain that they are not simply going by their
-                // default vote setting.
-                makeDefaultNo(enabled_),
-                makeDefaultYes(vetoed_),
-                makeObsolete(obsolete_));
-        return makeTable(
-            env.app(),
-            majorityTime,
-            supported,
-            makeSection(enabled_),
-            makeSection(vetoed_));
+        static std::vector<AmendmentTable::FeatureInfo> const supported = combine(
+            makeDefaultYes(yes_),
+            // Use non-intuitive default votes for "enabled_" and "vetoed_"
+            // so that when the tests later explicitly enable or veto them,
+            // we can be certain that they are not simply going by their
+            // default vote setting.
+            makeDefaultNo(enabled_),
+            makeDefaultYes(vetoed_),
+            makeObsolete(obsolete_));
+        return makeTable(env.app(), majorityTime, supported, makeSection(enabled_), makeSection(vetoed_));
     }
 
     void
@@ -270,16 +250,14 @@ public:
         // Verify that unsupportedID is not in table.
         uint256 const unsupportedID = amendmentId(unsupported_[0]);
         {
-            Json::Value const unsupp =
-                table->getJson(unsupportedID, true)[to_string(unsupportedID)];
+            Json::Value const unsupp = table->getJson(unsupportedID, true)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp.size() == 0);
         }
 
         // After vetoing unsupportedID verify that it is in table.
         table->veto(unsupportedID);
         {
-            Json::Value const unsupp =
-                table->getJson(unsupportedID, true)[to_string(unsupportedID)];
+            Json::Value const unsupp = table->getJson(unsupportedID, true)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp[jss::vetoed].asBool());
         }
     }
@@ -305,8 +283,7 @@ public:
             }
             catch (std::exception const& e)
             {
-                BEAST_EXPECT(
-                    e.what() == "Invalid entry '" + id + "' in [Test]");
+                BEAST_EXPECT(e.what() == "Invalid entry '" + id + "' in [Test]");
             }
         }
 
@@ -322,9 +299,7 @@ public:
             }
             catch (std::exception const& e)
             {
-                BEAST_EXPECT(
-                    e.what() ==
-                    "Invalid entry '" + id + " Test Name' in [Test]");
+                BEAST_EXPECT(e.what() == "Invalid entry '" + id + " Test Name' in [Test]");
             }
         }
 
@@ -343,8 +318,7 @@ public:
             }
             catch (std::exception const& e)
             {
-                BEAST_EXPECT(
-                    e.what() == "Invalid entry '" + sid + " Name' in [Test]");
+                BEAST_EXPECT(e.what() == "Invalid entry '" + sid + " Name' in [Test]");
             }
         }
 
@@ -363,8 +337,7 @@ public:
             }
             catch (std::exception const& e)
             {
-                BEAST_EXPECT(
-                    e.what() == "Invalid entry '" + sid + " Name' in [Test]");
+                BEAST_EXPECT(e.what() == "Invalid entry '" + sid + " Name' in [Test]");
             }
         }
 
@@ -384,8 +357,7 @@ public:
             }
             catch (std::exception const& e)
             {
-                BEAST_EXPECT(
-                    e.what() == "Invalid entry '" + sid + " Name' in [Test]");
+                BEAST_EXPECT(e.what() == "Invalid entry '" + sid + " Name' in [Test]");
             }
         }
     }
@@ -416,9 +388,7 @@ public:
             bool const enabled = table->isEnabled(supportedID);
             bool const found = allEnabled.find(supportedID) != allEnabled.end();
             BEAST_EXPECTS(
-                enabled == found,
-                a + (enabled ? " enabled " : " disabled ") +
-                    (found ? " found" : " not found"));
+                enabled == found, a + (enabled ? " enabled " : " disabled ") + (found ? " found" : " not found"));
         }
 
         // All supported and unVetoed amendments should be returned as desired.
@@ -444,9 +414,7 @@ public:
             BEAST_EXPECT(table->unVeto(unvetoedID));
 
             std::vector<uint256> const desired = table->getDesired();
-            BEAST_EXPECT(
-                std::find(desired.begin(), desired.end(), unvetoedID) !=
-                desired.end());
+            BEAST_EXPECT(std::find(desired.begin(), desired.end(), unvetoedID) != desired.end());
         }
 
         // Veto all supported amendments.  Now desired should be empty.
@@ -475,8 +443,7 @@ public:
         trustedValidators.reserve(num);
         for (int i = 0; i < num; ++i)
         {
-            auto const& back =
-                ret.emplace_back(randomKeyPair(KeyType::secp256k1));
+            auto const& back = ret.emplace_back(randomKeyPair(KeyType::secp256k1));
             trustedValidators.insert(back.first);
         }
         table->trustChanged(trustedValidators);
@@ -506,7 +473,7 @@ public:
 
         // Parameters:
         // table:      Our table of known and vetoed amendments
-        // validators: The addreses of validators we trust
+        // validators: The addresses of validators we trust
         // votes:      Amendments and the number of validators who vote for them
         // ourVotes:   The amendments we vote for in our validation
         // enabled:    In/out enabled amendments
@@ -534,14 +501,9 @@ public:
             }
 
             auto v = std::make_shared<STValidation>(
-                ripple::NetClock::time_point{},
-                pub,
-                sec,
-                calcNodeID(pub),
-                [&field](STValidation& v) {
+                xrpl::NetClock::time_point{}, pub, sec, calcNodeID(pub), [&field](STValidation& v) {
                     if (!field.empty())
-                        v.setFieldV256(
-                            sfAmendments, STVector256(sfAmendments, field));
+                        v.setFieldV256(sfAmendments, STVector256(sfAmendments, field));
                     v.setFieldU32(sfLedgerSequence, 6180339);
                 });
 
@@ -550,8 +512,7 @@ public:
 
         ourVotes = table.doValidation(enabled);
 
-        auto actions =
-            table.doVoting(rules, roundTime, enabled, majority, validations);
+        auto actions = table.doVoting(rules, roundTime, enabled, majority, validations);
         for (auto const& [hash, action] : actions)
         {
             // This code assumes other validators do as we do
@@ -570,15 +531,13 @@ public:
 
                 case tfGotMajority:
                     if (majority.find(hash) != majority.end())
-                        Throw<std::runtime_error>(
-                            "got majority while having majority");
+                        Throw<std::runtime_error>("got majority while having majority");
                     majority[hash] = roundTime;
                     break;
 
                 case tfLostMajority:
                     if (majority.find(hash) == majority.end())
-                        Throw<std::runtime_error>(
-                            "lost majority without majority");
+                        Throw<std::runtime_error>("lost majority without majority");
                     majority.erase(hash);
                     break;
 
@@ -597,8 +556,7 @@ public:
         auto const testAmendment = amendmentId("TestAmendment");
 
         test::jtx::Env env{*this, feat};
-        auto table =
-            makeTable(env, weeks(2), emptyYes_, emptySection_, emptySection_);
+        auto table = makeTable(env, weeks(2), emptyYes_, emptySection_, emptySection_);
 
         auto const validators = makeValidators(10, table);
 
@@ -607,30 +565,20 @@ public:
         std::set<uint256> enabled;
         majorityAmendments_t majority;
 
-        doRound(
-            env.current()->rules(),
-            *table,
-            weeks{1},
-            validators,
-            votes,
-            ourVotes,
-            enabled,
-            majority);
+        doRound(env.current()->rules(), *table, weeks{1}, validators, votes, ourVotes, enabled, majority);
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
         BEAST_EXPECT(majority.empty());
 
         uint256 const unsupportedID = amendmentId(unsupported_[0]);
         {
-            Json::Value const unsupp =
-                table->getJson(unsupportedID, false)[to_string(unsupportedID)];
+            Json::Value const unsupp = table->getJson(unsupportedID, false)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp.size() == 0);
         }
 
         table->veto(unsupportedID);
         {
-            Json::Value const unsupp =
-                table->getJson(unsupportedID, false)[to_string(unsupportedID)];
+            Json::Value const unsupp = table->getJson(unsupportedID, false)[to_string(unsupportedID)];
             BEAST_EXPECT(!unsupp[jss::vetoed].asBool());
         }
 
@@ -638,15 +586,7 @@ public:
 
         votes.emplace_back(testAmendment, validators.size());
 
-        doRound(
-            env.current()->rules(),
-            *table,
-            weeks{2},
-            validators,
-            votes,
-            ourVotes,
-            enabled,
-            majority);
+        doRound(env.current()->rules(), *table, weeks{2}, validators, votes, ourVotes, enabled, majority);
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
 
@@ -654,15 +594,7 @@ public:
 
         // Note that the simulation code assumes others behave as we do,
         // so the amendment won't get enabled
-        doRound(
-            env.current()->rules(),
-            *table,
-            weeks{5},
-            validators,
-            votes,
-            ourVotes,
-            enabled,
-            majority);
+        doRound(env.current()->rules(), *table, weeks{5}, validators, votes, ourVotes, enabled, majority);
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
     }
@@ -676,12 +608,7 @@ public:
         auto const testAmendment = amendmentId("vetoedAmendment");
 
         test::jtx::Env env{*this, feat};
-        auto table = makeTable(
-            env,
-            weeks(2),
-            emptyYes_,
-            emptySection_,
-            makeSection(testAmendment));
+        auto table = makeTable(env, weeks(2), emptyYes_, emptySection_, makeSection(testAmendment));
 
         auto const validators = makeValidators(10, table);
 
@@ -690,44 +617,20 @@ public:
         std::set<uint256> enabled;
         majorityAmendments_t majority;
 
-        doRound(
-            env.current()->rules(),
-            *table,
-            weeks{1},
-            validators,
-            votes,
-            ourVotes,
-            enabled,
-            majority);
+        doRound(env.current()->rules(), *table, weeks{1}, validators, votes, ourVotes, enabled, majority);
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
         BEAST_EXPECT(majority.empty());
 
         votes.emplace_back(testAmendment, validators.size());
 
-        doRound(
-            env.current()->rules(),
-            *table,
-            weeks{2},
-            validators,
-            votes,
-            ourVotes,
-            enabled,
-            majority);
+        doRound(env.current()->rules(), *table, weeks{2}, validators, votes, ourVotes, enabled, majority);
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
 
         majority[testAmendment] = hourTime(weeks{1});
 
-        doRound(
-            env.current()->rules(),
-            *table,
-            weeks{5},
-            validators,
-            votes,
-            ourVotes,
-            enabled,
-            majority);
+        doRound(env.current()->rules(), *table, weeks{5}, validators, votes, ourVotes, enabled, majority);
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
     }
@@ -739,8 +642,7 @@ public:
         testcase("voteEnable");
 
         test::jtx::Env env{*this, feat};
-        auto table = makeTable(
-            env, weeks(2), makeDefaultYes(yes_), emptySection_, emptySection_);
+        auto table = makeTable(env, weeks(2), makeDefaultYes(yes_), emptySection_, emptySection_);
 
         auto const validators = makeValidators(10, table);
 
@@ -750,15 +652,7 @@ public:
         majorityAmendments_t majority;
 
         // Week 1: We should vote for all known amendments not enabled
-        doRound(
-            env.current()->rules(),
-            *table,
-            weeks{1},
-            validators,
-            votes,
-            ourVotes,
-            enabled,
-            majority);
+        doRound(env.current()->rules(), *table, weeks{1}, validators, votes, ourVotes, enabled, majority);
         BEAST_EXPECT(ourVotes.size() == yes_.size());
         BEAST_EXPECT(enabled.empty());
         for (auto const& i : yes_)
@@ -769,15 +663,7 @@ public:
             votes.emplace_back(amendmentId(i), validators.size());
 
         // Week 2: We should recognize a majority
-        doRound(
-            env.current()->rules(),
-            *table,
-            weeks{2},
-            validators,
-            votes,
-            ourVotes,
-            enabled,
-            majority);
+        doRound(env.current()->rules(), *table, weeks{2}, validators, votes, ourVotes, enabled, majority);
         BEAST_EXPECT(ourVotes.size() == yes_.size());
         BEAST_EXPECT(enabled.empty());
 
@@ -785,27 +671,11 @@ public:
             BEAST_EXPECT(majority[amendmentId(i)] == hourTime(weeks{2}));
 
         // Week 5: We should enable the amendment
-        doRound(
-            env.current()->rules(),
-            *table,
-            weeks{5},
-            validators,
-            votes,
-            ourVotes,
-            enabled,
-            majority);
+        doRound(env.current()->rules(), *table, weeks{5}, validators, votes, ourVotes, enabled, majority);
         BEAST_EXPECT(enabled.size() == yes_.size());
 
         // Week 6: We should remove it from our votes and from having a majority
-        doRound(
-            env.current()->rules(),
-            *table,
-            weeks{6},
-            validators,
-            votes,
-            ourVotes,
-            enabled,
-            majority);
+        doRound(env.current()->rules(), *table, weeks{6}, validators, votes, ourVotes, enabled, majority);
         BEAST_EXPECT(enabled.size() == yes_.size());
         BEAST_EXPECT(ourVotes.empty());
         for (auto const& i : yes_)
@@ -820,12 +690,7 @@ public:
 
         auto const testAmendment = amendmentId("detectMajority");
         test::jtx::Env env{*this, feat};
-        auto table = makeTable(
-            env,
-            weeks(2),
-            makeDefaultYes(testAmendment),
-            emptySection_,
-            emptySection_);
+        auto table = makeTable(env, weeks(2), makeDefaultYes(testAmendment), emptySection_, emptySection_);
 
         auto const validators = makeValidators(16, table);
 
@@ -840,15 +705,7 @@ public:
             if ((i > 0) && (i < 17))
                 votes.emplace_back(testAmendment, i);
 
-            doRound(
-                env.current()->rules(),
-                *table,
-                weeks{i},
-                validators,
-                votes,
-                ourVotes,
-                enabled,
-                majority);
+            doRound(env.current()->rules(), *table, weeks{i}, validators, votes, ourVotes, enabled, majority);
 
             if (i < 13)  // 13 => 13/16 = 0.8125 => > 80%
             {
@@ -890,12 +747,7 @@ public:
         auto const testAmendment = amendmentId("lostMajority");
 
         test::jtx::Env env{*this, feat};
-        auto table = makeTable(
-            env,
-            weeks(8),
-            makeDefaultYes(testAmendment),
-            emptySection_,
-            emptySection_);
+        auto table = makeTable(env, weeks(8), makeDefaultYes(testAmendment), emptySection_, emptySection_);
 
         auto const validators = makeValidators(16, table);
 
@@ -909,15 +761,7 @@ public:
 
             votes.emplace_back(testAmendment, validators.size());
 
-            doRound(
-                env.current()->rules(),
-                *table,
-                weeks{1},
-                validators,
-                votes,
-                ourVotes,
-                enabled,
-                majority);
+            doRound(env.current()->rules(), *table, weeks{1}, validators, votes, ourVotes, enabled, majority);
 
             BEAST_EXPECT(enabled.empty());
             BEAST_EXPECT(!majority.empty());
@@ -931,15 +775,7 @@ public:
             // Gradually reduce support
             votes.emplace_back(testAmendment, validators.size() - i);
 
-            doRound(
-                env.current()->rules(),
-                *table,
-                weeks{i + 1},
-                validators,
-                votes,
-                ourVotes,
-                enabled,
-                majority);
+            doRound(env.current()->rules(), *table, weeks{i + 1}, validators, votes, ourVotes, enabled, majority);
 
             if (i < 4)  // 16 - 3 = 13 => 13/16 = 0.8125 => > 80%
             {           // 16 - 4 = 12 => 12/16 = 0.75 => < 80%
@@ -966,15 +802,9 @@ public:
 
         auto const testAmendment = amendmentId("changedUNL");
         test::jtx::Env env{*this, feat};
-        auto table = makeTable(
-            env,
-            weeks(8),
-            makeDefaultYes(testAmendment),
-            emptySection_,
-            emptySection_);
+        auto table = makeTable(env, weeks(8), makeDefaultYes(testAmendment), emptySection_, emptySection_);
 
-        std::vector<std::pair<PublicKey, SecretKey>> validators =
-            makeValidators(10, table);
+        std::vector<std::pair<PublicKey, SecretKey>> validators = makeValidators(10, table);
 
         std::set<uint256> enabled;
         majorityAmendments_t majority;
@@ -986,15 +816,7 @@ public:
 
             votes.emplace_back(testAmendment, validators.size() - 2);
 
-            doRound(
-                env.current()->rules(),
-                *table,
-                weeks{1},
-                validators,
-                votes,
-                ourVotes,
-                enabled,
-                majority);
+            doRound(env.current()->rules(), *table, weeks{1}, validators, votes, ourVotes, enabled, majority);
 
             BEAST_EXPECT(enabled.empty());
             BEAST_EXPECT(majority.empty());
@@ -1005,22 +827,18 @@ public:
 
         // A lambda that updates the AmendmentTable with the latest
         // trusted validators.
-        auto callTrustChanged =
-            [](std::vector<std::pair<PublicKey, SecretKey>> const& validators,
-               std::unique_ptr<AmendmentTable> const& table) {
-                // We need a hash_set to pass to trustChanged.
-                hash_set<PublicKey> trustedValidators;
-                trustedValidators.reserve(validators.size());
-                std::for_each(
-                    validators.begin(),
-                    validators.end(),
-                    [&trustedValidators](auto const& val) {
-                        trustedValidators.insert(val.first);
-                    });
+        auto callTrustChanged = [](std::vector<std::pair<PublicKey, SecretKey>> const& validators,
+                                   std::unique_ptr<AmendmentTable> const& table) {
+            // We need a hash_set to pass to trustChanged.
+            hash_set<PublicKey> trustedValidators;
+            trustedValidators.reserve(validators.size());
+            std::for_each(validators.begin(), validators.end(), [&trustedValidators](auto const& val) {
+                trustedValidators.insert(val.first);
+            });
 
-                // Tell the AmendmentTable that the UNL changed.
-                table->trustChanged(trustedValidators);
-            };
+            // Tell the AmendmentTable that the UNL changed.
+            table->trustChanged(trustedValidators);
+        };
 
         // Tell the table that there's been a change in trusted validators.
         callTrustChanged(validators, table);
@@ -1032,15 +850,7 @@ public:
 
             votes.emplace_back(testAmendment, validators.size() - 2);
 
-            doRound(
-                env.current()->rules(),
-                *table,
-                weeks{2},
-                validators,
-                votes,
-                ourVotes,
-                enabled,
-                majority);
+            doRound(env.current()->rules(), *table, weeks{2}, validators, votes, ourVotes, enabled, majority);
 
             BEAST_EXPECT(enabled.empty());
             BEAST_EXPECT(!majority.empty());
@@ -1048,8 +858,7 @@ public:
         {
             // One of the validators goes flaky and doesn't send validations
             // (without the UNL changing) so the amendment loses majority.
-            std::pair<PublicKey, SecretKey> const savedValidator =
-                validators.front();
+            std::pair<PublicKey, SecretKey> const savedValidator = validators.front();
             validators.erase(validators.begin());
 
             std::vector<std::pair<uint256, int>> votes;
@@ -1057,15 +866,7 @@ public:
 
             votes.emplace_back(testAmendment, validators.size() - 2);
 
-            doRound(
-                env.current()->rules(),
-                *table,
-                weeks{3},
-                validators,
-                votes,
-                ourVotes,
-                enabled,
-                majority);
+            doRound(env.current()->rules(), *table, weeks{3}, validators, votes, ourVotes, enabled, majority);
 
             BEAST_EXPECT(enabled.empty());
             BEAST_EXPECT(majority.empty());
@@ -1076,15 +877,7 @@ public:
 
             votes.front().second = validators.size() - 2;
 
-            doRound(
-                env.current()->rules(),
-                *table,
-                weeks{4},
-                validators,
-                votes,
-                ourVotes,
-                enabled,
-                majority);
+            doRound(env.current()->rules(), *table, weeks{4}, validators, votes, ourVotes, enabled, majority);
 
             BEAST_EXPECT(enabled.empty());
             BEAST_EXPECT(!majority.empty());
@@ -1098,15 +891,7 @@ public:
 
             votes.front().second = validators.size() - 2;
 
-            doRound(
-                env.current()->rules(),
-                *table,
-                weeks{5},
-                validators,
-                votes,
-                ourVotes,
-                enabled,
-                majority);
+            doRound(env.current()->rules(), *table, weeks{5}, validators, votes, ourVotes, enabled, majority);
 
             BEAST_EXPECT(enabled.empty());
             BEAST_EXPECT(majority.empty());
@@ -1131,18 +916,12 @@ public:
         {
             test::jtx::Env env{*this, feat};
             auto const testAmendment = amendmentId("validatorFlapping");
-            auto table = makeTable(
-                env,
-                weeks(1),
-                makeDefaultYes(testAmendment),
-                emptySection_,
-                emptySection_);
+            auto table = makeTable(env, weeks(1), makeDefaultYes(testAmendment), emptySection_, emptySection_);
 
             // Make two lists of validators, one with a missing validator, to
             // make it easy to simulate validator flapping.
             auto const allValidators = makeValidators(11, table);
-            decltype(allValidators) const mostValidators(
-                allValidators.begin() + 1, allValidators.end());
+            decltype(allValidators) const mostValidators(allValidators.begin() + 1, allValidators.end());
             BEAST_EXPECT(allValidators.size() == mostValidators.size() + 1);
 
             std::set<uint256> enabled;
@@ -1184,9 +963,7 @@ public:
                     // no flapping.  Otherwise we should only have majority
                     // if allValidators vote -- which means there are no
                     // missing validators.
-                    bool const expectMajority = (delay <= 24)
-                        ? true
-                        : &thisHoursValidators == &allValidators;
+                    bool const expectMajority = (delay <= 24) ? true : &thisHoursValidators == &allValidators;
                     BEAST_EXPECT(majority.empty() != expectMajority);
                 }
                 else
@@ -1217,9 +994,7 @@ public:
 
         std::set<uint256> enabled;
         std::for_each(
-            unsupported_.begin(),
-            unsupported_.end(),
-            [&enabled](auto const& s) { enabled.insert(amendmentId(s)); });
+            unsupported_.begin(), unsupported_.end(), [&enabled](auto const& s) { enabled.insert(amendmentId(s)); });
 
         majorityAmendments_t majority;
         table->doValidatedLedger(1, enabled, majority);
@@ -1227,18 +1002,14 @@ public:
         BEAST_EXPECT(!table->firstUnsupportedExpected());
 
         NetClock::duration t{1000s};
-        std::for_each(
-            unsupportedMajority_.begin(),
-            unsupportedMajority_.end(),
-            [&majority, &t](auto const& s) {
-                majority[amendmentId(s)] = NetClock::time_point{--t};
-            });
+        std::for_each(unsupportedMajority_.begin(), unsupportedMajority_.end(), [&majority, &t](auto const& s) {
+            majority[amendmentId(s)] = NetClock::time_point{--t};
+        });
 
         table->doValidatedLedger(1, enabled, majority);
         BEAST_EXPECT(table->hasUnsupportedEnabled());
         BEAST_EXPECT(
-            table->firstUnsupportedExpected() &&
-            *table->firstUnsupportedExpected() == NetClock::time_point{t} + w);
+            table->firstUnsupportedExpected() && *table->firstUnsupportedExpected() == NetClock::time_point{t} + w);
 
         // Make sure the table knows when it needs an update.
         BEAST_EXPECT(!table->needValidatedLedger(256));
@@ -1271,6 +1042,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AmendmentTable, app, ripple);
+BEAST_DEFINE_TESTSUITE(AmendmentTable, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

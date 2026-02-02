@@ -6,7 +6,7 @@
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doServerInfo(RPC::JsonContext& context)
@@ -16,10 +16,9 @@ doServerInfo(RPC::JsonContext& context)
     ret[jss::info] = context.netOps.getServerInfo(
         true,
         context.role == Role::ADMIN,
-        context.params.isMember(jss::counters) &&
-            context.params[jss::counters].asBool());
+        context.params.isMember(jss::counters) && context.params[jss::counters].asBool());
 
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

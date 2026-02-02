@@ -1,0 +1,29 @@
+# We were seeing some false positives and some repeated errors(since these are library files) in following files.
+# Clang will skip instrumenting the files added here.
+# We should fix the underlying issues(if any) and remove these entries.
+
+deadlock:libxrpl/beast/utility/beast_Journal.cpp
+deadlock:libxrpl/beast/utility/beast_PropertyStream.cpp
+deadlock:test/beast/beast_PropertyStream_test.cpp
+deadlock:xrpld/core/detail/Workers.cpp
+deadlock:xrpld/core/JobQueue.cpp
+
+race:libxrpl/beast/utility/beast_Journal.cpp
+race:libxrpl/beast/utility/beast_PropertyStream.cpp
+race:test/beast/beast_PropertyStream_test.cpp
+race:xrpld/core/detail/Workers.cpp
+race:xrpld/core/JobQueue.cpp
+
+signal:libxrpl/beast/utility/beast_Journal.cpp
+signal:libxrpl/beast/utility/beast_PropertyStream.cpp
+signal:test/beast/beast_PropertyStream_test.cpp
+signal:xrpld/core/detail/Workers.cpp
+signal:xrpld/core/JobQueue.cpp
+
+src:beast/utility/beast_Journal.cpp
+src:beast/utility/beast_PropertyStream.cpp
+src:core/detail/Workers.cpp
+src:core/JobQueue.cpp
+src:libxrpl/beast/utility/beast_Journal.cpp
+src:test/beast/beast_PropertyStream_test.cpp
+src:src/test/app/Invariants_test.cpp

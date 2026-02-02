@@ -10,7 +10,7 @@
 #include <mutex>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 
 LoadManager::LoadManager(Application& app, beast::Journal journal)
     : app_(app), journal_(journal), lastHeartbeat_(), armed_(false)
@@ -26,8 +26,7 @@ LoadManager::~LoadManager()
     catch (std::exception const& ex)
     {
         // Swallow the exception in a destructor.
-        JLOG(journal_.warn())
-            << "std::exception in ~LoadManager.  " << ex.what();
+        JLOG(journal_.warn()) << "std::exception in ~LoadManager.  " << ex.what();
     }
 }
 
@@ -55,9 +54,7 @@ void
 LoadManager::start()
 {
     JLOG(journal_.debug()) << "Starting";
-    XRPL_ASSERT(
-        !thread_.joinable(),
-        "ripple::LoadManager::start : thread not joinable");
+    XRPL_ASSERT(!thread_.joinable(), "xrpl::LoadManager::start : thread not joinable");
 
     thread_ = std::thread{&LoadManager::run, this};
 }
@@ -105,8 +102,7 @@ LoadManager::run()
 
         // Measure the amount of time we have been stalled, in seconds.
         using namespace std::chrono;
-        auto const timeSpentStalled =
-            duration_cast<seconds>(steady_clock::now() - lastHeartbeat);
+        auto const timeSpentStalled = duration_cast<seconds>(steady_clock::now() - lastHeartbeat);
 
         constexpr auto reportingIntervalSeconds = 10s;
         constexpr auto stallFatalLogMessageTimeLimit = 90s;
@@ -119,23 +115,17 @@ LoadManager::run()
             {
                 if (timeSpentStalled < stallFatalLogMessageTimeLimit)
                 {
-                    JLOG(journal_.warn())
-                        << "Server stalled for " << timeSpentStalled.count()
-                        << " seconds.";
+                    JLOG(journal_.warn()) << "Server stalled for " << timeSpentStalled.count() << " seconds.";
 
                     if (app_.getJobQueue().isOverloaded())
                     {
-                        JLOG(journal_.warn())
-                            << "JobQueue: " << app_.getJobQueue().getJson(0);
+                        JLOG(journal_.warn()) << "JobQueue: " << app_.getJobQueue().getJson(0);
                     }
                 }
                 else
                 {
-                    JLOG(journal_.fatal())
-                        << "Server stalled for " << timeSpentStalled.count()
-                        << " seconds.";
-                    JLOG(journal_.fatal())
-                        << "JobQueue: " << app_.getJobQueue().getJson(0);
+                    JLOG(journal_.fatal()) << "Server stalled for " << timeSpentStalled.count() << " seconds.";
+                    JLOG(journal_.fatal()) << "JobQueue: " << app_.getJobQueue().getJson(0);
                 }
             }
 
@@ -144,11 +134,9 @@ LoadManager::run()
             // as a LogicError
             if (timeSpentStalled >= stallLogicErrorTimeLimit)
             {
-                JLOG(journal_.fatal())
-                    << "LogicError: Fatal server stall detected. Stalled time: "
-                    << timeSpentStalled.count() << "s";
-                JLOG(journal_.fatal())
-                    << "JobQueue: " << app_.getJobQueue().getJson(0);
+                JLOG(journal_.fatal()) << "LogicError: Fatal server stall detected. Stalled time: "
+                                       << timeSpentStalled.count() << "s";
+                JLOG(journal_.fatal()) << "JobQueue: " << app_.getJobQueue().getJson(0);
                 LogicError("Fatal server stall detected");
             }
         }
@@ -157,8 +145,7 @@ LoadManager::run()
     bool change = false;
     if (app_.getJobQueue().isOverloaded())
     {
-        JLOG(journal_.info()) << "Raising local fee (JQ overload): "
-                              << app_.getJobQueue().getJson(0);
+        JLOG(journal_.info()) << "Raising local fee (JQ overload): " << app_.getJobQueue().getJson(0);
         change = app_.getFeeTrack().raiseLocalFee();
     }
     else
@@ -182,4 +169,4 @@ make_LoadManager(Application& app, beast::Journal journal)
     return std::unique_ptr<LoadManager>{new LoadManager{app, journal}};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

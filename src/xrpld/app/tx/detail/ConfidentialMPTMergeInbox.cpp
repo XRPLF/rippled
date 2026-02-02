@@ -7,7 +7,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 ConfidentialMPTMergeInbox::preflight(PreflightContext const& ctx)
@@ -94,4 +94,4 @@ ConfidentialMPTMergeInbox::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

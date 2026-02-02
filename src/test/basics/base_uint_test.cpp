@@ -8,7 +8,7 @@
 #include <complex>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // a non-hashing Hasher that just copies the bytes.
@@ -47,19 +47,17 @@ struct base_uint_test : beast::unit_test::suite
     testComparisons()
     {
         {
-            static constexpr std::
-                array<std::pair<std::string_view, std::string_view>, 6>
-                    test_args{
-                        {{"0000000000000000", "0000000000000001"},
-                         {"0000000000000000", "ffffffffffffffff"},
-                         {"1234567812345678", "2345678923456789"},
-                         {"8000000000000000", "8000000000000001"},
-                         {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
-                         {"fffffffffffffffe", "ffffffffffffffff"}}};
+            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> test_args{
+                {{"0000000000000000", "0000000000000001"},
+                 {"0000000000000000", "ffffffffffffffff"},
+                 {"1234567812345678", "2345678923456789"},
+                 {"8000000000000000", "8000000000000001"},
+                 {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
+                 {"fffffffffffffffe", "ffffffffffffffff"}}};
 
             for (auto const& arg : test_args)
             {
-                ripple::base_uint<64> const u{arg.first}, v{arg.second};
+                xrpl::base_uint<64> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -78,21 +76,18 @@ struct base_uint_test : beast::unit_test::suite
         }
 
         {
-            static constexpr std::array<
-                std::pair<std::string_view, std::string_view>,
-                6>
-                test_args{{
-                    {"000000000000000000000000", "000000000000000000000001"},
-                    {"000000000000000000000000", "ffffffffffffffffffffffff"},
-                    {"0123456789ab0123456789ab", "123456789abc123456789abc"},
-                    {"555555555555555555555555", "55555555555a555555555555"},
-                    {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
-                    {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
-                }};
+            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> test_args{{
+                {"000000000000000000000000", "000000000000000000000001"},
+                {"000000000000000000000000", "ffffffffffffffffffffffff"},
+                {"0123456789ab0123456789ab", "123456789abc123456789abc"},
+                {"555555555555555555555555", "55555555555a555555555555"},
+                {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
+                {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
+            }};
 
             for (auto const& arg : test_args)
             {
-                ripple::base_uint<96> const u{arg.first}, v{arg.second};
+                xrpl::base_uint<96> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -116,10 +111,8 @@ struct base_uint_test : beast::unit_test::suite
     {
         testcase("base_uint: general purpose tests");
 
-        static_assert(
-            !std::is_constructible<test96, std::complex<double>>::value);
-        static_assert(
-            !std::is_assignable<test96&, std::complex<double>>::value);
+        static_assert(!std::is_constructible<test96, std::complex<double>>::value);
+        static_assert(!std::is_assignable<test96&, std::complex<double>>::value);
 
         testComparisons();
 
@@ -296,9 +289,7 @@ struct base_uint_test : beast::unit_test::suite
                 }
                 catch (std::invalid_argument const& e)
                 {
-                    BEAST_EXPECT(
-                        e.what() ==
-                        std::string("invalid length for hex string"));
+                    BEAST_EXPECT(e.what() == std::string("invalid length for hex string"));
                     caught = true;
                 }
                 BEAST_EXPECT(caught);
@@ -316,8 +307,7 @@ struct base_uint_test : beast::unit_test::suite
                 }
                 catch (std::range_error const& e)
                 {
-                    BEAST_EXPECT(
-                        e.what() == std::string("invalid hex character"));
+                    BEAST_EXPECT(e.what() == std::string("invalid hex character"));
                     caught = true;
                 }
                 BEAST_EXPECT(caught);
@@ -352,7 +342,7 @@ struct base_uint_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(base_uint, basics, ripple);
+BEAST_DEFINE_TESTSUITE(base_uint, basics, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

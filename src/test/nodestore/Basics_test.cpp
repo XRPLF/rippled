@@ -3,7 +3,7 @@
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 // Tests predictable batches, and NodeObject blob encoding
@@ -40,15 +40,13 @@ public:
         {
             EncodedBlob encoded(batch[i]);
 
-            DecodedBlob decoded(
-                encoded.getKey(), encoded.getData(), encoded.getSize());
+            DecodedBlob decoded(encoded.getKey(), encoded.getData(), encoded.getSize());
 
             BEAST_EXPECT(decoded.wasOk());
 
             if (decoded.wasOk())
             {
-                std::shared_ptr<NodeObject> const object(
-                    decoded.createObject());
+                std::shared_ptr<NodeObject> const object(decoded.createObject());
 
                 BEAST_EXPECT(isSame(batch[i], object));
             }
@@ -66,7 +64,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NodeStoreBasic, nodestore, ripple);
+BEAST_DEFINE_TESTSUITE(NodeStoreBasic, nodestore, xrpl);
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

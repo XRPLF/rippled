@@ -1,6 +1,6 @@
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 DatabaseRotatingImp::DatabaseRotatingImp(
@@ -23,9 +23,7 @@ DatabaseRotatingImp::DatabaseRotatingImp(
 void
 DatabaseRotatingImp::rotate(
     std::unique_ptr<NodeStore::Backend>&& newBackend,
-    std::function<void(
-        std::string const& writableName,
-        std::string const& archiveName)> const& f)
+    std::function<void(std::string const& writableName, std::string const& archiveName)> const& f)
 {
     // Pass these two names to the callback function
     std::string const newWritableBackendName = newBackend->getName();
@@ -82,11 +80,7 @@ DatabaseRotatingImp::sync()
 }
 
 void
-DatabaseRotatingImp::store(
-    NodeObjectType type,
-    Blob&& data,
-    uint256 const& hash,
-    std::uint32_t)
+DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
 {
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
 
@@ -106,11 +100,7 @@ DatabaseRotatingImp::sweep()
 }
 
 std::shared_ptr<NodeObject>
-DatabaseRotatingImp::fetchNodeObject(
-    uint256 const& hash,
-    std::uint32_t,
-    FetchReport& fetchReport,
-    bool duplicate)
+DatabaseRotatingImp::fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
 {
     auto fetch = [&](std::shared_ptr<Backend> const& backend) {
         Status status;
@@ -176,8 +166,7 @@ DatabaseRotatingImp::fetchNodeObject(
 }
 
 void
-DatabaseRotatingImp::for_each(
-    std::function<void(std::shared_ptr<NodeObject>)> f)
+DatabaseRotatingImp::for_each(std::function<void(std::shared_ptr<NodeObject>)> f)
 {
     auto [writable, archive] = [&] {
         std::lock_guard lock(mutex_);
@@ -192,4 +181,4 @@ DatabaseRotatingImp::for_each(
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

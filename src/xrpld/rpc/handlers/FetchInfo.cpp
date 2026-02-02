@@ -5,15 +5,14 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doFetchInfo(RPC::JsonContext& context)
 {
     Json::Value ret(Json::objectValue);
 
-    if (context.params.isMember(jss::clear) &&
-        context.params[jss::clear].asBool())
+    if (context.params.isMember(jss::clear) && context.params[jss::clear].asBool())
     {
         context.netOps.clearLedgerFetch();
         ret[jss::clear] = true;
@@ -24,4 +23,4 @@ doFetchInfo(RPC::JsonContext& context)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

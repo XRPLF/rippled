@@ -9,7 +9,7 @@
 #include <optional>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -140,15 +140,7 @@ public:
     asTie() const
     {
         // trusted is a status set by the receiver, so it is not part of the tie
-        return std::tie(
-            ledgerID_,
-            seq_,
-            signTime_,
-            seenTime_,
-            key_,
-            nodeID_,
-            loadFee_,
-            full_);
+        return std::tie(ledgerID_, seq_, signTime_, seenTime_, key_, nodeID_, loadFee_, full_);
     }
     bool
     operator==(Validation const& o) const
@@ -183,6 +175,6 @@ public:
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

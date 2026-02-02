@@ -4,7 +4,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/Journal.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // A Journal::Sink intended for use with the beast unit test framework.
@@ -33,14 +33,11 @@ public:
     write(beast::severities::Severity level, std::string const& text) override;
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text)
-        override;
+    writeAlways(beast::severities::Severity level, std::string const& text) override;
 };
 
 inline void
-SuiteJournalSink::write(
-    beast::severities::Severity level,
-    std::string const& text)
+SuiteJournalSink::write(beast::severities::Severity level, std::string const& text)
 {
     // Only write the string if the level at least equals the threshold.
     if (level >= threshold())
@@ -48,9 +45,7 @@ SuiteJournalSink::write(
 }
 
 inline void
-SuiteJournalSink::writeAlways(
-    beast::severities::Severity level,
-    std::string const& text)
+SuiteJournalSink::writeAlways(beast::severities::Severity level, std::string const& text)
 {
     using namespace beast::severities;
 
@@ -111,9 +106,7 @@ class StreamSink : public beast::Journal::Sink
     std::stringstream strm_;
 
 public:
-    StreamSink(
-        beast::severities::Severity threshold = beast::severities::kDebug)
-        : Sink(threshold, false)
+    StreamSink(beast::severities::Severity threshold = beast::severities::kDebug) : Sink(threshold, false)
     {
     }
 
@@ -126,8 +119,7 @@ public:
     }
 
     inline void
-    writeAlways(beast::severities::Severity level, std::string const& text)
-        override
+    writeAlways(beast::severities::Severity level, std::string const& text) override
     {
         strm_ << text << std::endl;
     }
@@ -140,6 +132,6 @@ public:
 };
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

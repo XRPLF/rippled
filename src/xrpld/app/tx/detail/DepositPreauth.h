@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 class DepositPreauth : public Transactor
 {
@@ -28,12 +28,9 @@ public:
 
     // Interface used by DeleteAccount
     static TER
-    removeFromLedger(
-        ApplyView& view,
-        uint256 const& delIndex,
-        beast::Journal j);
+    removeFromLedger(ApplyView& view, uint256 const& delIndex, beast::Journal j);
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -28,13 +28,7 @@ class suite_info
     run_type run_;
 
 public:
-    suite_info(
-        std::string name,
-        std::string module,
-        std::string library,
-        bool manual,
-        int priority,
-        run_type run)
+    suite_info(std::string name, std::string module, std::string library, bool manual, int priority, run_type run)
         : name_(std::move(name))
         , module_(std::move(module))
         , library_(std::move(library))
@@ -88,10 +82,8 @@ public:
     {
         // we want higher priority suites sorted first, thus the negation
         // of priority value here
-        return std::forward_as_tuple(
-                   -lhs.priority_, lhs.library_, lhs.module_, lhs.name_) <
-            std::forward_as_tuple(
-                   -rhs.priority_, rhs.library_, rhs.module_, rhs.name_);
+        return std::forward_as_tuple(-lhs.priority_, lhs.library_, lhs.module_, lhs.name_) <
+            std::forward_as_tuple(-rhs.priority_, rhs.library_, rhs.module_, rhs.name_);
     }
 };
 
@@ -100,20 +92,10 @@ public:
 /// Convenience for producing suite_info for a given test type.
 template <class Suite>
 suite_info
-make_suite_info(
-    std::string name,
-    std::string module,
-    std::string library,
-    bool manual,
-    int priority)
+make_suite_info(std::string name, std::string module, std::string library, bool manual, int priority)
 {
     return suite_info(
-        std::move(name),
-        std::move(module),
-        std::move(library),
-        manual,
-        priority,
-        [](runner& r) { Suite{}(r); });
+        std::move(name), std::move(module), std::move(library), manual, priority, [](runner& r) { Suite{}(r); });
 }
 
 }  // namespace unit_test

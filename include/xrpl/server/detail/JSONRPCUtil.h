@@ -5,15 +5,11 @@
 #include <xrpl/json/Output.h>
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
-HTTPReply(
-    int nStatus,
-    std::string const& strMsg,
-    Json::Output const&,
-    beast::Journal j);
+HTTPReply(int nStatus, std::string const& strMsg, Json::Output const&, beast::Journal j);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

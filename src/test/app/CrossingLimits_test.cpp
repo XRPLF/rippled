@@ -3,7 +3,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class CrossingLimits_test : public beast::unit_test::suite
@@ -283,8 +283,7 @@ public:
             // best quality
             n_offers(env, 2000, alice, EUR(2), XRP(1));
             n_offers(env, 100, alice, XRP(1), USD(4));
-            n_offers(
-                env, 801, carol, XRP(1), USD(3));  // only one offer is funded
+            n_offers(env, 801, carol, XRP(1), USD(3));  // only one offer is funded
             n_offers(env, 1000, alice, XRP(1), USD(3));
 
             n_offers(env, 1, alice, EUR(500), USD(500));
@@ -303,7 +302,7 @@ public:
             //     offers unfunded.
             //     b. Carol's remaining 800 offers are consumed as unfunded.
             //     c. 199 of alice's XRP(1) to USD(3) offers are consumed.
-            //        A book step is allowed to consume a maxium of 1000 offers
+            //        A book step is allowed to consume a maximum of 1000 offers
             //        at a given quality, and that limit is now reached.
             //     d. Now the strand is dry, even though there are still funded
             //     XRP(1) to USD(3) offers available.
@@ -341,8 +340,7 @@ public:
 
             env.require(balance(alice, USD(2503)));
             env.require(balance(alice, EUR(1100)));
-            auto const numAOffers =
-                2000 + 100 + 1000 + 1 - (2 * 100 + 2 * 199 + 1 + 1);
+            auto const numAOffers = 2000 + 100 + 1000 + 1 - (2 * 100 + 2 * 199 + 1 + 1);
             env.require(offers(alice, numAOffers));
             env.require(owners(alice, numAOffers + 2));
 
@@ -363,8 +361,7 @@ public:
             n_offers(env, 1, alice, EUR(1), USD(10));
             n_offers(env, 2000, alice, EUR(2), XRP(1));
             n_offers(env, 100, alice, XRP(1), USD(4));
-            n_offers(
-                env, 801, carol, XRP(1), USD(3));  // only one offer is funded
+            n_offers(env, 801, carol, XRP(1), USD(3));  // only one offer is funded
             n_offers(env, 1000, alice, XRP(1), USD(3));
 
             n_offers(env, 1, alice, EUR(499), USD(499));
@@ -384,7 +381,7 @@ public:
             //     offers unfunded.
             //     b. Carol's remaining 800 offers are consumed as unfunded.
             //     c. 199 of alice's XRP(1) to USD(3) offers are consumed.
-            //        A book step is allowed to consume a maxium of 1000 offers
+            //        A book step is allowed to consume a maximum of 1000 offers
             //        at a given quality, and that limit is now reached.
             //     d. Now the strand is dry, even though there are still funded
             //     XRP(1) to USD(3) offers available. Bob has spent 400 EUR and
@@ -414,8 +411,7 @@ public:
 
             env.require(balance(alice, USD(2494)));
             env.require(balance(alice, EUR(1100)));
-            auto const numAOffers =
-                1 + 2000 + 100 + 1000 + 1 - (1 + 2 * 100 + 2 * 199 + 1 + 1);
+            auto const numAOffers = 1 + 2000 + 100 + 1000 + 1 - (1 + 2 * 100 + 2 * 199 + 1 + 1);
             env.require(offers(alice, numAOffers));
             env.require(owners(alice, numAOffers + 2));
 
@@ -492,7 +488,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimits, app, ripple, 10);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimits, app, xrpl, 10);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

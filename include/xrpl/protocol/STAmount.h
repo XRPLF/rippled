@@ -15,7 +15,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Internal form:
 // 1: If amount is zero, then value is zero and offset is -100
@@ -81,12 +81,7 @@ public:
         unchecked);
 
     template <AssetType A>
-    STAmount(
-        A const& asset,
-        mantissa_type mantissa,
-        exponent_type exponent,
-        bool negative,
-        unchecked);
+    STAmount(A const& asset, mantissa_type mantissa, exponent_type exponent, bool negative, unchecked);
 
     // Call canonicalize
     template <AssetType A>
@@ -99,36 +94,22 @@ public:
 
     STAmount(SField const& name, std::int64_t mantissa);
 
-    STAmount(
-        SField const& name,
-        std::uint64_t mantissa = 0,
-        bool negative = false);
+    STAmount(SField const& name, std::uint64_t mantissa = 0, bool negative = false);
 
     explicit STAmount(std::uint64_t mantissa = 0, bool negative = false);
 
     explicit STAmount(SField const& name, STAmount const& amt);
 
     template <AssetType A>
-    STAmount(
-        A const& asset,
-        std::uint64_t mantissa = 0,
-        int exponent = 0,
-        bool negative = false)
-        : mAsset(asset)
-        , mValue(mantissa)
-        , mOffset(exponent)
-        , mIsNegative(negative)
+    STAmount(A const& asset, std::uint64_t mantissa = 0, int exponent = 0, bool negative = false)
+        : mAsset(asset), mValue(mantissa), mOffset(exponent), mIsNegative(negative)
     {
         canonicalize();
     }
 
     // VFALCO Is this needed when we have the previous signature?
     template <AssetType A>
-    STAmount(
-        A const& asset,
-        std::uint32_t mantissa,
-        int exponent = 0,
-        bool negative = false);
+    STAmount(A const& asset, std::uint32_t mantissa, int exponent = 0, bool negative = false);
 
     template <AssetType A>
     STAmount(A const& asset, std::int64_t mantissa, int exponent = 0);
@@ -137,8 +118,7 @@ public:
     STAmount(A const& asset, int mantissa, int exponent = 0);
 
     template <AssetType A>
-    STAmount(A const& asset, Number const& number)
-        : STAmount(asset, number.mantissa(), number.exponent())
+    STAmount(A const& asset, Number const& number) : STAmount(fromNumber(asset, number))
     {
     }
 
@@ -282,6 +262,10 @@ public:
     mpt() const;
 
 private:
+    template <AssetType A>
+    static STAmount
+    fromNumber(A const& asset, Number const& number);
+
     static std::unique_ptr<STAmount>
     construct(SerialIter&, SField const& name);
 
@@ -312,60 +296,45 @@ STAmount::STAmount(
     exponent_type exponent,
     bool negative,
     unchecked)
-    : STBase(name)
-    , mAsset(asset)
-    , mValue(mantissa)
-    , mOffset(exponent)
-    , mIsNegative(negative)
+    : STBase(name), mAsset(asset), mValue(mantissa), mOffset(exponent), mIsNegative(negative)
 {
 }
 
 template <AssetType A>
-STAmount::STAmount(
-    A const& asset,
-    mantissa_type mantissa,
-    exponent_type exponent,
-    bool negative,
-    unchecked)
+STAmount::STAmount(A const& asset, mantissa_type mantissa, exponent_type exponent, bool negative, unchecked)
     : mAsset(asset), mValue(mantissa), mOffset(exponent), mIsNegative(negative)
 {
 }
 
 template <AssetType A>
-STAmount::STAmount(
-    SField const& name,
-    A const& asset,
-    std::uint64_t mantissa,
-    int exponent,
-    bool negative)
-    : STBase(name)
-    , mAsset(asset)
-    , mValue(mantissa)
-    , mOffset(exponent)
-    , mIsNegative(negative)
+STAmount::STAmount(SField const& name, A const& asset, std::uint64_t mantissa, int exponent, bool negative)
+    : STBase(name), mAsset(asset), mValue(mantissa), mOffset(exponent), mIsNegative(negative)
 {
     // mValue is uint64, but needs to fit in the range of int64
-    XRPL_ASSERT(
-        mValue <= std::numeric_limits<std::int64_t>::max(),
-        "ripple::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
-        "maximum mantissa input");
+    if (Number::getMantissaScale() == MantissaRange::small)
+    {
+        XRPL_ASSERT(
+            mValue <= std::numeric_limits<std::int64_t>::max(),
+            "xrpl::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
+            "maximum mantissa input");
+    }
+    else
+    {
+        if (integral() && mValue > std::numeric_limits<std::int64_t>::max())
+            throw std::overflow_error("STAmount mantissa is too large " + std::to_string(mantissa));
+    }
     canonicalize();
 }
 
 template <AssetType A>
-STAmount::STAmount(A const& asset, std::int64_t mantissa, int exponent)
-    : mAsset(asset), mOffset(exponent)
+STAmount::STAmount(A const& asset, std::int64_t mantissa, int exponent) : mAsset(asset), mOffset(exponent)
 {
     set(mantissa);
     canonicalize();
 }
 
 template <AssetType A>
-STAmount::STAmount(
-    A const& asset,
-    std::uint32_t mantissa,
-    int exponent,
-    bool negative)
+STAmount::STAmount(A const& asset, std::uint32_t mantissa, int exponent, bool negative)
     : STAmount(asset, safe_cast<std::uint64_t>(mantissa), exponent, negative)
 {
 }
@@ -378,9 +347,7 @@ STAmount::STAmount(A const& asset, int mantissa, int exponent)
 
 // Legacy support for new-style amounts
 inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
-    : mAsset(issue)
-    , mOffset(amount.exponent())
-    , mIsNegative(amount < beast::zero)
+    : mAsset(issue), mOffset(amount.exponent()), mIsNegative(amount < beast::zero)
 {
     if (mIsNegative)
         mValue = unsafe_cast<std::uint64_t>(-amount.mantissa());
@@ -542,14 +509,22 @@ STAmount::operator=(XRPAmount const& amount)
     return *this;
 }
 
-inline STAmount&
-STAmount::operator=(Number const& number)
+template <AssetType A>
+inline STAmount
+STAmount::fromNumber(A const& a, Number const& number)
 {
-    mIsNegative = number.mantissa() < 0;
-    mValue = mIsNegative ? -number.mantissa() : number.mantissa();
-    mOffset = number.exponent();
-    canonicalize();
-    return *this;
+    bool const negative = number.mantissa() < 0;
+    Number const working{negative ? -number : number};
+    Asset asset{a};
+    if (asset.integral())
+    {
+        std::uint64_t const intValue = static_cast<std::int64_t>(working);
+        return STAmount{asset, intValue, 0, negative};
+    }
+
+    auto const [mantissa, exponent] = working.normalizeToRange(cMinValue, cMaxValue);
+
+    return STAmount{asset, mantissa, exponent, negative};
 }
 
 inline void
@@ -651,35 +626,19 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset);
 
 // multiply rounding result in specified direction
 STAmount
-mulRound(
-    STAmount const& v1,
-    STAmount const& v2,
-    Asset const& asset,
-    bool roundUp);
+mulRound(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp);
 
 // multiply following the rounding directions more precisely.
 STAmount
-mulRoundStrict(
-    STAmount const& v1,
-    STAmount const& v2,
-    Asset const& asset,
-    bool roundUp);
+mulRoundStrict(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp);
 
 // divide rounding result in specified direction
 STAmount
-divRound(
-    STAmount const& v1,
-    STAmount const& v2,
-    Asset const& asset,
-    bool roundUp);
+divRound(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp);
 
 // divide following the rounding directions more precisely.
 STAmount
-divRoundStrict(
-    STAmount const& v1,
-    STAmount const& v2,
-    Asset const& asset,
-    bool roundUp);
+divRoundStrict(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp);
 
 // Someone is offering X for Y, what is the rate?
 // Rate: smaller is better, the taker wants the most out: in/out
@@ -699,17 +658,29 @@ getRate(STAmount const& offerOut, STAmount const& offerIn);
  * @param rounding Optional Number rounding mode
  *
  */
-STAmount
-roundToScale(
-    STAmount const& value,
-    std::int32_t scale,
-    Number::rounding_mode rounding = Number::getround());
+[[nodiscard]] STAmount
+roundToScale(STAmount const& value, std::int32_t scale, Number::rounding_mode rounding = Number::getround());
+
+/** Round an arbitrary precision Number IN PLACE to the precision of a given
+ * Asset.
+ *
+ * This is used to ensure that calculations do not collect dust for IOUs, or
+ * fractional amounts for the integral types XRP and MPT.
+ *
+ * @param asset The relevant asset
+ * @param value The lvalue to be rounded
+ */
+template <AssetType A>
+void
+roundToAsset(A const& asset, Number& value)
+{
+    value = STAmount{asset, value};
+}
 
 /** Round an arbitrary precision Number to the precision of a given Asset.
  *
- * This is used to ensure that calculations do not collect dust beyond the
- * precision of the reference value for IOUs, or fractional amounts for the
- * integral types XRP and MPT.
+ * This is used to ensure that calculations do not collect dust beyond specified
+ * scale for IOUs, or fractional amounts for the integral types XRP and MPT.
  *
  * @param asset The relevant asset
  * @param value The value to be rounded
@@ -718,7 +689,7 @@ roundToScale(
  * @param rounding Optional Number rounding mode
  */
 template <AssetType A>
-Number
+[[nodiscard]] Number
 roundToAsset(
     A const& asset,
     Number const& value,
@@ -748,15 +719,15 @@ canAdd(STAmount const& amt1, STAmount const& amt2);
 bool
 canSubtract(STAmount const& amt1, STAmount const& amt2);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 namespace Json {
 template <>
-inline ripple::STAmount
-getOrThrow(Json::Value const& v, ripple::SField const& field)
+inline xrpl::STAmount
+getOrThrow(Json::Value const& v, xrpl::SField const& field)
 {
-    using namespace ripple;
+    using namespace xrpl;
     Json::StaticString const& key = field.getJsonName();
     if (!v.isMember(key))
         Throw<JsonMissingKeyError>(key);

@@ -27,7 +27,7 @@ test-applied to all new open ledgers until seen in a fully-
 validated ledger
 */
 
-namespace ripple {
+namespace xrpl {
 
 // This class wraps a pointer to a transaction along with
 // its expiration ledger. It also caches the issuing account.
@@ -42,8 +42,7 @@ public:
         , m_seqProxy(txn->getSeqProxy())
     {
         if (txn->isFieldPresent(sfLastLedgerSequence))
-            m_expire =
-                std::min(m_expire, txn->getFieldU32(sfLastLedgerSequence) + 1);
+            m_expire = std::min(m_expire, txn->getFieldU32(sfLastLedgerSequence) + 1);
     }
 
     uint256 const&
@@ -93,8 +92,7 @@ public:
 
     // Add a new transaction to the set of local transactions
     void
-    push_back(LedgerIndex index, std::shared_ptr<STTx const> const& txn)
-        override
+    push_back(LedgerIndex index, std::shared_ptr<STTx const> const& txn) override
     {
         std::lock_guard lock(m_lock);
 
@@ -126,7 +124,7 @@ public:
         std::lock_guard lock(m_lock);
 
         m_txns.remove_if([&view](auto const& txn) {
-            if (txn.isExpired(view.info().seq))
+            if (txn.isExpired(view.header().seq))
                 return true;
             if (view.txExists(txn.getID()))
                 return true;
@@ -137,8 +135,7 @@ public:
             if (!sleAcct)
                 return false;
 
-            SeqProxy const acctSeq =
-                SeqProxy::sequence(sleAcct->getFieldU32(sfSequence));
+            SeqProxy const acctSeq = SeqProxy::sequence(sleAcct->getFieldU32(sfSequence));
             SeqProxy const seqProx = txn.getSeqProxy();
 
             if (seqProx.isSeq())
@@ -175,4 +172,4 @@ make_LocalTxs()
     return std::make_unique<LocalTxsImp>();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -9,7 +9,7 @@
 #include <memory>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /**
    Add an `offer_id` field to the `meta` output parameter.
@@ -19,9 +19,7 @@ namespace ripple {
    @{
  */
 bool
-canHaveNFTokenOfferID(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta);
+canHaveNFTokenOfferID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta);
 
 std::optional<uint256>
 getOfferIDFromCreatedOffer(TxMeta const& transactionMeta);
@@ -33,6 +31,6 @@ insertNFTokenOfferID(
     TxMeta const& transactionMeta);
 /** @} */
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

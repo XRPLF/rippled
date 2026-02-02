@@ -6,7 +6,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
@@ -23,8 +23,7 @@ AMMDelete::preflight(PreflightContext const& ctx)
 TER
 AMMDelete::preclaim(PreclaimContext const& ctx)
 {
-    auto const ammSle =
-        ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Delete: Invalid asset pair.";
@@ -45,12 +44,11 @@ AMMDelete::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    auto const ter = deleteAMMAccount(
-        sb, ctx_.tx[sfAsset].get<Issue>(), ctx_.tx[sfAsset2].get<Issue>(), j_);
+    auto const ter = deleteAMMAccount(sb, ctx_.tx[sfAsset].get<Issue>(), ctx_.tx[sfAsset2].get<Issue>(), j_);
     if (ter == tesSUCCESS || ter == tecINCOMPLETE)
         sb.apply(ctx_.rawView());
 
     return ter;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

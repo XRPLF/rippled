@@ -7,7 +7,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 class flags_helper
@@ -112,8 +112,7 @@ private:
 
 public:
     template <class... Args>
-    flags(Account const& account, Args... args)
-        : flags_helper(args...), account_(account)
+    flags(Account const& account, Args... args) : flags_helper(args...), account_(account)
     {
     }
 
@@ -129,8 +128,7 @@ private:
 
 public:
     template <class... Args>
-    nflags(Account const& account, Args... args)
-        : flags_helper(args...), account_(account)
+    nflags(Account const& account, Args... args) : flags_helper(args...), account_(account)
     {
     }
 
@@ -140,6 +138,6 @@ public:
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

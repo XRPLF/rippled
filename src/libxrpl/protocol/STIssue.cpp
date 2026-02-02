@@ -17,7 +17,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STIssue::STIssue(SField const& name) : STBase{name}
 {
@@ -44,13 +44,9 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
         {
             MPTID mptID;
             std::uint32_t sequence = sit.get32();
-            static_assert(
-                MPTID::size() == sizeof(sequence) + sizeof(currencyOrAccount));
+            static_assert(MPTID::size() == sizeof(sequence) + sizeof(currencyOrAccount));
             memcpy(mptID.data(), &sequence, sizeof(sequence));
-            memcpy(
-                mptID.data() + sizeof(sequence),
-                currencyOrAccount.data(),
-                sizeof(currencyOrAccount));
+            memcpy(mptID.data() + sizeof(sequence), currencyOrAccount.data(), sizeof(currencyOrAccount));
             MPTIssue issue{mptID};
             asset_ = issue;
         }
@@ -60,8 +56,7 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
             issue.currency = currencyOrAccount;
             issue.account = account;
             if (!isConsistent(issue))
-                Throw<std::runtime_error>(
-                    "invalid issue: currency and account native mismatch");
+                Throw<std::runtime_error>("invalid issue: currency and account native mismatch");
             asset_ = issue;
         }
     }
@@ -139,4 +134,4 @@ issueFromJson(SField const& name, Json::Value const& v)
     return STIssue{name, assetFromJson(v)};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

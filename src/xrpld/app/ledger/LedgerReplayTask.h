@@ -7,7 +7,7 @@
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 class InboundLedgers;
 class Ledger;
 class LedgerDeltaAcquire;
@@ -17,10 +17,9 @@ namespace test {
 class LedgerReplayClient;
 }  // namespace test
 
-class LedgerReplayTask final
-    : public TimeoutCounter,
-      public std::enable_shared_from_this<LedgerReplayTask>,
-      public CountedObject<LedgerReplayTask>
+class LedgerReplayTask final : public TimeoutCounter,
+                               public std::enable_shared_from_this<LedgerReplayTask>,
+                               public CountedObject<LedgerReplayTask>
 {
 public:
     class TaskParameter
@@ -44,10 +43,7 @@ public:
          * @param finishLedgerHash  hash of the last ledger in the range
          * @param totalNumLedgers  number of ledgers to download
          */
-        TaskParameter(
-            InboundLedger::Reason r,
-            uint256 const& finishLedgerHash,
-            std::uint32_t totalNumLedgers);
+        TaskParameter(InboundLedger::Reason r, uint256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
 
         /**
          * fill all the fields that was not filled during construction
@@ -59,10 +55,7 @@ public:
          *         true on success
          */
         bool
-        update(
-            uint256 const& hash,
-            std::uint32_t seq,
-            std::vector<uint256> const& sList);
+        update(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList);
 
         /** check if this task can be merged into an existing task */
         bool
@@ -123,10 +116,7 @@ private:
      * @param sList  skip list
      */
     void
-    updateSkipList(
-        uint256 const& hash,
-        std::uint32_t seq,
-        std::vector<uint256> const& sList);
+    updateSkipList(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList);
 
     /**
      * Notify this task (by a LedgerDeltaAcquire subtask) that a delta is ready
@@ -161,6 +151,6 @@ private:
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -12,14 +12,10 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 static void
-textTime(
-    std::string& text,
-    UptimeClock::time_point& seconds,
-    char const* unitName,
-    std::chrono::seconds unitVal)
+textTime(std::string& text, UptimeClock::time_point& seconds, char const* unitName, std::chrono::seconds unitVal)
 {
     auto i = seconds.time_since_epoch() / unitVal;
 
@@ -53,8 +49,7 @@ getCountsJson(Application& app, int minObjectCount)
 
     if (app.config().useTxTables())
     {
-        auto const db =
-            dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());
+        auto const db = dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());
 
         if (!db)
             Throw<std::runtime_error>("Failed to get relational database");
@@ -83,19 +78,15 @@ getCountsJson(Application& app, int minObjectCount)
 
     ret[jss::write_load] = app.getNodeStore().getWriteLoad();
 
-    ret[jss::historical_perminute] =
-        static_cast<int>(app.getInboundLedgers().fetchRate());
+    ret[jss::historical_perminute] = static_cast<int>(app.getInboundLedgers().fetchRate());
     ret[jss::SLE_hit_rate] = app.cachedSLEs().rate();
     ret[jss::ledger_hit_rate] = app.getLedgerMaster().getCacheHitRate();
     ret[jss::AL_size] = Json::UInt(app.getAcceptedLedgerCache().size());
     ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();
 
-    ret[jss::fullbelow_size] =
-        static_cast<int>(app.getNodeFamily().getFullBelowCache()->size());
-    ret[jss::treenode_cache_size] =
-        app.getNodeFamily().getTreeNodeCache()->getCacheSize();
-    ret[jss::treenode_track_size] =
-        app.getNodeFamily().getTreeNodeCache()->getTrackSize();
+    ret[jss::fullbelow_size] = static_cast<int>(app.getNodeFamily().getFullBelowCache()->size());
+    ret[jss::treenode_cache_size] = app.getNodeFamily().getTreeNodeCache()->getCacheSize();
+    ret[jss::treenode_track_size] = app.getNodeFamily().getTreeNodeCache()->getTrackSize();
 
     std::string uptime;
     auto s = UptimeClock::now();
@@ -126,4 +117,4 @@ doGetCounts(RPC::JsonContext& context)
     return getCountsJson(context.app, minCount);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

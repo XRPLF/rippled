@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /**
 See the README.md for an overview of the SetSignerList transaction that
@@ -45,18 +45,10 @@ public:
 
     // Interface used by DeleteAccount
     static TER
-    removeFromLedger(
-        Application& app,
-        ApplyView& view,
-        AccountID const& account,
-        beast::Journal j);
+    removeFromLedger(Application& app, ApplyView& view, AccountID const& account, beast::Journal j);
 
 private:
-    static std::tuple<
-        NotTEC,
-        std::uint32_t,
-        std::vector<SignerEntries::SignerEntry>,
-        Operation>
+    static std::tuple<NotTEC, std::uint32_t, std::vector<SignerEntries::SignerEntry>, Operation>
     determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j);
 
     static NotTEC
@@ -73,12 +65,11 @@ private:
     destroySignerList();
 
     void
-    writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags)
-        const;
+    writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const;
 };
 
 using SignerListSet = SetSignerList;
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

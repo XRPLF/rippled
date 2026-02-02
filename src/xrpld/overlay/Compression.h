@@ -4,7 +4,7 @@
 #include <xrpl/basics/CompressionAlgorithms.h>
 #include <xrpl/basics/Log.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace compression {
 
@@ -37,16 +37,13 @@ decompress(
     try
     {
         if (algorithm == Algorithm::LZ4)
-            return ripple::compression_algorithms::lz4Decompress(
-                in, inSize, decompressed, decompressedSize);
+            return xrpl::compression_algorithms::lz4Decompress(in, inSize, decompressed, decompressedSize);
         else
         {
             // LCOV_EXCL_START
-            JLOG(debugLog().warn())
-                << "decompress: invalid compression algorithm "
-                << static_cast<int>(algorithm);
+            JLOG(debugLog().warn()) << "decompress: invalid compression algorithm " << static_cast<int>(algorithm);
             UNREACHABLE(
-                "ripple::compression::decompress : invalid compression "
+                "xrpl::compression::decompress : invalid compression "
                 "algorithm");
             // LCOV_EXCL_STOP
         }
@@ -68,24 +65,18 @@ decompress(
  */
 template <class BufferFactory>
 std::size_t
-compress(
-    void const* in,
-    std::size_t inSize,
-    BufferFactory&& bf,
-    Algorithm algorithm = Algorithm::LZ4)
+compress(void const* in, std::size_t inSize, BufferFactory&& bf, Algorithm algorithm = Algorithm::LZ4)
 {
     try
     {
         if (algorithm == Algorithm::LZ4)
-            return ripple::compression_algorithms::lz4Compress(
-                in, inSize, std::forward<BufferFactory>(bf));
+            return xrpl::compression_algorithms::lz4Compress(in, inSize, std::forward<BufferFactory>(bf));
         else
         {
             // LCOV_EXCL_START
-            JLOG(debugLog().warn()) << "compress: invalid compression algorithm"
-                                    << static_cast<int>(algorithm);
+            JLOG(debugLog().warn()) << "compress: invalid compression algorithm" << static_cast<int>(algorithm);
             UNREACHABLE(
-                "ripple::compression::compress : invalid compression "
+                "xrpl::compression::compress : invalid compression "
                 "algorithm");
             // LCOV_EXCL_STOP
         }
@@ -97,6 +88,6 @@ compress(
 }
 }  // namespace compression
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_COMPRESSION_H_INCLUDED

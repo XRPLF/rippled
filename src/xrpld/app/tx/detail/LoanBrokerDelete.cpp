@@ -2,7 +2,9 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
-namespace ripple {
+#include <xrpl/protocol/STTakesAsset.h>
+
+namespace xrpl {
 
 bool
 LoanBrokerDelete::checkExtraFeatures(PreflightContext const& ctx)
@@ -46,30 +48,6 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "LoanBrokerDelete: Owner count is " << ownerCount;
         return tecHAS_OBLIGATIONS;
     }
-    if (auto const debtTotal = sleBroker->at(sfDebtTotal);
-        debtTotal != beast::zero)
-    {
-        // Any remaining debt should have been wiped out by the last Loan
-        // Delete. This check is purely defensive.
-        auto const vault =
-            ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
-        if (!vault)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-        auto const asset = vault->at(sfAsset);
-        auto const scale = getVaultScale(vault);
-
-        auto const rounded =
-            roundToAsset(asset, debtTotal, scale, Number::towards_zero);
-
-        if (rounded != beast::zero)
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.warn()) << "LoanBrokerDelete: Debt total is "
-                               << debtTotal << ", which rounds to " << rounded;
-            return tecHAS_OBLIGATIONS;
-            // LCOV_EXCL_START
-        }
-    }
 
     auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
     if (!vault)
@@ -82,8 +60,24 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
 
     Asset const asset = vault->at(sfAsset);
 
-    auto const coverAvailable =
-        STAmount{asset, sleBroker->at(sfCoverAvailable)};
+    if (auto const debtTotal = sleBroker->at(sfDebtTotal); debtTotal != beast::zero)
+    {
+        // Any remaining debt should have been wiped out by the last Loan
+        // Delete. This check is purely defensive.
+        auto const scale = getAssetsTotalScale(vault);
+
+        auto const rounded = roundToAsset(asset, debtTotal, scale, Number::towards_zero);
+
+        if (rounded != beast::zero)
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.warn()) << "LoanBrokerDelete: Debt total is " << debtTotal << ", which rounds to " << rounded;
+            return tecHAS_OBLIGATIONS;
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    auto const coverAvailable = STAmount{asset, sleBroker->at(sfCoverAvailable)};
     // If there are assets in the cover, broker will receive them on deletion.
     // So we need to check if the broker owner is deep frozen for that asset.
     if (coverAvailable > beast::zero)
@@ -118,33 +112,18 @@ LoanBrokerDelete::doApply()
 
     auto const brokerPseudoID = broker->at(sfAccount);
 
-    if (!view().dirRemove(
-            keylet::ownerDir(account_),
-            broker->at(sfOwnerNode),
-            broker->key(),
-            false))
+    if (!view().dirRemove(keylet::ownerDir(account_), broker->at(sfOwnerNode), broker->key(), false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
-    if (!view().dirRemove(
-            keylet::ownerDir(vaultPseudoID),
-            broker->at(sfVaultNode),
-            broker->key(),
-            false))
+    if (!view().dirRemove(keylet::ownerDir(vaultPseudoID), broker->at(sfVaultNode), broker->key(), false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     {
-        auto const coverAvailable =
-            STAmount{vaultAsset, broker->at(sfCoverAvailable)};
-        if (auto const ter = accountSend(
-                view(),
-                brokerPseudoID,
-                account_,
-                coverAvailable,
-                j_,
-                WaiveTransferFee::Yes))
+        auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
+        if (auto const ter = accountSend(view(), brokerPseudoID, account_, coverAvailable, j_, WaiveTransferFee::Yes))
             return ter;
     }
 
@@ -164,12 +143,10 @@ LoanBrokerDelete::doApply()
     }
     if (brokerPseudoSLE->at(sfOwnerCount) != 0)
     {
-        JLOG(j_.warn())
-            << "LoanBrokerDelete: Pseudo-account still owns objects";
+        JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account still owns objects";
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
     }
-    if (auto const directory = keylet::ownerDir(brokerPseudoID);
-        view().read(directory))
+    if (auto const directory = keylet::ownerDir(brokerPseudoID); view().read(directory))
     {
         JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account has a directory";
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
@@ -189,9 +166,11 @@ LoanBrokerDelete::doApply()
         adjustOwnerCount(view(), owner, -2, j_);
     }
 
+    associateAsset(*broker, vaultAsset);
+
     return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -9,7 +9,7 @@
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doLedgerAccept(RPC::JsonContext& context)
@@ -24,11 +24,10 @@ doLedgerAccept(RPC::JsonContext& context)
     {
         std::unique_lock lock{context.app.getMasterMutex()};
         context.netOps.acceptLedger();
-        jvResult[jss::ledger_current_index] =
-            context.ledgerMaster.getCurrentLedgerIndex();
+        jvResult[jss::ledger_current_index] = context.ledgerMaster.getCurrentLedgerIndex();
     }
 
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

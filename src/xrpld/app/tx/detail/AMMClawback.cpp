@@ -12,7 +12,7 @@
 
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 AMMClawback::getFlagsMask(PreflightContext const& ctx)
@@ -28,8 +28,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
 
     if (issuer == holder)
     {
-        JLOG(ctx.j.trace())
-            << "AMMClawback: holder cannot be the same as issuer.";
+        JLOG(ctx.j.trace()) << "AMMClawback: holder cannot be the same as issuer.";
         return temMALFORMED;
     }
 
@@ -44,9 +43,8 @@ AMMClawback::preflight(PreflightContext const& ctx)
 
     if (flags & tfClawTwoAssets && asset.account != asset2.account)
     {
-        JLOG(ctx.j.trace())
-            << "AMMClawback: tfClawTwoAssets can only be enabled when two "
-               "assets in the AMM pool are both issued by the issuer";
+        JLOG(ctx.j.trace()) << "AMMClawback: tfClawTwoAssets can only be enabled when two "
+                               "assets in the AMM pool are both issued by the issuer";
         return temINVALID_FLAG;
     }
 
@@ -93,8 +91,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
 
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) ||
-        (issuerFlagsIn & lsfNoFreeze))
+    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) || (issuerFlagsIn & lsfNoFreeze))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -138,19 +135,11 @@ AMMClawback::applyGuts(Sandbox& sb)
         if (lpTokenBalance == beast::zero)
             return tecAMM_BALANCE;
 
-        if (auto const res = verifyAndAdjustLPTokenBalance(
-                sb, lpTokenBalance, ammSle, holder);
-            !res)
+        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokenBalance, ammSle, holder); !res)
             return res.error();  // LCOV_EXCL_LINE
     }
 
-    auto const expected = ammHolds(
-        sb,
-        *ammSle,
-        asset,
-        asset2,
-        FreezeHandling::fhIGNORE_FREEZE,
-        ctx_.journal);
+    auto const expected = ammHolds(sb, *ammSle, asset, asset2, FreezeHandling::fhIGNORE_FREEZE, ctx_.journal);
 
     if (!expected)
         return expected.error();  // LCOV_EXCL_LINE
@@ -168,47 +157,35 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!clawAmount)
         // Because we are doing a two-asset withdrawal,
         // tfee is actually not used, so pass tfee as 0.
-        std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
-            AMMWithdraw::equalWithdrawTokens(
-                sb,
-                *ammSle,
-                holder,
-                ammAccount,
-                amountBalance,
-                amount2Balance,
-                lptAMMBalance,
-                holdLPtokens,
-                holdLPtokens,
-                0,
-                FreezeHandling::fhIGNORE_FREEZE,
-                WithdrawAll::Yes,
-                mPriorBalance,
-                ctx_.journal);
+        std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) = AMMWithdraw::equalWithdrawTokens(
+            sb,
+            *ammSle,
+            holder,
+            ammAccount,
+            amountBalance,
+            amount2Balance,
+            lptAMMBalance,
+            holdLPtokens,
+            holdLPtokens,
+            0,
+            FreezeHandling::fhIGNORE_FREEZE,
+            WithdrawAll::Yes,
+            mPriorBalance,
+            ctx_.journal);
     else
-        std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
-            equalWithdrawMatchingOneAmount(
-                sb,
-                *ammSle,
-                holder,
-                ammAccount,
-                amountBalance,
-                amount2Balance,
-                lptAMMBalance,
-                holdLPtokens,
-                *clawAmount);
+        std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) = equalWithdrawMatchingOneAmount(
+            sb, *ammSle, holder, ammAccount, amountBalance, amount2Balance, lptAMMBalance, holdLPtokens, *clawAmount);
 
     if (result != tesSUCCESS)
         return result;  // LCOV_EXCL_LINE
 
-    auto const res = AMMWithdraw::deleteAMMAccountIfEmpty(
-        sb, ammSle, newLPTokenBalance, asset, asset2, j_);
+    auto const res = AMMWithdraw::deleteAMMAccountIfEmpty(sb, ammSle, newLPTokenBalance, asset, asset2, j_);
     if (!res.second)
         return res.first;  // LCOV_EXCL_LINE
 
-    JLOG(ctx_.journal.trace())
-        << "AMM Withdraw during AMMClawback: lptoken new balance: "
-        << to_string(newLPTokenBalance.iou())
-        << " old balance: " << to_string(lptAMMBalance.iou());
+    JLOG(ctx_.journal.trace()) << "AMM Withdraw during AMMClawback: lptoken new balance: "
+                               << to_string(newLPTokenBalance.iou())
+                               << " old balance: " << to_string(lptAMMBalance.iou());
 
     auto const ter = rippleCredit(sb, holder, issuer, amountWithdraw, true, j_);
     if (ter != tesSUCCESS)
@@ -243,8 +220,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     auto frac = Number{amount} / amountBalance;
     auto amount2Withdraw = amount2Balance * frac;
 
-    auto const lpTokensWithdraw =
-        toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
+    auto const lpTokensWithdraw = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
 
     if (lpTokensWithdraw > holdLPtokens)
         // if lptoken balance less than what the issuer intended to clawback,
@@ -269,21 +245,17 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     auto const& rules = sb.rules();
     if (rules.enabled(fixAMMClawbackRounding))
     {
-        auto tokensAdj =
-            getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
+        auto tokensAdj = getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
 
         // LCOV_EXCL_START
         if (tokensAdj == beast::zero)
-            return {
-                tecAMM_INVALID_TOKENS, STAmount{}, STAmount{}, std::nullopt};
+            return {tecAMM_INVALID_TOKENS, STAmount{}, STAmount{}, std::nullopt};
         // LCOV_EXCL_STOP
 
         frac = adjustFracByTokens(rules, lptAMMBalance, tokensAdj, frac);
-        auto amount2Rounded =
-            getRoundedAsset(rules, amount2Balance, frac, IsDeposit::No);
+        auto amount2Rounded = getRoundedAsset(rules, amount2Balance, frac, IsDeposit::No);
 
-        auto amountRounded =
-            getRoundedAsset(rules, amountBalance, frac, IsDeposit::No);
+        auto amountRounded = getRoundedAsset(rules, amountBalance, frac, IsDeposit::No);
 
         return AMMWithdraw::withdraw(
             sb,
@@ -321,4 +293,4 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         ctx_.journal);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

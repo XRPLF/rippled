@@ -3,7 +3,7 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct MPTAuthorizeArgs
 {
@@ -33,16 +33,12 @@ public:
     preclaim(PreclaimContext const& ctx);
 
     static TER
-    createMPToken(
-        ApplyView& view,
-        MPTID const& mptIssuanceID,
-        AccountID const& account,
-        std::uint32_t const flags);
+    createMPToken(ApplyView& view, MPTID const& mptIssuanceID, AccountID const& account, std::uint32_t const flags);
 
     TER
     doApply() override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

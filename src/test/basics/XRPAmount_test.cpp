@@ -1,7 +1,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 class XRPAmount_test : public beast::unit_test::suite
 {
@@ -203,10 +203,8 @@ public:
         testcase("mulRatio");
 
         constexpr auto maxUInt32 = std::numeric_limits<std::uint32_t>::max();
-        constexpr auto maxXRP =
-            std::numeric_limits<XRPAmount::value_type>::max();
-        constexpr auto minXRP =
-            std::numeric_limits<XRPAmount::value_type>::min();
+        constexpr auto maxXRP = std::numeric_limits<XRPAmount::value_type>::max();
+        constexpr auto minXRP = std::numeric_limits<XRPAmount::value_type>::min();
 
         {
             // multiply by a number that would overflow then divide by the same
@@ -218,11 +216,9 @@ public:
 
             // multiply and divide by values that would overflow if done
             // naively, and check that it gives the correct answer
-            big -= 0xf;  // Subtract a little so it's divisable by 4
-            BEAST_EXPECT(
-                mulRatio(big, 3, 4, false).value() == (big.value() / 4) * 3);
-            BEAST_EXPECT(
-                mulRatio(big, 3, 4, true).value() == (big.value() / 4) * 3);
+            big -= 0xf;  // Subtract a little so it's divisible by 4
+            BEAST_EXPECT(mulRatio(big, 3, 4, false).value() == (big.value() / 4) * 3);
+            BEAST_EXPECT(mulRatio(big, 3, 4, true).value() == (big.value() / 4) * 3);
             BEAST_EXPECT((big.value() * 3) / 4 != (big.value() / 4) * 3);
         }
 
@@ -235,10 +231,8 @@ public:
 
             // multiply and divide by values that would overflow if done
             // naively, and check that it gives the correct answer
-            BEAST_EXPECT(
-                mulRatio(big, 3, 4, false).value() == (big.value() / 4) * 3);
-            BEAST_EXPECT(
-                mulRatio(big, 3, 4, true).value() == (big.value() / 4) * 3);
+            BEAST_EXPECT(mulRatio(big, 3, 4, false).value() == (big.value() / 4) * 3);
+            BEAST_EXPECT(mulRatio(big, 3, 4, true).value() == (big.value() / 4) * 3);
             BEAST_EXPECT((big.value() * 3) / 4 != (big.value() / 4) * 3);
         }
 
@@ -249,44 +243,36 @@ public:
             BEAST_EXPECT(tiny == mulRatio(tiny, 1, maxUInt32, true));
             // rounding down should be zero
             BEAST_EXPECT(beast::zero == mulRatio(tiny, 1, maxUInt32, false));
-            BEAST_EXPECT(
-                beast::zero == mulRatio(tiny, maxUInt32 - 1, maxUInt32, false));
+            BEAST_EXPECT(beast::zero == mulRatio(tiny, maxUInt32 - 1, maxUInt32, false));
 
             // tiny negative numbers
             XRPAmount tinyNeg(-1);
             // Round up should give zero
             BEAST_EXPECT(beast::zero == mulRatio(tinyNeg, 1, maxUInt32, true));
-            BEAST_EXPECT(
-                beast::zero ==
-                mulRatio(tinyNeg, maxUInt32 - 1, maxUInt32, true));
+            BEAST_EXPECT(beast::zero == mulRatio(tinyNeg, maxUInt32 - 1, maxUInt32, true));
             // rounding down should be tiny
-            BEAST_EXPECT(
-                tinyNeg == mulRatio(tinyNeg, maxUInt32 - 1, maxUInt32, false));
+            BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, maxUInt32 - 1, maxUInt32, false));
         }
 
         {  // rounding
             {
                 XRPAmount one(1);
                 auto const rup = mulRatio(one, maxUInt32 - 1, maxUInt32, true);
-                auto const rdown =
-                    mulRatio(one, maxUInt32 - 1, maxUInt32, false);
+                auto const rdown = mulRatio(one, maxUInt32 - 1, maxUInt32, false);
                 BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
             }
 
             {
                 XRPAmount big(maxXRP);
                 auto const rup = mulRatio(big, maxUInt32 - 1, maxUInt32, true);
-                auto const rdown =
-                    mulRatio(big, maxUInt32 - 1, maxUInt32, false);
+                auto const rdown = mulRatio(big, maxUInt32 - 1, maxUInt32, false);
                 BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
             }
 
             {
                 XRPAmount negOne(-1);
-                auto const rup =
-                    mulRatio(negOne, maxUInt32 - 1, maxUInt32, true);
-                auto const rdown =
-                    mulRatio(negOne, maxUInt32 - 1, maxUInt32, false);
+                auto const rup = mulRatio(negOne, maxUInt32 - 1, maxUInt32, true);
+                auto const rdown = mulRatio(negOne, maxUInt32 - 1, maxUInt32, false);
                 BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
             }
         }
@@ -308,7 +294,7 @@ public:
             XRPAmount bigNegative(minXRP + 10);
             BEAST_EXPECT(mulRatio(bigNegative, 2, 1, true) == minXRP);
         }
-    }  // namespace ripple
+    }  // namespace xrpl
 
     //--------------------------------------------------------------------------
 
@@ -325,6 +311,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(XRPAmount, basics, ripple);
+BEAST_DEFINE_TESTSUITE(XRPAmount, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,22 +3,17 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
 namespace delegate {
 
 Json::Value
-set(jtx::Account const& account,
-    jtx::Account const& authorize,
-    std::vector<std::string> const& permissions);
+set(jtx::Account const& account, jtx::Account const& authorize, std::vector<std::string> const& permissions);
 
 Json::Value
-entry(
-    jtx::Env& env,
-    jtx::Account const& account,
-    jtx::Account const& authorize);
+entry(jtx::Env& env, jtx::Account const& account, jtx::Account const& authorize);
 
 struct as
 {
@@ -40,4 +35,4 @@ public:
 }  // namespace delegate
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

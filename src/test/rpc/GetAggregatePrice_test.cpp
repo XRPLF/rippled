@@ -5,7 +5,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 namespace oracle {
@@ -26,17 +26,12 @@ public:
             Env env(*this);
             auto const baseFee = env.current()->fees().base;
             // missing base_asset
-            auto ret =
-                Oracle::aggregatePrice(env, std::nullopt, "USD", oracles);
-            BEAST_EXPECT(
-                ret[jss::error_message].asString() ==
-                "Missing field 'base_asset'.");
+            auto ret = Oracle::aggregatePrice(env, std::nullopt, "USD", oracles);
+            BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'base_asset'.");
 
             // missing quote_asset
             ret = Oracle::aggregatePrice(env, "XRP", std::nullopt, oracles);
-            BEAST_EXPECT(
-                ret[jss::error_message].asString() ==
-                "Missing field 'quote_asset'.");
+            BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'quote_asset'.");
 
             // invalid base_asset, quote_asset
             std::vector<AnyValue> invalidAsset = {
@@ -66,9 +61,7 @@ public:
 
             // missing oracles array
             ret = Oracle::aggregatePrice(env, "XRP", "USD");
-            BEAST_EXPECT(
-                ret[jss::error_message].asString() ==
-                "Missing field 'oracles'.");
+            BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'oracles'.");
 
             // empty oracles array
             ret = Oracle::aggregatePrice(env, "XRP", "USD", OraclesData{});
@@ -83,8 +76,7 @@ public:
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, 2}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
             // invalid values
-            std::vector<AnyValue> invalidDocument = {
-                NoneTag, 1.2, -1, "", "none", "1.2"};
+            std::vector<AnyValue> invalidDocument = {NoneTag, 1.2, -1, "", "none", "1.2"};
             for (auto const& v : invalidDocument)
             {
                 ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, v}}});
@@ -93,51 +85,36 @@ public:
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
             }
             // missing document id
-            ret = Oracle::aggregatePrice(
-                env, "XRP", "USD", {{{owner, std::nullopt}}});
+            ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, std::nullopt}}});
             BEAST_EXPECT(ret[jss::error].asString() == "oracleMalformed");
 
             // invalid owner
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{some, 1}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
             // missing account
-            ret = Oracle::aggregatePrice(
-                env, "XRP", "USD", {{{std::nullopt, 1}}});
+            ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{std::nullopt, 1}}});
             BEAST_EXPECT(ret[jss::error].asString() == "oracleMalformed");
 
             // oracles have wrong asset pair
             env.fund(XRP(1'000), owner);
             Oracle oracle(
-                env,
-                {.owner = owner,
-                 .series = {{"XRP", "EUR", 740, 1}},
-                 .fee = static_cast<int>(baseFee.drops())});
-            ret = Oracle::aggregatePrice(
-                env, "XRP", "USD", {{{owner, oracle.documentID()}}});
+                env, {.owner = owner, .series = {{"XRP", "EUR", 740, 1}}, .fee = static_cast<int>(baseFee.drops())});
+            ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, oracle.documentID()}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
 
             // invalid trim value
-            std::vector<AnyValue> invalidTrim = {
-                NoneTag, 0, 26, -1, 1.2, "", "none", "1.2"};
+            std::vector<AnyValue> invalidTrim = {NoneTag, 0, 26, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTrim)
             {
-                ret = Oracle::aggregatePrice(
-                    env, "XRP", "USD", {{{owner, oracle.documentID()}}}, v);
+                ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, oracle.documentID()}}}, v);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
             }
 
             // invalid time threshold value
-            std::vector<AnyValue> invalidTime = {
-                NoneTag, -1, 1.2, "", "none", "1.2"};
+            std::vector<AnyValue> invalidTime = {NoneTag, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTime)
             {
-                ret = Oracle::aggregatePrice(
-                    env,
-                    "XRP",
-                    "USD",
-                    {{{owner, oracle.documentID()}}},
-                    std::nullopt,
-                    v);
+                ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, oracle.documentID()}}}, std::nullopt, v);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
             }
         }
@@ -145,16 +122,14 @@ public:
         // too many oracles
         {
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
             OraclesData oracles;
             for (int i = 0; i < 201; ++i)
             {
                 Account const owner(std::to_string(i));
                 env.fund(XRP(1'000), owner);
-                Oracle oracle(
-                    env, {.owner = owner, .documentID = i, .fee = baseFee});
+                Oracle oracle(env, {.owner = owner, .documentID = i, .fee = baseFee});
                 oracles.emplace_back(owner, oracle.documentID());
             }
             auto const ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
@@ -172,8 +147,7 @@ public:
             oracles.reserve(10);
             for (int i = 0; i < 10; ++i)
             {
-                auto const baseFee =
-                    static_cast<int>(env.current()->fees().base.drops());
+                auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
                 Account const owner{std::to_string(i)};
                 env.fund(XRP(1'000), owner);
@@ -181,8 +155,7 @@ public:
                     env,
                     {.owner = owner,
                      .documentID = rand(),
-                     .series =
-                         {{"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}},
+                     .series = {{"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}},
                      .fee = baseFee});
                 oracles.emplace_back(owner, oracle.documentID());
             }
@@ -191,18 +164,32 @@ public:
         // Aggregate data set includes all price oracle instances, no trimming
         // or time threshold
         {
-            Env env(*this);
-            OraclesData oracles;
-            prep(env, oracles);
-            // entire and trimmed stats
-            auto ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
-            BEAST_EXPECT(ret[jss::entire_set][jss::mean] == "74.45");
-            BEAST_EXPECT(ret[jss::entire_set][jss::size].asUInt() == 10);
-            BEAST_EXPECT(
-                ret[jss::entire_set][jss::standard_deviation] ==
-                "0.3027650354097492");
-            BEAST_EXPECT(ret[jss::median] == "74.45");
-            BEAST_EXPECT(ret[jss::time] == 946694900);
+            auto const all = testable_amendments();
+            for (auto const& feats : {all - featureSingleAssetVault - featureLendingProtocol, all})
+            {
+                for (auto const mantissaSize : {MantissaRange::small, MantissaRange::large})
+                {
+                    // Regardless of the features enabled, RPC is controlled by
+                    // the global mantissa size. And since it's a thread-local,
+                    // overriding it locally won't make a difference either.
+                    // This will mean all RPC will use the default of "large".
+                    NumberMantissaScaleGuard mg(mantissaSize);
+
+                    Env env(*this, feats);
+                    OraclesData oracles;
+                    prep(env, oracles);
+                    // entire and trimmed stats
+                    auto ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
+                    BEAST_EXPECT(ret[jss::entire_set][jss::mean] == "74.45");
+                    BEAST_EXPECT(ret[jss::entire_set][jss::size].asUInt() == 10);
+                    // Short: 0.3027650354097492
+                    BEAST_EXPECTS(
+                        ret[jss::entire_set][jss::standard_deviation] == "0.3027650354097491666",
+                        ret[jss::entire_set][jss::standard_deviation].asString());
+                    BEAST_EXPECT(ret[jss::median] == "74.45");
+                    BEAST_EXPECT(ret[jss::time] == 946694900);
+                }
+            }
         }
 
         // Aggregate data set includes all price oracle instances
@@ -211,19 +198,20 @@ public:
             OraclesData oracles;
             prep(env, oracles);
             // entire and trimmed stats
-            auto ret =
-                Oracle::aggregatePrice(env, "XRP", "USD", oracles, 20, 100);
+            auto ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles, 20, 100);
             BEAST_EXPECT(ret[jss::entire_set][jss::mean] == "74.45");
             BEAST_EXPECT(ret[jss::entire_set][jss::size].asUInt() == 10);
-            BEAST_EXPECT(
-                ret[jss::entire_set][jss::standard_deviation] ==
-                "0.3027650354097492");
+            // Short: "0.3027650354097492",
+            BEAST_EXPECTS(
+                ret[jss::entire_set][jss::standard_deviation] == "0.3027650354097491666",
+                ret[jss::entire_set][jss::standard_deviation].asString());
             BEAST_EXPECT(ret[jss::median] == "74.45");
             BEAST_EXPECT(ret[jss::trimmed_set][jss::mean] == "74.45");
             BEAST_EXPECT(ret[jss::trimmed_set][jss::size].asUInt() == 6);
-            BEAST_EXPECT(
-                ret[jss::trimmed_set][jss::standard_deviation] ==
-                "0.187082869338697");
+            // Short: "0.187082869338697",
+            BEAST_EXPECTS(
+                ret[jss::trimmed_set][jss::standard_deviation] == "0.1870828693386970693",
+                ret[jss::trimmed_set][jss::standard_deviation].asString());
             BEAST_EXPECT(ret[jss::time] == 946694900);
         }
 
@@ -231,86 +219,66 @@ public:
         // updated ledgers
         {
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
             OraclesData oracles;
             prep(env, oracles);
             for (int i = 0; i < 3; ++i)
             {
                 Oracle oracle(
-                    env,
-                    {.owner = oracles[i].first,
-                     .documentID = asUInt(*oracles[i].second),
-                     .fee = baseFee},
-                    false);
+                    env, {.owner = oracles[i].first, .documentID = asUInt(*oracles[i].second), .fee = baseFee}, false);
                 // push XRP/USD by more than three ledgers, so this price
                 // oracle is not included in the dataset
-                oracle.set(UpdateArg{
-                    .series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
-                oracle.set(UpdateArg{
-                    .series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
-                oracle.set(UpdateArg{
-                    .series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
+                oracle.set(UpdateArg{.series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
+                oracle.set(UpdateArg{.series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
+                oracle.set(UpdateArg{.series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
             }
             for (int i = 3; i < 6; ++i)
             {
                 Oracle oracle(
-                    env,
-                    {.owner = oracles[i].first,
-                     .documentID = asUInt(*oracles[i].second),
-                     .fee = baseFee},
-                    false);
+                    env, {.owner = oracles[i].first, .documentID = asUInt(*oracles[i].second), .fee = baseFee}, false);
                 // push XRP/USD by two ledgers, so this price
                 // is included in the dataset
-                oracle.set(UpdateArg{
-                    .series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
-                oracle.set(UpdateArg{
-                    .series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
+                oracle.set(UpdateArg{.series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
+                oracle.set(UpdateArg{.series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
             }
 
             // entire and trimmed stats
-            auto ret =
-                Oracle::aggregatePrice(env, "XRP", "USD", oracles, 20, "200");
+            auto ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles, 20, "200");
             BEAST_EXPECT(ret[jss::entire_set][jss::mean] == "74.6");
             BEAST_EXPECT(ret[jss::entire_set][jss::size].asUInt() == 7);
-            BEAST_EXPECT(
-                ret[jss::entire_set][jss::standard_deviation] ==
-                "0.2160246899469287");
+            // Short: 0.2160246899469287
+            BEAST_EXPECTS(
+                ret[jss::entire_set][jss::standard_deviation] == "0.2160246899469286744",
+                ret[jss::entire_set][jss::standard_deviation].asString());
             BEAST_EXPECT(ret[jss::median] == "74.6");
             BEAST_EXPECT(ret[jss::trimmed_set][jss::mean] == "74.6");
             BEAST_EXPECT(ret[jss::trimmed_set][jss::size].asUInt() == 5);
-            BEAST_EXPECT(
-                ret[jss::trimmed_set][jss::standard_deviation] ==
-                "0.158113883008419");
+            // Short: 0.158113883008419
+            BEAST_EXPECTS(
+                ret[jss::trimmed_set][jss::standard_deviation] == "0.1581138830084189666",
+                ret[jss::trimmed_set][jss::standard_deviation].asString());
             BEAST_EXPECT(ret[jss::time] == 946694900);
         }
 
         // Reduced data set because of the time threshold
         {
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
             OraclesData oracles;
             prep(env, oracles);
             for (int i = 0; i < oracles.size(); ++i)
             {
                 Oracle oracle(
-                    env,
-                    {.owner = oracles[i].first,
-                     .documentID = asUInt(*oracles[i].second),
-                     .fee = baseFee},
-                    false);
+                    env, {.owner = oracles[i].first, .documentID = asUInt(*oracles[i].second), .fee = baseFee}, false);
                 // push XRP/USD by two ledgers, so this price
                 // is included in the dataset
-                oracle.set(UpdateArg{
-                    .series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
+                oracle.set(UpdateArg{.series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
             }
 
             // entire stats only, limit lastUpdateTime to {200, 125}
-            auto ret = Oracle::aggregatePrice(
-                env, "XRP", "USD", oracles, std::nullopt, 75);
+            auto ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles, std::nullopt, 75);
             BEAST_EXPECT(ret[jss::entire_set][jss::mean] == "74");
             BEAST_EXPECT(ret[jss::entire_set][jss::size].asUInt() == 8);
             BEAST_EXPECT(ret[jss::entire_set][jss::standard_deviation] == "0");
@@ -327,9 +295,9 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(GetAggregatePrice, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(GetAggregatePrice, rpc, xrpl);
 
 }  // namespace oracle
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -9,7 +9,7 @@
 #include <memory>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class WSClient : public AbstractClient
@@ -17,15 +17,11 @@ class WSClient : public AbstractClient
 public:
     /** Retrieve a message. */
     virtual std::optional<Json::Value>
-    getMsg(
-        std::chrono::milliseconds const& timeout = std::chrono::milliseconds{
-            0}) = 0;
+    getMsg(std::chrono::milliseconds const& timeout = std::chrono::milliseconds{0}) = 0;
 
     /** Retrieve a message that meets the predicate criteria. */
     virtual std::optional<Json::Value>
-    findMsg(
-        std::chrono::milliseconds const& timeout,
-        std::function<bool(Json::Value const&)> pred) = 0;
+    findMsg(std::chrono::milliseconds const& timeout, std::function<bool(Json::Value const&)> pred) = 0;
 };
 
 /** Returns a client operating through WebSockets/S. */
@@ -37,6 +33,6 @@ makeWSClient(
     std::unordered_map<std::string, std::string> const& headers = {});
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

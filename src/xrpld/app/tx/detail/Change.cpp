@@ -12,7 +12,7 @@
 
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 template <>
 NotTEC
@@ -22,8 +22,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
     // The check for tfChangeMask is gated by LendingProtocol because that
     // feature introduced this parameter, and it's not worth adding another
     // amendment just for this.
-    if (auto const ret = preflight0(
-            ctx, ctx.rules.enabled(featureLendingProtocol) ? tfChangeMask : 0))
+    if (auto const ret = preflight0(ctx, ctx.rules.enabled(featureLendingProtocol) ? tfChangeMask : 0))
         return ret;
 
     auto account = ctx.tx.getAccountID(sfAccount);
@@ -41,15 +40,13 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    if (!ctx.tx.getSigningPubKey().empty() || !ctx.tx.getSignature().empty() ||
-        ctx.tx.isFieldPresent(sfSigners))
+    if (!ctx.tx.getSigningPubKey().empty() || !ctx.tx.getSignature().empty() || ctx.tx.isFieldPresent(sfSigners))
     {
         JLOG(ctx.j.warn()) << "Change: Bad signature";
         return temBAD_SIGNATURE;
     }
 
-    if (ctx.tx.getFieldU32(sfSequence) != 0 ||
-        ctx.tx.isFieldPresent(sfPreviousTxnID))
+    if (ctx.tx.getFieldU32(sfSequence) != 0 || ctx.tx.isFieldPresent(sfPreviousTxnID))
     {
         JLOG(ctx.j.warn()) << "Change: Bad sequence";
         return temBAD_SEQUENCE;
@@ -77,17 +74,14 @@ Change::preclaim(PreclaimContext const& ctx)
                 // The ttFEE transaction format defines these fields as
                 // optional, but once the XRPFees feature is enabled, they are
                 // required.
-                if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
-                    !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
+                if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) || !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
                     !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temMALFORMED;
                 // The ttFEE transaction format defines these fields as
                 // optional, but once the XRPFees feature is enabled, they are
                 // forbidden.
-                if (ctx.tx.isFieldPresent(sfBaseFee) ||
-                    ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
-                    ctx.tx.isFieldPresent(sfReserveBase) ||
-                    ctx.tx.isFieldPresent(sfReserveIncrement))
+                if (ctx.tx.isFieldPresent(sfBaseFee) || ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
+                    ctx.tx.isFieldPresent(sfReserveBase) || ctx.tx.isFieldPresent(sfReserveIncrement))
                     return temMALFORMED;
             }
             else
@@ -96,16 +90,13 @@ Change::preclaim(PreclaimContext const& ctx)
                 // as required. When the XRPFees feature was implemented, they
                 // were changed to be optional. Until the feature has been
                 // enabled, they are required.
-                if (!ctx.tx.isFieldPresent(sfBaseFee) ||
-                    !ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
-                    !ctx.tx.isFieldPresent(sfReserveBase) ||
-                    !ctx.tx.isFieldPresent(sfReserveIncrement))
+                if (!ctx.tx.isFieldPresent(sfBaseFee) || !ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
+                    !ctx.tx.isFieldPresent(sfReserveBase) || !ctx.tx.isFieldPresent(sfReserveIncrement))
                     return temMALFORMED;
                 // The ttFEE transaction format defines these fields as
                 // optional, but without the XRPFees feature, they are
                 // forbidden.
-                if (ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
-                    ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
+                if (ctx.tx.isFieldPresent(sfBaseFeeDrops) || ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
                     ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temDISABLED;
             }
@@ -131,7 +122,7 @@ Change::doApply()
             return applyUNLModify();
         // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Change::doApply : invalid transaction type");
+            UNREACHABLE("xrpl::Change::doApply : invalid transaction type");
             return tefFAILURE;
             // LCOV_EXCL_STOP
     }
@@ -140,8 +131,7 @@ Change::doApply()
 void
 Change::preCompute()
 {
-    XRPL_ASSERT(
-        account_ == beast::zero, "ripple::Change::preCompute : zero account");
+    XRPL_ASSERT(account_ == beast::zero, "xrpl::Change::preCompute : zero account");
 }
 
 TER
@@ -161,8 +151,7 @@ Change::applyAmendment()
 
     STVector256 amendments = amendmentObject->getFieldV256(sfAmendments);
 
-    if (std::find(amendments.begin(), amendments.end(), amendment) !=
-        amendments.end())
+    if (std::find(amendments.begin(), amendments.end(), amendment) != amendments.end())
         return tefALREADY;
 
     auto flags = ctx_.tx.getFlags();
@@ -178,8 +167,7 @@ Change::applyAmendment()
     bool found = false;
     if (amendmentObject->isFieldPresent(sfMajorities))
     {
-        STArray const& oldMajorities =
-            amendmentObject->getFieldArray(sfMajorities);
+        STArray const& oldMajorities = amendmentObject->getFieldArray(sfMajorities);
         for (auto const& majority : oldMajorities)
         {
             if (majority.getFieldH256(sfAmendment) == amendment)
@@ -205,13 +193,11 @@ Change::applyAmendment()
         newMajorities.push_back(STObject::makeInnerObject(sfMajority));
         auto& entry = newMajorities.back();
         entry[sfAmendment] = amendment;
-        entry[sfCloseTime] =
-            view().parentCloseTime().time_since_epoch().count();
+        entry[sfCloseTime] = view().parentCloseTime().time_since_epoch().count();
 
         if (!ctx_.app.getAmendmentTable().isSupported(amendment))
         {
-            JLOG(j_.warn()) << "Unsupported amendment " << amendment
-                            << " received a majority.";
+            JLOG(j_.warn()) << "Unsupported amendment " << amendment << " received a majority.";
         }
     }
     else if (!lostMajority)
@@ -224,8 +210,7 @@ Change::applyAmendment()
 
         if (!ctx_.app.getAmendmentTable().isSupported(amendment))
         {
-            JLOG(j_.error()) << "Unsupported amendment " << amendment
-                             << " activated: server blocked.";
+            JLOG(j_.error()) << "Unsupported amendment " << amendment << " activated: server blocked.";
             ctx_.app.getOPs().setAmendmentBlocked();
         }
     }
@@ -252,9 +237,7 @@ Change::applyFee()
         feeObject = std::make_shared<SLE>(k);
         view().insert(feeObject);
     }
-    auto set = [](SLE::pointer& feeObject, STTx const& tx, auto const& field) {
-        feeObject->at(field) = tx[field];
-    };
+    auto set = [](SLE::pointer& feeObject, STTx const& tx, auto const& field) { feeObject->at(field) = tx[field]; };
     if (view().rules().enabled(featureXRPFees))
     {
         set(feeObject, ctx_.tx, sfBaseFeeDrops);
@@ -285,15 +268,12 @@ Change::applyUNLModify()
 {
     if (!isFlagLedger(view().seq()))
     {
-        JLOG(j_.warn()) << "N-UNL: applyUNLModify, not a flag ledger, seq="
-                        << view().seq();
+        JLOG(j_.warn()) << "N-UNL: applyUNLModify, not a flag ledger, seq=" << view().seq();
         return tefFAILURE;
     }
 
-    if (!ctx_.tx.isFieldPresent(sfUNLModifyDisabling) ||
-        ctx_.tx.getFieldU8(sfUNLModifyDisabling) > 1 ||
-        !ctx_.tx.isFieldPresent(sfLedgerSequence) ||
-        !ctx_.tx.isFieldPresent(sfUNLModifyValidator))
+    if (!ctx_.tx.isFieldPresent(sfUNLModifyDisabling) || ctx_.tx.getFieldU8(sfUNLModifyDisabling) > 1 ||
+        !ctx_.tx.isFieldPresent(sfLedgerSequence) || !ctx_.tx.isFieldPresent(sfUNLModifyValidator))
     {
         JLOG(j_.warn()) << "N-UNL: applyUNLModify, wrong Tx format.";
         return tefFAILURE;
@@ -314,9 +294,7 @@ Change::applyUNLModify()
         return tefFAILURE;
     }
 
-    JLOG(j_.info()) << "N-UNL: applyUNLModify, "
-                    << (disabling ? "ToDisable" : "ToReEnable")
-                    << " seq=" << seq
+    JLOG(j_.info()) << "N-UNL: applyUNLModify, " << (disabling ? "ToDisable" : "ToReEnable") << " seq=" << seq
                     << " validator data:" << strHex(validator);
 
     auto const k = keylet::negativeUNL();
@@ -330,12 +308,10 @@ Change::applyUNLModify()
     bool const found = [&] {
         if (negUnlObject->isFieldPresent(sfDisabledValidators))
         {
-            auto const& negUnl =
-                negUnlObject->getFieldArray(sfDisabledValidators);
+            auto const& negUnl = negUnlObject->getFieldArray(sfDisabledValidators);
             for (auto const& v : negUnl)
             {
-                if (v.isFieldPresent(sfPublicKey) &&
-                    v.getFieldVL(sfPublicKey) == validator)
+                if (v.isFieldPresent(sfPublicKey) && v.getFieldVL(sfPublicKey) == validator)
                     return true;
             }
         }
@@ -356,8 +332,7 @@ Change::applyUNLModify()
         {
             if (negUnlObject->getFieldVL(sfValidatorToReEnable) == validator)
             {
-                JLOG(j_.warn())
-                    << "N-UNL: applyUNLModify, ToDisable is same as ToReEnable";
+                JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToDisable is same as ToReEnable";
                 return tefFAILURE;
             }
         }
@@ -365,8 +340,7 @@ Change::applyUNLModify()
         // cannot be in negative UNL already
         if (found)
         {
-            JLOG(j_.warn())
-                << "N-UNL: applyUNLModify, ToDisable already in negative UNL";
+            JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToDisable already in negative UNL";
             return tefFAILURE;
         }
 
@@ -386,8 +360,7 @@ Change::applyUNLModify()
         {
             if (negUnlObject->getFieldVL(sfValidatorToDisable) == validator)
             {
-                JLOG(j_.warn())
-                    << "N-UNL: applyUNLModify, ToReEnable is same as ToDisable";
+                JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToReEnable is same as ToDisable";
                 return tefFAILURE;
             }
         }
@@ -395,8 +368,7 @@ Change::applyUNLModify()
         // must be in negative UNL
         if (!found)
         {
-            JLOG(j_.warn())
-                << "N-UNL: applyUNLModify, ToReEnable is not in negative UNL";
+            JLOG(j_.warn()) << "N-UNL: applyUNLModify, ToReEnable is not in negative UNL";
             return tefFAILURE;
         }
 
@@ -407,4 +379,4 @@ Change::applyUNLModify()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

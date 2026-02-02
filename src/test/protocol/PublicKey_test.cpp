@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class PublicKey_test : public beast::unit_test::suite
 {
@@ -294,11 +294,9 @@ public:
         // Try converting short, long and malformed data
         BEAST_EXPECT(!parseBase58<PublicKey>(TokenType::NodePublic, ""));
         BEAST_EXPECT(!parseBase58<PublicKey>(TokenType::NodePublic, " "));
-        BEAST_EXPECT(
-            !parseBase58<PublicKey>(TokenType::NodePublic, "!ty89234gh45"));
+        BEAST_EXPECT(!parseBase58<PublicKey>(TokenType::NodePublic, "!ty89234gh45"));
 
-        auto const good = toBase58(
-            TokenType::NodePublic, derivePublicKey(keyType, randomSecretKey()));
+        auto const good = toBase58(TokenType::NodePublic, derivePublicKey(keyType, randomSecretKey()));
 
         // Short (non-empty) strings
         {
@@ -368,8 +366,7 @@ public:
 
                 BEAST_EXPECT((si == sj) == (i == j));
 
-                auto const skj =
-                    parseBase58<PublicKey>(TokenType::NodePublic, sj);
+                auto const skj = parseBase58<PublicKey>(TokenType::NodePublic, sj);
                 BEAST_EXPECT(skj && (keys[j] == *skj));
 
                 BEAST_EXPECT((*ski == *skj) == (i == j));
@@ -384,13 +381,10 @@ public:
 
         {
             auto const pk1 = derivePublicKey(
-                KeyType::secp256k1,
-                generateSecretKey(
-                    KeyType::secp256k1, generateSeed("masterpassphrase")));
+                KeyType::secp256k1, generateSecretKey(KeyType::secp256k1, generateSeed("masterpassphrase")));
 
-            auto const pk2 = parseBase58<PublicKey>(
-                TokenType::NodePublic,
-                "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9");
+            auto const pk2 =
+                parseBase58<PublicKey>(TokenType::NodePublic, "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9");
             BEAST_EXPECT(pk2);
 
             BEAST_EXPECT(pk1 == *pk2);
@@ -402,13 +396,10 @@ public:
 
         {
             auto const pk1 = derivePublicKey(
-                KeyType::ed25519,
-                generateSecretKey(
-                    KeyType::ed25519, generateSeed("masterpassphrase")));
+                KeyType::ed25519, generateSecretKey(KeyType::ed25519, generateSeed("masterpassphrase")));
 
-            auto const pk2 = parseBase58<PublicKey>(
-                TokenType::NodePublic,
-                "nHUeeJCSY2dM71oxM8Cgjouf5ekTuev2mwDpc374aLMxzDLXNmjf");
+            auto const pk2 =
+                parseBase58<PublicKey>(TokenType::NodePublic, "nHUeeJCSY2dM71oxM8Cgjouf5ekTuev2mwDpc374aLMxzDLXNmjf");
             BEAST_EXPECT(pk2);
 
             BEAST_EXPECT(pk1 == *pk2);
@@ -423,18 +414,14 @@ public:
         testcase("Miscellaneous operations");
 
         auto const pk1 = derivePublicKey(
-            KeyType::secp256k1,
-            generateSecretKey(
-                KeyType::secp256k1, generateSeed("masterpassphrase")));
+            KeyType::secp256k1, generateSecretKey(KeyType::secp256k1, generateSeed("masterpassphrase")));
 
         PublicKey pk2(pk1);
         BEAST_EXPECT(pk1 == pk2);
         BEAST_EXPECT(pk2 == pk1);
 
         PublicKey pk3 = derivePublicKey(
-            KeyType::secp256k1,
-            generateSecretKey(
-                KeyType::secp256k1, generateSeed("arbitraryPassPhrase")));
+            KeyType::secp256k1, generateSecretKey(KeyType::secp256k1, generateSeed("arbitraryPassPhrase")));
         // Testing the copy assignment operation of PublicKey class
         pk3 = pk2;
         BEAST_EXPECT(pk3 == pk2);
@@ -450,6 +437,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PublicKey, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(PublicKey, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

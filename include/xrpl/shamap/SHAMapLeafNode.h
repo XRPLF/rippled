@@ -6,21 +6,16 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 class SHAMapLeafNode : public SHAMapTreeNode
 {
 protected:
     boost::intrusive_ptr<SHAMapItem const> item_;
 
-    SHAMapLeafNode(
-        boost::intrusive_ptr<SHAMapItem const> item,
-        std::uint32_t cowid);
+    SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid);
 
-    SHAMapLeafNode(
-        boost::intrusive_ptr<SHAMapItem const> item,
-        std::uint32_t cowid,
-        SHAMapHash const& hash);
+    SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid, SHAMapHash const& hash);
 
 public:
     SHAMapLeafNode(SHAMapLeafNode const&) = delete;
@@ -59,6 +54,6 @@ public:
     getString(SHAMapNodeID const&) const final override;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

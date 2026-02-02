@@ -1,7 +1,6 @@
-#include <xrpld/core/detail/Workers.h>
-#include <xrpld/perflog/PerfLog.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/core/PerfLog.h>
+#include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
 
 #include <chrono>
@@ -10,7 +9,7 @@
 #include <mutex>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * Dummy class for unit tests.
@@ -50,8 +49,7 @@ class PerfLogTest : public PerfLog
     }
 
     void
-    jobFinish(JobType const type, std::chrono::microseconds dur, int instance)
-        override
+    jobFinish(JobType const type, std::chrono::microseconds dur, int instance) override
     {
     }
 
@@ -103,13 +101,10 @@ public:
     void
     testThreads(int const tc1, int const tc2, int const tc3)
     {
-        testcase(
-            "threadCounts: " + std::to_string(tc1) + " -> " +
-            std::to_string(tc2) + " -> " + std::to_string(tc3));
+        testcase("threadCounts: " + std::to_string(tc1) + " -> " + std::to_string(tc2) + " -> " + std::to_string(tc3));
 
         TestCallback cb;
-        std::unique_ptr<perf::PerfLog> perfLog =
-            std::make_unique<perf::PerfLogTest>();
+        std::unique_ptr<perf::PerfLog> perfLog = std::make_unique<perf::PerfLogTest>();
 
         Workers w(cb, perfLog.get(), "Test", tc1);
         BEAST_EXPECT(w.getNumberOfThreads() == tc1);
@@ -129,8 +124,7 @@ public:
             //
             using namespace std::chrono_literals;
             std::unique_lock<std::mutex> lk{cb.mut};
-            bool const signaled =
-                cb.cv.wait_for(lk, 10s, [&cb] { return cb.count == 0; });
+            bool const signaled = cb.cv.wait_for(lk, 10s, [&cb] { return cb.count == 0; });
             BEAST_EXPECT(signaled);
             BEAST_EXPECT(cb.count == 0);
         };
@@ -155,6 +149,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Workers, core, ripple);
+BEAST_DEFINE_TESTSUITE(Workers, core, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

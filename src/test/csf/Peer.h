@@ -20,7 +20,7 @@
 
 #include <algorithm>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -405,20 +405,18 @@ struct Peer
             minDuration = std::min(minDuration, link.data.delay);
 
             // Send a message to neighbors to find the ledger
-            net.send(
-                this, link.target, [to = link.target, from = this, ledgerID]() {
-                    if (auto it = to->ledgers.find(ledgerID);
-                        it != to->ledgers.end())
-                    {
-                        // if the ledger is found, send it back to the original
-                        // requesting peer where it is added to the available
-                        // ledgers
-                        to->net.send(to, from, [from, ledger = it->second]() {
-                            from->acquiringLedgers.erase(ledger.id());
-                            from->ledgers.emplace(ledger.id(), ledger);
-                        });
-                    }
-                });
+            net.send(this, link.target, [to = link.target, from = this, ledgerID]() {
+                if (auto it = to->ledgers.find(ledgerID); it != to->ledgers.end())
+                {
+                    // if the ledger is found, send it back to the original
+                    // requesting peer where it is added to the available
+                    // ledgers
+                    to->net.send(to, from, [from, ledger = it->second]() {
+                        from->acquiringLedgers.erase(ledger.id());
+                        from->ledgers.emplace(ledger.id(), ledger);
+                    });
+                }
+            });
         }
         acquiringLedgers[ledgerID] = scheduler.now() + 2 * minDuration;
         return nullptr;
@@ -451,20 +449,18 @@ struct Peer
         {
             minDuration = std::min(minDuration, link.data.delay);
             // Send a message to neighbors to find the tx set
-            net.send(
-                this, link.target, [to = link.target, from = this, setId]() {
-                    if (auto it = to->txSets.find(setId);
-                        it != to->txSets.end())
-                    {
-                        // If the txSet is found, send it back to the original
-                        // requesting peer, where it is handled like a TxSet
-                        // that was broadcast over the network
-                        to->net.send(to, from, [from, txSet = it->second]() {
-                            from->acquiringTxSets.erase(txSet.id());
-                            from->handle(txSet);
-                        });
-                    }
-                });
+            net.send(this, link.target, [to = link.target, from = this, setId]() {
+                if (auto it = to->txSets.find(setId); it != to->txSets.end())
+                {
+                    // If the txSet is found, send it back to the original
+                    // requesting peer, where it is handled like a TxSet
+                    // that was broadcast over the network
+                    to->net.send(to, from, [from, txSet = it->second]() {
+                        from->acquiringTxSets.erase(txSet.id());
+                        from->handle(txSet);
+                    });
+                }
+            });
         }
         acquiringTxSets[setId] = scheduler.now() + 2 * minDuration;
         return nullptr;
@@ -489,22 +485,12 @@ struct Peer
     }
 
     Result
-    onClose(
-        Ledger const& prevLedger,
-        NetClock::time_point closeTime,
-        ConsensusMode mode)
+    onClose(Ledger const& prevLedger, NetClock::time_point closeTime, ConsensusMode mode)
     {
         issue(CloseLedger{prevLedger, openTxs});
 
         return Result(
-            TxSet{openTxs},
-            Proposal(
-                prevLedger.id(),
-                Proposal::seqJoin,
-                TxSet::calcID(openTxs),
-                closeTime,
-                now(),
-                id));
+            TxSet{openTxs}, Proposal(prevLedger.id(), Proposal::seqJoin, TxSet::calcID(openTxs), closeTime, now(), id));
     }
 
     void
@@ -516,14 +502,7 @@ struct Peer
         ConsensusMode const& mode,
         Json::Value&& consensusJson)
     {
-        onAccept(
-            result,
-            prevLedger,
-            closeResolution,
-            rawCloseTimes,
-            mode,
-            std::move(consensusJson),
-            validating());
+        onAccept(result, prevLedger, closeResolution, rawCloseTimes, mode, std::move(consensusJson), validating());
     }
 
     void
@@ -541,11 +520,8 @@ struct Peer
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 
             TxSet const acceptedTxs = injectTxs(prevLedger, result.txns);
-            Ledger const newLedger = oracle.accept(
-                prevLedger,
-                acceptedTxs.txs(),
-                closeResolution,
-                result.position.closeTime());
+            Ledger const newLedger =
+                oracle.accept(prevLedger, acceptedTxs.txs(), closeResolution, result.position.closeTime());
             ledgers[newLedger.id()] = newLedger;
 
             issue(AcceptLedger{newLedger, lastClosedLedger});
@@ -554,30 +530,19 @@ struct Peer
             lastClosedLedger = newLedger;
 
             auto const it = std::remove_if(
-                openTxs.begin(), openTxs.end(), [&](Tx const& tx) {
-                    return acceptedTxs.exists(tx.id());
-                });
+                openTxs.begin(), openTxs.end(), [&](Tx const& tx) { return acceptedTxs.exists(tx.id()); });
             openTxs.erase(it, openTxs.end());
 
             // Only send validation if the new ledger is compatible with our
             // fully validated ledger
-            bool const isCompatible =
-                newLedger.isAncestor(fullyValidatedLedger);
+            bool const isCompatible = newLedger.isAncestor(fullyValidatedLedger);
 
             // Can only send one validated ledger per seq
-            if (runAsValidator && isCompatible && !consensusFail &&
-                validations.canValidateSeq(newLedger.seq()))
+            if (runAsValidator && isCompatible && !consensusFail && validations.canValidateSeq(newLedger.seq()))
             {
                 bool isFull = proposing;
 
-                Validation v{
-                    newLedger.id(),
-                    newLedger.seq(),
-                    now(),
-                    now(),
-                    key,
-                    id,
-                    isFull};
+                Validation v{newLedger.id(), newLedger.seq(), now(), now(), key, id, isFull};
                 // share the new validation; it is trusted by the receiver
                 share(v);
                 // we trust ourselves
@@ -608,17 +573,13 @@ struct Peer
     }
 
     Ledger::ID
-    getPrevLedger(
-        Ledger::ID const& ledgerID,
-        Ledger const& ledger,
-        ConsensusMode mode)
+    getPrevLedger(Ledger::ID const& ledgerID, Ledger const& ledger, ConsensusMode mode)
     {
         // only do if we are past the genesis ledger
         if (ledger.seq() == Ledger::Seq{0})
             return ledgerID;
 
-        Ledger::ID const netLgr =
-            validations.getPreferred(ledger, earliestAllowedSeq());
+        Ledger::ID const netLgr = validations.getPreferred(ledger, earliestAllowedSeq());
 
         if (netLgr != ledgerID)
         {
@@ -722,7 +683,7 @@ struct Peer
     template <class M>
     struct BroadcastMesg
     {
-        M mesg;
+        M msg;
         std::size_t seq;
         PeerID origin;
     };
@@ -748,13 +709,8 @@ struct Peer
                 // used on the other end
                 if (link.target->router.lastObservedSeq[bm.origin] < bm.seq)
                 {
-                    issue(Relay<M>{link.target->id, bm.mesg});
-                    net.send(
-                        this,
-                        link.target,
-                        [to = link.target, bm, id = this->id] {
-                            to->receive(bm, id);
-                        });
+                    issue(Relay<M>{link.target->id, bm.msg});
+                    net.send(this, link.target, [to = link.target, bm, id = this->id] { to->receive(bm, id); });
                 }
             }
         }
@@ -765,12 +721,12 @@ struct Peer
     void
     receive(BroadcastMesg<M> const& bm, PeerID from)
     {
-        issue(Receive<M>{from, bm.mesg});
+        issue(Receive<M>{from, bm.msg});
         if (router.lastObservedSeq[bm.origin] < bm.seq)
         {
             router.lastObservedSeq[bm.origin] = bm.seq;
-            schedule(delays.onReceive(bm.mesg), [this, bm, from] {
-                if (handle(bm.mesg))
+            schedule(delays.onReceive(bm.msg), [this, bm, from] {
+                if (handle(bm.msg))
                     send(bm, from);
             });
         }
@@ -800,8 +756,7 @@ struct Peer
     bool
     handle(TxSet const& txs)
     {
-        bool const inserted =
-            txSets.insert(std::make_pair(txs.id(), txs)).second;
+        bool const inserted = txSets.insert(std::make_pair(txs.id(), txs)).second;
         if (inserted)
             consensus.gotTxSet(now(), txs);
         // relay only if new
@@ -906,8 +861,7 @@ struct Peer
         // Between rounds, we take the majority ledger
         // In the future, consider taking peer dominant ledger if no validations
         // yet
-        Ledger::ID bestLCL =
-            validations.getPreferred(lastClosedLedger, earliestAllowedSeq());
+        Ledger::ID bestLCL = validations.getPreferred(lastClosedLedger, earliestAllowedSeq());
         if (bestLCL == Ledger::ID{0})
             bestLCL = lastClosedLedger.id();
 
@@ -915,8 +869,7 @@ struct Peer
 
         // Not yet modeling dynamic UNL.
         hash_set<PeerID> nowUntrusted;
-        consensus.startRound(
-            now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator, {});
+        consensus.startRound(now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator, {});
     }
 
     // Start the consensus process assuming it is not yet running
@@ -939,8 +892,8 @@ struct Peer
         // code are positive. (e.g. proposeFRESHNESS)
         using namespace std::chrono;
         using namespace std::chrono_literals;
-        return NetClock::time_point(duration_cast<NetClock::duration>(
-            scheduler.now().time_since_epoch() + 86400s + clockSkew));
+        return NetClock::time_point(
+            duration_cast<NetClock::duration>(scheduler.now().time_since_epoch() + 86400s + clockSkew));
     }
 
     Ledger::ID
@@ -983,5 +936,5 @@ struct Peer
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 #endif

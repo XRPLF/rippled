@@ -5,15 +5,14 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doLedgerCurrent(RPC::JsonContext& context)
 {
     Json::Value jvResult;
-    jvResult[jss::ledger_current_index] =
-        context.ledgerMaster.getCurrentLedgerIndex();
+    jvResult[jss::ledger_current_index] = context.ledgerMaster.getCurrentLedgerIndex();
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

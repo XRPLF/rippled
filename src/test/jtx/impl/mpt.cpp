@@ -4,13 +4,13 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-#include "test/jtx/mpt.h"
+#include <test/jtx/mpt.h>
 #include <openssl/rand.h>
 
 #include <cstdint>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -80,17 +80,8 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
         create(*arg.create);
 }
 
-MPTTester::MPTTester(
-    Env& env,
-    Account const& issuer,
-    MPTID const& id,
-    std::vector<Account> const& holders,
-    bool close)
-    : env_(env)
-    , issuer_(issuer)
-    , holders_(makeHolders(holders))
-    , id_(id)
-    , close_(close)
+MPTTester::MPTTester(Env& env, Account const& issuer, MPTID const& id, std::vector<Account> const& holders, bool close)
+    : env_(env), issuer_(issuer), holders_(makeHolders(holders)), id_(id), close_(close)
 {
 }
 
@@ -173,9 +164,7 @@ MPTTester::create(MPTCreate const& arg)
     if (submit(arg, jv) != tesSUCCESS)
     {
         // Verify issuance doesn't exist
-        env_.require(requireAny([&]() -> bool {
-            return env_.le(keylet::mptIssuance(*id_)) == nullptr;
-        }));
+        env_.require(requireAny([&]() -> bool { return env_.le(keylet::mptIssuance(*id_)) == nullptr; }));
 
         id_.reset();
     }
@@ -186,8 +175,7 @@ MPTTester::create(MPTCreate const& arg)
             for (auto const& it : accts)
             {
                 authorize({.account = getAcct(it)});
-                if ((arg.flags.value_or(0) & tfMPTRequireAuth) &&
-                    arg.authHolder)
+                if ((arg.flags.value_or(0) & tfMPTRequireAuth) && arg.authHolder)
                     authorize({.account = issuer_, .holder = getAcct(it)});
                 if (arg.pay && arg.pay->first.empty())
                     pay(issuer_, getAcct(it), arg.pay->second);
@@ -233,9 +221,7 @@ MPTTester::destroy(MPTDestroy const& arg)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
-    Json::Value jv = destroyjv(
-        {.issuer = arg.issuer ? arg.issuer : issuer_,
-         .id = arg.id ? arg.id : id_});
+    Json::Value jv = destroyjv({.issuer = arg.issuer ? arg.issuer : issuer_, .id = arg.id ? arg.id : id_});
     submit(arg, jv);
 }
 
@@ -253,8 +239,7 @@ MPTTester::authorizejv(MPTAuthorize const& arg)
 {
     Json::Value jv;
     if (!arg.account || !arg.id)
-        Throw<std::runtime_error>(
-            "MPTTester::authorizejv: issuer/id is not set");
+        Throw<std::runtime_error>("MPTTester::authorizejv: issuer/id is not set");
     jv[sfAccount] = arg.account->human();
     jv[sfMPTokenIssuanceID] = to_string(*arg.id);
     if (arg.holder)
@@ -285,8 +270,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
                 env_.require(mptflags(*this, flags, arg.holder));
             // issuer authorizes the holder
             else
-                env_.require(
-                    mptflags(*this, flags | lsfMPTAuthorized, arg.holder));
+                env_.require(mptflags(*this, flags | lsfMPTAuthorized, arg.holder));
         }
         // Holder authorizes
         else if (arg.flags.value_or(0) != tfMPTUnauthorize)
@@ -299,31 +283,23 @@ MPTTester::authorize(MPTAuthorize const& arg)
         else
         {
             // Verify that the MPToken doesn't exist.
-            forObject(
-                [&](SLEP const& sle) { return env_.test.BEAST_EXPECT(!sle); },
-                arg.account);
+            forObject([&](SLEP const& sle) { return env_.test.BEAST_EXPECT(!sle); }, arg.account);
         }
     }
-    else if (
-        arg.account && *arg.account != issuer_ &&
-        arg.flags.value_or(0) != tfMPTUnauthorize && id_)
+    else if (arg.account && *arg.account != issuer_ && arg.flags.value_or(0) != tfMPTUnauthorize && id_)
     {
         if (result == tecDUPLICATE)
         {
             // Verify that MPToken already exists
-            env_.require(requireAny([&]() -> bool {
-                return env_.le(keylet::mptoken(*id_, arg.account->id())) !=
-                    nullptr;
-            }));
+            env_.require(
+                requireAny([&]() -> bool { return env_.le(keylet::mptoken(*id_, arg.account->id())) != nullptr; }));
         }
         else
         {
             // Verify MPToken doesn't exist if holder failed authorizing(unless
             // it already exists)
-            env_.require(requireAny([&]() -> bool {
-                return env_.le(keylet::mptoken(*id_, arg.account->id())) ==
-                    nullptr;
-            }));
+            env_.require(
+                requireAny([&]() -> bool { return env_.le(keylet::mptoken(*id_, arg.account->id())) == nullptr; }));
         }
     }
 }
@@ -502,14 +478,11 @@ MPTTester::set(MPTSet const& arg)
 }
 
 bool
-MPTTester::forObject(
-    std::function<bool(SLEP const& sle)> const& cb,
-    std::optional<Account> const& holder_) const
+MPTTester::forObject(std::function<bool(SLEP const& sle)> const& cb, std::optional<Account> const& holder_) const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
-    auto const key = holder_ ? keylet::mptoken(*id_, holder_->id())
-                             : keylet::mptIssuance(*id_);
+    auto const key = holder_ ? keylet::mptoken(*id_, holder_->id()) : keylet::mptIssuance(*id_);
     if (auto const sle = env_.le(key))
         return cb(sle);
     return false;
@@ -541,17 +514,13 @@ MPTTester::checkMPTokenAmount(
     Account const& holder_,
     std::int64_t expectedAmount) const
 {
-    return forObject(
-        [&](SLEP const& sle) { return expectedAmount == (*sle)[sfMPTAmount]; },
-        holder_);
+    return forObject([&](SLEP const& sle) { return expectedAmount == (*sle)[sfMPTAmount]; }, holder_);
 }
 
 [[nodiscard]] bool
 MPTTester::checkMPTokenOutstandingAmount(std::int64_t expectedAmount) const
 {
-    return forObject([&](SLEP const& sle) {
-        return expectedAmount == (*sle)[sfOutstandingAmount];
-    });
+    return forObject([&](SLEP const& sle) { return expectedAmount == (*sle)[sfOutstandingAmount]; });
 }
 
 [[nodiscard]] bool
@@ -576,8 +545,7 @@ MPTTester::checkMetadata(std::string const& metadata) const
 {
     return forObject([&](SLEP const& sle) -> bool {
         if (sle->isFieldPresent(sfMPTokenMetadata))
-            return strHex(sle->getFieldVL(sfMPTokenMetadata)) ==
-                strHex(metadata);
+            return strHex(sle->getFieldVL(sfMPTokenMetadata)) == strHex(metadata);
         return false;
     });
 }
@@ -585,9 +553,7 @@ MPTTester::checkMetadata(std::string const& metadata) const
 [[nodiscard]] bool
 MPTTester::isMetadataPresent() const
 {
-    return forObject([&](SLEP const& sle) -> bool {
-        return sle->isFieldPresent(sfMPTokenMetadata);
-    });
+    return forObject([&](SLEP const& sle) -> bool { return sle->isFieldPresent(sfMPTokenMetadata); });
 }
 
 [[nodiscard]] bool
@@ -603,9 +569,7 @@ MPTTester::checkTransferFee(std::uint16_t transferFee) const
 [[nodiscard]] bool
 MPTTester::isTransferFeePresent() const
 {
-    return forObject([&](SLEP const& sle) -> bool {
-        return sle->isFieldPresent(sfTransferFee);
-    });
+    return forObject([&](SLEP const& sle) -> bool { return sle->isFieldPresent(sfTransferFee); });
 }
 
 void
@@ -623,10 +587,7 @@ MPTTester::pay(
     auto const outstnAmt = getBalance(issuer_);
 
     if (credentials)
-        env_(
-            jtx::pay(src, dest, mpt(amount)),
-            ter(err.value_or(tesSUCCESS)),
-            credentials::ids(*credentials));
+        env_(jtx::pay(src, dest, mpt(amount)), ter(err.value_or(tesSUCCESS)), credentials::ids(*credentials));
     else
         env_(jtx::pay(src, dest, mpt(amount)), ter(err.value_or(tesSUCCESS)));
 
@@ -647,10 +608,7 @@ MPTTester::pay(
     else
     {
         STAmount const saAmount = {*id_, amount};
-        auto const actual =
-            multiply(saAmount, transferRate(*env_.current(), *id_))
-                .mpt()
-                .value();
+        auto const actual = multiply(saAmount, transferRate(*env_.current(), *id_)).mpt().value();
         // Sender pays the transfer fee if any
         env_.require(mptbalance(*this, src, srcAmt - actual));
         env_.require(mptbalance(*this, dest, destAmt + amount));
@@ -660,11 +618,7 @@ MPTTester::pay(
 }
 
 void
-MPTTester::claw(
-    Account const& issuer,
-    Account const& holder,
-    std::int64_t amount,
-    std::optional<TER> err)
+MPTTester::claw(Account const& issuer, Account const& holder, std::int64_t amount, std::optional<TER> err)
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
@@ -676,10 +630,8 @@ MPTTester::claw(
     if (close_)
         env_.close();
 
-    env_.require(
-        mptbalance(*this, issuer, issuerAmt - std::min(holderAmt, amount)));
-    env_.require(
-        mptbalance(*this, holder, holderAmt - std::min(holderAmt, amount)));
+    env_.require(mptbalance(*this, issuer, issuerAmt - std::min(holderAmt, amount)));
+    env_.require(mptbalance(*this, holder, holderAmt - std::min(holderAmt, amount)));
 }
 
 PrettyAmount
@@ -687,7 +639,7 @@ MPTTester::mpt(std::int64_t amount) const
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
-    return ripple::test::jtx::MPT(issuer_.name(), *id_)(amount);
+    return xrpl::test::jtx::MPT(issuer_.name(), *id_)(amount);
 }
 
 MPTTester::operator Asset() const
@@ -1040,7 +992,7 @@ MPTTester::operator[](std::string const& name) const
 }
 
 PrettyAmount
-MPTTester::operator()(std::uint64_t amount) const
+MPTTester::operator()(std::int64_t amount) const
 {
     return MPT("", issuanceID())(amount);
 }
@@ -1671,7 +1623,7 @@ MPTTester::encryptAmount(
     if (auto const pubKey = getPubKey(account))
     {
         if (auto const result =
-                ripple::encryptAmount(amt, *pubKey, blindingFactor))
+                xrpl::encryptAmount(amt, *pubKey, blindingFactor))
             return *result;
     }
 
@@ -2096,4 +2048,4 @@ MPTTester::getBalanceLinkageProof(
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

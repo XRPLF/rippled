@@ -39,7 +39,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -64,8 +64,7 @@ testable_amendments()
             if (auto const f = getRegisteredFeature(s))
                 feats.push_back(*f);
             else
-                Throw<std::runtime_error>(
-                    "Unknown feature: " + s + "  in allAmendments.");
+                Throw<std::runtime_error>("Unknown feature: " + s + "  in allAmendments.");
         }
         return FeatureBitset(feats);
     }();
@@ -79,17 +78,14 @@ class SuiteLogs : public Logs
     beast::unit_test::suite& suite_;
 
 public:
-    explicit SuiteLogs(beast::unit_test::suite& suite)
-        : Logs(beast::severities::kError), suite_(suite)
+    explicit SuiteLogs(beast::unit_test::suite& suite) : Logs(beast::severities::kError), suite_(suite)
     {
     }
 
     ~SuiteLogs() override = default;
 
     std::unique_ptr<beast::Journal::Sink>
-    makeSink(
-        std::string const& partition,
-        beast::severities::Severity threshold) override
+    makeSink(std::string const& partition, beast::severities::Severity threshold) override
     {
         return std::make_unique<SuiteJournalSink>(partition, threshold, suite_);
     }
@@ -173,10 +169,7 @@ public:
     {
         memoize(Account::master);
         Pathfinder::initPathTable();
-        foreachFeature(
-            features, [&appFeats = app().config().features](uint256 const& f) {
-                appFeats.insert(f);
-            });
+        foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) { appFeats.insert(f); });
     }
 
     /**
@@ -192,9 +185,7 @@ public:
      * @param args collection of features
      *
      */
-    Env(beast::unit_test::suite& suite_,
-        FeatureBitset features,
-        std::unique_ptr<Logs> logs = nullptr)
+    Env(beast::unit_test::suite& suite_, FeatureBitset features, std::unique_ptr<Logs> logs = nullptr)
         : Env(suite_, envconfig(), features, std::move(logs))
     {
     }
@@ -215,11 +206,7 @@ public:
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs = nullptr,
         beast::severities::Severity thresh = beast::severities::kError)
-        : Env(suite_,
-              std::move(config),
-              testable_amendments(),
-              std::move(logs),
-              thresh)
+        : Env(suite_, std::move(config), testable_amendments(), std::move(logs), thresh)
     {
     }
 
@@ -232,8 +219,7 @@ public:
      *
      * @param suite_ the current unit_test::suite
      */
-    Env(beast::unit_test::suite& suite_,
-        beast::severities::Severity thresh = beast::severities::kError)
+    Env(beast::unit_test::suite& suite_, beast::severities::Severity thresh = beast::severities::kError)
         : Env(suite_, envconfig(), nullptr, thresh)
     {
     }
@@ -294,9 +280,7 @@ public:
 
     template <class... Args>
     Json::Value
-    rpc(std::unordered_map<std::string, std::string> const& headers,
-        std::string const& cmd,
-        Args&&... args);
+    rpc(std::unordered_map<std::string, std::string> const& headers, std::string const& cmd, Args&&... args);
 
     template <class... Args>
     Json::Value
@@ -346,9 +330,7 @@ public:
         @return true if no error, false if error
     */
     bool
-    close(
-        NetClock::time_point closeTime,
-        std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
+    close(NetClock::time_point closeTime, std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
 
     /** Close and advance the ledger.
 
@@ -553,10 +535,7 @@ public:
         of JTx submission.
     */
     void
-    postconditions(
-        JTx const& jt,
-        ParsedResult const& parsed,
-        Json::Value const& jr = Json::Value());
+    postconditions(JTx const& jt, ParsedResult const& parsed, Json::Value const& jr = Json::Value());
 
     /** Apply funclets and submit. */
     /** @{ */
@@ -700,11 +679,7 @@ public:
 
     template <class... Accounts>
     void
-    trust(
-        STAmount const& amount,
-        Account const& to0,
-        Account const& to1,
-        Accounts const&... toN)
+    trust(STAmount const& amount, Account const& to0, Account const& to1, Accounts const&... toN)
     {
         trust(amount, to0);
         trust(amount, to1, toN...);
@@ -777,48 +752,32 @@ Env::rpc(
     std::string const& cmd,
     Args&&... args)
 {
-    return do_rpc(
-        apiVersion,
-        std::vector<std::string>{cmd, std::forward<Args>(args)...},
-        headers);
+    return do_rpc(apiVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
 }
 
 template <class... Args>
 Json::Value
 Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 {
-    return rpc(
-        apiVersion,
-        std::unordered_map<std::string, std::string>(),
-        cmd,
-        std::forward<Args>(args)...);
+    return rpc(apiVersion, std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);
 }
 
 template <class... Args>
 Json::Value
-Env::rpc(
-    std::unordered_map<std::string, std::string> const& headers,
-    std::string const& cmd,
-    Args&&... args)
+Env::rpc(std::unordered_map<std::string, std::string> const& headers, std::string const& cmd, Args&&... args)
 {
-    return do_rpc(
-        RPC::apiCommandLineVersion,
-        std::vector<std::string>{cmd, std::forward<Args>(args)...},
-        headers);
+    return do_rpc(RPC::apiCommandLineVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
 }
 
 template <class... Args>
 Json::Value
 Env::rpc(std::string const& cmd, Args&&... args)
 {
-    return rpc(
-        std::unordered_map<std::string, std::string>(),
-        cmd,
-        std::forward<Args>(args)...);
+    return rpc(std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);
 }
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

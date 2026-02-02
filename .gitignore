@@ -1,4 +1,5 @@
 # .gitignore
+# cspell: disable
 
 # Macintosh Desktop Services Store files.
 .DS_Store
@@ -35,6 +36,7 @@ gmon.out
 
 # Customized configs.
 /rippled.cfg
+/xrpld.cfg
 /validators.txt
 
 # Locally patched Conan recipes

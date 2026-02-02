@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Connect_test : public beast::unit_test::suite
 {
@@ -22,9 +22,7 @@ class Connect_test : public beast::unit_test::suite
             BEAST_EXPECT(result[jss::result][jss::status] == "error");
             BEAST_EXPECT(result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::error] == "notSynced");
-            BEAST_EXPECT(
-                result[jss::result][jss::error_message] ==
-                "Not synced to the network.");
+            BEAST_EXPECT(result[jss::result][jss::error_message] == "Not synced to the network.");
         }
     }
 
@@ -36,6 +34,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Connect, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Connect, rpc, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

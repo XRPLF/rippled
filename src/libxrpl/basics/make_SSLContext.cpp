@@ -24,11 +24,11 @@
 #include <memory>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 namespace openssl {
 namespace detail {
 
-/** The default strength of self-signed RSA certifices.
+/** The default strength of self-signed RSA certificates.
 
     Per NIST Special Publication 800-57 Part 3, 2048-bit RSA is still
     considered acceptably secure. Generally, we would want to go above
@@ -115,8 +115,7 @@ initAnonymous(boost::asio::ssl::context& context)
         // We need to up the reference count of here, since we are retaining a
         // copy of the key for (potential) reuse.
         if (RSA_up_ref(defaultRSA) != 1)
-            LogicError(
-                "EVP_PKEY_assign_RSA: incrementing reference count failed");
+            LogicError("EVP_PKEY_assign_RSA: incrementing reference count failed");
 
         if (!EVP_PKEY_assign_RSA(pkey, defaultRSA))
             LogicError("EVP_PKEY_assign_RSA failed");
@@ -131,7 +130,7 @@ initAnonymous(boost::asio::ssl::context& context)
             LogicError("X509_new failed");
 
         // According to the standards (X.509 et al), the value should be one
-        // less than the actualy certificate version we want. Since we want
+        // less than the actually certificate version we want. Since we want
         // version 3, we must use a 2.
         X509_set_version(x509, 2);
 
@@ -141,8 +140,7 @@ initAnonymous(boost::asio::ssl::context& context)
 
         auto const ts = std::time(nullptr) - (25 * 60 * 60);
 
-        int ret = std::strftime(
-            buf, sizeof(buf) - 1, "%y%m%d000000Z", std::gmtime(&ts));
+        int ret = std::strftime(buf, sizeof(buf) - 1, "%y%m%d000000Z", std::gmtime(&ts));
 
         buf[ret] = 0;
 
@@ -176,32 +174,25 @@ initAnonymous(boost::asio::ssl::context& context)
             X509V3_set_ctx_nodb(&ctx);
             X509V3_set_ctx(&ctx, x509, x509, nullptr, nullptr, 0);
 
-            if (auto ext = X509V3_EXT_conf_nid(
-                    nullptr, &ctx, NID_basic_constraints, "critical,CA:FALSE"))
+            if (auto ext = X509V3_EXT_conf_nid(nullptr, &ctx, NID_basic_constraints, "critical,CA:FALSE"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
             }
 
-            if (auto ext = X509V3_EXT_conf_nid(
-                    nullptr,
-                    &ctx,
-                    NID_ext_key_usage,
-                    "critical,serverAuth,clientAuth"))
+            if (auto ext = X509V3_EXT_conf_nid(nullptr, &ctx, NID_ext_key_usage, "critical,serverAuth,clientAuth"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
             }
 
-            if (auto ext = X509V3_EXT_conf_nid(
-                    nullptr, &ctx, NID_key_usage, "critical,digitalSignature"))
+            if (auto ext = X509V3_EXT_conf_nid(nullptr, &ctx, NID_key_usage, "critical,digitalSignature"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
             }
 
-            if (auto ext = X509V3_EXT_conf_nid(
-                    nullptr, &ctx, NID_subject_key_identifier, "hash"))
+            if (auto ext = X509V3_EXT_conf_nid(nullptr, &ctx, NID_subject_key_identifier, "hash"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
@@ -245,8 +236,7 @@ initAuthenticated(
     {
         boost::system::error_code ec;
 
-        context.use_certificate_file(
-            cert_file, boost::asio::ssl::context::pem, ec);
+        context.use_certificate_file(cert_file, boost::asio::ssl::context::pem, ec);
 
         if (ec)
             LogicError("Problem with SSL certificate file" + fmt_error(ec));
@@ -263,8 +253,7 @@ initAuthenticated(
         {
             LogicError(
                 "Problem opening SSL chain file" +
-                fmt_error(boost::system::error_code(
-                    errno, boost::system::generic_category())));
+                fmt_error(boost::system::error_code(errno, boost::system::generic_category())));
         }
 
         try
@@ -297,10 +286,7 @@ initAuthenticated(
         catch (std::exception const& ex)
         {
             fclose(f);
-            LogicError(
-                std::string(
-                    "Reading the SSL chain file generated an exception: ") +
-                ex.what());
+            LogicError(std::string("Reading the SSL chain file generated an exception: ") + ex.what());
         }
     }
 
@@ -308,13 +294,11 @@ initAuthenticated(
     {
         boost::system::error_code ec;
 
-        context.use_private_key_file(
-            key_file, boost::asio::ssl::context::pem, ec);
+        context.use_private_key_file(key_file, boost::asio::ssl::context::pem, ec);
 
         if (ec)
         {
-            LogicError(
-                "Problem using the SSL private key file" + fmt_error(ec));
+            LogicError("Problem using the SSL private key file" + fmt_error(ec));
         }
     }
 
@@ -327,24 +311,18 @@ initAuthenticated(
 std::shared_ptr<boost::asio::ssl::context>
 get_context(std::string cipherList)
 {
-    auto c = std::make_shared<boost::asio::ssl::context>(
-        boost::asio::ssl::context::sslv23);
+    auto c = std::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::sslv23);
 
     c->set_options(
-        boost::asio::ssl::context::default_workarounds |
-        boost::asio::ssl::context::no_sslv2 |
-        boost::asio::ssl::context::no_sslv3 |
-        boost::asio::ssl::context::no_tlsv1 |
-        boost::asio::ssl::context::no_tlsv1_1 |
-        boost::asio::ssl::context::single_dh_use |
+        boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2 |
+        boost::asio::ssl::context::no_sslv3 | boost::asio::ssl::context::no_tlsv1 |
+        boost::asio::ssl::context::no_tlsv1_1 | boost::asio::ssl::context::single_dh_use |
         boost::asio::ssl::context::no_compression);
 
     if (cipherList.empty())
         cipherList = defaultCipherList;
 
-    if (auto result =
-            SSL_CTX_set_cipher_list(c->native_handle(), cipherList.c_str());
-        result != 1)
+    if (auto result = SSL_CTX_set_cipher_list(c->native_handle(), cipherList.c_str()); result != 1)
         LogicError("SSL_CTX_set_cipher_list failed");
 
     c->use_tmp_dh({std::addressof(detail::defaultDH), sizeof(defaultDH)});
@@ -385,4 +363,4 @@ make_SSLContextAuthed(
     return context;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

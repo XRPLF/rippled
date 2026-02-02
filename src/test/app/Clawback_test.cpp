@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Clawback_test : public beast::unit_test::suite
 {
@@ -250,9 +250,7 @@ class Clawback_test : public beast::unit_test::suite
             env.require(balance(alice, bob["USD"](-10)));
 
             // fails due to invalid flag
-            env(claw(alice, bob["USD"](5)),
-                txflags(0x00008000),
-                ter(temINVALID_FLAG));
+            env(claw(alice, bob["USD"](5)), txflags(0x00008000), ter(temINVALID_FLAG));
             env.close();
 
             // fails due to negative amount
@@ -937,5 +935,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Clawback, app, ripple);
-}  // namespace ripple
+BEAST_DEFINE_TESTSUITE(Clawback, app, xrpl);
+}  // namespace xrpl

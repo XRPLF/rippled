@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TER.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <typename TIn, typename TOut>
 class AMMLiquidity;
@@ -81,18 +81,14 @@ public:
      * current quality.
      */
     TAmounts<TIn, TOut>
-    limitOut(
-        TAmounts<TIn, TOut> const& offrAmt,
-        TOut const& limit,
-        bool roundUp) const;
+    limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const;
 
     /** Limit in of the provided offer. If one-path then swapIn
      * using current balances. If multi-path then ceil_in using
      * current quality.
      */
     TAmounts<TIn, TOut>
-    limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit, bool roundUp)
-        const;
+    limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const;
 
     QualityFunction
     getQualityFunc() const;
@@ -127,6 +123,6 @@ public:
     checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_APP_AMMOFFER_H_INCLUDED

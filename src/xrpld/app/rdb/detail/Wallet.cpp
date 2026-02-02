@@ -2,33 +2,24 @@
 
 #include <boost/format.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 std::unique_ptr<DatabaseCon>
 makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
     // wallet database
-    return std::make_unique<DatabaseCon>(
-        setup, WalletDBName, std::array<std::string, 0>(), WalletDBInit, j);
+    return std::make_unique<DatabaseCon>(setup, WalletDBName, std::array<std::string, 0>(), WalletDBInit, j);
 }
 
 std::unique_ptr<DatabaseCon>
-makeTestWalletDB(
-    DatabaseCon::Setup const& setup,
-    std::string const& dbname,
-    beast::Journal j)
+makeTestWalletDB(DatabaseCon::Setup const& setup, std::string const& dbname, beast::Journal j)
 {
     // wallet database
-    return std::make_unique<DatabaseCon>(
-        setup, dbname.data(), std::array<std::string, 0>(), WalletDBInit, j);
+    return std::make_unique<DatabaseCon>(setup, dbname.data(), std::array<std::string, 0>(), WalletDBInit, j);
 }
 
 void
-getManifests(
-    soci::session& session,
-    std::string const& dbTable,
-    ManifestCache& mCache,
-    beast::Journal j)
+getManifests(soci::session& session, std::string const& dbTable, ManifestCache& mCache, beast::Journal j)
 {
     // Load manifests stored in database
     std::string const sql = "SELECT RawData FROM " + dbTable + ";";
@@ -57,18 +48,14 @@ getManifests(
 }
 
 static void
-saveManifest(
-    soci::session& session,
-    std::string const& dbTable,
-    std::string const& serialized)
+saveManifest(soci::session& session, std::string const& dbTable, std::string const& serialized)
 {
     // soci does not support bulk insertion of blob data
     // Do not reuse blob because manifest ecdsa signatures vary in length
     // but blob write length is expected to be >= the last write
     soci::blob rawData(session);
     convert(serialized, rawData);
-    session << "INSERT INTO " << dbTable << " (RawData) VALUES (:rawData);",
-        soci::use(rawData);
+    session << "INSERT INTO " << dbTable << " (RawData) VALUES (:rawData);", soci::use(rawData);
 }
 
 void
@@ -117,17 +104,14 @@ getNodeIdentity(soci::session& session)
         // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<std::string> pubKO, priKO;
         soci::statement st =
-            (session.prepare
-                 << "SELECT PublicKey, PrivateKey FROM NodeIdentity;",
+            (session.prepare << "SELECT PublicKey, PrivateKey FROM NodeIdentity;",
              soci::into(pubKO),
              soci::into(priKO));
         st.execute();
         while (st.fetch())
         {
-            auto const sk = parseBase58<SecretKey>(
-                TokenType::NodePrivate, priKO.value_or(""));
-            auto const pk = parseBase58<PublicKey>(
-                TokenType::NodePublic, pubKO.value_or(""));
+            auto const sk = parseBase58<SecretKey>(TokenType::NodePrivate, priKO.value_or(""));
+            auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, pubKO.value_or(""));
 
             // Only use if the public and secret keys are a pair
             if (sk && pk && (*pk == derivePublicKey(KeyType::secp256k1, *sk)))
@@ -141,8 +125,7 @@ getNodeIdentity(soci::session& session)
     session << str(
         boost::format("INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
                       "VALUES ('%s','%s');") %
-        toBase58(TokenType::NodePublic, newpublicKey) %
-        toBase58(TokenType::NodePrivate, newsecretKey));
+        toBase58(TokenType::NodePublic, newpublicKey) % toBase58(TokenType::NodePrivate, newsecretKey));
 
     return {newpublicKey, newsecretKey};
 }
@@ -158,8 +141,7 @@ getPeerReservationTable(soci::session& session, beast::Journal j)
     // but no one else does. Because it is too tedious? It would be easy if we
     // had a jOOQ for C++.
     soci::statement st =
-        (session.prepare
-             << "SELECT PublicKey, Description FROM PeerReservations;",
+        (session.prepare << "SELECT PublicKey, Description FROM PeerReservations;",
          soci::into(valPubKey),
          soci::into(valDesc));
     st.execute();
@@ -171,8 +153,7 @@ getPeerReservationTable(soci::session& session, beast::Journal j)
             // unreachable.
             continue;
         }
-        auto const optNodeId =
-            parseBase58<PublicKey>(TokenType::NodePublic, *valPubKey);
+        auto const optNodeId = parseBase58<PublicKey>(TokenType::NodePublic, *valPubKey);
         if (!optNodeId)
         {
             JLOG(j.warn()) << "load: not a public key: " << valPubKey;
@@ -185,10 +166,7 @@ getPeerReservationTable(soci::session& session, beast::Journal j)
 }
 
 void
-insertPeerReservation(
-    soci::session& session,
-    PublicKey const& nodeId,
-    std::string const& description)
+insertPeerReservation(soci::session& session, PublicKey const& nodeId, std::string const& description)
 {
     auto const sNodeId = toBase58(TokenType::NodePublic, nodeId);
     session << "INSERT INTO PeerReservations (PublicKey, Description) "
@@ -202,8 +180,7 @@ void
 deletePeerReservation(soci::session& session, PublicKey const& nodeId)
 {
     auto const sNodeId = toBase58(TokenType::NodePublic, nodeId);
-    session << "DELETE FROM PeerReservations WHERE PublicKey = :nodeId",
-        soci::use(sNodeId);
+    session << "DELETE FROM PeerReservations WHERE PublicKey = :nodeId", soci::use(sNodeId);
 }
 
 bool
@@ -239,8 +216,7 @@ readAmendments(
         boost::optional<AmendmentVote> vote)> const& callback)
 {
     // lambda that converts the internally stored int to an AmendmentVote.
-    auto intToVote = [](boost::optional<int> const& dbVote)
-        -> boost::optional<AmendmentVote> {
+    auto intToVote = [](boost::optional<int> const& dbVote) -> boost::optional<AmendmentVote> {
         return safe_cast<AmendmentVote>(dbVote.value_or(1));
     };
 
@@ -255,10 +231,7 @@ readAmendments(
     boost::optional<std::string> amendment_name;
     boost::optional<int> vote_to_veto;
     soci::statement st =
-        (session.prepare << sql,
-         soci::into(amendment_hash),
-         soci::into(amendment_name),
-         soci::into(vote_to_veto));
+        (session.prepare << sql, soci::into(amendment_hash), soci::into(amendment_name), soci::into(vote_to_veto));
     st.execute();
     while (st.fetch())
     {
@@ -267,11 +240,7 @@ readAmendments(
 }
 
 void
-voteAmendment(
-    soci::session& session,
-    uint256 const& amendment,
-    std::string const& name,
-    AmendmentVote vote)
+voteAmendment(soci::session& session, uint256 const& amendment, std::string const& name, AmendmentVote vote)
 {
     soci::transaction tr(session);
     std::string sql =
@@ -284,4 +253,4 @@ voteAmendment(
     tr.commit();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

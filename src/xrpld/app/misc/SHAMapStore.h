@@ -7,7 +7,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class TransactionMaster;
 
@@ -84,10 +84,7 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<SHAMapStore>
-make_SHAMapStore(
-    Application& app,
-    NodeStore::Scheduler& scheduler,
-    beast::Journal journal);
-}  // namespace ripple
+make_SHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
+}  // namespace xrpl
 
 #endif

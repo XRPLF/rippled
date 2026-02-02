@@ -14,14 +14,13 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STAccount::STAccount() : STBase(), value_(beast::zero), default_(true)
 {
 }
 
-STAccount::STAccount(SField const& n)
-    : STBase(n), value_(beast::zero), default_(true)
+STAccount::STAccount(SField const& n) : STBase(n), value_(beast::zero), default_(true)
 {
 }
 
@@ -42,13 +41,11 @@ STAccount::STAccount(SField const& n, Buffer&& v) : STAccount(n)
     memcpy(value_.begin(), v.data(), uint160::bytes);
 }
 
-STAccount::STAccount(SerialIter& sit, SField const& name)
-    : STAccount(name, sit.getVLBuffer())
+STAccount::STAccount(SerialIter& sit, SField const& name) : STAccount(name, sit.getVLBuffer())
 {
 }
 
-STAccount::STAccount(SField const& n, AccountID const& v)
-    : STBase(n), value_(v), default_(false)
+STAccount::STAccount(SField const& n, AccountID const& v) : STBase(n), value_(v), default_(false)
 {
 }
 
@@ -73,11 +70,8 @@ STAccount::getSType() const
 void
 STAccount::add(Serializer& s) const
 {
-    XRPL_ASSERT(
-        getFName().isBinary(), "ripple::STAccount::add : field is binary");
-    XRPL_ASSERT(
-        getFName().fieldType == STI_ACCOUNT,
-        "ripple::STAccount::add : valid field type");
+    XRPL_ASSERT(getFName().isBinary(), "xrpl::STAccount::add : field is binary");
+    XRPL_ASSERT(getFName().fieldType == STI_ACCOUNT, "xrpl::STAccount::add : valid field type");
 
     // Preserve the serialization behavior of an STBlob:
     //  o If we are default (all zeros) serialize as an empty blob.
@@ -107,4 +101,4 @@ STAccount::getText() const
     return toBase58(value());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

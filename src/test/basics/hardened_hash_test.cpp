@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 template <class T>
@@ -51,11 +51,11 @@ public:
 };
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -66,12 +66,10 @@ template <class T>
 using test_hardened_unordered_map = std::unordered_map<T, int, hardened_hash<>>;
 
 template <class T>
-using test_hardened_unordered_multiset =
-    std::unordered_multiset<T, hardened_hash<>>;
+using test_hardened_unordered_multiset = std::unordered_multiset<T, hardened_hash<>>;
 
 template <class T>
-using test_hardened_unordered_multimap =
-    std::unordered_multimap<T, int, hardened_hash<>>;
+using test_hardened_unordered_multimap = std::unordered_multimap<T, int, hardened_hash<>>;
 
 }  // namespace detail
 
@@ -83,13 +81,9 @@ private:
         std::is_integral<UInt>::value && std::is_unsigned<UInt>::value,
         "UInt must be an unsigned integral type");
 
-    static_assert(
-        Bits % (8 * sizeof(UInt)) == 0,
-        "Bits must be a multiple of 8*sizeof(UInt)");
+    static_assert(Bits % (8 * sizeof(UInt)) == 0, "Bits must be a multiple of 8*sizeof(UInt)");
 
-    static_assert(
-        Bits >= (8 * sizeof(UInt)),
-        "Bits must be at least 8*sizeof(UInt)");
+    static_assert(Bits >= (8 * sizeof(UInt)), "Bits must be at least 8*sizeof(UInt)");
 
     static std::size_t const size = Bits / (8 * sizeof(UInt));
 
@@ -136,8 +130,7 @@ public:
     operator<<(std::ostream& s, unsigned_integer const& v)
     {
         for (std::size_t i(0); i < size; ++i)
-            s << std::hex << std::setfill('0') << std::setw(2 * sizeof(UInt))
-              << v.m_vec[i];
+            s << std::hex << std::setfill('0') << std::setw(2 * sizeof(UInt)) << v.m_vec[i];
         return s;
     }
 };
@@ -148,11 +141,11 @@ using sha256_t = unsigned_integer<256, std::size_t>;
 static_assert(sha256_t::bits == 256, "sha256_t must have 256 bits");
 #endif
 
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 
-namespace ripple {
+namespace xrpl {
 
 class hardened_hash_test : public beast::unit_test::suite
 {
@@ -234,6 +227,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(hardened_hash, basics, ripple);
+BEAST_DEFINE_TESTSUITE(hardened_hash, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

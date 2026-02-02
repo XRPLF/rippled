@@ -4,7 +4,7 @@
 #include <openssl/rand.h>
 #include <openssl/sha.h>
 
-namespace ripple {
+namespace xrpl {
 void
 addCommonZKPFields(
     Serializer& s,
@@ -1961,4 +1961,4 @@ secp256k1_mpt_verify_same_plaintext_multi(
     return 1;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

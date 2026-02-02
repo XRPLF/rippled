@@ -7,7 +7,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -17,13 +17,10 @@ namespace RPC {
    @{
  */
 void
-insertNFTSyntheticInJson(
-    Json::Value&,
-    std::shared_ptr<STTx const> const&,
-    TxMeta const&);
+insertNFTSyntheticInJson(Json::Value&, std::shared_ptr<STTx const> const&, TxMeta const&);
 /** @} */
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

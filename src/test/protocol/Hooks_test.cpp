@@ -5,7 +5,7 @@
 #include <functional>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class Hooks_test : public beast::unit_test::suite
 {
@@ -134,8 +134,7 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_ACCOUNT: {
-                    AccountID id = *parseBase58<AccountID>(
-                        "rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
+                    AccountID id = *parseBase58<AccountID>("rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
                     dummy.setAccountID(f, id);
                     BEAST_EXPECT(dummy.getAccountID(f) == id);
                     BEAST_EXPECT(dummy.isFieldPresent(f));
@@ -174,6 +173,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Hooks, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Hooks, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

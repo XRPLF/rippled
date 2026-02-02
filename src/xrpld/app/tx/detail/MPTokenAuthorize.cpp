@@ -5,7 +5,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 MPTokenAuthorize::getFlagsMask(PreflightContext const& ctx)
@@ -36,8 +36,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     //       `holderID` is NOT used
     if (!holderID)
     {
-        std::shared_ptr<SLE const> sleMpt = ctx.view.read(
-            keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
+        std::shared_ptr<SLE const> sleMpt = ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
 
         // There is an edge case where all holders have zero balance, issuance
         // is legally destroyed, then outstanding MPT(s) are deleted afterwards.
@@ -53,8 +52,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
             if ((*sleMpt)[sfMPTAmount] != 0)
             {
-                auto const sleMptIssuance = ctx.view.read(
-                    keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
                 if (!sleMptIssuance)
                     return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -63,15 +61,13 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
             if ((*sleMpt)[~sfLockedAmount].value_or(0) != 0)
             {
-                auto const sleMptIssuance = ctx.view.read(
-                    keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
                 if (!sleMptIssuance)
                     return tefINTERNAL;  // LCOV_EXCL_LINE
 
                 return tecHAS_OBLIGATIONS;
             }
-            if (ctx.view.rules().enabled(featureSingleAssetVault) &&
-                sleMpt->isFlag(lsfMPTLocked))
+            if (ctx.view.rules().enabled(featureSingleAssetVault) && sleMpt->isFlag(lsfMPTLocked))
                 return tecNO_PERMISSION;
 
             if (ctx.view.rules().enabled(featureConfidentialTransfer))
@@ -98,8 +94,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         }
 
         // Now test when the holder wants to hold/create/authorize a new MPT
-        auto const sleMptIssuance =
-            ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+        auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
 
         if (!sleMptIssuance)
             return tecOBJECT_NOT_FOUND;
@@ -118,8 +113,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (!sleHolder)
         return tecNO_DST;
 
-    auto const sleMptIssuance =
-        ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -141,8 +135,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         return tecNO_AUTH;
 
     // The holder must create the MPT before the issuer can authorize it.
-    if (!ctx.view.exists(
-            keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], *holderID)))
+    if (!ctx.view.exists(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], *holderID)))
         return tecOBJECT_NOT_FOUND;
 
     // Can't unauthorize the pseudo-accounts because they are implicitly
@@ -163,8 +156,7 @@ MPTokenAuthorize::createMPToken(
 {
     auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
 
-    auto const ownerNode = view.dirInsert(
-        keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
+    auto const ownerNode = view.dirInsert(keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
 
     if (!ownerNode)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
@@ -185,13 +177,7 @@ MPTokenAuthorize::doApply()
 {
     auto const& tx = ctx_.tx;
     return authorizeMPToken(
-        ctx_.view(),
-        mPriorBalance,
-        tx[sfMPTokenIssuanceID],
-        account_,
-        ctx_.journal,
-        tx.getFlags(),
-        tx[~sfHolder]);
+        ctx_.view(), mPriorBalance, tx[sfMPTokenIssuanceID], account_, ctx_.journal, tx.getFlags(), tx[~sfHolder]);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

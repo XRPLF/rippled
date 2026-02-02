@@ -9,12 +9,11 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Handler>
-class PlainHTTPPeer
-    : public BaseHTTPPeer<Handler, PlainHTTPPeer<Handler>>,
-      public std::enable_shared_from_this<PlainHTTPPeer<Handler>>
+class PlainHTTPPeer : public BaseHTTPPeer<Handler, PlainHTTPPeer<Handler>>,
+                      public std::enable_shared_from_this<PlainHTTPPeer<Handler>>
 {
 private:
     friend class BaseHTTPPeer<Handler, PlainHTTPPeer>;
@@ -62,13 +61,7 @@ PlainHTTPPeer<Handler>::PlainHTTPPeer(
     endpoint_type remote_endpoint,
     ConstBufferSequence const& buffers,
     stream_type&& stream)
-    : BaseHTTPPeer<Handler, PlainHTTPPeer>(
-          port,
-          handler,
-          ioc.get_executor(),
-          journal,
-          remote_endpoint,
-          buffers)
+    : BaseHTTPPeer<Handler, PlainHTTPPeer>(port, handler, ioc.get_executor(), journal, remote_endpoint, buffers)
     , stream_(std::move(stream))
     , socket_(stream_.socket())
 {
@@ -86,21 +79,14 @@ PlainHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remote_address_))
     {
-        util::spawn(
-            this->strand_,
-            std::bind(&PlainHTTPPeer::do_close, this->shared_from_this()));
+        util::spawn(this->strand_, std::bind(&PlainHTTPPeer::do_close, this->shared_from_this()));
         return;
     }
 
     if (!socket_.is_open())
         return;
 
-    util::spawn(
-        this->strand_,
-        std::bind(
-            &PlainHTTPPeer::do_read,
-            this->shared_from_this(),
-            std::placeholders::_1));
+    util::spawn(this->strand_, std::bind(&PlainHTTPPeer::do_read, this->shared_from_this(), std::placeholders::_1));
 }
 
 template <class Handler>
@@ -122,8 +108,7 @@ void
 PlainHTTPPeer<Handler>::do_request()
 {
     ++this->request_count_;
-    auto const what = this->handler_.onHandoff(
-        this->session(), std::move(this->message_), this->remote_address_);
+    auto const what = this->handler_.onHandoff(this->session(), std::move(this->message_), this->remote_address_);
     if (what.moved)
         return;
     boost::system::error_code ec;
@@ -154,6 +139,6 @@ PlainHTTPPeer<Handler>::do_close()
     socket_.shutdown(socket_type::shutdown_send, ec);
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

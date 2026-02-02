@@ -15,7 +15,7 @@
 #include <optional>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 // A pathfinding request submitted by a client
 // The request issuer must maintain a strong pointer
@@ -103,14 +103,10 @@ private:
         std::function<bool(void)> const&);
 
     /** Finds and sets a PathSet in the JSON argument.
-        Returns false if the source currencies are inavlid.
+        Returns false if the source currencies are invalid.
     */
     bool
-    findPaths(
-        std::shared_ptr<RippleLineCache> const&,
-        int const,
-        Json::Value&,
-        std::function<bool(void)> const&);
+    findPaths(std::shared_ptr<RippleLineCache> const&, int const, Json::Value&, std::function<bool(void)> const&);
 
     int
     parseJson(Json::Value const&);
@@ -158,6 +154,6 @@ private:
     static unsigned int const max_paths_ = 4;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

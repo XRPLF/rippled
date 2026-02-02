@@ -1,8 +1,11 @@
+#include <xrpl/protocol/IOUAmount.h>
+// Do not remove. Forces IOUAmount.h to stay first, to verify it can compile
+// without any hidden dependencies
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/STAmount.h>
 
 #include <boost/multiprecision/cpp_int.hpp>
 
@@ -14,11 +17,11 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 
-// Use a static inside a function to help prevent order-of-initialzation issues
+// Use a static inside a function to help prevent order-of-initialization issues
 LocalValue<bool>&
 getStaticSTNumberSwitchover()
 {
@@ -40,11 +43,23 @@ setSTNumberSwitchover(bool v)
 }
 
 /* The range for the mantissa when normalized */
-static std::int64_t constexpr minMantissa = 1000000000000000ull;
-static std::int64_t constexpr maxMantissa = 9999999999999999ull;
+// log(2^63,10) ~ 18.96
+//
+static std::int64_t constexpr minMantissa = STAmount::cMinValue;
+static std::int64_t constexpr maxMantissa = STAmount::cMaxValue;
 /* The range for the exponent when normalized */
-static int constexpr minExponent = -96;
-static int constexpr maxExponent = 80;
+static int constexpr minExponent = STAmount::cMinOffset;
+static int constexpr maxExponent = STAmount::cMaxOffset;
+
+IOUAmount
+IOUAmount::fromNumber(Number const& number)
+{
+    // Need to create a default IOUAmount and assign directly so it doesn't try
+    // to normalize, which calls fromNumber
+    IOUAmount result{};
+    std::tie(result.mantissa_, result.exponent_) = number.normalizeToRange(minMantissa, maxMantissa);
+    return result;
+}
 
 IOUAmount
 IOUAmount::minPositiveAmount()
@@ -64,8 +79,7 @@ IOUAmount::normalize()
     if (getSTNumberSwitchover())
     {
         Number const v{mantissa_, exponent_};
-        mantissa_ = v.mantissa();
-        exponent_ = v.exponent();
+        *this = fromNumber(v);
         if (exponent_ > maxExponent)
             Throw<std::overflow_error>("value overflow");
         if (exponent_ < minExponent)
@@ -106,8 +120,7 @@ IOUAmount::normalize()
         mantissa_ = -mantissa_;
 }
 
-IOUAmount::IOUAmount(Number const& other)
-    : mantissa_(other.mantissa()), exponent_(other.exponent())
+IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
 {
     if (exponent_ > maxExponent)
         Throw<std::overflow_error>("value overflow");
@@ -168,11 +181,7 @@ to_string(IOUAmount const& amount)
 }
 
 IOUAmount
-mulRatio(
-    IOUAmount const& amt,
-    std::uint32_t num,
-    std::uint32_t den,
-    bool roundUp)
+mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp)
 {
     using namespace boost::multiprecision;
 
@@ -199,8 +208,7 @@ mulRatio(
     static auto log10Floor = [](uint128_t const& v) {
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
-        auto const l =
-            std::lower_bound(powerTable.begin(), powerTable.end(), v);
+        auto const l = std::lower_bound(powerTable.begin(), powerTable.end(), v);
         int index = std::distance(powerTable.begin(), l);
         // If we're not equal, subtract to get the floor
         if (*l != v)
@@ -212,20 +220,17 @@ mulRatio(
     static auto log10Ceil = [](uint128_t const& v) {
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
-        auto const l =
-            std::lower_bound(powerTable.begin(), powerTable.end(), v);
+        auto const l = std::lower_bound(powerTable.begin(), powerTable.end(), v);
         return int(std::distance(powerTable.begin(), l));
     };
 
-    static auto const fl64 =
-        log10Floor(std::numeric_limits<std::int64_t>::max());
+    static auto const fl64 = log10Floor(std::numeric_limits<std::int64_t>::max());
 
     bool const neg = amt.mantissa() < 0;
     uint128_t const den128(den);
     // a 32 value * a 64 bit value and stored in a 128 bit value. This will
     // never overflow
-    uint128_t const mul =
-        uint128_t(neg ? -amt.mantissa() : amt.mantissa()) * uint128_t(num);
+    uint128_t const mul = uint128_t(neg ? -amt.mantissa() : amt.mantissa()) * uint128_t(num);
 
     auto low = mul / den128;
     uint128_t rem(mul - low * den128);
@@ -303,4 +308,4 @@ mulRatio(
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

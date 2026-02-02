@@ -7,7 +7,7 @@
 
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 /** Expected is an approximation of std::expected (hoped for in C++23)
 
@@ -108,23 +108,20 @@ Unexpected(E (&)[N]) -> Unexpected<E const*>;
 
 // Definition of Expected.  All of the machinery comes from boost::result.
 template <class T, class E>
-class [[nodiscard]] Expected
-    : private boost::outcome_v2::result<T, E, detail::throw_policy>
+class [[nodiscard]] Expected : private boost::outcome_v2::result<T, E, detail::throw_policy>
 {
     using Base = boost::outcome_v2::result<T, E, detail::throw_policy>;
 
 public:
     template <typename U>
         requires std::convertible_to<U, T>
-    constexpr Expected(U&& r)
-        : Base(boost::outcome_v2::in_place_type_t<T>{}, std::forward<U>(r))
+    constexpr Expected(U&& r) : Base(boost::outcome_v2::in_place_type_t<T>{}, std::forward<U>(r))
     {
     }
 
     template <typename U>
         requires std::convertible_to<U, E> && (!std::is_reference_v<U>)
-    constexpr Expected(Unexpected<U> e)
-        : Base(boost::outcome_v2::in_place_type_t<E>{}, std::move(e.value()))
+    constexpr Expected(Unexpected<U> e) : Base(boost::outcome_v2::in_place_type_t<E>{}, std::move(e.value()))
     {
     }
 
@@ -195,8 +192,7 @@ public:
 // Specialization of Expected<void, E>.  Allows returning either success
 // (without a value) or the reason for the failure.
 template <class E>
-class [[nodiscard]] Expected<void, E>
-    : private boost::outcome_v2::result<void, E, detail::throw_policy>
+class [[nodiscard]] Expected<void, E> : private boost::outcome_v2::result<void, E, detail::throw_policy>
 {
     using Base = boost::outcome_v2::result<void, E, detail::throw_policy>;
 
@@ -232,6 +228,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif  // XRPL_BASICS_EXPECTED_H_INCLUDED

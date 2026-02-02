@@ -7,7 +7,7 @@
 
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -20,8 +20,7 @@ private:
     unsigned int limit_;
 
 public:
-    paths(Issue const& in, int depth = 7, unsigned int limit = 4)
-        : in_(in), depth_(depth), limit_(limit)
+    paths(Issue const& in, int depth = 7, unsigned int limit = 4) : in_(in), depth_(depth), limit_(limit)
     {
     }
 
@@ -94,6 +93,6 @@ path::append(T const& t, Args const&... args)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

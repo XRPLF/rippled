@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -63,12 +63,9 @@ public:
                 return cache_[index].encoding;
         }
 
-        auto ret =
-            encodeBase58Token(TokenType::AccountID, id.data(), id.size());
+        auto ret = encodeBase58Token(TokenType::AccountID, id.data(), id.size());
 
-        XRPL_ASSERT(
-            ret.size() <= 38,
-            "ripple::detail::AccountIdCache : maximum result size");
+        XRPL_ASSERT(ret.size() <= 38, "xrpl::detail::AccountIdCache : maximum result size");
 
         {
             std::lock_guard lock(sl);
@@ -181,4 +178,4 @@ to_issuer(AccountID& issuer, std::string const& s)
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

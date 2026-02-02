@@ -2,7 +2,9 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
-namespace ripple {
+#include <xrpl/protocol/STTakesAsset.h>
+
+namespace xrpl {
 
 bool
 LoanDelete::checkExtraFeatures(PreflightContext const& ctx)
@@ -46,11 +48,9 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
         // should be impossible
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
-    if (loanBrokerSle->at(sfOwner) != account &&
-        loanSle->at(sfBorrower) != account)
+    if (loanBrokerSle->at(sfOwner) != account && loanSle->at(sfBorrower) != account)
     {
-        JLOG(ctx.j.warn())
-            << "Account is not Loan Broker Owner or Loan Borrower.";
+        JLOG(ctx.j.warn()) << "Account is not Loan Broker Owner or Loan Borrower.";
         return tecNO_PERMISSION;
     }
 
@@ -78,23 +78,16 @@ LoanDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerPseudoAccount = brokerSle->at(sfAccount);
 
-    auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
+    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const vaultAsset = vaultSle->at(sfAsset);
 
     // Remove LoanID from Directory of the LoanBroker pseudo-account.
-    if (!view.dirRemove(
-            keylet::ownerDir(brokerPseudoAccount),
-            loanSle->at(sfLoanBrokerNode),
-            loanID,
-            false))
+    if (!view.dirRemove(keylet::ownerDir(brokerPseudoAccount), loanSle->at(sfLoanBrokerNode), loanID, false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     // Remove LoanID from Directory of the Borrower.
-    if (!view.dirRemove(
-            keylet::ownerDir(borrower),
-            loanSle->at(sfOwnerNode),
-            loanID,
-            false))
+    if (!view.dirRemove(keylet::ownerDir(borrower), loanSle->at(sfOwnerNode), loanID, false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     // Delete the Loan object
@@ -113,11 +106,9 @@ LoanDelete::doApply()
         {
             XRPL_ASSERT_PARTS(
                 roundToAsset(
-                    vaultSle->at(sfAsset),
-                    debtTotalProxy,
-                    getVaultScale(vaultSle),
-                    Number::towards_zero) == beast::zero,
-                "ripple::LoanDelete::doApply",
+                    vaultSle->at(sfAsset), debtTotalProxy, getAssetsTotalScale(vaultSle), Number::towards_zero) ==
+                    beast::zero,
+                "xrpl::LoanDelete::doApply",
                 "last loan, remaining debt rounds to zero");
             debtTotalProxy = 0;
         }
@@ -125,9 +116,14 @@ LoanDelete::doApply()
     // Decrement the borrower's owner count
     adjustOwnerCount(view, borrowerSle, -1, j_);
 
+    // These associations shouldn't do anything, but do them just to be safe
+    associateAsset(*loanSle, vaultAsset);
+    associateAsset(*brokerSle, vaultAsset);
+    associateAsset(*vaultSle, vaultAsset);
+
     return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl

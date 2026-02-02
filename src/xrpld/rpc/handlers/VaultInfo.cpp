@@ -8,7 +8,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
 
-namespace ripple {
+namespace xrpl {
 
 static std::optional<uint256>
 parseVault(Json::Value const& params, Json::Value& jvResult)
@@ -36,8 +36,7 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
             return std::nullopt;
         }
         else if (
-            !(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
-            params[jss::seq].asDouble() <= 0.0 ||
+            !(params[jss::seq].isInt() || params[jss::seq].isUInt()) || params[jss::seq].asDouble() <= 0.0 ||
             params[jss::seq].asDouble() > double(Json::Value::maxUInt))
         {
             RPC::inject_error(rpcINVALID_PARAMS, jvResult);
@@ -65,8 +64,7 @@ doVaultInfo(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    auto const uNodeIndex =
-        parseVault(context.params, jvResult).value_or(beast::zero);
+    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::zero);
     if (uNodeIndex == beast::zero)
     {
         jvResult[jss::error] = "malformedRequest";
@@ -92,4 +90,4 @@ doVaultInfo(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

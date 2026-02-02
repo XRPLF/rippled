@@ -3,7 +3,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 NotTEC
 PermissionedDomainDelete::preflight(PreflightContext const& ctx)
@@ -26,7 +26,7 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 
     XRPL_ASSERT(
         sleDomain->isFieldPresent(sfOwner) && ctx.tx.isFieldPresent(sfAccount),
-        "ripple::PermissionedDomainDelete::preclaim : required fields present");
+        "xrpl::PermissionedDomainDelete::preclaim : required fields present");
     if (sleDomain->getAccountID(sfOwner) != ctx.tx.getAccountID(sfAccount))
         return tecNO_PERMISSION;
 
@@ -37,19 +37,15 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainDelete::doApply()
 {
-    XRPL_ASSERT(
-        ctx_.tx.isFieldPresent(sfDomainID),
-        "ripple::PermissionedDomainDelete::doApply : required field present");
+    XRPL_ASSERT(ctx_.tx.isFieldPresent(sfDomainID), "xrpl::PermissionedDomainDelete::doApply : required field present");
 
-    auto const slePd =
-        view().peek({ltPERMISSIONED_DOMAIN, ctx_.tx.at(sfDomainID)});
+    auto const slePd = view().peek({ltPERMISSIONED_DOMAIN, ctx_.tx.at(sfDomainID)});
     auto const page = (*slePd)[sfOwnerNode];
 
     if (!view().dirRemove(keylet::ownerDir(account_), page, slePd->key(), true))
     {
         // LCOV_EXCL_START
-        JLOG(j_.fatal())
-            << "Unable to delete permissioned domain directory entry.";
+        JLOG(j_.fatal()) << "Unable to delete permissioned domain directory entry.";
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
@@ -57,11 +53,11 @@ PermissionedDomainDelete::doApply()
     auto const ownerSle = view().peek(keylet::account(account_));
     XRPL_ASSERT(
         ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
-        "ripple::PermissionedDomainDelete::doApply : nonzero owner count");
+        "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");
     adjustOwnerCount(view(), ownerSle, -1, ctx_.journal);
     view().erase(slePd);
 
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

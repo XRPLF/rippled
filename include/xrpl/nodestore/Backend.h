@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 /** A backend used for the NodeStore.
@@ -64,9 +64,7 @@ public:
     virtual void
     open(bool createIfMissing, uint64_t appType, uint64_t uid, uint64_t salt)
     {
-        Throw<std::runtime_error>(
-            "Deterministic appType/uid/salt not supported by backend " +
-            getName());
+        Throw<std::runtime_error>("Deterministic appType/uid/salt not supported by backend " + getName());
     }
 
     /** Close the backend.
@@ -143,6 +141,6 @@ public:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

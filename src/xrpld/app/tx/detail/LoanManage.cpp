@@ -2,9 +2,10 @@
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 LoanManage::checkExtraFeatures(PreflightContext const& ctx)
@@ -30,9 +31,8 @@ LoanManage::preflight(PreflightContext const& ctx)
         auto const flags = *flagField & tfUniversalMask;
         if ((flags & (flags - 1)) != 0)
         {
-            JLOG(ctx.j.warn())
-                << "LoanManage: Only one of tfLoanDefault, tfLoanImpair, or "
-                   "tfLoanUnimpair can be set.";
+            JLOG(ctx.j.warn()) << "LoanManage: Only one of tfLoanDefault, tfLoanImpair, or "
+                                  "tfLoanUnimpair can be set.";
             return temINVALID_FLAG;
         }
     }
@@ -62,22 +62,17 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     // 4. If it's in a state, it can't be put in that state again.
     if (loanSle->isFlag(lsfLoanDefault))
     {
-        JLOG(ctx.j.warn())
-            << "Loan is in default. A defaulted loan can not be modified.";
+        JLOG(ctx.j.warn()) << "Loan is in default. A defaulted loan can not be modified.";
         return tecNO_PERMISSION;
     }
     if (loanSle->isFlag(lsfLoanImpaired) && tx.isFlag(tfLoanImpair))
     {
-        JLOG(ctx.j.warn())
-            << "Loan is impaired. A loan can not be impaired twice.";
+        JLOG(ctx.j.warn()) << "Loan is impaired. A loan can not be impaired twice.";
         return tecNO_PERMISSION;
     }
-    if (!(loanSle->isFlag(lsfLoanImpaired) ||
-          loanSle->isFlag(lsfLoanDefault)) &&
-        (tx.isFlag(tfLoanUnimpair)))
+    if (!(loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault)) && (tx.isFlag(tfLoanUnimpair)))
     {
-        JLOG(ctx.j.warn())
-            << "Loan is unimpaired. Can not be unimpaired again.";
+        JLOG(ctx.j.warn()) << "Loan is unimpaired. Can not be unimpaired again.";
         return tecNO_PERMISSION;
     }
     if (loanSle->at(sfPaymentRemaining) == 0)
@@ -87,12 +82,9 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
     if (tx.isFlag(tfLoanDefault) &&
-        !hasExpired(
-            ctx.view,
-            loanSle->at(sfNextPaymentDueDate) + loanSle->at(sfGracePeriod)))
+        !hasExpired(ctx.view, loanSle->at(sfNextPaymentDueDate) + loanSle->at(sfGracePeriod)))
     {
-        JLOG(ctx.j.warn())
-            << "A loan can not be defaulted before the next payment due date.";
+        JLOG(ctx.j.warn()) << "A loan can not be defaulted before the next payment due date.";
         return tecTOO_SOON;
     }
 
@@ -105,9 +97,8 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     }
     if (loanBrokerSle->at(sfOwner) != account)
     {
-        JLOG(ctx.j.warn())
-            << "LoanBroker for Loan does not belong to the account. LoanModify "
-               "can only be submitted by the Loan Broker.";
+        JLOG(ctx.j.warn()) << "LoanBroker for Loan does not belong to the account. LoanManage "
+                              "can only be submitted by the Loan Broker.";
         return tecNO_PERMISSION;
     }
 
@@ -128,8 +119,7 @@ owedToVault(SLE::ref loanSle)
     //      Loan.ManagementFeeOutstanding
     //
     // Add that to the original formula, and you get this:
-    return loanSle->at(sfTotalValueOutstanding) -
-        loanSle->at(sfManagementFeeOutstanding);
+    return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfManagementFeeOutstanding);
 }
 
 TER
@@ -150,25 +140,24 @@ LoanManage::defaultLoan(
 
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
-    TenthBips32 const coverRateLiquidation{
-        brokerSle->at(sfCoverRateLiquidation)};
+    TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
     auto const defaultCovered = [&]() {
         // Always round the minimum required up.
         NumberRoundModeGuard mg(Number::upward);
-        auto const minimumCover =
-            tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
+        auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
         // Round the liquidation amount up, too
-        return roundToAsset(
+        auto const covered = roundToAsset(
             vaultAsset,
             /*
              * This formula is from the XLS-66 spec, section 3.2.3.2 (State
              * Changes), specifically "if the `tfLoanDefault` flag is set" /
              * "Apply the First-Loss Capital to the Default Amount"
              */
-            std::min(
-                tenthBipsOfValue(minimumCover, coverRateLiquidation),
-                totalDefaultAmount),
+            std::min(tenthBipsOfValue(minimumCover, coverRateLiquidation), totalDefaultAmount),
             loanScale);
+        auto const coverAvailable = *brokerSle->at(sfCoverAvailable);
+
+        return std::min(covered, coverAvailable);
     }();
 
     auto const vaultDefaultAmount = totalDefaultAmount - defaultCovered;
@@ -178,7 +167,7 @@ LoanManage::defaultLoan(
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
-    auto const vaultScale = getVaultScale(vaultSle);
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     {
         // Decrease the Total Value of the Vault:
@@ -188,14 +177,12 @@ LoanManage::defaultLoan(
         if (vaultTotalProxy < vaultDefaultAmount)
         {
             // LCOV_EXCL_START
-            JLOG(j.warn())
-                << "Vault total assets is less than the vault default amount";
+            JLOG(j.warn()) << "Vault total assets is less than the vault default amount";
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
 
-        auto const vaultDefaultRounded = roundToAsset(
-            vaultAsset, vaultDefaultAmount, vaultScale, Number::downward);
+        auto const vaultDefaultRounded = roundToAsset(vaultAsset, vaultDefaultAmount, vaultScale, Number::downward);
         vaultTotalProxy -= vaultDefaultRounded;
         // Increase the Asset Available of the Vault by liquidated First-Loss
         // Capital and any unclaimed funds amount:
@@ -203,31 +190,27 @@ LoanManage::defaultLoan(
         if (*vaultAvailableProxy > *vaultTotalProxy && !vaultAsset.integral())
         {
             auto const difference = vaultAvailableProxy - vaultTotalProxy;
-            JLOG(j.debug())
-                << "Vault assets available: " << *vaultAvailableProxy << "("
-                << vaultAvailableProxy.value().exponent()
-                << "), Total: " << *vaultTotalProxy << "("
-                << vaultTotalProxy.value().exponent()
-                << "), Difference: " << difference << "("
-                << difference.exponent() << ")";
-            if (vaultAvailableProxy.value().exponent() - difference.exponent() >
-                13)
+            JLOG(j.debug()) << "Vault assets available: " << *vaultAvailableProxy << "("
+                            << vaultAvailableProxy.value().exponent() << "), Total: " << *vaultTotalProxy << "("
+                            << vaultTotalProxy.value().exponent() << "), Difference: " << difference << "("
+                            << difference.exponent() << ")";
+            if (vaultAvailableProxy.value().exponent() - difference.exponent() > 13)
             {
                 // If the difference is dust, bring the total up to match
                 // the available
-                JLOG(j.debug())
-                    << "Difference between vault assets available and total is "
-                       "dust. Set both to the larger value.";
+                JLOG(j.debug()) << "Difference between vault assets available and total is "
+                                   "dust. Set both to the larger value.";
                 vaultTotalProxy = vaultAvailableProxy;
             }
         }
         if (*vaultAvailableProxy > *vaultTotalProxy)
         {
-            JLOG(j.warn()) << "Vault assets available must not be greater "
-                              "than assets outstanding. Available: "
-                           << *vaultAvailableProxy
-                           << ", Total: " << *vaultTotalProxy;
-            return tecLIMIT_EXCEEDED;
+            // LCOV_EXCL_START
+            JLOG(j.fatal()) << "Vault assets available must not be greater "
+                               "than assets outstanding. Available: "
+                            << *vaultAvailableProxy << ", Total: " << *vaultTotalProxy;
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
 
         // The loss has been realized
@@ -237,12 +220,11 @@ LoanManage::defaultLoan(
             if (vaultLossUnrealizedProxy < totalDefaultAmount)
             {
                 // LCOV_EXCL_START
-                JLOG(j.warn())
-                    << "Vault unrealized loss is less than the default amount";
+                JLOG(j.warn()) << "Vault unrealized loss is less than the default amount";
                 return tefBAD_LEDGER;
                 // LCOV_EXCL_STOP
             }
-            vaultLossUnrealizedProxy -= totalDefaultAmount;
+            adjustImpreciseNumber(vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
         }
         view.update(vaultSle);
     }
@@ -250,18 +232,14 @@ LoanManage::defaultLoan(
     // Update the LoanBroker object:
 
     {
-        auto const asset = *vaultSle->at(sfAsset);
-
         // Decrease the Debt of the LoanBroker:
-        adjustImpreciseNumber(
-            brokerDebtTotalProxy, -totalDefaultAmount, asset, vaultScale);
+        adjustImpreciseNumber(brokerDebtTotalProxy, -totalDefaultAmount, vaultAsset, vaultScale);
         // Decrease the First-Loss Capital Cover Available:
         auto coverAvailableProxy = brokerSle->at(sfCoverAvailable);
         if (coverAvailableProxy < defaultCovered)
         {
             // LCOV_EXCL_START
-            JLOG(j.warn())
-                << "LoanBroker cover available is less than amount covered";
+            JLOG(j.warn()) << "LoanBroker cover available is less than amount covered";
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
@@ -293,19 +271,19 @@ LoanManage::defaultLoan(
 }
 
 TER
-LoanManage::impairLoan(
-    ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref vaultSle,
-    beast::Journal j)
+LoanManage::impairLoan(ApplyView& view, SLE::ref loanSle, SLE::ref vaultSle, Asset const& vaultAsset, beast::Journal j)
 {
     Number const lossUnrealized = owedToVault(loanSle);
 
+    // The vault may be at a different scale than the loan. Reduce rounding
+    // errors during the accounting by rounding some of the values to that
+    // scale.
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
+
     // Update the Vault object(set "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
-    vaultLossUnrealizedProxy += lossUnrealized;
-    if (vaultLossUnrealizedProxy >
-        vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
+    adjustImpreciseNumber(vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
+    if (vaultLossUnrealizedProxy > vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
     {
         // Having a loss greater than the vault's unavailable assets
         // will leave the vault in an invalid / inconsistent state.
@@ -329,33 +307,39 @@ LoanManage::impairLoan(
     return tesSUCCESS;
 }
 
-TER
+[[nodiscard]] TER
 LoanManage::unimpairLoan(
     ApplyView& view,
     SLE::ref loanSle,
     SLE::ref vaultSle,
+    Asset const& vaultAsset,
     beast::Journal j)
 {
+    // The vault may be at a different scale than the loan. Reduce rounding
+    // errors during the accounting by rounding some of the values to that
+    // scale.
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
+
     // Update the Vault object(clear "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
     Number const lossReversed = owedToVault(loanSle);
     if (vaultLossUnrealizedProxy < lossReversed)
     {
         // LCOV_EXCL_START
-        JLOG(j.warn())
-            << "Vault unrealized loss is less than the amount to be cleared";
+        JLOG(j.warn()) << "Vault unrealized loss is less than the amount to be cleared";
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    vaultLossUnrealizedProxy -= lossReversed;
+    // Reverse the "paper loss"
+    adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
+
     view.update(vaultSle);
 
     // Update the Loan object
     loanSle->clearFlag(lsfLoanImpaired);
     auto const paymentInterval = loanSle->at(sfPaymentInterval);
     auto const normalPaymentDueDate =
-        std::max(loanSle->at(sfPreviousPaymentDate), loanSle->at(sfStartDate)) +
-        paymentInterval;
+        std::max(loanSle->at(sfPreviousPaymentDueDate), loanSle->at(sfStartDate)) + paymentInterval;
     if (!hasExpired(view, normalPaymentDueDate))
     {
         // loan was unimpaired within the payment interval
@@ -364,8 +348,7 @@ LoanManage::unimpairLoan(
     else
     {
         // loan was unimpaired after the original payment due date
-        loanSle->at(sfNextPaymentDueDate) =
-            view.parentCloseTime().time_since_epoch().count() + paymentInterval;
+        loanSle->at(sfNextPaymentDueDate) = view.parentCloseTime().time_since_epoch().count() + paymentInterval;
     }
     view.update(loanSle);
 
@@ -388,7 +371,7 @@ LoanManage::doApply()
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
+    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
@@ -396,25 +379,20 @@ LoanManage::doApply()
     // Valid flag combinations are checked in preflight. No flags is valid -
     // just a noop.
     if (tx.isFlag(tfLoanDefault))
-    {
-        if (auto const ter =
-                defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_))
-            return ter;
-    }
-    else if (tx.isFlag(tfLoanImpair))
-    {
-        if (auto const ter = impairLoan(view, loanSle, vaultSle, j_))
-            return ter;
-    }
-    else if (tx.isFlag(tfLoanUnimpair))
-    {
-        if (auto const ter = unimpairLoan(view, loanSle, vaultSle, j_))
-            return ter;
-    }
+        return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
+    if (tx.isFlag(tfLoanImpair))
+        return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+    if (tx.isFlag(tfLoanUnimpair))
+        return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+    // Noop, as described above.
+
+    associateAsset(*loanSle, vaultAsset);
+    associateAsset(*brokerSle, vaultAsset);
+    associateAsset(*vaultSle, vaultAsset);
 
     return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
+}  // namespace xrpl

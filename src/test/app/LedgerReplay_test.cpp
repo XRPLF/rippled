@@ -17,7 +17,7 @@
 #include <chrono>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct LedgerReplay_test : public beast::unit_test::suite
@@ -39,16 +39,11 @@ struct LedgerReplay_test : public beast::unit_test::suite
 
         LedgerMaster& ledgerMaster = env.app().getLedgerMaster();
         auto const lastClosed = ledgerMaster.getClosedLedger();
-        auto const lastClosedParent =
-            ledgerMaster.getLedgerByHash(lastClosed->info().parentHash);
+        auto const lastClosedParent = ledgerMaster.getLedgerByHash(lastClosed->header().parentHash);
 
-        auto const replayed = buildLedger(
-            LedgerReplay(lastClosedParent, lastClosed),
-            tapNONE,
-            env.app(),
-            env.journal);
+        auto const replayed = buildLedger(LedgerReplay(lastClosedParent, lastClosed), tapNONE, env.app(), env.journal);
 
-        BEAST_EXPECT(replayed->info().hash == lastClosed->info().hash);
+        BEAST_EXPECT(replayed->header().hash == lastClosed->header().hash);
     }
 };
 
@@ -65,18 +60,14 @@ enum class InboundLedgersBehavior {
 class MagicInboundLedgers : public InboundLedgers
 {
 public:
-    MagicInboundLedgers(
-        LedgerMaster& ledgerSource,
-        LedgerMaster& ledgerSink,
-        InboundLedgersBehavior bhvr)
+    MagicInboundLedgers(LedgerMaster& ledgerSource, LedgerMaster& ledgerSink, InboundLedgersBehavior bhvr)
         : ledgerSource(ledgerSource), ledgerSink(ledgerSink), bhvr(bhvr)
     {
     }
     virtual ~MagicInboundLedgers() = default;
 
     virtual std::shared_ptr<Ledger const>
-    acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason)
-        override
+    acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason) override
     {
         if (bhvr == InboundLedgersBehavior::DropAll)
             return {};
@@ -90,10 +81,7 @@ public:
     }
 
     virtual void
-    acquireAsync(
-        uint256 const& hash,
-        std::uint32_t seq,
-        InboundLedger::Reason reason) override
+    acquireAsync(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
     }
 
@@ -104,10 +92,7 @@ public:
     }
 
     virtual bool
-    gotLedgerData(
-        LedgerHash const& ledgerHash,
-        std::shared_ptr<Peer>,
-        std::shared_ptr<protocol::TMLedgerData>) override
+    gotLedgerData(LedgerHash const& ledgerHash, std::shared_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>) override
     {
         return false;
     }
@@ -189,8 +174,7 @@ class TestPeer : public Peer
 {
 public:
     TestPeer(bool enableLedgerReplay)
-        : ledgerReplayEnabled_(enableLedgerReplay)
-        , nodePublicKey_(derivePublicKey(KeyType::ed25519, randomSecretKey()))
+        : ledgerReplayEnabled_(enableLedgerReplay), nodePublicKey_(derivePublicKey(KeyType::ed25519, randomSecretKey()))
     {
     }
 
@@ -204,8 +188,7 @@ public:
         return {};
     }
     void
-    charge(Resource::Charge const& fee, std::string const& context = {})
-        override
+    charge(Resource::Charge const& fee, std::string const& context = {}) override
     {
     }
     id_t
@@ -339,10 +322,7 @@ struct TestPeerSet : public PeerSet
         LedgerReplayMsgHandler& other,
         PeerSetBehavior bhvr,
         bool enableLedgerReplay)
-        : local(me)
-        , remote(other)
-        , dummyPeer(std::make_shared<TestPeer>(enableLedgerReplay))
-        , behavior(bhvr)
+        : local(me), remote(other), dummyPeer(std::make_shared<TestPeer>(enableLedgerReplay)), behavior(bhvr)
     {
     }
 
@@ -357,10 +337,8 @@ struct TestPeerSet : public PeerSet
     }
 
     void
-    sendRequest(
-        ::google::protobuf::Message const& msg,
-        protocol::MessageType type,
-        std::shared_ptr<Peer> const& peer) override
+    sendRequest(::google::protobuf::Message const& msg, protocol::MessageType type, std::shared_ptr<Peer> const& peer)
+        override
     {
         int dropRate = 0;
         if (behavior == PeerSetBehavior::Drop50)
@@ -378,8 +356,7 @@ struct TestPeerSet : public PeerSet
                     return;
                 auto request = std::make_shared<protocol::TMProofPathRequest>(
                     dynamic_cast<protocol::TMProofPathRequest const&>(msg));
-                auto reply = std::make_shared<protocol::TMProofPathResponse>(
-                    remote.processProofPathRequest(request));
+                auto reply = std::make_shared<protocol::TMProofPathResponse>(remote.processProofPathRequest(request));
                 local.processProofPathResponse(reply);
                 if (behavior == PeerSetBehavior::Repeat)
                     local.processProofPathResponse(reply);
@@ -390,8 +367,8 @@ struct TestPeerSet : public PeerSet
                     return;
                 auto request = std::make_shared<protocol::TMReplayDeltaRequest>(
                     dynamic_cast<protocol::TMReplayDeltaRequest const&>(msg));
-                auto reply = std::make_shared<protocol::TMReplayDeltaResponse>(
-                    remote.processReplayDeltaRequest(request));
+                auto reply =
+                    std::make_shared<protocol::TMReplayDeltaResponse>(remote.processReplayDeltaRequest(request));
                 local.processReplayDeltaResponse(reply);
                 if (behavior == PeerSetBehavior::Repeat)
                     local.processReplayDeltaResponse(reply);
@@ -426,18 +403,14 @@ public:
         LedgerReplayMsgHandler& other,
         PeerSetBehavior bhvr,
         PeerFeature peerFeature)
-        : local(me)
-        , remote(other)
-        , behavior(bhvr)
-        , enableLedgerReplay(peerFeature == PeerFeature::LedgerReplayEnabled)
+        : local(me), remote(other), behavior(bhvr), enableLedgerReplay(peerFeature == PeerFeature::LedgerReplayEnabled)
     {
     }
 
     std::unique_ptr<PeerSet>
     build() override
     {
-        return std::make_unique<TestPeerSet>(
-            local, remote, behavior, enableLedgerReplay);
+        return std::make_unique<TestPeerSet>(local, remote, behavior, enableLedgerReplay);
     }
 
 private:
@@ -484,8 +457,7 @@ struct LedgerServer
         auto fundedAccounts = accounts.size();
         for (int i = 0; i < newAccounts; ++i)
         {
-            accounts.emplace_back(
-                "alice_" + std::to_string(fundedAccounts + i));
+            accounts.emplace_back("alice_" + std::to_string(fundedAccounts + i));
             env.fund(jtx::XRP(param.initAmount), accounts.back());
         }
         env.close();
@@ -522,8 +494,7 @@ struct LedgerServer
             env.apply(
                 pay(accounts[fromIdx],
                     accounts[toIdx],
-                    jtx::drops(ledgerMaster.getClosedLedger()->fees().base) +
-                        jtx::XRP(param.txAmount)),
+                    jtx::drops(ledgerMaster.getClosedLedger()->fees().base) + jtx::XRP(param.txAmount)),
                 jtx::seq(jtx::autofill),
                 jtx::fee(jtx::autofill),
                 jtx::sig(jtx::autofill));
@@ -577,20 +548,13 @@ public:
         : env(suite, jtx::envconfig(), nullptr, beast::severities::kDisabled)
         , app(env.app())
         , ledgerMaster(env.app().getLedgerMaster())
-        , inboundLedgers(
-              server.app.getLedgerMaster(),
-              ledgerMaster,
-              inboundBhvr)
+        , inboundLedgers(server.app.getLedgerMaster(), ledgerMaster, inboundBhvr)
         , serverMsgHandler(server.app, server.app.getLedgerReplayer())
         , clientMsgHandler(env.app(), replayer)
         , replayer(
               env.app(),
               inboundLedgers,
-              std::make_unique<TestPeerSetBuilder>(
-                  clientMsgHandler,
-                  serverMsgHandler,
-                  behavior,
-                  peerFeature))
+              std::make_unique<TestPeerSetBuilder>(clientMsgHandler, serverMsgHandler, behavior, peerFeature))
     {
     }
 
@@ -610,7 +574,7 @@ public:
             auto const l = ledgerMaster.getLedgerByHash(hash);
             if (!l)
                 return false;
-            hash = l->info().parentHash;
+            hash = l->header().parentHash;
         }
         return true;
     }
@@ -666,11 +630,9 @@ public:
     findTask(uint256 const& hash, int totalReplay)
     {
         std::unique_lock<std::mutex> lock(replayer.mtx_);
-        auto i = std::find_if(
-            replayer.tasks_.begin(), replayer.tasks_.end(), [&](auto const& t) {
-                return t->parameter_.finishHash_ == hash &&
-                    t->parameter_.totalLedgers_ == totalReplay;
-            });
+        auto i = std::find_if(replayer.tasks_.begin(), replayer.tasks_.end(), [&](auto const& t) {
+            return t->parameter_.finishHash_ == hash && t->parameter_.totalLedgers_ == totalReplay;
+        });
         if (i == replayer.tasks_.end())
             return {};
         return *i;
@@ -691,14 +653,10 @@ public:
     }
 
     bool
-    countsAsExpected(
-        std::size_t tasks,
-        std::size_t skipLists,
-        std::size_t deltas)
+    countsAsExpected(std::size_t tasks, std::size_t skipLists, std::size_t deltas)
     {
         std::unique_lock<std::mutex> lock(replayer.mtx_);
-        return replayer.tasks_.size() == tasks &&
-            replayer.skipLists_.size() == skipLists &&
+        return replayer.tasks_.size() == tasks && replayer.skipLists_.size() == skipLists &&
             replayer.deltas_.size() == deltas;
     }
 
@@ -807,8 +765,7 @@ public:
         if (!waitForDone())
             return false;
 
-        return checkStatus(
-            hash, totalReplay, taskExpect, skiplistExpect, deltaExpects);
+        return checkStatus(hash, totalReplay, taskExpect, skiplistExpect, deltaExpects);
     }
 
     jtx::Env env;
@@ -822,10 +779,7 @@ public:
 
 using namespace beast::severities;
 void
-logAll(
-    LedgerServer& server,
-    LedgerReplayClient& client,
-    beast::severities::Severity level = Severity::kTrace)
+logAll(LedgerServer& server, LedgerReplayClient& client, beast::severities::Severity level = Severity::kTrace)
 {
     server.app.logs().threshold(level);
     client.app.logs().threshold(level);
@@ -843,8 +797,7 @@ struct NetworkOfTwo
         PeerSetBehavior behavior = PeerSetBehavior::Good,
         InboundLedgersBehavior inboundBhvr = InboundLedgersBehavior::Good,
         PeerFeature peerFeature = PeerFeature::LedgerReplayEnabled)
-        : server(suite, param)
-        , client(suite, server, behavior, inboundBhvr, peerFeature)
+        : server(suite, param), client(suite, server, behavior, inboundBhvr, peerFeature)
     {
         // logAll(server, client);
     }
@@ -889,11 +842,10 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         {
             // request, missing key
             auto request = std::make_shared<protocol::TMProofPathRequest>();
-            request->set_ledgerhash(
-                l->info().hash.data(), l->info().hash.size());
+            request->set_ledgerhash(l->header().hash.data(), l->header().hash.size());
             request->set_type(protocol::TMLedgerMapType::lmACCOUNT_STATE);
-            auto reply = std::make_shared<protocol::TMProofPathResponse>(
-                server.msgHandler.processProofPathRequest(request));
+            auto reply =
+                std::make_shared<protocol::TMProofPathResponse>(server.msgHandler.processProofPathRequest(request));
             BEAST_EXPECT(reply->has_error());
             BEAST_EXPECT(!server.msgHandler.processProofPathResponse(reply));
         }
@@ -901,26 +853,23 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             // request, wrong hash
             auto request = std::make_shared<protocol::TMProofPathRequest>();
             request->set_type(protocol::TMLedgerMapType::lmACCOUNT_STATE);
-            request->set_key(
-                keylet::skip().key.data(), keylet::skip().key.size());
+            request->set_key(keylet::skip().key.data(), keylet::skip().key.size());
             uint256 hash(1234567);
             request->set_ledgerhash(hash.data(), hash.size());
-            auto reply = std::make_shared<protocol::TMProofPathResponse>(
-                server.msgHandler.processProofPathRequest(request));
+            auto reply =
+                std::make_shared<protocol::TMProofPathResponse>(server.msgHandler.processProofPathRequest(request));
             BEAST_EXPECT(reply->has_error());
         }
 
         {
             // good request
             auto request = std::make_shared<protocol::TMProofPathRequest>();
-            request->set_ledgerhash(
-                l->info().hash.data(), l->info().hash.size());
+            request->set_ledgerhash(l->header().hash.data(), l->header().hash.size());
             request->set_type(protocol::TMLedgerMapType::lmACCOUNT_STATE);
-            request->set_key(
-                keylet::skip().key.data(), keylet::skip().key.size());
+            request->set_key(keylet::skip().key.data(), keylet::skip().key.size());
             // generate response
-            auto reply = std::make_shared<protocol::TMProofPathResponse>(
-                server.msgHandler.processProofPathRequest(request));
+            auto reply =
+                std::make_shared<protocol::TMProofPathResponse>(server.msgHandler.processProofPathRequest(request));
             BEAST_EXPECT(!reply->has_error());
             BEAST_EXPECT(server.msgHandler.processProofPathResponse(reply));
 
@@ -930,15 +879,13 @@ struct LedgerReplayer_test : public beast::unit_test::suite
                 std::string r(reply->ledgerheader());
                 r.back()--;
                 reply->set_ledgerheader(r);
-                BEAST_EXPECT(
-                    !server.msgHandler.processProofPathResponse(reply));
+                BEAST_EXPECT(!server.msgHandler.processProofPathResponse(reply));
                 r.back()++;
                 reply->set_ledgerheader(r);
                 BEAST_EXPECT(server.msgHandler.processProofPathResponse(reply));
                 // bad proof path
                 reply->mutable_path()->RemoveLast();
-                BEAST_EXPECT(
-                    !server.msgHandler.processProofPathResponse(reply));
+                BEAST_EXPECT(!server.msgHandler.processProofPathResponse(reply));
             }
         }
     }
@@ -953,15 +900,15 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         {
             // request, missing hash
             auto request = std::make_shared<protocol::TMReplayDeltaRequest>();
-            auto reply = std::make_shared<protocol::TMReplayDeltaResponse>(
-                server.msgHandler.processReplayDeltaRequest(request));
+            auto reply =
+                std::make_shared<protocol::TMReplayDeltaResponse>(server.msgHandler.processReplayDeltaRequest(request));
             BEAST_EXPECT(reply->has_error());
             BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(reply));
             // request, wrong hash
             uint256 hash(1234567);
             request->set_ledgerhash(hash.data(), hash.size());
-            reply = std::make_shared<protocol::TMReplayDeltaResponse>(
-                server.msgHandler.processReplayDeltaRequest(request));
+            reply =
+                std::make_shared<protocol::TMReplayDeltaResponse>(server.msgHandler.processReplayDeltaRequest(request));
             BEAST_EXPECT(reply->has_error());
             BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(reply));
         }
@@ -969,10 +916,9 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         {
             // good request
             auto request = std::make_shared<protocol::TMReplayDeltaRequest>();
-            request->set_ledgerhash(
-                l->info().hash.data(), l->info().hash.size());
-            auto reply = std::make_shared<protocol::TMReplayDeltaResponse>(
-                server.msgHandler.processReplayDeltaRequest(request));
+            request->set_ledgerhash(l->header().hash.data(), l->header().hash.size());
+            auto reply =
+                std::make_shared<protocol::TMReplayDeltaResponse>(server.msgHandler.processReplayDeltaRequest(request));
             BEAST_EXPECT(!reply->has_error());
             BEAST_EXPECT(server.msgHandler.processReplayDeltaResponse(reply));
 
@@ -982,16 +928,13 @@ struct LedgerReplayer_test : public beast::unit_test::suite
                 std::string r(reply->ledgerheader());
                 r.back()--;
                 reply->set_ledgerheader(r);
-                BEAST_EXPECT(
-                    !server.msgHandler.processReplayDeltaResponse(reply));
+                BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(reply));
                 r.back()++;
                 reply->set_ledgerheader(r);
-                BEAST_EXPECT(
-                    server.msgHandler.processReplayDeltaResponse(reply));
+                BEAST_EXPECT(server.msgHandler.processReplayDeltaResponse(reply));
                 // bad txns
                 reply->mutable_transaction()->RemoveLast();
-                BEAST_EXPECT(
-                    !server.msgHandler.processReplayDeltaResponse(reply));
+                BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(reply));
             }
         }
     }
@@ -1008,8 +951,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             return sList;
         };
 
-        LedgerReplayTask::TaskParameter tp10(
-            InboundLedger::Reason::GENERIC, uint256(10), 10);
+        LedgerReplayTask::TaskParameter tp10(InboundLedger::Reason::GENERIC, uint256(10), 10);
         BEAST_EXPECT(!tp10.update(uint256(777), 5, makeSkipList(10)));
         BEAST_EXPECT(!tp10.update(uint256(10), 5, makeSkipList(8)));
         BEAST_EXPECT(tp10.update(uint256(10), 10, makeSkipList(10)));
@@ -1018,8 +960,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         BEAST_EXPECT(tp10.canMergeInto(tp10));
 
         // smaller task
-        LedgerReplayTask::TaskParameter tp9(
-            InboundLedger::Reason::GENERIC, uint256(9), 9);
+        LedgerReplayTask::TaskParameter tp9(InboundLedger::Reason::GENERIC, uint256(9), 9);
 
         BEAST_EXPECT(tp9.canMergeInto(tp10));
         BEAST_EXPECT(!tp10.canMergeInto(tp9));
@@ -1040,8 +981,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         BEAST_EXPECT(tp9.canMergeInto(tp10));
 
         // larger task
-        LedgerReplayTask::TaskParameter tp20(
-            InboundLedger::Reason::GENERIC, uint256(20), 20);
+        LedgerReplayTask::TaskParameter tp20(InboundLedger::Reason::GENERIC, uint256(20), 20);
         BEAST_EXPECT(tp20.update(uint256(20), 20, makeSkipList(20)));
         BEAST_EXPECT(tp10.canMergeInto(tp20));
         BEAST_EXPECT(tp9.canMergeInto(tp20));
@@ -1084,31 +1024,19 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     {
         testcase("handshake test");
         auto handshake = [&](bool client, bool server, bool expecting) -> bool {
-            auto request =
-                ripple::makeRequest(true, false, client, false, false);
+            auto request = xrpl::makeRequest(true, false, client, false, false);
             http_request_type http_request;
             http_request.version(request.version());
             http_request.base() = request.base();
-            bool serverResult =
-                peerFeatureEnabled(http_request, FEATURE_LEDGER_REPLAY, server);
+            bool serverResult = peerFeatureEnabled(http_request, FEATURE_LEDGER_REPLAY, server);
             if (serverResult != expecting)
                 return false;
 
-            beast::IP::Address addr =
-                boost::asio::ip::make_address("172.1.1.100");
+            beast::IP::Address addr = boost::asio::ip::make_address("172.1.1.100");
             jtx::Env serverEnv(*this);
             serverEnv.app().config().LEDGER_REPLAY = server;
-            auto http_resp = ripple::makeResponse(
-                true,
-                http_request,
-                addr,
-                addr,
-                uint256{1},
-                1,
-                {1, 0},
-                serverEnv.app());
-            auto const clientResult =
-                peerFeatureEnabled(http_resp, FEATURE_LEDGER_REPLAY, client);
+            auto http_resp = xrpl::makeResponse(true, http_request, addr, addr, uint256{1}, 1, {1, 0}, serverEnv.app());
+            auto const clientResult = peerFeatureEnabled(http_resp, FEATURE_LEDGER_REPLAY, client);
             if (clientResult != expecting)
                 return false;
 
@@ -1132,31 +1060,24 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         NetworkOfTwo net(*this, {totalReplay + 1}, psBhvr, ilBhvr, peerFeature);
 
         auto l = net.server.ledgerMaster.getClosedLedger();
-        uint256 finalHash = l->info().hash;
+        uint256 finalHash = l->header().hash;
         for (int i = 0; i < totalReplay; ++i)
         {
             BEAST_EXPECT(l);
             if (l)
             {
                 net.client.ledgerMaster.storeLedger(l);
-                l = net.server.ledgerMaster.getLedgerByHash(
-                    l->info().parentHash);
+                l = net.server.ledgerMaster.getLedgerByHash(l->header().parentHash);
             }
             else
                 break;
         }
 
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay);
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);
 
-        std::vector<TaskStatus> deltaStatuses(
-            totalReplay - 1, TaskStatus::Completed);
+        std::vector<TaskStatus> deltaStatuses(totalReplay - 1, TaskStatus::Completed);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
-            finalHash,
-            totalReplay,
-            TaskStatus::Completed,
-            TaskStatus::Completed,
-            deltaStatuses));
+            finalHash, totalReplay, TaskStatus::Completed, TaskStatus::Completed, deltaStatuses));
 
         // sweep
         net.client.replayer.sweep();
@@ -1168,25 +1089,15 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     {
         testcase("all the ledgers from InboundLedgers");
         NetworkOfTwo net(
-            *this,
-            {totalReplay + 1},
-            PeerSetBehavior::DropAll,
-            InboundLedgersBehavior::Good,
-            PeerFeature::None);
+            *this, {totalReplay + 1}, PeerSetBehavior::DropAll, InboundLedgersBehavior::Good, PeerFeature::None);
 
         auto l = net.server.ledgerMaster.getClosedLedger();
-        uint256 finalHash = l->info().hash;
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay);
+        uint256 finalHash = l->header().hash;
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);
 
-        std::vector<TaskStatus> deltaStatuses(
-            totalReplay - 1, TaskStatus::Completed);
+        std::vector<TaskStatus> deltaStatuses(totalReplay - 1, TaskStatus::Completed);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
-            finalHash,
-            totalReplay,
-            TaskStatus::Completed,
-            TaskStatus::Completed,
-            deltaStatuses));
+            finalHash, totalReplay, TaskStatus::Completed, TaskStatus::Completed, deltaStatuses));
 
         // sweep
         net.client.replayer.sweep();
@@ -1220,24 +1131,18 @@ struct LedgerReplayer_test : public beast::unit_test::suite
 
         // feed client with start ledger since InboundLedgers drops all
         auto l = net.server.ledgerMaster.getClosedLedger();
-        uint256 finalHash = l->info().hash;
+        uint256 finalHash = l->header().hash;
         for (int i = 0; i < totalReplay - 1; ++i)
         {
-            l = net.server.ledgerMaster.getLedgerByHash(l->info().parentHash);
+            l = net.server.ledgerMaster.getLedgerByHash(l->header().parentHash);
         }
         net.client.ledgerMaster.storeLedger(l);
 
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay);
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);
 
-        std::vector<TaskStatus> deltaStatuses(
-            totalReplay - 1, TaskStatus::Completed);
+        std::vector<TaskStatus> deltaStatuses(totalReplay - 1, TaskStatus::Completed);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
-            finalHash,
-            totalReplay,
-            TaskStatus::Completed,
-            TaskStatus::Completed,
-            deltaStatuses));
+            finalHash, totalReplay, TaskStatus::Completed, TaskStatus::Completed, deltaStatuses));
         BEAST_EXPECT(net.client.waitForLedgers(finalHash, totalReplay));
 
         // sweep
@@ -1258,17 +1163,12 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             PeerFeature::LedgerReplayEnabled);
 
         auto l = net.server.ledgerMaster.getClosedLedger();
-        uint256 finalHash = l->info().hash;
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay);
+        uint256 finalHash = l->header().hash;
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);
 
         std::vector<TaskStatus> deltaStatuses;
-        BEAST_EXPECT(net.client.checkStatus(
-            finalHash,
-            totalReplay,
-            TaskStatus::NotDone,
-            TaskStatus::NotDone,
-            deltaStatuses));
+        BEAST_EXPECT(
+            net.client.checkStatus(finalHash, totalReplay, TaskStatus::NotDone, TaskStatus::NotDone, deltaStatuses));
 
         BEAST_EXPECT(net.client.countsAsExpected(1, 1, 0));
         net.client.replayer.stop();
@@ -1288,35 +1188,23 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             PeerFeature::LedgerReplayEnabled);
 
         auto l = net.server.ledgerMaster.getClosedLedger();
-        uint256 finalHash = l->info().hash;
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay);
+        uint256 finalHash = l->header().hash;
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);
 
         auto skipList = net.client.findSkipListAcquire(finalHash);
 
-        std::uint8_t payload[55] = {
-            0x6A, 0x09, 0xE6, 0x67, 0xF3, 0xBC, 0xC9, 0x08, 0xB2};
-        auto item =
-            make_shamapitem(uint256(12345), Slice(payload, sizeof(payload)));
+        std::uint8_t payload[55] = {0x6A, 0x09, 0xE6, 0x67, 0xF3, 0xBC, 0xC9, 0x08, 0xB2};
+        auto item = make_shamapitem(uint256(12345), Slice(payload, sizeof(payload)));
         skipList->processData(l->seq(), item);
 
         std::vector<TaskStatus> deltaStatuses;
         BEAST_EXPECT(net.client.waitAndCheckStatus(
-            finalHash,
-            totalReplay,
-            TaskStatus::Failed,
-            TaskStatus::Failed,
-            deltaStatuses));
+            finalHash, totalReplay, TaskStatus::Failed, TaskStatus::Failed, deltaStatuses));
 
         // add another task
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay + 1);
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay + 1);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
-            finalHash,
-            totalReplay,
-            TaskStatus::Failed,
-            TaskStatus::Failed,
-            deltaStatuses));
+            finalHash, totalReplay, TaskStatus::Failed, TaskStatus::Failed, deltaStatuses));
         BEAST_EXPECT(net.client.countsAsExpected(2, 1, 0));
     }
 
@@ -1333,26 +1221,20 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             PeerFeature::LedgerReplayEnabled);
 
         auto l = net.server.ledgerMaster.getClosedLedger();
-        uint256 finalHash = l->info().hash;
+        uint256 finalHash = l->header().hash;
         net.client.ledgerMaster.storeLedger(l);
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay);
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);
 
-        auto delta = net.client.findLedgerDeltaAcquire(l->info().parentHash);
+        auto delta = net.client.findLedgerDeltaAcquire(l->header().parentHash);
         delta->processData(
-            l->info(),  // wrong ledger info
+            l->header(),  // wrong ledger info
             std::map<std::uint32_t, std::shared_ptr<STTx const>>());
         BEAST_EXPECT(net.client.taskStatus(delta) == TaskStatus::Failed);
-        BEAST_EXPECT(
-            net.client.taskStatus(net.client.findTask(
-                finalHash, totalReplay)) == TaskStatus::Failed);
+        BEAST_EXPECT(net.client.taskStatus(net.client.findTask(finalHash, totalReplay)) == TaskStatus::Failed);
 
         // add another task
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay + 1);
-        BEAST_EXPECT(
-            net.client.taskStatus(net.client.findTask(
-                finalHash, totalReplay + 1)) == TaskStatus::Failed);
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay + 1);
+        BEAST_EXPECT(net.client.taskStatus(net.client.findTask(finalHash, totalReplay + 1)) == TaskStatus::Failed);
     }
 
     void
@@ -1367,36 +1249,27 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             InboundLedgersBehavior::Good,
             PeerFeature::LedgerReplayEnabled);
         auto l = net.server.ledgerMaster.getClosedLedger();
-        uint256 finalHash = l->info().hash;
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay);
-        std::vector<TaskStatus> deltaStatuses(
-            totalReplay - 1, TaskStatus::Completed);
+        uint256 finalHash = l->header().hash;
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);
+        std::vector<TaskStatus> deltaStatuses(totalReplay - 1, TaskStatus::Completed);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
-            finalHash,
-            totalReplay,
-            TaskStatus::Completed,
-            TaskStatus::Completed,
-            deltaStatuses));
+            finalHash, totalReplay, TaskStatus::Completed, TaskStatus::Completed, deltaStatuses));
         BEAST_EXPECT(net.client.waitForLedgers(finalHash, totalReplay));
 
         // same range, same reason
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay);
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);
         BEAST_EXPECT(net.client.countsAsExpected(1, 1, totalReplay - 1));
         // same range, different reason
-        net.client.replayer.replay(
-            InboundLedger::Reason::CONSENSUS, finalHash, totalReplay);
+        net.client.replayer.replay(InboundLedger::Reason::CONSENSUS, finalHash, totalReplay);
         BEAST_EXPECT(net.client.countsAsExpected(2, 1, totalReplay - 1));
 
         // no overlap
         for (int i = 0; i < totalReplay + 2; ++i)
         {
-            l = net.server.ledgerMaster.getLedgerByHash(l->info().parentHash);
+            l = net.server.ledgerMaster.getLedgerByHash(l->header().parentHash);
         }
-        auto finalHash_early = l->info().hash;
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash_early, totalReplay);
+        auto finalHash_early = l->header().hash;
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash_early, totalReplay);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
             finalHash_early,
             totalReplay,
@@ -1407,26 +1280,21 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         BEAST_EXPECT(net.client.countsAsExpected(3, 2, 2 * (totalReplay - 1)));
 
         // partial overlap
-        l = net.server.ledgerMaster.getLedgerByHash(l->info().parentHash);
-        auto finalHash_moreEarly = l->info().parentHash;
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash_moreEarly, totalReplay);
+        l = net.server.ledgerMaster.getLedgerByHash(l->header().parentHash);
+        auto finalHash_moreEarly = l->header().parentHash;
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash_moreEarly, totalReplay);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
             finalHash_moreEarly,
             totalReplay,
             TaskStatus::Completed,
             TaskStatus::Completed,
             deltaStatuses));  // deltaStatuses no change
-        BEAST_EXPECT(
-            net.client.waitForLedgers(finalHash_moreEarly, totalReplay));
-        BEAST_EXPECT(
-            net.client.countsAsExpected(4, 3, 2 * (totalReplay - 1) + 2));
+        BEAST_EXPECT(net.client.waitForLedgers(finalHash_moreEarly, totalReplay));
+        BEAST_EXPECT(net.client.countsAsExpected(4, 3, 2 * (totalReplay - 1) + 2));
 
         // cover
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay * 3);
-        deltaStatuses =
-            std::vector<TaskStatus>(totalReplay * 3 - 1, TaskStatus::Completed);
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay * 3);
+        deltaStatuses = std::vector<TaskStatus>(totalReplay * 3 - 1, TaskStatus::Completed);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
             finalHash,
             totalReplay * 3,
@@ -1479,17 +1347,12 @@ struct LedgerReplayerTimeout_test : public beast::unit_test::suite
             PeerFeature::LedgerReplayEnabled);
 
         auto l = net.server.ledgerMaster.getClosedLedger();
-        uint256 finalHash = l->info().hash;
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay);
+        uint256 finalHash = l->header().hash;
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);
 
         std::vector<TaskStatus> deltaStatuses;
         BEAST_EXPECT(net.client.waitAndCheckStatus(
-            finalHash,
-            totalReplay,
-            TaskStatus::Failed,
-            TaskStatus::Failed,
-            deltaStatuses));
+            finalHash, totalReplay, TaskStatus::Failed, TaskStatus::Failed, deltaStatuses));
 
         // sweep
         BEAST_EXPECT(net.client.countsAsExpected(1, 1, 0));
@@ -1510,20 +1373,14 @@ struct LedgerReplayerTimeout_test : public beast::unit_test::suite
             PeerFeature::LedgerReplayEnabled);
 
         auto l = net.server.ledgerMaster.getClosedLedger();
-        uint256 finalHash = l->info().hash;
+        uint256 finalHash = l->header().hash;
         net.client.ledgerMaster.storeLedger(l);
-        net.client.replayer.replay(
-            InboundLedger::Reason::GENERIC, finalHash, totalReplay);
+        net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);
 
-        std::vector<TaskStatus> deltaStatuses(
-            totalReplay - 1, TaskStatus::Failed);
+        std::vector<TaskStatus> deltaStatuses(totalReplay - 1, TaskStatus::Failed);
         deltaStatuses.back() = TaskStatus::Completed;  // in client ledgerMaster
         BEAST_EXPECT(net.client.waitAndCheckStatus(
-            finalHash,
-            totalReplay,
-            TaskStatus::Failed,
-            TaskStatus::Completed,
-            deltaStatuses));
+            finalHash, totalReplay, TaskStatus::Failed, TaskStatus::Completed, deltaStatuses));
 
         // sweep
         BEAST_EXPECT(net.client.countsAsExpected(1, 1, totalReplay - 1));
@@ -1558,37 +1415,28 @@ struct LedgerReplayerLong_test : public beast::unit_test::suite
         auto l = net.server.ledgerMaster.getClosedLedger();
         for (int i = 0; i < rounds; ++i)
         {
-            finishHashes.push_back(l->info().hash);
+            finishHashes.push_back(l->header().hash);
             for (int j = 0; j < totalReplay; ++j)
             {
-                l = net.server.ledgerMaster.getLedgerByHash(
-                    l->info().parentHash);
+                l = net.server.ledgerMaster.getLedgerByHash(l->header().parentHash);
             }
         }
         BEAST_EXPECT(finishHashes.size() == rounds);
 
         for (int i = 0; i < rounds; ++i)
         {
-            net.client.replayer.replay(
-                InboundLedger::Reason::GENERIC, finishHashes[i], totalReplay);
+            net.client.replayer.replay(InboundLedger::Reason::GENERIC, finishHashes[i], totalReplay);
         }
 
-        std::vector<TaskStatus> deltaStatuses(
-            totalReplay - 1, TaskStatus::Completed);
+        std::vector<TaskStatus> deltaStatuses(totalReplay - 1, TaskStatus::Completed);
         for (int i = 0; i < rounds; ++i)
         {
             BEAST_EXPECT(net.client.waitAndCheckStatus(
-                finishHashes[i],
-                totalReplay,
-                TaskStatus::Completed,
-                TaskStatus::Completed,
-                deltaStatuses));
+                finishHashes[i], totalReplay, TaskStatus::Completed, TaskStatus::Completed, deltaStatuses));
         }
 
-        BEAST_EXPECT(
-            net.client.waitForLedgers(finishHashes[0], totalReplay * rounds));
-        BEAST_EXPECT(net.client.countsAsExpected(
-            rounds, rounds, rounds * (totalReplay - 1)));
+        BEAST_EXPECT(net.client.waitForLedgers(finishHashes[0], totalReplay * rounds));
+        BEAST_EXPECT(net.client.countsAsExpected(rounds, rounds, rounds * (totalReplay - 1)));
 
         // sweep
         net.client.replayer.sweep();
@@ -1596,10 +1444,10 @@ struct LedgerReplayerLong_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerReplay, app, ripple);
-BEAST_DEFINE_TESTSUITE_PRIO(LedgerReplayer, app, ripple, 1);
-BEAST_DEFINE_TESTSUITE(LedgerReplayerTimeout, app, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(LedgerReplayerLong, app, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerReplay, app, xrpl);
+BEAST_DEFINE_TESTSUITE_PRIO(LedgerReplayer, app, xrpl, 1);
+BEAST_DEFINE_TESTSUITE(LedgerReplayerTimeout, app, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(LedgerReplayerLong, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

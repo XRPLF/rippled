@@ -5,7 +5,7 @@
 
 #include <openssl/rand.h>
 
-namespace ripple {
+namespace xrpl {
 
 class ConfidentialTransfer_test : public beast::unit_test::suite
 {
@@ -3501,4 +3501,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(ConfidentialTransfer, app, ripple);
-}  // namespace ripple
+}  // namespace xrpl

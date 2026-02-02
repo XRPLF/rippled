@@ -7,7 +7,7 @@
 
 // VFALCO NOTE Intentionally not in the NodeStore namespace
 
-namespace ripple {
+namespace xrpl {
 
 /** The types of node objects. */
 enum NodeObjectType : std::uint32_t {
@@ -43,11 +43,7 @@ private:
 
 public:
     // This constructor is private, use createObject instead.
-    NodeObject(
-        NodeObjectType type,
-        Blob&& data,
-        uint256 const& hash,
-        PrivateAccess);
+    NodeObject(NodeObjectType type, Blob&& data, uint256 const& hash, PrivateAccess);
 
     /** Create an object from fields.
 
@@ -81,6 +77,6 @@ private:
     Blob const mData;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

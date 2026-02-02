@@ -28,7 +28,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -50,24 +50,18 @@ Env::AppBundle::AppBundle(
     {
         logs = std::make_unique<SuiteLogs>(suite);
         // Use kFatal threshold to reduce noise from STObject.
-        setDebugLogSink(
-            std::make_unique<SuiteJournalSink>("Debug", kFatal, suite));
+        setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", kFatal, suite));
     }
     auto timeKeeper_ = std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
     // Hack so we don't have to call Config::setup
-    HTTPClient::initializeSSLContext(
-        config->SSL_VERIFY_DIR,
-        config->SSL_VERIFY_FILE,
-        config->SSL_VERIFY,
-        debugLog());
-    owned = make_Application(
-        std::move(config), std::move(logs), std::move(timeKeeper_));
+    HTTPClient::initializeSSLContext(config->SSL_VERIFY_DIR, config->SSL_VERIFY_FILE, config->SSL_VERIFY, debugLog());
+    owned = make_Application(std::move(config), std::move(logs), std::move(timeKeeper_));
     app = owned.get();
     app->logs().threshold(thresh);
     if (!app->setup({}))
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
-    timeKeeper->set(app->getLedgerMaster().getClosedLedger()->info().closeTime);
+    timeKeeper->set(app->getLedgerMaster().getClosedLedger()->header().closeTime);
     app->start(false /*don't start timers*/);
     thread = std::thread([&]() { app->run(); });
 
@@ -100,14 +94,12 @@ Env::closed()
 }
 
 bool
-Env::close(
-    NetClock::time_point closeTime,
-    std::optional<std::chrono::milliseconds> consensusDelay)
+Env::close(NetClock::time_point closeTime, std::optional<std::chrono::milliseconds> consensusDelay)
 {
     // Round up to next distinguishable value
     using namespace std::chrono_literals;
     bool res = true;
-    closeTime += closed()->info().closeTimeResolution - 1s;
+    closeTime += closed()->header().closeTimeResolution - 1s;
     timeKeeper().set(closeTime);
     // Go through the rpc interface unless we need to simulate
     // a specific consensus delay.
@@ -130,7 +122,7 @@ Env::close(
             res = false;
         }
     }
-    timeKeeper().set(closed()->info().closeTime);
+    timeKeeper().set(closed()->header().closeTime);
     return res;
 }
 
@@ -201,8 +193,7 @@ Env::balance(Account const& account, MPTIssue const& mptIssue) const
             return {STAmount(mptIssue, 0), account.name()};
 
         // Make it negative
-        STAmount const amount{
-            mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
+        STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
         return {amount, lookup(issuer).name()};
     }
     else
@@ -220,9 +211,7 @@ Env::balance(Account const& account, MPTIssue const& mptIssue) const
 PrettyAmount
 Env::balance(Account const& account, Asset const& asset) const
 {
-    return std::visit(
-        [&](auto const& issue) { return balance(account, issue); },
-        asset.value());
+    return std::visit([&](auto const& issue) { return balance(account, issue); }, asset.value());
 }
 
 PrettyAmount
@@ -279,20 +268,12 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
             jtx::seq(jtx::autofill),
             fee(jtx::autofill),
             sig(jtx::autofill));
-        apply(
-            fset(account, asfDefaultRipple),
-            jtx::seq(jtx::autofill),
-            fee(jtx::autofill),
-            sig(jtx::autofill));
+        apply(fset(account, asfDefaultRipple), jtx::seq(jtx::autofill), fee(jtx::autofill), sig(jtx::autofill));
         require(flags(account, asfDefaultRipple));
     }
     else
     {
-        apply(
-            pay(master, account, amount),
-            jtx::seq(jtx::autofill),
-            fee(jtx::autofill),
-            sig(jtx::autofill));
+        apply(pay(master, account, amount), jtx::seq(jtx::autofill), fee(jtx::autofill), sig(jtx::autofill));
         require(nflags(account, asfDefaultRipple));
     }
     require(jtx::balance(account, amount));
@@ -302,11 +283,7 @@ void
 Env::trust(STAmount const& amount, Account const& account)
 {
     auto const start = balance(account);
-    apply(
-        jtx::trust(account, amount),
-        jtx::seq(jtx::autofill),
-        fee(jtx::autofill),
-        sig(jtx::autofill));
+    apply(jtx::trust(account, amount), jtx::seq(jtx::autofill), fee(jtx::autofill), sig(jtx::autofill));
     apply(
         pay(master, account, drops(current()->fees().base)),
         jtx::seq(jtx::autofill),
@@ -326,8 +303,7 @@ Env::parseResult(Json::Value const& jr)
         if (!object.isObject())
             return;
         if (object.isMember(jss::error_code))
-            parsed.rpcCode =
-                safe_cast<error_code_i>(object[jss::error_code].asInt());
+            parsed.rpcCode = safe_cast<error_code_i>(object[jss::error_code].asInt());
         if (object.isMember(jss::error_message))
             parsed.rpcMessage = object[jss::error_message].asString();
         if (object.isMember(jss::error))
@@ -401,9 +377,8 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
         // Use the provided parameters, and go straight
         // to the (RPC) client.
         assert(params.isObject());
-        if (!params.isMember(jss::secret) && !params.isMember(jss::key_type) &&
-            !params.isMember(jss::seed) && !params.isMember(jss::seed_hex) &&
-            !params.isMember(jss::passphrase))
+        if (!params.isMember(jss::secret) && !params.isMember(jss::key_type) && !params.isMember(jss::seed) &&
+            !params.isMember(jss::seed_hex) && !params.isMember(jss::passphrase))
         {
             params[jss::secret] = passphrase;
         }
@@ -422,10 +397,7 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
 }
 
 void
-Env::postconditions(
-    JTx const& jt,
-    ParsedResult const& parsed,
-    Json::Value const& jr)
+Env::postconditions(JTx const& jt, ParsedResult const& parsed, Json::Value const& jr)
 {
     auto const line = jt.testLine ? " (" + to_string(*jt.testLine) + ")" : "";
     bool bad = !test.expect(parsed.ter, "apply: No ter result!" + line);
@@ -433,21 +405,15 @@ Env::postconditions(
         (jt.ter && parsed.ter &&
          !test.expect(
              *parsed.ter == *jt.ter,
-             "apply: Got " + transToken(*parsed.ter) + " (" +
-                 transHuman(*parsed.ter) + "); Expected " +
-                 transToken(*jt.ter) + " (" + transHuman(*jt.ter) + ")" +
-                 line));
+             "apply: Got " + transToken(*parsed.ter) + " (" + transHuman(*parsed.ter) + "); Expected " +
+                 transToken(*jt.ter) + " (" + transHuman(*jt.ter) + ")" + line));
     using namespace std::string_literals;
     bad = (jt.rpcCode &&
            !test.expect(
-               parsed.rpcCode == jt.rpcCode->first &&
-                   parsed.rpcMessage == jt.rpcCode->second,
+               parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
                "apply: Got RPC result "s +
-                   (parsed.rpcCode
-                        ? RPC::get_error_info(*parsed.rpcCode).token.c_str()
-                        : "NO RESULT") +
-                   " (" + parsed.rpcMessage + "); Expected " +
-                   RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
+                   (parsed.rpcCode ? RPC::get_error_info(*parsed.rpcCode).token.c_str() : "NO RESULT") + " (" +
+                   parsed.rpcMessage + "); Expected " + RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
                    jt.rpcCode->second + ")" + line)) ||
         bad;
     // If we have an rpcCode (just checked), then the rpcException check is
@@ -457,12 +423,9 @@ Env::postconditions(
            !test.expect(
                (jt.rpcCode && parsed.rpcError.empty()) ||
                    (parsed.rpcError == jt.rpcException->first &&
-                    (!jt.rpcException->second ||
-                     parsed.rpcException == *jt.rpcException->second)),
-               "apply: Got RPC result "s + parsed.rpcError + " (" +
-                   parsed.rpcException + "); Expected " +
-                   jt.rpcException->first + " (" +
-                   jt.rpcException->second.value_or("n/a") + ")" + line)) ||
+                    (!jt.rpcException->second || parsed.rpcException == *jt.rpcException->second)),
+               "apply: Got RPC result "s + parsed.rpcError + " (" + parsed.rpcException + "); Expected " +
+                   jt.rpcException->first + " (" + jt.rpcException->second.value_or("n/a") + ")" + line)) ||
         bad;
     if (bad)
     {
@@ -533,9 +496,8 @@ Env::autofill_sig(JTx& jt)
     // If the sig is still needed, get it here.
     if (!jt.fill_sig)
         return;
-    auto const account = jv.isMember(sfDelegate.jsonName)
-        ? lookup(jv[sfDelegate.jsonName].asString())
-        : lookup(jv[jss::Account].asString());
+    auto const account = jv.isMember(sfDelegate.jsonName) ? lookup(jv[sfDelegate.jsonName].asString())
+                                                          : lookup(jv[jss::Account].asString());
     if (!app().checkSigs())
     {
         jv[jss::SigningPubKey] = strHex(account.pk().slice());
@@ -637,18 +599,14 @@ Env::do_rpc(
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    auto response =
-        rpcClient(args, app().config(), app().logs(), apiVersion, headers);
+    auto response = rpcClient(args, app().config(), app().logs(), apiVersion, headers);
 
-    for (unsigned ctr = 0; (ctr < retries_) and (response.first == rpcINTERNAL);
-         ++ctr)
+    for (unsigned ctr = 0; (ctr < retries_) and (response.first == rpcINTERNAL); ++ctr)
     {
-        JLOG(journal.error())
-            << "Env::do_rpc error, retrying, attempt #" << ctr + 1 << " ...";
+        JLOG(journal.error()) << "Env::do_rpc error, retrying, attempt #" << ctr + 1 << " ...";
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        response =
-            rpcClient(args, app().config(), app().logs(), apiVersion, headers);
+        response = rpcClient(args, app().config(), app().logs(), apiVersion, headers);
     }
 
     return response.second;
@@ -672,4 +630,4 @@ Env::disableFeature(uint256 const feature)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

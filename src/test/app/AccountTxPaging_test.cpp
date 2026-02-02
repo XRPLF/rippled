@@ -6,16 +6,14 @@
 
 #include <cstdlib>
 
-namespace ripple {
+namespace xrpl {
 
 class AccountTxPaging_test : public beast::unit_test::suite
 {
     bool
     checkTransaction(Json::Value const& tx, int sequence, int ledger)
     {
-        return (
-            tx[jss::tx][jss::Sequence].asInt() == sequence &&
-            tx[jss::tx][jss::ledger_index].asInt() == ledger);
+        return (tx[jss::tx][jss::Sequence].asInt() == sequence && tx[jss::tx][jss::ledger_index].asInt() == ledger);
     }
 
     auto
@@ -251,6 +249,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

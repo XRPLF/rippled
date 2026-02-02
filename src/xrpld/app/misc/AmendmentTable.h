@@ -10,7 +10,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** The amendment table stores the list of enabled and potential amendments.
     Individuals amendments are voted on by validators during the consensus
@@ -22,8 +22,7 @@ public:
     struct FeatureInfo
     {
         FeatureInfo() = delete;
-        FeatureInfo(std::string const& n, uint256 const& f, VoteBehavior v)
-            : name(n), feature(f), vote(v)
+        FeatureInfo(std::string const& n, uint256 const& f, VoteBehavior v) : name(n), feature(f), vote(v)
         {
         }
 
@@ -71,8 +70,7 @@ public:
 
     /** Called when a new fully-validated ledger is accepted. */
     void
-    doValidatedLedger(
-        std::shared_ptr<ReadView const> const& lastValidatedLedger)
+    doValidatedLedger(std::shared_ptr<ReadView const> const& lastValidatedLedger)
     {
         if (needValidatedLedger(lastValidatedLedger->seq()))
             doValidatedLedger(
@@ -143,27 +141,23 @@ public:
         // Inject appropriate pseudo-transactions
         for (auto const& it : actions)
         {
-            STTx amendTx(
-                ttAMENDMENT,
-                [&it, seq = lastClosedLedger->seq() + 1](auto& obj) {
-                    obj.setAccountID(sfAccount, AccountID());
-                    obj.setFieldH256(sfAmendment, it.first);
-                    obj.setFieldU32(sfLedgerSequence, seq);
+            STTx amendTx(ttAMENDMENT, [&it, seq = lastClosedLedger->seq() + 1](auto& obj) {
+                obj.setAccountID(sfAccount, AccountID());
+                obj.setFieldH256(sfAmendment, it.first);
+                obj.setFieldU32(sfLedgerSequence, seq);
 
-                    if (it.second != 0)
-                        obj.setFieldU32(sfFlags, it.second);
-                });
+                if (it.second != 0)
+                    obj.setFieldU32(sfFlags, it.second);
+            });
 
             Serializer s;
             amendTx.add(s);
 
-            JLOG(j.debug()) << "Amendments: Adding pseudo-transaction: "
-                            << amendTx.getTransactionID() << ": "
+            JLOG(j.debug()) << "Amendments: Adding pseudo-transaction: " << amendTx.getTransactionID() << ": "
                             << strHex(s.slice()) << ": " << amendTx;
 
             initialPosition->addGiveItem(
-                SHAMapNodeType::tnTRANSACTION_NM,
-                make_shamapitem(amendTx.getTransactionID(), s.slice()));
+                SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(amendTx.getTransactionID(), s.slice()));
         }
     }
 };
@@ -177,6 +171,6 @@ make_AmendmentTable(
     Section const& vetoed,
     beast::Journal journal);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 // Dummy class when no edge data needed for graph
 struct NoEdgeData
@@ -129,9 +129,7 @@ public:
     auto
     outVertices() const
     {
-        return boost::adaptors::transform(
-            graph_,
-            [](typename Graph::value_type const& v) { return v.first; });
+        return boost::adaptors::transform(graph_, [](typename Graph::value_type const& v) { return v.first; });
     }
 
     /** Range over target vertices
@@ -142,9 +140,7 @@ public:
     auto
     outVertices(Vertex source) const
     {
-        auto transform = [](typename Links::value_type const& link) {
-            return link.first;
-        };
+        auto transform = [](typename Links::value_type const& link) { return link.first; };
         auto it = graph_.find(source);
         if (it != graph_.end())
             return boost::adaptors::transform(it->second, transform);
@@ -199,7 +195,7 @@ public:
 
         Save a GraphViz dot description of the graph
         @param fileName The output file (creates)
-        @param vertexName A invokable T vertexName(Vertex const &) that
+        @param vertexName A invocable T vertexName(Vertex const &) that
                           returns the name target use for the vertex in the file
                           T must be ostream-able
     */
@@ -231,5 +227,5 @@ public:
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl
 #endif

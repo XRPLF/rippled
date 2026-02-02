@@ -23,9 +23,7 @@ public:
         @param journal Destination for logging output.
     */
     static std::shared_ptr<StatsDCollector>
-    New(IP::Endpoint const& address,
-        std::string const& prefix,
-        Journal journal);
+    New(IP::Endpoint const& address, std::string const& prefix, Journal journal);
 };
 
 }  // namespace insight

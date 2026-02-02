@@ -7,7 +7,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 /** Protocol specific constants.
 
@@ -115,8 +115,7 @@ namespace Lending {
 
     Valid values are between 0 and 10% inclusive.
 */
-TenthBips16 constexpr maxManagementFeeRate(
-    unsafe_cast<std::uint16_t>(percentageToTenthBips(10).value()));
+TenthBips16 constexpr maxManagementFeeRate(unsafe_cast<std::uint16_t>(percentageToTenthBips(10).value()));
 static_assert(maxManagementFeeRate == TenthBips16(std::uint16_t(10'000u)));
 
 /** The maximum coverage rate required of a loan broker in 1/10 bips.
@@ -179,7 +178,7 @@ static constexpr int loanPaymentsPerFeeIncrement = 5;
  *
  * This limit is enforced during the loan payment process, and thus is not
  * estimated. If the limit is hit, no further payments or overpayments will be
- * processed, no matter how much of the transation Amount is left, but the
+ * processed, no matter how much of the transaction Amount is left, but the
  * transaction will succeed with the payments that have been processed up to
  * that point.
  *
@@ -233,6 +232,7 @@ std::size_t constexpr maxMPTokenMetadataLength = 1024;
 
 /** The maximum amount of MPTokenIssuance */
 std::uint64_t constexpr maxMPTokenAmount = 0x7FFF'FFFF'FFFF'FFFFull;
+static_assert(Number::maxRep >= maxMPTokenAmount);
 
 /** The maximum length of Data payload */
 std::size_t constexpr maxDataPayloadLength = 256;
@@ -326,6 +326,7 @@ std::size_t constexpr ecPedersenProofLength = 195;
 
 /** Length of Pedersen Commitment proof */
 std::size_t constexpr ecPedersenCommitmentLength = 64;
-}  // namespace ripple
+
+}  // namespace xrpl
 
 #endif

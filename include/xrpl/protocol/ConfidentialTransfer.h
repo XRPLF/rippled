@@ -15,7 +15,7 @@
 
 #include <secp256k1.h>
 
-namespace ripple {
+namespace xrpl {
 // Helper struct to bundle the ElGamal Public Key and the associated Ciphertext
 struct ConfidentialRecipient
 {
@@ -505,6 +505,6 @@ secp256k1_mpt_verify_same_plaintext_multi(
     secp256k1_pubkey const* S,
     secp256k1_pubkey const* Pk,
     unsigned char const* tx_id);
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

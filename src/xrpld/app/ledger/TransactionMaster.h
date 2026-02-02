@@ -9,7 +9,7 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class STTx;
@@ -27,9 +27,7 @@ public:
     std::shared_ptr<Transaction>
     fetch_from_cache(uint256 const&);
 
-    std::variant<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearched>
+    std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
     fetch(uint256 const&, error_code_i& ec);
 
     /**
@@ -41,27 +39,15 @@ public:
      *         the all ledgers in the provided range were present in
      *         the database while the search was conducted.
      */
-    std::variant<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearched>
-    fetch(
-        uint256 const&,
-        ClosedInterval<uint32_t> const& range,
-        error_code_i& ec);
+    std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
+    fetch(uint256 const&, ClosedInterval<uint32_t> const& range, error_code_i& ec);
 
     std::shared_ptr<STTx const>
-    fetch(
-        boost::intrusive_ptr<SHAMapItem> const& item,
-        SHAMapNodeType type,
-        std::uint32_t uCommitLedger);
+    fetch(boost::intrusive_ptr<SHAMapItem> const& item, SHAMapNodeType type, std::uint32_t uCommitLedger);
 
     // return value: true = we had the transaction already
     bool
-    inLedger(
-        uint256 const& hash,
-        std::uint32_t ledger,
-        std::optional<uint32_t> tseq,
-        std::optional<uint32_t> netID);
+    inLedger(uint256 const& hash, std::uint32_t ledger, std::optional<uint32_t> tseq, std::optional<uint32_t> netID);
 
     void
     canonicalize(std::shared_ptr<Transaction>* pTransaction);
@@ -77,6 +63,6 @@ private:
     TaggedCache<uint256, Transaction> mCache;
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

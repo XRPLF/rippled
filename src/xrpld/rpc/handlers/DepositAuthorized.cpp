@@ -8,7 +8,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   source_account : <ident>
@@ -27,9 +27,7 @@ doDepositAuthorized(RPC::JsonContext& context)
     if (!params.isMember(jss::source_account))
         return RPC::missing_field_error(jss::source_account);
     if (!params[jss::source_account].isString())
-        return RPC::make_error(
-            rpcINVALID_PARAMS,
-            RPC::expected_field_message(jss::source_account, "a string"));
+        return RPC::make_error(rpcINVALID_PARAMS, RPC::expected_field_message(jss::source_account, "a string"));
 
     auto srcID = parseBase58<AccountID>(params[jss::source_account].asString());
     if (!srcID)
@@ -40,12 +38,9 @@ doDepositAuthorized(RPC::JsonContext& context)
     if (!params.isMember(jss::destination_account))
         return RPC::missing_field_error(jss::destination_account);
     if (!params[jss::destination_account].isString())
-        return RPC::make_error(
-            rpcINVALID_PARAMS,
-            RPC::expected_field_message(jss::destination_account, "a string"));
+        return RPC::make_error(rpcINVALID_PARAMS, RPC::expected_field_message(jss::destination_account, "a string"));
 
-    auto dstID =
-        parseBase58<AccountID>(params[jss::destination_account].asString());
+    auto dstID = parseBase58<AccountID>(params[jss::destination_account].asString());
     if (!dstID)
         return rpcError(rpcACT_MALFORMED);
     auto const dstAcct{std::move(dstID.value())};
@@ -72,8 +67,7 @@ doDepositAuthorized(RPC::JsonContext& context)
         return result;
     }
 
-    bool const reqAuth =
-        (sleDest->getFlags() & lsfDepositAuth) && (srcAcct != dstAcct);
+    bool const reqAuth = (sleDest->getFlags() & lsfDepositAuth) && (srcAcct != dstAcct);
     bool const credentialsPresent = params.isMember(jss::credentials);
 
     std::set<std::pair<AccountID, Slice>> sorted;
@@ -85,16 +79,11 @@ doDepositAuthorized(RPC::JsonContext& context)
         {
             return RPC::make_error(
                 rpcINVALID_PARAMS,
-                RPC::expected_field_message(
-                    jss::credentials,
-                    "is non-empty array of CredentialID(hash256)"));
+                RPC::expected_field_message(jss::credentials, "is non-empty array of CredentialID(hash256)"));
         }
         else if (creds.size() > maxCredentialsArraySize)
         {
-            return RPC::make_error(
-                rpcINVALID_PARAMS,
-                RPC::expected_field_message(
-                    jss::credentials, "array too long"));
+            return RPC::make_error(rpcINVALID_PARAMS, RPC::expected_field_message(jss::credentials, "array too long"));
         }
 
         lifeExtender.reserve(creds.size());
@@ -104,8 +93,7 @@ doDepositAuthorized(RPC::JsonContext& context)
             {
                 return RPC::make_error(
                     rpcINVALID_PARAMS,
-                    RPC::expected_field_message(
-                        jss::credentials, "an array of CredentialID(hash256)"));
+                    RPC::expected_field_message(jss::credentials, "an array of CredentialID(hash256)"));
             }
 
             uint256 credH;
@@ -114,49 +102,38 @@ doDepositAuthorized(RPC::JsonContext& context)
             {
                 return RPC::make_error(
                     rpcINVALID_PARAMS,
-                    RPC::expected_field_message(
-                        jss::credentials, "an array of CredentialID(hash256)"));
+                    RPC::expected_field_message(jss::credentials, "an array of CredentialID(hash256)"));
             }
 
-            std::shared_ptr<SLE const> sleCred =
-                ledger->read(keylet::credential(credH));
+            std::shared_ptr<SLE const> sleCred = ledger->read(keylet::credential(credH));
             if (!sleCred)
             {
-                RPC::inject_error(
-                    rpcBAD_CREDENTIALS, "credentials don't exist", result);
+                RPC::inject_error(rpcBAD_CREDENTIALS, "credentials don't exist", result);
                 return result;
             }
 
             if (!(sleCred->getFlags() & lsfAccepted))
             {
-                RPC::inject_error(
-                    rpcBAD_CREDENTIALS, "credentials aren't accepted", result);
+                RPC::inject_error(rpcBAD_CREDENTIALS, "credentials aren't accepted", result);
                 return result;
             }
 
-            if (credentials::checkExpired(
-                    sleCred, ledger->info().parentCloseTime))
+            if (credentials::checkExpired(sleCred, ledger->header().parentCloseTime))
             {
-                RPC::inject_error(
-                    rpcBAD_CREDENTIALS, "credentials are expired", result);
+                RPC::inject_error(rpcBAD_CREDENTIALS, "credentials are expired", result);
                 return result;
             }
 
             if ((*sleCred)[sfSubject] != srcAcct)
             {
-                RPC::inject_error(
-                    rpcBAD_CREDENTIALS,
-                    "credentials doesn't belong to the root account",
-                    result);
+                RPC::inject_error(rpcBAD_CREDENTIALS, "credentials doesn't belong to the root account", result);
                 return result;
             }
 
-            auto [it, ins] = sorted.emplace(
-                (*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]);
+            auto [it, ins] = sorted.emplace((*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]);
             if (!ins)
             {
-                RPC::inject_error(
-                    rpcBAD_CREDENTIALS, "duplicates in credentials", result);
+                RPC::inject_error(rpcBAD_CREDENTIALS, "duplicates in credentials", result);
                 return result;
             }
             lifeExtender.push_back(std::move(sleCred));
@@ -167,14 +144,11 @@ doDepositAuthorized(RPC::JsonContext& context)
     // not set, then the deposit should be fine.
     bool depositAuthorized = true;
     if (reqAuth)
-        depositAuthorized =
-            ledger->exists(keylet::depositPreauth(dstAcct, srcAcct)) ||
-            (credentialsPresent &&
-             ledger->exists(keylet::depositPreauth(dstAcct, sorted)));
+        depositAuthorized = ledger->exists(keylet::depositPreauth(dstAcct, srcAcct)) ||
+            (credentialsPresent && ledger->exists(keylet::depositPreauth(dstAcct, sorted)));
 
     result[jss::source_account] = params[jss::source_account].asString();
-    result[jss::destination_account] =
-        params[jss::destination_account].asString();
+    result[jss::destination_account] = params[jss::destination_account].asString();
     if (credentialsPresent)
         result[jss::credentials] = params[jss::credentials];
 
@@ -182,4 +156,4 @@ doDepositAuthorized(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 
 #include <atomic>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 
@@ -28,6 +28,6 @@ private:
 };
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

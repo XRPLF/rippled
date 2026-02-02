@@ -9,7 +9,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 // can_delete [<ledgerid>|<ledgerhash>|now|always|never]
 Json::Value
@@ -34,8 +34,7 @@ doCanDelete(RPC::JsonContext& context)
             std::string canDeleteStr = canDelete.asString();
             boost::to_lower(canDeleteStr);
 
-            if (canDeleteStr.find_first_not_of("0123456789") ==
-                std::string::npos)
+            if (canDeleteStr.find_first_not_of("0123456789") == std::string::npos)
             {
                 canDeleteSeq = beast::lexicalCast<std::uint32_t>(canDeleteStr);
             }
@@ -60,7 +59,7 @@ doCanDelete(RPC::JsonContext& context)
                 if (!ledger)
                     return RPC::make_error(rpcLGR_NOT_FOUND, "ledgerNotFound");
 
-                canDeleteSeq = ledger->info().seq;
+                canDeleteSeq = ledger->header().seq;
             }
             else
             {
@@ -68,8 +67,7 @@ doCanDelete(RPC::JsonContext& context)
             }
         }
 
-        ret[jss::can_delete] =
-            context.app.getSHAMapStore().setCanDelete(canDeleteSeq);
+        ret[jss::can_delete] = context.app.getSHAMapStore().setCanDelete(canDeleteSeq);
     }
     else
     {
@@ -79,4 +77,4 @@ doCanDelete(RPC::JsonContext& context)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

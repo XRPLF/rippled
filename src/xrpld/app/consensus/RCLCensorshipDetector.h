@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 template <class TxID, class Sequence>
 class RCLCensorshipDetector
@@ -19,8 +19,7 @@ public:
         TxID txid;
         Sequence seq;
 
-        TxIDSeq(TxID const& txid_, Sequence const& seq_)
-            : txid(txid_), seq(seq_)
+        TxIDSeq(TxID const& txid_, Sequence const& seq_) : txid(txid_), seq(seq_)
         {
         }
     };
@@ -122,6 +121,6 @@ public:
     }
 };
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #endif

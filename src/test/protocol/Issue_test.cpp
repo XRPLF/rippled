@@ -25,7 +25,7 @@
 #endif
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 class Issue_test : public beast::unit_test::suite
 {
@@ -434,12 +434,10 @@ public:
             // Both Books have the same domain
             BEAST_EXPECT(Book(a2, a3, domain1) == Book(a2, a3, domain1));
             BEAST_EXPECT(Book(a2, a3, domain2) == Book(a2, a3, domain2));
-            BEAST_EXPECT(
-                Book(a2, a3, std::nullopt) == Book(a2, a3, std::nullopt));
+            BEAST_EXPECT(Book(a2, a3, std::nullopt) == Book(a2, a3, std::nullopt));
 
             // Both Books have no domain
-            BEAST_EXPECT(
-                Book(a2, a3, std::nullopt) == Book(a2, a3, std::nullopt));
+            BEAST_EXPECT(Book(a2, a3, std::nullopt) == Book(a2, a3, std::nullopt));
 
             // Testing comparisons with >= and <=
 
@@ -458,10 +456,8 @@ public:
             BEAST_EXPECT(Book(a2, a3, std::nullopt) < Book(a2, a3, domain2));
 
             // Comparing two Books with no domains
-            BEAST_EXPECT(
-                Book(a2, a3, std::nullopt) <= Book(a2, a3, std::nullopt));
-            BEAST_EXPECT(
-                Book(a2, a3, std::nullopt) >= Book(a2, a3, std::nullopt));
+            BEAST_EXPECT(Book(a2, a3, std::nullopt) <= Book(a2, a3, std::nullopt));
+            BEAST_EXPECT(Book(a2, a3, std::nullopt) >= Book(a2, a3, std::nullopt));
 
             // Test case where domain1 is less than domain2
             BEAST_EXPECT(Book(a2, a3, domain1) <= Book(a2, a3, domain2));
@@ -509,99 +505,51 @@ public:
         //         log << std::hex << hash (Book (a3, a4));
         //         log << std::hex << hash (Book (a3, a4));
 
-        BEAST_EXPECT(
-            hash(Book(a1, a2, std::nullopt)) ==
-            hash(Book(a1, a2, std::nullopt)));
-        BEAST_EXPECT(
-            hash(Book(a1, a3, std::nullopt)) ==
-            hash(Book(a1, a3, std::nullopt)));
-        BEAST_EXPECT(
-            hash(Book(a1, a4, std::nullopt)) ==
-            hash(Book(a1, a4, std::nullopt)));
-        BEAST_EXPECT(
-            hash(Book(a2, a3, std::nullopt)) ==
-            hash(Book(a2, a3, std::nullopt)));
-        BEAST_EXPECT(
-            hash(Book(a2, a4, std::nullopt)) ==
-            hash(Book(a2, a4, std::nullopt)));
-        BEAST_EXPECT(
-            hash(Book(a3, a4, std::nullopt)) ==
-            hash(Book(a3, a4, std::nullopt)));
+        BEAST_EXPECT(hash(Book(a1, a2, std::nullopt)) == hash(Book(a1, a2, std::nullopt)));
+        BEAST_EXPECT(hash(Book(a1, a3, std::nullopt)) == hash(Book(a1, a3, std::nullopt)));
+        BEAST_EXPECT(hash(Book(a1, a4, std::nullopt)) == hash(Book(a1, a4, std::nullopt)));
+        BEAST_EXPECT(hash(Book(a2, a3, std::nullopt)) == hash(Book(a2, a3, std::nullopt)));
+        BEAST_EXPECT(hash(Book(a2, a4, std::nullopt)) == hash(Book(a2, a4, std::nullopt)));
+        BEAST_EXPECT(hash(Book(a3, a4, std::nullopt)) == hash(Book(a3, a4, std::nullopt)));
 
-        BEAST_EXPECT(
-            hash(Book(a1, a2, std::nullopt)) !=
-            hash(Book(a1, a3, std::nullopt)));
-        BEAST_EXPECT(
-            hash(Book(a1, a2, std::nullopt)) !=
-            hash(Book(a1, a4, std::nullopt)));
-        BEAST_EXPECT(
-            hash(Book(a1, a2, std::nullopt)) !=
-            hash(Book(a2, a3, std::nullopt)));
-        BEAST_EXPECT(
-            hash(Book(a1, a2, std::nullopt)) !=
-            hash(Book(a2, a4, std::nullopt)));
-        BEAST_EXPECT(
-            hash(Book(a1, a2, std::nullopt)) !=
-            hash(Book(a3, a4, std::nullopt)));
+        BEAST_EXPECT(hash(Book(a1, a2, std::nullopt)) != hash(Book(a1, a3, std::nullopt)));
+        BEAST_EXPECT(hash(Book(a1, a2, std::nullopt)) != hash(Book(a1, a4, std::nullopt)));
+        BEAST_EXPECT(hash(Book(a1, a2, std::nullopt)) != hash(Book(a2, a3, std::nullopt)));
+        BEAST_EXPECT(hash(Book(a1, a2, std::nullopt)) != hash(Book(a2, a4, std::nullopt)));
+        BEAST_EXPECT(hash(Book(a1, a2, std::nullopt)) != hash(Book(a3, a4, std::nullopt)));
 
         // Books with domain
-        BEAST_EXPECT(
-            hash(Book(a1, a2, domain1)) == hash(Book(a1, a2, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a1, a3, domain1)) == hash(Book(a1, a3, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a1, a4, domain1)) == hash(Book(a1, a4, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a2, a3, domain1)) == hash(Book(a2, a3, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a2, a4, domain1)) == hash(Book(a2, a4, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a3, a4, domain1)) == hash(Book(a3, a4, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a1, a2, std::nullopt)) ==
-            hash(Book(a1, a2, std::nullopt)));
+        BEAST_EXPECT(hash(Book(a1, a2, domain1)) == hash(Book(a1, a2, domain1)));
+        BEAST_EXPECT(hash(Book(a1, a3, domain1)) == hash(Book(a1, a3, domain1)));
+        BEAST_EXPECT(hash(Book(a1, a4, domain1)) == hash(Book(a1, a4, domain1)));
+        BEAST_EXPECT(hash(Book(a2, a3, domain1)) == hash(Book(a2, a3, domain1)));
+        BEAST_EXPECT(hash(Book(a2, a4, domain1)) == hash(Book(a2, a4, domain1)));
+        BEAST_EXPECT(hash(Book(a3, a4, domain1)) == hash(Book(a3, a4, domain1)));
+        BEAST_EXPECT(hash(Book(a1, a2, std::nullopt)) == hash(Book(a1, a2, std::nullopt)));
 
         // Comparing Books with domain1 vs no domain
-        BEAST_EXPECT(
-            hash(Book(a1, a2, std::nullopt)) != hash(Book(a1, a2, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a1, a3, std::nullopt)) != hash(Book(a1, a3, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a1, a4, std::nullopt)) != hash(Book(a1, a4, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a2, a3, std::nullopt)) != hash(Book(a2, a3, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a2, a4, std::nullopt)) != hash(Book(a2, a4, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a3, a4, std::nullopt)) != hash(Book(a3, a4, domain1)));
+        BEAST_EXPECT(hash(Book(a1, a2, std::nullopt)) != hash(Book(a1, a2, domain1)));
+        BEAST_EXPECT(hash(Book(a1, a3, std::nullopt)) != hash(Book(a1, a3, domain1)));
+        BEAST_EXPECT(hash(Book(a1, a4, std::nullopt)) != hash(Book(a1, a4, domain1)));
+        BEAST_EXPECT(hash(Book(a2, a3, std::nullopt)) != hash(Book(a2, a3, domain1)));
+        BEAST_EXPECT(hash(Book(a2, a4, std::nullopt)) != hash(Book(a2, a4, domain1)));
+        BEAST_EXPECT(hash(Book(a3, a4, std::nullopt)) != hash(Book(a3, a4, domain1)));
 
         // Books with domain1 but different Issues
-        BEAST_EXPECT(
-            hash(Book(a1, a2, domain1)) != hash(Book(a1, a3, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a1, a2, domain1)) != hash(Book(a1, a4, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a2, a3, domain1)) != hash(Book(a2, a4, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a1, a2, domain1)) != hash(Book(a2, a3, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a2, a4, domain1)) != hash(Book(a3, a4, domain1)));
-        BEAST_EXPECT(
-            hash(Book(a3, a4, domain1)) != hash(Book(a1, a4, domain1)));
+        BEAST_EXPECT(hash(Book(a1, a2, domain1)) != hash(Book(a1, a3, domain1)));
+        BEAST_EXPECT(hash(Book(a1, a2, domain1)) != hash(Book(a1, a4, domain1)));
+        BEAST_EXPECT(hash(Book(a2, a3, domain1)) != hash(Book(a2, a4, domain1)));
+        BEAST_EXPECT(hash(Book(a1, a2, domain1)) != hash(Book(a2, a3, domain1)));
+        BEAST_EXPECT(hash(Book(a2, a4, domain1)) != hash(Book(a3, a4, domain1)));
+        BEAST_EXPECT(hash(Book(a3, a4, domain1)) != hash(Book(a1, a4, domain1)));
 
         // Books with domain1 and domain2
-        BEAST_EXPECT(
-            hash(Book(a1, a2, domain1)) != hash(Book(a1, a2, domain2)));
-        BEAST_EXPECT(
-            hash(Book(a1, a3, domain1)) != hash(Book(a1, a3, domain2)));
-        BEAST_EXPECT(
-            hash(Book(a1, a4, domain1)) != hash(Book(a1, a4, domain2)));
-        BEAST_EXPECT(
-            hash(Book(a2, a3, domain1)) != hash(Book(a2, a3, domain2)));
-        BEAST_EXPECT(
-            hash(Book(a2, a4, domain1)) != hash(Book(a2, a4, domain2)));
-        BEAST_EXPECT(
-            hash(Book(a3, a4, domain1)) != hash(Book(a3, a4, domain2)));
+        BEAST_EXPECT(hash(Book(a1, a2, domain1)) != hash(Book(a1, a2, domain2)));
+        BEAST_EXPECT(hash(Book(a1, a3, domain1)) != hash(Book(a1, a3, domain2)));
+        BEAST_EXPECT(hash(Book(a1, a4, domain1)) != hash(Book(a1, a4, domain2)));
+        BEAST_EXPECT(hash(Book(a2, a3, domain1)) != hash(Book(a2, a3, domain2)));
+        BEAST_EXPECT(hash(Book(a2, a4, domain1)) != hash(Book(a2, a4, domain2)));
+        BEAST_EXPECT(hash(Book(a3, a4, domain1)) != hash(Book(a3, a4, domain2)));
     }
 
     //--------------------------------------------------------------------------
@@ -959,6 +907,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Issue, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Issue, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

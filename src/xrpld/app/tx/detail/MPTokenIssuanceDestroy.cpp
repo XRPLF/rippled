@@ -4,7 +4,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint32_t
 MPTokenIssuanceDestroy::getFlagsMask(PreflightContext const& ctx)
@@ -22,8 +22,7 @@ TER
 MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    auto const sleMPT =
-        ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    auto const sleMPT = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleMPT)
         return tecOBJECT_NOT_FOUND;
 
@@ -44,13 +43,11 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 TER
 MPTokenIssuanceDestroy::doApply()
 {
-    auto const mpt =
-        view().peek(keylet::mptIssuance(ctx_.tx[sfMPTokenIssuanceID]));
+    auto const mpt = view().peek(keylet::mptIssuance(ctx_.tx[sfMPTokenIssuanceID]));
     if (account_ != mpt->getAccountID(sfIssuer))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view().dirRemove(
-            keylet::ownerDir(account_), (*mpt)[sfOwnerNode], mpt->key(), false))
+    if (!view().dirRemove(keylet::ownerDir(account_), (*mpt)[sfOwnerNode], mpt->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     view().erase(mpt);
@@ -60,4 +57,4 @@ MPTokenIssuanceDestroy::doApply()
     return tesSUCCESS;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

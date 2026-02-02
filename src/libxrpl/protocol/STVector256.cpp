@@ -12,16 +12,14 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
 {
     auto const slice = sit.getSlice(sit.getVLDataLength());
 
     if (slice.size() % uint256::size() != 0)
-        Throw<std::runtime_error>(
-            "Bad serialization for STVector256: " +
-            std::to_string(slice.size()));
+        Throw<std::runtime_error>("Bad serialization for STVector256: " + std::to_string(slice.size()));
 
     auto const cnt = slice.size() / uint256::size();
 
@@ -58,11 +56,8 @@ STVector256::isDefault() const
 void
 STVector256::add(Serializer& s) const
 {
-    XRPL_ASSERT(
-        getFName().isBinary(), "ripple::STVector256::add : field is binary");
-    XRPL_ASSERT(
-        getFName().fieldType == STI_VECTOR256,
-        "ripple::STVector256::add : valid field type");
+    XRPL_ASSERT(getFName().isBinary(), "xrpl::STVector256::add : field is binary");
+    XRPL_ASSERT(getFName().fieldType == STI_VECTOR256, "xrpl::STVector256::add : valid field type");
     s.addVL(mValue.begin(), mValue.end(), mValue.size() * (256 / 8));
 }
 
@@ -84,4 +79,4 @@ STVector256::getJson(JsonOptions) const
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
