@@ -1097,7 +1097,7 @@ MPTTester::convert(MPTConvert const& arg)
 }
 
 void
-MPTTester::send(MPTConfidentialMPTSend const& arg)
+MPTTester::send(MPTConfidentialSend const& arg)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::ConfidentialMPTSend;

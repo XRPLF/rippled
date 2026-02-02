@@ -196,7 +196,7 @@ struct MPTMergeInbox
     std::optional<TER> err = std::nullopt;
 };
 
-struct MPTConfidentialMPTSend
+struct MPTConfidentialSend
 {
     std::optional<Account> account = std::nullopt;
     std::optional<Account> dest = std::nullopt;
@@ -326,7 +326,7 @@ public:
     mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
 
     void
-    send(MPTConfidentialMPTSend const& arg = MPTConfidentialMPTSend{});
+    send(MPTConfidentialSend const& arg = MPTConfidentialSend{});
 
     void
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
