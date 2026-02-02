@@ -78,9 +78,9 @@ transfer(jtx::Account const& account, std::optional<uint256> const& index)
 }
 
 void
-sponsorAcc::operator()(Env& env, JTx& jt) const
+counterpartySponsor::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfSponsorAccount.jsonName] = sponsor_.human();
+    jt.jv[sfCounterpartySponsor.jsonName] = sponsor_.human();
 }
 
 void

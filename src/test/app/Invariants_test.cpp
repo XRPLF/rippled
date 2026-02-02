@@ -1429,7 +1429,7 @@ class Invariants_test : public beast::unit_test::suite
             },
             {
                 "pseudo-account has a sponsorship field",
-                [](SLE::pointer& sle) { sle->at(sfSponsorAccount) = Account("sponsor").id(); },
+                [](SLE::pointer& sle) { sle->at(sfSponsor) = Account("sponsor").id(); },
             },
         });
 
@@ -3540,7 +3540,7 @@ class Invariants_test : public beast::unit_test::suite
         {
             auto const expect_message =
                 "Invariant failed: Net delta of SponsoringAccountCount does "
-                "not match net delta of sfSponsorAccount presence.";
+                "not match net delta of sfSponsor presence.";
 
             doInvariantCheck({{expect_message}}, [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
@@ -3555,7 +3555,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
-                sle->setAccountID(sfSponsorAccount, A2.id());
+                sle->setAccountID(sfSponsor, A2.id());
                 ac.view().update(sle);
                 return true;
             });

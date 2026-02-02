@@ -23,14 +23,14 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     auto const account = ctx.tx.getAccountID(sfAccount);
-    bool const hasSponsor = ctx.tx.isFieldPresent(sfSponsorAccount);
+    bool const hasSponsor = ctx.tx.isFieldPresent(sfCounterpartySponsor);
     bool const hasSponsee = ctx.tx.isFieldPresent(sfSponsee);
 
     //  The transaction must specify either Sponsor or Sponsee, but not both.
     if (hasSponsor == hasSponsee)
         return temMALFORMED;
 
-    auto const sponsor = ctx.tx[~sfSponsorAccount].value_or(account);
+    auto const sponsor = ctx.tx[~sfCounterpartySponsor].value_or(account);
     auto const sponsee = ctx.tx[~sfSponsee].value_or(account);
 
     if (sponsor == sponsee)
@@ -140,7 +140,7 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
 TER
 SponsorshipSet::preclaim(PreclaimContext const& ctx)
 {
-    auto const sponsor = ctx.tx[~sfSponsorAccount].value_or(ctx.tx[sfAccount]);
+    auto const sponsor = ctx.tx[~sfCounterpartySponsor].value_or(ctx.tx[sfAccount]);
     auto const sponsee = ctx.tx[~sfSponsee].value_or(ctx.tx[sfAccount]);
 
     if (sponsee == sponsor)
@@ -172,7 +172,7 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
 TER
 SponsorshipSet::doApply()
 {
-    auto const sponsorAcc = ctx_.tx[~sfSponsorAccount].value_or(account_);
+    auto const sponsorAcc = ctx_.tx[~sfCounterpartySponsor].value_or(account_);
     auto const sponseeAcc = ctx_.tx[~sfSponsee].value_or(account_);
 
     if (sponseeAcc == sponsorAcc)

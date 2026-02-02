@@ -118,11 +118,14 @@ public:
 
         // invalid SponsorAccount / Sponsee
         // Account = Sponsor
-        env(sponsor::set(alice, tfDeleteObject), sponsor::sponsorAcc(alice), ter(temMALFORMED));
+        env(sponsor::set(alice, tfDeleteObject), sponsor::counterpartySponsor(alice), ter(temMALFORMED));
         // Account = Sponsee
         env(sponsor::set(alice, tfDeleteObject), sponsor::sponseeAcc(alice), ter(temMALFORMED));
         // Both Sponsor and Sponsee are specified
-        env(sponsor::set(alice, 0), sponsor::sponsorAcc(sponsor), sponsor::sponseeAcc(alice), ter(temMALFORMED));
+        env(sponsor::set(alice, 0),
+            sponsor::counterpartySponsor(sponsor),
+            sponsor::sponseeAcc(alice),
+            ter(temMALFORMED));
 
         // Invalid feeAmount
         for (auto amt : {XRP(-1), XRP(0), USD(1)})
@@ -144,8 +147,8 @@ public:
         // TODO: test MaxFee with tfDeleteObject
 
         // Invalid SponsorAccount with non-Delete operation
-        env(sponsor::set_reserve(sponsor, 0, 100), sponsor::sponsorAcc(alice), ter(temMALFORMED));
-        env(sponsor::set_fee(sponsor, 0, XRP(1), XRP(1)), sponsor::sponsorAcc(alice), ter(temMALFORMED));
+        env(sponsor::set_reserve(sponsor, 0, 100), sponsor::counterpartySponsor(alice), ter(temMALFORMED));
+        env(sponsor::set_fee(sponsor, 0, XRP(1), XRP(1)), sponsor::counterpartySponsor(alice), ter(temMALFORMED));
 
         //
         // preclaim
@@ -156,7 +159,7 @@ public:
         env.close();
 
         // Invalid Sponsor
-        env(sponsor::set(sponsor, tfDeleteObject), sponsor::sponsorAcc(noFunded), ter(tecNO_DST));
+        env(sponsor::set(sponsor, tfDeleteObject), sponsor::counterpartySponsor(noFunded), ter(tecNO_DST));
         env.close();
 
         // Invalid Delete operation (sponsorship not found)
@@ -391,7 +394,7 @@ public:
             env.close();
 
             // delete from sponsee
-            env(sponsor::del(alice), sponsor::sponsorAcc(sponsor), ter(tesSUCCESS));
+            env(sponsor::del(alice), sponsor::counterpartySponsor(sponsor), ter(tesSUCCESS));
             env.close();
         }
 
@@ -405,7 +408,7 @@ public:
             env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
             env.close();
 
-            env(sponsor::del(alice), sponsor::sponsorAcc(sponsor), ter(tesSUCCESS));
+            env(sponsor::del(alice), sponsor::counterpartySponsor(sponsor), ter(tesSUCCESS));
             env.close();
         }
         {
@@ -418,7 +421,7 @@ public:
             env(sponsor::set_reserve(sponsor, 0, 100), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
             env.close();
 
-            env(sponsor::del(alice), sponsor::sponsorAcc(sponsor), ter(tesSUCCESS));
+            env(sponsor::del(alice), sponsor::counterpartySponsor(sponsor), ter(tesSUCCESS));
             env.close();
         }
         {
@@ -426,7 +429,7 @@ public:
             env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
             env.close();
 
-            env(sponsor::del(alice), sponsor::sponsorAcc(sponsor), ter(tesSUCCESS));
+            env(sponsor::del(alice), sponsor::counterpartySponsor(sponsor), ter(tesSUCCESS));
             env.close();
         }
         {
@@ -434,7 +437,7 @@ public:
             env(sponsor::set_reserve(sponsor, 0, 100), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
             env.close();
 
-            env(sponsor::del(alice), sponsor::sponsorAcc(sponsor), ter(tesSUCCESS));
+            env(sponsor::del(alice), sponsor::counterpartySponsor(sponsor), ter(tesSUCCESS));
             env.close();
         }
     }
@@ -544,8 +547,8 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 1);
             auto const sle1 = env.le(keylet::account(alice));
-            BEAST_EXPECT(sle1->isFieldPresent(sfSponsorAccount));
-            BEAST_EXPECT(sle1->getAccountID(sfSponsorAccount) == sponsor1.id());
+            BEAST_EXPECT(sle1->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(sle1->getAccountID(sfSponsor) == sponsor1.id());
 
             // transfer sponsor
             adjustAccountXRPBalance(env, sponsor2, accountReserve(env, 2) - drops(1));
@@ -572,8 +575,8 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 1);
             BEAST_EXPECT(!env.le(keylet::account(sponsor1))->isFieldPresent(sfSponsoringAccountCount));
             auto const sle2 = env.le(keylet::account(alice));
-            BEAST_EXPECT(sle2->isFieldPresent(sfSponsorAccount));
-            BEAST_EXPECT(sle2->getAccountID(sfSponsorAccount) == sponsor2.id());
+            BEAST_EXPECT(sle2->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(sle2->getAccountID(sfSponsor) == sponsor2.id());
 
             // sponsor 2 accounts
             adjustAccountXRPBalance(env, sponsor2, accountReserve(env, 3));
@@ -601,7 +604,7 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 1);
             auto const sle3 = env.le(keylet::account(alice));
-            BEAST_EXPECT(!sle3->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(!sle3->isFieldPresent(sfSponsor));
 
             env(sponsor::transfer(bob));
             env.close();
@@ -617,7 +620,7 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
             BEAST_EXPECT(!env.le(keylet::account(sponsor2))->isFieldPresent(sfSponsoringAccountCount));
             auto const sle4 = env.le(keylet::account(bob));
-            BEAST_EXPECT(!sle4->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(!sle4->isFieldPresent(sfSponsor));
 
             // not sponsored
             env(sponsor::transfer(bob), ter(tecNO_PERMISSION));
@@ -680,8 +683,8 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             auto const sle1 = env.le(keylet::unchecked(checkId));
-            BEAST_EXPECT(sle1->isFieldPresent(sfSponsorAccount));
-            BEAST_EXPECT(sle1->getAccountID(sfSponsorAccount) == sponsor1.id());
+            BEAST_EXPECT(sle1->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(sle1->getAccountID(sfSponsor) == sponsor1.id());
 
             // transfer sponsor
             env(sponsor::transfer(alice, checkId),
@@ -707,8 +710,8 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
             auto const sle2 = env.le(keylet::unchecked(checkId));
-            BEAST_EXPECT(sle2->isFieldPresent(sfSponsorAccount));
-            BEAST_EXPECT(sle2->getAccountID(sfSponsorAccount) == sponsor2.id());
+            BEAST_EXPECT(sle2->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(sle2->getAccountID(sfSponsor) == sponsor2.id());
 
             // dissolve sponsor
             adjustAccountXRPBalance(env, alice, reserve(env, 1) - drops(1));
@@ -745,7 +748,7 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
             BEAST_EXPECT(!env.le(keylet::account(sponsor2))->isFieldPresent(sfSponsoringOwnerCount));
             auto const sle3 = env.le(keylet::unchecked(checkId));
-            BEAST_EXPECT(!sle3->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(!sle3->isFieldPresent(sfSponsor));
         }
         {
             // sponsor object (pre-funded + no ltSponsorship entry)
@@ -815,8 +818,8 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             auto checkSle = env.le(keylet::unchecked(checkId));
-            BEAST_EXPECT(checkSle->isFieldPresent(sfSponsorAccount));
-            BEAST_EXPECT(checkSle->getAccountID(sfSponsorAccount) == sponsor1.id());
+            BEAST_EXPECT(checkSle->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(checkSle->getAccountID(sfSponsor) == sponsor1.id());
             auto sponsor1Sle = env.le(keylet::sponsor(sponsor1, alice));
             BEAST_EXPECT(sponsor1Sle->getFieldU32(sfReserveCount) == 99);
 
@@ -837,8 +840,8 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
             checkSle = env.le(keylet::unchecked(checkId));
-            BEAST_EXPECT(checkSle->isFieldPresent(sfSponsorAccount));
-            BEAST_EXPECT(checkSle->getAccountID(sfSponsorAccount) == sponsor2.id());
+            BEAST_EXPECT(checkSle->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(checkSle->getAccountID(sfSponsor) == sponsor2.id());
             sponsor1Sle = env.le(keylet::sponsor(sponsor1, alice));
             BEAST_EXPECT(sponsor1Sle->getFieldU32(sfReserveCount) == 100);  // paybacked
             auto sponsor2Sle = env.le(keylet::sponsor(sponsor2, alice));
@@ -860,7 +863,7 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
             BEAST_EXPECT(!env.le(keylet::account(sponsor2))->isFieldPresent(sfSponsoringOwnerCount));
             checkSle = env.le(keylet::unchecked(checkId));
-            BEAST_EXPECT(!checkSle->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(!checkSle->isFieldPresent(sfSponsor));
             sponsor2Sle = env.le(keylet::sponsor(sponsor2, alice));
             BEAST_EXPECT(sponsor2Sle->getFieldU32(sfReserveCount) == 100);  // paybacked
         }
@@ -1210,7 +1213,7 @@ public:
             env.close();
 
             auto const bobSle = env.le(keylet::account(bob));
-            BEAST_EXPECT(!bobSle->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(!bobSle->isFieldPresent(sfSponsor));
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 0);
         }
@@ -1226,8 +1229,8 @@ public:
             env.close();
 
             auto const charlieSle = env.le(keylet::account(charlie));
-            BEAST_EXPECT(charlieSle->isFieldPresent(sfSponsorAccount));
-            BEAST_EXPECT(charlieSle->getAccountID(sfSponsorAccount) == sponsor.id());
+            BEAST_EXPECT(charlieSle->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(charlieSle->getAccountID(sfSponsor) == sponsor.id());
             BEAST_EXPECT(sponsoredOwnerCount(env, charlie) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 1);
         }
@@ -1469,7 +1472,7 @@ public:
                     BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);  // LPToken
                     BEAST_EXPECT(sponsoredOwnerCount(env, ammAccount) == 0);
                     BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);  // LPToken
-                    BEAST_EXPECT(!env.le(keylet::amm(USD.issue(), EUR.issue()))->isFieldPresent(sfSponsorAccount));
+                    BEAST_EXPECT(!env.le(keylet::amm(USD.issue(), EUR.issue()))->isFieldPresent(sfSponsor));
                 });
 
             auto const ammKeylet = keylet::amm(USD.issue(), EUR.issue());
@@ -1712,7 +1715,7 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
             auto const keylet = keylet::check(alice, seq);
-            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor.id());
+            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor.id());
 
             if (cosigning)
             {
@@ -1738,7 +1741,7 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor2.id());
+            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor2.id());
 
             // CheckCancel
             env(check::cancel(alice, keylet.key));
@@ -1801,7 +1804,7 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
 
             auto const keylet = keylet::check(alice, seq2);
-            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor.id());
+            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor.id());
 
             // CheckCash
             testEachSponsorship(
@@ -1874,7 +1877,7 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor2.id());
+            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor2.id());
 
             // OfferCancel
             env(offer_cancel(alice, seq));
@@ -2037,7 +2040,7 @@ public:
                 });
 
             auto const keylet = keylet::ticket(alice, ticketSeq);
-            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor.id());
+            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor.id());
 
             // transfer sponsor
             if (cosigning)
@@ -2061,7 +2064,7 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 249);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor2.id());
+            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor2.id());
 
             // use a Ticket
             env(noop(alice), ticket::use(ticketSeq));
@@ -2188,7 +2191,7 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(!env.le(keylet::credential(subject, issuer, credTypeSlice))->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(!env.le(keylet::credential(subject, issuer, credTypeSlice))->isFieldPresent(sfSponsor));
 
             env(credentials::deleteCred(subject, subject, issuer, credType));
             env.close();
@@ -2386,7 +2389,7 @@ public:
                         escrow::condition(escrow::cb1),
                         escrow::cancel_time(env.now() + 100s));
                 });
-            BEAST_EXPECT(env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsorAccount) == sponsor.id());
+            BEAST_EXPECT(env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor.id());
 
             // transfer sponsor
             if (cosigning)
@@ -2410,7 +2413,7 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-            BEAST_EXPECT(env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsorAccount) == sponsor2.id());
+            BEAST_EXPECT(env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor2.id());
 
             // EscrowFinish
             env(escrow::finish(bob, alice, seq),
@@ -2456,7 +2459,7 @@ public:
                         escrow::cancel_time(env.now() + 100s));
                 });
 
-            BEAST_EXPECT(env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsorAccount) == sponsor.id());
+            BEAST_EXPECT(env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor.id());
 
             // EscrowFinish
             testEachSponsorship(
@@ -3623,7 +3626,7 @@ public:
                     submit(std::get<0>(result));
                     keylet = std::get<1>(result);
                 });
-            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor.id());
+            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor.id());
         }
         // VaultDeposit
         {

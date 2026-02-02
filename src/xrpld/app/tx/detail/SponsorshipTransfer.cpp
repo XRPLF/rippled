@@ -149,7 +149,7 @@ getLedgerEntrySponsorField(T const& sle, AccountID const& owner)
             // LCOV_EXCL_STOP
         }
         default:
-            return sfSponsorAccount;
+            return sfSponsor;
     }
 };
 
@@ -210,7 +210,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
     {
         if (newSponsor)
         {
-            if (accSle->isFieldPresent(sfSponsorAccount))
+            if (accSle->isFieldPresent(sfSponsor))
             {
                 // check not same account
                 if (newSponsor->getAccountID(sfAccount) == accSle->getAccountID(sfAccount))
@@ -222,7 +222,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         {
             // dissolve sponsor
             // check account is sponsored
-            if (!accSle->isFieldPresent(sfSponsorAccount))
+            if (!accSle->isFieldPresent(sfSponsor))
                 return tecNO_PERMISSION;
         }
 
@@ -345,7 +345,7 @@ SponsorshipTransfer::doApply()
         else
         {
             // dissolve object sponsor
-            auto const oldSponsor = objSle->getAccountID(sfSponsorAccount);
+            auto const oldSponsor = objSle->getAccountID(sfSponsor);
             auto const oldSponsorSle = view().peek(keylet::account(oldSponsor));
             if (!oldSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -366,7 +366,7 @@ SponsorshipTransfer::doApply()
                     return ter;
 
             // remove sponsor from object
-            objSle->makeFieldAbsent(sfSponsorAccount);
+            objSle->makeFieldAbsent(sfSponsor);
             view().update(objSle);
         }
     }
@@ -383,21 +383,21 @@ SponsorshipTransfer::doApply()
 
             view().update(newSponsorSle);
             // decrement old sponsoring count
-            if (accSle->isFieldPresent(sfSponsorAccount))
+            if (accSle->isFieldPresent(sfSponsor))
             {
-                auto const oldSponsor = accSle->getAccountID(sfSponsorAccount);
+                auto const oldSponsor = accSle->getAccountID(sfSponsor);
                 auto const oldSponsorSle = view().peek(keylet::account(oldSponsor));
                 setSponsorFieldU32(oldSponsorSle, sfSponsoringAccountCount, -1);
                 view().update(oldSponsorSle);
             }
-            accSle->setAccountID(sfSponsorAccount, newSponsor);
+            accSle->setAccountID(sfSponsor, newSponsor);
             view().update(accSle);
         }
         else
         {
             // dissolve account sponsor
-            auto const oldSponsor = accSle->getAccountID(sfSponsorAccount);
-            accSle->makeFieldAbsent(sfSponsorAccount);
+            auto const oldSponsor = accSle->getAccountID(sfSponsor);
+            accSle->makeFieldAbsent(sfSponsor);
             // decrement account sponsoring count
             auto const oldSponsorSle = view().peek(keylet::account(oldSponsor));
             setSponsorFieldU32(oldSponsorSle, sfSponsoringAccountCount, -1);

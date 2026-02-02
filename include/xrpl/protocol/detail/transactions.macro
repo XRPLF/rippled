@@ -1079,7 +1079,7 @@ TRANSACTION(ttSPONSORSHIP_SET, 86, SponsorshipSet,
     featureSponsor,
     noPriv,
     ({
-    {sfSponsorAccount, soeOPTIONAL},
+    {sfCounterpartySponsor, soeOPTIONAL},
     {sfSponsee, soeOPTIONAL},
     {sfFeeAmount, soeOPTIONAL},
     {sfMaxFee, soeOPTIONAL},

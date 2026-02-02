@@ -580,7 +580,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 
     std::size_t sponsoredOwnerCount = sle->getFieldU32(sfSponsoredOwnerCount);
     std::size_t sponsoringOwnerCount = sle->getFieldU32(sfSponsoringOwnerCount);
-    bool isAccountSponsored = sle->isFieldPresent(sfSponsorAccount);
+    bool isAccountSponsored = sle->isFieldPresent(sfSponsor);
     std::size_t sponsoringAccountCount = sle->getFieldU32(sfSponsoringAccountCount);
 
     // Pseudo-accounts have no reserve requirement
@@ -958,7 +958,7 @@ calculateReserve(std::shared_ptr<SLE const> const& sle, Fees const& fees)
         sle->getFieldU32(sfOwnerCount),
         sle->getFieldU32(sfSponsoredOwnerCount),
         sle->getFieldU32(sfSponsoringOwnerCount),
-        sle->isFieldPresent(sfSponsorAccount),
+        sle->isFieldPresent(sfSponsor),
         sle->getFieldU32(sfSponsoringAccountCount));
 }
 
@@ -1008,7 +1008,7 @@ checkInsufficientReserve(
                 sponsorSle->getFieldU32(sfOwnerCount),
                 sponsorSle->getFieldU32(sfSponsoredOwnerCount),
                 sponsorSle->getFieldU32(sfSponsoringOwnerCount) + ownerCountDelta,
-                sponsorSle->isFieldPresent(sfSponsorAccount),
+                sponsorSle->isFieldPresent(sfSponsor),
                 sponsorSle->getFieldU32(sfSponsoringAccountCount) + accountCountDelta)};
 
             if (sponsorBalance < sponsorReserve)
@@ -1031,7 +1031,7 @@ checkInsufficientReserve(
             accSle->getFieldU32(sfOwnerCount) + ownerCountDelta,
             accSle->getFieldU32(sfSponsoredOwnerCount),
             accSle->getFieldU32(sfSponsoringOwnerCount),
-            accSle->isFieldPresent(sfSponsorAccount),
+            accSle->isFieldPresent(sfSponsor),
             accSle->getFieldU32(sfSponsoringAccountCount) + accountCountDelta)};
 
         if (accBalance < reserve)
@@ -1102,7 +1102,7 @@ addSponsorToLedgerEntry(
 {
     XRPL_ASSERT(
         (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
-            (sle->getType() != ltRIPPLE_STATE && field == sfSponsorAccount),
+            (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
         "addSponsorToLedgerEntry : Invalid field to the LedgerEntry");
     if (sponsorSle)
         sle->setAccountID(field, sponsorSle->getAccountID(sfAccount));
@@ -1113,7 +1113,7 @@ removeSponsorFromLedgerEntry(std::shared_ptr<SLE> const& sle, SF_ACCOUNT const& 
 {
     XRPL_ASSERT(
         (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
-            (sle->getType() != ltRIPPLE_STATE && field == sfSponsorAccount),
+            (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
         "removeSponsorFromLedgerEntry : Invalid field to the LedgerEntry");
     if (sle->isFieldPresent(field))
         sle->makeFieldAbsent(field);

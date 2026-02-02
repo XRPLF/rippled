@@ -1668,7 +1668,7 @@ ValidPseudoAccounts::visitEntry(
                 errors_.emplace_back("pseudo-account has a regular key");
             }
             if (after->isFieldPresent(sfSponsoredOwnerCount) || after->isFieldPresent(sfSponsoringOwnerCount) ||
-                after->isFieldPresent(sfSponsorAccount))
+                after->isFieldPresent(sfSponsor))
             {
                 errors_.emplace_back("pseudo-account has a sponsorship field");
             }
@@ -3342,7 +3342,7 @@ SponsorshipAccountCountMatchesField::visitEntry(
     };
 
     auto hasSponsorField = [](std::shared_ptr<SLE const> const& sle) -> bool {
-        return sle && sle->getType() == ltACCOUNT_ROOT && sle->isFieldPresent(sfSponsorAccount);
+        return sle && sle->getType() == ltACCOUNT_ROOT && sle->isFieldPresent(sfSponsor);
     };
 
     std::int64_t const beforeCount = getSponsoringAccountCount(before);
@@ -3365,7 +3365,7 @@ SponsorshipAccountCountMatchesField::finalize(
     if (deltaSponsoringAccountCount_ != deltaSponsorFieldPresence_)
     {
         JLOG(j.fatal()) << "Invariant failed: Net delta of SponsoringAccountCount does not "
-                           "match net delta of sfSponsorAccount presence.";
+                           "match net delta of sfSponsor presence.";
         return false;
     }
 

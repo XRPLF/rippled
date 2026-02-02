@@ -332,10 +332,10 @@ TYPED_SFIELD(sfIssuingChainDoor,         ACCOUNT,   23)
 TYPED_SFIELD(sfSubject,                  ACCOUNT,   24)
 TYPED_SFIELD(sfBorrower,                 ACCOUNT,   25)
 TYPED_SFIELD(sfCounterparty,             ACCOUNT,   26)
-TYPED_SFIELD(sfSponsorAccount,           ACCOUNT,   27)
+TYPED_SFIELD(sfSponsor,                  ACCOUNT,   27)
 TYPED_SFIELD(sfHighSponsor,              ACCOUNT,   28)
 TYPED_SFIELD(sfLowSponsor,               ACCOUNT,   29)
-TYPED_SFIELD(sfSponsor,                  ACCOUNT,   30)
+TYPED_SFIELD(sfCounterpartySponsor,      ACCOUNT,   30)
 TYPED_SFIELD(sfSponsee,                  ACCOUNT,   31)
 
 // vector of 256-bit

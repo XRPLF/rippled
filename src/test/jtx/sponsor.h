@@ -34,13 +34,13 @@ del(jtx::Account const& account);
 Json::Value
 transfer(jtx::Account const& account, std::optional<uint256> const& index = std::nullopt);
 
-struct sponsorAcc
+struct counterpartySponsor
 {
 private:
     jtx::Account sponsor_;
 
 public:
-    sponsorAcc(jtx::Account const& account) : sponsor_(account)
+    counterpartySponsor(jtx::Account const& account) : sponsor_(account)
     {
     }
 

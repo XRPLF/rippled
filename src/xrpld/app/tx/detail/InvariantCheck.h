@@ -423,7 +423,7 @@ public:
  * The following check is made for every transaction:
  *  - The net delta of `sfSponsoringAccountCount` across all accounts equals
  *    the net delta of the count of ltACCOUNT_ROOT entries having
- *    `sfSponsorAccount` present (presence transitions only: add/remove).
+ *    `sfSponsor` present (presence transitions only: add/remove).
  */
 class SponsorshipAccountCountMatchesField
 {

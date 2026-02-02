@@ -14,7 +14,7 @@ LedgerFormats::LedgerFormats()
         {sfLedgerIndex, soeOPTIONAL},
         {sfLedgerEntryType, soeREQUIRED},
         {sfFlags, soeREQUIRED},
-        {sfSponsorAccount, soeOPTIONAL},
+        {sfSponsor, soeOPTIONAL},
     };
 
 #pragma push_macro("UNWRAP")

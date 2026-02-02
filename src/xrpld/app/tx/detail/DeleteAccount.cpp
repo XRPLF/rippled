@@ -266,9 +266,9 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if (cp)
         return tecHAS_OBLIGATIONS;
 
-    if (sleAccount->isFieldPresent(sfSponsorAccount))
+    if (sleAccount->isFieldPresent(sfSponsor))
     {
-        if (dst != sleAccount->getAccountID(sfSponsorAccount))
+        if (dst != sleAccount->getAccountID(sfSponsor))
             return tecNO_SPONSOR_PERMISSION;
     }
     if (sleAccount->isFieldPresent(sfSponsoringOwnerCount) || sleAccount->isFieldPresent(sfSponsoringAccountCount))
@@ -400,9 +400,9 @@ DeleteAccount::doApply()
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
     ctx_.deliver(mSourceBalance);
 
-    if (src->isFieldPresent(sfSponsorAccount))
+    if (src->isFieldPresent(sfSponsor))
     {
-        auto const sponsorAcc = src->getAccountID(sfSponsorAccount);
+        auto const sponsorAcc = src->getAccountID(sfSponsor);
         auto sponsorSle = view().peek(keylet::account(sponsorAcc));
 
         if (!sponsorSle || !sponsorSle->isFieldPresent(sfSponsoringAccountCount))
@@ -421,10 +421,10 @@ DeleteAccount::doApply()
             sponsorSle->setFieldU32(sfSponsoringAccountCount, sponsoringAccountCount - 1);
         view().update(sponsorSle);
 
-        // Following line might look redundant, but without it, sfSponsorAccount
+        // Following line might look redundant, but without it, sfSponsor
         // would end up remaining in after-ltAccountRoot during the
         // InvariantCheck.
-        (*src).makeFieldAbsent(sfSponsorAccount);
+        (*src).makeFieldAbsent(sfSponsor);
     }
 
     XRPL_ASSERT((*src)[sfBalance] == XRPAmount(0), "xrpl::DeleteAccount::doApply : source balance is zero");

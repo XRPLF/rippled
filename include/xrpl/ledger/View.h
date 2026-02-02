@@ -450,30 +450,25 @@ std::shared_ptr<SLE const> const
 getTxReserveSponsor(ReadView const& view, STTx const& tx);
 
 std::optional<AccountID>
-getLedgerEntryReserveSponsorAccountID(
-    std::shared_ptr<SLE const> const& sle,
-    SF_ACCOUNT const& field = sfSponsorAccount);
+getLedgerEntryReserveSponsorAccountID(std::shared_ptr<SLE const> const& sle, SF_ACCOUNT const& field = sfSponsor);
 
 std::shared_ptr<SLE>
-getLedgerEntryReserveSponsor(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    SF_ACCOUNT const& field = sfSponsorAccount);
+getLedgerEntryReserveSponsor(ApplyView& view, std::shared_ptr<SLE> const& sle, SF_ACCOUNT const& field = sfSponsor);
 
 std::shared_ptr<SLE const> const
 getLedgerEntryReserveSponsor(
     ReadView const& view,
     std::shared_ptr<SLE const> const& sle,
-    SF_ACCOUNT const& field = sfSponsorAccount);
+    SF_ACCOUNT const& field = sfSponsor);
 
 void
 addSponsorToLedgerEntry(
     std::shared_ptr<SLE> const& sle,
     std::shared_ptr<SLE> const& sponsorSle,
-    SF_ACCOUNT const& field = sfSponsorAccount);
+    SF_ACCOUNT const& field = sfSponsor);
 
 void
-removeSponsorFromLedgerEntry(std::shared_ptr<SLE> const& sle, SF_ACCOUNT const& field = sfSponsorAccount);
+removeSponsorFromLedgerEntry(std::shared_ptr<SLE> const& sle, SF_ACCOUNT const& field = sfSponsor);
 
 //------------------------------------------------------------------------------
 //
