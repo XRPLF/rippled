@@ -142,7 +142,20 @@ parseBridge(Json::Value const& params, Json::StaticString const fieldName, [[may
 static Expected<uint256, Json::Value>
 parseCheck(Json::Value const& params, Json::StaticString const fieldName, [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const account = LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
+    if (!account)
+        return Unexpected(account.error());
+
+    auto const sequence = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!sequence)
+        return Unexpected(sequence.error());
+
+    return keylet::check(*account, *sequence).key;
 }
 
 static Expected<uint256, Json::Value>
@@ -491,7 +504,20 @@ parseNFTokenOffer(
     Json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const owner = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!owner)
+        return Unexpected(owner.error());
+
+    auto const sequence = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!sequence)
+        return Unexpected(sequence.error());
+
+    return keylet::nftoffer(*owner, *sequence).key;
 }
 
 static Expected<uint256, Json::Value>
@@ -549,7 +575,24 @@ parsePayChannel(
     Json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const account = LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
+    if (!account)
+        return Unexpected(account.error());
+
+    auto const destination = LedgerEntryHelpers::requiredAccountID(params, jss::destination, "malformedDestination");
+    if (!destination)
+        return Unexpected(destination.error());
+
+    auto const sequence = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
+    if (!sequence)
+        return Unexpected(sequence.error());
+
+    return keylet::payChan(*account, *destination, *sequence).key;
 }
 
 static Expected<uint256, Json::Value>
@@ -628,7 +671,16 @@ parseSignerList(
     Json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
+    if (!id)
+        return Unexpected(id.error());
+
+    return keylet::signers(*id).key;
 }
 
 static Expected<uint256, Json::Value>
