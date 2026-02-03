@@ -385,8 +385,9 @@ You can install it using Homebrew, i.e. `brew install ccache`.
 
 #### Windows
 
-You can install it using Chocolatey, i.e. `choco install ccache`. However, if
-you see an error such as:
+You can install it using Chocolatey, i.e. `choco install ccache`. If you already
+have Ccache installed, then `choco upgrade ccache` will update it to the latest
+version. However, if you see an error such as:
 
 ```
 terminate called after throwing an instance of 'std::bad_alloc'
@@ -394,8 +395,8 @@ terminate called after throwing an instance of 'std::bad_alloc'
 C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppCommon.targets(617,5): error MSB6006: "cl.exe" exited with code 3.
 ```
 
-then the latest version of Ccache still has not been fixed. In that case please
-install it via: `choco install ccache --version 4.11.3 --allow-downgrade`.
+then please install a specific version of Ccache that we know works, via: `choco
+install ccache --version 4.11.3 --allow-downgrade`.
 
 ### Build and Test
 
