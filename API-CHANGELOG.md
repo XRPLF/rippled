@@ -22,6 +22,12 @@ API version 2 is available in `rippled` version 2.0.0 and later. See [API-VERSIO
 
 This version is supported by all `rippled` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## Unreleased
+
+### Additions in unreleased
+
+- `ledger_entry`: Add full support for checks, NFT offers, payment channels, and signer lists. ([#6319](https://github.com/XRPLF/rippled/pull/6319))
+
 ## XRP Ledger server version 3.1.0
 
 [Version 3.1.0](https://github.com/XRPLF/rippled/releases/tag/3.1.0) was released on Jan 27, 2026.
