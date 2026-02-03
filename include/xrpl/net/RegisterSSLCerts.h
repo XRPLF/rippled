@@ -14,10 +14,7 @@ namespace xrpl {
     store accessible via CryptoAPI.
 */
 void
-registerSSLCerts(
-    boost::asio::ssl::context&,
-    boost::system::error_code&,
-    beast::Journal j);
+registerSSLCerts(boost::asio::ssl::context&, boost::system::error_code&, beast::Journal j);
 
 }  // namespace xrpl
 

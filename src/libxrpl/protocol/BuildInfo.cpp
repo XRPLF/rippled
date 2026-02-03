@@ -67,10 +67,8 @@ getFullVersionString()
     return value;
 }
 
-static constexpr std::uint64_t implementationVersionIdentifier =
-    0x183B'0000'0000'0000LLU;
-static constexpr std::uint64_t implementationVersionIdentifierMask =
-    0xFFFF'0000'0000'0000LLU;
+static constexpr std::uint64_t implementationVersionIdentifier = 0x183B'0000'0000'0000LLU;
+static constexpr std::uint64_t implementationVersionIdentifierMask = 0xFFFF'0000'0000'0000LLU;
 
 std::uint64_t
 encodeSoftwareVersion(char const* const versionStr)
@@ -109,9 +107,7 @@ encodeSoftwareVersion(char const* const versionStr)
                     if (prefix != identifier.substr(0, prefix.length()))
                         return 0;
 
-                    if (!beast::lexicalCastChecked(
-                            ret,
-                            std::string(identifier.substr(prefix.length()))))
+                    if (!beast::lexicalCastChecked(ret, std::string(identifier.substr(prefix.length()))))
                         return 0;
 
                     if (std::clamp(ret, lok, hik) != ret)
@@ -147,8 +143,7 @@ getEncodedVersion()
 bool
 isRippledVersion(std::uint64_t version)
 {
-    return (version & implementationVersionIdentifierMask) ==
-        implementationVersionIdentifier;
+    return (version & implementationVersionIdentifierMask) == implementationVersionIdentifier;
 }
 
 bool

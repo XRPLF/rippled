@@ -12,8 +12,7 @@ namespace test {
 namespace jtx {
 namespace oracle {
 
-Oracle::Oracle(Env& env, CreateArg const& arg, bool submit)
-    : env_(env), owner_{}, documentID_{}
+Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env), owner_{}, documentID_{}
 {
     // LastUpdateTime is checked to be in range
     // {close-maxLastUpdateTimeDelta, close+maxLastUpdateTimeDelta}.
@@ -95,20 +94,14 @@ Oracle::expectPrice(DataSeries const& series) const
             return false;
         for (auto const& data : series)
         {
-            if (std::find_if(
-                    leSeries.begin(),
-                    leSeries.end(),
-                    [&](STObject const& o) -> bool {
-                        auto const& baseAsset = o.getFieldCurrency(sfBaseAsset);
-                        auto const& quoteAsset =
-                            o.getFieldCurrency(sfQuoteAsset);
-                        auto const& price = o.getFieldU64(sfAssetPrice);
-                        auto const& scale = o.getFieldU8(sfScale);
-                        return baseAsset.getText() == std::get<0>(data) &&
-                            quoteAsset.getText() == std::get<1>(data) &&
-                            price == std::get<2>(data) &&
-                            scale == std::get<3>(data);
-                    }) == leSeries.end())
+            if (std::find_if(leSeries.begin(), leSeries.end(), [&](STObject const& o) -> bool {
+                    auto const& baseAsset = o.getFieldCurrency(sfBaseAsset);
+                    auto const& quoteAsset = o.getFieldCurrency(sfQuoteAsset);
+                    auto const& price = o.getFieldU64(sfAssetPrice);
+                    auto const& scale = o.getFieldU8(sfScale);
+                    return baseAsset.getText() == std::get<0>(data) && quoteAsset.getText() == std::get<1>(data) &&
+                        price == std::get<2>(data) && scale == std::get<3>(data);
+                }) == leSeries.end())
                 return false;
         }
         return true;
@@ -177,8 +170,7 @@ Oracle::set(UpdateArg const& arg)
     Json::Value jv;
     if (arg.owner)
         owner_ = *arg.owner;
-    if (arg.documentID &&
-        std::holds_alternative<std::uint32_t>(*arg.documentID))
+    if (arg.documentID && std::holds_alternative<std::uint32_t>(*arg.documentID))
     {
         documentID_ = std::get<std::uint32_t>(*arg.documentID);
         jv[jss::OracleDocumentID] = documentID_;
@@ -207,17 +199,13 @@ Oracle::set(UpdateArg const& arg)
     if (arg.lastUpdateTime)
     {
         if (std::holds_alternative<std::uint32_t>(*arg.lastUpdateTime))
-            jv[jss::LastUpdateTime] = to_string(
-                testStartTime.count() +
-                std::get<std::uint32_t>(*arg.lastUpdateTime));
+            jv[jss::LastUpdateTime] = to_string(testStartTime.count() + std::get<std::uint32_t>(*arg.lastUpdateTime));
         else
             toJson(jv[jss::LastUpdateTime], *arg.lastUpdateTime);
     }
     else
         jv[jss::LastUpdateTime] = to_string(
-            duration_cast<seconds>(
-                env_.current()->header().closeTime.time_since_epoch())
-                .count() +
+            duration_cast<seconds>(env_.current()->header().closeTime.time_since_epoch()).count() +
             epoch_offset.count());
     Json::Value dataSeries(Json::arrayValue);
     auto assetToStr = [](std::string const& s) {
@@ -275,11 +263,9 @@ Oracle::ledgerEntry(
     if (account)
     {
         if (std::holds_alternative<AccountID>(*account))
-            jvParams[jss::oracle][jss::account] =
-                to_string(std::get<AccountID>(*account));
+            jvParams[jss::oracle][jss::account] = to_string(std::get<AccountID>(*account));
         else
-            jvParams[jss::oracle][jss::account] =
-                std::get<std::string>(*account);
+            jvParams[jss::oracle][jss::account] = std::get<std::string>(*account);
     }
     if (documentID)
         toJson(jvParams[jss::oracle][jss::oracle_document_id], *documentID);

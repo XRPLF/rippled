@@ -13,9 +13,7 @@ namespace xrpl {
 static NetworkOPs::FailHard
 getFailHard(RPC::JsonContext const& context)
 {
-    return NetworkOPs::doFailHard(
-        context.params.isMember("fail_hard") &&
-        context.params["fail_hard"].asBool());
+    return NetworkOPs::doFailHard(context.params.isMember("fail_hard") && context.params["fail_hard"].asBool());
 }
 
 // {
@@ -32,8 +30,7 @@ doSubmit(RPC::JsonContext& context)
         auto const failType = getFailHard(context);
 
         if (context.role != Role::ADMIN && !context.app.config().canSign())
-            return RPC::make_error(
-                rpcNOT_SUPPORTED, "Signing is not supported by this server.");
+            return RPC::make_error(rpcNOT_SUPPORTED, "Signing is not supported by this server.");
 
         auto ret = RPC::transactionSubmit(
             context.params,
@@ -78,15 +75,9 @@ doSubmit(RPC::JsonContext& context)
 
     {
         if (!context.app.checkSigs())
-            forceValidity(
-                context.app.getHashRouter(),
-                stTx->getTransactionID(),
-                Validity::SigGoodOnly);
+            forceValidity(context.app.getHashRouter(), stTx->getTransactionID(), Validity::SigGoodOnly);
         auto [validity, reason] = checkValidity(
-            context.app.getHashRouter(),
-            *stTx,
-            context.ledgerMaster.getCurrentLedger()->rules(),
-            context.app.config());
+            context.app.getHashRouter(), *stTx, context.ledgerMaster.getCurrentLedger()->rules(), context.app.config());
         if (validity != Validity::Valid)
         {
             jvResult[jss::error] = "invalidTransaction";
@@ -110,8 +101,7 @@ doSubmit(RPC::JsonContext& context)
     {
         auto const failType = getFailHard(context);
 
-        context.netOps.processTransaction(
-            transaction, isUnlimited(context.role), true, failType);
+        context.netOps.processTransaction(transaction, isUnlimited(context.role), true, failType);
     }
     catch (std::exception& e)
     {
@@ -124,8 +114,7 @@ doSubmit(RPC::JsonContext& context)
     try
     {
         jvResult[jss::tx_json] = transaction->getJson(JsonOptions::none);
-        jvResult[jss::tx_blob] =
-            strHex(transaction->getSTransaction()->getSerializer().peekData());
+        jvResult[jss::tx_blob] = strHex(transaction->getSTransaction()->getSerializer().peekData());
 
         if (temUNCERTAIN != transaction->getResult())
         {
@@ -148,17 +137,12 @@ doSubmit(RPC::JsonContext& context)
 
             if (auto currentLedgerState = transaction->getCurrentLedgerState())
             {
-                jvResult[jss::account_sequence_next] =
-                    safe_cast<Json::Value::UInt>(
-                        currentLedgerState->accountSeqNext);
+                jvResult[jss::account_sequence_next] = safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqNext);
                 jvResult[jss::account_sequence_available] =
-                    safe_cast<Json::Value::UInt>(
-                        currentLedgerState->accountSeqAvail);
-                jvResult[jss::open_ledger_cost] =
-                    to_string(currentLedgerState->minFeeRequired);
+                    safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqAvail);
+                jvResult[jss::open_ledger_cost] = to_string(currentLedgerState->minFeeRequired);
                 jvResult[jss::validated_ledger_index] =
-                    safe_cast<Json::Value::UInt>(
-                        currentLedgerState->validatedLedger);
+                    safe_cast<Json::Value::UInt>(currentLedgerState->validatedLedger);
             }
         }
 

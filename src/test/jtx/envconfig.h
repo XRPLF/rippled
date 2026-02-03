@@ -104,14 +104,10 @@ std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
 ///
 /// @param cfg config instance to be modified
 std::unique_ptr<Config>
-addGrpcConfigWithSecureGateway(
-    std::unique_ptr<Config>,
-    std::string const& secureGateway);
+addGrpcConfigWithSecureGateway(std::unique_ptr<Config>, std::string const& secureGateway);
 
 std::unique_ptr<Config>
-makeConfig(
-    std::map<std::string, std::string> extraTxQ = {},
-    std::map<std::string, std::string> extraVoting = {});
+makeConfig(std::map<std::string, std::string> extraTxQ = {}, std::map<std::string, std::string> extraVoting = {});
 
 }  // namespace jtx
 }  // namespace test

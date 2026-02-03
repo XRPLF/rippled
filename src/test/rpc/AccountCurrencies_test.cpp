@@ -23,20 +23,15 @@ class AccountCurrencies_test : public beast::unit_test::suite
             Json::Value params;
             params[jss::account] = Account{"bob"}.human();
             params[jss::ledger_hash] = 1;
-            auto const result = env.rpc(
-                "json", "account_currencies", to_string(params))[jss::result];
+            auto const result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(
-                result[jss::error_message] ==
-                "Invalid field 'ledger_hash', not hex string.");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
         }
 
         {  // missing account field
-            auto const result =
-                env.rpc("json", "account_currencies", "{}")[jss::result];
+            auto const result = env.rpc("json", "account_currencies", "{}")[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(
-                result[jss::error_message] == "Missing field 'account'.");
+            BEAST_EXPECT(result[jss::error_message] == "Missing field 'account'.");
         }
 
         {
@@ -44,13 +39,9 @@ class AccountCurrencies_test : public beast::unit_test::suite
             auto testInvalidAccountParam = [&](auto const& param) {
                 Json::Value params;
                 params[jss::account] = param;
-                auto jrr = env.rpc(
-                    "json",
-                    "account_currencies",
-                    to_string(params))[jss::result];
+                auto jrr = env.rpc("json", "account_currencies", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    jrr[jss::error_message] == "Invalid field 'account'.");
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
             testInvalidAccountParam(1);
@@ -66,13 +57,9 @@ class AccountCurrencies_test : public beast::unit_test::suite
             auto testInvalidIdentParam = [&](auto const& param) {
                 Json::Value params;
                 params[jss::ident] = param;
-                auto jrr = env.rpc(
-                    "json",
-                    "account_currencies",
-                    to_string(params))[jss::result];
+                auto jrr = env.rpc("json", "account_currencies", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    jrr[jss::error_message] == "Invalid field 'ident'.");
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ident'.");
             };
 
             testInvalidIdentParam(1);
@@ -85,10 +72,8 @@ class AccountCurrencies_test : public beast::unit_test::suite
 
         {
             Json::Value params;
-            params[jss::account] =
-                "llIIOO";  // these are invalid in bitcoin alphabet
-            auto const result = env.rpc(
-                "json", "account_currencies", to_string(params))[jss::result];
+            params[jss::account] = "llIIOO";  // these are invalid in bitcoin alphabet
+            auto const result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
         }
@@ -97,8 +82,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
             // Cannot use a seed as account
             Json::Value params;
             params[jss::account] = "Bob";
-            auto const result = env.rpc(
-                "json", "account_currencies", to_string(params))[jss::result];
+            auto const result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
         }
@@ -106,8 +90,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         {  // ask for nonexistent account
             Json::Value params;
             params[jss::account] = Account{"bob"}.human();
-            auto const result = env.rpc(
-                "json", "account_currencies", to_string(params))[jss::result];
+            auto const result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actNotFound");
             BEAST_EXPECT(result[jss::error_message] == "Account not found.");
         }
@@ -135,20 +118,14 @@ class AccountCurrencies_test : public beast::unit_test::suite
 
         Json::Value params;
         params[jss::account] = alice.human();
-        auto result = env.rpc(
-            "json", "account_currencies", to_string(params))[jss::result];
+        auto result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
 
-        auto arrayCheck =
-            [&result](
-                Json::StaticString const& fld,
-                std::vector<std::optional<IOU>> const& expected) -> bool {
-            bool stat = result.isMember(fld) && result[fld].isArray() &&
-                result[fld].size() == expected.size();
+        auto arrayCheck = [&result](
+                              Json::StaticString const& fld, std::vector<std::optional<IOU>> const& expected) -> bool {
+            bool stat = result.isMember(fld) && result[fld].isArray() && result[fld].size() == expected.size();
             for (size_t i = 0; stat && i < expected.size(); ++i)
             {
-                stat &=
-                    (to_string(expected[i].value().currency) ==
-                     result[fld][i].asString());
+                stat &= (to_string(expected[i].value().currency) == result[fld][i].asString());
             }
             return stat;
         };
@@ -161,8 +138,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
             env(pay(gw, alice, c.value()(50)));
 
         // send_currencies should be populated now
-        result = env.rpc(
-            "json", "account_currencies", to_string(params))[jss::result];
+        result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
         BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrencies));
 
@@ -171,10 +147,8 @@ class AccountCurrencies_test : public beast::unit_test::suite
         env(trust(alice, gw["USD"](100), tfSetFreeze));
         result = env.rpc("account_lines", alice.human());
         for (auto const& l : result[jss::lines])
-            BEAST_EXPECT(
-                l[jss::freeze].asBool() == (l[jss::currency] == "USD"));
-        result = env.rpc(
-            "json", "account_currencies", to_string(params))[jss::result];
+            BEAST_EXPECT(l[jss::freeze].asBool() == (l[jss::currency] == "USD"));
+        result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
         BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrencies));
         // clear the freeze
@@ -183,10 +157,8 @@ class AccountCurrencies_test : public beast::unit_test::suite
         // make a payment that exhausts the trustline from alice to gw for USA
         env(pay(gw, alice, gw["USA"](50)));
         // USA should now be missing from receive_currencies
-        result = env.rpc(
-            "json", "account_currencies", to_string(params))[jss::result];
-        decltype(gwCurrencies) gwCurrenciesNoUSA(
-            gwCurrencies.begin() + 1, gwCurrencies.end());
+        result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+        decltype(gwCurrencies) gwCurrenciesNoUSA(gwCurrencies.begin() + 1, gwCurrencies.end());
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrenciesNoUSA));
         BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrencies));
 
@@ -194,8 +166,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         // so that send_currencies for alice will now omit USA
         env(trust(gw, alice["USA"](100)));
         env(pay(alice, gw, alice["USA"](200)));
-        result = env.rpc(
-            "json", "account_currencies", to_string(params))[jss::result];
+        result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
         BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrenciesNoUSA));
     }

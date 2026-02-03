@@ -9,6 +9,19 @@ typedef std::variant<STBase const*, uint256 const*> FieldValue;
 
 namespace detail {
 
+template <class T>
+Bytes
+getIntBytes(STBase const* obj)
+{
+    static_assert(std::is_integral<T>::value, "Only integral types");
+
+    auto const& num(static_cast<STInteger<T> const*>(obj));
+    T const data = adjustWasmEndianess(num->value());
+    auto const* b = reinterpret_cast<uint8_t const*>(&data);
+    auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+    return Bytes{b, e};
+}
+
 static Expected<Bytes, HostFunctionError>
 getAnyFieldData(STBase const* obj)
 {
@@ -58,20 +71,25 @@ getAnyFieldData(STBase const* obj)
         }
         break;
         case STI_UINT16: {
-            auto const& num(static_cast<STInteger<std::uint16_t> const*>(obj));
-            std::uint16_t const data = num->value();
-            auto const* b = reinterpret_cast<uint8_t const*>(&data);
-            auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
-            return Bytes{b, e};
+            return getIntBytes<std::uint16_t>(obj);
         }
         break;
         case STI_UINT32: {
-            auto const* num(static_cast<STInteger<std::uint32_t> const*>(obj));
-            std::uint32_t const data = num->value();
-            auto const* b = reinterpret_cast<uint8_t const*>(&data);
-            auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
-            return Bytes{b, e};
+            return getIntBytes<std::uint32_t>(obj);
         }
+        // LCOV_EXCL_START
+        case STI_UINT64: {
+            return getIntBytes<std::uint64_t>(obj);
+        }
+        break;
+        case STI_INT32: {
+            return getIntBytes<std::int32_t>(obj);
+        }
+        break;
+        case STI_INT64: {
+            return getIntBytes<std::int64_t>(obj);
+        }
+        // LCOV_EXCL_STOP
         break;
         case STI_UINT256: {
             auto const* uint256Obj(static_cast<STUInt256 const*>(obj));
@@ -108,8 +126,7 @@ getAnyFieldData(FieldValue const& variantObj)
 static inline bool
 noField(STBase const* field)
 {
-    return !field || (STI_NOTPRESENT == field->getSType()) ||
-        (STI_UNKNOWN == field->getSType());
+    return !field || (STI_NOTPRESENT == field->getSType()) || (STI_UNKNOWN == field->getSType());
 }
 
 static Expected<FieldValue, HostFunctionError>
@@ -135,7 +152,7 @@ locateField(STObject const& obj, Slice const& locator)
     auto const& knownSFields = SField::getKnownCodeToField();
 
     {
-        int32_t const sfieldCode = locPtr[0];
+        int32_t const sfieldCode = adjustWasmEndianess(locPtr[0]);
         auto const it = knownSFields.find(sfieldCode);
         if (it == knownSFields.end())
             return Unexpected(HostFunctionError::INVALID_FIELD);
@@ -148,7 +165,7 @@ locateField(STObject const& obj, Slice const& locator)
 
     for (int i = 1; i < locSize; ++i)
     {
-        int32_t const sfieldCode = locPtr[i];
+        int32_t const sfieldCode = adjustWasmEndianess(locPtr[i]);
 
         if (STI_ARRAY == field->getSType())
         {
@@ -254,8 +271,7 @@ WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
     if (!normalizedIdx.has_value())
         return Unexpected(normalizedIdx.error());
-    return detail::getAnyFieldData(
-        cache[normalizedIdx.value()]->peekAtPField(fname));
+    return detail::getAnyFieldData(cache[normalizedIdx.value()]->peekAtPField(fname));
 }
 
 // Subsection: nested getters
@@ -285,9 +301,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerObjNestedField(
-    int32_t cacheIdx,
-    Slice const& locator)
+WasmHostFunctionsImpl::getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator)
 {
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
     if (!normalizedIdx.has_value())
@@ -333,9 +347,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerObjArrayLen(
-    int32_t cacheIdx,
-    SField const& fname)
+WasmHostFunctionsImpl::getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname)
 {
     if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
         return Unexpected(HostFunctionError::NO_ARRAY);
@@ -379,9 +391,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
-    int32_t cacheIdx,
-    Slice const& locator)
+WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator)
 {
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
     if (!normalizedIdx.has_value())

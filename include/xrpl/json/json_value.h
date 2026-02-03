@@ -148,11 +148,7 @@ private:
     class CZString
     {
     public:
-        enum DuplicationPolicy {
-            noDuplication = 0,
-            duplicate,
-            duplicateOnCopy
-        };
+        enum DuplicationPolicy { noDuplication = 0, duplicate, duplicateOnCopy };
         CZString(int index);
         CZString(char const* cstr, DuplicationPolicy allocate);
         CZString(CZString const& other);

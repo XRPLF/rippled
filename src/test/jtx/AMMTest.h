@@ -24,8 +24,7 @@ struct TestAMMArg
     std::vector<FeatureBitset> features = {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        jtx::testable_amendments() - featureSingleAssetVault -
-        featureLendingProtocol};
+        jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
 
     bool noLog = false;
 };
@@ -76,8 +75,7 @@ public:
     {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        return jtx::testable_amendments() - featureSingleAssetVault -
-            featureLendingProtocol;
+        return jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol;
     }
 
 protected:
@@ -93,9 +91,7 @@ protected:
         std::vector<FeatureBitset> const& features = {testable_amendments()});
 
     void
-    testAMM(
-        std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
-        TestAMMArg const& arg);
+    testAMM(std::function<void(jtx::AMM&, jtx::Env&)>&& cb, TestAMMArg const& arg);
 };
 
 class AMMTest : public jtx::AMMTestBase

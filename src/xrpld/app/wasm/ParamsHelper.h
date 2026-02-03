@@ -50,13 +50,9 @@ struct WasmImportFunc
 typedef std::pair<void*, WasmImportFunc> WasmUserData;
 typedef std::vector<WasmUserData> ImportVec;
 
-#define WASM_IMPORT_FUNC(v, f, ...) \
-    WasmImpFunc<f##_proto>(         \
-        v, #f, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
+#define WASM_IMPORT_FUNC(v, f, ...) WasmImpFunc<f##_proto>(v, #f, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
 
-#define WASM_IMPORT_FUNC2(v, f, n, ...) \
-    WasmImpFunc<f##_proto>(             \
-        v, n, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
+#define WASM_IMPORT_FUNC2(v, f, n, ...) WasmImpFunc<f##_proto>(v, n, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
 
 template <int N, int C, typename mpl>
 void
@@ -91,8 +87,7 @@ WasmImpRet(WasmImportFunc& e)
         e.result = WT_I64;
     else if constexpr (std::is_void_v<rt>)
         e.result.reset();
-#if (defined(__GNUC__) && (__GNUC__ >= 14)) || \
-    ((defined(__clang_major__)) && (__clang_major__ >= 18))
+#if (defined(__GNUC__) && (__GNUC__ >= 14)) || ((defined(__clang_major__)) && (__clang_major__ >= 18))
     else
         static_assert(false, "Unsupported return type");
 #endif
@@ -113,12 +108,7 @@ WasmImpFuncHelper(WasmImportFunc& e)
 
 template <typename F>
 void
-WasmImpFunc(
-    ImportVec& v,
-    std::string_view imp_name,
-    void* f_wrap,
-    void* data = nullptr,
-    uint32_t gas = 0)
+WasmImpFunc(ImportVec& v, std::string_view imp_name, void* f_wrap, void* data = nullptr, uint32_t gas = 0)
 {
     WasmImportFunc e;
     e.name = imp_name;
@@ -185,11 +175,7 @@ wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
 
 template <class... Types>
 inline void
-wasmParamsHlp(
-    std::vector<WasmParam>& v,
-    std::uint8_t const* dt,
-    std::int32_t sz,
-    Types&&... args)
+wasmParamsHlp(std::vector<WasmParam>& v, std::uint8_t const* dt, std::int32_t sz, Types&&... args)
 {
     v.push_back({.type = WT_U8V, .of = {.u8v = {.d = dt, .sz = sz}}});
     wasmParamsHlp(v, std::forward<Types>(args)...);
@@ -199,20 +185,19 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, Bytes const& p, Types&&... args)
 {
-    wasmParamsHlp(
-        v,
-        p.data(),
-        static_cast<std::int32_t>(p.size()),
-        std::forward<Types>(args)...);
+    if (p.size() > std::numeric_limits<int32_t>::max())
+        throw std::runtime_error("can't allocate memory, size: " + std::to_string(p.size()));  // LCOV_EXCL_LINE
+
+    wasmParamsHlp(v, p.data(), static_cast<std::int32_t>(p.size()), std::forward<Types>(args)...);
 }
 
 template <class... Types>
 inline void
-wasmParamsHlp(
-    std::vector<WasmParam>& v,
-    std::string_view const& p,
-    Types&&... args)
+wasmParamsHlp(std::vector<WasmParam>& v, std::string_view const& p, Types&&... args)
 {
+    if (p.size() > std::numeric_limits<int32_t>::max())
+        throw std::runtime_error("can't allocate memory, size: " + std::to_string(p.size()));
+
     wasmParamsHlp(
         v,
         reinterpret_cast<std::uint8_t const*>(p.data()),
@@ -224,6 +209,9 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, std::string const& p, Types&&... args)
 {
+    if (p.size() > std::numeric_limits<int32_t>::max())
+        throw std::runtime_error("can't allocate memory, size: " + std::to_string(p.size()));  // LCOV_EXCL_LINE
+
     wasmParamsHlp(
         v,
         reinterpret_cast<std::uint8_t const*>(p.c_str()),
@@ -245,6 +233,37 @@ wasmParams(Types&&... args)
     v.reserve(sizeof...(args));
     wasmParamsHlp(v, std::forward<Types>(args)...);
     return v;
+}
+
+template <typename T, size_t size = sizeof(T)>
+inline constexpr T
+adjustWasmEndianessHlp(T x)
+{
+    static_assert(std::is_integral<T>::value, "Only integral types");
+    if constexpr (size > 1)
+    {
+        using U = std::make_unsigned<T>::type;
+        U u = static_cast<U>(x);
+        U const low = (u & 0xFF) << ((size - 1) << 3);
+        u = adjustWasmEndianessHlp<U, size - 1>(u >> 8);
+        return static_cast<T>(low | u);
+    }
+
+    return x;
+}
+
+template <typename T, size_t size = sizeof(T)>
+inline constexpr T
+adjustWasmEndianess(T x)
+{
+    // LCOV_EXCL_START
+    static_assert(std::is_integral<T>::value, "Only integral types");
+    if constexpr (std::endian::native == std::endian::big)
+    {
+        return adjustWasmEndianessHlp(x);
+    }
+    return x;
+    // LCOV_EXCL_STOP
 }
 
 }  // namespace xrpl

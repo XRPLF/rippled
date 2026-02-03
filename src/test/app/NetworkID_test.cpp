@@ -37,9 +37,7 @@ public:
 
         auto const alice = Account{"alice"};
 
-        auto const runTx = [&](test::jtx::Env& env,
-                               Json::Value const& jv,
-                               TER expectedOutcome) {
+        auto const runTx = [&](test::jtx::Env& env, Json::Value const& jv, TER expectedOutcome) {
             env.memoize(env.master);
             env.memoize(alice);
 
@@ -117,10 +115,7 @@ public:
                 Serializer s;
                 jt.stx->add(s);
                 BEAST_EXPECT(
-                    env.rpc(
-                        "submit",
-                        strHex(s.slice()))[jss::result][jss::engine_result] ==
-                    "telREQUIRES_NETWORK_ID");
+                    env.rpc("submit", strHex(s.slice()))[jss::result][jss::engine_result] == "telREQUIRES_NETWORK_ID");
                 env.close();
             }
 

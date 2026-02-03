@@ -44,12 +44,9 @@ public:
         env(regkey(alice, alie));
         env.close();
 
-        auto testFlags = [this, &alice, &alie, &env](
-                             std::initializer_list<std::uint32_t> goodFlags) {
+        auto testFlags = [this, &alice, &alie, &env](std::initializer_list<std::uint32_t> goodFlags) {
             std::uint32_t const orig_flags = (*env.le(alice))[sfFlags];
-            for (std::uint32_t flag{1u};
-                 flag < std::numeric_limits<std::uint32_t>::digits;
-                 ++flag)
+            for (std::uint32_t flag{1u}; flag < std::numeric_limits<std::uint32_t>::digits; ++flag)
             {
                 if (flag == asfNoFreeze)
                 {
@@ -66,10 +63,8 @@ public:
                     continue;
                 }
 
-                if (flag == asfDisallowIncomingCheck ||
-                    flag == asfDisallowIncomingPayChan ||
-                    flag == asfDisallowIncomingNFTokenOffer ||
-                    flag == asfDisallowIncomingTrustline)
+                if (flag == asfDisallowIncomingCheck || flag == asfDisallowIncomingPayChan ||
+                    flag == asfDisallowIncomingNFTokenOffer || flag == asfDisallowIncomingTrustline)
                 {
                     // These flags are part of the DisallowIncoming amendment
                     // and are tested elsewhere
@@ -88,8 +83,7 @@ public:
                     continue;
                 }
 
-                if (std::find(goodFlags.begin(), goodFlags.end(), flag) !=
-                    goodFlags.end())
+                if (std::find(goodFlags.begin(), goodFlags.end(), flag) != goodFlags.end())
                 {
                     // Good flag
                     env.require(nflags(alice, flag));
@@ -200,8 +194,7 @@ public:
         std::size_t const maxLength = 256;
         for (std::size_t len = maxLength - 1; len <= maxLength + 1; ++len)
         {
-            std::string domain2 =
-                std::string(len - domain.length() - 1, 'a') + "." + domain;
+            std::string domain2 = std::string(len - domain.length() - 1, 'a') + "." + domain;
 
             BEAST_EXPECT(domain2.length() == len);
 
@@ -233,9 +226,7 @@ public:
         auto const rkp = randomKeyPair(KeyType::ed25519);
         jt[sfMessageKey.fieldName] = strHex(rkp.first.slice());
         env(jt);
-        BEAST_EXPECT(
-            strHex((*env.le(alice))[sfMessageKey]) ==
-            strHex(rkp.first.slice()));
+        BEAST_EXPECT(strHex((*env.le(alice))[sfMessageKey]) == strHex(rkp.first.slice()));
 
         jt[sfMessageKey.fieldName] = "";
         env(jt);
@@ -257,8 +248,7 @@ public:
         env.fund(XRP(10000), alice);
         auto jt = noop(alice);
 
-        std::string const locator =
-            "9633EC8AF54F16B5286DB1D7B519EF49EEFC050C0C8AC4384F1D88ACD1BFDF05";
+        std::string const locator = "9633EC8AF54F16B5286DB1D7B519EF49EEFC050C0C8AC4384F1D88ACD1BFDF05";
         jt[sfWalletLocator.fieldName] = locator;
         env(jt);
         BEAST_EXPECT(to_string((*env.le(alice))[sfWalletLocator]) == locator);
@@ -302,9 +292,7 @@ public:
         testcase("TransferRate");
 
         using namespace test::jtx;
-        auto doTests = [this](
-                           FeatureBitset const& features,
-                           std::initializer_list<test_results> testData) {
+        auto doTests = [this](FeatureBitset const& features, std::initializer_list<test_results> testData) {
             Env env(*this, features);
 
             Account const alice("alice");
@@ -319,9 +307,7 @@ public:
                 if (!(*env.le(alice))[~sfTransferRate])
                     BEAST_EXPECT(r.get == 1.0);
                 else
-                    BEAST_EXPECT(
-                        *(*env.le(alice))[~sfTransferRate] ==
-                        r.get * QUALITY_ONE);
+                    BEAST_EXPECT(*(*env.le(alice))[~sfTransferRate] == r.get * QUALITY_ONE);
             }
         };
 
@@ -349,8 +335,7 @@ public:
         auto const USD = gw["USD"];
 
         // Test gateway with a variety of allowed transfer rates
-        for (double transferRate = 1.0; transferRate <= 2.0;
-             transferRate += 0.03125)
+        for (double transferRate = 1.0; transferRate <= 2.0; transferRate += 0.03125)
         {
             Env env(*this);
             env.fund(XRP(10000), gw, alice, bob);
@@ -362,8 +347,7 @@ public:
 
             auto const amount = USD(1);
             Rate const rate(transferRate * QUALITY_ONE);
-            auto const amountWithRate =
-                toAmount<STAmount>(multiply(amount.value(), rate));
+            auto const amountWithRate = toAmount<STAmount>(multiply(amount.value(), rate));
 
             env(pay(gw, alice, USD(10)));
             env.close();
@@ -412,25 +396,22 @@ public:
             // Note that we're bypassing almost all of the ledger's safety
             // checks with this modify() call.  If you call close() between
             // here and the end of the test all the effort will be lost.
-            env.app().openLedger().modify(
-                [&gw, transferRate](OpenView& view, beast::Journal j) {
-                    // Get the account root we want to hijack.
-                    auto const sle = view.read(keylet::account(gw.id()));
-                    if (!sle)
-                        return false;  // This would be really surprising!
+            env.app().openLedger().modify([&gw, transferRate](OpenView& view, beast::Journal j) {
+                // Get the account root we want to hijack.
+                auto const sle = view.read(keylet::account(gw.id()));
+                if (!sle)
+                    return false;  // This would be really surprising!
 
-                    // We'll insert a replacement for the account root
-                    // with the higher (currently invalid) transfer rate.
-                    auto replacement = std::make_shared<SLE>(*sle, sle->key());
-                    (*replacement)[sfTransferRate] =
-                        static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
-                    view.rawReplace(replacement);
-                    return true;
-                });
+                // We'll insert a replacement for the account root
+                // with the higher (currently invalid) transfer rate.
+                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                (*replacement)[sfTransferRate] = static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
+                view.rawReplace(replacement);
+                return true;
+            });
 
             auto const amount = USD(1);
-            auto const amountWithRate = toAmount<STAmount>(
-                multiply(amount.value(), Rate(transferRate * QUALITY_ONE)));
+            auto const amountWithRate = toAmount<STAmount>(multiply(amount.value(), Rate(transferRate * QUALITY_ONE)));
 
             env(pay(gw, alice, USD(10)));
             env(pay(alice, bob, amount), sendmax(USD(10)));
@@ -478,9 +459,7 @@ public:
         jt[sfFlags.fieldName] = tfAccountSetMask;
         env(jt, ter(temINVALID_FLAG));
 
-        env(fset(alice, asfDisableMaster),
-            sig(alice),
-            ter(tecNO_ALTERNATIVE_KEY));
+        env(fset(alice, asfDisableMaster), sig(alice), ter(tecNO_ALTERNATIVE_KEY));
     }
 
     void

@@ -58,8 +58,7 @@ public:
 
         // As per convention in XRPL, ledgers can be specified with strings
         // "closed", "validated" or "current"
-        Json::Value const resp =
-            env.rpc("json", "book_changes", to_string(Json::Value{}));
+        Json::Value const resp = env.rpc("json", "book_changes", to_string(Json::Value{}));
         BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
         BEAST_EXPECT(resp[jss::result][jss::status] == "success");
 
@@ -75,27 +74,21 @@ public:
         using namespace jtx;
 
         FeatureBitset const all{
-            jtx::testable_amendments() | featurePermissionedDomains |
-            featureCredentials | featurePermissionedDEX};
+            jtx::testable_amendments() | featurePermissionedDomains | featureCredentials | featurePermissionedDEX};
 
         Env env(*this, all);
         PermissionedDEX permDex(env);
-        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-            permDex;
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] = permDex;
 
         auto wsc = makeWSClient(env.app().config());
 
         env(offer(alice, XRP(10), USD(10)), domain(domainID));
         env.close();
 
-        env(pay(bob, carol, USD(10)),
-            path(~USD),
-            sendmax(XRP(10)),
-            domain(domainID));
+        env(pay(bob, carol, USD(10)), path(~USD), sendmax(XRP(10)), domain(domainID));
         env.close();
 
-        std::string const txHash{
-            env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+        std::string const txHash{env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
 
         Json::Value const txResult = env.rpc("tx", txHash)[jss::result];
         auto const ledgerIndex = txResult[jss::ledger_index].asInt();
@@ -107,9 +100,7 @@ public:
         auto jrr = jv[jss::result];
 
         BEAST_EXPECT(jrr[jss::changes].size() == 1);
-        BEAST_EXPECT(
-            jrr[jss::changes][0u][jss::domain].asString() ==
-            to_string(domainID));
+        BEAST_EXPECT(jrr[jss::changes][0u][jss::domain].asString() == to_string(domainID));
     }
 
     void

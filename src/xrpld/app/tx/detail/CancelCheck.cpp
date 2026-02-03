@@ -34,14 +34,12 @@ CancelCheck::preclaim(PreclaimContext const& ctx)
     // ledger, because we definitively know the time that it closed but
     // we do not know the closing time of the ledger that is under
     // construction.
-    if (!optExpiry ||
-        (ctx.view.parentCloseTime() < timepoint{duration{*optExpiry}}))
+    if (!optExpiry || (ctx.view.parentCloseTime() < timepoint{duration{*optExpiry}}))
     {
         // If the check is not yet expired, then only the creator or the
         // destination may cancel the check.
         AccountID const acctId{ctx.tx[sfAccount]};
-        if (acctId != (*sleCheck)[sfAccount] &&
-            acctId != (*sleCheck)[sfDestination])
+        if (acctId != (*sleCheck)[sfAccount] && acctId != (*sleCheck)[sfDestination])
         {
             JLOG(ctx.j.warn()) << "Check is not expired and canceler is "
                                   "neither check source nor destination.";
@@ -71,8 +69,7 @@ CancelCheck::doApply()
     if (srcId != dstId)
     {
         std::uint64_t const page{(*sleCheck)[sfDestinationNode]};
-        if (!view().dirRemove(
-                keylet::ownerDir(dstId), page, sleCheck->key(), true))
+        if (!view().dirRemove(keylet::ownerDir(dstId), page, sleCheck->key(), true))
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete check from destination.";
@@ -82,8 +79,7 @@ CancelCheck::doApply()
     }
     {
         std::uint64_t const page{(*sleCheck)[sfOwnerNode]};
-        if (!view().dirRemove(
-                keylet::ownerDir(srcId), page, sleCheck->key(), true))
+        if (!view().dirRemove(keylet::ownerDir(srcId), page, sleCheck->key(), true))
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete check from owner.";

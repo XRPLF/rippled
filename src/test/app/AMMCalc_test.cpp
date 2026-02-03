@@ -188,8 +188,7 @@ class AMMCalc_test : public beast::unit_test::suite
         STAmount limitStepOut{};
         auto trate = [&](auto const& amt) {
             auto const currency = to_string(amt.issue().currency);
-            return rates.find(currency) != rates.end() ? rates.at(currency)
-                                                       : QUALITY_ONE;
+            return rates.find(currency) != rates.end() ? rates.at(currency) : QUALITY_ONE;
         };
         // swap out reverse
         sin = sout;
@@ -235,8 +234,7 @@ class AMMCalc_test : public beast::unit_test::suite
             sin = sout;
             resultOut = sout;
         }
-        std::cout << "in: " << toString(resultIn)
-                  << " out: " << toString(resultOut) << std::endl;
+        std::cout << "in: " << toString(resultIn) << " out: " << toString(resultOut) << std::endl;
     }
 
     void
@@ -253,18 +251,14 @@ class AMMCalc_test : public beast::unit_test::suite
         STAmount limitStepIn{};
         auto trate = [&](auto const& amt) {
             auto const currency = to_string(amt.issue().currency);
-            return rates.find(currency) != rates.end() ? rates.at(currency)
-                                                       : QUALITY_ONE;
+            return rates.find(currency) != rates.end() ? rates.at(currency) : QUALITY_ONE;
         };
         // Swap in forward
         for (auto it = vp.begin(); it != vp.end(); ++it)
         {
             auto const [amts, amm] = *it;
-            sin = mulratio(
-                sin,
-                QUALITY_ONE,
-                trate(sin),
-                false);  // out of the next step
+            sin = mulratio(sin, QUALITY_ONE, trate(sin),
+                           false);  // out of the next step
             // assume no amm limit
             if (amm)
             {
@@ -303,8 +297,7 @@ class AMMCalc_test : public beast::unit_test::suite
             resultIn = sin;
         }
         resultOut = mulratio(resultOut, QUALITY_ONE, trate(resultOut), true);
-        std::cout << "in: " << toString(resultIn)
-                  << " out: " << toString(resultOut) << std::endl;
+        std::cout << "in: " << toString(resultIn) << " out: " << toString(resultOut) << std::endl;
     }
 
     void
@@ -378,11 +371,7 @@ class AMMCalc_test : public beast::unit_test::suite
                 {
                     Account const amm("amm");
                     auto const LPT = amm["LPT"];
-                    std::cout
-                        << to_string(
-                               ammLPTokens(pool->first.in, pool->first.out, LPT)
-                                   .iou())
-                        << std::endl;
+                    std::cout << to_string(ammLPTokens(pool->first.in, pool->first.out, LPT).iou()) << std::endl;
                     return true;
                 }
             }
@@ -409,17 +398,11 @@ class AMMCalc_test : public beast::unit_test::suite
                                 env.current()->rules(),
                                 beast::Journal(beast::Journal::getNullSink()));
                             ammOffer)
-                            std::cout
-                                << "amm offer: " << toString(ammOffer->in)
-                                << " " << toString(ammOffer->out)
-                                << "\nnew pool: "
-                                << toString(pool->first.in + ammOffer->in)
-                                << " "
-                                << toString(pool->first.out - ammOffer->out)
-                                << std::endl;
+                            std::cout << "amm offer: " << toString(ammOffer->in) << " " << toString(ammOffer->out)
+                                      << "\nnew pool: " << toString(pool->first.in + ammOffer->in) << " "
+                                      << toString(pool->first.out - ammOffer->out) << std::endl;
                         else
-                            std::cout << "can't change the pool's SP quality"
-                                      << std::endl;
+                            std::cout << "can't change the pool's SP quality" << std::endl;
                         return true;
                     }
                 }

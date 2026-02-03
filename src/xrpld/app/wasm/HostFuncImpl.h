@@ -52,8 +52,7 @@ class WasmHostFunctionsImpl : public HostFunctions
             return;
         auto j = getJournal().trace();
 #endif
-        j << "WasmTrace[" << to_short_string(leKey.key) << "]: " << msg << " "
-          << dataFn();
+        j << "WasmTrace[" << to_short_string(leKey.key) << "]: " << msg << " " << dataFn();
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;
@@ -61,8 +60,7 @@ class WasmHostFunctionsImpl : public HostFunctions
     }
 
 public:
-    WasmHostFunctionsImpl(ApplyContext& ct, Keylet const& leKey)
-        : HostFunctions(ct.journal), ctx(ct), leKey(leKey)
+    WasmHostFunctionsImpl(ApplyContext& ct, Keylet const& leKey) : HostFunctions(ct.journal), ctx(ct), leKey(leKey)
     {
     }
 
@@ -145,10 +143,7 @@ public:
     updateData(Slice const& data) override;
 
     Expected<int32_t, HostFunctionError>
-    checkSignature(
-        Slice const& message,
-        Slice const& signature,
-        Slice const& pubkey) override;
+    checkSignature(Slice const& message, Slice const& signature, Slice const& pubkey) override;
 
     Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data) override;
@@ -163,30 +158,22 @@ public:
     checkKeylet(AccountID const& account, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
-    credentialKeylet(
-        AccountID const& subject,
-        AccountID const& issuer,
-        Slice const& credentialType) override;
+    credentialKeylet(AccountID const& subject, AccountID const& issuer, Slice const& credentialType) override;
 
     Expected<Bytes, HostFunctionError>
     didKeylet(AccountID const& account) override;
 
     Expected<Bytes, HostFunctionError>
-    delegateKeylet(AccountID const& account, AccountID const& authorize)
-        override;
+    delegateKeylet(AccountID const& account, AccountID const& authorize) override;
 
     Expected<Bytes, HostFunctionError>
-    depositPreauthKeylet(AccountID const& account, AccountID const& authorize)
-        override;
+    depositPreauthKeylet(AccountID const& account, AccountID const& authorize) override;
 
     Expected<Bytes, HostFunctionError>
     escrowKeylet(AccountID const& account, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
-    lineKeylet(
-        AccountID const& account1,
-        AccountID const& account2,
-        Currency const& currency) override;
+    lineKeylet(AccountID const& account1, AccountID const& account2, Currency const& currency) override;
 
     Expected<Bytes, HostFunctionError>
     mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq) override;
@@ -204,14 +191,10 @@ public:
     oracleKeylet(AccountID const& account, std::uint32_t docId) override;
 
     Expected<Bytes, HostFunctionError>
-    paychanKeylet(
-        AccountID const& account,
-        AccountID const& destination,
-        std::uint32_t seq) override;
+    paychanKeylet(AccountID const& account, AccountID const& destination, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
-    permissionedDomainKeylet(AccountID const& account, std::uint32_t seq)
-        override;
+    permissionedDomainKeylet(AccountID const& account, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
     signersKeylet(AccountID const& account) override;
@@ -247,8 +230,7 @@ public:
     traceNum(std::string_view const& msg, int64_t data) override;
 
     Expected<int32_t, HostFunctionError>
-    traceAccount(std::string_view const& msg, AccountID const& account)
-        override;
+    traceAccount(std::string_view const& msg, AccountID const& account) override;
 
     Expected<int32_t, HostFunctionError>
     traceFloat(std::string_view const& msg, Slice const& data) override;
@@ -293,10 +275,10 @@ public:
 namespace wasm_float {
 
 // The range for the mantissa and exponent when normalized
-static std::int64_t constexpr minMantissa = 1'000'000'000'000'000ll;
-static std::int64_t constexpr maxMantissa = (1ull << 54) - 1;
-static int constexpr minExponent = -96;
-static int constexpr maxExponent = 80;
+static std::int64_t constexpr wasmMinMantissa = 1'000'000'000'000'000ll;
+static std::int64_t constexpr wasmMaxMantissa = wasmMinMantissa * 10 - 1;
+static int constexpr wasmMinExponent = -96;
+static int constexpr wasmMaxExponent = 80;
 
 }  // namespace wasm_float
 

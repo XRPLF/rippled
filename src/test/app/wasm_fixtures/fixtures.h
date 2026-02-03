@@ -22,15 +22,13 @@ static constexpr uint8_t WASM_HEADER[] = {
 };
 
 // Type section: () -> ()
-static constexpr uint8_t TYPE_EMPTY_FUNC[] =
-    {0x01, 0x04, 0x01, 0x60, 0x00, 0x00};
+static constexpr uint8_t TYPE_EMPTY_FUNC[] = {0x01, 0x04, 0x01, 0x60, 0x00, 0x00};
 
 // Function section: one function using type 0
 static constexpr uint8_t FUNC_TYPE0[] = {0x03, 0x02, 0x01, 0x00};
 
 // Export section: export func 0 as "finish"
-static constexpr uint8_t EXPORT_FINISH[] =
-    {0x07, 0x0a, 0x01, 0x06, 'f', 'i', 'n', 'i', 's', 'h', 0x00, 0x00};
+static constexpr uint8_t EXPORT_FINISH[] = {0x07, 0x0a, 0x01, 0x06, 'f', 'i', 'n', 'i', 's', 'h', 0x00, 0x00};
 
 // Empty function body: 0 locals, end
 static constexpr uint8_t EMPTY_BODY[] = {0x00, 0x0b};

@@ -18,8 +18,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     using namespace Lending;
 
     auto const& tx = ctx.tx;
-    if (auto const data = tx[~sfData]; data && !data->empty() &&
-        !validDataLength(tx[~sfData], maxDataPayloadLength))
+    if (auto const data = tx[~sfData]; data && !data->empty() && !validDataLength(tx[~sfData], maxDataPayloadLength))
         return temINVALID;
     if (!validNumericRange(tx[~sfManagementFeeRate], maxManagementFeeRate))
         return temINVALID;
@@ -27,16 +26,14 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
         return temINVALID;
     if (!validNumericRange(tx[~sfCoverRateLiquidation], maxCoverRate))
         return temINVALID;
-    if (!validNumericRange(
-            tx[~sfDebtMaximum], Number(maxMPTokenAmount), Number(0)))
+    if (!validNumericRange(tx[~sfDebtMaximum], Number(maxMPTokenAmount), Number(0)))
         return temINVALID;
 
     if (tx.isFieldPresent(sfLoanBrokerID))
     {
         // Fixed fields can not be specified if we're modifying an existing
         // LoanBroker Object
-        if (tx.isFieldPresent(sfManagementFeeRate) ||
-            tx.isFieldPresent(sfCoverRateMinimum) ||
+        if (tx.isFieldPresent(sfManagementFeeRate) || tx.isFieldPresent(sfCoverRateMinimum) ||
             tx.isFieldPresent(sfCoverRateLiquidation))
             return temINVALID;
 
@@ -52,8 +49,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 
     {
         auto const minimumZero = tx[~sfCoverRateMinimum].value_or(0) == 0;
-        auto const liquidationZero =
-            tx[~sfCoverRateLiquidation].value_or(0) == 0;
+        auto const liquidationZero = tx[~sfCoverRateLiquidation].value_or(0) == 0;
         // Both must be zero or non-zero.
         if (minimumZero != liquidationZero)
         {
@@ -67,8 +63,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 std::vector<OptionaledField<STNumber>> const&
 LoanBrokerSet::getValueFields()
 {
-    static std::vector<OptionaledField<STNumber>> const valueFields{
-        ~sfDebtMaximum};
+    static std::vector<OptionaledField<STNumber>> const valueFields{~sfDebtMaximum};
 
     return valueFields;
 }
@@ -107,8 +102,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         }
         if (vaultID != sleBroker->at(sfVaultID))
         {
-            JLOG(ctx.j.warn())
-                << "Can not change VaultID on an existing LoanBroker.";
+            JLOG(ctx.j.warn()) << "Can not change VaultID on an existing LoanBroker.";
             return tecNO_PERMISSION;
         }
         if (account != sleBroker->at(sfOwner))
@@ -123,8 +117,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
             auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
             if (*debtMax != 0 && *debtMax < currentDebtTotal)
             {
-                JLOG(ctx.j.warn())
-                    << "Cannot reduce DebtMaximum below current DebtTotal.";
+                JLOG(ctx.j.warn()) << "Cannot reduce DebtMaximum below current DebtTotal.";
                 return tecLIMIT_EXCEEDED;
             }
         }
@@ -134,8 +127,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         if (auto const ter = canAddHolding(ctx.view, asset))
             return ter;
 
-        if (auto const ter = checkFrozen(
-                ctx.view, sleVault->at(sfAccount), sleVault->at(sfAsset)))
+        if (auto const ter = checkFrozen(ctx.view, sleVault->at(sfAccount), sleVault->at(sfAsset)))
         {
             JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
             return ter;
@@ -146,11 +138,9 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     // type. This is mostly only relevant for integral (non-IOU) types
     for (auto const& field : getValueFields())
     {
-        if (auto const value = tx[field];
-            value && STAmount{asset, *value} != *value)
+        if (auto const value = tx[field]; value && STAmount{asset, *value} != *value)
         {
-            JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
-                               << ") can not be represented as a(n) "
+            JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value << ") can not be represented as a(n) "
                                << to_string(asset) << ".";
             return tecPRECISION_LOSS;
         }
@@ -219,8 +209,7 @@ LoanBrokerSet::doApply()
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        auto broker =
-            std::make_shared<SLE>(keylet::loanbroker(account_, sequence));
+        auto broker = std::make_shared<SLE>(keylet::loanbroker(account_, sequence));
 
         if (auto const ter = dirLink(view, account_, broker))
             return ter;  // LCOV_EXCL_LINE
@@ -234,15 +223,13 @@ LoanBrokerSet::doApply()
         if (mPriorBalance < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;
 
-        auto maybePseudo =
-            createPseudoAccount(view, broker->key(), sfLoanBrokerID);
+        auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
         if (!maybePseudo)
             return maybePseudo.error();  // LCOV_EXCL_LINE
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
 
-        if (auto ter = addEmptyHolding(
-                view, pseudoId, mPriorBalance, sleVault->at(sfAsset), j_))
+        if (auto ter = addEmptyHolding(view, pseudoId, mPriorBalance, sleVault->at(sfAsset), j_))
             return ter;
 
         // Initialize data fields:

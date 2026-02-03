@@ -23,8 +23,7 @@ STCurrency::STCurrency(SerialIter& sit, SField const& name) : STBase{name}
     currency_ = sit.get160();
 }
 
-STCurrency::STCurrency(SField const& name, Currency const& currency)
-    : STBase{name}, currency_{currency}
+STCurrency::STCurrency(SField const& name, Currency const& currency) : STBase{name}, currency_{currency}
 {
 }
 
@@ -88,15 +87,13 @@ currencyFromJson(SField const& name, Json::Value const& v)
 {
     if (!v.isString())
     {
-        Throw<std::runtime_error>(
-            "currencyFromJson currency must be a string Json value");
+        Throw<std::runtime_error>("currencyFromJson currency must be a string Json value");
     }
 
     auto const currency = to_currency(v.asString());
     if (currency == badCurrency() || currency == noCurrency())
     {
-        Throw<std::runtime_error>(
-            "currencyFromJson currency must be a valid currency");
+        Throw<std::runtime_error>("currencyFromJson currency must be a valid currency");
     }
 
     return STCurrency{name, currency};

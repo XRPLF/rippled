@@ -35,8 +35,7 @@ public:
     using time_point = typename clock_type::time_point;
 
 private:
-    using by_when_hook = boost::intrusive::set_base_hook<
-        boost::intrusive::link_mode<boost::intrusive::normal_link>>;
+    using by_when_hook = boost::intrusive::set_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>;
 
     struct event : by_when_hook
     {
@@ -75,8 +74,7 @@ private:
         operator=(event_impl const&) = delete;
 
         template <class DeducedHandler>
-        event_impl(time_point when_, DeducedHandler&& h)
-            : event(when_), h_(std::forward<DeducedHandler>(h))
+        event_impl(time_point when_, DeducedHandler&& h) : event(when_), h_(std::forward<DeducedHandler>(h))
         {
         }
 
@@ -90,9 +88,8 @@ private:
     class queue_type
     {
     private:
-        using by_when_set = typename boost::intrusive::make_multiset<
-            event,
-            boost::intrusive::constant_time_size<false>>::type;
+        using by_when_set =
+            typename boost::intrusive::make_multiset<event, boost::intrusive::constant_time_size<false>>::type;
         // alloc_ is owned by the scheduler
         boost::container::pmr::monotonic_buffer_resource* alloc_;
         by_when_set by_when_;
@@ -104,8 +101,7 @@ private:
         queue_type&
         operator=(queue_type const&) = delete;
 
-        explicit queue_type(
-            boost::container::pmr::monotonic_buffer_resource* alloc);
+        explicit queue_type(boost::container::pmr::monotonic_buffer_resource* alloc);
 
         ~queue_type();
 
@@ -256,9 +252,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-inline Scheduler::queue_type::queue_type(
-    boost::container::pmr::monotonic_buffer_resource* alloc)
-    : alloc_(alloc)
+inline Scheduler::queue_type::queue_type(boost::container::pmr::monotonic_buffer_resource* alloc) : alloc_(alloc)
 {
 }
 
@@ -293,8 +287,7 @@ Scheduler::queue_type::end() -> iterator
 
 template <class Handler>
 inline auto
-Scheduler::queue_type::emplace(time_point when, Handler&& h) ->
-    typename by_when_set::iterator
+Scheduler::queue_type::emplace(time_point when, Handler&& h) -> typename by_when_set::iterator
 {
     using event_type = event_impl<std::decay_t<Handler>>;
     auto const p = alloc_->allocate(sizeof(event_type));

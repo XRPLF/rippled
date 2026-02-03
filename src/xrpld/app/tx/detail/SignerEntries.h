@@ -35,10 +35,7 @@ public:
         std::uint16_t weight;
         std::optional<uint256> tag;
 
-        SignerEntry(
-            AccountID const& inAccount,
-            std::uint16_t inWeight,
-            std::optional<uint256> inTag)
+        SignerEntry(AccountID const& inAccount, std::uint16_t inWeight, std::optional<uint256> inTag)
             : account(inAccount), weight(inWeight), tag(inTag)
         {
         }
@@ -63,10 +60,7 @@ public:
     // journal For reporting error conditions.
     // annotation Source of SignerEntries, like "ledger" or "transaction".
     static Expected<std::vector<SignerEntry>, NotTEC>
-    deserialize(
-        STObject const& obj,
-        beast::Journal journal,
-        std::string_view annotation);
+    deserialize(STObject const& obj, beast::Journal journal, std::string_view annotation);
 };
 
 }  // namespace xrpl

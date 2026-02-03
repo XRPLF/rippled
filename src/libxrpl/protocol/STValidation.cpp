@@ -104,14 +104,10 @@ STValidation::isValid() const noexcept
     if (!valid_)
     {
         XRPL_ASSERT(
-            publicKeyType(getSignerPublic()) == KeyType::secp256k1,
-            "xrpl::STValidation::isValid : valid key type");
+            publicKeyType(getSignerPublic()) == KeyType::secp256k1, "xrpl::STValidation::isValid : valid key type");
 
         valid_ = verifyDigest(
-            getSignerPublic(),
-            getSigningHash(),
-            makeSlice(getFieldVL(sfSignature)),
-            getFlags() & vfFullyCanonicalSig);
+            getSignerPublic(), getSigningHash(), makeSlice(getFieldVL(sfSignature)), getFlags() & vfFullyCanonicalSig);
     }
 
     return valid_.value();

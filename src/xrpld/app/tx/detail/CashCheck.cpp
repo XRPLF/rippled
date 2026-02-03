@@ -22,9 +22,8 @@ CashCheck::preflight(PreflightContext const& ctx)
 
     if (static_cast<bool>(optAmount) == static_cast<bool>(optDeliverMin))
     {
-        JLOG(ctx.j.warn())
-            << "Malformed transaction: "
-               "does not specify exactly one of Amount and DeliverMin.";
+        JLOG(ctx.j.warn()) << "Malformed transaction: "
+                              "does not specify exactly one of Amount and DeliverMin.";
         return temMALFORMED;
     }
 
@@ -32,8 +31,7 @@ CashCheck::preflight(PreflightContext const& ctx)
     STAmount const value{optAmount ? *optAmount : *optDeliverMin};
     if (!isLegalNet(value) || value.signum() <= 0)
     {
-        JLOG(ctx.j.warn()) << "Malformed transaction: bad amount: "
-                           << value.getFullText();
+        JLOG(ctx.j.warn()) << "Malformed transaction: bad amount: " << value.getFullText();
         return temBAD_AMOUNT;
     }
 
@@ -79,18 +77,15 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         if (!sleSrc || !sleDst)
         {
             // If the check exists this should never occur.
-            JLOG(ctx.j.warn())
-                << "Malformed transaction: source or destination not in ledger";
+            JLOG(ctx.j.warn()) << "Malformed transaction: source or destination not in ledger";
             return tecNO_ENTRY;
         }
 
-        if ((sleDst->getFlags() & lsfRequireDestTag) &&
-            !sleCheck->isFieldPresent(sfDestinationTag))
+        if ((sleDst->getFlags() & lsfRequireDestTag) && !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
-            JLOG(ctx.j.warn())
-                << "Malformed transaction: DestinationTag required in check.";
+            JLOG(ctx.j.warn()) << "Malformed transaction: DestinationTag required in check.";
             return tecDST_TAG_NEEDED;
         }
     }
@@ -131,12 +126,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         // Make sure the check owner holds at least value.  If they have
         // less than value the check cannot be cashed.
         {
-            STAmount availableFunds{accountFunds(
-                ctx.view,
-                sleCheck->at(sfAccount),
-                value,
-                fhZERO_IF_FROZEN,
-                ctx.j)};
+            STAmount availableFunds{accountFunds(ctx.view, sleCheck->at(sfAccount), value, fhZERO_IF_FROZEN, ctx.j)};
 
             // Note that src will have one reserve's worth of additional XRP
             // once the check is cashed, since the check's reserve will no
@@ -147,8 +137,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
 
             if (value > availableFunds)
             {
-                JLOG(ctx.j.warn())
-                    << "Check cashed for more than owner's balance.";
+                JLOG(ctx.j.warn()) << "Check cashed for more than owner's balance.";
                 return tecPATH_PARTIAL;
             }
         }
@@ -159,16 +148,13 @@ CashCheck::preclaim(PreclaimContext const& ctx)
             auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
             if (!sleIssuer)
             {
-                JLOG(ctx.j.warn())
-                    << "Can't receive IOUs from non-existent issuer: "
-                    << to_string(issuerId);
+                JLOG(ctx.j.warn()) << "Can't receive IOUs from non-existent issuer: " << to_string(issuerId);
                 return tecNO_ISSUER;
             }
 
             if (sleIssuer->at(sfFlags) & lsfRequireAuth)
             {
-                auto const sleTrustLine =
-                    ctx.view.read(keylet::line(dstId, issuerId, currency));
+                auto const sleTrustLine = ctx.view.read(keylet::line(dstId, issuerId, currency));
 
                 if (!sleTrustLine)
                 {
@@ -182,14 +168,11 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 // weak ordering. Determine which entry we need to access.
                 bool const canonical_gt(dstId > issuerId);
 
-                bool const is_authorized(
-                    sleTrustLine->at(sfFlags) &
-                    (canonical_gt ? lsfLowAuth : lsfHighAuth));
+                bool const is_authorized(sleTrustLine->at(sfFlags) & (canonical_gt ? lsfLowAuth : lsfHighAuth));
 
                 if (!is_authorized)
                 {
-                    JLOG(ctx.j.warn())
-                        << "Can't receive IOUs from issuer without auth.";
+                    JLOG(ctx.j.warn()) << "Can't receive IOUs from issuer without auth.";
                     return tecNO_AUTH;
                 }
             }
@@ -227,12 +210,10 @@ CashCheck::doApply()
     }
 
     AccountID const srcId{sleCheck->getAccountID(sfAccount)};
-    if (!psb.exists(keylet::account(srcId)) ||
-        !psb.exists(keylet::account(account_)))
+    if (!psb.exists(keylet::account(srcId)) || !psb.exists(keylet::account(account_)))
     {
         // LCOV_EXCL_START
-        JLOG(ctx_.journal.fatal())
-            << "Precheck did not verify source or destination's existence.";
+        JLOG(ctx_.journal.fatal()) << "Precheck did not verify source or destination's existence.";
         return tecFAILED_PROCESSING;
         // LCOV_EXCL_STOP
     }
@@ -269,16 +250,14 @@ CashCheck::doApply()
 
             // Now, how much do they need in order to be successful?
             STAmount const xrpDeliver{
-                optDeliverMin
-                    ? std::max(*optDeliverMin, std::min(sendMax, srcLiquid))
-                    : ctx_.tx.getFieldAmount(sfAmount)};
+                optDeliverMin ? std::max(*optDeliverMin, std::min(sendMax, srcLiquid))
+                              : ctx_.tx.getFieldAmount(sfAmount)};
 
             if (srcLiquid < xrpDeliver)
             {
                 // Vote no. However the transaction might succeed if applied
                 // in a different order.
-                JLOG(j_.trace()) << "Cash Check: Insufficient XRP: "
-                                 << srcLiquid.getFullText() << " < "
+                JLOG(j_.trace()) << "Cash Check: Insufficient XRP: " << srcLiquid.getFullText() << " < "
                                  << xrpDeliver.getFullText();
                 return tecUNFUNDED_PAYMENT;
             }
@@ -288,9 +267,7 @@ CashCheck::doApply()
                 ctx_.deliver(xrpDeliver);
 
             // The source account has enough XRP so make the ledger change.
-            if (TER const ter{
-                    transferXRP(psb, srcId, account_, xrpDeliver, viewJ)};
-                ter != tesSUCCESS)
+            if (TER const ter{transferXRP(psb, srcId, account_, xrpDeliver, viewJ)}; ter != tesSUCCESS)
             {
                 // The transfer failed.  Return the error code.
                 return ter;
@@ -304,10 +281,7 @@ CashCheck::doApply()
             // transfer rate to account for.  Since the transfer rate cannot
             // exceed 200%, we use 1/2 maxValue as our limit.
             STAmount const flowDeliver{
-                optDeliverMin ? STAmount(
-                                    optDeliverMin->issue(),
-                                    STAmount::cMaxValue / 2,
-                                    STAmount::cMaxOffset)
+                optDeliverMin ? STAmount(optDeliverMin->issue(), STAmount::cMaxValue / 2, STAmount::cMaxOffset)
                               : ctx_.tx.getFieldAmount(sfAmount)};
 
             // If a trust line does not exist yet create one.
@@ -384,16 +358,14 @@ CashCheck::doApply()
             STAmount const savedLimit = sleTrustLine->at(tweakedLimit);
 
             // Make sure the tweaked limits are restored when we leave scope.
-            scope_exit fixup(
-                [&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
-                    if (auto const sleTrustLine = psb.peek(trustLineKey))
-                        sleTrustLine->at(tweakedLimit) = savedLimit;
-                });
+            scope_exit fixup([&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
+                if (auto const sleTrustLine = psb.peek(trustLineKey))
+                    sleTrustLine->at(tweakedLimit) = savedLimit;
+            });
 
             // Set the trust line limit to the highest possible value
             // while flow runs.
-            STAmount const bigAmount(
-                trustLineIssue, STAmount::cMaxValue, STAmount::cMaxOffset);
+            STAmount const bigAmount(trustLineIssue, STAmount::cMaxValue, STAmount::cMaxOffset);
             sleTrustLine->at(tweakedLimit) = bigAmount;
 
             // Let flow() do the heavy lifting on a check for an IOU.
@@ -423,8 +395,7 @@ CashCheck::doApply()
             {
                 if (result.actualAmountOut < *optDeliverMin)
                 {
-                    JLOG(ctx_.journal.warn())
-                        << "flow did not produce DeliverMin.";
+                    JLOG(ctx_.journal.warn()) << "flow did not produce DeliverMin.";
                     return tecPATH_PARTIAL;
                 }
             }
@@ -440,11 +411,7 @@ CashCheck::doApply()
     // Check was cashed.  If not a self send (and it shouldn't be), remove
     // check link from destination directory.
     if (srcId != account_ &&
-        !psb.dirRemove(
-            keylet::ownerDir(account_),
-            sleCheck->at(sfDestinationNode),
-            sleCheck->key(),
-            true))
+        !psb.dirRemove(keylet::ownerDir(account_), sleCheck->at(sfDestinationNode), sleCheck->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from destination.";
@@ -453,11 +420,7 @@ CashCheck::doApply()
     }
 
     // Remove check from check owner's directory.
-    if (!psb.dirRemove(
-            keylet::ownerDir(srcId),
-            sleCheck->at(sfOwnerNode),
-            sleCheck->key(),
-            true))
+    if (!psb.dirRemove(keylet::ownerDir(srcId), sleCheck->at(sfOwnerNode), sleCheck->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from owner.";

@@ -4,8 +4,7 @@ namespace xrpl {
 
 using const_iterator = Dir::const_iterator;
 
-Dir::Dir(ReadView const& view, Keylet const& key)
-    : view_(&view), root_(key), sle_(view_->read(root_))
+Dir::Dir(ReadView const& view, Keylet const& key) : view_(&view), root_(key), sle_(view_->read(root_))
 {
     if (sle_ != nullptr)
         indexes_ = &sle_->getFieldV256(sfIndexes);
@@ -50,9 +49,7 @@ const_iterator::operator==(const_iterator const& other) const
 const_iterator::reference
 const_iterator::operator*() const
 {
-    XRPL_ASSERT(
-        index_ != beast::zero,
-        "xrpl::const_iterator::operator* : nonzero index");
+    XRPL_ASSERT(index_ != beast::zero, "xrpl::const_iterator::operator* : nonzero index");
     if (!cache_)
         cache_ = view_->read(keylet::child(index_));
     return *cache_;
@@ -61,9 +58,7 @@ const_iterator::operator*() const
 const_iterator&
 const_iterator::operator++()
 {
-    XRPL_ASSERT(
-        index_ != beast::zero,
-        "xrpl::const_iterator::operator++ : nonzero index");
+    XRPL_ASSERT(index_ != beast::zero, "xrpl::const_iterator::operator++ : nonzero index");
     if (++it_ != std::end(*indexes_))
     {
         index_ = *it_;
@@ -77,9 +72,7 @@ const_iterator::operator++()
 const_iterator
 const_iterator::operator++(int)
 {
-    XRPL_ASSERT(
-        index_ != beast::zero,
-        "xrpl::const_iterator::operator++(int) : nonzero index");
+    XRPL_ASSERT(index_ != beast::zero, "xrpl::const_iterator::operator++(int) : nonzero index");
     const_iterator tmp(*this);
     ++(*this);
     return tmp;

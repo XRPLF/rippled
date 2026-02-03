@@ -14,16 +14,12 @@ class NFTokenAuth_test : public beast::unit_test::suite
         uint32_t xfee = 0u)
     {
         using namespace test::jtx;
-        auto const nftID{
-            token::getNextID(env, account, 0u, tfTransferable, xfee)};
-        env(token::mint(account, 0),
-            token::xferFee(xfee),
-            txflags(tfTransferable));
+        auto const nftID{token::getNextID(env, account, 0u, tfTransferable, xfee)};
+        env(token::mint(account, 0), token::xferFee(xfee), txflags(tfTransferable));
         env.close();
 
         auto const sellIdx = keylet::nftoffer(account, env.seq(account)).key;
-        env(token::createOffer(account, nftID, currency),
-            txflags(tfSellNFToken));
+        env(token::createOffer(account, nftID, currency), txflags(tfSellNFToken));
         env.close();
 
         return std::make_tuple(nftID, sellIdx);
@@ -102,18 +98,14 @@ public:
         auto const [nftID, _] = mintAndOfferNFT(env, A2, drops(1));
 
         // test: check that buyer can't make an offer if they're not authorized.
-        env(token::createOffer(A1, nftID, USD(10)),
-            token::owner(A2),
-            ter(tecUNFUNDED_OFFER));
+        env(token::createOffer(A1, nftID, USD(10)), token::owner(A2), ter(tecUNFUNDED_OFFER));
         env.close();
 
         // Artificially create an unauthorized trustline with balance. Don't
         // close ledger before running the actual tests against this trustline.
         // After ledger is closed, the trustline will not exist.
-        auto const unauthTrustline = [&](OpenView& view,
-                                         beast::Journal) -> bool {
-            auto const sleA1 =
-                std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
+        auto const unauthTrustline = [&](OpenView& view, beast::Journal) -> bool {
+            auto const sleA1 = std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
             sleA1->setFieldAmount(sfBalance, A1["USD"](-1000));
             view.rawInsert(sleA1);
             return true;
@@ -123,9 +115,7 @@ public:
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: check that buyer can't make an offer even with balance
-            env(token::createOffer(A1, nftID, USD(10)),
-                token::owner(A2),
-                ter(tecNO_AUTH));
+            env(token::createOffer(A1, nftID, USD(10)), token::owner(A2), ter(tecNO_AUTH));
         }
         else
         {
@@ -177,10 +167,8 @@ public:
         // trustline with balance. Don't close ledger before running the actual
         // tests against this trustline. After ledger is closed, the trustline
         // will not exist.
-        auto const unauthTrustline = [&](OpenView& view,
-                                         beast::Journal) -> bool {
-            auto const sleA1 =
-                std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
+        auto const unauthTrustline = [&](OpenView& view, beast::Journal) -> bool {
+            auto const sleA1 = std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
             sleA1->setFieldAmount(sfBalance, A1["USD"](-1000));
             view.rawInsert(sleA1);
             return true;
@@ -222,15 +210,11 @@ public:
         {
             // test: can't create sell offer if there is no trustline but auth
             // required
-            env(token::createOffer(A2, nftID, USD(10)),
-                txflags(tfSellNFToken),
-                ter(tecNO_LINE));
+            env(token::createOffer(A2, nftID, USD(10)), txflags(tfSellNFToken), ter(tecNO_LINE));
 
             env(trust(A2, limit));
             // test: can't create sell offer if not authorized to hold token
-            env(token::createOffer(A2, nftID, USD(10)),
-                txflags(tfSellNFToken),
-                ter(tecNO_AUTH));
+            env(token::createOffer(A2, nftID, USD(10)), txflags(tfSellNFToken), ter(tecNO_AUTH));
 
             // Authorizing trustline to make an offer creation possible
             env(trust(G1, USD(0), A2, tfSetfAuth));
@@ -303,10 +287,8 @@ public:
         env.close();
 
         // Creating an artificial unauth trustline
-        auto const unauthTrustline = [&](OpenView& view,
-                                         beast::Journal) -> bool {
-            auto const sleA1 =
-                std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
+        auto const unauthTrustline = [&](OpenView& view, beast::Journal) -> bool {
+            auto const sleA1 = std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
             sleA1->setFieldAmount(sfBalance, A1["USD"](-1000));
             view.rawInsert(sleA1);
             return true;
@@ -353,9 +335,7 @@ public:
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: G1 requires authorization of broker, no trust line exists
-            env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(USD(1)),
-                ter(tecNO_LINE));
+            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)), ter(tecNO_LINE));
             env.close();
 
             // trust line created, but not authorized
@@ -363,9 +343,7 @@ public:
             env.close();
 
             // test: G1 requires authorization of broker
-            env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(USD(1)),
-                ter(tecNO_AUTH));
+            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)), ter(tecNO_AUTH));
             env.close();
 
             // test: can still be brokered without broker fee.
@@ -375,8 +353,7 @@ public:
         else
         {
             // Old behavior: broker can receive IOUs without the authorization
-            env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(USD(1)));
+            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)));
             env.close();
 
             BEAST_EXPECT(env.balance(broker, USD) == USD(1));
@@ -425,10 +402,8 @@ public:
         env(trust(A1, USD(0)));
         env.close();
 
-        auto const unauthTrustline = [&](OpenView& view,
-                                         beast::Journal) -> bool {
-            auto const sleA1 =
-                std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
+        auto const unauthTrustline = [&](OpenView& view, beast::Journal) -> bool {
+            auto const sleA1 = std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
             sleA1->setFieldAmount(sfBalance, A1["USD"](-1000));
             view.rawInsert(sleA1);
             return true;
@@ -438,9 +413,7 @@ public:
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: G1 requires authorization of A2
-            env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(USD(1)),
-                ter(tecNO_AUTH));
+            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)), ter(tecNO_AUTH));
             env.close();
         }
     }
@@ -491,9 +464,7 @@ public:
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: G1 requires authorization of broker, no trust line exists
-            env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(USD(1)),
-                ter(tecNO_LINE));
+            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)), ter(tecNO_LINE));
             env.close();
 
             // trust line created, but not authorized
@@ -501,9 +472,7 @@ public:
             env.close();
 
             // test: G1 requires authorization of A2
-            env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(USD(1)),
-                ter(tecNO_AUTH));
+            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)), ter(tecNO_AUTH));
             env.close();
 
             // test: cannot be brokered even without broker fee.
@@ -513,8 +482,7 @@ public:
         else
         {
             // Old behavior: broker can receive IOUs without the authorization
-            env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(USD(1)));
+            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)));
             env.close();
 
             BEAST_EXPECT(env.balance(A2, USD) == USD(10));
@@ -553,8 +521,7 @@ public:
 
         // We authorized A1 and A2, but not the minter.
         // Now mint NFT
-        auto const [nftID, minterSellIdx] =
-            mintAndOfferNFT(env, minter, drops(1), 1);
+        auto const [nftID, minterSellIdx] = mintAndOfferNFT(env, minter, drops(1), 1);
         env(token::acceptSellOffer(A1, minterSellIdx));
 
         uint256 const sellIdx = keylet::nftoffer(A1, env.seq(A1)).key;
@@ -582,8 +549,7 @@ public:
         using namespace test::jtx;
         static FeatureBitset const all{testable_amendments()};
 
-        static std::array const features = {
-            all - fixEnforceNFTokenTrustlineV2, all};
+        static std::array const features = {all - fixEnforceNFTokenTrustlineV2, all};
 
         for (auto const feature : features)
         {

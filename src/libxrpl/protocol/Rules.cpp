@@ -39,11 +39,8 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // Make global changes associated with the rules before the value is moved.
     // Push the appropriate setting, instead of having the class pull every time
     // the value is needed. That could get expensive fast.
-    bool enableLargeNumbers = !r ||
-        (r->enabled(featureSingleAssetVault) ||
-         r->enabled(featureLendingProtocol));
-    Number::setMantissaScale(
-        enableLargeNumbers ? MantissaRange::large : MantissaRange::small);
+    bool enableLargeNumbers = !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
+    Number::setMantissaScale(enableLargeNumbers ? MantissaRange::large : MantissaRange::small);
 
     *getCurrentTransactionRulesRef() = std::move(r);
 }
@@ -56,8 +53,7 @@ private:
     std::unordered_set<uint256, beast::uhash<>> const& presets_;
 
 public:
-    explicit Impl(std::unordered_set<uint256, beast::uhash<>> const& presets)
-        : presets_(presets)
+    explicit Impl(std::unordered_set<uint256, beast::uhash<>> const& presets) : presets_(presets)
     {
     }
 
@@ -100,8 +96,7 @@ public:
     }
 };
 
-Rules::Rules(std::unordered_set<uint256, beast::uhash<>> const& presets)
-    : impl_(std::make_shared<Impl>(presets))
+Rules::Rules(std::unordered_set<uint256, beast::uhash<>> const& presets) : impl_(std::make_shared<Impl>(presets))
 {
 }
 
@@ -130,9 +125,7 @@ Rules::enabled(uint256 const& feature) const
 bool
 Rules::operator==(Rules const& other) const
 {
-    XRPL_ASSERT(
-        impl_ && other.impl_,
-        "xrpl::Rules::operator==(Rules) const : both initialized");
+    XRPL_ASSERT(impl_ && other.impl_, "xrpl::Rules::operator==(Rules) const : both initialized");
     if (impl_.get() == other.impl_.get())
         return true;
     return *impl_ == *other.impl_;

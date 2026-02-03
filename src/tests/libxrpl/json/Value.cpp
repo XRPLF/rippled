@@ -32,8 +32,7 @@ TEST(json_value, construct_and_compare_Json_StaticString)
     EXPECT_EQ(addrTest1, &sample[0]);
     EXPECT_EQ(test1.c_str(), &sample[0]);
 
-    static constexpr Json::StaticString test2{
-        "Contents of a Json::StaticString"};
+    static constexpr Json::StaticString test2{"Contents of a Json::StaticString"};
     static constexpr Json::StaticString test3{"Another StaticString"};
 
     EXPECT_EQ(test1, test2);
@@ -202,11 +201,7 @@ TEST(json_value, different_types)
 
 TEST(json_value, compare_strings)
 {
-    auto doCompare = [&](Json::Value const& lhs,
-                         Json::Value const& rhs,
-                         bool lhsEqRhs,
-                         bool lhsLtRhs,
-                         int line) {
+    auto doCompare = [&](Json::Value const& lhs, Json::Value const& rhs, bool lhsEqRhs, bool lhsLtRhs, int line) {
         SCOPED_TRACE(line);
         EXPECT_EQ((lhs == rhs), lhsEqRhs);
         EXPECT_NE((lhs != rhs), lhsEqRhs);
@@ -615,8 +610,7 @@ TEST(json_value, edge_cases)
         EXPECT_EQ(j1["max_int"].asInt(), max_int);
         EXPECT_EQ(j1["max_int"].asAbsUInt(), max_int);
         EXPECT_EQ(j1["min_int"].asInt(), min_int);
-        EXPECT_EQ(
-            j1["min_int"].asAbsUInt(), static_cast<std::int64_t>(min_int) * -1);
+        EXPECT_EQ(j1["min_int"].asAbsUInt(), static_cast<std::int64_t>(min_int) * -1);
         EXPECT_EQ(j1["a_uint"].asUInt(), a_uint);
         EXPECT_EQ(j1["a_uint"].asAbsUInt(), a_uint);
         EXPECT_GT(j1["a_uint"], a_large_int);
@@ -626,9 +620,7 @@ TEST(json_value, edge_cases)
         EXPECT_EQ(j1["a_large_int"].asUInt(), a_large_int);
         EXPECT_LT(j1["a_large_int"], a_uint);
         EXPECT_EQ(j1["a_small_int"].asInt(), a_small_int);
-        EXPECT_EQ(
-            j1["a_small_int"].asAbsUInt(),
-            static_cast<std::int64_t>(a_small_int) * -1);
+        EXPECT_EQ(j1["a_small_int"].asAbsUInt(), static_cast<std::int64_t>(a_small_int) * -1);
         EXPECT_LT(j1["a_small_int"], a_uint);
     }
 
@@ -839,9 +831,7 @@ TEST(json_value, compact)
     char const* s("{\"array\":[{\"12\":23},{},null,false,0.5]}");
 
     auto countLines = [](std::string const& str) {
-        return 1 + std::count_if(str.begin(), str.end(), [](char c) {
-                   return c == '\n';
-               });
+        return 1 + std::count_if(str.begin(), str.end(), [](char c) { return c == '\n'; });
     };
 
     EXPECT_TRUE(r.parse(s, j));
