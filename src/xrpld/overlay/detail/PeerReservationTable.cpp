@@ -1,9 +1,8 @@
-#include <xrpld/app/rdb/RelationalDatabase.h>
-
 #include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/server/Wallet.h>
 
 #include <algorithm>
