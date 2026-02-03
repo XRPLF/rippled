@@ -68,7 +68,6 @@ using NodeCache = TaggedCache<SHAMapHash, Blob>;
     ServiceRegistry rather than Application when they only need service
     access and not lifecycle management.
 
-    The implementation (ServiceRegistryImpl) is provided in xrpld.
 */
 class ServiceRegistry
 {
