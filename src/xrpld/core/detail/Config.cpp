@@ -358,9 +358,11 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         std::string const dbPath(legacy("database_path"));
         if (!dbPath.empty())
             dataDir = boost::filesystem::path(dbPath);
+        else if (RUN_STANDALONE)
+            dataDir.clear();
     }
 
-    if (!RUN_STANDALONE)
+    if (!dataDir.empty())
     {
         boost::system::error_code ec;
         boost::filesystem::create_directories(dataDir, ec);
