@@ -5,10 +5,6 @@
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/ledger/CachedSLEs.h>
-#include <xrpl/protocol/Protocol.h>
-
-#include <cstdint>
-#include <memory>
 
 namespace xrpl {
 
