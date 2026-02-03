@@ -1,3 +1,5 @@
+#pragma once
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
