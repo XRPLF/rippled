@@ -126,14 +126,14 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 escrow::finish_function("AA"),
                 escrow::cancel_time(env.now() + 100s),
                 fee(txnFees),
-                ter(temDEACTIVATED));
+                ter(temTEMP_DISABLED));
             env.close();
 
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
                 fee(txnFees),
-                ter(temDEACTIVATED));
+                ter(temTEMP_DISABLED));
             env.close();
         }
 
@@ -394,7 +394,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             env(escrow::finish(alice, alice, seq),
                 escrow::comp_allowance(1000),
                 fee(env.current()->fees().base + 1000),
-                ter(temDEACTIVATED));
+                ter(temTEMP_DISABLED));
         }
 
         Env env(*this, features);
