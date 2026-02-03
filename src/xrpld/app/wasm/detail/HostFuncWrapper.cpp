@@ -56,46 +56,40 @@ getDataInt64(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
     return result;
 }
 
-template <class IW>
-Expected<uint32_t, HostFunctionError>
-getDataUInt32(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
+template <class T, class IW>
+Expected<T, HostFunctionError>
+getDataUnsigned(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
+    static_assert(std::is_unsigned_v<T>);
     auto const r = getDataSlice(runtime, params, i);
     if (!r)
         return Unexpected(r.error());
-    if (r->size() != sizeof(uint32_t))
+    if (r->size() != sizeof(T))
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
-    uint32_t x;
+    T x;
     uintptr_t p = reinterpret_cast<uintptr_t>(r->data());
-    if (p & (alignof(uint32_t) - 1))  // unaligned
-        memcpy(&x, r->data(), sizeof(uint32_t));
+    if (p & (alignof(T) - 1))  // unaligned
+        memcpy(&x, r->data(), sizeof(T));
     else
-        x = *reinterpret_cast<uint32_t const*>(r->data());
+        x = *reinterpret_cast<T const*>(r->data());
     x = adjustWasmEndianess(x);
 
     return x;
 }
 
 template <class IW>
+Expected<uint32_t, HostFunctionError>
+getDataUInt32(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
+{
+    return getDataUnsigned<uint32_t>(runtime, params, i);
+}
+
+template <class IW>
 Expected<uint64_t, HostFunctionError>
 getDataUInt64(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
-    auto const r = getDataSlice(runtime, params, i);
-    if (!r)
-        return Unexpected(r.error());
-    if (r->size() != sizeof(uint64_t))
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
-
-    uint64_t x;
-    uintptr_t p = reinterpret_cast<uintptr_t>(r->data());
-    if (p & (alignof(uint64_t) - 1))  // unaligned
-        memcpy(&x, r->data(), sizeof(uint64_t));
-    else
-        x = *reinterpret_cast<uint64_t const*>(r->data());
-    x = adjustWasmEndianess(x);
-
-    return x;
+    return getDataUnsigned<uint64_t>(runtime, params, i);
 }
 
 template <class IW>
