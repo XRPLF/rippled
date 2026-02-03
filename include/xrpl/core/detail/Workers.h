@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_WORKERS_H_INCLUDED
-#define XRPL_CORE_WORKERS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/core/LockFreeStack.h>
 #include <xrpl/core/detail/semaphore.h>
@@ -208,5 +207,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef JOIN_H_INCLUDED
-#define JOIN_H_INCLUDED
+#pragma once
 
 #include <string>
 
@@ -80,5 +79,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

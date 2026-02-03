@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_BASICCONFIG_H_INCLUDED
-#define XRPL_BASICS_BASICCONFIG_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 
@@ -369,5 +368,3 @@ get_if_exists<bool>(Section const& section, std::string const& name, bool& v)
 }
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_CONTEXT_H_INCLUDED
-#define XRPL_RPC_CONTEXT_H_INCLUDED
+#pragma once
 
 #include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/Role.h>
@@ -54,5 +53,3 @@ struct GRPCContext : public Context
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

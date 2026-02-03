@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_REPORTER_HPP
-#define BEAST_UNIT_TEST_REPORTER_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/amount.h>
 #include <xrpl/beast/unit_test/recorder.h>
@@ -248,5 +247,3 @@ using reporter = detail::reporter<>;
 
 }  // namespace unit_test
 }  // namespace beast
-
-#endif

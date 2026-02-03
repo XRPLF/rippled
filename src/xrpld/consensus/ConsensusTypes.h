@@ -1,5 +1,4 @@
-#ifndef XRPL_CONSENSUS_CONSENSUS_TYPES_H_INCLUDED
-#define XRPL_CONSENSUS_CONSENSUS_TYPES_H_INCLUDED
+#pragma once
 
 #include <xrpld/consensus/ConsensusProposal.h>
 #include <xrpld/consensus/DisputedTx.h>
@@ -220,5 +219,3 @@ struct ConsensusResult
     std::size_t proposers = 0;
 };
 }  // namespace xrpl
-
-#endif

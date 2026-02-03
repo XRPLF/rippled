@@ -1,5 +1,4 @@
-#ifndef XRPL_CONDITIONS_ERROR_H
-#define XRPL_CONDITIONS_ERROR_H
+#pragma once
 
 #include <system_error>
 
@@ -43,5 +42,3 @@ struct is_error_code_enum<xrpl::cryptoconditions::error>
 };
 
 }  // namespace std
-
-#endif

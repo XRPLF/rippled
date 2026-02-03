@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPLEAFTXPLUSMETANODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPLEAFTXPLUSMETANODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -60,5 +59,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -34,8 +34,8 @@
 #include <utility>
 #include <vector>
 
-#ifndef BEAST_STATSDCOLLECTOR_TRACING_ENABLED
-#define BEAST_STATSDCOLLECTOR_TRACING_ENABLED 0
+#pragma once
+
 #endif
 
 namespace beast {
@@ -357,7 +357,6 @@ public:
             std::cerr << s;
         }
         std::cerr << '\n';
-#endif
     }
 
     // Send what we have

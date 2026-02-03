@@ -1,5 +1,4 @@
-#ifndef BEAST_CONTAINER_DETAIL_AGED_ASSOCIATIVE_CONTAINER_H_INCLUDED
-#define BEAST_CONTAINER_DETAIL_AGED_ASSOCIATIVE_CONTAINER_H_INCLUDED
+#pragma once
 
 namespace beast {
 namespace detail {
@@ -33,5 +32,3 @@ struct aged_associative_container_extract_t<false>
 
 }  // namespace detail
 }  // namespace beast
-
-#endif

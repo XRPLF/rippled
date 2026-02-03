@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_TIMERS_H_INCLUDED
-#define XRPL_TEST_CSF_TIMERS_H_INCLUDED
+#pragma once
 
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
@@ -61,5 +60,3 @@ public:
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

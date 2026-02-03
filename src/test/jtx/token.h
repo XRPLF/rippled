@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_NFT_H_INCLUDED
-#define XRPL_TEST_JTX_NFT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -218,5 +217,3 @@ modify(jtx::Account const& account, uint256 const& nftokenID);
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif  // XRPL_TEST_JTX_NFT_H_INCLUDED
