@@ -20,6 +20,10 @@ namespace perf {
 class PerfLog;
 }
 
+// This is temporary until we migrate all code to use ServiceRegistry.
+class Application;
+
+// Forward declarations
 class AcceptedLedger;
 class AmendmentTable;
 class Cluster;
