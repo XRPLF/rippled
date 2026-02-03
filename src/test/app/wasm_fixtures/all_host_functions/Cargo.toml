@@ -10,7 +10,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-xrpl-std = { git = "https://github.com/ripple/xrpl-wasm-stdlib.git", package = "xrpl-wasm-stdlib" }
+xrpl-std = { git = "https://github.com/ripple/xrpl-wasm-stdlib.git", package = "xrpl-wasm-stdlib", branch = "u32-buffer" }
 
 [profile.dev]
 panic = "abort"

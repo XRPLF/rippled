@@ -55,12 +55,20 @@ pub extern "C" fn finish() -> i32 {
     // that's in a separate test file (all_keylets).
     // The float tests are also in a separate file (float_tests).
     // ########################################
-    check_result(unsafe { host::get_ledger_sqn() }, 12345, "get_ledger_sqn");
-    check_result(
-        unsafe { host::get_parent_ledger_time() },
-        67890,
-        "get_parent_ledger_time",
-    );
+    with_buffer::<4, _, _>(|ptr, len| {
+        check_result(
+            unsafe { host::get_ledger_sqn(ptr, len) },
+            4,
+            "get_ledger_sqn",
+        );
+    });
+    with_buffer::<4, _, _>(|ptr, len| {
+        check_result(
+            unsafe { host::get_parent_ledger_time(ptr, len) },
+            4,
+            "get_parent_ledger_time",
+        );
+    });
     with_buffer::<32, _, _>(|ptr, len| {
         check_result(
             unsafe { host::get_parent_ledger_hash(ptr, len) },
@@ -68,7 +76,9 @@ pub extern "C" fn finish() -> i32 {
             "get_parent_ledger_hash",
         );
     });
-    check_result(unsafe { host::get_base_fee() }, 10, "get_base_fee");
+    with_buffer::<4, _, _>(|ptr, len| {
+        check_result(unsafe { host::get_base_fee(ptr, len) }, 4, "get_base_fee");
+    });
     let amendment_name: &[u8] = b"test_amendment";
     let amendment_id: [u8; 32] = [1; 32];
     check_result(
@@ -312,38 +322,6 @@ pub extern "C" fn finish() -> i32 {
     // Step #3: Test getData[Type] edge cases
     // ########################################
 
-    // uint64
-    with_buffer::<32, _, _>(|ptr, len| {
-        check_result(
-            unsafe {
-                host::float_from_uint(
-                    locator.as_ptr().wrapping_add(1_000_000_000),
-                    8,
-                    ptr,
-                    len,
-                    FLOAT_ROUNDING_MODES_TO_NEAREST,
-                )
-            },
-            error_codes::POINTER_OUT_OF_BOUNDS,
-            "float_from_uint_len_oob",
-        )
-    });
-    with_buffer::<32, _, _>(|ptr, len| {
-        check_result(
-            unsafe {
-                host::float_from_uint(
-                    locator.as_ptr(),
-                    locator.len(),
-                    ptr,
-                    len,
-                    FLOAT_ROUNDING_MODES_TO_NEAREST,
-                )
-            },
-            error_codes::INVALID_PARAMS,
-            "float_from_uint_wrong_len",
-        )
-    });
-
     // SField
     check_result(
         unsafe { host::get_tx_array_len(2) }, // not a valid SField value
@@ -380,6 +358,72 @@ pub extern "C" fn finish() -> i32 {
         error_codes::POINTER_OUT_OF_BOUNDS,
         "get_tx_nested_array_len_ptr_oob",
     );
+
+    // uint32
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::check_keylet(
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    locator.as_ptr().wrapping_add(1_000_000_000),
+                    8,
+                    ptr,
+                    len,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "check_keylet_oob_len_u32",
+        )
+    });
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::check_keylet(
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    ptr,
+                    len,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "check_keylet_wrong_len_u32",
+        )
+    });
+
+    // uint64
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_from_uint(
+                    locator.as_ptr().wrapping_add(1_000_000_000),
+                    8,
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_from_uint_len_oob",
+        )
+    });
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_from_uint(
+                    locator.as_ptr(),
+                    locator.len(),
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "float_from_uint_wrong_len_uint64",
+        )
+    });
 
     // uint256
     check_result(
@@ -1011,6 +1055,155 @@ pub extern "C" fn finish() -> i32 {
         )
     });
 
+    // invalid UInt32
+
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::escrow_keylet(
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    ptr,
+                    len,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "escrow_keylet_wrong_size_uint32",
+        )
+    });
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::mpt_issuance_keylet(
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    ptr,
+                    len,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "mpt_issuance_keylet_wrong_size_uint32",
+        )
+    });
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::nft_offer_keylet(
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    ptr,
+                    len,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "nft_offer_keylet_wrong_size_uint32",
+        )
+    });
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::offer_keylet(
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    ptr,
+                    len,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "offer_keylet_wrong_size_uint32",
+        )
+    });
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::oracle_keylet(
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    ptr,
+                    len,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "oracle_keylet_wrong_size_uint32",
+        )
+    });
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::paychan_keylet(
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    ptr,
+                    len,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "paychan_keylet_wrong_size_uint32",
+        )
+    });
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::permissioned_domain_keylet(
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    ptr,
+                    len,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "permissioned_domain_keylet_wrong_size_uint32",
+        )
+    });
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::ticket_keylet(
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    ptr,
+                    len,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "ticket_keylet_wrong_size_uint32",
+        )
+    });
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::vault_keylet(
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    account.0.as_ptr(),
+                    account.0.len(),
+                    ptr,
+                    len,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "vault_keylet_wrong_size_uint32",
+        )
+    });
+
     // invalid UInt256
 
     check_result(
@@ -1075,9 +1268,20 @@ pub extern "C" fn finish() -> i32 {
             "account_keylet_wrong_size_accountid",
         )
     });
+    let seq: i32 = 1;
+    let seq_bytes = seq.to_be_bytes();
     with_buffer::<2, _, _>(|ptr, len| {
         check_result(
-            unsafe { host::check_keylet(locator.as_ptr(), locator.len(), 1, ptr, len) },
+            unsafe {
+                host::check_keylet(
+                    locator.as_ptr(),
+                    locator.len(),
+                    seq_bytes.as_ptr(),
+                    seq_bytes.len(),
+                    ptr,
+                    len,
+                )
+            },
             error_codes::INVALID_PARAMS,
             "check_keylet_wrong_size_accountid",
         )
@@ -1191,7 +1395,16 @@ pub extern "C" fn finish() -> i32 {
     });
     with_buffer::<2, _, _>(|ptr, len| {
         check_result(
-            unsafe { host::escrow_keylet(locator.as_ptr(), locator.len(), 1, ptr, len) },
+            unsafe {
+                host::escrow_keylet(
+                    locator.as_ptr(),
+                    locator.len(),
+                    seq_bytes.as_ptr(),
+                    seq_bytes.len(),
+                    ptr,
+                    len,
+                )
+            },
             error_codes::INVALID_PARAMS,
             "escrow_keylet_wrong_size_accountid",
         )
@@ -1234,7 +1447,16 @@ pub extern "C" fn finish() -> i32 {
     });
     with_buffer::<2, _, _>(|ptr, len| {
         check_result(
-            unsafe { host::mpt_issuance_keylet(locator.as_ptr(), locator.len(), 1, ptr, len) },
+            unsafe {
+                host::mpt_issuance_keylet(
+                    locator.as_ptr(),
+                    locator.len(),
+                    seq_bytes.as_ptr(),
+                    seq_bytes.len(),
+                    ptr,
+                    len,
+                )
+            },
             error_codes::INVALID_PARAMS,
             "mpt_issuance_keylet_wrong_size_accountid",
         )
@@ -1257,21 +1479,48 @@ pub extern "C" fn finish() -> i32 {
     });
     with_buffer::<2, _, _>(|ptr, len| {
         check_result(
-            unsafe { host::nft_offer_keylet(locator.as_ptr(), locator.len(), 1, ptr, len) },
+            unsafe {
+                host::nft_offer_keylet(
+                    locator.as_ptr(),
+                    locator.len(),
+                    seq_bytes.as_ptr(),
+                    seq_bytes.len(),
+                    ptr,
+                    len,
+                )
+            },
             error_codes::INVALID_PARAMS,
             "nft_offer_keylet_wrong_size_accountid",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
         check_result(
-            unsafe { host::offer_keylet(locator.as_ptr(), locator.len(), 1, ptr, len) },
+            unsafe {
+                host::offer_keylet(
+                    locator.as_ptr(),
+                    locator.len(),
+                    seq_bytes.as_ptr(),
+                    seq_bytes.len(),
+                    ptr,
+                    len,
+                )
+            },
             error_codes::INVALID_PARAMS,
             "offer_keylet_wrong_size_accountid",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
         check_result(
-            unsafe { host::oracle_keylet(locator.as_ptr(), locator.len(), 1, ptr, len) },
+            unsafe {
+                host::oracle_keylet(
+                    locator.as_ptr(),
+                    locator.len(),
+                    seq_bytes.as_ptr(),
+                    seq_bytes.len(),
+                    ptr,
+                    len,
+                )
+            },
             error_codes::INVALID_PARAMS,
             "oracle_keylet_wrong_size_accountid",
         )
@@ -1284,7 +1533,8 @@ pub extern "C" fn finish() -> i32 {
                     locator.len(),
                     account.0.as_ptr(),
                     account.0.len(),
-                    1,
+                    seq_bytes.as_ptr(),
+                    seq_bytes.len(),
                     ptr,
                     len,
                 )
@@ -1301,7 +1551,8 @@ pub extern "C" fn finish() -> i32 {
                     account.0.len(),
                     locator.as_ptr(), // invalid AccountID size
                     locator.len(),
-                    1,
+                    seq_bytes.as_ptr(),
+                    seq_bytes.len(),
                     ptr,
                     len,
                 )
@@ -1313,7 +1564,14 @@ pub extern "C" fn finish() -> i32 {
     with_buffer::<2, _, _>(|ptr, len| {
         check_result(
             unsafe {
-                host::permissioned_domain_keylet(locator.as_ptr(), locator.len(), 1, ptr, len)
+                host::permissioned_domain_keylet(
+                    locator.as_ptr(),
+                    locator.len(),
+                    seq_bytes.as_ptr(),
+                    seq_bytes.len(),
+                    ptr,
+                    len,
+                )
             },
             error_codes::INVALID_PARAMS,
             "permissioned_domain_keylet_wrong_size_accountid",
@@ -1328,14 +1586,32 @@ pub extern "C" fn finish() -> i32 {
     });
     with_buffer::<2, _, _>(|ptr, len| {
         check_result(
-            unsafe { host::ticket_keylet(locator.as_ptr(), locator.len(), 1, ptr, len) },
+            unsafe {
+                host::ticket_keylet(
+                    locator.as_ptr(),
+                    locator.len(),
+                    seq_bytes.as_ptr(),
+                    seq_bytes.len(),
+                    ptr,
+                    len,
+                )
+            },
             error_codes::INVALID_PARAMS,
             "ticket_keylet_wrong_size_accountid",
         )
     });
     with_buffer::<2, _, _>(|ptr, len| {
         check_result(
-            unsafe { host::vault_keylet(locator.as_ptr(), locator.len(), 1, ptr, len) },
+            unsafe {
+                host::vault_keylet(
+                    locator.as_ptr(),
+                    locator.len(),
+                    seq_bytes.as_ptr(),
+                    seq_bytes.len(),
+                    ptr,
+                    len,
+                )
+            },
             error_codes::INVALID_PARAMS,
             "vault_keylet_wrong_size_accountid",
         )

@@ -84,4 +84,4 @@ extern std::string const infiniteLoopWasmHex;
 extern std::string const startLoopHex;
 
 extern std::string const badAllocHex;
-extern std::string const badAlignHex;
+extern std::string const badAlignWasmHex;
