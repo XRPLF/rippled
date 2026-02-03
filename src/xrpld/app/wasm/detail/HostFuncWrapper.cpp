@@ -56,25 +56,40 @@ getDataInt64(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
     return result;
 }
 
+template <class T, class IW>
+Expected<T, HostFunctionError>
+getDataUnsigned(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
+{
+    static_assert(std::is_unsigned_v<T>);
+    auto const r = getDataSlice(runtime, params, i);
+    if (!r)
+        return Unexpected(r.error());
+    if (r->size() != sizeof(T))
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+    T x;
+    uintptr_t p = reinterpret_cast<uintptr_t>(r->data());
+    if (p & (alignof(T) - 1))  // unaligned
+        memcpy(&x, r->data(), sizeof(T));
+    else
+        x = *reinterpret_cast<T const*>(r->data());
+    x = adjustWasmEndianess(x);
+
+    return x;
+}
+
+template <class IW>
+Expected<uint32_t, HostFunctionError>
+getDataUInt32(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
+{
+    return getDataUnsigned<uint32_t>(runtime, params, i);
+}
+
 template <class IW>
 Expected<uint64_t, HostFunctionError>
 getDataUInt64(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
-    auto const r = getDataSlice(runtime, params, i);
-    if (!r)
-        return Unexpected(r.error());
-    if (r->size() != sizeof(uint64_t))
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
-
-    uint64_t x;
-    uintptr_t p = reinterpret_cast<uintptr_t>(r->data());
-    if (p & (alignof(uint64_t) - 1))  // unaligned
-        memcpy(&x, r->data(), sizeof(uint64_t));
-    else
-        x = *reinterpret_cast<uint64_t const*>(r->data());
-    x = adjustWasmEndianess(x);
-
-    return x;
+    return getDataUnsigned<uint64_t>(runtime, params, i);
 }
 
 template <class IW>
@@ -777,10 +792,10 @@ checkKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(runtime, params, results, hf->checkKeylet(acc.value(), *seq), index);
@@ -897,10 +912,10 @@ escrowKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(runtime, params, results, hf->escrowKeylet(*acc, *seq), index);
@@ -951,10 +966,10 @@ mptIssuanceKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* 
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(runtime, params, results, hf->mptIssuanceKeylet(acc.value(), seq.value()), index);
@@ -1005,10 +1020,10 @@ nftOfferKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* res
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(runtime, params, results, hf->nftOfferKeylet(acc.value(), seq.value()), index);
@@ -1029,10 +1044,10 @@ offerKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(runtime, params, results, hf->offerKeylet(acc.value(), seq.value()), index);
@@ -1053,10 +1068,10 @@ oracleKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
         return hfResult(results, acc.error());
     }
 
-    auto const documentId = getDataInt32(runtime, params, index);
+    auto const documentId = getDataUInt32(runtime, params, index);
     if (!documentId)
     {
-        return hfResult(results, documentId.error());  // LCOV_EXCL_LINE
+        return hfResult(results, documentId.error());
     }
     return returnResult(runtime, params, results, hf->oracleKeylet(*acc, *documentId), index);
 }
@@ -1082,10 +1097,10 @@ paychanKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resu
         return hfResult(results, dest.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(runtime, params, results, hf->paychanKeylet(acc.value(), dest.value(), seq.value()), index);
@@ -1106,10 +1121,10 @@ permissionedDomainKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(runtime, params, results, hf->permissionedDomainKeylet(acc.value(), seq.value()), index);
@@ -1148,10 +1163,10 @@ ticketKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(runtime, params, results, hf->ticketKeylet(acc.value(), seq.value()), index);
@@ -1172,10 +1187,10 @@ vaultKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getDataInt32(runtime, params, index);
+    auto const seq = getDataUInt32(runtime, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+        return hfResult(results, seq.error());
     }
 
     return returnResult(runtime, params, results, hf->vaultKeylet(acc.value(), seq.value()), index);

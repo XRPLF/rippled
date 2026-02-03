@@ -29,7 +29,7 @@ namespace xrpl {
 
 #define INT32_PARAM int32_t
 #define INT64_PARAM int64_t
-#define UINT32_PARAM int32_t
+#define UINT32_PARAM uint8_t const*, int32_t
 #define UINT64_PARAM uint8_t const*, int32_t
 #define SFIELD_PARAM int32_t
 #define SLICE_PARAM uint8_t const*, int32_t

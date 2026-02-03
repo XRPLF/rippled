@@ -54,12 +54,7 @@ def process_rust(project_name):
         ")"
     )
     try:
-        result = subprocess.run(
-            build_cmd, shell=True, check=True, capture_output=True, text=True
-        )
-        print(f"stdout: {result.stdout}")
-        if result.stderr:
-            print(f"stderr: {result.stderr}")
+        subprocess.run(build_cmd, shell=True, check=True)
         print(f"WASM file for {project_name} has been built and optimized.")
     except subprocess.CalledProcessError as e:
         print(f"exec error: {e}")
@@ -91,12 +86,7 @@ def process_c(project_name):
         f"&& wasm-opt {wasm_path} {OPT} -o {wasm_path}"
     )
     try:
-        result = subprocess.run(
-            build_cmd, shell=True, check=True, capture_output=True, text=True
-        )
-        print(f"stdout: {result.stdout}")
-        if result.stderr:
-            print(f"stderr: {result.stderr}")
+        subprocess.run(build_cmd, shell=True, check=True)
         print(
             f"WASM file for {project_name} has been built with WASI support using clang."
         )
