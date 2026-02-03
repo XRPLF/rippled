@@ -65,7 +65,6 @@ test.core > test.toplevel
 test.core > test.unit_test
 test.core > xrpl.basics
 test.core > xrpl.core
-test.core > xrpld.app
 test.core > xrpld.core
 test.core > xrpl.json
 test.core > xrpl.server
@@ -155,7 +154,6 @@ tests.libxrpl > xrpl.net
 xrpl.core > xrpl.basics
 xrpl.core > xrpl.json
 xrpl.core > xrpl.ledger
-xrpl.core > xrpl.protocol
 xrpl.json > xrpl.basics
 xrpl.ledger > xrpl.basics
 xrpl.ledger > xrpl.protocol
