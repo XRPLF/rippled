@@ -37,6 +37,12 @@ namespace detail {
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
 
+inline int
+mallocTrimWithPad(std::size_t padBytes)
+{
+    return ::malloc_trim(padBytes);
+}
+
 long
 parseVmRSSkB(std::string const& status)
 {
@@ -55,14 +61,12 @@ parseVmRSSkB(std::string const& status)
 
         // Require the line (after leading whitespace) to start with "VmRSS:".
         // Check if we have enough characters and the substring matches.
-        if (firstNonWs + keyLen > line.size() ||
-            line.substr(firstNonWs, keyLen) != key)
+        if (firstNonWs + keyLen > line.size() || line.substr(firstNonWs, keyLen) != key)
             continue;
 
         // Move past "VmRSS:" and any following whitespace.
         auto pos = firstNonWs + keyLen;
-        while (pos < line.size() &&
-               std::isspace(static_cast<unsigned char>(line[pos])))
+        while (pos < line.size() && std::isspace(static_cast<unsigned char>(line[pos])))
         {
             ++pos;
         }
@@ -84,9 +88,7 @@ parseVmRSSkB(std::string const& status)
 }  // namespace detail
 
 MallocTrimReport
-mallocTrim(
-    [[maybe_unused]] std::optional<std::string> const& tag,
-    beast::Journal journal)
+mallocTrim([[maybe_unused]] std::optional<std::string> const& tag, beast::Journal journal)
 {
     MallocTrimReport report;
 
@@ -94,24 +96,27 @@ mallocTrim(
     JLOG(journal.debug()) << "malloc_trim not supported on this platform";
 #else
 
+    constexpr std::size_t KB = 1024;
+    constexpr std::size_t MB = 1024 * KB;
+
+    constexpr std::size_t TRIM_PAD = 256 * KB;
+    // constexpr std::size_t TRIM_PAD = 1 * MB;
+    // constexpr std::size_t TRIM_PAD = 16 * MB;
+    // constexpr std::size_t TRIM_PAD = 0;
+
     report.supported = true;
 
-    // Launch malloc_trim on a separate thread (async, fire-and-forget)
-    // std::thread trimThread([tag, journal]() {
     if (journal.debug())
     {
         auto readFile = [](std::string const& path) -> std::string {
             std::ifstream ifs(path);
             if (!ifs.is_open())
                 return {};
-            return std::string(
-                std::istreambuf_iterator<char>(ifs),
-                std::istreambuf_iterator<char>());
+            return std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
         };
 
         std::string const tagStr = tag.value_or("default");
-        std::string const statusPath =
-            "/proc/" + std::to_string(cachedPid) + "/status";
+        std::string const statusPath = "/proc/" + std::to_string(cachedPid) + "/status";
 
         auto const statusBefore = readFile(statusPath);
         long const rssBeforeKB = detail::parseVmRSSkB(statusBefore);
@@ -122,7 +127,9 @@ mallocTrim(
         bool const have_ru0 = getRusageThread(ru0);
 
         auto const t0 = std::chrono::steady_clock::now();
-        int const trimResult = ::malloc_trim(0);
+
+        report.trimResult = detail::mallocTrimWithPad(TRIM_PAD);
+
         auto const t1 = std::chrono::steady_clock::now();
 
         struct rusage ru1
@@ -133,9 +140,11 @@ mallocTrim(
         auto const statusAfter = readFile(statusPath);
         long const rssAfterKB = detail::parseVmRSSkB(statusAfter);
 
-        long long const durationUs =
-            std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0)
-                .count();
+        // Populate report fields
+        report.rssBeforeKB = rssBeforeKB;
+        report.rssAfterKB = rssAfterKB;
+
+        long long const durationUs = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
 
         long minfltDelta = -1;
         long majfltDelta = -1;
@@ -145,25 +154,20 @@ mallocTrim(
             majfltDelta = ru1.ru_majflt - ru0.ru_majflt;
         }
 
-        long const deltaKB = (rssBeforeKB < 0 || rssAfterKB < 0)
-            ? 0
-            : (rssAfterKB - rssBeforeKB);
+        long const deltaKB = (rssBeforeKB < 0 || rssAfterKB < 0) ? 0 : (rssAfterKB - rssBeforeKB);
 
-        JLOG(journal.debug())
-            << "malloc_trim tag=" << tagStr << " result=" << trimResult
-            << " rss_before=" << rssBeforeKB << "kB"
-            << " rss_after=" << rssAfterKB << "kB"
-            << " delta=" << deltaKB << "kB"
-            << " duration_us=" << durationUs << " minflt_delta=" << minfltDelta
-            << " majflt_delta=" << majfltDelta;
+        JLOG(journal.debug()) << "malloc_trim tag=" << tagStr << " result=" << report.trimResult << " pad=" << TRIM_PAD
+                              << " bytes"
+                              << " rss_before=" << rssBeforeKB << "kB"
+                              << " rss_after=" << rssAfterKB << "kB"
+                              << " delta=" << deltaKB << "kB"
+                              << " duration_us=" << durationUs << " minflt_delta=" << minfltDelta
+                              << " majflt_delta=" << majfltDelta;
     }
     else
     {
-        ::malloc_trim(0);
+        report.trimResult = detail::mallocTrimWithPad(TRIM_PAD);
     }
-    // });
-
-    // trimThread.detach();
 
 #endif
 
