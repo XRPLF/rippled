@@ -383,7 +383,7 @@ You can install it using the package manager, e.g. `sudo apt install ccache`
 
 You can install it using Homebrew, i.e. `brew install ccache`.
 
-####
+#### Windows
 
 You can install it using Chocolatey, i.e. `choco install ccache`. However, if
 you see an error such as:
