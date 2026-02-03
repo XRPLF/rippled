@@ -8,12 +8,8 @@ add_custom_target(xrpl.tests)
 
 # Test helpers
 add_library(xrpl.helpers.test STATIC)
-target_sources(xrpl.helpers.test PRIVATE
-  helpers/TestSink.cpp
-)
-target_include_directories(xrpl.helpers.test PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
+target_sources(xrpl.helpers.test PRIVATE helpers/TestSink.cpp)
+target_include_directories(xrpl.helpers.test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(xrpl.helpers.test PRIVATE xrpl.libxrpl)
 
 # Common library dependencies for the rest of the tests.
@@ -34,8 +30,8 @@ target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.json)
 
 # Network unit tests are currently not supported on Windows
-if(NOT WIN32)
-  xrpl_add_test(net)
-  target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
-  add_dependencies(xrpl.tests xrpl.test.net)
-endif()
+if (NOT WIN32)
+    xrpl_add_test(net)
+    target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
+    add_dependencies(xrpl.tests xrpl.test.net)
+endif ()
