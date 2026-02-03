@@ -70,8 +70,11 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
         batch.push_back(&hash);
     }
 
+    // Get the node objects that match the hashes from the backend. To protect
+    // against the backends returning more results than expected, the container
+    // is resized to the number of hashes.
     auto results = backend_->fetchBatch(batch).first;
-    XRPL_ASSERT(hashes.size() == results.size(), "number of input hashes matches number of output objects");
+    results.resize(hashes.size());
     for (size_t i = 0; i < results.size(); ++i)
     {
         if (!results[i])
