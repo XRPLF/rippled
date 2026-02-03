@@ -6,7 +6,7 @@ set -e
 # This script checks whether there are no new include guards introduced by a new
 # PR, as header files should use "#pragma once" instead. The script assumes any
 # include guards will use "XRPL_" as prefix.
-# Usage: .github/scripts/rename/pragma.sh <repository directory>
+# Usage: .github/scripts/rename/include.sh <repository directory>
 
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <repository directory>"
