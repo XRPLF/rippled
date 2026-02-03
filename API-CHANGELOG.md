@@ -35,6 +35,10 @@ This section contains changes targeting a future version.
   - `LEDGER_ENTRY_FLAGS`: Maps ledger entry type names to their flags and flag values.
   - `ACCOUNT_SET_FLAGS`: Maps AccountSet flag names (asf flags) to their numeric values.
 
+### Bugfixes
+
+- Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
+
 ## XRP Ledger server version 3.1.0
 
 [Version 3.1.0](https://github.com/XRPLF/rippled/releases/tag/3.1.0) was released on Jan 27, 2026.
@@ -42,10 +46,6 @@ This section contains changes targeting a future version.
 ### Additions in 3.1.0
 
 - `vault_info`: New RPC method to retrieve information about a specific vault (part of XLS-66 Lending Protocol). ([#6156](https://github.com/XRPLF/rippled/pull/6156))
-
-### Bugfixes in 3.1.0
-
-- Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers.
 
 ## XRP Ledger server version 3.0.0
 
