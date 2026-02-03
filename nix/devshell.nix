@@ -1,33 +1,23 @@
 { pkgs, ... }:
 let
   common_packages = with pkgs; [
-    cmake
-    ninja
-    python311
-    conan
-    pre-commit
-    cspell
-    gcovr
     ccache
-    pkg-config
+    cmake
+    conan
+    gcovr
+    git
     gnumake
     llvmPackages_18.clang-tools
+    ninja
     perl # needed for openssl
-    git
+    pkg-config
+    pre-commit
+    python314
   ];
 
   # Supported compiler versions
-  gcc_versions = [
-    13
-    14
-    15
-  ];
-  clang_versions = [
-    18
-    19
-    20
-    21
-  ];
+  gcc_versions = pkgs.lib.range 13 15;
+  clang_versions = pkgs.lib.range 18 21;
 
   default_compiler = if pkgs.stdenv.isDarwin then "apple-clang" else "gcc";
   default_gcc_version = 14;
@@ -85,7 +75,7 @@ let
       gccOnMacWarning =
         if pkgs.stdenv.isDarwin && compiler == "gcc" then
           ''
-            echo "WARNING: Using GCC on macOS may cause issues with prebuilt Conan packages."
+            echo "WARNING: Using GCC on macOS with Conan may not work."
             echo "         Consider using 'nix develop .#clang' or the default shell instead."
             echo ""
           ''

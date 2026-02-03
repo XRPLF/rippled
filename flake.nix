@@ -11,5 +11,6 @@
     in
     {
       devShells = forEachSystem (import ./nix/devshell.nix);
+      formatter = forEachSystem ({ pkgs, ... }: pkgs.nixfmt);
     };
 }
