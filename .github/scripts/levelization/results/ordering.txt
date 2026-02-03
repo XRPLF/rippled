@@ -160,6 +160,7 @@ tests.libxrpl > xrpl.net
 xrpl.core > xrpl.basics
 xrpl.core > xrpl.json
 xrpl.core > xrpl.ledger
+xrpl.core > xrpl.protocol
 xrpl.json > xrpl.basics
 xrpl.ledger > xrpl.basics
 xrpl.ledger > xrpl.protocol
@@ -186,6 +187,7 @@ xrpld.app > xrpl.basics
 xrpld.app > xrpl.core
 xrpld.app > xrpld.conditions
 xrpld.app > xrpld.consensus
+xrpld.app > xrpld.core
 xrpld.app > xrpl.json
 xrpld.app > xrpl.ledger
 xrpld.app > xrpl.net
