@@ -5,6 +5,8 @@
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/ledger/CachedSLEs.h>
 
+#include <boost/asio.hpp>
+
 namespace xrpl {
 
 // Forward declarations
@@ -194,6 +196,24 @@ public:
 
     virtual perf::PerfLog&
     getPerfLog() = 0;
+
+    // Configuration and state
+    virtual bool
+    isStopping() const = 0;
+
+    virtual beast::Journal
+    journal(std::string const& name) = 0;
+
+    virtual boost::asio::io_context&
+    getIOContext() = 0;
+
+    virtual Logs&
+    logs() = 0;
+
+    // Temporary: Get the underlying Application for functions that haven't
+    // been migrated yet. This should be removed once all code is migrated.
+    virtual Application&
+    app() = 0;
 };
 
 }  // namespace xrpl

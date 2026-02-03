@@ -1,14 +1,13 @@
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/core/ConfigSections.h>
 
 namespace xrpl {
 
 extern std::unique_ptr<RelationalDatabase>
-getSQLiteDatabase(Application& app, Config const& config, JobQueue& jobQueue);
+getSQLiteDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
 
 std::unique_ptr<RelationalDatabase>
-RelationalDatabase::init(Application& app, Config const& config, JobQueue& jobQueue)
+RelationalDatabase::init(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
 {
     bool use_sqlite = false;
 
@@ -31,7 +30,7 @@ RelationalDatabase::init(Application& app, Config const& config, JobQueue& jobQu
 
     if (use_sqlite)
     {
-        return getSQLiteDatabase(app, config, jobQueue);
+        return getSQLiteDatabase(registry, config, jobQueue);
     }
 
     return std::unique_ptr<RelationalDatabase>();
