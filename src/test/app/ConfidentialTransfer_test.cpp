@@ -48,27 +48,23 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         return trivialCiphertext;
     }
 
-    static std::string const&
+    std::string
     getTrivialSendProofHex(size_t nRecipients)
     {
-        static std::string const trivialProofHex = [nRecipients]() {
-            size_t const sizeEquality = getMultiCiphertextEqualityProofSize(nRecipients);
-            size_t const totalSize = sizeEquality + (2 * ecPedersenProofLength);
+        size_t const sizeEquality = getMultiCiphertextEqualityProofSize(nRecipients);
+        size_t const totalSize = sizeEquality + (2 * ecPedersenProofLength);
 
-            Buffer buf(totalSize);
-            std::memset(buf.data(), 0, totalSize);
+        Buffer buf(totalSize);
+        std::memset(buf.data(), 0, totalSize);
 
-            for (std::size_t i = 0; i < totalSize; i += ecGamalEncryptedLength)
-            {
-                buf.data()[i] = 0x02;
-                if (i + ecGamalEncryptedLength - 1 < totalSize)
-                    buf.data()[i + ecGamalEncryptedLength - 1] = 0x01;
-            }
+        for (std::size_t i = 0; i < totalSize; i += ecGamalEncryptedLength)
+        {
+            buf.data()[i] = 0x02;
+            if (i + ecGamalEncryptedLength - 1 < totalSize)
+                buf.data()[i + ecGamalEncryptedLength - 1] = 0x01;
+        }
 
-            return strHex(buf);
-        }();
-
-        return trivialProofHex;
+        return strHex(buf);
     }
 
     void
@@ -1164,6 +1160,81 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testSendPreflightWithAuditor(FeatureBitset features)
+    {
+        testcase("test ConfidentialSend Preflight with auditor");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const auditor("auditor");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}, .auditor = auditor});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanPrivacy});
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+        mptAlice.generateKeyPair(auditor);
+
+        mptAlice.set(
+            {.account = alice,
+             .issuerPubKey = mptAlice.getPubKey(alice),
+             .auditorPubKey = mptAlice.getPubKey(auditor)});
+        mptAlice.pay(alice, bob, 100);
+        mptAlice.pay(alice, carol, 50);
+
+        mptAlice.convert({
+            .account = bob,
+            .amt = 50,
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+
+        mptAlice.convert({
+            .account = carol,
+            .amt = 40,
+            .holderPubKey = mptAlice.getPubKey(carol),
+        });
+
+        // auditor encrypted amount wrong length
+        mptAlice.send(
+            {.account = bob,
+             .dest = carol,
+             .amt = 10,
+             .proof = getTrivialSendProofHex(4),
+             .auditorEncryptedAmt = Buffer(10),
+             .amountCommitment = Buffer(ecPedersenCommitmentLength),
+             .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+             .err = temBAD_CIPHERTEXT});
+
+        // auditor encrypted amount (correct length, invalid data)
+        mptAlice.send(
+            {.account = bob,
+             .dest = carol,
+             .amt = 10,
+             .proof = getTrivialSendProofHex(4),
+             .auditorEncryptedAmt = getBadCiphertext(),
+             .amountCommitment = Buffer(ecPedersenCommitmentLength),
+             .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+             .err = temBAD_CIPHERTEXT});
+
+        // Auditor ciphertext is valid, but does not match the transaction amount
+        mptAlice.send(
+            {.account = bob,
+             .dest = carol,
+             .amt = 10,
+             .proof = getTrivialSendProofHex(4),
+             .auditorEncryptedAmt = getTrivialCiphertext(),
+             .amountCommitment = Buffer(ecPedersenCommitmentLength),
+             .balanceCommitment = Buffer(ecPedersenCommitmentLength),
+             .err = tecBAD_PROOF});
+    }
+
+    void
     testSendPreclaim(FeatureBitset features)
     {
         testcase("test ConfidentialMPTSend Preclaim");
@@ -1441,6 +1512,64 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             mptAlice.send(
                 {.account = bob, .dest = carol, .amt = 10, .proof = getTrivialSendProofHex(3), .err = tecBAD_PROOF});
+        }
+
+        // No Auditor key set, but auditor encrypted amt provided
+        {
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = getTrivialSendProofHex(4),
+                 .auditorEncryptedAmt = getTrivialCiphertext(),
+                 .err = tecNO_PERMISSION});
+        }
+
+        // Auditor encrypted amount when no auditor key is set
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const auditor("auditor");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+            mptAlice.create({.flags = tfMPTCanTransfer | tfMPTCanPrivacy});
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 50);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.generateKeyPair(auditor);
+
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({.account = bob, .amt = 60, .holderPubKey = mptAlice.getPubKey(bob), .err = tesSUCCESS});
+
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+
+            mptAlice.convert(
+                {.account = carol, .amt = 20, .holderPubKey = mptAlice.getPubKey(carol), .err = tesSUCCESS});
+
+            mptAlice.mergeInbox({
+                .account = carol,
+            });
+
+            // auditor amount provided when no auditor key is set
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = 10,
+                 .proof = getTrivialSendProofHex(4),
+                 .auditorEncryptedAmt = getTrivialCiphertext(),
+                 .err = tecNO_PERMISSION});
         }
     }
 
@@ -2957,6 +3086,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testSendPreclaim(features);
         testSendDepositPreauth(features);
         testSendWithAuditor(features);
+        testSendPreflightWithAuditor(features);
 
         // ConfidentialMPTClawback
         testClawback(features);
