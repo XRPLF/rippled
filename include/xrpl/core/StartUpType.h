@@ -1,5 +1,6 @@
 #ifndef XRPL_STARTUPTYPE_H
 #define XRPL_STARTUPTYPE_H
+
 #include <iosfwd>
 #include <type_traits>
 

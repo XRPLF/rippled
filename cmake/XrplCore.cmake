@@ -109,17 +109,17 @@ target_link_modules(
     PUBLIC
     basics
     beast
+    core
     crypto
     json
-    protocol
-    core
-    resource
+    ledger
     net
     nodestore
-    shamap
+    protocol
     rdb
+    resource
     server
-    ledger)
+    shamap)
 
 # All headers in libxrpl are in modules.
 # Uncomment this stanza if you have not yet moved new headers into a module.
