@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_GLOBAL_SUITES_HPP
-#define BEAST_UNIT_TEST_GLOBAL_SUITES_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/suite_list.h>
 
@@ -40,5 +39,3 @@ global_suites()
 
 }  // namespace unit_test
 }  // namespace beast
-
-#endif

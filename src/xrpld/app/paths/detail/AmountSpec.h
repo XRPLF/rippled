@@ -1,5 +1,4 @@
-#ifndef XRPL_PATH_IMPL_AMOUNTSPEC_H_INCLUDED
-#define XRPL_PATH_IMPL_AMOUNTSPEC_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -197,5 +196,3 @@ toAmountSpec(EitherAmount const& ea, std::optional<Currency> const& c)
 }
 
 }  // namespace xrpl
-
-#endif

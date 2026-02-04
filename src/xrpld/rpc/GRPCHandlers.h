@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_GRPCHANDLER_H_INCLUDED
-#define XRPL_RPC_GRPCHANDLER_H_INCLUDED
+#pragma once
 
 #include <xrpld/rpc/Context.h>
 
@@ -30,5 +29,3 @@ std::pair<org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status>
 doLedgerDiffGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& context);
 
 }  // namespace xrpl
-
-#endif

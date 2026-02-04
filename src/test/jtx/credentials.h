@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_CREDENTIALS_H_INCLUDED
-#define XRPL_TEST_JTX_CREDENTIALS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -74,5 +73,3 @@ ledgerEntry(jtx::Env& env, std::string const& credIdx);
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_OUTPUT_H_INCLUDED
-#define XRPL_JSON_OUTPUT_H_INCLUDED
+#pragma once
 
 #include <boost/beast/core/string.hpp>
 
@@ -35,5 +34,3 @@ std::string
 jsonAsString(Json::Value const&);
 
 }  // namespace Json
-
-#endif

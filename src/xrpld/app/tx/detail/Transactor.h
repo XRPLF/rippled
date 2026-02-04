@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_TX_TRANSACTOR_H_INCLUDED
-#define XRPL_APP_TX_TRANSACTOR_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
@@ -419,5 +418,3 @@ Transactor::validNumericMinimum(std::optional<T> value, unit::ValueUnit<Unit, T>
 }
 
 }  // namespace xrpl
-
-#endif

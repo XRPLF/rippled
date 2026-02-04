@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_PARTITIONED_UNORDERED_MAP_H
-#define XRPL_BASICS_PARTITIONED_UNORDERED_MAP_H
+#pragma once
 
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -393,5 +392,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_PARTITIONED_UNORDERED_MAP_H

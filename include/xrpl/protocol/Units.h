@@ -1,5 +1,4 @@
-#ifndef PROTOCOL_UNITS_H_INCLUDED
-#define PROTOCOL_UNITS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -516,5 +515,3 @@ unsafe_cast(Src s) noexcept
 }
 
 }  // namespace xrpl
-
-#endif  // PROTOCOL_UNITS_H_INCLUDED

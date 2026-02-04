@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_CACHEDSLES_H_INCLUDED
-#define XRPL_LEDGER_CACHEDSLES_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
@@ -8,5 +7,3 @@
 namespace xrpl {
 using CachedSLEs = TaggedCache<uint256, SLE const>;
 }
-
-#endif  // XRPL_LEDGER_CACHEDSLES_H_INCLUDED

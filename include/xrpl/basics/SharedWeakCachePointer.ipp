@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_SHAREDWEAKCACHEPOINTER_IPP_INCLUDED
-#define XRPL_BASICS_SHAREDWEAKCACHEPOINTER_IPP_INCLUDED
+#pragma once
 
 #include <xrpl/basics/SharedWeakCachePointer.h>
 
@@ -164,4 +163,3 @@ SharedWeakCachePointer<T>::convertToWeak()
     return false;
 }
 }  // namespace xrpl
-#endif

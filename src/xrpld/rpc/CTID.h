@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_CTID_H_INCLUDED
-#define XRPL_RPC_CTID_H_INCLUDED
+#pragma once
 
 #include <boost/regex.hpp>
 
@@ -111,5 +110,3 @@ decodeCTID(T const ctid) noexcept
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_ACCTDELETE_H_INCLUDED
-#define XRPL_TEST_JTX_ACCTDELETE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -24,5 +23,3 @@ incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin 
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

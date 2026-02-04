@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_SKIPLISTACQUIRE_H_INCLUDED
-#define XRPL_APP_LEDGER_SKIPLISTACQUIRE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/Ledger.h>
@@ -134,5 +133,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

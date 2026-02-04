@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_DATABASE_H_INCLUDED
-#define XRPL_NODESTORE_DATABASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
@@ -274,5 +273,3 @@ private:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

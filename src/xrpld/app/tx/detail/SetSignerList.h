@@ -1,5 +1,4 @@
-#ifndef XRPL_TX_SETSIGNERLIST_H_INCLUDED
-#define XRPL_TX_SETSIGNERLIST_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/SignerEntries.h>
 #include <xrpld/app/tx/detail/Transactor.h>
@@ -71,5 +70,3 @@ private:
 using SignerListSet = SetSignerList;
 
 }  // namespace xrpl
-
-#endif

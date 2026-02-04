@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_QUALITYFUNCTION_H_INCLUDED
-#define XRPL_PROTOCOL_QUALITYFUNCTION_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -78,5 +77,3 @@ QualityFunction::QualityFunction(TAmounts<TIn, TOut> const& amounts, std::uint32
 }
 
 }  // namespace xrpl
-
-#endif  // XRPL_PROTOCOL_QUALITYFUNCTION_H_INCLUDED

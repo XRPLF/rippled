@@ -1,5 +1,4 @@
-#ifndef BEAST_CONTAINER_DETAIL_AGED_ORDERED_CONTAINER_H_INCLUDED
-#define BEAST_CONTAINER_DETAIL_AGED_ORDERED_CONTAINER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/container/aged_container.h>
@@ -1687,5 +1686,3 @@ expire(
 }
 
 }  // namespace beast
-
-#endif

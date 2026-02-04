@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_BUFFER_H_INCLUDED
-#define XRPL_BASICS_BUFFER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -213,5 +212,3 @@ operator!=(Buffer const& lhs, Buffer const& rhs) noexcept
 }
 
 }  // namespace xrpl
-
-#endif

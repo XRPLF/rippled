@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_MPTOKENISSUANCEID_H_INCLUDED
-#define XRPL_RPC_MPTOKENISSUANCEID_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_forwards.h>
@@ -36,5 +35,3 @@ insertMPTokenIssuanceID(
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

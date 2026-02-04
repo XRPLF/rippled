@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
-#define XRPL_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/detail/WorkBase.h>
 #include <xrpld/core/Config.h>
@@ -57,5 +56,3 @@ private:
 }  // namespace detail
 
 }  // namespace xrpl
-
-#endif

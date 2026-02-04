@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_PERFLOG_H
-#define XRPL_CORE_PERFLOG_H
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/core/JobTypes.h>
@@ -178,5 +177,3 @@ measureDurationAndLog(
 
 }  // namespace perf
 }  // namespace xrpl
-
-#endif  // XRPL_CORE_PERFLOG_H
