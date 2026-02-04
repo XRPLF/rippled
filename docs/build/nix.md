@@ -65,6 +65,7 @@ nix develop .#clang19
 # Use default for your platform
 nix develop
 ```
+
 ### Using a different shell
 
 `nix develop` opens bash by default. If you want to use another shell this could be done by adding `-c` flag. For example:
