@@ -35,12 +35,12 @@ class Xrpl(ConanFile):
         "openssl/3.5.4",
         "secp256k1/0.7.0",
         "soci/4.0.3",
-        "wasmi/0.42.1",
+        "wasmi/1.0.6",
         "zlib/1.3.1",
     ]
 
     test_requires = [
-        "doctest/2.4.12",
+        "gtest/1.17.0",
     ]
 
     tool_requires = [
@@ -88,7 +88,13 @@ class Xrpl(ConanFile):
         "libarchive/*:with_xattr": False,
         "libarchive/*:with_zlib": False,
         "lz4/*:shared": False,
+        "openssl/*:no_dtls": True,
+        "openssl/*:no_ssl": True,
+        "openssl/*:no_ssl3": True,
+        "openssl/*:no_tls1": True,
+        "openssl/*:no_tls1_1": True,
         "openssl/*:shared": False,
+        "openssl/*:tls_security_level": 2,
         "protobuf/*:shared": False,
         "protobuf/*:with_zlib": True,
         "rocksdb/*:enable_sse": False,
@@ -126,7 +132,7 @@ class Xrpl(ConanFile):
         transitive_headers_opt = (
             {"transitive_headers": True} if conan_version.split(".")[0] == "2" else {}
         )
-        self.requires("boost/1.88.0", force=True, **transitive_headers_opt)
+        self.requires("boost/1.90.0", force=True, **transitive_headers_opt)
         self.requires("date/3.0.4", **transitive_headers_opt)
         self.requires("lz4/1.10.0", force=True)
         self.requires("protobuf/6.32.1", force=True)
@@ -198,7 +204,6 @@ class Xrpl(ConanFile):
             "boost::program_options",
             "boost::process",
             "boost::regex",
-            "boost::system",
             "boost::thread",
             "date::date",
             "ed25519::ed25519",

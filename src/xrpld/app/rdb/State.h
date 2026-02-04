@@ -25,10 +25,7 @@ struct SavedState
  * @param dbName Name of the database.
  */
 void
-initStateDB(
-    soci::session& session,
-    BasicConfig const& config,
-    std::string const& dbName);
+initStateDB(soci::session& session, BasicConfig const& config, std::string const& dbName);
 
 /**
  * @brief getCanDelete Returns the ledger sequence which can be deleted.

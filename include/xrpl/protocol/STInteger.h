@@ -70,8 +70,7 @@ inline STInteger<Integer>::STInteger(Integer v) : value_(v)
 }
 
 template <typename Integer>
-inline STInteger<Integer>::STInteger(SField const& n, Integer v)
-    : STBase(n), value_(v)
+inline STInteger<Integer>::STInteger(SField const& n, Integer v) : STBase(n), value_(v)
 {
 }
 
@@ -93,11 +92,8 @@ template <typename Integer>
 inline void
 STInteger<Integer>::add(Serializer& s) const
 {
-    XRPL_ASSERT(
-        getFName().isBinary(), "xrpl::STInteger::add : field is binary");
-    XRPL_ASSERT(
-        getFName().fieldType == getSType(),
-        "xrpl::STInteger::add : field type match");
+    XRPL_ASSERT(getFName().isBinary(), "xrpl::STInteger::add : field is binary");
+    XRPL_ASSERT(getFName().fieldType == getSType(), "xrpl::STInteger::add : field type match");
     s.addInteger(value_);
 }
 

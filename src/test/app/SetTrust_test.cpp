@@ -13,8 +13,7 @@ public:
     void
     testTrustLineDelete()
     {
-        testcase(
-            "Test deletion of trust lines: revert trust line limit to zero");
+        testcase("Test deletion of trust lines: revert trust line limit to zero");
 
         using namespace jtx;
         Env env(*this);
@@ -149,10 +148,7 @@ public:
     }
 
     void
-    testFreeTrustlines(
-        FeatureBitset features,
-        bool thirdLineCreatesLE,
-        bool createOnHighAcct)
+    testFreeTrustlines(FeatureBitset features, bool thirdLineCreatesLE, bool createOnHighAcct)
     {
         if (thirdLineCreatesLE)
             testcase("Allow two free trustlines");
@@ -188,20 +184,16 @@ public:
         if (thirdLineCreatesLE)
         {
             // creator does not have enough for the third trust line
-            env(trust(creator, assistor["USD"](100)),
-                ter(tecNO_LINE_INSUF_RESERVE),
-                require(lines(creator, 2)));
+            env(trust(creator, assistor["USD"](100)), ter(tecNO_LINE_INSUF_RESERVE), require(lines(creator, 2)));
         }
         else
         {
             // First establish opposite trust direction from assistor
-            env(trust(assistor, creator["USD"](100)),
-                require(lines(creator, 3)));
+            env(trust(assistor, creator["USD"](100)), require(lines(creator, 3)));
 
             // creator does not have enough to create the other direction on
             // the existing trust line ledger entry
-            env(trust(creator, assistor["USD"](100)),
-                ter(tecINSUF_RESERVE_LINE));
+            env(trust(creator, assistor["USD"](100)), ter(tecINSUF_RESERVE_LINE));
         }
 
         // Fund creator additional amount to cover
@@ -209,13 +201,11 @@ public:
 
         if (thirdLineCreatesLE)
         {
-            env(trust(creator, assistor["USD"](100)),
-                require(lines(creator, 3)));
+            env(trust(creator, assistor["USD"](100)), require(lines(creator, 3)));
         }
         else
         {
-            env(trust(creator, assistor["USD"](100)),
-                require(lines(creator, 3)));
+            env(trust(creator, assistor["USD"](100)), require(lines(creator, 3)));
 
             Json::Value jv;
             jv["account"] = creator.human();
@@ -288,32 +278,23 @@ public:
         env.fund(XRP(10000), gw, alice);
 
         // Require valid tf flags
-        for (std::uint64_t badFlag = 1u;
-             badFlag <= std::numeric_limits<std::uint32_t>::max();
-             badFlag *= 2)
+        for (std::uint64_t badFlag = 1u; badFlag <= std::numeric_limits<std::uint32_t>::max(); badFlag *= 2)
         {
             if (badFlag & tfTrustSetMask)
-                env(trust(
-                        alice,
-                        gw["USD"](100),
-                        static_cast<std::uint32_t>(badFlag)),
-                    ter(temINVALID_FLAG));
+                env(trust(alice, gw["USD"](100), static_cast<std::uint32_t>(badFlag)), ter(temINVALID_FLAG));
         }
 
         // trust amount can't be XRP
         env(trust_explicit_amt(alice, drops(10000)), ter(temBAD_LIMIT));
 
         // trust amount can't be badCurrency IOU
-        env(trust_explicit_amt(alice, gw[to_string(badCurrency())](100)),
-            ter(temBAD_CURRENCY));
+        env(trust_explicit_amt(alice, gw[to_string(badCurrency())](100)), ter(temBAD_CURRENCY));
 
         // trust amount can't be negative
         env(trust(alice, gw["USD"](-1000)), ter(temBAD_LIMIT));
 
         // trust amount can't be from invalid issuer
-        env(trust_explicit_amt(
-                alice, STAmount{Issue{to_currency("USD"), noAccount()}, 100}),
-            ter(temDST_NEEDED));
+        env(trust_explicit_amt(alice, STAmount{Issue{to_currency("USD"), noAccount()}, 100}), ter(temDST_NEEDED));
 
         // trust cannot be to self
         env(trust(alice, alice["USD"](100)), ter(temDST_IS_SRC));
@@ -417,13 +398,9 @@ public:
     }
 
     void
-    testModifyQualityOfTrustline(
-        FeatureBitset features,
-        bool createQuality,
-        bool createOnHighAcct)
+    testModifyQualityOfTrustline(FeatureBitset features, bool createQuality, bool createOnHighAcct)
     {
-        testcase << "SetTrust " << (createQuality ? "creates" : "removes")
-                 << " quality of trustline for "
+        testcase << "SetTrust " << (createQuality ? "creates" : "removes") << " quality of trustline for "
                  << (createOnHighAcct ? "high" : "low") << " account";
 
         using namespace jtx;
@@ -455,11 +432,8 @@ public:
             auto quality = exists ? 1000 : 0;
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 1);
-            BEAST_EXPECT(
-                lines[jss::result][jss::lines][0u][jss::quality_in] == quality);
-            BEAST_EXPECT(
-                lines[jss::result][jss::lines][0u][jss::quality_out] ==
-                quality);
+            BEAST_EXPECT(lines[jss::result][jss::lines][0u][jss::quality_in] == quality);
+            BEAST_EXPECT(lines[jss::result][jss::lines][0u][jss::quality_out] == quality);
         };
 
         env(tx1, require(lines(toAcct, 1)), require(lines(fromAcct, 1)));
@@ -480,8 +454,7 @@ public:
         {
             for (bool const withFix : {true, false})
             {
-                auto const amend =
-                    withFix ? features : features - fixDisallowIncomingV1;
+                auto const amend = withFix ? features : features - fixDisallowIncomingV1;
 
                 Env env{*this, amend};
                 auto const dist = Account("dist");
@@ -503,15 +476,11 @@ public:
 
                 // withFix: can set trustline
                 // withOutFix: cannot set trustline
-                auto const trustResult =
-                    withFix ? ter(tesSUCCESS) : ter(tecNO_PERMISSION);
-                env(trust(gw, distUSD(10000)),
-                    txflags(tfSetfAuth),
-                    trustResult);
+                auto const trustResult = withFix ? ter(tesSUCCESS) : ter(tecNO_PERMISSION);
+                env(trust(gw, distUSD(10000)), txflags(tfSetfAuth), trustResult);
                 env.close();
 
-                auto const txResult =
-                    withFix ? ter(tesSUCCESS) : ter(tecPATH_DRY);
+                auto const txResult = withFix ? ter(tesSUCCESS) : ter(tecPATH_DRY);
                 env(pay(gw, dist, USD(1000)), txResult);
                 env.close();
             }

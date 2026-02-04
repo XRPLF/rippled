@@ -13,9 +13,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
     bool
     checkTransaction(Json::Value const& tx, int sequence, int ledger)
     {
-        return (
-            tx[jss::tx][jss::Sequence].asInt() == sequence &&
-            tx[jss::tx][jss::ledger_index].asInt() == ledger);
+        return (tx[jss::tx][jss::Sequence].asInt() == sequence && tx[jss::tx][jss::ledger_index].asInt() == ledger);
     }
 
     auto

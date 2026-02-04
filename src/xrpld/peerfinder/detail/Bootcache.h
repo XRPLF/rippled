@@ -65,25 +65,21 @@ private:
         int m_valence;
     };
 
-    using left_t = boost::bimaps::unordered_set_of<
-        beast::IP::Endpoint,
-        boost::hash<beast::IP::Endpoint>,
-        xrpl::equal_to<beast::IP::Endpoint>>;
+    using left_t = boost::bimaps::
+        unordered_set_of<beast::IP::Endpoint, boost::hash<beast::IP::Endpoint>, xrpl::equal_to<beast::IP::Endpoint>>;
     using right_t = boost::bimaps::multiset_of<Entry, xrpl::less<Entry>>;
     using map_type = boost::bimap<left_t, right_t>;
     using value_type = map_type::value_type;
 
     struct Transform
     {
-        using first_argument_type =
-            map_type::right_map::const_iterator::value_type const&;
+        using first_argument_type = map_type::right_map::const_iterator::value_type const&;
         using result_type = beast::IP::Endpoint const&;
 
         explicit Transform() = default;
 
         beast::IP::Endpoint const&
-        operator()(
-            map_type::right_map::const_iterator::value_type const& v) const
+        operator()(map_type::right_map::const_iterator::value_type const& v) const
         {
             return v.get_left();
         }
@@ -105,8 +101,7 @@ private:
 public:
     static constexpr int staticValence = 32;
 
-    using iterator = boost::
-        transform_iterator<Transform, map_type::right_map::const_iterator>;
+    using iterator = boost::transform_iterator<Transform, map_type::right_map::const_iterator>;
 
     using const_iterator = iterator;
 

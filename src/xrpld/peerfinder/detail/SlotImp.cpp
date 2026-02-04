@@ -24,10 +24,7 @@ SlotImp::SlotImp(
 {
 }
 
-SlotImp::SlotImp(
-    beast::IP::Endpoint const& remote_endpoint,
-    bool fixed,
-    clock_type& clock)
+SlotImp::SlotImp(beast::IP::Endpoint const& remote_endpoint, bool fixed, clock_type& clock)
     : recent(clock)
     , m_inbound(false)
     , m_fixed(fixed)
@@ -45,9 +42,7 @@ void
 SlotImp::state(State state_)
 {
     // Must go through activate() to set active state
-    XRPL_ASSERT(
-        state_ != active,
-        "xrpl::PeerFinder::SlotImp::state : input state is not active");
+    XRPL_ASSERT(state_ != active, "xrpl::PeerFinder::SlotImp::state : input state is not active");
 
     // The state must be different
     XRPL_ASSERT(
@@ -57,8 +52,7 @@ SlotImp::state(State state_)
 
     // You can't transition into the initial states
     XRPL_ASSERT(
-        state_ != accept && state_ != connect,
-        "xrpl::PeerFinder::SlotImp::state : input state is not an initial");
+        state_ != accept && state_ != connect, "xrpl::PeerFinder::SlotImp::state : input state is not an initial");
 
     // Can only become connected from outbound connect state
     XRPL_ASSERT(
@@ -79,9 +73,7 @@ void
 SlotImp::activate(clock_type::time_point const& now)
 {
     // Can only become active from the accept or connected state
-    XRPL_ASSERT(
-        m_state == accept || m_state == connected,
-        "xrpl::PeerFinder::SlotImp::activate : valid state");
+    XRPL_ASSERT(m_state == accept || m_state == connected, "xrpl::PeerFinder::SlotImp::activate : valid state");
 
     m_state = active;
     whenAcceptEndpoints = now;

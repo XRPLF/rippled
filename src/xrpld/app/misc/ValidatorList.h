@@ -273,11 +273,7 @@ public:
     {
         explicit PublisherListStats() = default;
         explicit PublisherListStats(ListDisposition d);
-        PublisherListStats(
-            ListDisposition d,
-            PublicKey key,
-            PublisherStatus stat,
-            std::size_t seq);
+        PublisherListStats(ListDisposition d, PublicKey key, PublisherStatus stat, std::size_t seq);
 
         ListDisposition
         bestDisposition() const;
@@ -297,10 +293,7 @@ public:
     struct MessageWithHash
     {
         explicit MessageWithHash() = default;
-        explicit MessageWithHash(
-            std::shared_ptr<Message> const& message_,
-            uint256 hash_,
-            std::size_t num_);
+        explicit MessageWithHash(std::shared_ptr<Message> const& message_, uint256 hash_, std::size_t num_);
         std::shared_ptr<Message> message;
         uint256 hash;
         std::size_t numVLs = 0;
@@ -604,22 +597,19 @@ public:
         May be called concurrently
     */
     void
-    for_each_available(
-        std::function<void(
-            std::string const& manifest,
-            std::uint32_t version,
-            std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
-            PublicKey const& pubKey,
-            std::size_t maxSequence,
-            uint256 const& hash)> func) const;
+    for_each_available(std::function<void(
+                           std::string const& manifest,
+                           std::uint32_t version,
+                           std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
+                           PublicKey const& pubKey,
+                           std::size_t maxSequence,
+                           uint256 const& hash)> func) const;
 
     /** Returns the current valid list for the given publisher key,
         if available, as a Json object.
     */
     std::optional<Json::Value>
-    getAvailable(
-        std::string_view pubKey,
-        std::optional<std::uint32_t> forceVersion = {});
+    getAvailable(std::string_view pubKey, std::optional<std::uint32_t> forceVersion = {});
 
     /** Return the number of configured validator list sites. */
     std::size_t
@@ -692,8 +682,7 @@ public:
      * @return a filtered copy of the validations
      */
     std::vector<std::shared_ptr<STValidation>>
-    negativeUNLFilter(
-        std::vector<std::shared_ptr<STValidation>>&& validations) const;
+    negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& validations) const;
 
 private:
     /** Return the number of configured validator list sites. */
@@ -779,9 +768,7 @@ private:
         lock_guard const&);
 
     static void
-    buildBlobInfos(
-        std::map<std::size_t, ValidatorBlobInfo>& blobInfos,
-        PublisherListCollection const& lists);
+    buildBlobInfos(std::map<std::size_t, ValidatorBlobInfo>& blobInfos, PublisherListCollection const& lists);
 
     static std::map<std::size_t, ValidatorBlobInfo>
     buildBlobInfos(PublisherListCollection const& lists);
@@ -818,10 +805,7 @@ private:
         writing to a cache file, or serving to a /vl/ query
     */
     static Json::Value
-    buildFileData(
-        std::string const& pubKey,
-        PublisherListCollection const& pubCollection,
-        beast::Journal j);
+    buildFileData(std::string const& pubKey, PublisherListCollection const& pubCollection, beast::Journal j);
 
     /** Build a Json representation of the collection, suitable for
     writing to a cache file, or serving to a /vl/ query
@@ -873,10 +857,7 @@ private:
         Calling public member function is expected to lock mutex
     */
     bool
-    removePublisherList(
-        lock_guard const&,
-        PublicKey const& publisherKey,
-        PublisherStatus reason);
+    removePublisherList(lock_guard const&, PublicKey const& publisherKey, PublisherStatus reason);
 
     /** Return quorum for trusted validator set
 
@@ -889,10 +870,7 @@ private:
         recently received validations
     */
     std::size_t
-    calculateQuorum(
-        std::size_t unlSize,
-        std::size_t effectiveUnlSize,
-        std::size_t seenSize);
+    calculateQuorum(std::size_t unlSize, std::size_t effectiveUnlSize, std::size_t seenSize);
 };
 
 // hashing helpers
@@ -944,8 +922,7 @@ void
 hash_append(Hasher& h, TMValidatorListCollection const& msg)
 {
     using beast::hash_append;
-    hash_append(
-        h, msg.manifest(), xrpl::ValidatorList::parseBlobs(msg), msg.version());
+    hash_append(h, msg.manifest(), xrpl::ValidatorList::parseBlobs(msg), msg.version());
 }
 
 }  // namespace protocol

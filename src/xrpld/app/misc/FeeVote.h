@@ -19,10 +19,7 @@ public:
         @param baseValidation
     */
     virtual void
-    doValidation(
-        Fees const& lastFees,
-        Rules const& rules,
-        STValidation& val) = 0;
+    doValidation(Fees const& lastFees, Rules const& rules, STValidation& val) = 0;
 
     /** Cast our local vote on the fee.
 

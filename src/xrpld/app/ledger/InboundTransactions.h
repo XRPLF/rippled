@@ -45,10 +45,7 @@ public:
      * @param message The LedgerData message.
      */
     virtual void
-    gotData(
-        uint256 const& setHash,
-        std::shared_ptr<Peer> peer,
-        std::shared_ptr<protocol::TMLedgerData> message) = 0;
+    gotData(uint256 const& setHash, std::shared_ptr<Peer> peer, std::shared_ptr<protocol::TMLedgerData> message) = 0;
 
     /** Add a transaction set.
      *
@@ -58,10 +55,7 @@ public:
      * or constructed by ourself during consensus.
      */
     virtual void
-    giveSet(
-        uint256 const& setHash,
-        std::shared_ptr<SHAMap> const& set,
-        bool acquired) = 0;
+    giveSet(uint256 const& setHash, std::shared_ptr<SHAMap> const& set, bool acquired) = 0;
 
     /** Informs the container if a new consensus round
      */

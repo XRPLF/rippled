@@ -22,8 +22,7 @@ static SField::private_access_tag_t access;
 
 template <class T>
 template <class... Args>
-TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
-    : SField(pat, std::forward<Args>(args)...)
+TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args) : SField(pat, std::forward<Args>(args)...)
 {
 }
 
@@ -37,19 +36,10 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 #undef TYPED_SFIELD
 
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
-    SField const sfName(                                   \
-        access,                                            \
-        STI_##stiSuffix,                                   \
-        fieldValue,                                        \
-        std::string_view(#sfName).substr(2).data(),        \
-        ##__VA_ARGS__);
+    SField const sfName(access, STI_##stiSuffix, fieldValue, std::string_view(#sfName).substr(2).data(), ##__VA_ARGS__);
 #define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
     SF_##stiSuffix const sfName(                         \
-        access,                                          \
-        STI_##stiSuffix,                                 \
-        fieldValue,                                      \
-        std::string_view(#sfName).substr(2).data(),      \
-        ##__VA_ARGS__);
+        access, STI_##stiSuffix, fieldValue, std::string_view(#sfName).substr(2).data(), ##__VA_ARGS__);
 
 // SFields which, for historical reasons, do not follow naming conventions.
 SField const sfInvalid(access, -1, "");
@@ -66,13 +56,7 @@ SField const sfIndex(access, STI_UINT256, 258, "index");
 #undef UNTYPED_SFIELD
 #pragma pop_macro("UNTYPED_SFIELD")
 
-SField::SField(
-    private_access_tag_t,
-    SerializedTypeID tid,
-    int fv,
-    char const* fn,
-    int meta,
-    IsSigning signing)
+SField::SField(private_access_tag_t, SerializedTypeID tid, int fv, char const* fn, int meta, IsSigning signing)
     : fieldCode(field_code(tid, fv))
     , fieldType(tid)
     , fieldValue(fv)
@@ -83,11 +67,9 @@ SField::SField(
     , jsonName(fieldName.c_str())
 {
     XRPL_ASSERT(
-        !knownCodeToField.contains(fieldCode),
-        "xrpl::SField::SField(tid,fv,fn,meta,signing) : fieldCode is unique");
+        !knownCodeToField.contains(fieldCode), "xrpl::SField::SField(tid,fv,fn,meta,signing) : fieldCode is unique");
     XRPL_ASSERT(
-        !knownNameToField.contains(fieldName),
-        "xrpl::SField::SField(tid,fv,fn,meta,signing) : fieldName is unique");
+        !knownNameToField.contains(fieldName), "xrpl::SField::SField(tid,fv,fn,meta,signing) : fieldName is unique");
     knownCodeToField[fieldCode] = this;
     knownNameToField[fieldName] = this;
 }
@@ -102,12 +84,8 @@ SField::SField(private_access_tag_t, int fc, char const* fn)
     , signingField(IsSigning::yes)
     , jsonName(fieldName.c_str())
 {
-    XRPL_ASSERT(
-        !knownCodeToField.contains(fieldCode),
-        "xrpl::SField::SField(fc,fn) : fieldCode is unique");
-    XRPL_ASSERT(
-        !knownNameToField.contains(fieldName),
-        "xrpl::SField::SField(fc,fn) : fieldName is unique");
+    XRPL_ASSERT(!knownCodeToField.contains(fieldCode), "xrpl::SField::SField(fc,fn) : fieldCode is unique");
+    XRPL_ASSERT(!knownNameToField.contains(fieldName), "xrpl::SField::SField(fc,fn) : fieldName is unique");
     knownCodeToField[fieldCode] = this;
     knownNameToField[fieldName] = this;
 }

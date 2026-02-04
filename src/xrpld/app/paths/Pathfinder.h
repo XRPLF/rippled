@@ -40,15 +40,11 @@ public:
     initPathTable();
 
     bool
-    findPaths(
-        int searchLevel,
-        std::function<bool(void)> const& continueCallback = {});
+    findPaths(int searchLevel, std::function<bool(void)> const& continueCallback = {});
 
     /** Compute the rankings of the paths. */
     void
-    computePathRanks(
-        int maxPaths,
-        std::function<bool(void)> const& continueCallback = {});
+    computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback = {});
 
     /* Get the best paths, up to maxPaths in number, from mCompletePaths.
 
@@ -64,11 +60,11 @@ public:
         std::function<bool(void)> const& continueCallback = {});
 
     enum NodeType {
-        nt_SOURCE,     // The source account: with an issuer account, if needed.
-        nt_ACCOUNTS,   // Accounts that connect from this source/currency.
-        nt_BOOKS,      // Order books that connect to this currency.
-        nt_XRP_BOOK,   // The order book from this currency to XRP.
-        nt_DEST_BOOK,  // The order book to the destination currency/issuer.
+        nt_SOURCE,      // The source account: with an issuer account, if needed.
+        nt_ACCOUNTS,    // Accounts that connect from this source/currency.
+        nt_BOOKS,       // Order books that connect to this currency.
+        nt_XRP_BOOK,    // The order book from this currency to XRP.
+        nt_DEST_BOOK,   // The order book to the destination currency/issuer.
         nt_DESTINATION  // The destination account only.
     };
 
@@ -116,9 +112,7 @@ private:
 
     // Add all paths of one type to mCompletePaths.
     STPathSet&
-    addPathsForType(
-        PathType const& type,
-        std::function<bool(void)> const& continueCallback);
+    addPathsForType(PathType const& type, std::function<bool(void)> const& continueCallback);
 
     bool
     issueMatchesOrigin(Issue const&);
@@ -164,10 +158,7 @@ private:
 
     // Is the "no ripple" flag set from one account to another?
     bool
-    isNoRipple(
-        AccountID const& fromAccount,
-        AccountID const& toAccount,
-        Currency const& currency);
+    isNoRipple(AccountID const& fromAccount, AccountID const& toAccount, Currency const& currency);
 
     void
     rankPaths(

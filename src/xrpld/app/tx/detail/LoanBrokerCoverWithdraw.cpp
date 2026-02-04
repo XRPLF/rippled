@@ -4,6 +4,7 @@
 #include <xrpld/app/tx/detail/Payment.h>
 
 #include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/protocol/STTakesAsset.h>
 
 namespace xrpl {
 
@@ -48,6 +49,11 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const dstAcct = tx[~sfDestination].value_or(account);
 
+    if (isPseudoAccount(ctx.view, dstAcct))
+    {
+        JLOG(ctx.j.warn()) << "Trying to withdraw into a pseudo-account.";
+        return tecPSEUDO_ACCOUNT;
+    }
     auto const sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
     if (!sleBroker)
     {
@@ -75,8 +81,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
     // Cannot transfer a non-transferable Asset
-    if (auto const ret =
-            canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct))
+    if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct))
         return ret;
 
     // Withdrawal to a 3rd party destination account is essentially a transfer.
@@ -116,9 +121,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         NumberRoundModeGuard mg(Number::upward);
         return roundToAsset(
             vaultAsset,
-            tenthBipsOfValue(
-                currentDebtTotal,
-                TenthBips32(sleBroker->at(sfCoverRateMinimum))),
+            tenthBipsOfValue(currentDebtTotal, TenthBips32(sleBroker->at(sfCoverRateMinimum))),
             currentDebtTotal.exponent());
     }();
     if (coverAvail < amount)
@@ -151,21 +154,21 @@ LoanBrokerCoverWithdraw::doApply()
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
+    auto const vault = view().read(keylet::vault(broker->at(sfVaultID)));
+    if (!vault)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const vaultAsset = vault->at(sfAsset);
+
     auto const brokerPseudoID = *broker->at(sfAccount);
 
     // Decrease the LoanBroker's CoverAvailable by Amount
     broker->at(sfCoverAvailable) -= amount;
     view().update(broker);
 
-    return doWithdraw(
-        view(),
-        tx,
-        account_,
-        dstAcct,
-        brokerPseudoID,
-        mPriorBalance,
-        amount,
-        j_);
+    associateAsset(*broker, vaultAsset);
+
+    return doWithdraw(view(), tx, account_, dstAcct, brokerPseudoID, mPriorBalance, amount, j_);
 }
 
 //------------------------------------------------------------------------------

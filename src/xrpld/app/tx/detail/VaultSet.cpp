@@ -6,6 +6,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -14,8 +15,7 @@ namespace xrpl {
 bool
 VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDomains))
+    if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDomains))
         return false;
 
     return true;
@@ -48,9 +48,7 @@ VaultSet::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (!ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.tx.isFieldPresent(sfAssetsMaximum) &&
-        !ctx.tx.isFieldPresent(sfData))
+    if (!ctx.tx.isFieldPresent(sfDomainID) && !ctx.tx.isFieldPresent(sfAssetsMaximum) && !ctx.tx.isFieldPresent(sfData))
     {
         JLOG(ctx.j.debug()) << "VaultSet: nothing is being updated.";
         return temMALFORMED;
@@ -94,8 +92,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
 
         if (*domain != beast::zero)
         {
-            auto const sleDomain =
-                ctx.view.read(keylet::permissionedDomain(*domain));
+            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
             if (!sleDomain)
                 return tecOBJECT_NOT_FOUND;
         }
@@ -104,8 +101,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
         {
             // LCOV_EXCL_START
-            JLOG(ctx.j.error())
-                << "VaultSet: issuance of vault shares is not private.";
+            JLOG(ctx.j.error()) << "VaultSet: issuance of vault shares is not private.";
             return tefINTERNAL;
             // LCOV_EXCL_STOP
         }
@@ -128,6 +124,8 @@ VaultSet::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
+    auto const vaultAsset = vault->at(sfAsset);
+
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
@@ -143,8 +141,7 @@ VaultSet::doApply()
         vault->at(sfData) = tx[sfData];
     if (tx.isFieldPresent(sfAssetsMaximum))
     {
-        if (tx[sfAssetsMaximum] != 0 &&
-            tx[sfAssetsMaximum] < *vault->at(sfAssetsTotal))
+        if (tx[sfAssetsMaximum] != 0 && tx[sfAssetsMaximum] < *vault->at(sfAssetsTotal))
             return tecLIMIT_EXCEEDED;
         vault->at(sfAssetsMaximum) = tx[sfAssetsMaximum];
     }
@@ -171,6 +168,8 @@ VaultSet::doApply()
     // in Issuance object. Otherwise it's really difficult for Vault invariants
     // to verify the operation.
     view().update(vault);
+
+    associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
 }

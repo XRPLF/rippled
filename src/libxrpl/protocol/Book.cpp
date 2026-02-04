@@ -9,8 +9,7 @@ namespace xrpl {
 bool
 isConsistent(Book const& book)
 {
-    return isConsistent(book.in) && isConsistent(book.out) &&
-        book.in != book.out;
+    return isConsistent(book.in) && isConsistent(book.out) && book.in != book.out;
 }
 
 std::string
