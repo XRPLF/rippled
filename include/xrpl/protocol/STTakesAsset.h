@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STTAKESASSET_H_INCLUDED
-#define XRPL_PROTOCOL_STTAKESASSET_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STBase.h>
@@ -59,5 +58,3 @@ void
 associateAsset(STLedgerEntry& sle, Asset const& asset);
 
 }  // namespace xrpl
-
-#endif

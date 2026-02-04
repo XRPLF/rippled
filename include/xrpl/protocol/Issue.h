@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_ISSUE_H_INCLUDED
-#define XRPL_PROTOCOL_ISSUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
@@ -116,5 +115,3 @@ isXRP(Issue const& issue)
 }
 
 }  // namespace xrpl
-
-#endif

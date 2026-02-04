@@ -1,5 +1,4 @@
-#ifndef XRPL_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
-#define XRPL_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -256,4 +255,3 @@ operator==(
         a.position() == b.position() && a.closeTime() == b.closeTime() && a.seenTime() == b.seenTime();
 }
 }  // namespace xrpl
-#endif

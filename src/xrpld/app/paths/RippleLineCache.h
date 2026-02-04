@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
-#define XRPL_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/paths/TrustLine.h>
@@ -99,5 +98,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_CONDITIONS_PREIMAGE_SHA256_H
-#define XRPL_CONDITIONS_PREIMAGE_SHA256_H
+#pragma once
 
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
@@ -131,5 +130,3 @@ public:
 
 }  // namespace cryptoconditions
 }  // namespace xrpl
-
-#endif

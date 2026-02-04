@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_SHAMAPSTOREIMP_H_INCLUDED
-#define XRPL_APP_MISC_SHAMAPSTOREIMP_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/SHAMapStore.h>
@@ -221,5 +220,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

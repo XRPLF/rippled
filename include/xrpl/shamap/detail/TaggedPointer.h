@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_TAGGEDPOINTER_H_INCLUDED
-#define XRPL_SHAMAP_TAGGEDPOINTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
@@ -221,5 +220,3 @@ popcnt16(std::uint16_t a)
 }
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_ASSET_H_INCLUDED
-#define XRPL_PROTOCOL_ASSET_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -225,5 +224,3 @@ Asset
 assetFromJson(Json::Value const& jv);
 
 }  // namespace xrpl
-
-#endif  // XRPL_PROTOCOL_ASSET_H_INCLUDED

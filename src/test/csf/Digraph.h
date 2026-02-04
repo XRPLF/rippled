@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_DIGRAPH_H_INCLUDED
-#define XRPL_TEST_CSF_DIGRAPH_H_INCLUDED
+#pragma once
 
 #include <boost/container/flat_map.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -228,4 +227,3 @@ public:
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-#endif

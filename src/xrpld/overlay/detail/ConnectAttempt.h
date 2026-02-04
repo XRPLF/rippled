@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_CONNECTATTEMPT_H_INCLUDED
-#define XRPL_OVERLAY_CONNECTATTEMPT_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/detail/OverlayImpl.h>
 
@@ -270,5 +269,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

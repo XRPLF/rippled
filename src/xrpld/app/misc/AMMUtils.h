@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_AMMUTILS_H_INCLUDED
-#define XRPL_APP_MISC_AMMUTILS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -100,5 +99,3 @@ verifyAndAdjustLPTokenBalance(
     AccountID const& account);
 
 }  // namespace xrpl
-
-#endif  // XRPL_APP_MISC_AMMUTILS_H_INCLUDED

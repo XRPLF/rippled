@@ -1,5 +1,4 @@
-#ifndef BEAST_INTRUSIVE_LIST_H_INCLUDED
-#define BEAST_INTRUSIVE_LIST_H_INCLUDED
+#pragma once
 
 #include <iterator>
 
@@ -574,5 +573,3 @@ private:
 };
 
 }  // namespace beast
-
-#endif
