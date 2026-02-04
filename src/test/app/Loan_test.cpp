@@ -6706,8 +6706,9 @@ protected:
             iou,
             lender,
             {
-                .vaultDeposit = 1'000'000,
+                .vaultDeposit = 5'000'000,
                 .debtMax = Number{100'000'000},
+                .coverDeposit = 500'000,
             });
         auto const [currentSeq, vaultId, vaultKeylet] = [&]() {
             auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
@@ -6716,11 +6717,6 @@ protected:
             auto const vaultId = brokerSle->at(sfVaultID);
             return std::make_tuple(currentSeq, vaultId, vaultKeylet);
         }();
-        Vault vault{env};
-        env(vault.deposit({.depositor = lender, .id = vaultId, .amount = iou(5'000'000)}));
-        env.close();
-        env(loanBroker::coverDeposit(lender, brokerInfo.brokerID, iou(500'000)));
-        env.close();
 
         // 4. Loan Parameters (Attack Vector)
         Number const principal = 1'000'000;
@@ -6752,10 +6748,6 @@ protected:
         STAmount const attackPayment = periodicPayment + paymentBuffer;
 
         auto const initialVaultAssets = env.le(vaultKeylet)->at(sfAssetsTotal);
-
-        log << "Periodic Payment: " << periodicPayment.value() << std::endl;
-        log << "Attack Payment:   " << attackPayment.value() << std::endl;
-        log << "Initial Vault Assets: " << initialVaultAssets << std::endl;
 
         // 5. Execution Loop
         int yieldTheftCount = 0;
@@ -6795,19 +6787,12 @@ protected:
             if (delta == beast::zero && borrowerDelta > roundedPayment)
             {
                 yieldTheftCount++;
-                // delta should be zero
-                log << "[ALERT] Iteration " << i << ": YIELD THEFT CONFIRMED. Vault Delta: " << delta << std::endl;
-            }
-            else
-            {
-                log << "[INFO]  Iteration " << i << ": Normal Yield: " << delta << std::endl;
             }
 
             previousAssetsTotal = currentAssetsTotal;
         }
 
         BEAST_EXPECTS(yieldTheftCount == 0, std::to_string(yieldTheftCount));
-        log << "[RESULT] Yield Theft Events: " << yieldTheftCount << " / 50 payments." << std::endl;
     }
 
 public:
