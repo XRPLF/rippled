@@ -473,5 +473,3 @@ rangeCheckedCast(C c)
 }
 
 }  // namespace xrpl
-
-#endif

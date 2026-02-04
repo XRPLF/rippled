@@ -171,6 +171,7 @@ xrpl.protocol > xrpl.basics
 xrpl.protocol > xrpl.json
 xrpl.rdb > xrpl.basics
 xrpl.rdb > xrpl.core
+xrpl.rdb > xrpl.protocol
 xrpl.resource > xrpl.basics
 xrpl.resource > xrpl.json
 xrpl.resource > xrpl.protocol
@@ -214,6 +215,7 @@ xrpld.overlay > xrpld.core
 xrpld.overlay > xrpld.peerfinder
 xrpld.overlay > xrpl.json
 xrpld.overlay > xrpl.protocol
+xrpld.overlay > xrpl.rdb
 xrpld.overlay > xrpl.resource
 xrpld.overlay > xrpl.server
 xrpld.peerfinder > xrpl.basics
@@ -232,6 +234,7 @@ xrpld.rpc > xrpl.ledger
 xrpld.rpc > xrpl.net
 xrpld.rpc > xrpl.nodestore
 xrpld.rpc > xrpl.protocol
+xrpld.rpc > xrpl.rdb
 xrpld.rpc > xrpl.resource
 xrpld.rpc > xrpl.server
 xrpld.shamap > xrpl.shamap
