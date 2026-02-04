@@ -6,6 +6,8 @@
 
 #include <xrpld/app/wasm/HostFuncWrapper.h>
 
+#include <wasm_test_fixtures.h>
+
 #include <source_location>
 
 namespace xrpl {

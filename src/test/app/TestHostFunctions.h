@@ -1,4 +1,3 @@
-#include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
 #include <xrpld/app/misc/AmendmentTable.h>
@@ -8,6 +7,8 @@
 
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/digest.h>
+
+#include <wasm_test_fixtures.h>
 
 namespace xrpl {
 

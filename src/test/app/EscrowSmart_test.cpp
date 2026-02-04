@@ -1,4 +1,3 @@
-#include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
 #include <xrpld/app/tx/applySteps.h>
@@ -9,6 +8,8 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
+#include <wasm_test_fixtures.h>
 
 #include <algorithm>
 #include <iterator>

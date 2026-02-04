@@ -1,0 +1,16 @@
+[workspace]
+resolver = "3"
+members = [
+    "all_host_functions",
+    "all_keylets",
+    "codecov_tests",
+    "float_tests",
+]
+
+[profile.release]
+lto = true
+opt-level = 's'
+panic = "abort"
+
+[profile.dev]
+panic = "abort"

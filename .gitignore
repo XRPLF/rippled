@@ -71,3 +71,6 @@ DerivedData
 /.augment
 /.claude
 /CLAUDE.md
+
+src/test/wasm_fixtures/**/target
+src/test/wasm_fixtures/**/debug
