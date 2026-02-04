@@ -95,6 +95,30 @@ verifyProofs(STTx const& tx, std::shared_ptr<SLE const> const& issuance, std::sh
         ptr += ecPedersenProofLength;
     }
 
+    // verify bullet proof
+    {
+        // Compute PC_rem = PC_balance - mG (the commitment to the remaining balance)
+        Buffer pcRem;
+        if (auto const ter = computeRemainingCommitment(tx[sfBalanceCommitment], amount, pcRem); !isTesSuccess(ter))
+        {
+            return ter;
+        }
+
+        Slice const bulletproofSlice{ptr, ecSingleBulletproofLength};
+
+        // The bulletproof verifies that the remaining balance is non-negative
+        std::vector<Slice> commitments{Slice(pcRem.data(), pcRem.size())};
+
+        if (auto const ter = verifyAggregatedBulletproof(bulletproofSlice, commitments, contextHash);
+            !isTesSuccess(ter))
+        {
+            return ter;
+        }
+
+        // increment pointer
+        ptr += ecSingleBulletproofLength;
+    }
+
     return tesSUCCESS;
 }
 

@@ -482,13 +482,119 @@ verifyBalancePcmLinkage(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     std::memcpy(pubKey.data, pubKeySlice.data(), ecPubKeyLength);
-    std::memcpy(pcm.data, pcmSlice.data(), ecPubKeyLength);
+    std::memcpy(pcm.data, pcmSlice.data(), ecPedersenCommitmentLength);
 
     if (secp256k1_elgamal_pedersen_link_verify(
             secp256k1Context(), proof.data(), &pubKey, &c2, &c1, &pcm, contextHash.data()) != 1)
     {
         return tecBAD_PROOF;
     }
+
+    return tesSUCCESS;
+}
+
+TER
+verifyAggregatedBulletproof(Slice const& proof, std::vector<Slice> const& commitments, uint256 const& contextHash)
+{
+    // 1. Validate Aggregation Factor (m)
+    std::size_t const m = commitments.size();
+    if (m == 0)
+        return tecINTERNAL;
+
+    // Bulletproofs require m to be a power of 2
+    if ((m & (m - 1)) != 0)
+        return tecINTERNAL;
+
+    // 2. Prepare Pedersen Commitments, use memcpy
+    std::vector<secp256k1_pubkey> commitmentPts(m);
+    for (size_t i = 0; i < m; ++i)
+    {
+        // Sanity check length
+        if (commitments[i].size() != ecPedersenCommitmentLength)
+            return tecINTERNAL;
+
+        std::memcpy(commitmentPts[i].data, commitments[i].data(), ecPedersenCommitmentLength);
+    }
+
+    // 3. Prepare Generator Vectors (G_vec, H_vec)
+    // The range proof requires vectors of size 64 * m
+    std::size_t const n = 64 * m;
+    std::vector<secp256k1_pubkey> G_vec(n);
+    std::vector<secp256k1_pubkey> H_vec(n);
+
+    // Retrieve deterministic generators "G" and "H"
+    if (secp256k1_mpt_get_generator_vector(secp256k1Context(), G_vec.data(), n, (unsigned char const*)"G", 1) != 1)
+    {
+        return tecINTERNAL;
+    }
+
+    if (secp256k1_mpt_get_generator_vector(secp256k1Context(), H_vec.data(), n, (unsigned char const*)"H", 1) != 1)
+    {
+        return tecINTERNAL;
+    }
+
+    // 4. Prepare Base Generator (pk_base / H)
+    secp256k1_pubkey pk_base;
+    if (secp256k1_mpt_get_h_generator(secp256k1Context(), &pk_base) != 1)
+    {
+        return tecINTERNAL;
+    }
+
+    // 5. Verify the Proof
+    int const result = secp256k1_bulletproof_verify_agg(
+        secp256k1Context(),
+        G_vec.data(),
+        H_vec.data(),
+        reinterpret_cast<unsigned char const*>(proof.data()),
+        proof.size(),
+        commitmentPts.data(),
+        m,
+        &pk_base,
+        contextHash.data());
+
+    if (result != 1)
+        return tecBAD_PROOF;
+
+    return tesSUCCESS;
+}
+
+TER
+computeRemainingCommitment(Slice const& commitment, std::uint64_t amount, Buffer& out)
+{
+    // Validate commitment length
+    if (commitment.size() != ecPedersenCommitmentLength)
+        return tecINTERNAL;
+
+    // Parse the commitment
+    secp256k1_pubkey pcm;
+    std::memcpy(pcm.data, commitment.data(), ecPedersenCommitmentLength);
+
+    // If amount is 0, the remaining commitment is the same as the original
+    if (amount == 0)
+    {
+        out.alloc(ecPedersenCommitmentLength);
+        std::memcpy(out.data(), commitment.data(), ecPedersenCommitmentLength);
+        return tesSUCCESS;
+    }
+
+    // Compute mG = amount * G
+    secp256k1_pubkey mG;
+    if (compute_amount_point(secp256k1Context(), &mG, amount) != 1)
+        return tecINTERNAL;
+
+    // Negate mG to get -mG
+    if (secp256k1_ec_pubkey_negate(secp256k1Context(), &mG) != 1)
+        return tecINTERNAL;
+
+    // Compute PC_rem = PC + (-mG) = PC - mG
+    secp256k1_pubkey const* points[2] = {&pcm, &mG};
+    secp256k1_pubkey result;
+    if (secp256k1_ec_pubkey_combine(secp256k1Context(), &result, points, 2) != 1)
+        return tecINTERNAL;
+
+    // Copy result to output buffer
+    out.alloc(ecPedersenCommitmentLength);
+    std::memcpy(out.data(), result.data, ecPedersenCommitmentLength);
 
     return tesSUCCESS;
 }

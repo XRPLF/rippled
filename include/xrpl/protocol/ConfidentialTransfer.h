@@ -199,6 +199,35 @@ verifyBalancePcmLinkage(
     Slice const& pcmSlice,
     uint256 const& contextHash);
 
+/**
+ * @brief Verifies an aggregated Bulletproof range proof.
+ *
+ * This function verifies that all commitments in commitment_C_vec commit
+ * to values within the valid 64-bit range [0, 2^64 - 1].
+ *
+ * @param proof       The serialized Bulletproof proof.
+ * @param commitments Vector of Pedersen commitments (each 64 bytes).
+ * @param contextHash The unique context hash for this transaction.
+ * @return tesSUCCESS if the proof is valid, tecBAD_PROOF if verification
+ *         fails, or tecINTERNAL for internal errors.
+ */
+TER
+verifyAggregatedBulletproof(Slice const& proof, std::vector<Slice> const& commitments, uint256 const& contextHash);
+
+/**
+ * @brief Computes the remaining commitment after subtracting an amount.
+ *
+ * Given a Pedersen commitment PC = m*G + rho*H, this function computes
+ * PC_rem = PC - amount*G = (m - amount)*G + rho*H
+ *
+ * @param commitment The original Pedersen commitment (64 bytes).
+ * @param amount     The amount to subtract.
+ * @param out        Output buffer for the resulting commitment (64 bytes).
+ * @return tesSUCCESS on success, tecINTERNAL on failure.
+ */
+TER
+computeRemainingCommitment(Slice const& commitment, std::uint64_t amount, Buffer& out);
+
 // The following functions belong to the mpt-crypto library,
 // they will be finally removed and we will use conan2 to manage the dependency.
 /**
@@ -484,6 +513,91 @@ secp256k1_mpt_verify_same_plaintext_multi(
     secp256k1_pubkey const* S,
     secp256k1_pubkey const* Pk,
     unsigned char const* tx_id);
+
+/**
+ * @brief Generates a vector of N independent NUMS generators.
+ */
+int
+secp256k1_mpt_get_generator_vector(
+    secp256k1_context const* ctx,
+    secp256k1_pubkey* vec,
+    size_t n,
+    unsigned char const* label,
+    size_t label_len);
+
+void
+secp256k1_mpt_scalar_add(unsigned char* res, unsigned char const* a, unsigned char const* b);
+void
+secp256k1_mpt_scalar_mul(unsigned char* res, unsigned char const* a, unsigned char const* b);
+void
+secp256k1_mpt_scalar_inverse(unsigned char* res, unsigned char const* in);
+void
+secp256k1_mpt_scalar_negate(unsigned char* res, unsigned char const* in);
+void
+secp256k1_mpt_scalar_reduce32(unsigned char out32[32], unsigned char const in32[32]);
+
+/**
+ * Returns the size of the serialized proof for N recipients.
+ * Size: (1 + N) * 33 bytes for points + 2 * 32 bytes for scalars.
+ */
+size_t
+secp256k1_mpt_proof_equality_shared_r_size(size_t n);
+
+/**
+ * Generates a proof that multiple ciphertexts encrypt the same amount m
+ * using the SAME shared randomness r.
+ */
+int
+secp256k1_mpt_prove_equality_shared_r(
+    secp256k1_context const* ctx,
+    unsigned char* proof_out,
+    uint64_t amount,
+    unsigned char const* r_shared,
+    size_t n,
+    secp256k1_pubkey const* C1,
+    secp256k1_pubkey const* C2_vec,
+    secp256k1_pubkey const* Pk_vec,
+    unsigned char const* context_id);
+
+/**
+ * Verifies the proof of equality with shared randomness.
+ */
+int
+secp256k1_mpt_verify_equality_shared_r(
+    secp256k1_context const* ctx,
+    unsigned char const* proof,
+    size_t n,
+    secp256k1_pubkey const* C1,
+    secp256k1_pubkey const* C2_vec,
+    secp256k1_pubkey const* Pk_vec,
+    unsigned char const* context_id);
+
+int
+secp256k1_bulletproof_prove_agg(
+    secp256k1_context const* ctx,
+    unsigned char* proof_out,
+    size_t* proof_len,
+    uint64_t const* values,
+    unsigned char const* blindings_flat,
+    size_t m,
+    secp256k1_pubkey const* pk_base,
+    unsigned char const* context_id);
+
+int
+secp256k1_bulletproof_verify_agg(
+    secp256k1_context const* ctx,
+    secp256k1_pubkey const* G_vec, /* length n = 64*m */
+    secp256k1_pubkey const* H_vec, /* length n = 64*m */
+    unsigned char const* proof,
+    size_t proof_len,
+    secp256k1_pubkey const* commitment_C_vec, /* length m */
+    size_t m,
+    secp256k1_pubkey const* pk_base,
+    unsigned char const* context_id);
+
+int
+secp256k1_mpt_get_h_generator(secp256k1_context const* ctx, secp256k1_pubkey* h);
+
 }  // namespace xrpl
 
 #endif
